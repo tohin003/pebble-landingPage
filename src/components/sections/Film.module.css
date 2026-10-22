@@ -1,0 +1,86 @@
+.film {
+  position: relative;
+  padding: 58px var(--gutter) 0;
+}
+
+.screen {
+  width: min(var(--w-content), 100%);
+  margin: 0 auto;
+}
+
+.window {
+  position: absolute;
+  left: 50%;
+  top: 8.6%;
+  width: 66%;
+  transform: translateX(-50%);
+}
+
+/* the pebble on the desktop: an 8.5 %-wide box (body about 5 % of the frame), its body resting 7.5 % above the
+   bottom edge (the box hangs 23.45 % of its height below the body) */
+.deskPet {
+  position: absolute;
+  right: 5.5%;
+  bottom: 4%;
+  width: 8.5%;
+  height: auto; /* the SVG's own height="100%" would otherwise stretch it to the frame */
+  aspect-ratio: 1;
+  filter: drop-shadow(0 6px 6px rgba(var(--shade), 0.16));
+}
+
+.play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.caption {
+  margin-top: 44px;
+  text-align: center;
+}
+
+.title {
+  font-size: clamp(30px, 1.4vw + 20px, 40px);
+  line-height: 1.08;
+  letter-spacing: -0.014em;
+}
+
+.lead {
+  max-width: 40em;
+  margin: 12px auto 0;
+  font-size: 16.5px;
+  color: var(--ink-2);
+}
+
+.chapters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 26px;
+  margin-top: 18px;
+}
+
+.chapters:not(:has(button)) {
+  display: none;
+}
+
+@media (max-width: 560px) {
+  .film {
+    padding-top: 56px;
+  }
+
+  .window {
+    width: 78%;
+    top: 9%;
+  }
+
+  .deskPet {
+    width: 11%;
+    right: 3%;
+  }
+
+  .caption {
+    margin-top: 30px;
+  }
+}

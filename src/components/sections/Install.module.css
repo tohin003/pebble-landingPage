@@ -1,0 +1,17 @@
+/* Install: stub styles (lane F1). The shared .section and .section-head helpers live in src/app/globals.css. */
+.section {
+  position: relative; /* TODO(F2): the section's layout */
+}
+
+.command {
+  width: min(940px, 100%);
+  margin: 40px auto 0;
+  padding: 18px 24px;
+  overflow-x: auto;
+  border-radius: var(--r-card);
+  background: var(--panel);
+  box-shadow: var(--shadow-panel);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink);
+}

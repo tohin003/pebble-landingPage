@@ -1,45 +1,513 @@
+/*
+ * Pebble site: tokens, theme, base type, focus and motion (docs/DESIGN.md §3, §4, §6; MASTER_PLAN §7.1, §7.5).
+ * Ported from design comp 3 (.work/design/comp-3/index.html).
+ *
+ * Theme:    html[data-theme="light" | "dark"], set before first paint by the inline <head> script
+ *           (src/lib/bootstrap.ts) from the stored choice or the system. Without JavaScript, the system decides.
+ * Motion:   html[data-motion="on" | "paused"]. Animate only under [data-motion="on"]; "paused" is the visitor's Pause
+ *           motion or the system's reduced motion. Without JavaScript nothing animates.
+ * Platform: html[data-platform="mac" | "other"] picks the call to action (.only-mac, .only-other).
+ *
+ * Components style themselves with CSS modules and these tokens. Tailwind utilities map to the same tokens
+ * (bg-panel, text-ink-2, font-display, rounded-media …); Tailwind's default palette is removed on purpose.
+ * Keep --pebble and --pebble-eye: src/components/pebble/PebbleSvg.tsx reads them.
+ */
+
 @import "tailwindcss" source("..");
 
-/* Placeholder until the design decision (docs/DESIGN.md) lands: the two page colours from MASTER_PLAN §7.8. */
-:root {
-  color-scheme: light dark;
-  --page-bg: #f8f9f6;
-  --page-fg: #191e1b;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --page-bg: #191e1b;
-    --page-fg: #f8f9f6;
+/* dark: follows html[data-theme]; without JavaScript, the system setting */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme]), :root:not([data-theme]) *) {
+      @slot;
+    }
   }
 }
 
-:root[data-theme="dark"] {
-  --page-bg: #191e1b;
-  --page-fg: #f8f9f6;
+/* motion-on: only when the visitor allows motion (not paused on the site, not reduced by the system) */
+@custom-variant motion-on (&:where([data-motion="on"], [data-motion="on"] *));
+/* motion-off: everything else, including no JavaScript */
+@custom-variant motion-off (&:where(:root:not([data-motion="on"]), :root:not([data-motion="on"]) *));
+
+@theme {
+  --color-*: initial;
+  --font-*: initial;
+  --breakpoint-phone: 35.0625rem; /* 561px: above the phone layout (DESIGN §2: phones are <= 560 px) */
+  --breakpoint-tablet: 64rem; /* 1024px: the full header */
+  --breakpoint-wide: 80rem; /* 1280px */
 }
 
-body {
-  background: var(--page-bg);
-  color: var(--page-fg);
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-soft: var(--soft);
+  --color-panel: var(--panel);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-accent-press: var(--accent-press);
+  --color-accent-soft: var(--accent-soft);
+  --color-pebble: var(--pebble);
+  --color-pebble-eye: var(--pebble-eye);
+  --color-trail: var(--trail);
+  --color-stone: var(--stone);
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-control: 12px;
+  --radius-card: 20px;
+  --radius-media: 28px;
+
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-firm: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-move: cubic-bezier(0.45, 0, 0.55, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
 }
 
-/* The pebble's two colours (MASTER_PLAN §7.1, Pebble's --avatar and --avatar-eye), read by
-   src/components/pebble/PebbleSvg.tsx. One flat body colour; never a black circle. Keep these names when the full token
-   set lands. */
+/* ------------------------------------------------------------------ tokens: light (Pebble's src/tokens.css) */
 :root {
-  --pebble: #536b54;
+  --bg: #f8f9f6;
+  --bg-2: #f1f3ee;
+  --soft: #f0f5ed;
+  --panel: #ffffff;
+  --ink: #252c28;
+  --ink-2: #5d665e;
+  --line: #e5e9e1;
+  --line-2: #d5dcd1;
+  --accent: #506e54;
+  --on-accent: #ffffff;
+  --accent-press: #45604a;
+  --accent-soft: #b0c2ae; /* decorative only, never text */
+  --pebble: #536b54; /* Pebble's --avatar */
   --pebble-eye: #ffffff;
+  --trail: #aabda7; /* the pebble's path (DESIGN §2): decorative only */
+  --stone: #bfcebc; /* rail stones, list marks */
+  --pool: #ffffff; /* the lamp's circle of light */
+  --room: #e7ece3; /* the wall around it */
+  --shade: 19, 37, 27; /* green-tinted shadows: rgba(var(--shade), a) */
+  --scrim: rgba(19, 37, 27, 0.56);
+  --code-bg: var(--bg-2);
+  --wallpaper-tint: #d3ddcd; /* the riverbed's ground, shown while its image loads */
+  color-scheme: light;
+
+  /* layout */
+  --gutter: 24px;
+  --header-h: 76px;
+  --w-content: 1120px; /* exhibits and media (comp 3) */
+  --w-wide: 1200px;
+  --w-head: 780px; /* centred section heads */
+  --w-prose: 62ch;
+  --section-pad: clamp(104px, 6vw + 78px, 164px);
+
+  /* radii: controls, cards, media frames */
+  --r-control: 12px;
+  --r-card: 20px;
+  --r-media: 28px;
+
+  /* motion (src/lib/motion.ts) */
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-firm: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-move: cubic-bezier(0.45, 0, 0.55, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --dur-press: 160ms;
+  --dur-fast: 180ms;
+  --dur-base: 240ms;
+  --dur-crossfade: 300ms;
+  --dur-reveal: 480ms;
+
+  /* shadows */
+  --shadow-control: 0 1px 1px rgba(var(--shade), 0.1), 0 10px 24px -6px rgba(var(--shade), 0.3);
+  --shadow-panel: 0 0 0 1px var(--line), 0 12px 32px -10px rgba(var(--shade), 0.14);
+  --shadow-media: 0 0 0 1px rgba(var(--shade), 0.05), 0 2px 4px rgba(var(--shade), 0.05),
+    0 24px 48px -12px rgba(var(--shade), 0.16), 0 60px 120px -40px rgba(var(--shade), 0.22);
+  --shadow-window: 0 0 0 1px rgba(var(--shade), 0.1), 0 2px 4px rgba(var(--shade), 0.06),
+    0 14px 36px rgba(var(--shade), 0.14), 0 44px 96px rgba(var(--shade), 0.18);
+  --shadow-frame: 0 0 0 1px rgba(var(--shade), 0.07), 0 2px 4px rgba(var(--shade), 0.04),
+    0 18px 40px -8px rgba(var(--shade), 0.12), 0 56px 110px -40px rgba(var(--shade), 0.2);
+
+  /* the galet (src/lib/galet.ts) as a mask: media masks, chapter marks, stones */
+  --galet-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 130 115'%3E%3Cpath d='M129.1 55.8C128.2 61.8 126.1 67.9 123.6 73.3C121.1 78.7 118.2 83.5 114.2 88.3C109.8 93.7 103.4 99.8 97.7 103.7C92.7 107.2 87.8 109.5 82.5 111.3C77.1 113 71.3 114 65.6 114.2C60 114.3 54.1 113.5 48.6 112C43 110.5 37.8 108.5 32.5 105.3C26.3 101.6 18.9 95.8 14 90.3C9.7 85.4 6.4 80.2 4 74.4C1.7 68.7 0.1 62 0 55.8C-0.1 49.5 1.2 42.7 3.6 37C6 31.3 9.7 26 14.4 21.5C19.6 16.5 27.9 11.9 34.3 8.9C39.7 6.4 44.7 5.4 49.9 4C55.1 2.7 60.3 1.7 65.6 1C71.1 0.3 76.8 -0.3 82.5 0.1C88.4 0.6 94.5 1.2 100.3 3.8C107.2 6.9 115.8 13.1 120.6 19C124.8 24.2 127.2 30.5 128.6 36.7C130 42.8 130 49.6 129.1 55.8Z'/%3E%3C/svg%3E");
+  /* very low-contrast grain for lit surfaces (comp 3) */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .07  0 0 0 0 .14  0 0 0 0 .1  0 0 0 .055 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-blend: multiply;
+  --grain-opacity: 0.5;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --pebble: #b4cda6;
-    --pebble-eye: #23351f;
-  }
-}
-
+/* ------------------------------------------------------------------ tokens: dark (manual choice, then the system) */
 :root[data-theme="dark"] {
+  --bg: #191e1b;
+  --bg-2: #151a17;
+  --soft: #273425;
+  --panel: #212822;
+  --ink: #e0e7de;
+  --ink-2: #adb9ab;
+  --line: #2b342c;
+  --line-2: #3a463c;
+  --accent: #a6c795;
+  --on-accent: #1b281a;
+  --accent-press: #b7d5a7;
+  --accent-soft: #4d6148;
   --pebble: #b4cda6;
   --pebble-eye: #23351f;
+  --trail: #4d6148;
+  --stone: #42543f;
+  --pool: #303c2d;
+  --room: #101411;
+  --shade: 0, 0, 0;
+  --scrim: rgba(6, 9, 7, 0.72);
+  --code-bg: #141815;
+  --wallpaper-tint: #1d2520;
+  --grain-blend: screen;
+  --grain-opacity: 0.35;
+  --shadow-frame: 0 0 0 1px #2e3830, 0 24px 60px -10px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #191e1b;
+    --bg-2: #151a17;
+    --soft: #273425;
+    --panel: #212822;
+    --ink: #e0e7de;
+    --ink-2: #adb9ab;
+    --line: #2b342c;
+    --line-2: #3a463c;
+    --accent: #a6c795;
+    --on-accent: #1b281a;
+    --accent-press: #b7d5a7;
+    --accent-soft: #4d6148;
+    --pebble: #b4cda6;
+    --pebble-eye: #23351f;
+    --trail: #4d6148;
+    --stone: #42543f;
+    --pool: #303c2d;
+    --room: #101411;
+    --shade: 0, 0, 0;
+    --scrim: rgba(6, 9, 7, 0.72);
+    --code-bg: #141815;
+    --wallpaper-tint: #1d2520;
+    --grain-blend: screen;
+    --grain-opacity: 0.35;
+    --shadow-frame: 0 0 0 1px #2e3830, 0 24px 60px -10px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+}
+
+@media (max-width: 1023px) {
+  :root {
+    --header-h: 64px;
+  }
+}
+
+@media (max-width: 560px) {
+  :root {
+    --gutter: 16px;
+  }
+}
+
+/* ------------------------------------------------------------------ base */
+@layer base {
+  html {
+    background: var(--bg);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scroll-padding-top: calc(var(--header-h) + 16px);
+    scroll-padding-bottom: 96px; /* the sticky call to action never hides a focused element (MASTER_PLAN §7.4) */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    min-height: 100dvh;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 17px;
+    line-height: 1.6;
+    font-weight: 400;
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-kerning: normal;
+  }
+
+  /* Display: Fraunces at 350, SOFT 100, WONK 0 (instanced in src/fonts), optical size from the font size. Never
+     italic, never an accent-coloured word (DESIGN §3). */
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 350;
+    font-style: normal;
+    font-synthesis: none;
+    font-optical-sizing: auto;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+
+  h1 {
+    font-size: clamp(43px, 4.6vw, 66px);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    font-size: clamp(32px, 2vw + 20px, 52px);
+    line-height: 1.06;
+    letter-spacing: -0.017em;
+  }
+
+  h3 {
+    font-family: var(--font-sans);
+    font-size: clamp(19px, 0.55vw + 15px, 24px);
+    line-height: 1.3;
+    font-weight: 600;
+    letter-spacing: -0.012em;
+    text-wrap: balance;
+  }
+
+  h4 {
+    font-size: 17px;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+
+  p,
+  li,
+  dd {
+    text-wrap: pretty;
+  }
+
+  a {
+    color: inherit;
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+    text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+    transition: text-decoration-color var(--dur-fast) ease;
+  }
+
+  a:hover {
+    text-decoration-color: currentColor;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: default;
+  }
+
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+    font-variant-ligatures: none;
+  }
+
+  pre {
+    tab-size: 2;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 24%, transparent);
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  video {
+    display: block;
+  }
+}
+
+/* ------------------------------------------------------------------ shared helpers */
+@layer components {
+  /* A section of the home page: its top padding and gutters. Sections add their own layout on top. */
+  .section {
+    position: relative;
+    padding-top: var(--section-pad);
+    padding-inline: var(--gutter);
+  }
+
+  /* A centred section head: H2 plus an optional lead. Text longer than three lines is left-aligned (DESIGN §1). */
+  .section-head {
+    max-width: var(--w-head);
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .section-head > p {
+    max-width: 36em;
+    margin: 20px auto 0;
+  }
+
+  .lead {
+    font-size: clamp(17.5px, 0.35vw + 14.5px, 19.5px);
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+
+  .small {
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+
+  /* Facts are lists with hairline separators, never middle-dot strings (DESIGN §3). Two rows on phones. */
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 4px;
+    font-size: 14.5px;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .facts > li {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+  }
+
+  .facts > li + li::before {
+    content: "";
+    width: 1px;
+    height: 13px;
+    margin: 0 13px;
+    background: var(--line-2);
+  }
+
+  @media (max-width: 560px) {
+    .facts > li + li::before {
+      margin: 0 10px;
+    }
+
+    .facts::before {
+      content: "";
+      flex-basis: 100%;
+      order: 1;
+    }
+
+    .facts > li:nth-child(n + 3) {
+      order: 2;
+    }
+
+    .facts > li:nth-child(3)::before {
+      display: none;
+    }
+  }
+
+  /* The galet as a shape: put it on an element and give that element a background colour. */
+  .galet {
+    -webkit-mask: var(--galet-mask) center / contain no-repeat;
+    mask: var(--galet-mask) center / contain no-repeat;
+  }
+
+  /* Hero text reveal (DESIGN §4): CSS only, opacity plus an 8 px rise, 480 ms, a 60 ms stagger via --i. */
+  :root[data-motion="on"] .reveal {
+    animation: pebble-rise var(--dur-reveal) var(--ease-enter) both;
+    animation-delay: calc(var(--i, 0) * 60ms + 80ms);
+  }
+}
+
+@keyframes pebble-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes pebble-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------------ switches (!important: they beat module styles) */
+:root[data-theme="dark"] .only-light,
+:root[data-theme="light"] .only-dark,
+:root[data-platform="other"] .only-mac,
+:root:not([data-platform="other"]) .only-other {
+  display: none !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .only-light {
+    display: none !important;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .only-dark {
+    display: none !important;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ------------------------------------------------------------------ motion: on only when allowed */
+:root[data-motion="on"] {
+  scroll-behavior: smooth;
+}
+
+/* Pause motion and reduced motion: everything static, state changes instant (DESIGN §4). */
+:root[data-motion="paused"] *,
+:root[data-motion="paused"] *::before,
+:root[data-motion="paused"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  transition-delay: 0s !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* No scrolling behind an open modal dialog (the film theatre, the phone menu). */
+html:has(dialog[open]:modal) {
+  overflow: hidden;
 }

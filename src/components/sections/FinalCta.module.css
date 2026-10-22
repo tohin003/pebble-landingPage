@@ -1,0 +1,21 @@
+/* FinalCta: stub styles (lane F1). The shared .section and .section-head helpers live in src/app/globals.css. */
+.section {
+  position: relative; /* TODO(F2): the section's layout */
+}
+
+.cta {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px 30px;
+  margin-top: 34px;
+}
+
+.quiet {
+  font-size: 16px;
+  font-weight: 550;
+  color: var(--ink);
+  text-decoration-color: var(--line-2);
+  text-underline-offset: 6px;
+}

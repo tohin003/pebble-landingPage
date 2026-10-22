@@ -1,0 +1,24 @@
+/* Limits: stub styles (lane F1). The shared .section and .section-head helpers live in src/app/globals.css. */
+.section {
+  position: relative; /* TODO(F2): the section's layout */
+}
+
+.list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 56px;
+  width: min(940px, 100%);
+  margin: 40px auto 0;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+@media (max-width: 860px) {
+  .list {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}

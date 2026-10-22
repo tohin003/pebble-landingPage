@@ -1,0 +1,245 @@
+/* The hero must not create a stacking context (no z-index, transform, filter or isolation here): its backdrop sits
+   at z-index -2 under the pebble's path (-1), inside the page wrapper's stacking context. */
+.hero {
+  position: relative;
+  padding: 8px var(--gutter) 0;
+  text-align: center;
+}
+
+/* --- the lamp's circle of light on the wall behind the pebble, and the room around it (comp 3) --- */
+.backdrop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(-1 * var(--header-h));
+  z-index: -2;
+  height: 1180px;
+  pointer-events: none;
+  background: radial-gradient(58% 56% at 50% 30%, transparent 0 34%, var(--room) 100%);
+  -webkit-mask-image: linear-gradient(#000 0 62%, transparent 100%);
+  mask-image: linear-gradient(#000 0 62%, transparent 100%);
+}
+
+.backdrop::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 292px;
+  width: 760px;
+  height: 700px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    closest-side,
+    var(--pool) 0%,
+    var(--pool) 46%,
+    color-mix(in srgb, var(--pool) 55%, transparent) 70%,
+    color-mix(in srgb, var(--pool) 0%, transparent) 100%
+  );
+}
+
+.backdrop::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 422px;
+  width: 620px;
+  height: 120px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    closest-side,
+    var(--pool) 0%,
+    var(--pool) 40%,
+    color-mix(in srgb, var(--pool) 40%, transparent) 72%,
+    transparent 100%
+  );
+}
+
+.grain {
+  position: absolute;
+  inset: 0;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: var(--grain-blend);
+  background-image: var(--grain);
+}
+
+/* --- the pebble on the line ---
+   The pebble's box is square and its body ends at 76.55 % of the box (shared/pebble BODY), so the box hangs below
+   the floor by 23.45 % of its size. --size 360px gives a body about 212 px wide (comp 3). */
+.stage {
+  --size: 360px;
+  --floor: 9px;
+  position: relative;
+  width: 300px;
+  height: 268px;
+  margin: 0 auto;
+}
+
+.pebble {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--floor) - var(--size) * 0.2345);
+  width: var(--size);
+  height: var(--size);
+  transform: translateX(-50%);
+}
+
+.floor {
+  position: absolute;
+  left: 50%;
+  bottom: var(--floor);
+  width: 1px;
+  height: 0;
+}
+
+.contact {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--floor) - 13px);
+  width: calc(var(--size) * 0.556);
+  height: 26px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgba(var(--shade), 0.3), rgba(var(--shade), 0));
+}
+
+:global(:root[data-theme="dark"]) .contact {
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0));
+}
+
+/* --- text --- */
+.title,
+.lead,
+.cta,
+.notice,
+.facts,
+.honest {
+  position: relative; /* above the pebble's box, which hangs below the floor */
+}
+
+.title {
+  margin: 34px auto 0;
+}
+
+.lead {
+  max-width: 34em;
+  margin: 22px auto 0;
+  font-size: 19.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  text-wrap: balance;
+}
+
+.cta {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  margin-top: 34px;
+}
+
+.quiet {
+  font-size: 16px;
+  font-weight: 550;
+  color: var(--ink);
+  text-decoration-color: var(--line-2);
+  text-underline-offset: 6px;
+}
+
+.notice {
+  margin-top: 16px;
+  font-size: 14.5px;
+  color: var(--ink-2);
+}
+
+.facts {
+  margin-top: 22px;
+}
+
+.honest {
+  max-width: 34em;
+  margin: 10px auto 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  text-wrap: balance;
+}
+
+.honest a {
+  color: var(--ink);
+}
+
+@media (max-width: 899px) {
+  .backdrop::before {
+    top: 214px;
+    width: 560px;
+    height: 520px;
+  }
+
+  .backdrop::after {
+    top: 300px;
+    width: 440px;
+    height: 90px;
+  }
+
+  .stage {
+    --size: 280px;
+    height: 220px;
+  }
+}
+
+@media (max-width: 560px) {
+  .backdrop {
+    top: -64px;
+  }
+
+  .backdrop::before {
+    top: 190px;
+    width: 480px;
+    height: 460px;
+  }
+
+  .backdrop::after {
+    top: 262px;
+    width: 380px;
+    height: 80px;
+  }
+
+  .stage {
+    --size: 229px;
+    width: 220px;
+    height: 196px;
+  }
+
+  .contact {
+    height: 18px;
+    bottom: calc(var(--floor) - 9px);
+  }
+
+  .title {
+    margin-top: 26px;
+  }
+
+  .lead {
+    margin-top: 18px;
+    font-size: 17.5px;
+  }
+
+  .cta {
+    flex-direction: column;
+    gap: 18px;
+    margin-top: 28px;
+  }
+
+  .primary {
+    width: 100%;
+  }
+
+  .facts {
+    margin-top: 20px;
+    font-size: 14px;
+  }
+
+  .honest {
+    font-size: 14px;
+  }
+}

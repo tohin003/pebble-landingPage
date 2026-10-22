@@ -1,0 +1,138 @@
+.footer {
+  position: relative;
+  padding: clamp(112px, 8vw + 56px, 170px) var(--gutter) 64px;
+  text-align: center;
+}
+
+/* --- the sleeping pebble, in a dimmer pool of light, resting on the end of the line --- */
+.rest {
+  position: relative;
+}
+
+.restLight {
+  position: absolute;
+  left: 50%;
+  top: -80px;
+  z-index: -2; /* under the line */
+  width: min(720px, 120vw);
+  height: 380px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--pool) 80%, transparent) 0%, transparent 100%);
+}
+
+/* The pebble box is square; the galet's body ends at 76.55 % of its height (shared/pebble BODY), which is where the
+   floor sits. 120 px box → a body about 71 px wide. */
+.restStage {
+  --size: 120px;
+  position: relative;
+  width: 220px;
+  height: 104px;
+  margin: 0 auto;
+}
+
+.restPebble {
+  position: absolute;
+  left: 50%;
+  bottom: calc(10px - var(--size) * 0.2345);
+  width: var(--size);
+  height: var(--size);
+  transform: translateX(-50%);
+}
+
+.floor {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  width: 1px;
+  height: 0;
+}
+
+.contact {
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 92px;
+  height: 14px;
+  transform: translateX(-50%);
+  background: radial-gradient(closest-side, rgba(var(--shade), 0.24), rgba(var(--shade), 0));
+}
+
+:global(:root[data-theme="dark"]) .contact {
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
+}
+
+.restNote {
+  margin-top: 30px;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+
+/* --- colophon --- */
+.colophon {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 22px 40px;
+  width: min(1040px, 100%);
+  margin: 84px auto 0;
+  padding-top: 30px;
+  border-top: 1px solid var(--line);
+  text-align: left;
+}
+
+.wordmark {
+  font-size: 21px;
+}
+
+.nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 26px;
+  font-size: 15px;
+}
+
+.nav a {
+  color: var(--ink-2);
+  text-decoration: none;
+  transition: color var(--dur-fast) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nav a:hover {
+    color: var(--ink);
+  }
+}
+
+.toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fine {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+  max-width: 88ch;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+@media (max-width: 860px) {
+  .colophon {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .nav ul,
+  .toggles {
+    justify-content: center;
+  }
+
+  .fine {
+    justify-items: center;
+  }
+}

@@ -1,0 +1,83 @@
+/* Header icon buttons (40 px: comfortably over the 24 px target minimum) and footer pills (comp 3). */
+.iconButton {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
+  color: var(--ink-2);
+  transition:
+    background-color var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    transform var(--dur-press) var(--ease-firm);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px 0 12px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--bg-2);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 550;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-fast) ease,
+    transform var(--dur-press) var(--ease-firm);
+}
+
+:global(:root[data-theme="dark"]) .pill {
+  background: #222a24;
+}
+
+.icon {
+  width: 19px;
+  height: 19px;
+  flex: none;
+}
+
+.pill .icon {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .iconButton:hover {
+    background: var(--bg-2);
+    color: var(--ink);
+  }
+
+  .pill:hover {
+    background: var(--line);
+  }
+}
+
+.iconButton:active,
+.pill:active {
+  transform: scale(0.97);
+}
+
+/* Pressed (motion paused): a quiet filled state, so the state reads without the label changing. */
+.motion[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--ink);
+}
+
+.motion[aria-pressed="true"] .icon {
+  color: var(--accent);
+}
+
+.motion[aria-disabled="true"] {
+  opacity: 0.7;
+}
+
+.motion[aria-disabled="true"]:active {
+  transform: none;
+}

@@ -1,0 +1,21 @@
+.still,
+.missing {
+  display: block;
+  aspect-ratio: 16 / 10;
+}
+
+.picture,
+.img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.missing {
+  background: var(--bg-2);
+}
+
+/* a light still standing in on the dark page (critic H5) */
+.dimmed {
+  filter: brightness(0.86) saturate(0.95);
+}

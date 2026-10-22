@@ -1,0 +1,4 @@
+/* OpenSourceFaq: stub styles (lane F1). The shared .section and .section-head helpers live in src/app/globals.css. */
+.section {
+  position: relative; /* TODO(F2): the section's layout */
+}

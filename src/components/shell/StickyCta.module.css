@@ -1,0 +1,52 @@
+.sticky {
+  position: fixed;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 16px 6px 6px;
+  border-radius: 18px;
+  background: var(--panel);
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 16px 40px -12px rgba(var(--shade), 0.28);
+  transform: translate(-50%, 16px);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    transform var(--dur-base) var(--ease-exit),
+    opacity var(--dur-fast) ease,
+    visibility 0s linear var(--dur-base);
+}
+
+.sticky[data-visible] {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  visibility: visible;
+  transition:
+    transform var(--dur-crossfade) var(--ease-enter),
+    opacity var(--dur-base) ease,
+    visibility 0s;
+}
+
+.facts {
+  font-size: 13.5px;
+  flex-wrap: nowrap;
+}
+
+/* only-mac hides the facts elsewhere; then the pill is just the button */
+:global(:root[data-platform="other"]) .sticky {
+  padding: 6px;
+}
+
+@media (max-width: 380px) {
+  .facts {
+    display: none;
+  }
+
+  .sticky {
+    padding: 6px;
+  }
+}

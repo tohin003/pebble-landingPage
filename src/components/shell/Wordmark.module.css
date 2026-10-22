@@ -1,0 +1,20 @@
+.wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 25px;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: -0.8px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.dot {
+  width: 8.4px;
+  height: 7.4px;
+  margin-left: 1.6px;
+  color: var(--accent);
+  overflow: visible;
+}

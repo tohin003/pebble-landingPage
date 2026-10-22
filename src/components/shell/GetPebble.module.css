@@ -1,0 +1,89 @@
+/* Buttons from comp 3: the primary (54 px, accent), the header's ghost (40 px, hairline) and a compact one. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  text-decoration: none;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    background-color var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease,
+    transform var(--dur-press) var(--ease-firm);
+}
+
+.button:active {
+  transform: scale(0.98);
+}
+
+.icon {
+  flex: none;
+}
+
+.primary {
+  height: 54px;
+  padding: 0 26px 0 22px;
+  border-radius: 15px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 17px;
+  box-shadow: var(--shadow-control);
+}
+
+.primary .icon {
+  width: 21px;
+  height: 21px;
+}
+
+.ghost {
+  height: 40px;
+  padding: 0 16px 0 13px;
+  border-radius: var(--r-control);
+  background: transparent;
+  color: var(--ink);
+  font-size: 15px;
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+
+.ghost .icon {
+  width: 17px;
+  height: 17px;
+  color: var(--accent);
+}
+
+.compact {
+  height: 44px;
+  padding: 0 18px 0 15px;
+  border-radius: 13px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 15px;
+  box-shadow: var(--shadow-control);
+}
+
+.compact .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.block {
+  width: 100%;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .primary:hover,
+  .compact:hover {
+    background: var(--accent-press);
+  }
+
+  .ghost:hover {
+    box-shadow: inset 0 0 0 1px var(--ink-2);
+  }
+}

@@ -1,0 +1,57 @@
+.article {
+  width: min(720px, 100%);
+  margin: 0 auto;
+  padding: clamp(56px, 6vw + 24px, 104px) var(--gutter) 0;
+}
+
+.head {
+  margin-bottom: 48px;
+}
+
+.title {
+  font-size: clamp(40px, 3vw + 26px, 58px);
+}
+
+.lead {
+  margin-top: 18px;
+}
+
+.body {
+  display: grid;
+  gap: 18px;
+}
+
+.body h2 {
+  margin-top: 36px;
+  font-size: clamp(26px, 1vw + 20px, 32px);
+}
+
+.body h3 {
+  margin-top: 18px;
+}
+
+.list {
+  display: grid;
+  gap: 10px;
+  padding-left: 1.2em;
+  list-style: disc;
+}
+
+.list li::marker {
+  color: var(--stone);
+}
+
+.pre {
+  padding: 18px 20px;
+  overflow-x: auto;
+  border-radius: var(--r-card);
+  background: var(--code-bg);
+  font-size: 13.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.back {
+  margin-top: 48px;
+  font-weight: 550;
+}

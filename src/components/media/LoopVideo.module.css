@@ -1,0 +1,75 @@
+.loop {
+  margin: 0;
+}
+
+.box {
+  position: relative;
+}
+
+.stage {
+  position: relative;
+  overflow: hidden;
+  border-radius: inherit;
+  background: var(--bg-2);
+}
+
+.video,
+.poster,
+.posterImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.video,
+.posterImg {
+  object-fit: cover;
+}
+
+/* Loops fade in when they start (DESIGN §4): the poster gives way. */
+.poster {
+  transition: opacity var(--dur-crossfade) ease;
+}
+
+/* Pause and play: a 44 px target, drawn as a small galet (critic M9). */
+.control {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  filter: drop-shadow(0 4px 8px rgba(var(--shade), 0.2)); /* a mask would clip a box-shadow */
+}
+
+.controlShape {
+  position: absolute;
+  inset: 6px 4px;
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+  transition: transform var(--dur-press) var(--ease-firm);
+}
+
+.controlIcon {
+  position: relative;
+  width: 15px;
+  height: 15px;
+}
+
+.control:active .controlShape {
+  transform: scale(0.94);
+}
+
+.caption {
+  margin-top: 14px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  text-align: center;
+}

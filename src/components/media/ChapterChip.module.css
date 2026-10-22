@@ -1,0 +1,45 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 32px;
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 14.5px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+:global(:root:not([data-film="ready"])) .chip {
+  display: none;
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 19.5px;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.icon {
+  width: 9px;
+  height: 9px;
+  margin-left: 1px;
+}
+
+.time {
+  color: var(--ink-2);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .chip:hover .text {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+}

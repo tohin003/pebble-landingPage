@@ -1,0 +1,20 @@
+.skip {
+  position: fixed;
+  top: 12px;
+  left: 16px;
+  z-index: 100;
+  padding: 10px 16px;
+  border-radius: var(--r-control);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(calc(-100% - 40px));
+}
+
+.skip:focus,
+.skip:focus-visible {
+  transform: none;
+  box-shadow: var(--shadow-panel);
+}

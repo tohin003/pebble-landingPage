@@ -1,0 +1,30 @@
+/* The pebble's path: one SVG over the whole page, behind the content (z-index -1 inside the page wrapper's isolated
+   stacking context). Sections' own backdrops that must sit under the line use z-index -2 and must not create a
+   stacking context of their own (no z-index, transform, filter or isolation on the section). */
+.path {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.path[data-pebble-path="ready"] {
+  animation: appear 400ms ease both;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+}
+
+.stroke,
+.gate {
+  fill: none;
+  stroke: var(--trail);
+  stroke-width: 1.35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
