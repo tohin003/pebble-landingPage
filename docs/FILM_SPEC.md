@@ -795,6 +795,9 @@ MASTER_PLAN listed L1 at 8 s; the real sequence needs 10 s to open, answer and c
 
 ## 18. Copy deltas for `src/content/chapters.ts` (for the main loop or lane A)
 
+**Status: applied** to `src/content/chapters.ts` (and the `film.posterAlt` delta below to `copy.ts`) by the claims
+review, 2026-10-23; see `.work/handoffs/HANDOFF-claims-review.md`.
+
 Lane E filled only the timings (`startSeconds`, `FILM_DURATION_SECONDS`, the `bars` notes). These text changes make the
 transcript, the chapter list and `video/src/film/timeline.ts`'s `line()` check match the cut. Apply them before lane G
 re-derives the timeline:
@@ -886,8 +889,8 @@ read, and keep the film's climax as specified.
 
 **Open issues.**
 1. R1–R4 are capture changes for lanes D/G; each has a fallback above.
-2. `chapters.ts` text deltas (§18) are for the main loop or lane A; `video/src/film/timeline.ts`'s `line()` check
-   fails until they land.
+2. `chapters.ts` text deltas (§18): applied by the claims review on 2026-10-23, so `video/src/film/timeline.ts`'s
+   `line()` check finds every on-screen line in `chapters.ts`.
 3. The square's S6c records sit at 31 px UI text (target 34); acceptable because T13 carries the meaning.
 4. T22 (the bloub credit) follows OVERRIDES §2's "wherever the character appears"; the main loop may move it to the
    LinkedIn post text instead, then drop it from the end card and from chapters.ts.
