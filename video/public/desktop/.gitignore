@@ -1,0 +1,4 @@
+# Rasters of the riverbed wallpaper are derived (rendered by the RiverbedPlate still); never commit them.
+*.png
+*.jpg
+*.webp

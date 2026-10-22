@@ -1,8 +1,9 @@
 // Motion spec for the films and loops: timing, easing, springs, camera, cursor, typing, type sizes and colour tokens.
 // Source: R5 (research/r5-scripts/spec-extracted.ts), unchanged except FPS.film = 30 (decision D7: every film and loop
 // renders at 30 fps; R5 assumed 60). Frame counts always come from sec(s, fps), never hard-coded.
+// Lane G1 appended the presets block at the end of this file (and `spring` to this import); the R5 block is unchanged.
 
-import {Easing, interpolate, random} from 'remotion';
+import {Easing, interpolate, random, spring} from 'remotion';
 
 /* ---------- frame rates & time ---------- */
 export const FPS = {film: 30, filmFallback: 30, loop: 30} as const;
@@ -124,3 +125,237 @@ export const LOOP = {lengthS: [6, 12], fps: 30, idleHeadS: 0.5, idleTailS: 0.4, 
 /** Use periodS = loopS / k (k integer) so frame N ≡ frame 0. */
 export const periodic = (frame: number, fps: number, periodS: number, phase = 0) =>
   Math.sin(2 * Math.PI * (frame / fps / periodS) + phase);
+
+/* =====================================================================================================================
+ * PRESETS (lane G1). The motion vocabulary every scene uses, built only from the R5 constants above.
+ * Rules they encode:
+ * - one-shot moves clamp; opacity, colour and data never spring; the character springs (pebble, jelly) are for the
+ *   pebble only, never for UI or type;
+ * - a landed element is dead still: every entrance returns FX_REST exactly (no filter, no transform) once it is done;
+ * - cameras ease with EASE.camera and zoom in log space; cursors travel on minimum-jerk arcs, Fitts-timed;
+ * - every duration is seconds through sec(), so the same preset works at any frame rate.
+ * =================================================================================================================== */
+
+export type Ease = (t: number) => number;
+type SpringConfig = (typeof SPRING)[keyof typeof SPRING];
+
+export const CLAMP = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
+
+/** Extra timing tokens (seconds), from R5 §4, §5.3, §5.4, §5.7 and §5.8. */
+export const T2 = {
+  lineOut: 0.2, // a line leaves: blur-out plus fade, 40–50 % shorter than its entrance (R5 §4)
+  cardOut: 0.3, // card exit, −12 px (R5 §5.7)
+  inkStagger: 0.08, // per-word ink (R5 §4 B)
+  letterIn: 0.2, // per-letter opacity 0.3 → 1 for the name only (R5 §4 D)
+  drawCheck: 0.35, // a check mark drawing on (R5 §5.7)
+  ringIn: 0.4, // callout ring draws on (R5 §5.8)
+  ringOut: 0.2, // callout fades (R5 §5.8)
+  labelLag: 0.12, // callout label after its ring (R5 §5.8)
+  cursorFade: 0.15, // the cursor hides or appears (R5 §5.4)
+  dimIn: 0.4, // spotlight: the rest of the UI dims (R5 §5.3)
+  dimOut: 0.3,
+  flood: 0.4, // colour flood between grounds (R5 §7.1)
+} as const;
+
+/** 0 → 1 over `dur` frames from frame `at`, eased; 0 before, 1 after. */
+export const ramp = (frame: number, at: number, dur: number, easing: Ease = EASE.enter): number =>
+  interpolate(frame, [at, at + Math.max(1, dur)], [0, 1], {...CLAMP, easing});
+
+/** A spring released at frame `at` (0 before it). Use SPRING.calm / snappy on UI, premium on the hero object. */
+export const springAt = (frame: number, fps: number, at: number, config: SpringConfig = SPRING.calm): number =>
+  frame < at ? 0 : spring({frame: frame - at, fps, config});
+
+/** Frames a line must hold to be read: 0.5 s + 0.3 s per word, at least 1.2 s (2 s for the last line). */
+export const holdFrames = (words: number, fps: number, last = false) => sec(holdFor(words, last), fps);
+export const wordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
+
+/* ---------- effects as numbers (combine, then convert once) ---------- */
+
+/** An element's animated look. Entrances and exits return one; combine them with mixFx, convert with fxStyle. */
+export interface Fx {
+  opacity: number;
+  blur: number; // px
+  dx: number; // px
+  dy: number; // px
+  scale: number;
+}
+export const FX_REST: Fx = {opacity: 1, blur: 0, dx: 0, dy: 0, scale: 1};
+export const mixFx = (...list: readonly Fx[]): Fx =>
+  list.reduce(
+    (a, b) => ({opacity: a.opacity * b.opacity, blur: a.blur + b.blur, dx: a.dx + b.dx, dy: a.dy + b.dy, scale: a.scale * b.scale}),
+    FX_REST,
+  );
+/** CSS for an Fx. A resting Fx gives {opacity: 1} and nothing else, so a landed element is pixel-still. */
+export const fxStyle = (fx: Fx): {opacity: number; filter?: string; transform?: string} => {
+  const style: {opacity: number; filter?: string; transform?: string} = {opacity: Math.max(0, Math.min(1, fx.opacity))};
+  if (fx.blur > 0.02) style.filter = `blur(${fx.blur.toFixed(2)}px)`;
+  if (Math.abs(fx.dx) > 0.01 || Math.abs(fx.dy) > 0.01 || Math.abs(fx.scale - 1) > 1e-4) {
+    style.transform = `translate(${fx.dx.toFixed(2)}px, ${fx.dy.toFixed(2)}px) scale(${fx.scale.toFixed(5)})`;
+  }
+  return style;
+};
+
+/* ---------- entrances and exits ---------- */
+
+/** (A) Per-word blur-in: blur 6 px → 0 and opacity 0 → 1 in 0.15 s, no translate. The default for headlines. */
+export const blurIn = (frame: number, at: number, fps: number, px = 6): Fx => {
+  const p = ramp(frame, at, sec(T.wordIn, fps), EASE.enter);
+  return p >= 1 ? FX_REST : {...FX_REST, opacity: p, blur: (1 - p) * px};
+};
+/** A line or element leaves: blur 0 → 8 px and opacity → 0 over 0.2 s, accelerating away. FX_REST before `at`. */
+export const blurOut = (frame: number, at: number, fps: number, px = 8, dur: number = T2.lineOut): Fx => {
+  if (frame < at) return FX_REST;
+  const p = ramp(frame, at, sec(dur, fps), EASE.exit);
+  return {...FX_REST, opacity: 1 - p, blur: p * px};
+};
+/** Card or panel in (R5 §5.7): +32 px → 0 on the calm spring, opacity over 0.3 s (opacity never springs), optional blur. */
+export const riseIn = (frame: number, at: number, fps: number, dist = 32, blurPx = 0): Fx => {
+  if (frame >= at + sec(0.9, fps)) return FX_REST;
+  const s = springAt(frame, fps, at, SPRING.calm);
+  const o = ramp(frame, at, sec(0.3, fps), EASE.enter);
+  return {...FX_REST, opacity: o, dy: (1 - s) * dist, blur: (1 - o) * blurPx};
+};
+/** Card exit (R5 §5.7): 0.3 s, accelerating, −12 px, opacity → 0. */
+export const sinkOut = (frame: number, at: number, fps: number, dist = 12): Fx => {
+  if (frame < at) return FX_REST;
+  const p = ramp(frame, at, sec(T2.cardOut, fps), EASE.exit);
+  return {...FX_REST, opacity: 1 - p, dy: -dist * p};
+};
+/** A chip or badge pops in on the snappy spring from 0.94 (never from 0), opacity over 0.18 s. */
+export const popIn = (frame: number, at: number, fps: number, from = 0.94): Fx => {
+  if (frame >= at + sec(0.6, fps)) return FX_REST;
+  const s = springAt(frame, fps, at, SPRING.snappy);
+  return {...FX_REST, opacity: ramp(frame, at, sec(T.micro, fps), EASE.enter), scale: from + (1 - from) * s};
+};
+export const fadeIn = (frame: number, at: number, fps: number, dur: number = T.micro): Fx => {
+  const p = ramp(frame, at, sec(dur, fps), EASE.enter);
+  return p >= 1 ? FX_REST : {...FX_REST, opacity: p};
+};
+export const fadeOut = (frame: number, at: number, fps: number, dur: number = T.micro): Fx =>
+  frame < at ? FX_REST : {...FX_REST, opacity: 1 - ramp(frame, at, sec(dur, fps), EASE.exit)};
+/** Spotlight (R5 §5.3): the rest of the UI goes to 45 % and 6 px blur over 0.4 s from `at`, and back over 0.3 s from `release`. */
+export const dimFx = (frame: number, at: number, release: number, fps: number): Fx => {
+  const k = ramp(frame, at, sec(T2.dimIn, fps), EASE.enter) * (1 - ramp(frame, release, sec(T2.dimOut, fps), EASE.enter));
+  return k <= 0 ? FX_REST : {...FX_REST, opacity: 1 - 0.55 * k, blur: 6 * k};
+};
+
+/* ---------- presses and clicks (R5 §5.4) ---------- */
+
+/** The cursor's own press: 1 → 0.88 in 0.06 s, held 0.04 s, released on the snappy spring. `clicks` are click-down frames. */
+export const cursorPressScale = (frame: number, clicks: readonly number[], fps: number): number => {
+  let at = -Infinity;
+  for (const c of clicks) if (c <= frame && c > at) at = c;
+  if (!Number.isFinite(at)) return 1;
+  const down = Math.max(1, sec(CLICK.pressS, fps));
+  const hold = sec(CLICK.holdS, fps);
+  if (frame < at + down) return interpolate(frame, [at, at + down], [1, CLICK.pressScale], {...CLAMP, easing: EASE.enterFirm});
+  if (frame < at + down + hold) return CLICK.pressScale;
+  return CLICK.pressScale + (1 - CLICK.pressScale) * spring({frame: frame - at - down - hold, fps, config: SPRING.snappy});
+};
+/** A pressed UI target: 0.97 from the click-down frame for 0.12 s, then released on the snappy spring. */
+export const pressScale = (frame: number, at: number, fps: number): number => {
+  if (frame < at) return 1;
+  const held = sec(CLICK.uiPressS, fps);
+  if (frame < at + held) return CLICK.uiPressScale;
+  return CLICK.uiPressScale + (1 - CLICK.uiPressScale) * spring({frame: frame - at - held, fps, config: SPRING.snappy});
+};
+
+/* ---------- camera (the camera itself is motion/camera.ts: arrival keys, log-space zoom, smooth pan-zoom) ---------- */
+
+/** The frame of a move's peak speed (where a cut on action belongs, R5 §7.1). */
+export const fastestFrame = (at: number, dur: number, ease: Ease = EASE.camera): number => {
+  let best = at;
+  let bestV = -Infinity;
+  for (let f = at; f < at + dur; f++) {
+    const v = ease((f + 1 - at) / dur) - ease((f - at) / dur);
+    if (v > bestV) {
+      bestV = v;
+      best = f;
+    }
+  }
+  return best;
+};
+
+/* ---------- cursor paths ---------- */
+
+/**
+ * A cursor key: the pointer ARRIVES at (x, y) on frame `at` and rests there until the next key's move begins. The move
+ * into a key starts `travel` frames before `at` (default: the Fitts-shaped time for the distance, 0.45–1.1 s).
+ */
+export interface CursorKey {
+  at: number;
+  x: number;
+  y: number;
+  travel?: number;
+  /** target size in the path's units for the Fitts time (default 40) */
+  target?: number;
+  seed?: string;
+}
+export const cursorTravelFrames = (from: {x: number; y: number}, to: CursorKey, fps: number): number =>
+  to.travel ?? sec(cursorTravelS(Math.hypot(to.x - from.x, to.y - from.y), to.target ?? 40), fps);
+/** Where the pointer is on `frame` (minimum-jerk progress along a gently arced quadratic Bézier, R5 §5.4). */
+export const cursorPathAt = (frame: number, keys: readonly CursorKey[], fps: number): {x: number; y: number; moving: boolean} => {
+  const first = keys[0];
+  if (!first) return {x: 0, y: 0, moving: false};
+  if (frame <= first.at) return {x: first.x, y: first.y, moving: false};
+  let prev = first;
+  for (let i = 1; i < keys.length; i++) {
+    const k = keys[i]!;
+    const travel = cursorTravelFrames(prev, k, fps);
+    const start = k.at - travel;
+    if (frame < k.at) {
+      if (frame <= start) return {x: prev.x, y: prev.y, moving: false};
+      const p = cursorAt(prev, k, (frame - start) / travel, k.seed ?? `cursor-${i}`);
+      return {...p, moving: true};
+    }
+    prev = k;
+  }
+  return {x: prev.x, y: prev.y, moving: false};
+};
+
+/* ---------- look (Pebble src/tokens.css, comp 2 and comp 3 of the landing page; DESIGN.md) ---------- */
+
+export const LOOK = {
+  room: '#E7ECE3', // the stage behind a window (comp 3 --room)
+  soft: '#F0F5ED',
+  line2: '#D5DCD1',
+  trail: '#AABDA7', // the pebble's path (decorative only, never text)
+  stone: '#BFCEBC',
+  accentPress: '#45604A',
+  riverbed: {g0: '#E7ECE2', g1: '#D3DDCD', g2: '#C6D3C0'}, // the wallpaper's ground (comp 2 wallpaper.py)
+  sageDeep: '#4A5F4B', // the far edge of the sage field's own light
+  onSage: '#FFFFFF',
+  onSageSoft: 'rgba(255, 255, 255, 0.72)',
+  dark: {
+    ground: '#191E1B',
+    ground2: '#151A17',
+    panel: '#212822',
+    ink: '#E0E7DE',
+    ink2: '#ADB9AB',
+    line: '#2B342C',
+    accent: '#A6C795',
+    pebble: '#B4CDA6',
+    pebbleEye: '#23351F',
+  },
+  traffic: {close: '#E8705F', minimize: '#EBB54B', zoom: '#66B65E', off: '#DADFD6', edge: 'rgba(0, 0, 0, 0.14)'},
+} as const;
+
+/* ---------- typography by role (DESIGN.md §3 over R5 §4: Fraunces 350, SOFT 100, WONK 0; Inter; Geist Mono) ---------- */
+
+/**
+ * Faces, weights, tracking and leading per role. Sizes are aspect-aware and come from useLayout().type. Fraunces is
+ * never italic and never accent-coloured (DESIGN.md §3); Geist Mono is for commands and paths only.
+ */
+export const TYPO = {
+  /** kinetic headlines and the claim: calm at 350 */
+  display: {family: 'display', weight: 350, tracking: '-0.018em', leading: 1.06, axes: '"SOFT" 100, "WONK" 0'},
+  /** support lines and the CTA's words */
+  text: {family: 'sans', weight: 480, tracking: '-0.012em', leading: 1.22, axes: undefined},
+  /** the "pebble." wordmark (the site header's: Inter 650, −0.8 px at 25 px) */
+  wordmark: {family: 'sans', weight: 650, tracking: '-0.032em', leading: 1, axes: undefined},
+  /** URLs and paths */
+  mono: {family: 'mono', weight: 500, tracking: '0em', leading: 1.3, axes: undefined},
+  /** small print ("Shown with sample data") */
+  small: {family: 'sans', weight: 450, tracking: '0em', leading: 1.3, axes: undefined},
+} as const;
+export type TypoRole = keyof typeof TYPO;
