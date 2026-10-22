@@ -1,32 +1,53 @@
-// Aspect-aware layout (OVERRIDES §4): one set of scenes, several compositions. Every scene reads its safe area, type
-// sizes, camera framings and caption boxes from here instead of hard-coding pixels, so LaunchFilm (1920 × 1080) and
-// LaunchFilmSquare (1080 × 1080) share one timeline and the square can reframe with tighter punch-ins.
+// Aspect-aware layout (OVERRIDES §4; docs/FILM_SPEC.md §2–§4): one set of scenes, several compositions. Every scene
+// reads its safe area, type sizes, caption band, the window world's split (text column or band, the stage, the pebble's
+// spot) and the cursor's size from here instead of hard-coding pixels, so LaunchFilm (1920 × 1080) and
+// LaunchFilmSquare (1080 × 1080) share one timeline and the square reframes with tighter punch-ins.
 //
-// The square is judged at 360 px wide (a phone feed): a scale of 1/3, so its type is relatively larger, its punch-ins
-// tighter (UI text ≥ 34 px in frame ≈ 11 CSS px on the phone) and no text sits within 80 px of an edge (OVERRIDES §4
-// asks for 60). The wide film follows R5 §4 (≥ 56 px for essential text, 28 px for UI text) with 64 px top and bottom.
+// The numbers are FILM_SPEC's (16:9 / square). Other sizes (the teaser, loops, posters) scale the 16:9 set by
+// min(width / 1920, height / 1080).
 import { useVideoConfig } from "remotion";
-import type { Rect } from "./camera";
+import type { Point, Rect } from "./camera";
 
 export type AspectId = "wide" | "square";
 
 export interface TypeScale {
-  /** the "pebble." wordmark at the reveal */
+  /** the `pebble` wordmark (Inter 650) */
   hero: number;
-  /** a kinetic headline line (Fraunces 350, ≤ 6 words) */
+  /** a headline on the sage field (Fraunces 350, white) */
   headline: number;
-  /** a support or caption line (Inter) */
+  /** a side line in the window world's text column or band, and the end card's tagline (Fraunces 350, ink) */
+  side: number;
+  /** the end card's tagline "A little help, right here." */
+  tagline: number;
+  /** support lines (Inter 500) */
   support: number;
+  /** the CTA's words (Inter 500) */
+  cta: number;
+  /** the URL (Geist Mono 500) */
+  mono: number;
+  /** small print (Inter 400) */
+  small: number;
   /** non-essential labels */
   label: number;
-  /** the CTA's words (Inter) */
-  cta: number;
-  /** the URL (Geist Mono) */
-  mono: number;
-  /** small print ("Shown with sample data") */
-  small: number;
   /** the smallest UI text a viewer must read, after magnification */
   uiMin: number;
+}
+
+/** The window world's split (FILM_SPEC §4): the text column (16:9) or band (square), the stage, the pebble's spot. */
+export interface WindowLayout {
+  /** where side lines sit: their block starts at `text.y` */
+  text: Rect;
+  /** the stage: a rounded viewport into Pebble's real UI. Its visible part; it bleeds off the right (16:9) or the
+   *  bottom (square) edge of the frame */
+  stage: Rect;
+  /** which stage corners are rounded (the others bleed off the frame) */
+  stageCorners: "left" | "top";
+  stageRadius: number;
+  /** the pebble in the window world: foot position and PebbleOnFilm size */
+  pebble: { foot: Point; size: number };
+  /** the S5e check mark's centre x (16:9 only; null in the square) */
+  checkX: number | null;
+  checkSize: number;
 }
 
 export interface Layout {
@@ -37,80 +58,84 @@ export interface Layout {
   s: number;
   /** text never leaves this box */
   safe: Rect;
+  /** player captions own everything below this y: no kinetic type, no click target (FILM_SPEC §2) */
+  captionBandY: number;
+  /** a UI region of interest stays this far from every frame edge */
+  roiMargin: number;
   type: TypeScale;
-  /** the base spacing step */
   gap: number;
-  /** camera magnifications (frame px per UI CSS px) for the three framings of R5 §5.1, tighter in the square */
-  zoom: { wide: number; pane: number; punch: number };
-  /** the cursor's height range in frame px (R5 §5.4: 4–7 % of the frame's height) */
-  cursor: { min: number; max: number };
-  /** where proof captions sit (on a defocused or quiet area, never over sharp UI) */
-  caption: { top: Rect; bottom: Rect };
-  /** where a shot's focus region is fitted: the frame inside the safe area, minus the caption band */
-  stage: { withTopCaption: Rect; withBottomCaption: Rect; full: Rect };
+  /** the cursor's height, px (FILM_SPEC §2) */
+  cursor: number;
+  win: WindowLayout;
+  /** type worlds: the pebble's size (FILM_SPEC §4) */
+  pebbleSize: number;
+  /** the reveal and end-card lockup: the pebble's foot and the wordmark's baseline */
+  lockup: { foot: Point; baseline: number };
+  /** the paper world's pool of light radius, px */
+  poolRadius: number;
 }
 
-const WIDE_TYPE: TypeScale = { hero: 216, headline: 112, support: 58, label: 40, cta: 56, mono: 50, small: 32, uiMin: 28 };
-const SQUARE_TYPE: TypeScale = { hero: 172, headline: 92, support: 50, label: 36, cta: 48, mono: 42, small: 34, uiMin: 34 };
+const WIDE_TYPE: TypeScale = { hero: 216, headline: 112, side: 92, tagline: 92, support: 58, cta: 56, mono: 52, small: 32, label: 40, uiMin: 28 };
+const SQUARE_TYPE: TypeScale = { hero: 172, headline: 92, side: 92, tagline: 72, support: 50, cta: 48, mono: 44, small: 34, label: 36, uiMin: 34 };
 
 const scaleType = (t: TypeScale, s: number): TypeScale =>
   Object.fromEntries(Object.entries(t).map(([k, v]) => [k, Math.round(v * s)])) as unknown as TypeScale;
+const r = (v: number, s: number) => Math.round(v * s);
 
 /** The layout of a frame of `width` × `height` (pure; useLayout() is the hook). */
 export function layoutFor(width: number, height: number): Layout {
   const aspect: AspectId = width / height >= 1.3 ? "wide" : "square";
   if (aspect === "wide") {
     const s = Math.min(width / 1920, height / 1080);
-    const sx = Math.round(96 * s);
-    const sy = Math.round(64 * s);
-    const safe = { x: sx, y: sy, w: width - 2 * sx, h: height - 2 * sy };
-    const capH = Math.round(260 * s);
     return {
       width,
       height,
       aspect,
       s,
-      safe,
+      safe: { x: r(96, s), y: r(64, s), w: width - 2 * r(96, s), h: height - 2 * r(64, s) },
+      captionBandY: r(918, s),
+      roiMargin: r(60, s),
       type: scaleType(WIDE_TYPE, s),
-      gap: Math.round(24 * s),
-      zoom: { wide: 1.25, pane: 2.0, punch: 2.7 },
-      cursor: { min: Math.round(46 * s), max: Math.round(70 * s) },
-      caption: {
-        top: { x: sx, y: sy, w: Math.round(1100 * s), h: capH },
-        bottom: { x: sx, y: height - sy - capH, w: Math.round(1100 * s), h: capH },
+      gap: r(24, s),
+      cursor: r(56, s),
+      win: {
+        text: { x: r(96, s), y: r(300, s), w: r(764, s), h: r(618, s) },
+        stage: { x: r(920, s), y: r(64, s), w: width - r(920, s), h: r(952, s) },
+        stageCorners: "left",
+        stageRadius: r(28, s),
+        pebble: { foot: { x: r(330, s), y: r(900, s) }, size: r(210, s) },
+        checkX: r(890, s),
+        checkSize: r(56, s),
       },
-      stage: {
-        withTopCaption: { x: sx, y: sy + capH, w: safe.w, h: safe.h - capH },
-        withBottomCaption: { x: sx, y: sy, w: safe.w, h: safe.h - capH },
-        full: safe,
-      },
+      pebbleSize: r(210, s),
+      lockup: { foot: { x: r(1295, s), y: r(422, s) }, baseline: r(420, s) },
+      poolRadius: r(760, s),
     };
   }
   const s = Math.min(width, height) / 1080;
-  const sx = Math.round(80 * s);
-  const top = Math.round(88 * s);
-  const bottom = Math.round(104 * s); // LinkedIn draws its controls along the bottom of a feed video
-  const safe = { x: sx, y: top, w: width - 2 * sx, h: height - top - bottom };
-  const capH = Math.round(236 * s);
   return {
     width,
     height,
     aspect,
     s,
-    safe,
+    safe: { x: r(80, s), y: r(80, s), w: width - 2 * r(80, s), h: height - 2 * r(80, s) },
+    captionBandY: r(918, s),
+    roiMargin: r(60, s),
     type: scaleType(SQUARE_TYPE, s),
-    gap: Math.round(22 * s),
-    zoom: { wide: 0.92, pane: 1.9, punch: 2.9 },
-    cursor: { min: Math.round(50 * s), max: Math.round(72 * s) },
-    caption: {
-      top: { x: sx, y: top, w: safe.w, h: capH },
-      bottom: { x: sx, y: height - bottom - capH, w: safe.w, h: capH },
+    gap: r(22, s),
+    cursor: r(52, s),
+    win: {
+      text: { x: r(80, s), y: r(96, s), w: r(780, s), h: r(220, s) },
+      stage: { x: r(24, s), y: r(336, s), w: r(1032, s), h: height - r(336, s) },
+      stageCorners: "top",
+      stageRadius: r(28, s),
+      pebble: { foot: { x: r(940, s), y: r(300, s) }, size: r(170, s) },
+      checkX: null,
+      checkSize: r(56, s),
     },
-    stage: {
-      withTopCaption: { x: sx, y: top + capH, w: safe.w, h: safe.h - capH },
-      withBottomCaption: { x: sx, y: top, w: safe.w, h: safe.h - capH },
-      full: safe,
-    },
+    pebbleSize: r(170, s),
+    lockup: { foot: { x: r(806, s), y: r(402, s) }, baseline: r(400, s) },
+    poolRadius: r(600, s),
   };
 }
 

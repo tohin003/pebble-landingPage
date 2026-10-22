@@ -1,44 +1,165 @@
-// The film's five key looks (gate G1.5, critic H11), built only from the core components and the timeline: frame 0,
-// the reveal lockup, a punch-in (AgentGuard's held run), the AgentGuard payoff (Verified) and the end card. Each look
-// reads the ABSOLUTE film frame, so it renders the same in LaunchFilm, LaunchFilmSquare and the StyleFrames sampler,
-// and it adapts to the aspect through useLayout(). Lane G2 animates the shots between them on this vocabulary.
-import { useCurrentFrame, useVideoConfig } from "remotion";
-import { Camera, CheckMark, Cursor, Desktop, KineticText, MacWindow, PaperField, SageField, UiStill, Vignette, Wordmark, World, lockupGeometry } from "../components";
-import { FILM_PEBBLE_CUES, FOCUS, PET, REVEAL_FRAME, WORLD, at, sec, shotById, time } from "../film/timeline";
-import { clampPose, fitRect, poseAt, rectCenter, toWorld, type CamKey, type CamPose, type Rect } from "../motion/camera";
-import { useLayout, type Layout } from "../motion/layout";
-import { COLOR, EASE, LOOK, T, ramp } from "../motion/spec";
+// The film's looks, built only from the core components and film/timeline.ts (re-derived from docs/FILM_SPEC.md), so
+// the style frames of gate G1.5 (critic H11) are frames of the film itself: SF1 frame 0, SF2 the reveal lockup (540),
+// SF3 the held run (985), SF4 Verified (1170), SF5 the end card (2280), SF6 the chart as the world (1700).
+// Each look reads the ABSOLUTE film frame and adapts to the aspect through useLayout(). Real UI comes from lane D's
+// stills until the just-in-time vclock sequences exist (FILM_SPEC §7, §17); lane G2 animates the shots between these
+// looks on the same vocabulary and replaces the board's slates.
+import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
+import {
+  Camera,
+  CheckMark,
+  ColourFlood,
+  Cursor,
+  Desktop,
+  KineticText,
+  PaperField,
+  SageField,
+  Stage,
+  UiStill,
+  Vignette,
+  Wordmark,
+  World,
+  blockHeight,
+  floodRadius,
+  lockupGeometry,
+  topForBaseline,
+  type UiStillName,
+} from "../components";
+import {
+  DESKTOP_RECT,
+  END,
+  FILM_PEBBLE_CUES,
+  FRAMING,
+  HOPS,
+  PEBBLE_INSTANCES,
+  PET,
+  PET_FOOT,
+  PET_PANEL,
+  S1_CAMERA,
+  TEXT,
+  UI_POINTS,
+  WORDMARK,
+  type Framing,
+  type PerAspect,
+  type Point,
+  type Rect,
+  type TextCue,
+} from "../film/timeline";
+import { poseAt, rectCenter, toWorld, type CamKey, type CamPose } from "../motion/camera";
+import { useLayout, type AspectId } from "../motion/layout";
+import { COLOR, EASE, LOOK, ramp, sec, type TypoRole } from "../motion/spec";
+import type { Hop } from "../pebble/acting";
 import { PebbleOnFilm } from "../pebble/PebbleOnFilm";
-
-/* ---------- shared bits ---------- */
-
-/** Pebble's main window with a capture inside, at its world place. */
-const MainWindow: React.FC<{ children: React.ReactNode; shadow?: number }> = ({ children, shadow = 1 }) => (
-  <MacWindow x={WORLD.mainWindow.x} y={WORLD.mainWindow.y} width={WORLD.mainWindow.w} height={WORLD.mainWindow.h} shadow={shadow}>
-    {children}
-  </MacWindow>
-);
-
-const lineOf = (shotId: string, i = 0) => shotById(shotId).captions[i]!;
+import { PEBBLE_DARK, PEBBLE_LIGHT } from "../pebble/PebbleSvg";
 
 /* ================================================================================================================
- * 1. Hook (frame 0): the pebble on its desktop, close; the pointer comes in; the click opens the quick chat
+ * Shared bits
  * ============================================================================================================== */
 
-export function hookCamera(L: Layout, width: number, height: number): CamKey[] {
-  // frame 0 is the thumbnail: the character big enough to read in a feed (its body ≈ 15 % of the frame's width in
-  // 16:9, a quarter of it in the square), on the riverbed's open ground with a stone in the near foreground
-  const close: CamPose = poseAt(
-    PET.centre,
-    { x: width * (L.aspect === "wide" ? 0.6 : 0.58), y: height * (L.aspect === "wide" ? 0.54 : 0.52) },
-    L.aspect === "wide" ? 3.8 : 3.6,
-    width,
-    height,
+const ROLE_TYPO: Record<TextCue["role"], TypoRole> = {
+  hero: "display",
+  headline: "display",
+  side: "display",
+  tagline: "display",
+  support: "text",
+  cta: "text",
+  mono: "mono",
+  small: "small",
+};
+
+/** Hops of a pebble instance, in the aspect's frame px. */
+const hopsFor = (ids: readonly string[], a: AspectId, s: number): Hop[] =>
+  HOPS.filter((h) => ids.includes(h.id)).map((h) => ({ at: h.at, to: { x: h.to[a].x * s, y: h.to[a].y * s }, duration: h.duration }));
+
+const linesFor = (c: TextCue, a: AspectId) => (a === "square" && c.squareLines ? c.squareLines : c.lines);
+
+/**
+ * The window world's text column (16:9) or band (square), FILM_SPEC §4: a cue's lines start at the block top, a cue
+ * marked `under` sits one gap under its anchor. FILM_SPEC §3's fit rule: if the group overflows its room (in the
+ * square, the band ends where the stage starts), the anchor steps down 4 px at a time.
+ */
+function columnPlacement(cue: TextCue, L: ReturnType<typeof useLayout>): { top: number; size: number } {
+  const anchor = cue.under ? TEXT.find((c) => c.id === cue.under) : cue;
+  if (!anchor) return { top: L.win.text.y, size: L.type[cue.role] };
+  const under = TEXT.filter((c) => c.under === anchor.id);
+  const gap = Math.round(L.gap * 0.5);
+  const room = L.aspect === "square" ? L.win.stage.y - L.win.text.y - Math.round(10 * L.s) : L.win.text.h;
+  const underH = under.reduce((h, u) => h + gap + blockHeight(linesFor(u, L.aspect).length, L.type[u.role], ROLE_TYPO[u.role]), 0);
+  let size = L.type[anchor.role];
+  while (size > Math.round(64 * L.s) && blockHeight(linesFor(anchor, L.aspect).length, size, ROLE_TYPO[anchor.role]) + underH > room) size -= 4;
+  if (cue === anchor) return { top: L.win.text.y, size };
+  const anchorH = blockHeight(linesFor(anchor, L.aspect).length, size, ROLE_TYPO[anchor.role]);
+  return { top: L.win.text.y + anchorH + gap, size: L.type[cue.role] };
+}
+
+/** A text cue of the timeline, placed and coloured as FILM_SPEC §3 and §8 say, for the world it sits in. */
+export const CueText: React.FC<{ cue: TextCue; world: "sage" | "paper" | "window" }> = ({ cue, world }) => {
+  const frame = useCurrentFrame();
+  const L = useLayout();
+  if (frame < cue.in - 1 || frame > cue.out + 8) return null;
+  const lines = linesFor(cue, L.aspect);
+  const typo = ROLE_TYPO[cue.role];
+  const column = cue.place === "column" ? columnPlacement(cue, L) : null;
+  const size = column ? column.size : L.type[cue.role];
+  const onSage = world === "sage";
+  const strong = cue.role === "headline" || cue.role === "side" || cue.role === "tagline" || cue.role === "mono" || cue.role === "hero";
+  const color = strong ? (onSage ? LOOK.onSage : COLOR.ink) : onSage ? "rgba(255, 255, 255, 0.8)" : COLOR.secondary;
+  const h = blockHeight(lines.length, size, typo);
+  let box: Rect;
+  let align: "left" | "center" = "center";
+  if (column) {
+    box = { x: L.win.text.x, y: column.top, w: L.win.text.w, h };
+    align = "left";
+  } else if (cue.place === "baseline") {
+    box = { x: L.safe.x, y: topForBaseline((cue.y as PerAspect<number>)[L.aspect] * L.s, size, typo), w: L.safe.w, h };
+  } else {
+    const cy = (cue.y as PerAspect<number>)[L.aspect] * L.s;
+    box = { x: L.safe.x, y: cy - h / 2, w: L.safe.w, h };
+  }
+  return (
+    <KineticText
+      lines={lines}
+      role={cue.role}
+      size={size}
+      at={cue.in}
+      exitAt={cue.out < END ? cue.out : undefined}
+      enter={cue.enter}
+      wordStarts={cue.wordStarts}
+      color={color}
+      inkFrom={cue.enter === "ink" && !onSage ? LOOK.stone : undefined}
+      align={align}
+      box={box}
+    />
   );
-  const chat = fitRect(shotById("hook").focus!, L.safe, width, height, { maxZoom: 2.0 });
+};
+
+/** Every text cue of a world that is on screen now. */
+const CuesNow: React.FC<{ ids: readonly string[]; world: "sage" | "paper" | "window" }> = ({ ids, world }) => (
+  <>
+    {TEXT.filter((c) => ids.includes(c.id)).map((c) => (
+      <CueText key={c.id} cue={c} world={world} />
+    ))}
+  </>
+);
+
+/* ================================================================================================================
+ * S1 Hook (0–143): the pebble on its desktop (SF1), the pointer, the quick chat, the zoom through the pebble
+ * ============================================================================================================== */
+
+/** S1's camera: C0 (frame 0) → C1 (f40–63) → cut to C2 (f72) → the zoom through the pebble (f126–143). */
+export function hookCamera(a: AspectId, width: number, height: number, s: number): CamKey[] {
+  const P = PET.centre;
+  const at = (p: Point) => ({ x: p.x * s, y: p.y * s });
+  const c0 = poseAt(P, at(S1_CAMERA.c0.pebbleAt[a]), S1_CAMERA.c0.m * s, width, height);
+  const c1 = poseAt(P, at(S1_CAMERA.c1.pebbleAt[a]), S1_CAMERA.c1.m * s, width, height);
+  const c2 = poseAt(P, at(S1_CAMERA.c2.pebbleAt[a]), S1_CAMERA.c2.m * s, width, height);
+  const k = PET.size / 220; // desktop units per viewBox unit
+  const aim = { x: P.x + S1_CAMERA.zoomThrough.aim.x * k, y: P.y + S1_CAMERA.zoomThrough.aim.y * k };
   return [
-    { at: 0, ...close },
-    { at: at(1, 4, 9), ...chat, dur: sec(1.0) },
+    { at: 0, ...c0 },
+    { at: 63, ...c1, dur: 23, path: "direct" },
+    { at: 72, ...c2, dur: 1 },
+    { at: 143, x: aim.x, y: aim.y, zoom: c2.zoom * S1_CAMERA.zoomThrough.scale, dur: 17, ease: EASE.exit, path: "direct" },
   ];
 }
 
@@ -46,300 +167,300 @@ export const HookLook: React.FC = () => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
   const L = useLayout();
-  const click = at(1, 3);
-  const keys = hookCamera(L, width, height);
-  // the pointer is already on screen at frame 0 (lower left), so the thumbnail says "click me"; it reaches the pebble
-  // and dwells before the click on beat 3
-  const from = toWorld({ x: width * 0.3, y: height * 0.88 }, clampPose(keys[0]!, WORLD.desktop, width, height), width, height);
+  const a = L.aspect;
+  const keys = hookCamera(a, width, height, L.s);
+  // the pointer enters from off-frame upper left at f8, reaches the pebble by f30, clicks on f36 and fades f44–48
+  const from = toWorld({ x: -70 * L.s, y: (a === "wide" ? 210 : 160) * L.s }, keys[0]!, width, height);
+  const chat: UiStillName | null = frame < 36 ? null : frame < 72 ? "pet-live-01-greeting" : "pet-live-02-thinking";
   return (
     <>
-      <Camera keys={keys} bounds={WORLD.desktop}>
+      <Camera keys={keys} bounds={DESKTOP_RECT}>
         <World>
           <Desktop />
-          {frame < click + 2 ? (
-            <PebbleOnFilm cues={FILM_PEBBLE_CUES} size={PET.size} x={PET.foot.x} y={PET.foot.y} />
-          ) : (
-            <UiStill
-              name={frame < at(2, 3) ? "pet-live-01-greeting" : "pet-live-02-thinking"}
-              x={WORLD.petExpanded.x}
-              y={WORLD.petExpanded.y}
-            />
-          )}
+          {chat ? (
+            // the real quick chat, clipped to its card: the film draws the pebble itself (FILM_SPEC R1, avatar hidden)
+            <UiStill name={chat} x={PET_PANEL.x} y={PET_PANEL.y} style={{ clipPath: "inset(0 0 96px 0)" }} />
+          ) : null}
+          <PebbleOnFilm cues={FILM_PEBBLE_CUES[a]} size={PET.size} x={PET_FOOT.x} y={PET_FOOT.y} />
         </World>
         <Cursor
           keys={[
-            { at: 0, x: from.x, y: from.y },
-            { at: click - sec(T.preClickDwell), x: PET.centre.x - 14, y: PET.centre.y + 10, travel: sec(0.75), seed: "hook" },
-            { at: click + sec(0.9), x: PET.centre.x - 120, y: PET.centre.y + 110, travel: sec(0.6) },
+            { at: 8, x: from.x, y: from.y },
+            { at: 30, x: PET.centre.x - 12, y: PET.centre.y + 10, travel: 22, seed: "hook" },
           ]}
-          clicks={[click]}
-          visible={[[-sec(1), click + sec(1.4)]]}
+          clicks={[36]}
+          visible={[[8, 48]]}
         />
       </Camera>
-      <Vignette amount={0.07} />
+      <Vignette amount={0.06 * (1 - ramp(frame, 126, 12))} />
     </>
   );
 };
 
 /* ================================================================================================================
- * 2. Reveal (frame 504): the pebble lands as the full stop of "pebble." on the bar-8 downbeat
+ * The sage field: S2 (questions), S3 (the intent line, the pebble rising in), S8 (the claims)
+ * ============================================================================================================== */
+
+export const SageLook: React.FC<{ ids: readonly string[]; pebble?: boolean }> = ({ ids, pebble }) => {
+  const L = useLayout();
+  const a = L.aspect;
+  const main = PEBBLE_INSTANCES.main;
+  return (
+    <SageField>
+      <CuesNow ids={ids} world="sage" />
+      {pebble ? (
+        <PebbleOnFilm
+          cues={FILM_PEBBLE_CUES[a]}
+          size={L.pebbleSize}
+          x={main.start[a].x * L.s}
+          y={main.start[a].y * L.s}
+          hops={hopsFor(main.hops, a, L.s)}
+          colors={PEBBLE_DARK}
+        />
+      ) : null}
+      <Vignette amount={0.06} />
+    </SageField>
+  );
+};
+
+/* ================================================================================================================
+ * S4 Reveal (504–647): the pebble lands as the full stop; paper floods out; the wordmark unrolls (SF2 at 540)
  * ============================================================================================================== */
 
 export const RevealLook: React.FC = () => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
   const L = useLayout();
-  const g = lockupGeometry(L.type.hero, { x: width / 2, y: height * (L.aspect === "wide" ? 0.45 : 0.44) });
-  const flight = 0.5;
-  const takeoff = time(REVEAL_FRAME) - flight;
-  const start = { x: g.box.x - g.body.w * 0.15, y: g.period.y };
-  // the letters appear behind the pebble's last hop: the wipe follows it and completes as it lands
-  const wipe = ramp(frame, REVEAL_FRAME - sec(flight), sec(flight), EASE.move);
-  const support = lineOf("reveal");
-  return (
-    <PaperField pool={{ x: 0.5, y: L.aspect === "wide" ? 0.42 : 0.4 }}>
-      <Wordmark
-        geometry={g}
-        reveal={wipe}
-        pebble={{
-          cues: FILM_PEBBLE_CUES,
-          start,
-          hops: [{ at: takeoff, to: g.period, duration: flight, height: g.body.h * 0.9 }],
-        }}
-      />
-      <KineticText
-        lines={[support.text]}
-        role="support"
-        at={support.in}
-        exitAt={support.out}
-        color={COLOR.secondary}
-        align="center"
-        box={{ x: L.safe.x, y: g.period.y + L.type.hero * 0.34, w: L.safe.w, h: L.type.support * 2 }}
-      />
-      <Vignette amount={0.05} />
-    </PaperField>
-  );
-};
-
-/* ================================================================================================================
- * 3. Punch-in (bar 14): AgentGuard holds the run; the panel rises from its own screen; the pointer heads to
- *    Run the tests
- * ============================================================================================================== */
-
-export function heldCamera(L: Layout, width: number, height: number): { keys: CamKey[]; punch: CamPose } {
-  const wide = L.aspect === "wide";
-  const focus = wide ? FOCUS.heldPanel : FOCUS.heldPanelLeft;
-  const punch = fitRect(focus, L.safe, width, height, {
-    mode: "width",
-    pad: wide ? Math.round(56 * L.s) : 0,
-    maxZoom: L.zoom.punch,
-    align: { x: wide ? 0.5 : 0, y: 0.5 },
-  });
-  const pane = fitRect({ x: WORLD.mainWindow.x + 300, y: WORLD.mainWindow.y + 300, w: 800, h: 400 }, L.safe, width, height, {
-    maxZoom: L.zoom.pane,
-  });
-  return {
-    punch,
-    keys: [
-      { at: at(13), ...pane },
-      { at: at(13, 3), ...punch, dur: sec(T.camera) },
-    ],
-  };
-}
-
-const heldPanelLocal: Rect = { x: 342, y: 470, w: 700, h: 128 };
-const runTestsLocal: Rect = { x: 386, y: 558, w: 96, h: 32 };
-
-export const HeldLook: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { width, height } = useVideoConfig();
-  const L = useLayout();
-  const { keys } = heldCamera(L, width, height);
-  const arrived = at(13, 3);
-  const focusIn = ramp(frame, arrived - sec(0.2), sec(0.45), EASE.enter);
-  const click = at(14, 3);
-  const btn = rectCenter(FOCUS.runTests);
+  const a = L.aspect;
+  const g = lockupGeometry({ fontSize: L.type.hero, foot: L.lockup.foot, baseline: L.lockup.baseline, pebbleSize: L.pebbleSize });
+  const w = WORDMARK.w1;
+  const unroll = ramp(frame, w.unroll.at, w.unroll.dur, EASE.enter) * (1 - ramp(frame, w.rollBack.at, w.rollBack.dur, EASE.exit));
+  const settle = ramp(frame, w.settle.at, w.settle.to - w.settle.at, EASE.enter);
+  const tracking = `${interpolate(settle, [0, 1], [0.04, -0.035]).toFixed(4)}em`;
+  const main = PEBBLE_INSTANCES.main;
   return (
     <>
-      <Camera keys={keys}>
-        <World>
-          <Desktop />
-          <MainWindow>
-            <UiStill
-              name="held-unverified"
-              focus={{ rect: heldPanelLocal, amount: focusIn, lift: focusIn, radius: 12, veil: 0.6, blur: 10 }}
-              press={frame >= click && frame < click + sec(T.press) ? { rect: runTestsLocal, amount: 1, radius: 8 } : undefined}
-            />
-          </MainWindow>
-        </World>
-        <Cursor
-          keys={[
-            { at: at(13, 2), x: btn.x + 330, y: btn.y + 120 },
-            { at: click - sec(T.preClickDwell), x: btn.x - 6, y: btn.y + 4, travel: sec(0.9), seed: "held" },
-          ]}
-          clicks={[click]}
-          visible={[[at(13, 2), at(15)]]}
-        />
-      </Camera>
+      <SageField />
+      <ColourFlood from={g.period} at={504} dur={13} radius={floodRadius(g.period, width, height)}>
+        <PaperField pool={{ x: width / 2, y: g.baseline - g.fontSize * 0.25 }}>
+          <Wordmark geometry={g} reveal={unroll} tracking={tracking} pebble={null} />
+          <CuesNow ids={["T5"]} world="paper" />
+          <Vignette amount={0.06} />
+        </PaperField>
+      </ColourFlood>
+      <PebbleOnFilm
+        cues={FILM_PEBBLE_CUES[a]}
+        size={L.pebbleSize}
+        x={main.start[a].x * L.s}
+        y={main.start[a].y * L.s}
+        hops={hopsFor(main.hops, a, L.s)}
+        colors={frame >= main.lightFrom ? PEBBLE_LIGHT : PEBBLE_DARK}
+      />
     </>
   );
 };
 
 /* ================================================================================================================
- * 4. Payoff (bar 16): "Verified · pytest 42 passed on current files" lifts off the window; a check draws on outside
- *    it (critic C3); the pebble is happy; "Done means tested"
+ * The window world (S5–S7a): the riverbed ground, the stage with the real UI, the text column, the pebble (SF3, SF4)
  * ============================================================================================================== */
 
-/** The payoff's lifted card: both receipt lines with the reply's avatar (16:9), or the Verified line alone, larger
- *  (the square, where UI text must stay ≥ 34 px for a 360 px phone). */
-export const verifiedCard = (L: Layout): Rect => (L.aspect === "wide" ? FOCUS.receiptRow : FOCUS.verifiedChip);
+/** The desktop ground around the stage: the whole riverbed, as a Mac shows it (no vignette in the window world). */
+const WindowGround: React.FC = () => {
+  const { width, height } = useVideoConfig();
+  const zoom = Math.max(width / DESKTOP_RECT.w, height / DESKTOP_RECT.h);
+  return (
+    <Camera pose={{ x: DESKTOP_RECT.w / 2, y: DESKTOP_RECT.h / 2, zoom }}>
+      <World>
+        <Desktop />
+      </World>
+    </Camera>
+  );
+};
 
-/** The check mark's size and its gap to the card, px. The mark's left edge sits on the safe area's left edge, the
- *  caption's edge, so the caption, the mark and the card share one axis. */
-const verifiedMark = (L: Layout) => ({
-  size: Math.round((L.aspect === "wide" ? 80 : 72) * L.s),
-  gap: Math.round((L.aspect === "wide" ? 40 : 30) * L.s),
+/** A stage camera key from a framing: the ROI's centre at the stage's centre, magnification m (× the layout scale). */
+const fkey = (at: number, f: Framing, s: number, dur?: number): CamKey => ({
+  at,
+  x: f.roi.x + f.roi.w / 2,
+  y: f.roi.y + f.roi.h / 2,
+  zoom: f.m * s,
+  dur,
+  path: "direct",
 });
 
-export function verifiedCamera(L: Layout, width: number, height: number): CamPose {
-  const wide = L.aspect === "wide";
-  // room left of the card for the check mark (outside the UI's bounds, critic C3) and right of it for the pebble
-  const mark = verifiedMark(L);
-  const markRoom = mark.size + mark.gap;
-  const pebbleRoom = Math.round((wide ? 330 : 0) * L.s);
-  const stage = L.stage.withTopCaption;
-  const box = {
-    x: stage.x + markRoom,
-    y: stage.y,
-    w: stage.w - markRoom - pebbleRoom,
-    h: stage.h - Math.round((wide ? 60 : 250) * L.s),
-  };
-  return fitRect(verifiedCard(L), box, width, height, { mode: "width", maxZoom: wide ? 3.0 : 3.3, align: { x: 0, y: wide ? 0.28 : 0.36 } });
+interface WindowBeat {
+  from: number;
+  to: number;
+  still: (frame: number) => UiStillName;
+  keys: (a: AspectId, s: number) => CamKey[];
+  text: readonly string[];
+  /** click-down frame and its target (UI CSS px) */
+  click?: { frame: number; at: Point };
+  /** S5e's fallback: the Verified row revealed by a mask at f1152, and the check (16:9) */
+  verified?: boolean;
 }
 
-const toLocal = (r: Rect): Rect => ({ x: r.x - WORLD.mainWindow.x, y: r.y - WORLD.mainWindow.y, w: r.w, h: r.h });
+/** The window world's beats (FILM_SPEC §6 S5–S7a) on lane D's stills; the vclock sequences replace them in G2. */
+export const WINDOW_BEATS: readonly WindowBeat[] = [
+  { from: 648, to: 720, still: () => "main-live-02-reading", keys: (a, s) => [fkey(648, FRAMING.s5a[a], s)], text: ["T6"] },
+  {
+    from: 720,
+    to: 864,
+    still: (f) => (f < 814 ? "main-approval" : "main-done"),
+    keys: (a, s) => [fkey(720, FRAMING.s5a[a], s), fkey(743, FRAMING.s5bTop[a], s, 23), fkey(797, FRAMING.s5bLow[a], s, 23)],
+    text: ["T7"],
+    click: { frame: 810, at: { x: 1076, y: 672 } },
+  },
+  {
+    from: 864,
+    to: 1008,
+    still: () => "held-unverified",
+    keys: (a, s) => [fkey(864, FRAMING.s5c[a], s)],
+    text: ["T8"],
+    click: { frame: 990, at: rectCenter(UI_POINTS.runTests) },
+  },
+  {
+    from: 1008,
+    to: 1152,
+    still: () => "held-tests-review",
+    keys: (a, s) => (a === "square" ? [fkey(1008, FRAMING.s5d.square, s), fkey(1073, FRAMING.s5dSquareTilt, s, 23)] : [fkey(1008, FRAMING.s5d.wide, s)]),
+    text: ["T9"],
+    click: { frame: 1080, at: { x: 1079, y: 513 } },
+  },
+  {
+    from: 1152,
+    to: 1224,
+    still: () => "main-done-timeline",
+    keys: (a, s) => [fkey(1152, FRAMING.s5eRows[a], s), fkey(1211, FRAMING.s5eOut[a], s, 23)],
+    text: ["T10"],
+    click: { frame: 1224, at: UI_POINTS.gear },
+    verified: true,
+  },
+  { from: 1224, to: 1332, still: () => "settings-models", keys: (a, s) => [fkey(1224, FRAMING.s6a[a], s)], text: ["T11", "T11s"] },
+  {
+    from: 1332,
+    to: 1440,
+    still: (f) => (f < 1404 ? "settings-permissions" : "settings-permissions-auto"),
+    keys: (a, s) => (a === "square" ? [fkey(1332, FRAMING.s6a.square, s), fkey(1361, FRAMING.s6bSquareTilt, s, 23)] : [fkey(1332, FRAMING.s6a.wide, s)]),
+    text: ["T12"],
+  },
+  {
+    from: 1440,
+    to: 1584,
+    still: (f) => (f < 1542 ? "settings-memory" : "settings-memory-forgotten"),
+    keys: (a, s) => [fkey(1440, FRAMING.s6a[a], s), fkey(1499, FRAMING.s6cRecords[a], s, 23)],
+    text: ["T13"],
+  },
+  { from: 1584, to: 1656, still: () => "main-dashboard", keys: (a, s) => [fkey(1584, FRAMING.s7a[a], s)], text: ["T14"] },
+];
 
-export const VerifiedLook: React.FC = () => {
+export const WindowLook: React.FC = () => {
   const frame = useCurrentFrame();
-  const { width, height } = useVideoConfig();
   const L = useLayout();
-  const wide = L.aspect === "wide";
-  const pose = verifiedCamera(L, width, height);
-  const cardWorld = verifiedCard(L);
-  const lands = at(16);
-  const lift = ramp(frame, lands, sec(0.5), EASE.enter);
-  const caption = lineOf("verified");
-  const toFrame = (p: { x: number; y: number }) => ({ x: width / 2 + (p.x - pose.x) * pose.zoom, y: height / 2 + (p.y - pose.y) * pose.zoom });
-  const card = { ...toFrame(cardWorld), w: cardWorld.w * pose.zoom, h: cardWorld.h * pose.zoom };
-  const vLine = toFrame({ x: FOCUS.verifiedLine.x, y: FOCUS.verifiedLine.y + FOCUS.verifiedLine.h / 2 });
-  // the check: left of the Verified line, outside the card
-  const mark = verifiedMark(L);
-  const markSize = mark.size;
-  const markAt = { x: card.x - mark.gap - markSize / 2, y: vLine.y };
-  // the pebble: beside the card (16:9) or below its right end (square), looking at the Verified line
-  const pebbleSize = Math.round((wide ? 260 : 250) * L.s);
-  const pebbleFoot = wide
-    ? { x: card.x + card.w + Math.round(150 * L.s), y: card.y + card.h + Math.round(18 * L.s) }
-    : { x: card.x + card.w - Math.round(90 * L.s), y: card.y + card.h + Math.round(220 * L.s) };
+  const a = L.aspect;
+  const beat = WINDOW_BEATS.find((b) => frame >= b.from && frame < b.to) ?? WINDOW_BEATS[0]!;
+  const keys = beat.keys(a, L.s);
+  const click = beat.click;
+  const row = UI_POINTS.verifiedRow;
+  const reveal = beat.verified ? ramp(frame, 1152, sec(0.3, 30), EASE.enter) : 1;
+  // the check's y: the Verified row's centre through the stage camera (its framing holds from f1152 to f1188)
+  const k0 = keys[0]!;
+  const rowFrameY = L.win.stage.y + L.win.stage.h / 2 + (row.y + row.h / 2 - k0.y) * k0.zoom;
+  const main = PEBBLE_INSTANCES.main;
+  const inFlight = frame < 652;
   return (
     <>
-      <Camera pose={pose}>
-        <World>
-          <Desktop />
-          <MainWindow>
-            <UiStill
-              name="main-done"
-              focus={{ rect: toLocal(cardWorld), amount: Math.max(lift, 0.0001), lift, radius: wide ? 12 : 8, veil: 0.66, blur: 11 }}
+      <WindowGround />
+      <Stage
+        keys={keys}
+        overlay={
+          click ? (
+            <Cursor
+              keys={[
+                { at: click.frame - 30, x: click.at.x + 260, y: click.at.y + 200 },
+                { at: click.frame - 5, x: click.at.x + 4, y: click.at.y + 6, travel: 25, seed: `c${click.frame}` },
+              ]}
+              clicks={[click.frame]}
+              visible={[[click.frame - 30, click.frame + 16]]}
             />
-          </MainWindow>
-        </World>
-        <CheckMark at={markAt} space="frame" size={markSize} drawAt={lands + sec(0.25)} avoid={cardWorld} />
-        <PebbleOnFilm cues={FILM_PEBBLE_CUES} size={pebbleSize} x={pebbleFoot.x} y={pebbleFoot.y} />
-        <KineticText lines={[caption.text]} role="headline" at={caption.in} exitAt={caption.out} box={L.caption.top} valign="center" />
-      </Camera>
+          ) : null
+        }
+      >
+        <UiStill name={beat.still(frame)} />
+        {beat.verified && reveal < 1 ? (
+          <div style={{ position: "absolute", left: row.x + row.w * reveal, top: row.y, width: row.w * (1 - reveal) + 2, height: row.h, background: "#F7F8F5" }} />
+        ) : null}
+      </Stage>
+      <CuesNow ids={beat.text} world="window" />
+      {beat.verified && L.win.checkX !== null ? (
+        <CheckMark at={{ x: L.win.checkX, y: rowFrameY }} space="frame" size={L.win.checkSize} stroke={6 * L.s} drawAt={1152} avoid={L.win.stage} />
+      ) : null}
+      <PebbleOnFilm
+        cues={FILM_PEBBLE_CUES[a]}
+        size={L.pebbleSize}
+        x={inFlight ? main.start[a].x * L.s : L.win.pebble.foot.x}
+        y={inFlight ? main.start[a].y * L.s : L.win.pebble.foot.y}
+        hops={inFlight ? hopsFor(main.hops, a, L.s) : []}
+      />
     </>
   );
 };
 
 /* ================================================================================================================
- * 5. End card (bars 29–32): the lockup, the claim, the CTA and the URL, held under the final chord
+ * S7b (1656–1727): the chart becomes the world (SF6 at 1700); S7c (1728–1799): the quiz, full frame
+ * ============================================================================================================== */
+
+export const FullBleedLook: React.FC<{ still: UiStillName; pose: PerAspect<CamPose> }> = ({ still, pose }) => {
+  const L = useLayout();
+  const p = pose[L.aspect];
+  return (
+    <Camera pose={{ ...p, zoom: p.zoom * L.s }} background="#F7F8F5">
+      <World>
+        <UiStill name={still} />
+      </World>
+    </Camera>
+  );
+};
+
+const CHART_POSE: PerAspect<CamPose> = {
+  wide: { x: FRAMING.s7b.wide.centre.x, y: FRAMING.s7b.wide.centre.y, zoom: FRAMING.s7b.wide.m },
+  square: { x: FRAMING.s7b.square.centre.x, y: FRAMING.s7b.square.centre.y, zoom: FRAMING.s7b.square.m },
+};
+const roiCentre = (f: Framing): CamPose => ({ x: f.roi.x + f.roi.w / 2, y: f.roi.y + f.roi.h / 2, zoom: f.m });
+const QUIZ_POSE: PerAspect<CamPose> = { wide: roiCentre(FRAMING.s7c.wide), square: roiCentre(FRAMING.s7c.square) };
+
+export const ChartWorldLook: React.FC = () => <FullBleedLook still="main-dashboard" pose={CHART_POSE} />;
+export const QuizLook: React.FC = () => <FullBleedLook still="main-quiz" pose={QUIZ_POSE} />;
+
+/* ================================================================================================================
+ * S9 End card (2016–2303): the pebble carries in, paper floods out, the lockup, the tagline, the CTA (SF5 at 2280)
  * ============================================================================================================== */
 
 export const EndCardLook: React.FC = () => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
   const L = useLayout();
-  const wide = L.aspect === "wide";
-  const shot = shotById("endcard");
-  const [claim, cta, url, small] = shot.captions as [typeof shot.captions[0], typeof shot.captions[0], typeof shot.captions[0], typeof shot.captions[0]];
-  const heroSize = Math.round(L.type.hero * (wide ? 0.6 : 0.62));
-  const g = lockupGeometry(heroSize, { x: width / 2, y: height * (wide ? 0.285 : 0.27) });
-  const lands = shot.from;
-  const flight = 0.55;
-  const claimTop = g.period.y + Math.round((wide ? 92 : 84) * L.s);
-  const ctaTop = claimTop + Math.round(L.type.headline * 1.06) + Math.round((wide ? 46 : 40) * L.s);
+  const a = L.aspect;
+  const g = lockupGeometry({ fontSize: L.type.hero, foot: L.lockup.foot, baseline: L.lockup.baseline, pebbleSize: L.pebbleSize });
+  const unroll = ramp(frame, WORDMARK.w2.unroll.at, WORDMARK.w2.unroll.dur, EASE.enter);
+  const end = PEBBLE_INSTANCES.end;
   return (
-    <PaperField pool={{ x: 0.5, y: wide ? 0.4 : 0.38 }}>
-      <Wordmark
-        geometry={g}
-        reveal={ramp(frame, lands - sec(0.1), sec(0.45), EASE.enter)}
-        pebble={{
-          cues: FILM_PEBBLE_CUES,
-          start: { x: g.period.x + Math.round(260 * L.s), y: g.period.y },
-          hops: [{ at: time(lands) - flight, to: g.period, duration: flight }],
-        }}
+    <>
+      <SageField />
+      <ColourFlood from={g.period} at={2016} dur={13} radius={floodRadius(g.period, width, height)}>
+        <PaperField pool={{ x: width / 2, y: g.baseline - g.fontSize * 0.25 }}>
+          <Wordmark geometry={g} reveal={unroll} pebble={null} />
+          <CuesNow ids={["T18", "T19", "T20", "T21", "T22"]} world="paper" />
+          <Vignette amount={0.06} />
+        </PaperField>
+      </ColourFlood>
+      <PebbleOnFilm
+        cues={FILM_PEBBLE_CUES[a]}
+        size={L.pebbleSize}
+        x={end.start[a].x * L.s}
+        y={end.start[a].y * L.s}
+        hops={hopsFor(end.hops, a, L.s)}
+        colors={frame >= end.lightFrom ? PEBBLE_LIGHT : PEBBLE_DARK}
       />
-      <KineticText lines={[claim.text]} role="headline" at={claim.in} align="center" box={{ x: L.safe.x, y: claimTop, w: L.safe.w, h: L.type.headline * 1.2 }} />
-      <KineticText lines={[cta.text]} role="cta" at={cta.in} enter="fade" align="center" color={COLOR.ink} box={{ x: L.safe.x, y: ctaTop, w: L.safe.w, h: L.type.cta * 1.3 }} />
-      <KineticText
-        lines={[url.text]}
-        role="mono"
-        at={url.in}
-        enter="fade"
-        align="center"
-        color={COLOR.accent}
-        box={{ x: L.safe.x, y: ctaTop + Math.round(L.type.cta * 1.3) + Math.round(14 * L.s), w: L.safe.w, h: L.type.mono * 1.4 }}
-      />
-      <KineticText
-        lines={[small.text]}
-        role="small"
-        at={small.in}
-        enter="fade"
-        align="center"
-        color={COLOR.secondary}
-        box={{ x: L.safe.x, y: height - L.safe.y - Math.round(L.type.small * 1.4), w: L.safe.w, h: Math.round(L.type.small * 1.4) }}
-      />
-      <Vignette amount={0.05} />
-    </PaperField>
-  );
-};
-
-
-/* ================================================================================================================
- * The sage field (tension questions, the claims): one white Fraunces line per bar, landing word by word, held still
- * ============================================================================================================== */
-
-export const SageLinesLook: React.FC<{ shotId: "questions" | "claims" }> = ({ shotId }) => {
-  const frame = useCurrentFrame();
-  const L = useLayout();
-  const shot = shotById(shotId);
-  const current = shot.captions.find((c) => frame >= c.in && frame < c.out + sec(0.25));
-  return (
-    <SageField>
-      {current ? (
-        <KineticText
-          key={current.text}
-          lines={[current.text]}
-          role="headline"
-          at={current.in}
-          exitAt={current.out}
-          color={LOOK.onSage}
-          align="center"
-          valign="center"
-          box={L.safe}
-        />
-      ) : null}
-      <Vignette amount={0.08} />
-    </SageField>
+    </>
   );
 };

@@ -340,7 +340,7 @@ export const LOOK = {
   traffic: {close: '#E8705F', minimize: '#EBB54B', zoom: '#66B65E', off: '#DADFD6', edge: 'rgba(0, 0, 0, 0.14)'},
 } as const;
 
-/* ---------- typography by role (DESIGN.md §3 over R5 §4: Fraunces 350, SOFT 100, WONK 0; Inter; Geist Mono) ---------- */
+/* ---------- typography by role (FILM_SPEC §3 and DESIGN.md §3 over R5 §4: Fraunces 350, SOFT 100, WONK 0) ---------- */
 
 /**
  * Faces, weights, tracking and leading per role. Sizes are aspect-aware and come from useLayout().type. Fraunces is
@@ -348,14 +348,14 @@ export const LOOK = {
  */
 export const TYPO = {
   /** kinetic headlines and the claim: calm at 350 */
-  display: {family: 'display', weight: 350, tracking: '-0.018em', leading: 1.06, axes: '"SOFT" 100, "WONK" 0'},
+  display: {family: 'display', weight: 350, tracking: '-0.02em', leading: 1.05, axes: '"SOFT" 100, "WONK" 0'},
   /** support lines and the CTA's words */
-  text: {family: 'sans', weight: 480, tracking: '-0.012em', leading: 1.22, axes: undefined},
-  /** the "pebble." wordmark (the site header's: Inter 650, −0.8 px at 25 px) */
-  wordmark: {family: 'sans', weight: 650, tracking: '-0.032em', leading: 1, axes: undefined},
+  text: {family: 'sans', weight: 500, tracking: '-0.01em', leading: 1.22, axes: undefined},
+  /** the `pebble` wordmark (Inter 650, −0.035 em, lowercase; the site header's is −0.8 px at 25 px) */
+  wordmark: {family: 'sans', weight: 650, tracking: '-0.035em', leading: 1, axes: undefined},
   /** URLs and paths */
   mono: {family: 'mono', weight: 500, tracking: '0em', leading: 1.3, axes: undefined},
   /** small print ("Shown with sample data") */
-  small: {family: 'sans', weight: 450, tracking: '0em', leading: 1.3, axes: undefined},
+  small: {family: 'sans', weight: 400, tracking: '0em', leading: 1.3, axes: undefined},
 } as const;
 export type TypoRole = keyof typeof TYPO;

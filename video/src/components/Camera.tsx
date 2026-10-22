@@ -72,10 +72,12 @@ export interface CameraProps {
   background?: string;
   /** the camera's viewport size, px (default: the composition's); set it when the camera fills only part of the frame */
   viewport?: { width: number; height: number };
+  /** clip to the viewport (default); false for overlays that may leave it (a pointer entering a stage) */
+  clip?: boolean;
   children: ReactNode;
 }
 
-export const Camera: React.FC<CameraProps> = ({ keys, pose, bounds, reference, background = "#D3DDCD", viewport, children }) => {
+export const Camera: React.FC<CameraProps> = ({ keys, pose, bounds, reference, background = "#D3DDCD", viewport, clip = true, children }) => {
   const frame = useCurrentFrame();
   const config = useVideoConfig();
   const fps = config.fps;
@@ -91,7 +93,7 @@ export const Camera: React.FC<CameraProps> = ({ keys, pose, bounds, reference, b
   const state = makeState(p, ref, width, height);
   return (
     <CameraContext.Provider value={state}>
-      <AbsoluteFill style={{ overflow: "hidden", backgroundColor: background }}>{children}</AbsoluteFill>
+      <AbsoluteFill style={{ overflow: clip ? "hidden" : "visible", backgroundColor: background }}>{children}</AbsoluteFill>
     </CameraContext.Provider>
   );
 };

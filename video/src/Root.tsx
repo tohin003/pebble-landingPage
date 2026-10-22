@@ -5,6 +5,7 @@ import { Placeholder } from "./Placeholder";
 import { PEBBLE_DEMO_FRAMES, PebbleDemo } from "./pebble/PebbleDemo";
 import { FilmBoard, StyleFrames } from "./stills/FilmBoard";
 import { FilmPoster } from "./stills/FilmPoster";
+import { FontMetrics } from "./stills/FontMetrics";
 import { LoopStub, TeaserStub } from "./stills/LoopStub";
 import { COMPONENT_CHECK_FRAMES, ComponentCheck } from "./stills/ComponentCheck";
 import { OgImage } from "./stills/OgImage";
@@ -25,7 +26,7 @@ export const RemotionRoot: React.FC = () => {
         <Composition id="StyleFramesSquare" component={StyleFrames} durationInFrames={STYLE_FRAMES.length} fps={FILM_FPS} width={1080} height={1080} />
       </Folder>
       <Folder name="Loops">
-        <Composition id="LoopCompanion" component={LoopStub} durationInFrames={240} fps={FPS.loop} width={1600} height={1000} defaultProps={{ id: "LoopCompanion" as const }} />
+        <Composition id="LoopCompanion" component={LoopStub} durationInFrames={300} fps={FPS.loop} width={1600} height={1000} defaultProps={{ id: "LoopCompanion" as const }} />
         <Composition id="LoopModels" component={LoopStub} durationInFrames={180} fps={FPS.loop} width={1600} height={1000} defaultProps={{ id: "LoopModels" as const }} />
         <Composition id="LoopApproveUndo" component={LoopStub} durationInFrames={300} fps={FPS.loop} width={1600} height={1000} defaultProps={{ id: "LoopApproveUndo" as const }} />
         <Composition id="LoopIsolatedTests" component={LoopStub} durationInFrames={240} fps={FPS.loop} width={1600} height={1000} defaultProps={{ id: "LoopIsolatedTests" as const }} />
@@ -40,6 +41,7 @@ export const RemotionRoot: React.FC = () => {
       </Folder>
       <Folder name="Tools">
         <Composition id="ComponentCheck" component={ComponentCheck} durationInFrames={COMPONENT_CHECK_FRAMES} fps={FPS.film} width={1920} height={1080} />
+        <Still id="FontMetrics" component={FontMetrics} width={1920} height={400} />
         <Still id="RiverbedPlate" component={RiverbedPlate} width={RIVERBED_PLATE.width} height={RIVERBED_PLATE.height} />
         <Composition id="Placeholder" component={Placeholder} durationInFrames={90} fps={FPS.film} width={1920} height={1080} />
         <Composition id="PebbleDemo" component={PebbleDemo} durationInFrames={PEBBLE_DEMO_FRAMES} fps={FPS.film} width={1920} height={1080} />

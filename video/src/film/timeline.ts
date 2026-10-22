@@ -1,27 +1,22 @@
-// The launch film's timeline as DATA (critic C4): frames for every shot, caption, pebble cue, sound-effect intent,
-// camera focus and review frame. No React, no Remotion, no path aliases: the scenes, the style frames, the cue exporter
-// (bun) and the checks all read this one module.
-//
-// Source of truth, in order: docs/FILM_SPEC.md (lane E) > OVERRIDES §2, §7, §9 > MASTER_PLAN §5.1.
-// STATUS 2026-10-23 03:40: docs/FILM_SPEC.md had not landed, so this version follows MASTER_PLAN §5.1 with the
-// OVERRIDES applied: neutral tension questions; the AgentGuard climax (held → Run the tests → isolated tests →
-// Verified); no test counter and no "network off" (C3); never "Any model". Re-derive the shot list from FILM_SPEC when
-// it lands; the machinery (bars → frames from the beat map, chapter-checked lines, the checks) stays.
+// The launch film's timeline as DATA (critic C4), re-derived from docs/FILM_SPEC.md (lane E, 2026-10-23 03:55): every
+// shot and sub-beat, framing, on-screen line, pebble instance, hop and cue, click, sound-effect intent, seam, review
+// frame and source-time map. No React, no Remotion, no path aliases: the scenes, the style frames, the cue exporter
+// (bun) and the checks all read this one module. Section numbers (§) below are FILM_SPEC's.
 //
 // Rules validateTimeline() enforces:
-// - every frame comes from the beat map by INDEX (bar, beat, offset), never by accumulating (R5 §10.1);
-// - shots tile the film exactly and cut on bar lines; the reveal shot starts on beatmap.reveal.frame;
-// - every on-screen line is copied from src/content/chapters.ts (the transcript, captions and chapter list use the
-//   same words), has ≤ 6 words, and holds ≥ 0.5 s + 0.3 s per word (the last line of a shot ≥ 2 s; claims and the CTA
-//   readable twice: ≥ 2 s and 0.6 s per word);
-// - pebble cues pass shared/pebble's checks (Pebble's own poses only, D6);
-// - exactly one riser, ending on the reveal.
+// - every frame comes from the beat map by INDEX (bar, beat, offset), never by accumulating (§1, R5 §10.1);
+// - shots tile the film on bar lines; cuts and clicks sit on beat frames; the reveal lands on beatmap.reveal.frame;
+// - every on-screen line is a copy line: in src/content/chapters.ts (or, until FILM_SPEC §18's deltas land there, in
+//   docs/film-captions.json, reported by pendingCopy()); ≤ 6 words; holds per holdFor (§8);
+// - pebble cues pass shared/pebble's checks (Pebble's own poses only, D6); exactly one riser, ending on the reveal.
 import beatmap from "../../../tools/audio/beatmap.json";
+import captions from "../../../docs/film-captions.json";
 import { chapters } from "../../../src/content/chapters";
+import { bloubCredit } from "../../../src/content/credits";
 import { checkCues, type PebbleCue } from "../../../shared/pebble/cues";
 
 /* ================================================================================================================
- * The grid (tools/audio/beatmap.json: 100 BPM, 18 frames per beat, 72 per bar, 32 bars = 2,304 frames at 30 fps)
+ * §1 The grid (tools/audio/beatmap.json: 100 BPM, 18 frames per beat, 72 per bar, 32 bars = 2,304 frames at 30 fps)
  * ============================================================================================================== */
 
 export const FPS: number = beatmap.fps;
@@ -38,10 +33,11 @@ export const GRID = {
 /** The frame of bar `bar` (1-based), beat `beat` (1-based) plus `offset` frames, computed from the beat's index. */
 export const at = (bar: number, beat = 1, offset = 0): number =>
   GRID.firstDownbeat + ((bar - 1) * GRID.beatsPerBar + (beat - 1)) * GRID.framesPerBeat + offset;
-/** Seconds → frames (the only way to turn a duration into frames). */
+/** Seconds → frames. */
 export const sec = (s: number): number => Math.round(s * FPS);
 /** Frames → seconds of composition time (pebble cues are in seconds). */
 export const time = (frame: number): number => frame / FPS;
+const isBeat = (f: number) => (f - GRID.firstDownbeat) % GRID.framesPerBeat === 0;
 
 export const DURATION_FRAMES: number = GRID.frames;
 export const REVEAL_FRAME: number = beatmap.reveal.frame;
@@ -52,30 +48,40 @@ export type SectionName = "hook" | "tension" | "build" | "reveal" | "proof" | "p
 export const SECTIONS = Object.fromEntries(
   beatmap.sections.map((s) => [s.name, { from: s.start_frame, to: s.end_frame, bars: [s.first_bar, s.last_bar] as const }]),
 ) as Record<SectionName, { from: number; to: number; bars: readonly [number, number] }>;
-/** The musical section a frame falls in. */
-export const sectionAt = (frame: number): SectionName | undefined =>
-  (Object.keys(SECTIONS) as SectionName[]).find((n) => frame >= SECTIONS[n].from && frame < SECTIONS[n].to);
 
 /* ================================================================================================================
- * Words: every on-screen line comes from src/content/chapters.ts
+ * Words: every on-screen line is a copy line
  * ============================================================================================================== */
 
 export type ChapterId = "desktop" | "project" | "tested" | "model" | "pace" | "memory" | "views" | "open-source" | "get";
 
-/** Lines the timeline uses that src/content/chapters.ts does not have (reported by validateTimeline, not thrown at
- *  import, so a copy change upstream breaks the film's check loudly without breaking every other composition). */
-const unknownLines: string[] = [];
+const problems: string[] = [];
+const pending: string[] = [];
+/** Lines of the caption source (lane E), flattened. */
+const captionLines = new Set(
+  (captions.cues as { kind: string; lines: string[] }[]).filter((c) => c.kind !== "sound").flatMap((c) => c.lines.filter((l) => !l.startsWith("["))),
+);
 
-/** A line of on-screen text, checked against the chapter's `onScreen` list (the transcript and captions use it too). */
+/**
+ * A line of on-screen text. It must be one of the chapter's `onScreen` lines in src/content/chapters.ts; until
+ * FILM_SPEC §18's copy deltas land there, a line found in docs/film-captions.json (lane E) is accepted and listed by
+ * pendingCopy(). Anything else is a problem (validateTimeline). Never throws at import, so a copy change upstream
+ * fails the film's check loudly without breaking the project's other compositions.
+ */
 export function line(chapter: ChapterId, text: string): string {
   const c = chapters.find((ch) => ch.id === chapter);
-  if (!c) unknownLines.push(`no chapter "${chapter}" in src/content/chapters.ts (line "${text}")`);
-  else if (!c.onScreen.includes(text)) unknownLines.push(`"${text}" is not an on-screen line of chapter "${chapter}" (src/content/chapters.ts)`);
+  if (c && c.onScreen.includes(text)) return text;
+  if (text === bloubCredit) return text; // src/content/credits.ts (OVERRIDES §2, verbatim)
+  if (captionLines.has(text)) pending.push(`${chapter}: "${text}"`);
+  else problems.push(`"${text}" (chapter ${chapter}) is in neither src/content/chapters.ts nor docs/film-captions.json`);
   return text;
 }
+/** On-screen lines still waiting for FILM_SPEC §18's chapters.ts deltas. */
+export const pendingCopy = (): readonly string[] => pending;
 
 /* ================================================================================================================
- * The world (units: points of a 1600 × 1000 desktop; one point = one CSS px of the captured UI)
+ * Geometry (§4). Frame positions are px; UI regions are CSS px of the captured window; desktop units are the
+ * riverbed's 1600 × 1000 points.
  * ============================================================================================================== */
 
 export interface Rect {
@@ -88,80 +94,115 @@ export interface Point {
   x: number;
   y: number;
 }
+export interface PerAspect<T> {
+  wide: T;
+  square: T;
+}
+const both = <T,>(wide: T, square: T): PerAspect<T> => ({ wide, square });
+/** A ROI given as x0–x1, y0–y1 (FILM_SPEC's notation). */
+const roi = (x0: number, x1: number, y0: number, y1: number): Rect => ({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
 
-export const WORLD = {
-  desktop: { x: 0, y: 0, w: 1600, h: 1000 },
-  /** Pebble's main window (tauri.conf.json: 1160 × 800), centred on the desktop */
-  mainWindow: { x: 220, y: 100, w: 1160, h: 800 },
-  /** the companion's collapsed window (112 × 112 pt), on the open ground just right of the riverbed's lower stones */
-  petWindow: { x: 1125, y: 810, w: 112, h: 112 },
-  /** its expanded window (384 × 456 pt) grows up and left from the same bottom-right corner */
-  petExpanded: { x: 853, y: 466, w: 384, h: 456 },
-} as const;
+/** A framing inside the stage: magnification m and the region of interest (its centre at the stage's centre). */
+export interface Framing {
+  m: number;
+  roi: Rect;
+}
+const fr = (m: number, r: Rect): Framing => ({ m, roi: r });
 
-/** The pebble in the collapsed pet window (measured on pet-collapsed@3x: body 86.7 × 76.3 CSS px, centre (55.3,
- *  56.8), bottom at 95) and the PebbleOnFilm size that matches it (body width = BODY.width × size / 220). */
+/** The pet in the desktop world (S1). The desktop placement is ours (FILM_SPEC gives frame positions only): its
+ *  centre sits where every S1 framing stays inside the wallpaper and frame 0 has the riverbed's lower stones in view. */
 export const PET = {
-  foot: { x: WORLD.petWindow.x + 55.3, y: WORLD.petWindow.y + 95 },
-  centre: { x: WORLD.petWindow.x + 55.3, y: WORLD.petWindow.y + 56.8 },
-  size: 147,
+  centre: { x: 1080, y: 750 },
+  /** the pebble's centre inside the expanded 384 × 456 chat panel (§7.1; measured on the captures) */
+  inPanel: { x: 326.7, y: 397.3 },
+  /** the collapsed pet window's pebble: body centre (55.3, 56.8), foot at 95 (pet-collapsed@3x) */
+  centreToFoot: 38.2,
+  /** PebbleOnFilm size at the desktop's scale (§4: 148 desktop units) */
+  size: 148,
+} as const;
+export const PET_FOOT: Point = { x: PET.centre.x, y: PET.centre.y + PET.centreToFoot };
+/** The expanded chat panel's top-left in desktop units. */
+export const PET_PANEL: Rect = { x: PET.centre.x - PET.inPanel.x, y: PET.centre.y - PET.inPanel.y, w: 384, h: 456 };
+export const DESKTOP_RECT: Rect = { x: 0, y: 0, w: 1600, h: 1000 };
+
+/** S1's camera states: magnification and where the pebble's centre sits in the frame (§6 S1). */
+export const S1_CAMERA = {
+  /** C0, f0–39: frame 0, the thumbnail */
+  c0: { m: 2.6, pebbleAt: both({ x: 1300, y: 640 }, { x: 640, y: 620 }) },
+  /** C1, f40–63 → hold to f71: the open chat */
+  c1: { m: 1.5, pebbleAt: both({ x: 1430, y: 746 }, { x: 742, y: 746 }) },
+  /** C2, f72 (hard cut, punch-in): the sent question */
+  c2: { m: 2.2, pebbleAt: both({ x: 1379, y: 866 }, { x: 837, y: 866 }) },
+  /** f126–143: the zoom through the pebble, aimed at a body point (−20, +25) viewBox units from its centre */
+  zoomThrough: { from: at(2, 4), to: at(3), aim: { x: -20, y: 25 }, scale: 22 },
 } as const;
 
-const inWindow = (r: Rect): Rect => ({ x: WORLD.mainWindow.x + r.x, y: WORLD.mainWindow.y + r.y, w: r.w, h: r.h });
+/** The stage framings of the window world (§6 S5–S7). */
+export const FRAMING = {
+  s5a: both(fr(2.6, roi(350, 735, 40, 406)), fr(2.65, roi(350, 712, 120, 401))),
+  s5bTop: both(fr(2.4, roi(810, 1150, 205, 602)), fr(2.65, roi(817, 1143, 205, 486))),
+  s5bLow: both(fr(2.4, roi(810, 1150, 404, 800)), fr(2.65, roi(817, 1143, 519, 800))),
+  /**
+   * 16:9 ROI y 313–745, not §6's 300–733: on the held-unverified still that puts Run the tests at §6's frame y ≈ 640 (the
+   * spec's ROI gives 668) and both stage edges in clear space (the spec's top edge halves the "tests/test_dates.py"
+   * bullet and its bottom edge halves the composer's model row). Re-check against the R-recording when G2 has it.
+   */
+  s5c: both(fr(2.2, roi(215, 670, 313, 745)), fr(2.65, roi(220, 582, 380, 661))),
+  s5d: both(fr(2.6, roi(812, 1150, 200, 566)), fr(2.65, roi(817, 1143, 205, 486))),
+  s5dSquareTilt: fr(2.65, roi(817, 1143, 300, 581)),
+  /**
+   * the S5d fallback (no R2 recording): main-done-timeline@3x on the conversation's run block, the Verified row. Edges
+   * measured on the still: the run's avatar spans x 258.5–275.2 and the pill starts at 288; the rows end by x 645; the
+   * user's bubble ends at y 266, the pill starts at 325, "Done, and verified:" ends at 605.7 and the composer starts at
+   * 627. 16:9 keeps the avatar 12 css px inside the stage; the square (m 2.5) holds the avatar, the whole pill (with air
+   * above it) and the rows down to Details.
+   */
+  s5eRows: both(fr(2.4, roi(246, 662, 225, 622)), fr(2.5, roi(248, 661, 282, 580))),
+  s5eOut: both(fr(1.3, roi(340, 1110, 0, 732)), fr(1.3, roi(366, 1160, 0, 572))),
+  s6a: both(fr(2.1, roi(346, 822, 96, 549)), fr(2.27, roi(346, 769, 100, 428))),
+  s6bSquareTilt: fr(2.27, roi(346, 769, 200, 528)),
+  s6cRecords: both(fr(2.1, roi(346, 822, 330, 783)), fr(2.08, roi(343, 805, 442, 800))),
+  s7a: both(fr(1.25, roi(612, 1412, 70, 832)), fr(1.25, roi(640, 1408, 62, 657))),
+  /**
+   * S7b's end framing: full bleed, m and the CSS point at the frame's centre. A G1.5 deviation from §6 (16:9 m 2.56 on
+   * (1041, 640), square m 2.26 on (1041, 661)), measured on main-dashboard@3x: the spec's 16:9 crop shows the panel's
+   * right border as a 1 px line and cuts the legend through its middle, and its square crop cuts Flights mid-bar and
+   * leaves "…ry" / "…st spent" title fragments top left. These crops make the bars and their labels the world (as §6
+   * words it) and keep every edge in clear space: 16:9 holds all six groups between the subtitle (ends y 480.3) and the
+   * legend (starts y 842), with the y-axis numbers (end x 748.6) outside and the gridlines (x 758.2–1381) bleeding off
+   * both sides; the square holds Stay → Transit with its side edges in the bar gaps (x 848–877, 1246–1292). The 16:9
+   * m 3.2 upsamples the @3x still by 7 %. Lane E to ratify.
+   */
+  s7b: both({ m: 3.2, centre: { x: 1059, y: 661.5 } }, { m: 2.55, centre: { x: 1061.5, y: 661.5 } }),
+  s7c: both(fr(2.6, roi(735, 1145, 330, 665)), fr(2.4, roi(735, 1135, 330, 640))),
+} as const;
 
-/** Regions of the main-window captures that shots frame, in WORLD units (measured on the @2x stills). */
-export const FOCUS = {
-  /** held-unverified: "Blocked", "Pebble's change isn't verified yet. · …" and its three buttons */
-  heldPanel: inWindow({ x: 342, y: 470, w: 700, h: 128 }),
-  /** held-unverified: the panel's left part (the sentence's start; Run the tests, Ask Pebble to finish) */
-  heldPanelLeft: inWindow({ x: 342, y: 470, w: 300, h: 128 }),
-  /** held-unverified: the Run the tests button */
-  runTests: inWindow({ x: 386, y: 558, w: 96, h: 32 }),
-  /** main-done: "Worked for 1 min 12 s · 5 steps · waited 6 s for you" and "Verified · pytest 42 passed on current files" */
-  receipt: inWindow({ x: 284, y: 210, w: 334, h: 54 }),
-  /** main-done: the same two lines with the reply's avatar, as one card */
-  receiptRow: inWindow({ x: 250, y: 207, w: 370, h: 60 }),
-  /** main-done: the "Verified · pytest 42 passed on current files" line */
-  verifiedLine: inWindow({ x: 295, y: 243, w: 223, h: 14 }),
-  /** main-done: that line alone as a card (the square's payoff, where UI text must be ≥ 34 px) */
-  verifiedChip: inWindow({ x: 284, y: 235, w: 245, h: 30 }),
-  /** main-done: the reply, from the receipt to "42 tests passed in an isolated copy of your project." */
-  reply: inWindow({ x: 255, y: 210, w: 470, h: 224 }),
+/** UI points the film touches, CSS px of the captured window (measured on the @2x stills). */
+export const UI_POINTS = {
+  /** held-unverified: the held panel ("Blocked" through the three buttons) and Run the tests */
+  heldPanel: { x: 342, y: 470, w: 700, h: 128 } as Rect,
+  runTests: { x: 386, y: 558, w: 96, h: 32 } as Rect,
+  /** main-done-timeline: the conversation's "Verified · pytest 42 passed on current files · 2 s" row */
+  verifiedRow: { x: 310, y: 506, w: 420, h: 22 } as Rect,
+  /** main-done-timeline: the run block (the receipt line and the timeline rows) */
+  runBlock: { x: 255, y: 325, w: 470, h: 245 } as Rect,
+  /** the window's Settings button (the gear) */
+  gear: { x: 1036, y: 32 } as Point,
 } as const;
 
 /* ================================================================================================================
- * Shots
+ * §6 Shots
  * ============================================================================================================== */
 
 export type World = "desktop" | "window" | "sage" | "paper";
-export type Transition = "cut" | "match-cut" | "carry" | "flood" | "zoom-through" | "object-world";
-export type TextRole = "hero" | "headline" | "support" | "cta" | "mono" | "small";
+export type Transition = "cut" | "hard-cut" | "match-cut" | "carry" | "flood" | "zoom-through" | "object-world" | "camera";
 
-export interface CaptionCue {
-  text: string;
-  chapter: ChapterId;
-  role: TextRole;
-  /** frame the entrance starts */
-  in: number;
-  /** frame the exit starts (the line is gone 0.2 s later) */
-  out: number;
-  enter?: "blur" | "ink" | "rise" | "fade";
-  /** "stack": part of the end card's stack, may overlap other stacked lines in time */
-  place?: "center" | "top" | "bottom" | "stack";
-  /** a claim or the CTA: readable twice (≥ 2 s and 0.6 s per word) */
-  key?: boolean;
+export interface Beat {
+  id: string;
+  from: number;
+  to: number;
+  note: string;
 }
-
-export type SfxRole = "click" | "pop" | "tick" | "thud" | "whoosh" | "riser" | "hit" | "shimmer" | "downlifter";
-export interface SfxCue {
-  /** the PICTURE event's frame; the exporter puts the peak one frame later (the riser's END on the reveal, sfx_kit.json) */
-  frame: number;
-  role: SfxRole;
-  event: string;
-  /** −1 left … 1 right */
-  pan?: number;
-}
-
 export interface Shot {
   id: string;
   chapter: ChapterId;
@@ -169,284 +210,392 @@ export interface Shot {
   from: number;
   to: number;
   world: World;
-  /** how the shot begins (R5 §7: 3–5 caused kinds, ≤ 1/3 hard cuts, never a cross-fade between worlds) */
   transitionIn: Transition;
-  /** captured UI it uses (lane D stills; record.mjs timelines) */
+  /** captured UI it uses */
   ui?: readonly string[];
-  /** the world region the camera must show once it has arrived */
-  focus?: Rect;
-  captions: readonly CaptionCue[];
-  sfx: readonly SfxCue[];
-  /** what happens (the shot list, for people) */
-  note: string;
+  beats: readonly Beat[];
 }
-
-const cap = (chapter: ChapterId, text: string, role: TextRole, inF: number, outF: number, extra: Partial<CaptionCue> = {}): CaptionCue => ({
-  text: line(chapter, text),
-  chapter,
-  role,
-  in: inF,
-  out: outF,
-  ...extra,
-});
-
-/** Past the last frame: a line that is still on screen when the film ends. */
-const END = GRID.frames + 1;
 
 export const SHOTS: readonly Shot[] = [
   {
-    id: "hook",
+    id: "S1",
     chapter: "desktop",
     from: at(1),
     to: at(3),
     world: "desktop",
     transitionIn: "cut",
-    ui: ["pet-live-error (record.mjs)", "pet-collapsed"],
-    focus: { x: WORLD.petExpanded.x - 40, y: WORLD.petExpanded.y - 30, w: WORLD.petExpanded.w + 80, h: WORLD.petExpanded.h + 60 },
-    captions: [],
-    sfx: [{ frame: at(1, 3), role: "click", event: "hook: click on the pebble", pan: 0.35 }],
-    note:
-      "Frame 0 is the thumbnail: the pebble on the riverbed desktop, close. The pointer enters, the eyes go first; a " +
-      "click on beat 3 opens the quick chat (real pet-live-error frames), the question is typed and sent on bar 2 beat 3, " +
-      "and the pebble thinks. The camera eases back to frame the chat as it opens.",
+    ui: ["pet-live-error (record.mjs, 3×, avatar hidden: R1)", "pet-live-01-greeting", "pet-live-02-thinking"],
+    beats: [
+      { id: "S1a", from: 0, to: 72, note: "the pebble on its desktop (m 2.6); the pointer from the upper left; click f36; the chat opens; C0 → C1 f40–63" },
+      { id: "S1b", from: 72, to: 144, note: "hard cut punch-in C2 (m 2.2): the sent question, Thinking; f126–143 zoom through the pebble" },
+    ],
   },
   {
-    id: "questions",
+    id: "S2",
     chapter: "desktop",
     from: at(3),
     to: at(6),
     world: "sage",
-    transitionIn: "carry",
-    captions: [
-      cap("desktop", "Did it run the tests?", "headline", at(3), at(4, 1, -6)),
-      cap("desktop", "What did it change?", "headline", at(4), at(5, 1, -6)),
-      cap("desktop", "Can I undo it?", "headline", at(5), at(6, 1, -6)),
-    ],
-    sfx: [{ frame: at(3), role: "whoosh", event: "into the sage field (the camera passes through the pebble's body)" }],
-    note:
-      "Neutral questions a careful person asks of any AI helper (OVERRIDES §2), one per bar, white Fraunces on the " +
-      "sage field. The world change is caused: the camera passes into the pebble's own sage.",
+    transitionIn: "zoom-through",
+    beats: [{ id: "S2", from: 144, to: 360, note: "three neutral questions, one per bar, (B) ink, centred" }],
   },
   {
-    id: "build",
+    id: "S3",
     chapter: "desktop",
     from: at(6),
     to: at(8),
     world: "sage",
     transitionIn: "cut",
-    captions: [],
-    sfx: [{ frame: REVEAL_FRAME, role: "riser", event: "riser over bars 6-7, its end on the reveal downbeat" }],
-    note:
-      "The riser. The pebble (its dark-mode palette reads on sage) arrives in small hops on the beats; on the breath " +
-      "(frame 486) it anticipates, then leaps. FILM_SPEC may place the allowed intent line here (OVERRIDES §2).",
+    beats: [{ id: "S3", from: 360, to: 504, note: "T4 the intent line (C); the pebble rises in (H1, dark palette), looks up, leaps (H2)" }],
   },
   {
-    id: "reveal",
+    id: "S4",
     chapter: "desktop",
     from: at(8),
     to: at(10),
     world: "paper",
     transitionIn: "flood",
-    captions: [cap("desktop", "A small companion for your Mac", "support", at(8, 2), at(10, 1, -6))],
-    sfx: [
-      { frame: REVEAL_FRAME, role: "hit", event: "reveal: the pebble lands as the full stop" },
-      { frame: REVEAL_FRAME, role: "thud", event: "reveal: felt texture under the hit" },
-    ],
-    note:
-      "On the bar-8 downbeat the sage floods to paper and the pebble lands as the full stop of \"pebble.\" (landing " +
-      "squash); the letters are wiped in behind its last hop. The support line lands one beat later and holds.",
+    beats: [{ id: "S4", from: 504, to: 648, note: "lands as the full stop; paper floods out f504–517; (W) unroll + tracking settle; T5; roll back f614–628; H3 f634" }],
   },
   {
-    id: "reads",
+    id: "S5",
     chapter: "project",
     from: at(10),
-    to: at(11),
-    world: "window",
-    transitionIn: "object-world",
-    ui: ["main-live-film (record.mjs)", "main-live-02-reading"],
-    captions: [cap("project", "It reads your project", "headline", at(10, 1, 6), at(11, 1, -6))],
-    sfx: [{ frame: at(10), role: "whoosh", event: "the paper opens onto the desktop and Pebble's window" }],
-    note: "Pebble's window on invoice-kit; its status line reads \"Reading invoice_kit/dates.py\" (critic C8 Reading still).",
-  },
-  {
-    id: "asks",
-    chapter: "project",
-    from: at(11),
-    to: at(13),
-    world: "window",
-    transitionIn: "zoom-through",
-    ui: ["main-live-film (record.mjs)", "main-approval", "crop-approval-card", "main-done"],
-    captions: [cap("project", "Review, apply, undo", "headline", at(11, 3), at(13, 1, -6))],
-    sfx: [
-      { frame: at(12), role: "click", event: "Apply edit", pan: 0.25 },
-      { frame: at(12, 2), role: "pop", event: "Done and Undo this edit appear" },
-    ],
-    note: "Punch-in on the approval card and its diff; the pointer arcs to Apply edit; Done; Undo this edit.",
-  },
-  {
-    id: "held",
-    chapter: "tested",
-    from: at(13),
-    to: at(15),
-    world: "window",
-    transitionIn: "match-cut",
-    ui: ["main-live-film (record.mjs)", "held-unverified", "crop-held"],
-    focus: FOCUS.heldPanel,
-    captions: [],
-    sfx: [{ frame: at(14, 3), role: "click", event: "Run the tests", pan: -0.1 }],
-    note:
-      "AgentGuard holds the run: \"Pebble's change isn't verified yet.\" with Run the tests / Ask Pebble to finish / " +
-      "Accept as unverified (verbatim, RunPanel.vue). The held panel rises from its own screen; the pointer goes to " +
-      "Run the tests and clicks on bar 14 beat 3. Any caption here is FILM_SPEC's call.",
-  },
-  {
-    id: "tests",
-    chapter: "tested",
-    from: at(15),
-    to: at(16),
-    world: "window",
-    transitionIn: "match-cut",
-    ui: ["main-live-film (record.mjs)", "held-tests-review", "crop-tests-card", "main-done-timeline"],
-    captions: [cap("tested", "Tests run in an isolated copy", "headline", at(15), at(16, 1, -3))],
-    sfx: [
-      { frame: at(15, 2), role: "click", event: "Run tests, on the \"Run isolated tests\" card", pan: 0.2 },
-      { frame: at(15, 4), role: "tick", event: "the \"Requesting isolated tests · 11 s\" row" },
-    ],
-    note:
-      "The real \"Run isolated tests\" card (\"Runs the project's tests in a temporary copy. Your project files don't " +
-      "change.\") → Run tests → the real row \"Requesting isolated tests · 11 s\". No counter, no invented UI (C3).",
-  },
-  {
-    id: "verified",
-    chapter: "tested",
-    from: at(16),
     to: at(18),
     world: "window",
-    transitionIn: "match-cut",
-    ui: ["main-done", "crop-done-receipt"],
-    focus: FOCUS.receipt,
-    captions: [cap("tested", "Done means tested", "headline", at(16, 2), at(18, 1, -6))],
-    sfx: [{ frame: at(16), role: "shimmer", event: "Verified · pytest 42 passed on current files" }],
-    note:
-      "The payoff of the AgentGuard climax: \"Verified · pytest 42 passed on current files\" lands on the bar-16 " +
-      "downbeat and lifts off the window; a check draws on OUTSIDE the UI's bounds (C3); the pebble is happy.",
+    transitionIn: "carry",
+    ui: ["main-live-film (record.mjs, 3×: R2)", "held-unverified", "main-done-timeline"],
+    beats: [
+      { id: "S5a", from: 648, to: 720, note: "reads: the carry lands f652; Reading invoice_kit/dates.py; T6" },
+      { id: "S5b", from: 720, to: 864, note: "the approval card; T7 with its verbs; Apply edit f810; match cut f814 to Done + Undo this edit; ring" },
+      { id: "S5c", from: 864, to: 1008, note: "hard cut (chapter tested): the reply; AgentGuard holds f931; T8; Run the tests f990" },
+      { id: "S5d", from: 1008, to: 1152, note: "the Run isolated tests card; T9; Run tests f1080; Requesting isolated tests · 11 s" },
+      { id: "S5e", from: 1152, to: 1224, note: "Verified f1152; happy; T10; the check (16:9); pull back f1188–1211; to the gear" },
+    ],
   },
   {
-    id: "models",
+    id: "S6",
     chapter: "model",
     from: at(18),
-    to: at(19),
-    world: "window",
-    transitionIn: "match-cut",
-    ui: ["settings-models", "crop-models-ways-in"],
-    captions: [cap("model", "Your model, your choice", "headline", at(18, 1, 4), at(19, 1, -6))],
-    sfx: [{ frame: at(18), role: "whoosh", event: "into Settings › Models" }],
-    note: "Settings › Models: Continue with ChatGPT, Connect provider, Add a model file (On this Mac). Never \"Any model\".",
-  },
-  {
-    id: "pace",
-    chapter: "pace",
-    from: at(19),
-    to: at(21),
-    world: "window",
-    transitionIn: "match-cut",
-    ui: ["settings-permissions", "settings-permissions-auto", "crop-permissions-modes", "crop-permissions-modes-auto"],
-    captions: [cap("pace", "You set what it may do", "headline", at(19, 2), at(21, 1, -6))],
-    sfx: [{ frame: at(20), role: "click", event: "Auto in project selected (match cut on the click)", pan: 0.1 }],
-    note: "Settings › Permissions: the selection moves from Ask for approval to Auto in project (critic C8 capture).",
-  },
-  {
-    id: "memory",
-    chapter: "memory",
-    from: at(21),
     to: at(23),
     world: "window",
     transitionIn: "match-cut",
-    ui: ["settings-memory", "settings-memory-forgotten", "crop-memory-records", "crop-memory-records-forgotten"],
-    captions: [cap("memory", "Memory you can read and forget", "headline", at(21, 2), at(23, 1, -6))],
-    sfx: [
-      { frame: at(22), role: "click", event: "Forget this memory", pan: 0.2 },
-      { frame: at(22, 1, 4), role: "pop", event: "the record dissolves" },
+    ui: ["settings-models", "settings-permissions", "settings-permissions-auto", "settings-memory", "settings-memory-forgotten"],
+    beats: [
+      { id: "S6a", from: 1224, to: 1332, note: "Settings › Models; T11 + T11s; Permissions tab f1332" },
+      { id: "S6b", from: 1332, to: 1440, note: "Permissions; T12 (C); Auto in project f1404 (match cut); Memory tab f1440" },
+      { id: "S6c", from: 1440, to: 1584, note: "the six layers; T13; pan to the records; forget f1530; swap f1542" },
     ],
-    note: "Settings › Memory: Forget this memory; the record dissolves (cut to settings-memory-forgotten on the click).",
   },
   {
-    id: "views",
+    id: "S7",
     chapter: "views",
     from: at(23),
     to: at(26),
     world: "window",
-    transitionIn: "object-world",
-    ui: ["main-dashboard", "crop-dashboard-chart"],
-    captions: [cap("views", "Views, not just text", "headline", at(23, 3), at(26, 1, -6))],
-    sfx: [{ frame: at(23), role: "whoosh", event: "the dashboard opens; the chart becomes the world" }],
-    note: "The \"Lisbon trip budget\" dashboard; its chart grows past the frame (object becomes the world, 0.65 s).",
+    transitionIn: "hard-cut",
+    ui: ["main-dashboard", "main-quiz"],
+    beats: [
+      { id: "S7a", from: 1584, to: 1656, note: "the Lisbon trip budget dashboard (m 1.25); T14" },
+      { id: "S7b", from: 1656, to: 1728, note: "object becomes the world: the chart panel to full bleed f1656–1675; hold" },
+      { id: "S7c", from: 1728, to: 1800, note: "hard cut to the quiz; f1782–1799 zoom through the A badge" },
+    ],
   },
   {
-    id: "claims",
+    id: "S8",
     chapter: "open-source",
     from: at(26),
     to: at(29),
     world: "sage",
-    transitionIn: "flood",
-    captions: [
-      cap("open-source", "Open source · Apache-2.0", "headline", at(26), at(27, 1, -3)),
-      cap("open-source", "No telemetry", "headline", at(27), at(28, 1, -3)),
-      cap("open-source", "Your keys stay in your Keychain", "headline", at(28), at(29, 1, -3)),
-    ],
-    sfx: [{ frame: at(26), role: "downlifter", event: "into the breakdown" }],
-    note: "One line per bar on the sage field. (DESIGN.md bans middle-dot strings: FILM_SPEC/lane A may reword line 1.)",
+    transitionIn: "zoom-through",
+    beats: [{ id: "S8", from: 1800, to: 2016, note: "T15 + T15s, T16, T17; (B) ink, centred" }],
   },
   {
-    id: "endcard",
+    id: "S9",
     chapter: "get",
     from: at(29),
     to: GRID.frames,
     world: "paper",
     transitionIn: "flood",
-    captions: [
-      cap("get", "A little help, right here.", "headline", at(29, 3), END, { key: true, place: "stack" }),
-      cap("get", "Free for Macs with Apple silicon", "support", at(30), END, { key: true, place: "stack" }),
-      cap("get", "github.com/tohin003/Pebble", "mono", at(30, 2), END, { key: true, place: "stack" }),
-      cap("get", "Shown with sample data", "small", at(30, 3), END, { place: "bottom" }),
-    ],
-    sfx: [{ frame: at(29), role: "hit", event: "end card: the pebble lands in the lockup (the smaller take)" }],
-    note:
-      "The pebble hops in on the bar-29 downbeat (premium spring) to form the \"pebble.\" lockup; the claim, the CTA " +
-      "and the URL land and hold while the back-timed final chord (frame 2160) rings to the end.",
+    beats: [{ id: "S9", from: 2016, to: 2304, note: "P-end lands f2016; flood; (W); T18; T19 + T20 on the final chord; T21 + T22" }],
   },
 ];
 
 /* ================================================================================================================
- * The character (absolute composition seconds; Pebble's own poses only, D6)
+ * §8 On-screen text
  * ============================================================================================================== */
 
-export const FILM_PEBBLE_CUES: readonly PebbleCue[] = [
-  { at: -0.5, look: { x: -0.5, y: 0.25 }, note: "before frame 0, so the eyes have already moved: glancing at the pointer, lower left" },
-  { at: time(at(1, 2)), look: { x: -0.375, y: 0.375 }, note: "the pointer enters lower left: the eyes go first" },
-  { at: time(at(1, 3, -6)), pose: "hover", note: "the pointer reaches the pebble" },
-  { at: time(at(1, 3)), pose: "tap", note: "click" },
-  { at: time(at(1, 3, 12)), look: null },
-  { at: time(at(2, 3)), pose: "sending", note: "the question is sent" },
-  { at: time(at(2, 4)), pose: "thinking" },
-  { at: time(REVEAL_FRAME - 6), look: { x: 0, y: 0.125 }, note: "lands looking at us" },
-  { at: time(REVEAL_FRAME), pose: "tap", note: "lands as the full stop" },
-  { at: time(at(10)), pose: "idle" },
-  { at: time(at(10)), look: null },
-  { at: time(at(11, 2)), pose: "review", note: "the approval card arrives (the \"!\" only here, MASTER_PLAN §4.4)" },
-  { at: time(at(12, 2)), pose: "idle" },
-  { at: time(at(15, 2)), pose: "testing", note: "tests run in the isolated copy" },
-  { at: time(at(16, 1, -3)), look: { x: -0.625, y: -0.25 }, note: "looking at the Verified line (up and to its left)" },
-  { at: time(at(16)), pose: "happy", note: "Verified lands" },
-  { at: time(at(18)), pose: "idle" },
-  { at: time(at(18)), look: null },
-  { at: time(at(29)), pose: "tap", note: "end card: lands in the lockup" },
-  { at: time(at(30)), pose: "idle" },
-  { at: time(at(30)), look: { x: -0.125, y: 0.25 }, note: "looking down at the claim" },
+export type TextRole = "hero" | "headline" | "side" | "tagline" | "support" | "cta" | "mono" | "small";
+export type Entrance = "blur" | "ink" | "rise" | "fade";
+
+export interface TextCue {
+  id: string;
+  chapter: ChapterId;
+  /** the lines as they break on screen (16:9; `squareLines` when the square breaks differently) */
+  lines: readonly string[];
+  squareLines?: readonly string[];
+  role: TextRole;
+  enter: Entrance;
+  /** the first word's frame */
+  in: number;
+  /** the frame the exit starts (gone 6 frames later); END = held to the end */
+  out: number;
+  /** explicit word frames (T7 builds with its verbs) */
+  wordStarts?: readonly number[];
+  /** where it sits: "centre" (y = the line block's centre), "baseline" (y = the first line's baseline), "column" */
+  place: "centre" | "baseline" | "column";
+  y?: PerAspect<number>;
+  /** a key line (the end card's), readable twice */
+  key?: boolean;
+  /** column lines that sit under another cue (T11s under T11), by id */
+  under?: string;
+}
+
+export const END = GRID.frames + 6;
+
+/** A text cue, its words checked as one copy line. */
+const t = (c: TextCue): TextCue => {
+  line(c.chapter, c.lines.join(" "));
+  return c;
+};
+
+export const TEXT: readonly TextCue[] = [
+  t({ id: "T1", chapter: "desktop", lines: ["What did it change?"], role: "headline", enter: "ink", in: 144, out: 210, place: "centre", y: both(470, 470) }),
+  t({ id: "T2", chapter: "desktop", lines: ["Can I undo it?"], role: "headline", enter: "ink", in: 216, out: 282, place: "centre", y: both(470, 470) }),
+  t({ id: "T3", chapter: "desktop", lines: ["Did it run the tests?"], role: "headline", enter: "ink", in: 288, out: 354, place: "centre", y: both(470, 470) }),
+  t({ id: "T4", chapter: "desktop", lines: ["An agent shouldn't", "grade its own work"], role: "headline", enter: "rise", in: 360, out: 462, place: "centre", y: both(420, 420) }),
+  t({ id: "T5", chapter: "desktop", lines: ["A small companion for your Mac"], role: "support", enter: "blur", in: 522, out: 612, place: "baseline", y: both(560, 530) }),
+  t({ id: "T6", chapter: "project", lines: ["It reads", "your project"], role: "side", enter: "blur", in: 660, out: 712, place: "column" }),
+  t({ id: "T7", chapter: "project", lines: ["Review, apply,", "undo"], role: "side", enter: "blur", in: 756, out: 858, wordStarts: [756, 811, 830], place: "column" }),
+  t({ id: "T8", chapter: "tested", lines: ["AgentGuard checks", "the evidence"], role: "side", enter: "blur", in: 954, out: 1038, place: "column" }),
+  t({ id: "T9", chapter: "tested", lines: ["Tests run in", "an isolated copy"], role: "side", enter: "blur", in: 1044, out: 1140, place: "column" }),
+  t({ id: "T10", chapter: "tested", lines: ["Done means tested"], role: "side", enter: "ink", in: 1152, out: 1212, place: "column" }),
+  t({ id: "T11", chapter: "model", lines: ["Your model,", "your choice"], role: "side", enter: "blur", in: 1242, out: 1320, place: "column" }),
+  t({ id: "T11s", chapter: "model", lines: ["Even one on your Mac"], role: "support", enter: "blur", in: 1260, out: 1320, place: "column", under: "T11" }),
+  t({ id: "T12", chapter: "pace", lines: ["You set what", "it may do"], role: "side", enter: "rise", in: 1350, out: 1428, place: "column" }),
+  t({ id: "T13", chapter: "memory", lines: ["Memory you can", "read and forget"], role: "side", enter: "blur", in: 1458, out: 1578, place: "column" }),
+  t({ id: "T14", chapter: "views", lines: ["Views,", "not just text"], role: "side", enter: "blur", in: 1590, out: 1656, place: "column" }),
+  t({ id: "T15", chapter: "open-source", lines: ["Free and open source"], role: "headline", enter: "ink", in: 1800, out: 1866, place: "centre", y: both(450, 450) }),
+  t({ id: "T15s", chapter: "open-source", lines: ["Apache-2.0"], role: "support", enter: "ink", in: 1809, out: 1866, place: "baseline", y: both(560, 540) }),
+  t({ id: "T16", chapter: "open-source", lines: ["No telemetry"], role: "headline", enter: "ink", in: 1872, out: 1935, place: "centre", y: both(450, 450) }),
+  t({ id: "T17", chapter: "open-source", lines: ["Your keys stay in your Keychain"], squareLines: ["Your keys stay", "in your Keychain"], role: "headline", enter: "ink", in: 1941, out: 2010, place: "centre", y: both(450, 450) }),
+  t({ id: "T18", chapter: "get", lines: ["A little help, right here."], role: "tagline", enter: "blur", in: 2088, out: END, place: "baseline", y: both(560, 520), key: true }),
+  t({ id: "T19", chapter: "get", lines: ["Free for Macs with Apple silicon"], role: "cta", enter: "rise", in: 2160, out: END, place: "baseline", y: both(690, 630), key: true }),
+  t({ id: "T20", chapter: "get", lines: ["github.com/tohin003/Pebble"], role: "mono", enter: "rise", in: 2164, out: END, place: "baseline", y: both(770, 700), key: true }),
+  t({ id: "T21", chapter: "get", lines: ["Shown with sample data"], role: "small", enter: "fade", in: 2196, out: END, place: "baseline", y: both(852, 820) }),
+  t({ id: "T22", chapter: "get", lines: [bloubCredit], role: "small", enter: "fade", in: 2196, out: END, place: "baseline", y: both(892, 860) }),
+];
+
+export const textById = (id: string): TextCue => {
+  const c = TEXT.find((x) => x.id === id);
+  if (!c) throw new Error(`timeline: no text "${id}"`);
+  return c;
+};
+
+/** The wordmark (W1, W2): the unroll and, on the reveal, the tracking settle (§3, §6 S4, S9). */
+export const WORDMARK = {
+  w1: { unroll: { at: 506, dur: 15 }, settle: { at: 506, to: 529, from: "0.04em", toTracking: "-0.035em" }, rollBack: { at: 614, dur: 15 } },
+  w2: { unroll: { at: 2018, dur: 15 } },
+} as const;
+
+/* ================================================================================================================
+ * §9 The pebble: instances, hops, cues
+ * ============================================================================================================== */
+
+export interface HopSpec {
+  id: string;
+  /** take-off, seconds of composition time */
+  at: number;
+  duration: number;
+  from: PerAspect<Point>;
+  to: PerAspect<Point>;
+}
+export const HOPS: readonly HopSpec[] = [
+  { id: "H1", at: 14.4, duration: 0.5, from: both({ x: 960, y: 1150 }, { x: 540, y: 1150 }), to: both({ x: 960, y: 880 }, { x: 540, y: 880 }) },
+  { id: "H2", at: time(490), duration: 0.467, from: both({ x: 960, y: 880 }, { x: 540, y: 880 }), to: both({ x: 1295, y: 422 }, { x: 806, y: 402 }) },
+  { id: "H3", at: time(634), duration: 0.6, from: both({ x: 1295, y: 422 }, { x: 806, y: 402 }), to: both({ x: 330, y: 900 }, { x: 940, y: 300 }) },
+  { id: "H4", at: time(2002), duration: 0.467, from: both({ x: 2050, y: 1180 }, { x: 1180, y: 1180 }), to: both({ x: 1295, y: 422 }, { x: 806, y: 402 }) },
+];
+
+export const PEBBLE_INSTANCES = {
+  /** inside the desktop world at the pet's place, scaled by the camera, light palette */
+  desk: { from: 0, to: 144 },
+  /** off-frame below, rises in (H1), leaps (H2), carries (H3); dark until the reveal flood (f504), then light */
+  main: { from: 432, to: 1666, start: both({ x: 960, y: 1150 }, { x: 540, y: 1150 }), hops: ["H1", "H2", "H3"], lightFrom: 504 },
+  /** the end card's: off-frame lower right, H4; dark until f2016, then light */
+  end: { from: 1999, to: GRID.frames, start: both({ x: 2050, y: 1180 }, { x: 1180, y: 1180 }), hops: ["H4"], lightFrom: 2016 },
+} as const;
+
+/** §9.3, the static cues (the pointer-driven look cues of f8–30, 780–826, 960–1000, 1050–1090 and 1196–1555 are computed
+ *  by the scenes from the cursor with gazeToward and merged in). Square variants differ only in four looks. */
+const cue = (frame: number, c: Omit<PebbleCue, "at">): PebbleCue => ({ at: time(frame), ...c });
+function cuesFor(square: boolean): PebbleCue[] {
+  return [
+    cue(-15, { look: { x: -0.625, y: -0.375 }, note: "G1.5: before frame 0 the eyes turn to where the pointer will enter (upper left), so the thumbnail looks somewhere" }),
+    cue(18, { pose: "hover", note: "the pointer enters the pet window" }),
+    cue(36, { pose: "tap", note: "click" }),
+    cue(48, { look: null, note: "the pointer has faded" }),
+    cue(72, { pose: "thinking", note: "the run has started" }),
+    cue(144, { pose: "idle" }),
+    cue(440, { look: { x: 0, y: -0.75 }, note: "looks up at T4" }),
+    cue(481, { look: square ? { x: 0.5, y: -0.875 } : { x: 0.625, y: -0.75 }, note: "eyes lead the leap" }),
+    cue(504, { pose: "tap", note: "lands: the reveal" }),
+    cue(520, { look: null }),
+    cue(540, { pose: "idle", note: "tap ends (1.2 s)" }),
+    cue(624, { look: square ? { x: 0.75, y: -0.625 } : { x: -0.875, y: 0.5 }, note: "eyes lead the carry" }),
+    cue(652, { pose: "reading", note: "lands in the window world" }),
+    cue(660, { look: square ? { x: -0.75, y: 0.625 } : { x: 0.875, y: -0.375 }, note: "toward the stage" }),
+    cue(711, { pose: "editing", note: "inside the f708–714 blink" }),
+    cue(729, { pose: "review", note: "the edit card waits (\"!\")" }),
+    cue(864, { pose: "thinking" }),
+    cue(931, { pose: "blocked", note: "verification required" }),
+    cue(995, { pose: "review", note: "the Run isolated tests card waits" }),
+    cue(1094, { pose: "testing" }),
+    cue(1152, { pose: "happy", note: "Verified (the one celebration)" }),
+    cue(1287, { pose: "idle", note: "happy ends after 4.5 s, as in the app" }),
+    cue(1584, { look: square ? { x: -0.25, y: 0.75 } : { x: 0.875, y: -0.25 }, note: "the dashboard" }),
+    cue(1999, { look: { x: -0.75, y: -0.5 }, note: "P-end: eyes lead the landing" }),
+    cue(2016, { pose: "tap", note: "lands in the end-card lockup" }),
+    cue(2030, { look: null }),
+    cue(2052, { pose: "idle" }),
+    cue(2166, { look: { x: -0.625, y: 0.75 }, note: "glances at the URL" }),
+    cue(2214, { look: { x: 0, y: 0 }, note: "looks at the viewer to the end" }),
+  ];
+}
+export const FILM_PEBBLE_CUES: PerAspect<readonly PebbleCue[]> = both(cuesFor(false), cuesFor(true));
+
+/* ================================================================================================================
+ * §10 Clicks, §11 sound effects, §12 seams
+ * ============================================================================================================== */
+
+export interface Click {
+  frame: number;
+  target: string;
+  shot: string;
+}
+export const CLICKS: readonly Click[] = [
+  { frame: 36, target: "the pebble", shot: "S1a" },
+  { frame: 810, target: "Apply edit", shot: "S5b" },
+  { frame: 990, target: "Run the tests", shot: "S5c" },
+  { frame: 1080, target: "Run tests", shot: "S5d" },
+  { frame: 1224, target: "Settings (the gear)", shot: "S5e" },
+  { frame: 1332, target: "Permissions tab", shot: "S6a" },
+  { frame: 1404, target: "Auto in project", shot: "S6b" },
+  { frame: 1440, target: "Memory tab", shot: "S6b" },
+  { frame: 1530, target: "the bin (Forget this memory)", shot: "S6c" },
+];
+
+export type SfxRole = "click" | "pop" | "tick" | "thud" | "whoosh" | "riser" | "hit" | "shimmer";
+export interface SfxCue {
+  /** the PICTURE frame; the exporter puts the peak one frame later (the riser's END on the reveal, sfx_kit.json) */
+  frame: number;
+  role: SfxRole;
+  take: string;
+  event: string;
+  pan?: number;
+  duckDb?: number;
+}
+export const SFX: readonly SfxCue[] = [
+  { frame: 36, role: "click", take: "click_a", event: "the pebble is clicked", pan: 0.14 },
+  { frame: 144, role: "whoosh", take: "whoosh_b", event: "into the sage field (zoom through the pebble)" },
+  { frame: 504, role: "riser", take: "riser", event: "bars 6–7, its end on the reveal" },
+  { frame: 504, role: "hit", take: "soft_hit_b", event: "the reveal landing", duckDb: 2.5 },
+  { frame: 504, role: "thud", take: "thud_a", event: "texture under the hit" },
+  { frame: 648, role: "whoosh", take: "whoosh_a", event: "the carry into the window world" },
+  { frame: 810, role: "click", take: "click_b", event: "Apply edit", pan: 0.3 },
+  { frame: 814, role: "pop", take: "pop_a", event: "Done" },
+  { frame: 990, role: "click", take: "click_c", event: "Run the tests", pan: 0.1 },
+  { frame: 1080, role: "click", take: "click_a", event: "Run tests", pan: 0.32 },
+  { frame: 1094, role: "tick", take: "tick_a", event: "\"Requesting isolated tests\" row" },
+  { frame: 1152, role: "shimmer", take: "shimmer_a", event: "Verified" },
+  { frame: 1224, role: "click", take: "click_b", event: "Settings", pan: 0.33 },
+  { frame: 1332, role: "click", take: "click_c", event: "Permissions tab" },
+  { frame: 1404, role: "click", take: "click_a", event: "Auto in project" },
+  { frame: 1440, role: "click", take: "click_b", event: "Memory tab" },
+  { frame: 1530, role: "click", take: "click_c", event: "the bin" },
+  { frame: 1542, role: "pop", take: "pop_c", event: "the record dissolves" },
+  { frame: 1665, role: "whoosh", take: "whoosh_c", event: "the chart becomes the world (its fastest frame)" },
+  { frame: 1800, role: "whoosh", take: "whoosh_a", event: "into the sage field (zoom through the badge)" },
+  { frame: 2016, role: "pop", take: "pop_b", event: "the end-card landing" },
+  { frame: 2016, role: "thud", take: "thud_b", event: "landing texture", duckDb: 1.5 },
+];
+
+export interface Seam {
+  frame: number;
+  kind: Transition;
+  cause: string;
+}
+export const SEAMS: readonly Seam[] = [
+  { frame: 144, kind: "zoom-through", cause: "the camera passes into the thinking pebble's sage body" },
+  { frame: 504, kind: "flood", cause: "the pebble's landing pushes paper out from where it lands" },
+  { frame: 648, kind: "carry", cause: "the pebble's leap continues across the cut at u = 0.78" },
+  { frame: 720, kind: "camera", cause: "the drawer opens; the camera follows Preparing an edit" },
+  { frame: 864, kind: "hard-cut", cause: "chapter change on the bar" },
+  { frame: 1008, kind: "camera", cause: "the tests card arrives in the drawer" },
+  { frame: 1152, kind: "camera", cause: "the Verified row appears (R2) / punch-in cut (fallback)" },
+  { frame: 1224, kind: "match-cut", cause: "the Settings button" },
+  { frame: 1332, kind: "match-cut", cause: "the Permissions tab" },
+  { frame: 1440, kind: "match-cut", cause: "the Memory tab" },
+  { frame: 1584, kind: "hard-cut", cause: "the payoff, on the motif downbeat" },
+  { frame: 1656, kind: "object-world", cause: "the chart panel grows past the frame" },
+  { frame: 1728, kind: "hard-cut", cause: "the next view, on the bar" },
+  { frame: 1800, kind: "zoom-through", cause: "the camera passes into the chosen answer's badge" },
+  { frame: 2016, kind: "flood", cause: "the pebble lands; paper spreads from it" },
 ];
 
 /* ================================================================================================================
- * Review frames: gate G1.5's style frames (critic H11) and one frame per bar for contact sheets
+ * §7 Source-time maps (film frame → source seconds of the vclock recordings; linear between keys)
+ * ============================================================================================================== */
+
+export interface SourceKey {
+  frame: number;
+  s: number;
+  /** a jump (allowed only on a cut) or a freeze starts here */
+  hold?: boolean;
+}
+export const SOURCE_MAPS = {
+  "pet-live-error": [
+    { frame: 36, s: 0.6 },
+    { frame: 71, s: 1.28 },
+    { frame: 72, s: 3.35, hold: true },
+    { frame: 143, s: 4.5 },
+  ],
+  "main-live-film": [
+    { frame: 648, s: 3.85 },
+    { frame: 701, s: 4.73 },
+    { frame: 719, s: 5.93 },
+    { frame: 791, s: 8.3 },
+    { frame: 810, s: 9.4 },
+    { frame: 813, s: 9.4 },
+    { frame: 814, s: 11.05, hold: true },
+    { frame: 863, s: 11.05 },
+    { frame: 864, s: 11.8, hold: true },
+    { frame: 1007, s: 16.57 },
+    { frame: 1031, s: 17.34 },
+    { frame: 1079, s: 17.74 },
+    { frame: 1080, s: 17.8 },
+    { frame: 1151, s: 20.55 },
+    { frame: 1152, s: 20.6 },
+    { frame: 1223, s: 22.97 },
+  ],
+} as const satisfies Record<string, readonly SourceKey[]>;
+
+/** Source seconds shown on film frame `frame` (linear between keys; a `hold` key starts a new segment). */
+export function sourceAt(map: readonly SourceKey[], frame: number): number | null {
+  if (!map.length || frame < map[0]!.frame) return null;
+  for (let i = map.length - 1; i >= 0; i--) {
+    const a = map[i]!;
+    if (frame >= a.frame) {
+      const b = map[i + 1];
+      if (!b || b.hold) return a.s;
+      return a.s + ((b.s - a.s) * (frame - a.frame)) / (b.frame - a.frame);
+    }
+  }
+  return null;
+}
+
+/* ================================================================================================================
+ * §14 Review frames
  * ============================================================================================================== */
 
 export interface ReviewFrame {
@@ -455,73 +604,94 @@ export interface ReviewFrame {
   frame: number;
   note: string;
 }
-
+/** Gate G1.5's style frames (critic H11), both aspects, full resolution. */
 export const STYLE_FRAMES: readonly ReviewFrame[] = [
-  { id: "01-frame0", shot: "hook", frame: 0, note: "frame 0, the thumbnail: the pebble on its desktop" },
-  { id: "02-reveal", shot: "reveal", frame: REVEAL_FRAME, note: "the reveal lockup on the bar-8 downbeat (landing squash)" },
-  { id: "03-punch-in", shot: "held", frame: at(14, 2), note: "punch-in: AgentGuard's held run, the pointer on its way to Run the tests" },
-  { id: "04-payoff", shot: "verified", frame: at(16, 4), note: "the AgentGuard payoff: Verified lifted, the check drawn, the pebble happy" },
-  { id: "05-endcard", shot: "endcard", frame: at(32), note: "the end card, everything landed, the final chord ringing" },
+  { id: "SF1", shot: "S1", frame: 0, note: "the thumbnail: the pebble on its desktop, eyes open" },
+  { id: "SF2", shot: "S4", frame: 540, note: "the reveal lockup with T5 (paper, pool of light, the period pebble)" },
+  { id: "SF3", shot: "S5", frame: 985, note: "a punch-in: the held run, the pointer on Run the tests, T8 in the column" },
+  { id: "SF4", shot: "S5", frame: 1170, note: "the climax: the Verified row, the check, the happy pebble, T10" },
+  { id: "SF5", shot: "S9", frame: 2280, note: "the end card, everything landed" },
+  { id: "SF6", shot: "S7", frame: 1700, note: "(extra) the chart as the world" },
 ];
-
-/** Every downbeat, for contact sheets (MASTER_PLAN §9.4: one frame per bar). */
+/** Every downbeat, for contact sheets (one frame per bar, each checked at 360 px wide). */
 export const BAR_FRAMES: readonly number[] = Array.from({ length: GRID.bars }, (_, i) => at(i + 1));
 
 export const shotAt = (frame: number): Shot | undefined => SHOTS.find((s) => frame >= s.from && frame < s.to);
+export const beatAt = (frame: number): Beat | undefined => shotAt(frame)?.beats.find((b) => frame >= b.from && frame < b.to);
 export const shotById = (id: string): Shot => {
   const s = SHOTS.find((x) => x.id === id);
   if (!s) throw new Error(`timeline: no shot "${id}"`);
   return s;
 };
-export const allSfx = (): SfxCue[] => SHOTS.flatMap((s) => s.sfx).sort((a, b) => a.frame - b.frame);
-export const allCaptions = (): CaptionCue[] => SHOTS.flatMap((s) => s.captions).sort((a, b) => a.in - b.in);
 
 /* ================================================================================================================
  * Checks
  * ============================================================================================================== */
 
 const wordsIn = (s: string) => s.trim().split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
-/** R5 §3: 0.5 s + 0.3 s per word, ≥ 1.2 s (the last line of a shot ≥ 2 s); claims and the CTA readable twice. */
-export const minHoldFrames = (c: CaptionCue, last = false): number => {
-  const n = wordsIn(c.text);
+/** §8: 0.5 s + 0.3 s per word, ≥ 1.2 s (the last line of a shot ≥ 2 s); the end card's key lines readable twice. */
+export const minHoldFrames = (c: TextCue, last = false): number => {
+  const n = wordsIn(c.lines.join(" "));
   const read = Math.max(last ? 2 : 1.2, 0.5 + 0.3 * n);
   return sec(c.key ? Math.max(read, 2, 0.6 * n) : read);
 };
 
-/** Every problem in the timeline (an empty list means it is valid). */
+/** Every problem in the timeline (an empty list means it is valid). Copy still waiting for chapters.ts is not a
+ *  problem: see pendingCopy(). */
 export function validateTimeline(): string[] {
-  const out: string[] = [...unknownLines];
+  const out: string[] = [...problems];
   if (GRID.framesPerBeat * GRID.beatsPerBar !== GRID.barFrames) out.push("beat map: frames per bar ≠ beats × frames per beat");
   if (at(GRID.bars + 1) !== GRID.frames) out.push(`beat map: ${GRID.bars} bars end on frame ${at(GRID.bars + 1)}, not ${GRID.frames}`);
   let cursor = 0;
   for (const s of SHOTS) {
-    if (s.from !== cursor) out.push(`shot ${s.id}: starts on ${s.from}, expected ${cursor} (shots must tile the film)`);
-    if (s.to <= s.from) out.push(`shot ${s.id}: empty`);
-    if ((s.from - GRID.firstDownbeat) % GRID.barFrames !== 0) out.push(`shot ${s.id}: does not start on a bar line (${s.from})`);
-    const solo = s.captions.filter((c) => c.place !== "stack" && c.place !== "bottom");
-    s.captions.forEach((c) => {
-      if (c.in < s.from || c.in >= s.to) out.push(`shot ${s.id}: "${c.text}" enters outside the shot`);
-      if (c.out < END && c.out + sec(0.2) > s.to + 3) out.push(`shot ${s.id}: "${c.text}" is still leaving after the cut`);
-      const last = solo[solo.length - 1] === c;
-      const need = minHoldFrames(c, last);
-      if (c.out - c.in < need) out.push(`shot ${s.id}: "${c.text}" holds ${c.out - c.in} frames, needs ${need}`);
-      if (wordsIn(c.text) > 6) out.push(`shot ${s.id}: "${c.text}" has more than 6 words`);
-    });
-    for (let i = 1; i < solo.length; i++) {
-      if (solo[i]!.in < solo[i - 1]!.out) out.push(`shot ${s.id}: "${solo[i]!.text}" enters before "${solo[i - 1]!.text}" leaves`);
+    if (s.from !== cursor) out.push(`shot ${s.id}: starts on ${s.from}, expected ${cursor} (shots tile the film)`);
+    if ((s.from - GRID.firstDownbeat) % GRID.barFrames !== 0) out.push(`shot ${s.id}: not on a bar line (${s.from})`);
+    let b0 = s.from;
+    for (const b of s.beats) {
+      if (b.from !== b0) out.push(`beat ${b.id}: starts on ${b.from}, expected ${b0}`);
+      if (!isBeat(b.from)) out.push(`beat ${b.id}: not on a beat (${b.from})`);
+      b0 = b.to;
     }
-    for (const f of s.sfx) if (f.frame < 0 || f.frame > GRID.frames) out.push(`shot ${s.id}: sfx "${f.event}" is outside the film`);
+    if (b0 !== s.to) out.push(`shot ${s.id}: its beats end on ${b0}, the shot on ${s.to}`);
     cursor = s.to;
   }
   if (cursor !== GRID.frames) out.push(`shots end on ${cursor}; the film is ${GRID.frames} frames`);
-  if (!SHOTS.some((s) => s.from === REVEAL_FRAME && s.id === "reveal")) out.push(`the reveal shot must start on frame ${REVEAL_FRAME}`);
-  out.push(...checkCues(FILM_PEBBLE_CUES, "FILM_PEBBLE_CUES"));
-  for (const r of STYLE_FRAMES) {
-    const s = SHOTS.find((x) => x.id === r.shot);
-    if (!s) out.push(`style frame ${r.id}: unknown shot ${r.shot}`);
-    else if (r.frame < s.from || r.frame >= s.to) out.push(`style frame ${r.id}: frame ${r.frame} is outside shot ${s.id}`);
+  if (shotById("S4").from !== REVEAL_FRAME) out.push(`S4 must start on the reveal, frame ${REVEAL_FRAME}`);
+  // text: ≤ 6 words a line, holds, inside the film
+  const byShot = new Map<string, TextCue[]>();
+  for (const c of TEXT) {
+    const sh = shotAt(c.in);
+    if (!sh) {
+      out.push(`${c.id}: enters outside the film`);
+      continue;
+    }
+    byShot.set(sh.id, [...(byShot.get(sh.id) ?? []), c]);
+    // small print (T21, T22) is not a read-aloud line (§8 notes)
+    if (c.role !== "small") for (const l of [...c.lines, ...(c.squareLines ?? [])]) if (wordsIn(l) > 6) out.push(`${c.id}: "${l}" has more than 6 words`);
   }
-  const risers = allSfx().filter((f) => f.role === "riser");
+  for (const [, cs] of byShot) {
+    const solo = cs.filter((c) => c.role !== "small");
+    solo.forEach((c, i) => {
+      const last = i === solo.length - 1;
+      const need = minHoldFrames(c, last);
+      if (c.out < END && c.out - c.in < need) out.push(`${c.id}: holds ${c.out - c.in} frames, needs ${need}`);
+    });
+  }
+  // the character
+  out.push(...checkCues(FILM_PEBBLE_CUES.wide, "FILM_PEBBLE_CUES.wide"), ...checkCues(FILM_PEBBLE_CUES.square, "FILM_PEBBLE_CUES.square"));
+  for (const h of HOPS) {
+    const landing = sec(h.at + h.duration);
+    if (h.id === "H2" && landing !== REVEAL_FRAME) out.push(`H2 lands on ${landing}, not the reveal ${REVEAL_FRAME}`);
+    if (h.id === "H4" && landing !== at(29)) out.push(`H4 lands on ${landing}, not bar 29 (${at(29)})`);
+  }
+  // clicks on beats
+  for (const c of CLICKS) if (!isBeat(c.frame)) out.push(`click on ${c.target} (f${c.frame}) is not on a beat`);
+  // one riser, ending on the reveal
+  const risers = SFX.filter((f) => f.role === "riser");
   if (risers.length !== 1 || risers[0]!.frame !== REVEAL_FRAME) out.push("there must be exactly one riser, ending on the reveal frame");
+  for (const r of STYLE_FRAMES) {
+    const s = shotById(r.shot);
+    if (r.frame < s.from || r.frame >= s.to) out.push(`style frame ${r.id}: frame ${r.frame} is outside shot ${s.id}`);
+  }
   return out;
 }

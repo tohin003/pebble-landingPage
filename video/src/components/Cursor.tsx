@@ -25,11 +25,11 @@ export interface CursorProps {
   space?: "world" | "frame";
   /** [from, to) local frame ranges when the pointer shows; it fades in and out over 0.15 s. Default: always. */
   visible?: readonly (readonly [number, number])[];
-  /** the arrow's height in frame px; "auto" follows the camera (a 21 px pointer magnified), clamped to the layout's range */
-  size?: number | "auto";
+  /** the arrow's height in frame px (default: the layout's, FILM_SPEC §2: 56 px in 16:9, 52 px in the square) */
+  size?: number;
 }
 
-export const Cursor: React.FC<CursorProps> = ({ keys, clicks = [], space = "world", visible, size = "auto" }) => {
+export const Cursor: React.FC<CursorProps> = ({ keys, clicks = [], space = "world", visible, size }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const layout = useLayout();
@@ -46,8 +46,7 @@ export const Cursor: React.FC<CursorProps> = ({ keys, clicks = [], space = "worl
     }
   }
   if (opacity <= 0.001) return null;
-  const arrowPx =
-    size === "auto" ? Math.min(layout.cursor.max, Math.max(layout.cursor.min, 21 * cam.pose.zoom)) : size;
+  const arrowPx = size ?? layout.cursor;
   const boxPx = arrowPx / ARROW_SHARE;
   const unit = boxPx / BOX;
   const press = cursorPressScale(frame, clicks, fps);
@@ -64,10 +63,12 @@ export const Cursor: React.FC<CursorProps> = ({ keys, clicks = [], space = "worl
         opacity: Math.min(1, opacity),
         transformOrigin: `${HOTSPOT.x * unit}px ${HOTSPOT.y * unit}px`,
         transform: press !== 1 ? `scale(${press.toFixed(4)})` : undefined,
-        filter: `drop-shadow(0 ${(1.2 * unit).toFixed(2)}px ${(1.6 * unit).toFixed(2)}px rgba(19, 37, 27, 0.32))`,
+        // the card shadow (R5 §8), scaled to the pointer
+        filter: `drop-shadow(0 1px 2px rgba(19, 37, 27, 0.18)) drop-shadow(0 ${(0.25 * unit).toFixed(2)}px ${(1.4 * unit).toFixed(2)}px rgba(19, 37, 27, 0.22))`,
       }}
     >
-      <path d={ARROW} fill="#141815" stroke="#FFFFFF" strokeWidth={1.45} strokeLinejoin="round" strokeLinecap="round" />
+      {/* black fill and a 3 px white border (FILM_SPEC §10): a 6 px stroke painted under the fill shows 3 px outside it */}
+      <path d={ARROW} fill="#141815" stroke="#FFFFFF" strokeWidth={6 / unit} strokeLinejoin="round" strokeLinecap="round" paintOrder="stroke" />
     </svg>
   );
 };

@@ -15,7 +15,7 @@ export const OgImage: React.FC = () => {
   // "A little help, right here." on two lines at the comma, as the site's H1 balances it
   const [first, second] = splitAtComma(hero.h1);
   return (
-    <PaperField pool={{ x: 0.3, y: 0.46 }}>
+    <PaperField pool={{ x: 360, y: 300 }}>
       <PebbleOnFilm cues={STILL_CUES} size={430} x={330} y={452} offsetFrames={30} />
       <AbsoluteFill style={{ left: 560, right: 64, justifyContent: "center" }}>
         <div

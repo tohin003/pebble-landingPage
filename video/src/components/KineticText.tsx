@@ -1,39 +1,29 @@
-// Kinetic type (R5 §4) in the brand's faces (DESIGN.md §3): Fraunces 350 (SOFT 100, WONK 0) for headlines, Inter for
-// support lines and the CTA, Geist Mono for the URL. Lines are given explicitly (≤ 6 words each, never re-wrapped),
-// land with one of R5's entrances and are DEAD STILL once landed: a landed word has no transform and no filter, only
-// opacity 1. Exits are shorter than entrances and leave as a line.
+// Kinetic type (R5 §4; docs/FILM_SPEC.md §3) in the brand's faces (DESIGN.md §3): Fraunces 350 (SOFT 100, WONK 0) for
+// headlines and side lines, Inter for support lines and the CTA, Geist Mono for the URL. Lines are given explicitly
+// (≤ 6 words each, never re-wrapped), land with one of the spec's entrances and are DEAD STILL once landed: a landed
+// word has no transform and no filter, only opacity 1. Exits are shorter than entrances and leave as a line.
 //
-// Entrances: "blur" (A, per-word blur-in: the default for headlines), "ink" (B, per-word ink on the sage field),
-// "rise" (C, mask line-rise for two-line statements), "fade" (support lines, small print), "none".
+// Entrances (FILM_SPEC §3):
+//   "blur" (A): per word, blur 6 px → 0 and opacity 0 → 1 over 5 frames, words 2 frames apart, no movement;
+//   "ink"  (B): per word, opacity 0.35 → 1 over 5 frames, words 2 frames apart (pass inkFrom #B0C2AE on light grounds);
+//   "rise" (C): each line rises translateY(105 %) → 0 inside its own clip over 15 frames, lines 4 frames apart;
+//   "fade": the line fades in over 15 frames (small print); "none".
+// Exit: blur 0 → 8 px and opacity → 0 over 6 frames. `wordStarts` gives each word its own frame (T7 builds with its
+// verbs).
 import type { CSSProperties } from "react";
 import { interpolateColors, useCurrentFrame, useVideoConfig } from "remotion";
 import { FONT } from "../fonts";
 import type { Rect } from "../motion/camera";
 import { useLayout, type TypeScale } from "../motion/layout";
-import {
-  COLOR,
-  EASE,
-  FX_REST,
-  T,
-  T2,
-  TYPO,
-  blurIn,
-  blurOut,
-  fadeIn,
-  fadeOut,
-  fxStyle,
-  mixFx,
-  ramp,
-  sec,
-  type Fx,
-  type TypoRole,
-} from "../motion/spec";
+import { COLOR, EASE, FX_REST, T, T2, TYPO, blurIn, blurOut, fadeIn, fadeOut, fxStyle, mixFx, ramp, sec, type Fx, type TypoRole } from "../motion/spec";
 
-export type TextRole = "hero" | "headline" | "support" | "cta" | "mono" | "small";
+export type TextRole = "hero" | "headline" | "side" | "tagline" | "support" | "cta" | "mono" | "small";
 
 const ROLE_TYPO: Record<TextRole, TypoRole> = {
   hero: "display",
   headline: "display",
+  side: "display",
+  tagline: "display",
   support: "text",
   cta: "text",
   mono: "mono",
@@ -42,11 +32,16 @@ const ROLE_TYPO: Record<TextRole, TypoRole> = {
 const ROLE_SIZE: Record<TextRole, keyof TypeScale> = {
   hero: "hero",
   headline: "headline",
+  side: "side",
+  tagline: "tagline",
   support: "support",
   cta: "cta",
   mono: "mono",
   small: "small",
 };
+
+/** FILM_SPEC §3: words 2 frames apart (at 30 fps). */
+export const WORD_STEP_S = 2 / 30;
 
 export interface KineticTextProps {
   lines: readonly string[];
@@ -54,7 +49,7 @@ export interface KineticTextProps {
   /** px; default from useLayout().type */
   size?: number;
   weight?: number;
-  /** local frame the entrance starts on */
+  /** local frame the entrance starts on (the first word's frame) */
   at?: number;
   /** local frame the exit starts on */
   exitAt?: number;
@@ -67,16 +62,18 @@ export interface KineticTextProps {
   /** frame-space box the lines sit in (default: the layout's safe area) */
   box?: Rect;
   valign?: "top" | "center" | "bottom";
-  /** seconds between words (default R5: 0.08) */
+  /** seconds between words (default 2 frames) */
   wordStagger?: number;
-  /** seconds between lines (default R5: 0.12; for "blur" a line starts when the previous line's words have) */
+  /** seconds between lines for "rise" (default 0.12 s = 4 frames) */
   lineStagger?: number;
+  /** explicit start frame for each word, in reading order across the lines (overrides the stagger) */
+  wordStarts?: readonly number[];
   style?: CSSProperties;
 }
 
 const FLEX = { left: "flex-start", center: "center", right: "flex-end", top: "flex-start", bottom: "flex-end" } as const;
 
-/** The words of a line, keeping the spaces between them as text. */
+/** The words of a line. */
 const wordsOf = (line: string) => line.split(" ").filter((w) => w.length > 0);
 
 /** "#rrggbb" at alpha `a` (other colour forms are returned unchanged). */
@@ -99,8 +96,9 @@ export const KineticText: React.FC<KineticTextProps> = ({
   align = "left",
   box,
   valign = "top",
-  wordStagger = T.wordStagger,
+  wordStagger = WORD_STEP_S,
   lineStagger = T.lineStagger,
+  wordStarts,
   style,
 }) => {
   const frame = useCurrentFrame();
@@ -111,14 +109,15 @@ export const KineticText: React.FC<KineticTextProps> = ({
   const b = box ?? layout.safe;
   const from = inkFrom ?? withAlpha(color, 0.35);
 
-  // start frame of each word: lines follow each other (a line starts lineStagger after the previous line's last word)
-  let cursor = 0;
-  const starts = lines.map((line) => {
-    const ws = wordsOf(line);
-    const s = ws.map((_, wi) => at + sec(cursor + wi * wordStagger, fps));
-    cursor += (enter === "blur" || enter === "ink" ? Math.max(0, ws.length - 1) * wordStagger : 0) + lineStagger;
-    return s;
-  });
+  // each word's start frame, in reading order across the lines
+  let n = 0;
+  const starts = lines.map((line) =>
+    wordsOf(line).map(() => {
+      const s = wordStarts?.[n] ?? at + sec(n * wordStagger, fps);
+      n++;
+      return s;
+    }),
+  );
 
   const exitFx = (li: number): Fx => {
     if (exitAt === undefined || exit === "none") return FX_REST;
@@ -159,8 +158,9 @@ export const KineticText: React.FC<KineticTextProps> = ({
         if (enter === "rise") {
           const p = ramp(frame, at + sec(li * lineStagger, fps), sec(T.textIn, fps), EASE.enter);
           const fx = mixFx(out, p >= 1 ? FX_REST : { ...FX_REST, dy: (1 - p) * px * typo.leading * 1.05 });
+          if (frame < at) return <div key={li} style={{ ...lineStyle, opacity: 0 }}>{line}</div>;
           return (
-            <div key={li} style={{ overflow: "hidden", fontSize: px, padding: "0.12em 0 0.16em", margin: "-0.12em 0 -0.16em" }}>
+            <div key={li} style={{ overflow: "hidden", fontSize: px, lineHeight: typo.leading, padding: "0.12em 0 0.16em", margin: "-0.12em 0 -0.16em" }}>
               <div style={{ ...lineStyle, ...fxStyle(fx) }}>{line}</div>
             </div>
           );
@@ -173,14 +173,14 @@ export const KineticText: React.FC<KineticTextProps> = ({
             </div>
           );
         }
-        // per word: "blur" (A) or "ink" (B)
+        // per word: (A) blur-in or (B) ink
         const ws = wordsOf(line);
         return (
           <div key={li} style={{ ...lineStyle, ...fxStyle(out) }}>
             {ws.map((w, wi) => {
               const s = starts[li]![wi]!;
               if (enter === "ink") {
-                const shown = ramp(frame, at, sec(T.micro, fps), EASE.enter);
+                const shown = frame >= Math.min(at, s) ? 1 : 0;
                 const inked = ramp(frame, s, sec(T.wordIn, fps), EASE.enter);
                 return (
                   <span key={wi}>
@@ -206,8 +206,7 @@ export const KineticText: React.FC<KineticTextProps> = ({
 
 /** Local frame on which a KineticText's last word has landed (for timing holds and the next beat). */
 export const landedAt = (lines: readonly string[], at: number, fps: number, enter: KineticTextProps["enter"] = "blur") => {
-  if (enter === "rise") return at + sec((lines.length - 1) * T.lineStagger + T.textIn, fps);
-  if (enter === "fade") return at + sec((lines.length - 1) * T.lineStagger + T.textIn, fps);
-  const words = lines.reduce((n, l) => n + wordsOf(l).length, 0);
-  return at + sec((words - 1) * T.wordStagger + (lines.length - 1) * T.lineStagger + T.wordIn, fps);
+  if (enter === "rise" || enter === "fade") return at + sec((lines.length - 1) * T.lineStagger + T.textIn, fps);
+  const words = lines.reduce((k, l) => k + wordsOf(l).length, 0);
+  return at + sec((words - 1) * WORD_STEP_S + T.wordIn, fps);
 };

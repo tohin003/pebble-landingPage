@@ -3,7 +3,7 @@
 import { Slate } from "../components";
 
 export const LOOP_SPECS = {
-  LoopCompanion: { frames: 240, section: "On your desktop", note: "Idle pet → the pointer arcs in, the eyes follow → click → the quick chat opens and the reply streams → hold → collapse → the same idle frame." },
+  LoopCompanion: { frames: 300, section: "On your desktop", note: "Idle pet → the pointer arcs in, the eyes follow → click → the quick chat opens and the reply streams → hold → collapse → the same idle frame." },
   LoopModels: { frames: 180, section: "Your model, your choice", note: "Pan across the three ways in → one callout ring on Add a model file / On this Mac → the camera returns." },
   LoopApproveUndo: { frames: 300, section: "Works in your project (step 01)", note: "The card rises → dwell → Apply edit → Done + Undo this edit → hold → a 0.4 s time-passage dissolve back to the pending card." },
   LoopIsolatedTests: { frames: 240, section: "Works in your project (step 02)", note: "Timeline rows arrive → \"Requesting isolated tests · 11 s\" → \"Verified · pytest 42 passed on current files\" → reset." },
