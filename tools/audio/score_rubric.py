@@ -87,8 +87,9 @@ for arg in sys.argv[3:]:
                      "top_sound_tags": [f"{x['label']} {x['score']}" for x in t["tags"][:8]]},
     })
 rows.sort(key=lambda r: -r["total"])
-eligible = [r for r in rows if r["eligible"] and r["id"] != "original"]
-stock = [r for r in rows if r["id"] != "original"]
+composed = lambda r: r["id"].startswith("original")   # our own scores ("original", "original-sampled") are not stock
+eligible = [r for r in rows if r["eligible"] and not composed(r)]
+stock = [r for r in rows if not composed(r)]
 best = stock[0] if stock else None
 res = {"pass_mark": 70, "weights": {"brand_fit": 30, "structure": 20, "tempo": 15, "no_voice_or_alarm": 15, "dynamics": 10, "distinctiveness": 10},
        "rows": rows,

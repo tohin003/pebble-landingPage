@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # tools/audio/use_music.sh <option-id>      switch the film's music in one command
 #
-# Options are listed in tools/audio/music_options.json: "original" (the composed score, the default) and the three
-# Mixkit alternates ("mixkit-431", "mixkit-282", "mixkit-79"). The script:
-#   1. rebuilds the bed at .work/audio/render/music_bed.wav (composes it, or fetches the Mixkit track, checks its
-#      SHA-256 against tools/audio/sha256-sources.txt and fits it to the film with fit_music.py film mode);
+# Options are listed in tools/audio/music_options.json (its "default" names the film's current music):
+# "original-sampled" (the composed score played on recorded CC0 instruments), "original" (the same score synthesised
+# in code) and the three Mixkit alternates ("mixkit-431", "mixkit-282", "mixkit-79"). The script:
+#   1. rebuilds the bed at .work/audio/render/music_bed.wav: composes it; or fetches and verifies the CC0 sample kit
+#      (tools/audio/sample_kit.py) and renders it (tools/audio/render_sampled.py); or fetches the Mixkit track, checks
+#      its SHA-256 against tools/audio/sha256-sources.txt and fits it to the film with fit_music.py film mode;
 #   2. validates it against the option's beat map (validate_bed.py: downbeats, reveal frame, exact length);
 #   3. copies the option's beat map to tools/audio/beatmap.json, which the film timeline imports.
 # After a switch: re-snap the film to the new beat map, re-export tools/audio/cues.json and re-run the mix (§6.4).
@@ -33,8 +35,16 @@ print(o['kind'], o.get('mixkit_id', '-'), o['beatmap'])")
 [ -n "${BEATMAP:-}" ] || { echo "use_music.sh: could not read option $ID from $OPTS" >&2; exit 1; }
 OUT=".work/audio/render/music_bed.wav"
 mkdir -p .work/audio/render .work/audio/analysis
+BUILD="$("$PY" -I -c "import json; print(' '.join(json.load(open('$OPTS'))['options']['$ID'].get('build', [])))")"
+BUILD_SCRIPT="${BUILD%% *}"
+BUILD_ARGS="${BUILD#"$BUILD_SCRIPT"}"
 if [ "$KIND" = composed ]; then
-  "$PY" -I tools/audio/compose_score.py "$OUT" $("$PY" -I -c "import json; print(' '.join(json.load(open('$OPTS'))['options']['$ID']['build'][1:]))")
+  # shellcheck disable=SC2086
+  "$PY" -I $BUILD_SCRIPT "$OUT" $BUILD_ARGS
+elif [ "$KIND" = sampled ]; then
+  "$PY" -I tools/audio/sample_kit.py fetch
+  # shellcheck disable=SC2086
+  "$PY" -I $BUILD_SCRIPT "$OUT" $BUILD_ARGS
 else
   bash tools/audio/fetch_track.sh "$MID"
   # shellcheck disable=SC2046

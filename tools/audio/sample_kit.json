@@ -1,0 +1,855 @@
+{
+ "schema": "pebble-sample-kit/1",
+ "about": "The CC0 instrument samples that tools/audio/render_sampled.py plays the composed score with. Every file is fetched from the library's GitHub repository at the pinned commit by tools/audio/sample_kit.py (sample files and licence texts only; nothing downloaded is executed) into .work/audio/samples/<library>/<path> (gitignored), and verified against the git blob SHA-1 of the pinned tree and the SHA-256 recorded here. Only the samples the score plays are kept: every played pitch is within 3 semitones of a sampled one, and the layers, round robins and notes this score never reaches were pruned after the final render. Audio never enters git. A file's onset_ms, where present, overrides render_sampled.py's onset detection for that take.",
+ "naming": "Both libraries name notes with middle C = C3 (Yamaha convention): a file named D4 sounds D5 (587 Hz). Measured on every pitched file by render_sampled.py, which tunes each note from the measured pitch.",
+ "libraries": {
+  "VCSL": {
+   "title": "Versilian Community Sample Library (VCSL)",
+   "by": "Versilian Studios LLC (Sam Gossner) and contributors",
+   "repo": "sgossner/VCSL",
+   "url": "https://github.com/sgossner/VCSL",
+   "commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+   "commit_date": "2026-01-14",
+   "licence": "CC0 1.0 Universal",
+   "licence_file": "LICENSE",
+   "licence_sha256": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499",
+   "licence_quotes": [
+    "Creative Commons Legal Code",
+    "CC0 1.0 Universal",
+    "2. Waiver. To the greatest extent permitted by, but not in contravention of, applicable law, Affirmer hereby overtly, fully, permanently, irrevocably and unconditionally waives, abandons, and surrenders all of Affirmer's Copyright and Related Rights and associated claims and causes of action"
+   ],
+   "readme_quotes": [
+    "The Versilian Community Sample Library is an open CC0 general-purpose sample library created by Versilian Studios LLC",
+    "This collection is under a Creative Commons 0 license. Essentially it's Public Domain- you can do whatever you want with these sounds (even make commercial software), no royalties, no credit, no special terms."
+   ],
+   "github_api_licence": "cc0-1.0 (Creative Commons Zero v1.0 Universal)"
+  },
+  "VSCO-2-CE": {
+   "title": "VS Chamber Orchestra: Community Edition (VSCO 2 CE)",
+   "by": "Versilian Studios LLC; recorded by Sam Gossner and Simon Dalzell (Ivy Audio); sample cutting by Elan Hickler (Soundemote)",
+   "repo": "sgossner/VSCO-2-CE",
+   "url": "https://github.com/sgossner/VSCO-2-CE",
+   "homepage": "http://vis.versilstudios.net/vsco-community.html",
+   "commit": "440300901dfe9275fd84e0b7763af1f8443ae62e",
+   "commit_date": "2020-08-05",
+   "licence": "CC0 1.0 Universal",
+   "licence_file": "LICENSE",
+   "licence_sha256": "36ffd9dc085d529a7e60e1276d73ae5a030b020313e6c5408593a6ae2af39673",
+   "licence_quotes": [
+    "CC0 1.0 Universal",
+    "2. Waiver. To the greatest extent permitted by, but not in contravention of, applicable law, Affirmer hereby overtly, fully, permanently, irrevocably and unconditionally waives, abandons, and surrenders all of Affirmer's Copyright and Related Rights and associated claims and causes of action"
+   ],
+   "readme_quotes": [
+    "You are permitted to use these samples for ANY purpose. We ask that you do not sell the samples directly, and encourage you to keep any work done on improving the sample set open and public.",
+    "Please provide credit to Versilian Studios/Sam Gossner, and/or Ivy Audio/Simon Dalzell where applicable, and link to the VSCO: CE homepage."
+   ],
+   "readme_file": "Readme.txt",
+   "github_api_licence": "cc0-1.0 (Creative Commons Zero v1.0 Universal)"
+  }
+ },
+ "instruments": {
+  "marimba": {
+   "part": "mallet",
+   "lib": "VCSL",
+   "dir": "Idiophones/Struck Idiophones/Marimba",
+   "what": "VCSL Marimba (Outrigger mallets), 3 dynamics: soft, med, loud",
+   "files": [
+    {
+     "file": "Marimba_hit_Outrigger_B2_med_01.wav",
+     "note": "B2",
+     "layer": 2,
+     "bytes": 1495616,
+     "git_blob_sha1": "c936311bb0a094e7a6625f3c8a4914754242583d",
+     "sha256": "4d0ffc47858d0c4545191eef3240d470c40df1c090841c0fb2ae2f47900794ee"
+    },
+    {
+     "file": "Marimba_hit_Outrigger_B2_soft_01.wav",
+     "note": "B2",
+     "layer": 1,
+     "bytes": 1406594,
+     "git_blob_sha1": "a8d92ac62a6008d29c60d6fb39674f77cfe6ca57",
+     "sha256": "10e4a47853920c93423fd72f224e46bf1bce60319d5e7ae501d1b8431ec7d78a"
+    },
+    {
+     "file": "Marimba_hit_Outrigger_B4_med_01.wav",
+     "note": "B4",
+     "layer": 2,
+     "bytes": 433802,
+     "git_blob_sha1": "9393bece679f9d698a8b8acf81be463c07247576",
+     "sha256": "d676b76e3850d85333c85b1fc77d20f4524ff2e9e6f03551f52c5b22fbe8ab30"
+    },
+    {
+     "file": "Marimba_hit_Outrigger_B4_soft_01.wav",
+     "note": "B4",
+     "layer": 1,
+     "bytes": 492602,
+     "git_blob_sha1": "e6935a398d8cec04a8e23c58c78d44a9ac066620",
+     "sha256": "278f5123442162e7946fa68a48ed650e3838b1ddcd3e2173d3ea69f30079c534"
+    },
+    {
+     "file": "Marimba_hit_Outrigger_C4_med_01.wav",
+     "note": "C4",
+     "layer": 2,
+     "bytes": 655244,
+     "git_blob_sha1": "85c657dd0a8f58808efad5e9184d5b9124285512",
+     "sha256": "3e88c006eef05e8f7891f8f6027042006199a4ec3b53a0ad7308f9782a52d4df"
+    },
+    {
+     "file": "Marimba_hit_Outrigger_C4_soft_01.wav",
+     "note": "C4",
+     "layer": 1,
+     "bytes": 915446,
+     "git_blob_sha1": "6ccd29800db58963dd91136ea426b895d703bb22",
+     "sha256": "4d03d005166e8b366e6a983b7a4a89e0847e1d58a6d34dda35ddf74289cace94"
+    },
+    {
+     "file": "Marimba_hit_Outrigger_F3_med_01.wav",
+     "note": "F3",
+     "layer": 2,
+     "bytes": 1382924,
+     "git_blob_sha1": "2c74c56eba169268ec3e74bc2de31fb282716a58",
+     "sha256": "a493b31ac2e588ed961c522a66b790acc584b59a08918bd7193d6e6fa8df4756"
+    },
+    {
+     "file": "Marimba_hit_Outrigger_F3_soft_01.wav",
+     "note": "F3",
+     "layer": 1,
+     "bytes": 1455272,
+     "git_blob_sha1": "520e49115bc66a7f3a57a09ba8999abd02e7a7b0",
+     "sha256": "6eb7ccf5fa10b1bdaf10f0cc7a50d8c42ef086636a9e88c6527fb3af58e5ee1f"
+    },
+    {
+     "file": "Marimba_hit_Outrigger_G4_med_01.wav",
+     "note": "G4",
+     "layer": 2,
+     "bytes": 580262,
+     "git_blob_sha1": "be84c27de4fea671b78c82591aa6d6f98c06619e",
+     "sha256": "278e738d8214cdc192e63c3350b1e464a72c86dc135ddf0c5ce035569be66c71"
+    },
+    {
+     "file": "Marimba_hit_Outrigger_G4_soft_01.wav",
+     "note": "G4",
+     "layer": 1,
+     "bytes": 860570,
+     "git_blob_sha1": "2aa39578faced00688851f5705857170aa656055",
+     "sha256": "d3e23f018b091a60d91c3c93b38b605d02a9e26c7cf5830ffb866cfe84130cd0"
+    }
+   ]
+  },
+  "vibes": {
+   "part": "vibes",
+   "lib": "VCSL",
+   "dir": "Idiophones/Struck Idiophones/Vibraphone/Soft Mallets",
+   "what": "VCSL Vibraphone, soft mallets, 2 dynamics (v1, v2), motor off",
+   "files": [
+    {
+     "file": "Vibes_soft_A2_v1_rr1_Main.wav",
+     "note": "A2",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 1811676,
+     "git_blob_sha1": "5e0049f968a46453e531d235c55dec82d7cda29d",
+     "sha256": "b6e23a94322107d0ab884d7c38e51be538eb45f613c6a24e980c2261151bed75"
+    },
+    {
+     "file": "Vibes_soft_A4_v2_rr1_Main.wav",
+     "note": "A4",
+     "layer": 2,
+     "rr": 1,
+     "bytes": 2388580,
+     "git_blob_sha1": "f49a1fadfdbc378aacbfbb2a57a6fb434dd90ede",
+     "sha256": "fb507c5cb2f2023289fdf1384092f3c5e13f03a2b5b1c39f6792cc57aa77d58d"
+    },
+    {
+     "file": "Vibes_soft_B3_v1_rr1_Main.wav",
+     "note": "B3",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 1850652,
+     "git_blob_sha1": "bacab8cdb0f85f9f4f28a1654ded6811318bb9f8",
+     "sha256": "7edfbd70f93781d2cbb17c2fc8befe474de9987c6353db2358af4e13a0269345"
+    },
+    {
+     "file": "Vibes_soft_B3_v2_rr1_Main.wav",
+     "note": "B3",
+     "layer": 2,
+     "rr": 1,
+     "bytes": 2851524,
+     "git_blob_sha1": "c2050a8979ad5673be81c0466833014736254977",
+     "sha256": "9d2466c4d3375f2eb24c57f17e15736052a5492d6c84b876c1d0a4997eea99a0"
+    },
+    {
+     "file": "Vibes_soft_C3_v1_rr2_Main.wav",
+     "note": "C3",
+     "layer": 1,
+     "rr": 2,
+     "bytes": 1815048,
+     "git_blob_sha1": "8413d99c880ff57e696be5ca4de5eb2b0774aabd",
+     "sha256": "1dda9a4c3205c365345d66dcb68c8e09c0dca76a310b8fe8108e43c7e8c1cd0a"
+    },
+    {
+     "file": "Vibes_soft_C5_v2_rr1_Main.wav",
+     "note": "C5",
+     "layer": 2,
+     "rr": 1,
+     "bytes": 1161864,
+     "git_blob_sha1": "7896c7155ca938445cf59e16c779c4504e911630",
+     "sha256": "129c5661e386f3c08a4f777c108815f174d96e02f5fb4b4026a9437905327847"
+    },
+    {
+     "file": "Vibes_soft_D4_v2_rr1_Main.wav",
+     "note": "D4",
+     "layer": 2,
+     "rr": 1,
+     "bytes": 2625224,
+     "git_blob_sha1": "88e93ea2798d9583c81a867a8a27c7559c873c35",
+     "sha256": "aa5626038a653de08057e1dae8a7160b12f2ce26c85a525bc545b8d14843ce80"
+    },
+    {
+     "file": "Vibes_soft_E3_v1_rr2_Main.wav",
+     "note": "E3",
+     "layer": 1,
+     "rr": 2,
+     "bytes": 2081904,
+     "git_blob_sha1": "19a3cc3b74fb64d19a9e6995f634685ab41a90f6",
+     "sha256": "620a241017d0de0e6cb789c97d439401f25d659d08f753746690632e71de8f0b"
+    },
+    {
+     "file": "Vibes_soft_E3_v2_rr1_Main.wav",
+     "note": "E3",
+     "layer": 2,
+     "rr": 1,
+     "bytes": 2665284,
+     "git_blob_sha1": "3e5d93391a1e94724a6e2e2cb2f75181ea78e2dc",
+     "sha256": "268f0a703ca5e394533913bce3760e8c06661a5d72841601ade887ea72a00312"
+    },
+    {
+     "file": "Vibes_soft_F4_v1_rr1_Main.wav",
+     "note": "F4",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 1368508,
+     "git_blob_sha1": "0e230262665e212a99cab1a11cfdad30b9977492",
+     "sha256": "95b7d6eeb71d77cce607c0c52b0a6dfd23d0eeedc2eb393fb9a6c5a5768f4aa5"
+    },
+    {
+     "file": "Vibes_soft_F4_v2_rr1_Main.wav",
+     "note": "F4",
+     "layer": 2,
+     "rr": 1,
+     "bytes": 2027468,
+     "git_blob_sha1": "ec0b4f8a15407cf79e943c7e895a0292947e7de1",
+     "sha256": "76c2813ea1e87870dfbf3035360af46aee54214eda5e95b03bffb83f64a89b1c"
+    },
+    {
+     "file": "Vibes_soft_G3_v1_rr1_Main.wav",
+     "note": "G3",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 2519544,
+     "git_blob_sha1": "36a655b6f107c87cd5e7ed06aa1805449600576a",
+     "sha256": "9b479e4c84fb1caafba8c1c106a8922cea20bba81c37d65f93afae339626767f"
+    }
+   ]
+  },
+  "glock": {
+   "part": "glock",
+   "lib": "VCSL",
+   "dir": "Idiophones/Struck Idiophones/Glockenspiel",
+   "what": "VCSL Glockenspiel, soft",
+   "files": [
+    {
+     "file": "glock_soft_C5_02.wav",
+     "note": "C5",
+     "layer": 1,
+     "bytes": 709206,
+     "git_blob_sha1": "b68621c4f4fc482284bc8e848ea2d2654366d49e",
+     "sha256": "4fa149e6f224557df5fab98ad660a8f192bc6fbf2556077dd1089509bf4424e2"
+    },
+    {
+     "file": "glock_soft_G5_01.wav",
+     "note": "G5",
+     "layer": 1,
+     "bytes": 706962,
+     "git_blob_sha1": "2de4932c129eaacdb2ec9e6e9795cdf00e112cf7",
+     "sha256": "73f6a6de89291d0292b303d641444de5e6e1561881f09f6cf20d77f245f7bec3"
+    }
+   ]
+  },
+  "bass": {
+   "part": "bass",
+   "lib": "VSCO-2-CE",
+   "dir": "Strings/Solo Contrabass/Pizz",
+   "what": "VSCO 2 CE Solo Contrabass pizzicato, 2 dynamics where recorded (v1, v3), 2 round robins",
+   "files": [
+    {
+     "file": "BKCtbss_Pizz_A#0_v1_rr1.wav",
+     "note": "A#0",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 344328,
+     "git_blob_sha1": "6b42c2b752ac8aa098fa512b1c068229036f9d55",
+     "sha256": "c172382a1c8db63d1893e909da3c0f7f96a60371dce0cfe712e64fd622066fbe"
+    },
+    {
+     "file": "BKCtbss_Pizz_A#0_v1_rr2.wav",
+     "note": "A#0",
+     "layer": 1,
+     "rr": 2,
+     "bytes": 326372,
+     "git_blob_sha1": "74b090dd2b40841aa3657f35859ae5810ed3344e",
+     "sha256": "a82a509344a7e03e81f937b0daf647d55c3d47ec01867deeb41463d1d39209af"
+    },
+    {
+     "file": "BKCtbss_Pizz_A#0_v3_rr1.wav",
+     "note": "A#0",
+     "layer": 2,
+     "rr": 1,
+     "bytes": 417360,
+     "git_blob_sha1": "b5525c15a77e1871feb42f70cc17a6650aee4355",
+     "sha256": "ffdcf783332627d78bb09c348ce5bbf64e833d529a1cfd48e05362f27a857c0a"
+    },
+    {
+     "file": "BKCtbss_Pizz_A#0_v3_rr2.wav",
+     "note": "A#0",
+     "layer": 2,
+     "rr": 2,
+     "bytes": 458396,
+     "git_blob_sha1": "3bcb6e93918b0e8355867acfcaca87106e421b23",
+     "sha256": "47ca23f0950ab1ad7c07fd3d4743d826985cc3b79f997c372ead51ebd538a60b"
+    },
+    {
+     "file": "BKCtbss_Pizz_A1_v1_rr1.wav",
+     "note": "A1",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 623260,
+     "git_blob_sha1": "311a5027a127715530f1e723a21f7927d280d493",
+     "sha256": "c88e632ac4f716d4e85112d6ea5bbe2d27d67019296787c25d27178a9e5f18ac"
+    },
+    {
+     "file": "BKCtbss_Pizz_A1_v1_rr2.wav",
+     "note": "A1",
+     "layer": 1,
+     "rr": 2,
+     "bytes": 485472,
+     "git_blob_sha1": "4ccbcc407cdc07f124f6523d50778d8e77ac2aad",
+     "sha256": "e7aaefac5eb3986fcec86040e1f7310e84ea38be5d13abe2b3de101c41f43b2b"
+    },
+    {
+     "file": "BKCtbss_Pizz_C#2_v1_rr1.wav",
+     "note": "C#2",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 513824,
+     "git_blob_sha1": "16b7ca596182a49fe693b81ed925df8d2fc1be59",
+     "sha256": "41804fc70cf82bd1c475611e315b14b1adf5effbd3369028302a681b54064b3f"
+    },
+    {
+     "file": "BKCtbss_Pizz_C1_v1_rr1.wav",
+     "note": "C1",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 270720,
+     "git_blob_sha1": "46a4f947083669e7281be98b16c89b434529ea9e",
+     "sha256": "5591160a867b21ba193d601390c9e1f35ec8d5deb0de686a410d25a98a103b06"
+    },
+    {
+     "file": "BKCtbss_Pizz_C1_v1_rr2.wav",
+     "note": "C1",
+     "layer": 1,
+     "rr": 2,
+     "bytes": 405984,
+     "git_blob_sha1": "aa16603fb7d318a87c47abf01e3ea321cdc78418",
+     "sha256": "d880b29cafc4b537a5097c9b65a7e20d1be15d60efaf7ceb15e20517b6ad455b"
+    },
+    {
+     "file": "BKCtbss_Pizz_C1_v3_rr1.wav",
+     "note": "C1",
+     "layer": 2,
+     "rr": 1,
+     "bytes": 400396,
+     "git_blob_sha1": "eb8c1aa8049e386288b71b7678098352a0c8f037",
+     "sha256": "706d82ca773408bb6cd6f22466d5d017c1d36a9055f3a6b6af864407b26c5a0d"
+    },
+    {
+     "file": "BKCtbss_Pizz_C1_v3_rr2.wav",
+     "note": "C1",
+     "layer": 2,
+     "rr": 2,
+     "bytes": 384920,
+     "git_blob_sha1": "974926b4eda1088bb5c7865de6712acc7803d304",
+     "sha256": "242a0638d0571084b3a40da3a21a3f2dd67585e31601babf85f4251b4f67a3d3"
+    },
+    {
+     "file": "BKCtbss_Pizz_D1_v1_rr1.wav",
+     "note": "D1",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 856252,
+     "git_blob_sha1": "623693ad1479a3e1da230fe62b8d012406412d86",
+     "sha256": "c4db29ae6949cb6c0d24201bb444c1d5b3806505bae47785cb199f5f0f4f02d2"
+    },
+    {
+     "file": "BKCtbss_Pizz_D1_v1_rr2.wav",
+     "note": "D1",
+     "layer": 1,
+     "rr": 2,
+     "bytes": 1062672,
+     "git_blob_sha1": "6b66446765a55ddcad2fbfdf3b47fdc6737bc540",
+     "sha256": "4f17f7c828a9d9123c8c6498a27aa6b7a2772a5b937183f3d622f41f56ce21ce"
+    },
+    {
+     "file": "BKCtbss_Pizz_E1_v1_rr1.wav",
+     "note": "E1",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 294356,
+     "git_blob_sha1": "da8962289a777507e94094c6dde7131916ca1b64",
+     "sha256": "818fd3e7cc5200774333fc5dbb37e021ed0f155918cafe129acc0e90d37f9d49"
+    },
+    {
+     "file": "BKCtbss_Pizz_E1_v1_rr2.wav",
+     "note": "E1",
+     "layer": 1,
+     "rr": 2,
+     "bytes": 315292,
+     "git_blob_sha1": "3326b2b4ae5a4bc6156e7ec8ce5adaca94e867e5",
+     "sha256": "9b87c1440edb95a70ca997ac83cff0d0e84c176f6269a59f86ce381f339f09ce"
+    },
+    {
+     "file": "BKCtbss_Pizz_E1_v3_rr1.wav",
+     "note": "E1",
+     "layer": 2,
+     "rr": 1,
+     "bytes": 518876,
+     "git_blob_sha1": "1cada4277b16b2eb8b240d4a6da4bbd3aca989a0",
+     "sha256": "7628daebe4a9f8524d46e6d58eee811f437e73c77eb6c21396152af58a062506"
+    },
+    {
+     "file": "BKCtbss_Pizz_E1_v3_rr2.wav",
+     "note": "E1",
+     "layer": 2,
+     "rr": 2,
+     "bytes": 445256,
+     "git_blob_sha1": "9033e53e840a4ca791ff0ae57bd1f171bc5a310c",
+     "sha256": "496f50ac55ae948b2a155fd06a9bc430118b9725eb638c1673ae3c389203ae91"
+    },
+    {
+     "file": "BKCtbss_Pizz_F#1_v1_rr1.wav",
+     "note": "F#1",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 868632,
+     "git_blob_sha1": "757d0487bc7ad3461aac13cdce1999fabb3952b3",
+     "sha256": "6f91a2747ce3cea061c670f7bf5dc8611eef1c3af8d6e2dca75b6dac5a65bfc6"
+    },
+    {
+     "file": "BKCtbss_Pizz_G#1_v1_rr1.wav",
+     "note": "G#1",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 601752,
+     "git_blob_sha1": "1b3774619e9ae958177bc6bd4429d32fbef0c0c8",
+     "sha256": "bf377a41759c17794901957edc89ff48fb405f98879549916d9b228492f7f8d1"
+    },
+    {
+     "file": "BKCtbss_Pizz_G#1_v1_rr2.wav",
+     "note": "G#1",
+     "layer": 1,
+     "rr": 2,
+     "bytes": 537212,
+     "git_blob_sha1": "51b5c8bbabf1760a072fc557652fb84bcaf827d8",
+     "sha256": "25ff38b5300151dd040fd4934e67dc668d3d63a66c4733d9971428116d1b08bc"
+    },
+    {
+     "file": "BKCtbss_Pizz_G0_v1_rr1.wav",
+     "note": "G0",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 169640,
+     "git_blob_sha1": "45d11b0a0545d59407f740b938461b205e8c91cb",
+     "sha256": "6c8ed06c816b2aee6443a3df4d8c24dd05d1e6fa72595d47b0e3755cd251e60f"
+    },
+    {
+     "file": "BKCtbss_Pizz_G0_v1_rr2.wav",
+     "note": "G0",
+     "layer": 1,
+     "rr": 2,
+     "bytes": 240624,
+     "git_blob_sha1": "968cf37ef77070e116c8f665d0242af1287530fc",
+     "sha256": "805a41b3a153a8601c9308a106c33604030ff7f3c0c944a92b25663a1baa7873"
+    },
+    {
+     "file": "BKCtbss_Pizz_G0_v3_rr1.wav",
+     "note": "G0",
+     "layer": 2,
+     "rr": 1,
+     "bytes": 636880,
+     "git_blob_sha1": "219542998cac263bb0b5bd03ab02fd6bbdcb3d21",
+     "sha256": "9dc3c010e20999e524a7694abf27c12fb55296f2d9946d70917fa82b1d076136"
+    },
+    {
+     "file": "BKCtbss_Pizz_G0_v3_rr2.wav",
+     "note": "G0",
+     "layer": 2,
+     "rr": 2,
+     "bytes": 713924,
+     "git_blob_sha1": "09b63873d4e3070f2d0c513f69cb827ed83911c0",
+     "sha256": "7f64d7d6f6309ab622cc0e070c6d50274f73d3f483e4067a05647fb89a6f51c8",
+     "onset_ms": 17.0,
+     "onset_note": "the take opens with 17 ms of quiet handling noise before the pluck; onset measured by hand"
+    }
+   ]
+  },
+  "strings_viola": {
+   "part": "pad",
+   "lib": "VSCO-2-CE",
+   "dir": "Strings/Viola Section/susvib",
+   "what": "VSCO 2 CE Viola Section, sustain with vibrato, 2 dynamics (v1, v2): the pad's lower voices (up to D4)",
+   "files": [
+    {
+     "file": "ViolaEns_susvib_A3_v1_1.wav",
+     "note": "A3",
+     "layer": 1,
+     "bytes": 2491352,
+     "git_blob_sha1": "a57d0e5e328257ef14a3dd09b1debea045671527",
+     "sha256": "7cea6482a8f67536e3108f01b688d54d198e5820ffcd0ac5a49652d38f6ec065"
+    },
+    {
+     "file": "ViolaEns_susvib_B2_v1_1.wav",
+     "note": "B2",
+     "layer": 1,
+     "bytes": 2861510,
+     "git_blob_sha1": "86e2428bca77c49d795e5e3d5be7dd9b022fce65",
+     "sha256": "ad96d747c5125adec8f069c49091ee3ba937efd4a5b909d3c4938f17e3c8513d"
+    },
+    {
+     "file": "ViolaEns_susvib_B2_v2_1.wav",
+     "note": "B2",
+     "layer": 2,
+     "bytes": 3268364,
+     "git_blob_sha1": "0f7bee6ccadc6e25a101cbd7be1c27ac6e896ea4",
+     "sha256": "edc77038a83f47cf49296c0009fdac23cb5ade3133a2beabd0d2d1f591ccf3cb"
+    },
+    {
+     "file": "ViolaEns_susvib_D3_v1_1.wav",
+     "note": "D3",
+     "layer": 1,
+     "bytes": 2789648,
+     "git_blob_sha1": "9a3a65b93d871964a666d6a86deec4d29425d828",
+     "sha256": "61ab4cfc0ea90c683433a7c50b3bb4fa86a81c9d4854589562707d54ed028349"
+    },
+    {
+     "file": "ViolaEns_susvib_D3_v2_1.wav",
+     "note": "D3",
+     "layer": 2,
+     "bytes": 3596756,
+     "git_blob_sha1": "2f6d74aa54f4f23889de311ff85d9f704fb600b9",
+     "sha256": "f941028c5d5e854b4391669056f0f639799f80ac7c8da3939c7788b1a394d16c"
+    },
+    {
+     "file": "ViolaEns_susvib_F3_v1_1.wav",
+     "note": "F3",
+     "layer": 1,
+     "bytes": 2487818,
+     "git_blob_sha1": "f9e0fa27802046cf9ed1e6b5625b6a815b3c09e8",
+     "sha256": "7a37f00ecb58fcaa5c32427a5ffb30950787b40c247409a8e18cfe0880955fd8"
+    },
+    {
+     "file": "ViolaEns_susvib_F3_v2_1.wav",
+     "note": "F3",
+     "layer": 2,
+     "bytes": 3471944,
+     "git_blob_sha1": "e6b387021b4b98c926d737b2d451037aad087d0e",
+     "sha256": "d281171e60b852451deecce57a6f5e9b623eea9632916336324c52c4ada6c750"
+    },
+    {
+     "file": "ViolaEns_susvib_G2_v1_1.wav",
+     "note": "G2",
+     "layer": 1,
+     "bytes": 2001644,
+     "git_blob_sha1": "7c6dbafbe1f5de539b5861515f1bf39987e354cb",
+     "sha256": "557c2e033951015c30765bf18266bce0dd0412e3ca646dd1a225c32422c60662"
+    },
+    {
+     "file": "ViolaEns_susvib_G2_v2_1.wav",
+     "note": "G2",
+     "layer": 2,
+     "bytes": 3637364,
+     "git_blob_sha1": "e8b4cc651229723bc4dcb781d715d6b995b5589d",
+     "sha256": "e3552ebd2d1ac5d089cd2424d31ea88be8d887643311cb23abf5b416838ce2ba"
+    }
+   ]
+  },
+  "strings_violin": {
+   "part": "pad",
+   "lib": "VSCO-2-CE",
+   "dir": "Strings/Violin Section/susVib",
+   "what": "VSCO 2 CE Violin Section, sustain with vibrato, 2 dynamics (v1, v2): the pad's upper voices (E4 and up)",
+   "files": [
+    {
+     "file": "VlnEns_susVib_C4_v1.wav",
+     "note": "C4",
+     "layer": 1,
+     "bytes": 2063320,
+     "git_blob_sha1": "6d81fcafba04ca992a8b85665a56e60337929ce0",
+     "sha256": "c07edd5b2119fa1da2207aba996961b50dd616f69bbcf2300ab271bc6c16239f"
+    },
+    {
+     "file": "VlnEns_susVib_E4_v1.wav",
+     "note": "E4",
+     "layer": 1,
+     "bytes": 2315540,
+     "git_blob_sha1": "838b43d3c9e763898817869d411ab26463b7464f",
+     "sha256": "787fb4bcfb47d5c88ee1573c8db15f32d345386301be4a8eea6a825847413ae2"
+    },
+    {
+     "file": "VlnEns_susVib_G4_v1.wav",
+     "note": "G4",
+     "layer": 1,
+     "bytes": 2330236,
+     "git_blob_sha1": "81d3994ebbf467cbbc88bb2d2ad0dd94d96e7e04",
+     "sha256": "ed2a89cf254432d2af073699fa43ebfa16cfbc5552c7fc964a184fc434eaaa39"
+    }
+   ]
+  },
+  "kick_vcsl": {
+   "part": "kick",
+   "lib": "VCSL",
+   "dir": "Membranophones/Struck Membranophones/Bass Drum 1",
+   "what": "VCSL Bass Drum 1, 4 dynamics (v2, v3, v5, v7), 2 round robins",
+   "files": [
+    {
+     "file": "BDrumNew_hit_v2_rr1_Sum.wav",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 281616,
+     "git_blob_sha1": "90e36064984ad741962e2f033e286bc16758b46c",
+     "sha256": "56827fe9b55f282a0db851e242bc24660d339a0e358b182966aea047240c1136"
+    },
+    {
+     "file": "BDrumNew_hit_v2_rr2_Sum.wav",
+     "layer": 1,
+     "rr": 2,
+     "bytes": 302396,
+     "git_blob_sha1": "eb9b718cd1b75df824f30ae07405ba0a111f1be7",
+     "sha256": "f1f8979de26f8efe278fe778da7bdce2a39fbfb9f2cbf345e38ce8c66f171b59"
+    },
+    {
+     "file": "BDrumNew_hit_v3_rr1_Sum.wav",
+     "layer": 2,
+     "rr": 1,
+     "bytes": 367124,
+     "git_blob_sha1": "5f068b40b13f887c170d574b916dd21927f545ca",
+     "sha256": "a2d8829e8b2b59e8afb12fa396b01758827059339c2a84ad066d17b36c82d1ff"
+    },
+    {
+     "file": "BDrumNew_hit_v3_rr2_Sum.wav",
+     "layer": 2,
+     "rr": 2,
+     "bytes": 354580,
+     "git_blob_sha1": "92756223015f024e235dc8a0543118cf048b7e82",
+     "sha256": "036c6c5fcfbcca845d92dbcdcef075ee6e0ae01636374a2f7dd1a696a7ba33f8"
+    },
+    {
+     "file": "BDrumNew_hit_v5_rr1_Sum.wav",
+     "layer": 3,
+     "rr": 1,
+     "bytes": 588092,
+     "git_blob_sha1": "6a3b5a0fdc56be45b6188c026b2221c31ba8ecb4",
+     "sha256": "642aaf3375eaff1307973f7de3ccbf74d18e71fb3cf9412e021b08fc3bf1981c"
+    },
+    {
+     "file": "BDrumNew_hit_v5_rr2_Sum.wav",
+     "layer": 3,
+     "rr": 2,
+     "bytes": 614388,
+     "git_blob_sha1": "cb6a7fc6201c4466ab5ea2a0bc62359a04d2ca37",
+     "sha256": "a83943f8125ae39469ef5dab1d0be2fe3145c6842c0621b27be5d86aa44b325d"
+    },
+    {
+     "file": "BDrumNew_hit_v7_rr1_Sum.wav",
+     "layer": 4,
+     "rr": 1,
+     "bytes": 1105152,
+     "git_blob_sha1": "93ebf3571cef69c65ba1acba1d746e5bfa6c7db8",
+     "sha256": "7024054e68261d2cca0ee58fdf9d6f23b54370792d04aa2c1ccf41acc090bd2b"
+    },
+    {
+     "file": "BDrumNew_hit_v7_rr2_Sum.wav",
+     "layer": 4,
+     "rr": 2,
+     "bytes": 993988,
+     "git_blob_sha1": "b76f283f9fffd4ad4d32689424e8562292021791",
+     "sha256": "fa4374b9ffdc3b9a3c85331ce96c447cf13e46d956cce9cfd9ba02801f71276f"
+    }
+   ]
+  },
+  "shaker_vcsl": {
+   "part": "perc",
+   "lib": "VCSL",
+   "dir": "Idiophones/Struck Idiophones/Shaker, Small",
+   "what": "VCSL small shaker, down and up strokes, 2 round robins",
+   "files": [
+    {
+     "file": "Mid_ShakerHighFaster_Down_rr1.wav",
+     "articulation": "HighFaster_Down",
+     "rr": 1,
+     "bytes": 31556,
+     "git_blob_sha1": "d04a94860571471202fbf14cfcb4cc90a15ef873",
+     "sha256": "cf4cb388ffcff5a042149e0645123b089ae85e8342876421e817dce55ce66a5a"
+    },
+    {
+     "file": "Mid_ShakerHighFaster_Down_rr2.wav",
+     "articulation": "HighFaster_Down",
+     "rr": 2,
+     "bytes": 24012,
+     "git_blob_sha1": "45d0c9daa1e7891595c4134ae72ef9eedc0536eb",
+     "sha256": "fa616e9ea22817bb75dfeb6a914440ea933696d43649d6c472f417617b741bd4"
+    },
+    {
+     "file": "Mid_ShakerHighFaster_Up_rr1.wav",
+     "articulation": "HighFaster_Up",
+     "rr": 1,
+     "bytes": 32196,
+     "git_blob_sha1": "831b3482793512402dfd6f015d4a3d4abf432e49",
+     "sha256": "45ae715ce4f64280c9d8fa7eacb4e7003127b93c59c08e95125b67b173cf98e0"
+    },
+    {
+     "file": "Mid_ShakerHighFaster_Up_rr2.wav",
+     "articulation": "HighFaster_Up",
+     "rr": 2,
+     "bytes": 24672,
+     "git_blob_sha1": "9529768151bd8f7b17883ceb339f2d2386d32610",
+     "sha256": "43511c3cf1522a3adf1f5533d443aa147e4a3e5272615e29485cb8efebc63dd2"
+    }
+   ]
+  },
+  "piano": {
+   "part": "kal",
+   "lib": "VCSL",
+   "dir": "Chordophones/Zithers/Upright Piano, Yamaha/Sustains",
+   "what": "VCSL Upright Piano (Yamaha, 'Upright No. 1' cleaned and remastered), sustain pedal off, 2 dynamics (vl1 with 2 round robins, vl2)",
+   "files": [
+    {
+     "file": "Upright1_Sus_C3_vl1_rr1.wav",
+     "note": "C3",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 3458012,
+     "git_blob_sha1": "d09854fe40e4b31eb3a354eea846ca10fbf82184",
+     "sha256": "a22976e015b2a4826bd67512eb9b62cc734cc6ef790255f37b683bf56cfe0256"
+    },
+    {
+     "file": "Upright1_Sus_C3_vl1_rr2.wav",
+     "note": "C3",
+     "layer": 1,
+     "rr": 2,
+     "bytes": 2890910,
+     "git_blob_sha1": "542b5bf9303f0c6a0ff6305478ef4245c6575a11",
+     "sha256": "efe916841ea499f97e9c5d5519ed72f575849402853b8a31eeada15b5b77617d"
+    },
+    {
+     "file": "Upright1_Sus_C4_vl1_rr1.wav",
+     "note": "C4",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 2536052,
+     "git_blob_sha1": "728369cd3c923e0f7f2efacbd57bce8730db0033",
+     "sha256": "4c8ae105fe25cee84c27b61a92a863bd0bb1ed05b40561d2c99557dd2cd598b5"
+    },
+    {
+     "file": "Upright1_Sus_C4_vl1_rr2.wav",
+     "note": "C4",
+     "layer": 1,
+     "rr": 2,
+     "bytes": 2722208,
+     "git_blob_sha1": "4f3547a0126e9a9bfb830c244caaed76f449986b",
+     "sha256": "2e55724c30212d8cced5a19445f315a8e6714d88d963c908c2b1715dda77caa5"
+    },
+    {
+     "file": "Upright1_Sus_C4_vl2_rr1.wav",
+     "note": "C4",
+     "layer": 2,
+     "rr": 1,
+     "bytes": 2964236,
+     "git_blob_sha1": "29efe51f08dcca83c476139a97fdc49aec6a9471",
+     "sha256": "39fdc55747ce7c0bd09215a357b577274c4c02928bf48972441ba6f47ec6e0a4"
+    },
+    {
+     "file": "Upright1_Sus_C5_vl1_rr1.wav",
+     "note": "C5",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 724508,
+     "git_blob_sha1": "932439e0d11482227b7cdef1564f36f03927aea2",
+     "sha256": "7bab9f242be9a32108ccea7fbce80191f02feb64ba1bdbc777a718c937ec4401"
+    },
+    {
+     "file": "Upright1_Sus_C5_vl1_rr2.wav",
+     "note": "C5",
+     "layer": 1,
+     "rr": 2,
+     "bytes": 1120100,
+     "git_blob_sha1": "e1f02a39395d17dade8304370917693ef1574a8c",
+     "sha256": "239fdbcad49f48e7c38cc9411433ec3d3146e9277993bba9c93cebcb7fb003d9"
+    },
+    {
+     "file": "Upright1_Sus_G3_vl1_rr1.wav",
+     "note": "G3",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 3339848,
+     "git_blob_sha1": "67af1f96067add47edb9c6b6af24b6821bb400b5",
+     "sha256": "1a261431459446c02407c810728e99787dba814c1c8ea4de3696a30b9d15facf"
+    },
+    {
+     "file": "Upright1_Sus_G3_vl1_rr2.wav",
+     "note": "G3",
+     "layer": 1,
+     "rr": 2,
+     "bytes": 2442050,
+     "git_blob_sha1": "856337bb26289940c96fd78625426db9fc8f23ff",
+     "sha256": "e9e5467d1b4525d057f8c1f33369e848dfe58f0cb83da8147cf789c7b040db39"
+    },
+    {
+     "file": "Upright1_Sus_G4_vl1_rr1.wav",
+     "note": "G4",
+     "layer": 1,
+     "rr": 1,
+     "bytes": 1130282,
+     "git_blob_sha1": "aad51653960268f5334deab86a5c56433f8ba472",
+     "sha256": "c826915b7d06f9a40f76e79f7038c05554260e964372c8cc47c4fbbb0b8e849f"
+    },
+    {
+     "file": "Upright1_Sus_G4_vl1_rr2.wav",
+     "note": "G4",
+     "layer": 1,
+     "rr": 2,
+     "bytes": 1044356,
+     "git_blob_sha1": "42112ed07425e6ed7ba2111073a55a5a96f247ae",
+     "sha256": "edad10e28597dd208c610935625a0ebd9241ae5d619f24621661b9b12aa14f0f"
+    },
+    {
+     "file": "Upright1_Sus_G4_vl2_rr1.wav",
+     "note": "G4",
+     "layer": 2,
+     "rr": 1,
+     "bytes": 1689146,
+     "git_blob_sha1": "5cdec52d39898e6ebbcc5d32c71ba041ed524ff0",
+     "sha256": "f6a8647d92a28553b596b7f072b1e4c2d79b5ecccbfd8a62dd20fdfce2490c16"
+    },
+    {
+     "file": "Upright1_Sus_G5_vl1_rr2.wav",
+     "note": "G5",
+     "layer": 1,
+     "rr": 2,
+     "bytes": 811244,
+     "git_blob_sha1": "96b437e9bc67af9672d3a098a67cf7050ddb26e7",
+     "sha256": "da091c6473034cfbd918662d4a7abcb40a8ed1055ba65e2b705fbf2f17f61396"
+    }
+   ]
+  }
+ }
+}

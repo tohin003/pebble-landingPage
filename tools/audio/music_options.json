@@ -1,13 +1,20 @@
 {
- "about": "Every music bed the film can use, with how to rebuild it. tools/audio/use_music.sh <id> rebuilds the bed in .work/audio/render/music_bed.wav, validates it and copies its beat map to tools/audio/beatmap.json. The film then re-snaps to the new map (MASTER_PLAN 6.2: a swap changes no picture work beyond that). Rubric scores and the selection are in docs/media-provenance.json.",
- "default": "original",
+ "about": "Every music bed the film can use, with how to rebuild it; 'default' is the film's current music. tools/audio/use_music.sh <id> rebuilds the bed in .work/audio/render/music_bed.wav, validates it and copies its beat map to tools/audio/beatmap.json. The film then re-snaps to the new map (MASTER_PLAN 6.2: a swap changes no picture work beyond that). Rubric scores and the selection are in docs/media-provenance.json.",
+ "default": "original-sampled",
  "options": {
+  "original-sampled": {
+   "title": "Pebble launch cue (sampled instruments)",
+   "kind": "sampled",
+   "beatmap": "tools/audio/beatmaps/original-sampled.json",
+   "build": ["tools/audio/render_sampled.py", "--seed", "7"],
+   "why": "Chosen (2026-10-23, HANDOFF-C2): the composed score, note for note, played on recorded CC0 instruments (VCSL, VSCO 2 CE). It passes every gate and scores 93/100, against 91 for the synthesised original."
+  },
   "original": {
    "title": "Pebble launch cue (original score)",
    "kind": "composed",
    "beatmap": "tools/audio/beatmaps/original.json",
    "build": ["tools/audio/compose_score.py", "--seed", "7"],
-   "why": "Chosen: no Mixkit candidate reached the 70/100 pass mark (MASTER_PLAN 6.2 gate), so the fallback score was composed to the film plan."
+   "why": "Alternate (the previous default): the same score synthesised in code. It passes every gate (91/100); the sampled rendering replaced it because recorded instruments sound more natural. It was composed because no Mixkit candidate reached the 70/100 pass mark (MASTER_PLAN 6.2 gate)."
   },
   "mixkit-431": {
    "title": "Young Trizzy 02", "artist": "Arulo", "kind": "mixkit", "mixkit_id": 431,

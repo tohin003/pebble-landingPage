@@ -1,12 +1,13 @@
 {
  "schema": "pebble-beatmap/1",
- "id": "original",
- "title": "Pebble launch cue (original score)",
+ "id": "original-sampled",
+ "title": "Pebble launch cue (sampled instruments)",
  "music": {
-  "source": "composed for this film (MASTER_PLAN 6.2 fallback B2)",
-  "generator": "tools/audio/compose_score.py --seed 7",
-  "rebuild": "tools/audio/use_music.sh original",
-  "licence": "part of the film media, (c) 2026 Tohin Majumder; no third-party material"
+  "source": "the composed score (tools/audio/compose_score.py --seed 7, the same notes) played on recorded instrument samples",
+  "generator": "tools/audio/render_sampled.py --seed 7",
+  "samples": "Versilian Community Sample Library (VCSL) and VS Chamber Orchestra: Community Edition (VSCO 2 CE), CC0 1.0; files, pinned commits and SHA-256: tools/audio/sample_kit.json",
+  "rebuild": "tools/audio/use_music.sh original-sampled",
+  "licence": "part of the film media, (c) 2026 Tohin Majumder; the instrument samples are CC0 1.0 (credit is courtesy)"
  },
  "bed_wav": ".work/audio/render/music_bed.wav",
  "fps": 30,
@@ -306,18 +307,18 @@
  "motif": "D5 A5 G#5 A5 (eighth, eighth, sixteenth, dotted eighth tied)",
  "key": "D major",
  "validation": {
-  "median_offset_ms": 1.12,
-  "median_abs_offset_ms": 1.27,
-  "max_abs_offset_ms": 30.08,
+  "median_offset_ms": 3.42,
+  "median_abs_offset_ms": 3.42,
+  "max_abs_offset_ms": 30.67,
   "within_1_frame_pct": 100.0,
   "downbeats_measured": 32,
   "downbeats_total": 32,
   "reveal": {
    "planned_frame": 504,
-   "attack_s": 16.801,
+   "attack_s": 16.80379,
    "attack_frame": 504,
-   "offset_ms": 1.0,
-   "strength": 439.8
+   "offset_ms": 3.79,
+   "strength": 455.1
   },
   "gates": {
    "median_abs_offset_le_5ms": true,

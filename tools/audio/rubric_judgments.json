@@ -63,6 +63,17 @@
                  "ending": [5, "a final D(add9) chord on bar 31 rings for 4.8 s"],
                  "breakdown": [4, "bars 26-28 drop drums and bass for the trust lines"]},
    "distinctiveness": [7, "its own four-note motif, written for Pebble; mallet minimalism is a known idiom"]
+  },
+  "original-sampled": {
+   "note": "Self-assessed by the agent that rendered it (HANDOFF-C2): the same composition, notes and form as 'original', played on recorded CC0 instruments. It needs the same one human listen before the film ships.",
+   "brand_fit": {"mood": [8, "the original's calm, warm, hopeful D major, unchanged: the same notes, dynamics and fader ride"],
+                 "instrumentation": [9, "recorded marimba, vibraphone, glockenspiel, upright piano, viola and violin sections, pizzicato double bass, bass drum and shaker (VCSL, VSCO 2 CE): the brief's acoustic and mallet palette, recorded, not synthesised (SoundAnalysis: marimba_xylophone 0.33, vibraphone 0.32, piano 0.29, glockenspiel 0.26; 'synthesizer' falls to 0.15, from 0.35 on the original). Not 10: SoundAnalysis hears the soft viola-section pad partly as french horn (up to 0.21), and the score's kalimba part is played on piano"],
+                 "register": [9, "low-key, written under the film's picture and sound effects; level-matched to the original's stem balance"]},
+   "structure": {"intro": [5, "the original's form: hook and tension bars 3-7 dB under the body"],
+                 "lift": [6, "the reveal on bar 8 (frame 504) after the empty breath beat"],
+                 "ending": [5, "the final D(add9) chord on bar 31 rings for 4.8 s"],
+                 "breakdown": [4, "bars 26-28 drop drums and bass for the trust lines"]},
+   "distinctiveness": [7, "the same four-note motif written for Pebble; mallet minimalism is a known idiom"]
   }
  }
 }

@@ -3,8 +3,8 @@
  "updated": "2026-10-23",
  "notice": "The films, loops and images are (c) 2026 Tohin Majumder and are not covered by the code licence (Apache-2.0). Audio is distributed only inside the rendered films, never as standalone files: no audio file is committed (.gitignore lists *.wav *.mp3 *.flac *.aiff *.m4a *.mov).",
  "music": {
-  "selected": "original",
-  "selected_title": "Pebble launch cue (original score)",
+  "selected": "original-sampled",
+  "selected_title": "Pebble launch cue (sampled instruments)",
   "selection_method": "MASTER_PLAN 6.1: shortlist from the cached Mixkit catalogue (281 tracks parsed from 18 category pages saved 2026-10-22; no new catalogue requests), Pebble-profile ranking from tags and public waveform envelopes (tools/audio/mixkit_rank_pebble.py), then a no-ears audition of the top 5 (analyze_track.py PNGs, all looked at; Apple SoundAnalysis via sound_tags; rubric_metrics.py), scored with tools/audio/score_rubric.py and tools/audio/rubric_judgments.json.",
   "audition_set_note": "The ranker's top three (282, 431, 79) plus the plan's two other seeds (817, 148). Places 4-5 were a four-way tie at 10.8; the waveform envelopes showed 682, 717 (and 713, 710) are solo piano with no lift to put a reveal on, 614 is melancholic with a 42 s intro, 250 repeats 282 (same artist, tags and shape), 351 has no intro and 1037 is the flattest.",
   "rubric": {
@@ -537,7 +537,7 @@
     }
    }
   ],
-  "decision": "No Mixkit candidate reached 70/100: the top stock score is 67 (431), which also fails the small-speaker gate like 282 (66); the best eligible track is 79 at 64. So the MASTER_PLAN 6.2 gate sends the film to the composed fallback. B1 (huashu-motion composer mode with its CC0 sample pack) could not be run: the session's permission system blocked executing that downloaded third-party CLI, so B2 was used: an original score rendered by our own code (tools/audio/compose_score.py, numpy + scipy + pedalboard), no samples and no third-party music. B1 stays available if the user approves running huashu-motion (pinned commit 52467f99c602b76ba86d511d37acdfe93fa1e16e).",
+  "decision": "No Mixkit candidate reached 70/100: the top stock score is 67 (431), which also fails the small-speaker gate like 282 (66); the best eligible track is 79 at 64. So the MASTER_PLAN 6.2 gate sends the film to the composed fallback. B1 (huashu-motion composer mode with its CC0 sample pack) could not be run: the session's permission system blocked executing that downloaded third-party CLI, so B2 was used: an original score rendered by our own code (tools/audio/compose_score.py, numpy + scipy + pedalboard), no samples and no third-party music. B1 stays available if the user approves running huashu-motion (pinned commit 52467f99c602b76ba86d511d37acdfe93fa1e16e). UPDATE 2026-10-23 (HANDOFF-C2): the user asked for a professional score, so the same composition is now played on recorded CC0 instrument samples (VCSL, VSCO 2 CE) by our own sampler (tools/audio/render_sampled.py; no downloaded code was run). The sampled bed passes every gate (beat grid, reveal, length; H9 small-speaker share and mono fold-down; SoundAnalysis; web and social loudness) and scores 93/100 against 91 for the synthesised original, so it is the default; the grid is identical, so no picture changes. The synthesised original stays one command away (tools/audio/use_music.sh original).",
   "licence_check": {
    "checked": "2026-10-23",
    "licence_url": "https://mixkit.co/license/#musicFree",
@@ -739,9 +739,19 @@
     },
     "pass": true
    },
-   "needs": "one human listen before the film ships (critic question 6); taste is the part an agent cannot verify"
+   "needs": "one human listen before the film ships (critic question 6); taste is the part an agent cannot verify",
+   "status": "alternate (the default until 2026-10-23); restore with tools/audio/use_music.sh original"
   },
   "alternates": [
+   {
+    "option": "original",
+    "title": "Pebble launch cue (original score, synthesised)",
+    "rubric_total": 91,
+    "why_not_chosen": "replaced by the same score on recorded instruments (93 vs 91); it still passes every gate",
+    "beatmap": "tools/audio/beatmaps/original.json",
+    "switch_with": "tools/audio/use_music.sh original",
+    "bed_sha256": "287466a9583a4d0d432d736983d316612d2a26ab59f02b50d98e245b5e44789a"
+   },
    {
     "option": "mixkit-431",
     "title": "Young Trizzy 02",
@@ -948,20 +958,1390 @@
   ],
   "mix_test": {
    "what": "the bed plus tools/audio/cues.example.json (19 cues on the beat map's frames) through tools/audio/mix_master.py",
-   "web_master": {
-    "target": "-16 LUFS, -1.7 dBTP before AAC",
-    "integrated_lufs": -16.01,
-    "true_peak_dbtp_4x": -1.69,
-    "lra_lu": 6.4
+   "original-sampled": {
+    "web_master": {
+     "I": -16.0,
+     "LRA": 6.9,
+     "TP": -1.7
+    },
+    "social_master": {
+     "I": -14.1,
+     "LRA": 6.7,
+     "TP": -1.5
+    },
+    "units": "I LUFS, LRA LU, TP dBTP (FFmpeg ebur128, true peak)",
+    "sound_analysis": "no alert, horn or voice label in any window's top 3; maxima in gates_A_B_C"
    },
-   "social_master": {
-    "target": "-14 LUFS (OVERRIDES 4)",
-    "integrated_lufs": -14.03,
-    "true_peak_dbtp_4x": -1.19,
-    "lra_lu": 6.3,
-    "note": "use --tp -1.5 for the social masters so the encoded AAC stays at or under -1.0 dBTP"
+   "original": {
+    "web_master": {
+     "target": "-16 LUFS, -1.7 dBTP before AAC",
+     "integrated_lufs": -16.01,
+     "true_peak_dbtp_4x": -1.69,
+     "lra_lu": 6.4
+    },
+    "social_master": {
+     "target": "-14 LUFS (OVERRIDES 4)",
+     "integrated_lufs": -14.03,
+     "true_peak_dbtp_4x": -1.19,
+     "lra_lu": 6.3,
+     "note": "use --tp -1.5 for the social masters so the encoded AAC stays at or under -1.0 dBTP"
+    },
+    "sound_analysis": "no speech, singing, siren, alarm or ringtone label in any window"
+   }
+  },
+  "sampled_score": {
+   "title": "Pebble launch cue (sampled instruments)",
+   "status": "the film's music (default since 2026-10-23, HANDOFF-C2)",
+   "what": "the composed score (tools/audio/compose_score.py --seed 7), note for note: the same pitches, rhythms, velocities, durations, pans and fader ride, played on recorded CC0 instrument samples by our own sampler",
+   "generator": "tools/audio/render_sampled.py --seed 7 (deterministic: the same command and kit rebuild the same file bit for bit)",
+   "rebuild": "tools/audio/use_music.sh original-sampled (fetches and verifies the kit, renders, validates, copies the beat map)",
+   "bed": {
+    "path": ".work/audio/render/music_bed.wav (not committed)",
+    "sha256": "69fc17d3c9657c42bd7b1bb3683ce6ccc23400b56fd20f6f7061648fc9d6153e",
+    "format": "48 kHz, 24-bit, 76.8 s, -18 LUFS (un-mastered bed)"
    },
-   "sound_analysis": "no speech, singing, siren, alarm or ringtone label in any window"
+   "events_from": "compose_score.py --events (a recording-only refactor: the synthesised bed re-renders bit-identically, SHA-256 287466a9583a4d0d432d736983d316612d2a26ab59f02b50d98e245b5e44789a before and after)",
+   "instruments": {
+    "mallet": {
+     "kit": [
+      "marimba"
+     ],
+     "what": [
+      "VCSL Marimba (Outrigger mallets), 3 dynamics: soft, med, loud"
+     ]
+    },
+    "vibes": {
+     "kit": [
+      "vibes"
+     ],
+     "what": [
+      "VCSL Vibraphone, soft mallets, 2 dynamics (v1, v2), motor off"
+     ]
+    },
+    "kal": {
+     "kit": [
+      "piano"
+     ],
+     "what": [
+      "VCSL Upright Piano (Yamaha, 'Upright No. 1' cleaned and remastered), sustain pedal off, 2 dynamics (vl1 with 2 round robins, vl2)"
+     ]
+    },
+    "glock": {
+     "kit": [
+      "glock"
+     ],
+     "what": [
+      "VCSL Glockenspiel, soft"
+     ]
+    },
+    "pad": {
+     "kit": [
+      "strings_viola",
+      "strings_violin"
+     ],
+     "what": [
+      "VSCO 2 CE Viola Section, sustain with vibrato, 2 dynamics (v1, v2): the pad's lower voices (up to D4)",
+      "VSCO 2 CE Violin Section, sustain with vibrato, 2 dynamics (v1, v2): the pad's upper voices (E4 and up)"
+     ]
+    },
+    "bass": {
+     "kit": [
+      "bass"
+     ],
+     "what": [
+      "VSCO 2 CE Solo Contrabass pizzicato, 2 dynamics where recorded (v1, v3), 2 round robins"
+     ]
+    },
+    "kick": {
+     "kit": [
+      "kick_vcsl"
+     ],
+     "what": [
+      "VCSL Bass Drum 1, 4 dynamics (v2, v3, v5, v7), 2 round robins"
+     ]
+    },
+    "perc": {
+     "kit": [
+      "shaker_vcsl"
+     ],
+     "what": [
+      "VCSL small shaker, down and up strokes, 2 round robins"
+     ]
+    }
+   },
+   "mapping_notes": [
+    "the score's kalimba part is played on the upright piano: the recorded kalimba (VCSL, Tanzania) was tried first; SoundAnalysis heard its tines as cowbell (0.49), bell (0.63), ringtone (0.40) and telephone (0.36), so it was dropped",
+    "the pad is the viola section; the violin section plays its upper octave (B4 and up); violins on the pad's top voices were tried and made the opening read as a telephone (0.25)",
+    "two bass-drum and two shaker candidates were compared by envelope and spectrum; VCSL Bass Drum 1 (deeper, cleaner, closest to the original felt kick) and the VCSL small shaker (down/up strokes with round robins) were kept"
+   ],
+   "method": {
+    "pitch": "nearest sampled note in the velocity layer, pitch-shifted with soxr (VHQ resampling) from the sample's measured pitch (libraries name middle C 'C3': sounding = name + 12 semitones, measured on every file; median |offset| from the name 2.0 cents, max 34.2); max shift per part (semitones): {'mallet': 3.046, 'vibes': 2.0, 'kal': 2.981, 'glock': 1.879, 'pad': 2.036, 'bass': 2.047, 'kick': 0.0, 'perc': 0.0}",
+    "layers_round_robins": "velocity layers and round robins where recorded; elsewhere +-3 cents and +-0.4 dB per hit",
+    "timing": "samples trimmed to their measured onset (0.5 ms pre-roll; one bass take, BKCtbss_Pizz_G0_v3_rr2, opens with 17 ms of handling noise and has its onset set by hand); the shaker's stroke peak lands 4 ms after the note",
+    "humanisation": {
+     "timing_ms_max_abs": 5.0,
+     "timing_ms_sd": 1.33,
+     "velocity_pct_max": 6.0,
+     "downbeats_and_exact_notes": "on the grid (0 ms)"
+    },
+    "transients": "bass drum and pizzicato through a transient shaper (attack +5 / +4 dB; the 20-60 ms bloom of their low end held at the attack's level) so their thump peaks on the hit; without it the validator read the low end 10-30 ms late",
+    "tails": "vibraphone pedal-up after the written hold with the score's 3.2 Hz motor; bass hand-damped after its written length; piano keys released after 1.4 s; string swell and release as written",
+    "mix": "bus levels calibrated to the original score's measured stem loudness, then offsets (dB) {'mallet': -1.5, 'bass': 0.0, 'vibes': 0.0, 'kick': 2.0, 'kal': 3.0, 'pad': 0.5, 'glock': 0.0, 'perc': 0.0}; per-part EQ; the bass low-passed at 3 kHz (4th order); a convolution hall from an impulse response synthesised in render_sampled.py (no third-party IR); the score's fader ride; two final-bar touches (the marimba roll 6 dB softer and the strings' final chord 3 dB softer: on recorded instruments the roll under the strings read as 'foghorn' 0.6-0.9); light bus compression (1.6:1) and a brick-wall limiter 13 dB above the loudness (it never engages on this mix); normalised to -18 LUFS like compose_score.py"
+   },
+   "samples": {
+    "libraries": {
+     "VCSL": {
+      "title": "Versilian Community Sample Library (VCSL)",
+      "by": "Versilian Studios LLC (Sam Gossner) and contributors",
+      "repo": "sgossner/VCSL",
+      "url": "https://github.com/sgossner/VCSL",
+      "commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+      "commit_date": "2026-01-14",
+      "licence": "CC0 1.0 Universal",
+      "licence_file": "LICENSE",
+      "licence_sha256": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499",
+      "licence_quotes": [
+       "Creative Commons Legal Code",
+       "CC0 1.0 Universal",
+       "2. Waiver. To the greatest extent permitted by, but not in contravention of, applicable law, Affirmer hereby overtly, fully, permanently, irrevocably and unconditionally waives, abandons, and surrenders all of Affirmer's Copyright and Related Rights and associated claims and causes of action"
+      ],
+      "readme_quotes": [
+       "The Versilian Community Sample Library is an open CC0 general-purpose sample library created by Versilian Studios LLC",
+       "This collection is under a Creative Commons 0 license. Essentially it's Public Domain- you can do whatever you want with these sounds (even make commercial software), no royalties, no credit, no special terms."
+      ],
+      "github_api_licence": "cc0-1.0 (Creative Commons Zero v1.0 Universal)"
+     },
+     "VSCO-2-CE": {
+      "title": "VS Chamber Orchestra: Community Edition (VSCO 2 CE)",
+      "by": "Versilian Studios LLC; recorded by Sam Gossner and Simon Dalzell (Ivy Audio); sample cutting by Elan Hickler (Soundemote)",
+      "repo": "sgossner/VSCO-2-CE",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "homepage": "http://vis.versilstudios.net/vsco-community.html",
+      "commit": "440300901dfe9275fd84e0b7763af1f8443ae62e",
+      "commit_date": "2020-08-05",
+      "licence": "CC0 1.0 Universal",
+      "licence_file": "LICENSE",
+      "licence_sha256": "36ffd9dc085d529a7e60e1276d73ae5a030b020313e6c5408593a6ae2af39673",
+      "licence_quotes": [
+       "CC0 1.0 Universal",
+       "2. Waiver. To the greatest extent permitted by, but not in contravention of, applicable law, Affirmer hereby overtly, fully, permanently, irrevocably and unconditionally waives, abandons, and surrenders all of Affirmer's Copyright and Related Rights and associated claims and causes of action"
+      ],
+      "readme_quotes": [
+       "You are permitted to use these samples for ANY purpose. We ask that you do not sell the samples directly, and encourage you to keep any work done on improving the sample set open and public.",
+       "Please provide credit to Versilian Studios/Sam Gossner, and/or Ivy Audio/Simon Dalzell where applicable, and link to the VSCO: CE homepage."
+      ],
+      "readme_file": "Readme.txt",
+      "github_api_licence": "cc0-1.0 (Creative Commons Zero v1.0 Universal)"
+     }
+    },
+    "kit": "tools/audio/sample_kit.json (fetch and verify: tools/audio/sample_kit.py fetch)",
+    "verification": "every file is checked against the git blob SHA-1 of the pinned commit's tree and its recorded SHA-256; the libraries' LICENSE texts are hashed too",
+    "files_used": 85,
+    "bytes_used": 113062396,
+    "fetched_then_deleted": "17 VCSL kalimba files (replaced by the piano), 15 VSCO 2 CE bass-drum and shaker candidates, 39 layers/round robins/notes this score never plays, and 2 probe files used only to measure the libraries' octave naming; their URLs and SHA-256 stay in tools/audio/sha256-sources.txt",
+    "files": [
+     {
+      "library": "VCSL",
+      "instrument": "marimba",
+      "part": "mallet",
+      "path": "Idiophones/Struck Idiophones/Marimba/Marimba_hit_Outrigger_B2_med_01.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Marimba/Marimba_hit_Outrigger_B2_med_01.wav",
+      "bytes": 1495616,
+      "git_blob_sha1": "c936311bb0a094e7a6625f3c8a4914754242583d",
+      "sha256": "4d0ffc47858d0c4545191eef3240d470c40df1c090841c0fb2ae2f47900794ee"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "marimba",
+      "part": "mallet",
+      "path": "Idiophones/Struck Idiophones/Marimba/Marimba_hit_Outrigger_B2_soft_01.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Marimba/Marimba_hit_Outrigger_B2_soft_01.wav",
+      "bytes": 1406594,
+      "git_blob_sha1": "a8d92ac62a6008d29c60d6fb39674f77cfe6ca57",
+      "sha256": "10e4a47853920c93423fd72f224e46bf1bce60319d5e7ae501d1b8431ec7d78a"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "marimba",
+      "part": "mallet",
+      "path": "Idiophones/Struck Idiophones/Marimba/Marimba_hit_Outrigger_B4_med_01.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Marimba/Marimba_hit_Outrigger_B4_med_01.wav",
+      "bytes": 433802,
+      "git_blob_sha1": "9393bece679f9d698a8b8acf81be463c07247576",
+      "sha256": "d676b76e3850d85333c85b1fc77d20f4524ff2e9e6f03551f52c5b22fbe8ab30"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "marimba",
+      "part": "mallet",
+      "path": "Idiophones/Struck Idiophones/Marimba/Marimba_hit_Outrigger_B4_soft_01.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Marimba/Marimba_hit_Outrigger_B4_soft_01.wav",
+      "bytes": 492602,
+      "git_blob_sha1": "e6935a398d8cec04a8e23c58c78d44a9ac066620",
+      "sha256": "278f5123442162e7946fa68a48ed650e3838b1ddcd3e2173d3ea69f30079c534"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "marimba",
+      "part": "mallet",
+      "path": "Idiophones/Struck Idiophones/Marimba/Marimba_hit_Outrigger_C4_med_01.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Marimba/Marimba_hit_Outrigger_C4_med_01.wav",
+      "bytes": 655244,
+      "git_blob_sha1": "85c657dd0a8f58808efad5e9184d5b9124285512",
+      "sha256": "3e88c006eef05e8f7891f8f6027042006199a4ec3b53a0ad7308f9782a52d4df"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "marimba",
+      "part": "mallet",
+      "path": "Idiophones/Struck Idiophones/Marimba/Marimba_hit_Outrigger_C4_soft_01.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Marimba/Marimba_hit_Outrigger_C4_soft_01.wav",
+      "bytes": 915446,
+      "git_blob_sha1": "6ccd29800db58963dd91136ea426b895d703bb22",
+      "sha256": "4d03d005166e8b366e6a983b7a4a89e0847e1d58a6d34dda35ddf74289cace94"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "marimba",
+      "part": "mallet",
+      "path": "Idiophones/Struck Idiophones/Marimba/Marimba_hit_Outrigger_F3_med_01.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Marimba/Marimba_hit_Outrigger_F3_med_01.wav",
+      "bytes": 1382924,
+      "git_blob_sha1": "2c74c56eba169268ec3e74bc2de31fb282716a58",
+      "sha256": "a493b31ac2e588ed961c522a66b790acc584b59a08918bd7193d6e6fa8df4756"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "marimba",
+      "part": "mallet",
+      "path": "Idiophones/Struck Idiophones/Marimba/Marimba_hit_Outrigger_F3_soft_01.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Marimba/Marimba_hit_Outrigger_F3_soft_01.wav",
+      "bytes": 1455272,
+      "git_blob_sha1": "520e49115bc66a7f3a57a09ba8999abd02e7a7b0",
+      "sha256": "6eb7ccf5fa10b1bdaf10f0cc7a50d8c42ef086636a9e88c6527fb3af58e5ee1f"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "marimba",
+      "part": "mallet",
+      "path": "Idiophones/Struck Idiophones/Marimba/Marimba_hit_Outrigger_G4_med_01.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Marimba/Marimba_hit_Outrigger_G4_med_01.wav",
+      "bytes": 580262,
+      "git_blob_sha1": "be84c27de4fea671b78c82591aa6d6f98c06619e",
+      "sha256": "278e738d8214cdc192e63c3350b1e464a72c86dc135ddf0c5ce035569be66c71"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "marimba",
+      "part": "mallet",
+      "path": "Idiophones/Struck Idiophones/Marimba/Marimba_hit_Outrigger_G4_soft_01.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Marimba/Marimba_hit_Outrigger_G4_soft_01.wav",
+      "bytes": 860570,
+      "git_blob_sha1": "2aa39578faced00688851f5705857170aa656055",
+      "sha256": "d3e23f018b091a60d91c3c93b38b605d02a9e26c7cf5830ffb866cfe84130cd0"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "vibes",
+      "part": "vibes",
+      "path": "Idiophones/Struck Idiophones/Vibraphone/Soft Mallets/Vibes_soft_A2_v1_rr1_Main.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Vibraphone/Soft%20Mallets/Vibes_soft_A2_v1_rr1_Main.wav",
+      "bytes": 1811676,
+      "git_blob_sha1": "5e0049f968a46453e531d235c55dec82d7cda29d",
+      "sha256": "b6e23a94322107d0ab884d7c38e51be538eb45f613c6a24e980c2261151bed75"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "vibes",
+      "part": "vibes",
+      "path": "Idiophones/Struck Idiophones/Vibraphone/Soft Mallets/Vibes_soft_A4_v2_rr1_Main.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Vibraphone/Soft%20Mallets/Vibes_soft_A4_v2_rr1_Main.wav",
+      "bytes": 2388580,
+      "git_blob_sha1": "f49a1fadfdbc378aacbfbb2a57a6fb434dd90ede",
+      "sha256": "fb507c5cb2f2023289fdf1384092f3c5e13f03a2b5b1c39f6792cc57aa77d58d"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "vibes",
+      "part": "vibes",
+      "path": "Idiophones/Struck Idiophones/Vibraphone/Soft Mallets/Vibes_soft_B3_v1_rr1_Main.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Vibraphone/Soft%20Mallets/Vibes_soft_B3_v1_rr1_Main.wav",
+      "bytes": 1850652,
+      "git_blob_sha1": "bacab8cdb0f85f9f4f28a1654ded6811318bb9f8",
+      "sha256": "7edfbd70f93781d2cbb17c2fc8befe474de9987c6353db2358af4e13a0269345"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "vibes",
+      "part": "vibes",
+      "path": "Idiophones/Struck Idiophones/Vibraphone/Soft Mallets/Vibes_soft_B3_v2_rr1_Main.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Vibraphone/Soft%20Mallets/Vibes_soft_B3_v2_rr1_Main.wav",
+      "bytes": 2851524,
+      "git_blob_sha1": "c2050a8979ad5673be81c0466833014736254977",
+      "sha256": "9d2466c4d3375f2eb24c57f17e15736052a5492d6c84b876c1d0a4997eea99a0"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "vibes",
+      "part": "vibes",
+      "path": "Idiophones/Struck Idiophones/Vibraphone/Soft Mallets/Vibes_soft_C3_v1_rr2_Main.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Vibraphone/Soft%20Mallets/Vibes_soft_C3_v1_rr2_Main.wav",
+      "bytes": 1815048,
+      "git_blob_sha1": "8413d99c880ff57e696be5ca4de5eb2b0774aabd",
+      "sha256": "1dda9a4c3205c365345d66dcb68c8e09c0dca76a310b8fe8108e43c7e8c1cd0a"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "vibes",
+      "part": "vibes",
+      "path": "Idiophones/Struck Idiophones/Vibraphone/Soft Mallets/Vibes_soft_C5_v2_rr1_Main.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Vibraphone/Soft%20Mallets/Vibes_soft_C5_v2_rr1_Main.wav",
+      "bytes": 1161864,
+      "git_blob_sha1": "7896c7155ca938445cf59e16c779c4504e911630",
+      "sha256": "129c5661e386f3c08a4f777c108815f174d96e02f5fb4b4026a9437905327847"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "vibes",
+      "part": "vibes",
+      "path": "Idiophones/Struck Idiophones/Vibraphone/Soft Mallets/Vibes_soft_D4_v2_rr1_Main.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Vibraphone/Soft%20Mallets/Vibes_soft_D4_v2_rr1_Main.wav",
+      "bytes": 2625224,
+      "git_blob_sha1": "88e93ea2798d9583c81a867a8a27c7559c873c35",
+      "sha256": "aa5626038a653de08057e1dae8a7160b12f2ce26c85a525bc545b8d14843ce80"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "vibes",
+      "part": "vibes",
+      "path": "Idiophones/Struck Idiophones/Vibraphone/Soft Mallets/Vibes_soft_E3_v1_rr2_Main.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Vibraphone/Soft%20Mallets/Vibes_soft_E3_v1_rr2_Main.wav",
+      "bytes": 2081904,
+      "git_blob_sha1": "19a3cc3b74fb64d19a9e6995f634685ab41a90f6",
+      "sha256": "620a241017d0de0e6cb789c97d439401f25d659d08f753746690632e71de8f0b"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "vibes",
+      "part": "vibes",
+      "path": "Idiophones/Struck Idiophones/Vibraphone/Soft Mallets/Vibes_soft_E3_v2_rr1_Main.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Vibraphone/Soft%20Mallets/Vibes_soft_E3_v2_rr1_Main.wav",
+      "bytes": 2665284,
+      "git_blob_sha1": "3e5d93391a1e94724a6e2e2cb2f75181ea78e2dc",
+      "sha256": "268f0a703ca5e394533913bce3760e8c06661a5d72841601ade887ea72a00312"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "vibes",
+      "part": "vibes",
+      "path": "Idiophones/Struck Idiophones/Vibraphone/Soft Mallets/Vibes_soft_F4_v1_rr1_Main.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Vibraphone/Soft%20Mallets/Vibes_soft_F4_v1_rr1_Main.wav",
+      "bytes": 1368508,
+      "git_blob_sha1": "0e230262665e212a99cab1a11cfdad30b9977492",
+      "sha256": "95b7d6eeb71d77cce607c0c52b0a6dfd23d0eeedc2eb393fb9a6c5a5768f4aa5"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "vibes",
+      "part": "vibes",
+      "path": "Idiophones/Struck Idiophones/Vibraphone/Soft Mallets/Vibes_soft_F4_v2_rr1_Main.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Vibraphone/Soft%20Mallets/Vibes_soft_F4_v2_rr1_Main.wav",
+      "bytes": 2027468,
+      "git_blob_sha1": "ec0b4f8a15407cf79e943c7e895a0292947e7de1",
+      "sha256": "76c2813ea1e87870dfbf3035360af46aee54214eda5e95b03bffb83f64a89b1c"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "vibes",
+      "part": "vibes",
+      "path": "Idiophones/Struck Idiophones/Vibraphone/Soft Mallets/Vibes_soft_G3_v1_rr1_Main.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Vibraphone/Soft%20Mallets/Vibes_soft_G3_v1_rr1_Main.wav",
+      "bytes": 2519544,
+      "git_blob_sha1": "36a655b6f107c87cd5e7ed06aa1805449600576a",
+      "sha256": "9b479e4c84fb1caafba8c1c106a8922cea20bba81c37d65f93afae339626767f"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "glock",
+      "part": "glock",
+      "path": "Idiophones/Struck Idiophones/Glockenspiel/glock_soft_C5_02.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Glockenspiel/glock_soft_C5_02.wav",
+      "bytes": 709206,
+      "git_blob_sha1": "b68621c4f4fc482284bc8e848ea2d2654366d49e",
+      "sha256": "4fa149e6f224557df5fab98ad660a8f192bc6fbf2556077dd1089509bf4424e2"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "glock",
+      "part": "glock",
+      "path": "Idiophones/Struck Idiophones/Glockenspiel/glock_soft_G5_01.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Glockenspiel/glock_soft_G5_01.wav",
+      "bytes": 706962,
+      "git_blob_sha1": "2de4932c129eaacdb2ec9e6e9795cdf00e112cf7",
+      "sha256": "73f6a6de89291d0292b303d641444de5e6e1561881f09f6cf20d77f245f7bec3"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A#0_v1_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_A%230_v1_rr1.wav",
+      "bytes": 344328,
+      "git_blob_sha1": "6b42c2b752ac8aa098fa512b1c068229036f9d55",
+      "sha256": "c172382a1c8db63d1893e909da3c0f7f96a60371dce0cfe712e64fd622066fbe"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A#0_v1_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_A%230_v1_rr2.wav",
+      "bytes": 326372,
+      "git_blob_sha1": "74b090dd2b40841aa3657f35859ae5810ed3344e",
+      "sha256": "a82a509344a7e03e81f937b0daf647d55c3d47ec01867deeb41463d1d39209af"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A#0_v3_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_A%230_v3_rr1.wav",
+      "bytes": 417360,
+      "git_blob_sha1": "b5525c15a77e1871feb42f70cc17a6650aee4355",
+      "sha256": "ffdcf783332627d78bb09c348ce5bbf64e833d529a1cfd48e05362f27a857c0a"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A#0_v3_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_A%230_v3_rr2.wav",
+      "bytes": 458396,
+      "git_blob_sha1": "3bcb6e93918b0e8355867acfcaca87106e421b23",
+      "sha256": "47ca23f0950ab1ad7c07fd3d4743d826985cc3b79f997c372ead51ebd538a60b"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A1_v1_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_A1_v1_rr1.wav",
+      "bytes": 623260,
+      "git_blob_sha1": "311a5027a127715530f1e723a21f7927d280d493",
+      "sha256": "c88e632ac4f716d4e85112d6ea5bbe2d27d67019296787c25d27178a9e5f18ac"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A1_v1_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_A1_v1_rr2.wav",
+      "bytes": 485472,
+      "git_blob_sha1": "4ccbcc407cdc07f124f6523d50778d8e77ac2aad",
+      "sha256": "e7aaefac5eb3986fcec86040e1f7310e84ea38be5d13abe2b3de101c41f43b2b"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_C#2_v1_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_C%232_v1_rr1.wav",
+      "bytes": 513824,
+      "git_blob_sha1": "16b7ca596182a49fe693b81ed925df8d2fc1be59",
+      "sha256": "41804fc70cf82bd1c475611e315b14b1adf5effbd3369028302a681b54064b3f"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_C1_v1_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_C1_v1_rr1.wav",
+      "bytes": 270720,
+      "git_blob_sha1": "46a4f947083669e7281be98b16c89b434529ea9e",
+      "sha256": "5591160a867b21ba193d601390c9e1f35ec8d5deb0de686a410d25a98a103b06"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_C1_v1_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_C1_v1_rr2.wav",
+      "bytes": 405984,
+      "git_blob_sha1": "aa16603fb7d318a87c47abf01e3ea321cdc78418",
+      "sha256": "d880b29cafc4b537a5097c9b65a7e20d1be15d60efaf7ceb15e20517b6ad455b"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_C1_v3_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_C1_v3_rr1.wav",
+      "bytes": 400396,
+      "git_blob_sha1": "eb8c1aa8049e386288b71b7678098352a0c8f037",
+      "sha256": "706d82ca773408bb6cd6f22466d5d017c1d36a9055f3a6b6af864407b26c5a0d"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_C1_v3_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_C1_v3_rr2.wav",
+      "bytes": 384920,
+      "git_blob_sha1": "974926b4eda1088bb5c7865de6712acc7803d304",
+      "sha256": "242a0638d0571084b3a40da3a21a3f2dd67585e31601babf85f4251b4f67a3d3"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_D1_v1_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_D1_v1_rr1.wav",
+      "bytes": 856252,
+      "git_blob_sha1": "623693ad1479a3e1da230fe62b8d012406412d86",
+      "sha256": "c4db29ae6949cb6c0d24201bb444c1d5b3806505bae47785cb199f5f0f4f02d2"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_D1_v1_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_D1_v1_rr2.wav",
+      "bytes": 1062672,
+      "git_blob_sha1": "6b66446765a55ddcad2fbfdf3b47fdc6737bc540",
+      "sha256": "4f17f7c828a9d9123c8c6498a27aa6b7a2772a5b937183f3d622f41f56ce21ce"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E1_v1_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_E1_v1_rr1.wav",
+      "bytes": 294356,
+      "git_blob_sha1": "da8962289a777507e94094c6dde7131916ca1b64",
+      "sha256": "818fd3e7cc5200774333fc5dbb37e021ed0f155918cafe129acc0e90d37f9d49"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E1_v1_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_E1_v1_rr2.wav",
+      "bytes": 315292,
+      "git_blob_sha1": "3326b2b4ae5a4bc6156e7ec8ce5adaca94e867e5",
+      "sha256": "9b87c1440edb95a70ca997ac83cff0d0e84c176f6269a59f86ce381f339f09ce"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E1_v3_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_E1_v3_rr1.wav",
+      "bytes": 518876,
+      "git_blob_sha1": "1cada4277b16b2eb8b240d4a6da4bbd3aca989a0",
+      "sha256": "7628daebe4a9f8524d46e6d58eee811f437e73c77eb6c21396152af58a062506"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E1_v3_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_E1_v3_rr2.wav",
+      "bytes": 445256,
+      "git_blob_sha1": "9033e53e840a4ca791ff0ae57bd1f171bc5a310c",
+      "sha256": "496f50ac55ae948b2a155fd06a9bc430118b9725eb638c1673ae3c389203ae91"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_F#1_v1_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_F%231_v1_rr1.wav",
+      "bytes": 868632,
+      "git_blob_sha1": "757d0487bc7ad3461aac13cdce1999fabb3952b3",
+      "sha256": "6f91a2747ce3cea061c670f7bf5dc8611eef1c3af8d6e2dca75b6dac5a65bfc6"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_G#1_v1_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_G%231_v1_rr1.wav",
+      "bytes": 601752,
+      "git_blob_sha1": "1b3774619e9ae958177bc6bd4429d32fbef0c0c8",
+      "sha256": "bf377a41759c17794901957edc89ff48fb405f98879549916d9b228492f7f8d1"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_G#1_v1_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_G%231_v1_rr2.wav",
+      "bytes": 537212,
+      "git_blob_sha1": "51b5c8bbabf1760a072fc557652fb84bcaf827d8",
+      "sha256": "25ff38b5300151dd040fd4934e67dc668d3d63a66c4733d9971428116d1b08bc"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_G0_v1_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_G0_v1_rr1.wav",
+      "bytes": 169640,
+      "git_blob_sha1": "45d11b0a0545d59407f740b938461b205e8c91cb",
+      "sha256": "6c8ed06c816b2aee6443a3df4d8c24dd05d1e6fa72595d47b0e3755cd251e60f"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_G0_v1_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_G0_v1_rr2.wav",
+      "bytes": 240624,
+      "git_blob_sha1": "968cf37ef77070e116c8f665d0242af1287530fc",
+      "sha256": "805a41b3a153a8601c9308a106c33604030ff7f3c0c944a92b25663a1baa7873"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_G0_v3_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_G0_v3_rr1.wav",
+      "bytes": 636880,
+      "git_blob_sha1": "219542998cac263bb0b5bd03ab02fd6bbdcb3d21",
+      "sha256": "9dc3c010e20999e524a7694abf27c12fb55296f2d9946d70917fa82b1d076136"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "bass",
+      "part": "bass",
+      "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_G0_v3_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_G0_v3_rr2.wav",
+      "bytes": 713924,
+      "git_blob_sha1": "09b63873d4e3070f2d0c513f69cb827ed83911c0",
+      "sha256": "7f64d7d6f6309ab622cc0e070c6d50274f73d3f483e4067a05647fb89a6f51c8",
+      "onset_ms": 17.0
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "strings_viola",
+      "part": "pad",
+      "path": "Strings/Viola Section/susvib/ViolaEns_susvib_A3_v1_1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Viola%20Section/susvib/ViolaEns_susvib_A3_v1_1.wav",
+      "bytes": 2491352,
+      "git_blob_sha1": "a57d0e5e328257ef14a3dd09b1debea045671527",
+      "sha256": "7cea6482a8f67536e3108f01b688d54d198e5820ffcd0ac5a49652d38f6ec065"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "strings_viola",
+      "part": "pad",
+      "path": "Strings/Viola Section/susvib/ViolaEns_susvib_B2_v1_1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Viola%20Section/susvib/ViolaEns_susvib_B2_v1_1.wav",
+      "bytes": 2861510,
+      "git_blob_sha1": "86e2428bca77c49d795e5e3d5be7dd9b022fce65",
+      "sha256": "ad96d747c5125adec8f069c49091ee3ba937efd4a5b909d3c4938f17e3c8513d"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "strings_viola",
+      "part": "pad",
+      "path": "Strings/Viola Section/susvib/ViolaEns_susvib_B2_v2_1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Viola%20Section/susvib/ViolaEns_susvib_B2_v2_1.wav",
+      "bytes": 3268364,
+      "git_blob_sha1": "0f7bee6ccadc6e25a101cbd7be1c27ac6e896ea4",
+      "sha256": "edc77038a83f47cf49296c0009fdac23cb5ade3133a2beabd0d2d1f591ccf3cb"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "strings_viola",
+      "part": "pad",
+      "path": "Strings/Viola Section/susvib/ViolaEns_susvib_D3_v1_1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Viola%20Section/susvib/ViolaEns_susvib_D3_v1_1.wav",
+      "bytes": 2789648,
+      "git_blob_sha1": "9a3a65b93d871964a666d6a86deec4d29425d828",
+      "sha256": "61ab4cfc0ea90c683433a7c50b3bb4fa86a81c9d4854589562707d54ed028349"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "strings_viola",
+      "part": "pad",
+      "path": "Strings/Viola Section/susvib/ViolaEns_susvib_D3_v2_1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Viola%20Section/susvib/ViolaEns_susvib_D3_v2_1.wav",
+      "bytes": 3596756,
+      "git_blob_sha1": "2f6d74aa54f4f23889de311ff85d9f704fb600b9",
+      "sha256": "f941028c5d5e854b4391669056f0f639799f80ac7c8da3939c7788b1a394d16c"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "strings_viola",
+      "part": "pad",
+      "path": "Strings/Viola Section/susvib/ViolaEns_susvib_F3_v1_1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Viola%20Section/susvib/ViolaEns_susvib_F3_v1_1.wav",
+      "bytes": 2487818,
+      "git_blob_sha1": "f9e0fa27802046cf9ed1e6b5625b6a815b3c09e8",
+      "sha256": "7a37f00ecb58fcaa5c32427a5ffb30950787b40c247409a8e18cfe0880955fd8"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "strings_viola",
+      "part": "pad",
+      "path": "Strings/Viola Section/susvib/ViolaEns_susvib_F3_v2_1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Viola%20Section/susvib/ViolaEns_susvib_F3_v2_1.wav",
+      "bytes": 3471944,
+      "git_blob_sha1": "e6b387021b4b98c926d737b2d451037aad087d0e",
+      "sha256": "d281171e60b852451deecce57a6f5e9b623eea9632916336324c52c4ada6c750"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "strings_viola",
+      "part": "pad",
+      "path": "Strings/Viola Section/susvib/ViolaEns_susvib_G2_v1_1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Viola%20Section/susvib/ViolaEns_susvib_G2_v1_1.wav",
+      "bytes": 2001644,
+      "git_blob_sha1": "7c6dbafbe1f5de539b5861515f1bf39987e354cb",
+      "sha256": "557c2e033951015c30765bf18266bce0dd0412e3ca646dd1a225c32422c60662"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "strings_viola",
+      "part": "pad",
+      "path": "Strings/Viola Section/susvib/ViolaEns_susvib_G2_v2_1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Viola%20Section/susvib/ViolaEns_susvib_G2_v2_1.wav",
+      "bytes": 3637364,
+      "git_blob_sha1": "e8b4cc651229723bc4dcb781d715d6b995b5589d",
+      "sha256": "e3552ebd2d1ac5d089cd2424d31ea88be8d887643311cb23abf5b416838ce2ba"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "strings_violin",
+      "part": "pad",
+      "path": "Strings/Violin Section/susVib/VlnEns_susVib_C4_v1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_C4_v1.wav",
+      "bytes": 2063320,
+      "git_blob_sha1": "6d81fcafba04ca992a8b85665a56e60337929ce0",
+      "sha256": "c07edd5b2119fa1da2207aba996961b50dd616f69bbcf2300ab271bc6c16239f"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "strings_violin",
+      "part": "pad",
+      "path": "Strings/Violin Section/susVib/VlnEns_susVib_E4_v1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_E4_v1.wav",
+      "bytes": 2315540,
+      "git_blob_sha1": "838b43d3c9e763898817869d411ab26463b7464f",
+      "sha256": "787fb4bcfb47d5c88ee1573c8db15f32d345386301be4a8eea6a825847413ae2"
+     },
+     {
+      "library": "VSCO-2-CE",
+      "instrument": "strings_violin",
+      "part": "pad",
+      "path": "Strings/Violin Section/susVib/VlnEns_susVib_G4_v1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_G4_v1.wav",
+      "bytes": 2330236,
+      "git_blob_sha1": "81d3994ebbf467cbbc88bb2d2ad0dd94d96e7e04",
+      "sha256": "ed2a89cf254432d2af073699fa43ebfa16cfbc5552c7fc964a184fc434eaaa39"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "kick_vcsl",
+      "part": "kick",
+      "path": "Membranophones/Struck Membranophones/Bass Drum 1/BDrumNew_hit_v2_rr1_Sum.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bass%20Drum%201/BDrumNew_hit_v2_rr1_Sum.wav",
+      "bytes": 281616,
+      "git_blob_sha1": "90e36064984ad741962e2f033e286bc16758b46c",
+      "sha256": "56827fe9b55f282a0db851e242bc24660d339a0e358b182966aea047240c1136"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "kick_vcsl",
+      "part": "kick",
+      "path": "Membranophones/Struck Membranophones/Bass Drum 1/BDrumNew_hit_v2_rr2_Sum.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bass%20Drum%201/BDrumNew_hit_v2_rr2_Sum.wav",
+      "bytes": 302396,
+      "git_blob_sha1": "eb9b718cd1b75df824f30ae07405ba0a111f1be7",
+      "sha256": "f1f8979de26f8efe278fe778da7bdce2a39fbfb9f2cbf345e38ce8c66f171b59"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "kick_vcsl",
+      "part": "kick",
+      "path": "Membranophones/Struck Membranophones/Bass Drum 1/BDrumNew_hit_v3_rr1_Sum.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bass%20Drum%201/BDrumNew_hit_v3_rr1_Sum.wav",
+      "bytes": 367124,
+      "git_blob_sha1": "5f068b40b13f887c170d574b916dd21927f545ca",
+      "sha256": "a2d8829e8b2b59e8afb12fa396b01758827059339c2a84ad066d17b36c82d1ff"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "kick_vcsl",
+      "part": "kick",
+      "path": "Membranophones/Struck Membranophones/Bass Drum 1/BDrumNew_hit_v3_rr2_Sum.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bass%20Drum%201/BDrumNew_hit_v3_rr2_Sum.wav",
+      "bytes": 354580,
+      "git_blob_sha1": "92756223015f024e235dc8a0543118cf048b7e82",
+      "sha256": "036c6c5fcfbcca845d92dbcdcef075ee6e0ae01636374a2f7dd1a696a7ba33f8"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "kick_vcsl",
+      "part": "kick",
+      "path": "Membranophones/Struck Membranophones/Bass Drum 1/BDrumNew_hit_v5_rr1_Sum.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bass%20Drum%201/BDrumNew_hit_v5_rr1_Sum.wav",
+      "bytes": 588092,
+      "git_blob_sha1": "6a3b5a0fdc56be45b6188c026b2221c31ba8ecb4",
+      "sha256": "642aaf3375eaff1307973f7de3ccbf74d18e71fb3cf9412e021b08fc3bf1981c"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "kick_vcsl",
+      "part": "kick",
+      "path": "Membranophones/Struck Membranophones/Bass Drum 1/BDrumNew_hit_v5_rr2_Sum.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bass%20Drum%201/BDrumNew_hit_v5_rr2_Sum.wav",
+      "bytes": 614388,
+      "git_blob_sha1": "cb6a7fc6201c4466ab5ea2a0bc62359a04d2ca37",
+      "sha256": "a83943f8125ae39469ef5dab1d0be2fe3145c6842c0621b27be5d86aa44b325d"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "kick_vcsl",
+      "part": "kick",
+      "path": "Membranophones/Struck Membranophones/Bass Drum 1/BDrumNew_hit_v7_rr1_Sum.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bass%20Drum%201/BDrumNew_hit_v7_rr1_Sum.wav",
+      "bytes": 1105152,
+      "git_blob_sha1": "93ebf3571cef69c65ba1acba1d746e5bfa6c7db8",
+      "sha256": "7024054e68261d2cca0ee58fdf9d6f23b54370792d04aa2c1ccf41acc090bd2b"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "kick_vcsl",
+      "part": "kick",
+      "path": "Membranophones/Struck Membranophones/Bass Drum 1/BDrumNew_hit_v7_rr2_Sum.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bass%20Drum%201/BDrumNew_hit_v7_rr2_Sum.wav",
+      "bytes": 993988,
+      "git_blob_sha1": "b76f283f9fffd4ad4d32689424e8562292021791",
+      "sha256": "fa4374b9ffdc3b9a3c85331ce96c447cf13e46d956cce9cfd9ba02801f71276f"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "shaker_vcsl",
+      "part": "perc",
+      "path": "Idiophones/Struck Idiophones/Shaker, Small/Mid_ShakerHighFaster_Down_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Shaker%2C%20Small/Mid_ShakerHighFaster_Down_rr1.wav",
+      "bytes": 31556,
+      "git_blob_sha1": "d04a94860571471202fbf14cfcb4cc90a15ef873",
+      "sha256": "cf4cb388ffcff5a042149e0645123b089ae85e8342876421e817dce55ce66a5a"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "shaker_vcsl",
+      "part": "perc",
+      "path": "Idiophones/Struck Idiophones/Shaker, Small/Mid_ShakerHighFaster_Down_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Shaker%2C%20Small/Mid_ShakerHighFaster_Down_rr2.wav",
+      "bytes": 24012,
+      "git_blob_sha1": "45d0c9daa1e7891595c4134ae72ef9eedc0536eb",
+      "sha256": "fa616e9ea22817bb75dfeb6a914440ea933696d43649d6c472f417617b741bd4"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "shaker_vcsl",
+      "part": "perc",
+      "path": "Idiophones/Struck Idiophones/Shaker, Small/Mid_ShakerHighFaster_Up_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Shaker%2C%20Small/Mid_ShakerHighFaster_Up_rr1.wav",
+      "bytes": 32196,
+      "git_blob_sha1": "831b3482793512402dfd6f015d4a3d4abf432e49",
+      "sha256": "45ae715ce4f64280c9d8fa7eacb4e7003127b93c59c08e95125b67b173cf98e0"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "shaker_vcsl",
+      "part": "perc",
+      "path": "Idiophones/Struck Idiophones/Shaker, Small/Mid_ShakerHighFaster_Up_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Shaker%2C%20Small/Mid_ShakerHighFaster_Up_rr2.wav",
+      "bytes": 24672,
+      "git_blob_sha1": "9529768151bd8f7b17883ceb339f2d2386d32610",
+      "sha256": "43511c3cf1522a3adf1f5533d443aa147e4a3e5272615e29485cb8efebc63dd2"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "piano",
+      "part": "kal",
+      "path": "Chordophones/Zithers/Upright Piano, Yamaha/Sustains/Upright1_Sus_C3_vl1_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Upright%20Piano%2C%20Yamaha/Sustains/Upright1_Sus_C3_vl1_rr1.wav",
+      "bytes": 3458012,
+      "git_blob_sha1": "d09854fe40e4b31eb3a354eea846ca10fbf82184",
+      "sha256": "a22976e015b2a4826bd67512eb9b62cc734cc6ef790255f37b683bf56cfe0256"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "piano",
+      "part": "kal",
+      "path": "Chordophones/Zithers/Upright Piano, Yamaha/Sustains/Upright1_Sus_C3_vl1_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Upright%20Piano%2C%20Yamaha/Sustains/Upright1_Sus_C3_vl1_rr2.wav",
+      "bytes": 2890910,
+      "git_blob_sha1": "542b5bf9303f0c6a0ff6305478ef4245c6575a11",
+      "sha256": "efe916841ea499f97e9c5d5519ed72f575849402853b8a31eeada15b5b77617d"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "piano",
+      "part": "kal",
+      "path": "Chordophones/Zithers/Upright Piano, Yamaha/Sustains/Upright1_Sus_C4_vl1_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Upright%20Piano%2C%20Yamaha/Sustains/Upright1_Sus_C4_vl1_rr1.wav",
+      "bytes": 2536052,
+      "git_blob_sha1": "728369cd3c923e0f7f2efacbd57bce8730db0033",
+      "sha256": "4c8ae105fe25cee84c27b61a92a863bd0bb1ed05b40561d2c99557dd2cd598b5"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "piano",
+      "part": "kal",
+      "path": "Chordophones/Zithers/Upright Piano, Yamaha/Sustains/Upright1_Sus_C4_vl1_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Upright%20Piano%2C%20Yamaha/Sustains/Upright1_Sus_C4_vl1_rr2.wav",
+      "bytes": 2722208,
+      "git_blob_sha1": "4f3547a0126e9a9bfb830c244caaed76f449986b",
+      "sha256": "2e55724c30212d8cced5a19445f315a8e6714d88d963c908c2b1715dda77caa5"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "piano",
+      "part": "kal",
+      "path": "Chordophones/Zithers/Upright Piano, Yamaha/Sustains/Upright1_Sus_C4_vl2_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Upright%20Piano%2C%20Yamaha/Sustains/Upright1_Sus_C4_vl2_rr1.wav",
+      "bytes": 2964236,
+      "git_blob_sha1": "29efe51f08dcca83c476139a97fdc49aec6a9471",
+      "sha256": "39fdc55747ce7c0bd09215a357b577274c4c02928bf48972441ba6f47ec6e0a4"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "piano",
+      "part": "kal",
+      "path": "Chordophones/Zithers/Upright Piano, Yamaha/Sustains/Upright1_Sus_C5_vl1_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Upright%20Piano%2C%20Yamaha/Sustains/Upright1_Sus_C5_vl1_rr1.wav",
+      "bytes": 724508,
+      "git_blob_sha1": "932439e0d11482227b7cdef1564f36f03927aea2",
+      "sha256": "7bab9f242be9a32108ccea7fbce80191f02feb64ba1bdbc777a718c937ec4401"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "piano",
+      "part": "kal",
+      "path": "Chordophones/Zithers/Upright Piano, Yamaha/Sustains/Upright1_Sus_C5_vl1_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Upright%20Piano%2C%20Yamaha/Sustains/Upright1_Sus_C5_vl1_rr2.wav",
+      "bytes": 1120100,
+      "git_blob_sha1": "e1f02a39395d17dade8304370917693ef1574a8c",
+      "sha256": "239fdbcad49f48e7c38cc9411433ec3d3146e9277993bba9c93cebcb7fb003d9"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "piano",
+      "part": "kal",
+      "path": "Chordophones/Zithers/Upright Piano, Yamaha/Sustains/Upright1_Sus_G3_vl1_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Upright%20Piano%2C%20Yamaha/Sustains/Upright1_Sus_G3_vl1_rr1.wav",
+      "bytes": 3339848,
+      "git_blob_sha1": "67af1f96067add47edb9c6b6af24b6821bb400b5",
+      "sha256": "1a261431459446c02407c810728e99787dba814c1c8ea4de3696a30b9d15facf"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "piano",
+      "part": "kal",
+      "path": "Chordophones/Zithers/Upright Piano, Yamaha/Sustains/Upright1_Sus_G3_vl1_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Upright%20Piano%2C%20Yamaha/Sustains/Upright1_Sus_G3_vl1_rr2.wav",
+      "bytes": 2442050,
+      "git_blob_sha1": "856337bb26289940c96fd78625426db9fc8f23ff",
+      "sha256": "e9e5467d1b4525d057f8c1f33369e848dfe58f0cb83da8147cf789c7b040db39"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "piano",
+      "part": "kal",
+      "path": "Chordophones/Zithers/Upright Piano, Yamaha/Sustains/Upright1_Sus_G4_vl1_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Upright%20Piano%2C%20Yamaha/Sustains/Upright1_Sus_G4_vl1_rr1.wav",
+      "bytes": 1130282,
+      "git_blob_sha1": "aad51653960268f5334deab86a5c56433f8ba472",
+      "sha256": "c826915b7d06f9a40f76e79f7038c05554260e964372c8cc47c4fbbb0b8e849f"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "piano",
+      "part": "kal",
+      "path": "Chordophones/Zithers/Upright Piano, Yamaha/Sustains/Upright1_Sus_G4_vl1_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Upright%20Piano%2C%20Yamaha/Sustains/Upright1_Sus_G4_vl1_rr2.wav",
+      "bytes": 1044356,
+      "git_blob_sha1": "42112ed07425e6ed7ba2111073a55a5a96f247ae",
+      "sha256": "edad10e28597dd208c610935625a0ebd9241ae5d619f24621661b9b12aa14f0f"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "piano",
+      "part": "kal",
+      "path": "Chordophones/Zithers/Upright Piano, Yamaha/Sustains/Upright1_Sus_G4_vl2_rr1.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Upright%20Piano%2C%20Yamaha/Sustains/Upright1_Sus_G4_vl2_rr1.wav",
+      "bytes": 1689146,
+      "git_blob_sha1": "5cdec52d39898e6ebbcc5d32c71ba041ed524ff0",
+      "sha256": "f6a8647d92a28553b596b7f072b1e4c2d79b5ecccbfd8a62dd20fdfce2490c16"
+     },
+     {
+      "library": "VCSL",
+      "instrument": "piano",
+      "part": "kal",
+      "path": "Chordophones/Zithers/Upright Piano, Yamaha/Sustains/Upright1_Sus_G5_vl1_rr2.wav",
+      "url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Upright%20Piano%2C%20Yamaha/Sustains/Upright1_Sus_G5_vl1_rr2.wav",
+      "bytes": 811244,
+      "git_blob_sha1": "96b437e9bc67af9672d3a098a67cf7050ddb26e7",
+      "sha256": "da091c6473034cfbd918662d4a7abcb40a8ed1055ba65e2b705fbf2f17f61396"
+     }
+    ]
+   },
+   "validation_6_1_step_5": {
+    "duration_s": 76.8,
+    "expected_duration_s": 76.8,
+    "median_abs_offset_ms": 3.42,
+    "max_abs_offset_ms": 30.67,
+    "within_1_frame_pct": 100.0,
+    "downbeats_measured": 32,
+    "reveal": {
+     "planned_frame": 504,
+     "attack_s": 16.80379,
+     "attack_frame": 504,
+     "offset_ms": 3.79,
+     "strength": 455.1
+    },
+    "gates": {
+     "median_abs_offset_le_5ms": true,
+     "reveal_within_1_frame": true,
+     "duration_exact": true
+    },
+    "pass": true
+   },
+   "rubric_total_self_assessed": 93,
+   "rubric": {
+    "brand_fit": 26,
+    "structure": 20,
+    "tempo": 15,
+    "no_voice_or_alarm": 15,
+    "dynamics": 10,
+    "distinctiveness": 7
+   },
+   "rubric_gates": {
+    "small_speaker_share_ge_0.30": true,
+    "mono_loss_le_3db": true
+   },
+   "judged": {
+    "brand_fit": {
+     "mood": [
+      8,
+      "the original's calm, warm, hopeful D major, unchanged: the same notes, dynamics and fader ride"
+     ],
+     "instrumentation": [
+      9,
+      "recorded marimba, vibraphone, glockenspiel, upright piano, viola and violin sections, pizzicato double bass, bass drum and shaker (VCSL, VSCO 2 CE): the brief's acoustic and mallet palette, recorded, not synthesised (SoundAnalysis: marimba_xylophone 0.33, vibraphone 0.32, piano 0.29, glockenspiel 0.26; 'synthesizer' falls to 0.15, from 0.35 on the original). Not 10: SoundAnalysis hears the soft viola-section pad partly as french horn (up to 0.21), and the score's kalimba part is played on piano"
+     ],
+     "register": [
+      9,
+      "low-key, written under the film's picture and sound effects; level-matched to the original's stem balance"
+     ]
+    },
+    "structure": {
+     "intro": [
+      5,
+      "the original's form: hook and tension bars 3-7 dB under the body"
+     ],
+     "lift": [
+      6,
+      "the reveal on bar 8 (frame 504) after the empty breath beat"
+     ],
+     "ending": [
+      5,
+      "the final D(add9) chord on bar 31 rings for 4.8 s"
+     ],
+     "breakdown": [
+      4,
+      "bars 26-28 drop drums and bass for the trust lines"
+     ]
+    },
+    "distinctiveness": [
+     7,
+     "the same four-note motif written for Pebble; mallet minimalism is a known idiom"
+    ]
+   },
+   "measured": {
+    "tempo_bpm": 99.992,
+    "onsets_within_1_frame_pct": 100.0,
+    "timing_spread_ms": 5.5,
+    "stretch_to_whole_frames_per_beat_pct": 0.008,
+    "frames_per_beat_at_30fps": 18,
+    "tempo_points": "stability 10 + frames per beat 5",
+    "integrated_lufs": -18.0,
+    "lra_lu": 7.0,
+    "true_peak_dbtp": -2.5,
+    "plr_db": 15.5,
+    "power_share_above_150hz": 0.719,
+    "lufs_lost_through_150hz_highpass_db": 0.77,
+    "mono_fold_down_loss_db": 1.17,
+    "voice_alarm_flags": [
+     "none"
+    ],
+    "top_sound_tags": [
+     "music 0.803",
+     "percussion 0.421",
+     "mallet_percussion 0.397",
+     "keyboard_musical 0.361",
+     "marimba_xylophone 0.327",
+     "vibraphone 0.319",
+     "piano 0.287",
+     "glockenspiel 0.261"
+    ]
+   },
+   "sound_tags_top": [
+    "music 0.803",
+    "percussion 0.421",
+    "mallet_percussion 0.397",
+    "keyboard_musical 0.361",
+    "marimba_xylophone 0.327",
+    "vibraphone 0.319",
+    "piano 0.287",
+    "glockenspiel 0.261"
+   ],
+   "sound_tags_watch_max": {
+    "foghorn": 0.168,
+    "telephone": 0.157,
+    "ringtone": 0.127,
+    "humming": 0.098,
+    "singing": 0.073,
+    "battle_cry": 0.068,
+    "train_whistle": 0.055,
+    "speech": 0.051,
+    "train_horn": 0.051
+   },
+   "masters": {
+    "bed-social": {
+     "integrated_lufs": -14.0,
+     "lra_lu": 6.7,
+     "true_peak_dbtp": -1.5
+    },
+    "bed-web": {
+     "integrated_lufs": -16.0,
+     "lra_lu": 6.9,
+     "true_peak_dbtp": -1.7
+    },
+    "sfx-social": {
+     "integrated_lufs": -14.1,
+     "lra_lu": 6.7,
+     "true_peak_dbtp": -1.5
+    },
+    "sfx-web": {
+     "integrated_lufs": -16.0,
+     "lra_lu": 6.9,
+     "true_peak_dbtp": -1.7
+    }
+   },
+   "needs": "one human listen before the film ships (the audition set: A synthesised, B sampled, C Mixkit 79); taste is the part an agent cannot verify"
+  },
+  "gates_A_B_C": {
+   "what": "every gate on the three beds the user auditions (2026-10-23); rubric per tools/audio/score_rubric.py",
+   "A_original_synthesised": {
+    "validation": {
+     "median_abs_offset_ms": 1.27,
+     "reveal": {
+      "planned_frame": 504,
+      "attack_s": 16.801,
+      "attack_frame": 504,
+      "offset_ms": 1.0,
+      "strength": 439.8
+     },
+     "duration_s": 76.8,
+     "pass": true
+    },
+    "rubric_total": 91,
+    "rubric": {
+     "brand_fit": 24,
+     "structure": 20,
+     "tempo": 15,
+     "no_voice_or_alarm": 15,
+     "dynamics": 10,
+     "distinctiveness": 7
+    },
+    "gates": {
+     "small_speaker_share_ge_0.30": true,
+     "mono_loss_le_3db": true
+    },
+    "speaker_share_above_150hz": 0.855,
+    "mono_fold_down_loss_db": 0.11,
+    "sound_tags_watch_max_bed": {
+     "telephone": 0.174,
+     "ringtone": 0.14,
+     "beep": 0.079,
+     "alarm_clock": 0.077
+    },
+    "sound_tags_watch_max_sfx_test_mix": {
+     "telephone": 0.242,
+     "ringtone": 0.215,
+     "beep": 0.071,
+     "alarm_clock": 0.071,
+     "telephone_bell_ringing": 0.07
+    },
+    "masters": {
+     "bed-social": {
+      "integrated_lufs": -14.0,
+      "lra_lu": 6.3,
+      "true_peak_dbtp": -1.5
+     },
+     "bed-web": {
+      "integrated_lufs": -16.0,
+      "lra_lu": 6.4,
+      "true_peak_dbtp": -1.7
+     },
+     "sfx-social": {
+      "integrated_lufs": -14.0,
+      "lra_lu": 6.3,
+      "true_peak_dbtp": -1.5
+     },
+     "sfx-web": {
+      "integrated_lufs": -16.0,
+      "lra_lu": 6.4,
+      "true_peak_dbtp": -1.7
+     }
+    }
+   },
+   "B_original_sampled": {
+    "validation": {
+     "median_abs_offset_ms": 3.42,
+     "reveal": {
+      "planned_frame": 504,
+      "attack_s": 16.80379,
+      "attack_frame": 504,
+      "offset_ms": 3.79,
+      "strength": 455.1
+     },
+     "duration_s": 76.8,
+     "pass": true
+    },
+    "rubric_total": 93,
+    "rubric": {
+     "brand_fit": 26,
+     "structure": 20,
+     "tempo": 15,
+     "no_voice_or_alarm": 15,
+     "dynamics": 10,
+     "distinctiveness": 7
+    },
+    "gates": {
+     "small_speaker_share_ge_0.30": true,
+     "mono_loss_le_3db": true
+    },
+    "speaker_share_above_150hz": 0.719,
+    "mono_fold_down_loss_db": 1.17,
+    "sound_tags_watch_max_bed": {
+     "foghorn": 0.168,
+     "telephone": 0.157,
+     "ringtone": 0.127,
+     "humming": 0.098,
+     "singing": 0.073,
+     "battle_cry": 0.068,
+     "train_whistle": 0.055,
+     "speech": 0.051,
+     "train_horn": 0.051
+    },
+    "sound_tags_watch_max_sfx_test_mix": {
+     "telephone": 0.232,
+     "foghorn": 0.175,
+     "ringtone": 0.136,
+     "humming": 0.096,
+     "singing": 0.073,
+     "battle_cry": 0.062,
+     "speech": 0.056,
+     "beep": 0.054,
+     "train_whistle": 0.052
+    },
+    "masters": {
+     "bed-social": {
+      "integrated_lufs": -14.0,
+      "lra_lu": 6.7,
+      "true_peak_dbtp": -1.5
+     },
+     "bed-web": {
+      "integrated_lufs": -16.0,
+      "lra_lu": 6.9,
+      "true_peak_dbtp": -1.7
+     },
+     "sfx-social": {
+      "integrated_lufs": -14.1,
+      "lra_lu": 6.7,
+      "true_peak_dbtp": -1.5
+     },
+     "sfx-web": {
+      "integrated_lufs": -16.0,
+      "lra_lu": 6.9,
+      "true_peak_dbtp": -1.7
+     }
+    }
+   },
+   "C_mixkit_79_fitted": {
+    "validation": {
+     "median_abs_offset_ms": 5.27,
+     "reveal": {
+      "planned_frame": 480,
+      "attack_s": 16.00567,
+      "attack_frame": 480,
+      "offset_ms": 5.67,
+      "strength": 13.7
+     },
+     "duration_s": 77.333333,
+     "pass": false
+    },
+    "rubric_total": 64,
+    "rubric": {
+     "brand_fit": 14,
+     "structure": 14,
+     "tempo": 13,
+     "no_voice_or_alarm": 11,
+     "dynamics": 7,
+     "distinctiveness": 5
+    },
+    "gates": {
+     "small_speaker_share_ge_0.30": true,
+     "mono_loss_le_3db": true
+    },
+    "rubric_note": "scored on the full track (MASTER_PLAN 6.1); the fitted bed measures 0.71 above 150 Hz and 0.94 dB mono loss",
+    "speaker_share_above_150hz": 0.706,
+    "mono_fold_down_loss_db": 0.94,
+    "sound_tags_watch_max_bed": {
+     "foghorn": 0.619,
+     "telephone": 0.061
+    },
+    "masters": {
+     "bed-social": {
+      "integrated_lufs": -14.0,
+      "lra_lu": 6.1,
+      "true_peak_dbtp": -2.0
+     },
+     "bed-web": {
+      "integrated_lufs": -16.0,
+      "lra_lu": 6.1,
+      "true_peak_dbtp": -4.0
+     }
+    }
+   },
+   "notes": [
+    "watch maxima: SoundAnalysis confidence over 3 s windows; the rubric docks alert labels (telephone, ringtone ...) from 0.2 and horn warnings (foghorn ...) from 0.2",
+    "sfx test mix: the bed plus tools/audio/cues.example.json (19 cues on the 100 BPM grid) through mix_master.py; the test SFX themselves lift 'telephone' on both A (0.24) and B (0.23); no alert or voice label reaches the top 3 of any window",
+    "C's grid differs (90 BPM, 20 frames per beat), so the 100 BPM test cues were not mixed onto it"
+   ]
+  },
+  "audition_set": {
+   "folder": "Desktop/Pebble launch film/music-preview/ on the build Mac (not committed)",
+   "files": {
+    "A-synthesised-original.m4a": "the synthesised original",
+    "B-sampled-instruments.m4a": "the sampled score (the default)",
+    "C-stock-mixkit-79.m4a": "Mixkit 79 fitted to its grid: a local audition copy, never shared on its own"
+   },
+   "format": "each full bed fitted to its grid, mastered with mix_master.py to -16 LUFS / -1.7 dBTP, AAC 192 kb/s 48 kHz with Homebrew FFmpeg",
+   "measured_on_the_aac": {
+    "A": "-16.0 LUFS, -1.7 dBTP, 76.8 s",
+    "B": "-16.0 LUFS, -1.6 dBTP, 76.8 s",
+    "C": "-16.0 LUFS, -4.0 dBTP, 77.3 s"
+   }
   }
  },
  "sfx": {
@@ -1222,14 +2602,14 @@
   {
    "file": "public/media/v1/film-1080.hevc.mp4, film-1080.h264.mp4, film-720.hevc.mp4, film-720.h264.mp4",
    "status": "not rendered yet (Phase 3)",
-   "music": "original (tools/audio/beatmap.json)",
+   "music": "original-sampled (tools/audio/beatmap.json)",
    "sfx": "from tools/audio/cues.json once the film timeline exports it",
    "loudness": "to be measured on the final AAC: -16 +-0.5 LUFS, <= -1.5 dBTP"
   },
   {
    "file": "Desktop deliverables: Pebble-launch-film-1920x1080.mp4, Pebble-launch-film-1080x1080.mp4 (LinkedIn)",
    "status": "not rendered yet",
-   "music": "original",
+   "music": "original-sampled",
    "loudness": "-14 LUFS, <= -1.0 dBTP after encoding (OVERRIDES 4)"
   },
   {

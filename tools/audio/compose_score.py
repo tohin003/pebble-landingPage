@@ -14,8 +14,11 @@ Form (100 BPM, 4/4, D major, 32 bars = 76.8 s = 2,304 frames at 30 fps; a beat i
   bars 31-32  final chord D(add9) on the bar-31 downbeat, left to ring for 4.8 s (back-timed end)
 Timing is exact (no rubato); notes get +-3 ms of humanisation, downbeats +-1 ms, so the beat grid is frame-accurate.
 
-Usage: python -I compose_score.py OUT.wav [--seed 7] [--stems DIR]
+Usage: python -I compose_score.py OUT.wav [--seed 7] [--stems DIR] [--events EVENTS.json]
 Writes OUT.wav (48 kHz, 24-bit, un-mastered bed at about -18 LUFS) and OUT.score.json (form, cue times, levels).
+--events also writes every note event (bus, instrument, pitch, nominal and humanised velocity and time, durations, pan)
+plus the fader ride, for tools/audio/render_sampled.py. Recording the events only reads values the score already
+computes: it draws nothing from the random generator, so OUT.wav stays bit-identical with or without it.
 """
 import argparse
 import json
@@ -31,6 +34,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("out")
 ap.add_argument("--seed", type=int, default=7)
 ap.add_argument("--stems")
+ap.add_argument("--events")
 a = ap.parse_args()
 
 SR = 48000
@@ -59,6 +63,22 @@ def nm(s):
     """'F#4' -> MIDI number."""
     p = NOTE[s[0]] + (1 if "#" in s else -1 if s[1] == "b" else 0)
     return 12 * (int(s[-1]) + 1) + p
+
+
+# ----------------------------------------------------------------------------------------------------------------
+# event recording (for --events): bookkeeping only, it never touches the random generator or the audio
+# ----------------------------------------------------------------------------------------------------------------
+_hv_last = [None]     # (nominal, humanised) velocity of the last hv() call
+_inst_last = {}       # parameters of the last instrument call; put() files them with the note's time and pan
+
+
+def _rec(inst, f, vel, **params):
+    nominal = vel
+    if _hv_last[0] is not None and _hv_last[0][1] == vel:   # this velocity came from hv(): keep its nominal value
+        nominal = _hv_last[0][0]
+    _hv_last[0] = None
+    _inst_last.clear()
+    _inst_last.update(inst=inst, f=f, vel=vel, vel_nominal=nominal, **params)
 
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -92,6 +112,7 @@ def _noise_burst(dur, lo, hi, tau, n_order=2):
 
 def marimba(f, vel, length=None):
     """Tuned bar (partials 1 : 3.99 : 9.95) over a resonator; soft yarn mallet. Decay shortens with pitch."""
+    _rec("marimba", f, vel, length=length)
     tau = 0.5 * (440 / f) ** 0.55 + 0.15
     dur = min(6 * tau, 4.0) if length is None else length
     modes = [(1.0, 1.0, tau), (1.0035, 0.18, tau * 1.6),                  # bar + resonator (slow beating)
@@ -104,6 +125,7 @@ def marimba(f, vel, length=None):
 
 def vibes(f, vel, hold, trem=0.07):
     """Vibraphone bar (1 : 4 : 10), soft mallets, pedal down for `hold` seconds then damped; gentle motor shimmer."""
+    _rec("vibes", f, vel, hold=hold, trem=trem)
     tau = 2.4 * (440 / f) ** 0.35
     dur = hold + 0.35
     y = _modal(f, [(1.0, 1.0, tau), (4.0, 0.12 * vel, tau / 3.5), (10.0, 0.03 * vel, tau / 9)], dur, 0.004)
@@ -116,6 +138,7 @@ def vibes(f, vel, hold, trem=0.07):
 
 def kalimba(f, vel):
     """Thumb-piano tine: fundamental plus the cantilever's inharmonic 2nd mode (x6.27) that dies in ~60 ms."""
+    _rec("kalimba", f, vel)
     tau = 1.1 * (440 / f) ** 0.4
     y = _modal(f, [(1.0, 1.0, tau), (2.0, 0.08, tau / 3), (6.27, 0.25 * vel, 0.06)], min(5 * tau, 3.0), 0.0015)
     k = int(0.004 * SR)
@@ -125,12 +148,14 @@ def kalimba(f, vel):
 
 def glock(f, vel):
     """Glockenspiel (free bar, 1 : 2.756 : 5.404): only a few notes, very soft."""
+    _rec("glock", f, vel)
     y = _modal(f, [(1.0, 1.0, 1.6), (2.756, 0.28, 0.45), (5.404, 0.08, 0.18)], 3.0, 0.002)
     return y * vel ** 1.4
 
 
 def pluck_bass(f, vel, dur):
     """Karplus-Strong plucked upright-style bass with a little sine weight; damped by the hand at note-off."""
+    _rec("bass", f, vel, dur=dur)
     P = SR / f - 0.5
     Np = int(np.floor(P))
     n = int((dur + 0.15) * SR)
@@ -171,6 +196,7 @@ def _saw(f, n):
 
 def pad_note(f, vel, dur, att=0.9, rel=1.8):
     """Soft string-like pad voice: three detuned saws, slow bow-like attack, late gentle vibrato."""
+    _rec("pad", f, vel, dur=dur, att=att, rel=rel)
     n = int((dur + rel) * SR)
     t = np.arange(n) / SR
     vib = 1 + 0.0018 * np.sin(2 * np.pi * 4.6 * t) * np.clip((t - 0.6) / 0.8, 0, 1)
@@ -183,6 +209,7 @@ def pad_note(f, vel, dur, att=0.9, rel=1.8):
 
 
 def shaker(vel):
+    _rec("shaker", None, vel)
     y = _noise_burst(0.07, 4500, 11000, 0.022)
     k = int(0.012 * SR)
     y[k:] += 0.45 * _noise_burst(0.07, 4500, 11000, 0.018)[: len(y) - k]   # the beads' second rattle
@@ -190,6 +217,7 @@ def shaker(vel):
 
 
 def felt_kick(vel):
+    _rec("kick", None, vel)
     n = int(0.45 * SR)
     t = np.arange(n) / SR
     f = 48 + 42 * np.exp(-t / 0.03)
@@ -237,6 +265,7 @@ B_LINE = {17: [(1.0, "B4", .5), (1.5, "E5", .5), (2.0, "D5", .25), (2.25, "E5", 
           20: [(1.0, "B5", 2.0), (3.0, "A5", .5), (3.5, "F#5", .5), (4.0, "D5", 1.0)]}
 
 notes = []    # (bus, start_s, signal, pan, kind)
+events = []   # one dict per note, in the same order (written by --events)
 
 
 def jitter(beat):
@@ -247,10 +276,13 @@ def jitter(beat):
 def put(bus, bar, beat, sig, pan=0.0, exact=False):
     t = t_of(bar, beat) + (0.0 if exact else jitter(beat))
     notes.append((bus, max(0.0, t), sig, pan))
+    events.append(dict(_inst_last, bus=bus, bar=bar, beat=beat, t_grid=t_of(bar, beat), t=max(0.0, t), pan=pan, exact=exact))
 
 
 def hv(v, spread=0.05):
-    return float(np.clip(v * (1 + rng.normal(0, spread)), 0.05, 1.0))
+    out = float(np.clip(v * (1 + rng.normal(0, spread)), 0.05, 1.0))
+    _hv_last[0] = (v, out)
+    return out
 
 
 def play_line(bus, bar, line, inst, vel, pan=0.0, octave=0):
@@ -393,6 +425,8 @@ for bar in range(1, N_BARS + 1):
         while r_t < 2.2:                                                    # a roll on D4/A4 dying away
             v = 0.34 * (1 - r_t / 2.4) ** 1.5
             notes.append(("mallet", t_of(31) + r_t + 0.06, marimba(mtof(nm("D4" if k % 2 else "A4")), hv(max(v, 0.05), 0.08)), -0.1 + 0.2 * (k % 2)))
+            events.append(dict(_inst_last, bus="mallet", bar=31, beat=1.0 + (r_t + 0.06) / BEAT, t_grid=t_of(31) + r_t + 0.06,
+                               t=t_of(31) + r_t + 0.06, pan=-0.1 + 0.2 * (k % 2), exact=True, roll=True))
             r_t += 0.085 + 0.01 * rng.random()
             k += 1
 
@@ -499,5 +533,18 @@ info = {"title": "Pebble launch cue", "bpm": BPM, "meter": "4/4", "key": "D majo
         "motif": "D5 A5 G#5 A5 (eighth, eighth, sixteenth, dotted eighth tied)",
         "bar_rms_db": bar_rms}
 json.dump(info, open(a.out.rsplit(".", 1)[0] + ".score.json", "w"), indent=1)
+if a.events:
+    for ev in events:
+        ev["midi"] = None if ev["f"] is None else round(69 + 12 * float(np.log2(ev["f"] / 440.0)), 4)
+    json.dump({"title": "Pebble launch cue: note events", "seed": a.seed, "bpm": BPM, "beat_s": BEAT, "bar_s": BAR,
+               "bars": N_BARS, "duration_s": LEN_S, "sample_rate": SR,
+               "about": ("Every note of compose_score.py in render order. t_grid = the written time (bar, beat), t = the "
+                         "time the synthesised score plays it (with its humanisation); vel_nominal = the written velocity, "
+                         "vel = the humanised one; f in Hz (None for unpitched kick and shaker); exact = placed on the grid "
+                         "without timing jitter; roll = the final marimba roll, timed off the grid on purpose."),
+               "ride_db_by_bar": {str(b): RIDE.get(b, 0.0) for b in range(1, N_BARS + 1)},
+               "bus_chain": {b: {"gain_db": g, "reverb_send": s} for b, (_, g, s) in CHAIN.items()},
+               "sections": info["sections"], "chords": info["chords"], "events": events},
+              open(a.events, "w"), indent=0)
 print(json.dumps({k: v for k, v in info.items() if k not in ("chords", "bar_rms_db", "sections")}))
 print("bar RMS dB:", " ".join(f"{i + 1}:{v}" for i, v in enumerate(bar_rms)))
