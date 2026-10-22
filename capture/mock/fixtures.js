@@ -1,11 +1,27 @@
-// Demo fixtures for Pebble 1.0.1's real UI. Everything here is fictional demo content (no real person's data).
-// Shapes follow backend/pebble/app.py (state, chat), run_activity.py (activity items and verdict labels),
-// app.py tool_label() wording, memory.py KINDS and the components' own validators.
+// Demo fixtures for Pebble 1.0.1's real UI. Everything here is fictional demo content (no real person's data): Maya
+// (maya@example.com, /Users/maya), her invoice-kit project, a Lisbon trip budget and a Python datetime quiz.
 //
-// buildWorld({scene, theme, surface}) returns { storage, has(method), rpc(method, params) }.
+// What may appear on screen, and where it comes from:
+//   - Host strings (timeline rows, verdicts, notices, the forget reply, AgentGuard's challenge) are built here with the
+//     same templates as the Pebble service: backend/pebble/run_activity.py (row labels, verdict(), STATE_NOTES,
+//     WITHHELD), app.py tool_label(), controller.py gate_sentences(), runner.py (forget reply, held notice), memory.py
+//     KINDS, the vendored AgentGuard engine (validate/checks.py scope_creep(), challenge/renderer.py render()) and
+//     guard.py refusal(). Window chrome strings come from the real components themselves.
+//   - Model replies, user messages, file names, diffs, memories, dashboard and quiz data are fictional content.
+//   - Numbers (durations, token counts, "42 passed") are illustrative, never measurements.
+//   - Model labels are provider-neutral: only the local GGUF file the project tests with (docs/MODEL_SELECTION.md,
+//     config/model.json) is connected, so no cloud model name dates the captures (critic H14).
+//
+// buildWorld({scene, theme, surface, drawer}) returns { storage, has(method), rpc(method, params), live, ... }.
 
-const ID = { coding: "chat-invoice-fix", trip: "chat-lisbon-trip", quiz: "chat-datetime-quiz", pet: "chat-pet-weather", fresh: "chat-new" };
+const ID = {
+  coding: "chat-invoice-fix", trip: "chat-lisbon-trip", quiz: "chat-datetime-quiz", pet: "chat-pet-dates",
+  fresh: "chat-new", forget: "chat-forget-trip", challenge: "chat-pdf-dates", command: "chat-export-january",
+};
 const WORKSPACE = "/Users/maya/Projects/invoice-kit";
+// The project's pinned local model: config/model.json "filename"; a GGUF profile is named after the file's stem
+// (backend/pebble/providers.py add_gguf, model.py status).
+const LOCAL_MODEL = { file: "/Users/maya/Models/FrogNano-4B-2609-Q4_K_M.gguf", name: "FrogNano-4B-2609-Q4_K_M" };
 
 const DIFF_DATES = `@@ -1,14 +1,17 @@
  """Date helpers for invoice terms."""
@@ -36,19 +52,53 @@ const DIFF_TESTS = `@@ -21,3 +21,10 @@ def test_add_months_keeps_day():
 +
  def test_due_date_default_terms():`;
 
+const REQUEST = "The CSV export crashes for invoices issued on the 31st: ValueError: day is out of range for month. Can you find the bug and fix it?";
+// store.py message(): a new conversation is titled with the first 54 characters of its first message.
+const autoTitle = (text) => text.slice(0, 54).replace(/\n/g, " ");
+
 const REPLY_PROPOSED = `Found it. \`add_months()\` in \`invoice_kit/dates.py\` keeps the original day when it moves a date forward, so an invoice issued on **31 January** asks Python for **31 February** and the export stops with \`ValueError: day is out of range for month\`.
 
 I've drafted a two-line fix that clamps the day to the last day of the target month, plus a regression test for 31 Jan → 28 Feb (and 29 Feb in a leap year).
 
 Nothing changes until you approve both edits. After that I'll run the test suite in an isolated copy of the project.`;
 
+// The film's live run (record.mjs main-live-film) holds at the completion gate, so its proposal promises no test run.
+const REPLY_PROPOSED_HELD = REPLY_PROPOSED.replace(" After that I'll run the test suite in an isolated copy of the project.", "");
+// A resumed run continues the same reply (runner.py: resume keeps message_id and answer); each continuation is
+// model-written and starts on a new paragraph.
+const CONTINUE_HELD = "\n" + `Both edits are in:
+
+- **\`invoice_kit/dates.py\`**: \`add_months()\` now clamps to the last day of the month, so 31 Jan + 1 month is 28 Feb.
+- **\`tests/test_dates.py\`**: a new regression test covers month ends and leap years.
+
+The CSV export should work again for invoices issued on the 29th, 30th and 31st.`;
+const CONTINUE_VERIFIED = "\n\nThe tests ran in an isolated copy of your project: **42 passed**. Both edits are verified, and the CSV export works again for invoices issued on the 29th, 30th and 31st.";
+
 const REPLY_DONE = `Done, and verified:
 
 - **\`invoice_kit/dates.py\`**: \`add_months()\` now clamps to the last day of the month, so 31 Jan + 1 month is 28 Feb.
 - **\`tests/test_dates.py\`**: a new regression test covers month ends and leap years.
-- **42 tests passed** in an isolated copy of your project, with network access off.
+- **42 tests passed** in an isolated copy of your project.
 
 The CSV export works again for invoices issued on the 29th, 30th and 31st. Either edit can be undone from Details › Activity.`;
+
+// The held path (AgentGuard's completion gate): the model finished without running the covering tests. The reply is the
+// model's last attempt; the quoted line is the host's (runner.py: '> Verification remains incomplete: ' +
+// person_notice(gate); controller.py gate_sentences() 'no_test_run' notice; _names() keeps file names only).
+const REPLY_HELD_MODEL = `Both edits are in:
+
+- **\`invoice_kit/dates.py\`**: \`add_months()\` now clamps to the last day of the month, so 31 Jan + 1 month is 28 Feb.
+- **\`tests/test_dates.py\`**: a new regression test covers month ends and leap years.
+
+The CSV export should work again for invoices issued on the 29th, 30th and 31st.`;
+const HELD_CHANGED = ["invoice_kit/dates.py", "tests/test_dates.py"];
+const HELD_COVERING = ["tests/test_dates.py"];
+const baseName = (p) => p.split("/").pop();
+const HELD_NOTICE = `Pebble changed ${HELD_CHANGED.slice(0, 2).map(baseName).join(", ")} but did not run the tests that cover ${HELD_CHANGED.length === 1 ? "it." : "them."}`;
+const REPLY_HELD = REPLY_HELD_MODEL + "\n\n> Verification remains incomplete: " + HELD_NOTICE;
+// The run's error is the gate's model-facing issue (runner.py: failure = '\n'.join(gate['issues'])); RunPanel shows it
+// after the held sentence in the conversation.
+const HELD_ISSUE = `${HELD_CHANGED.length} file(s) changed and no tests were run, but ${HELD_COVERING.length} test file(s) cover this code: ${JSON.stringify(HELD_COVERING)}. Run them (RunTests) before finishing and report what they said.`;
 
 const TRIP_REPLY = `Here's your **Lisbon trip budget** as a live dashboard. You're on track: €486 spent of €1,240, with the biggest costs (flights and the apartment) already paid.
 
@@ -56,77 +106,151 @@ Open it from the canvas to see spending by category and what's still to book.`;
 
 const QUIZ_REPLY = `Here's a 5-question check on Python's \`datetime\` module. You have 10 minutes; your answers save as you go, and I'll explain each one when you submit.`;
 
-const PET_REPLY = `Light showers until about **11:00**, then clearing up, with a high of **19 °C**.
+// The companion's demo question (D22: model-answered, and it leads into the coding story).
+const PET_QUESTION = "What does 'day is out of range for month' mean?";
+const PET_REPLY = `Python is being asked for a date that doesn't exist, like **31 February**. If it's from your invoice export, open invoice-kit and I'll look.`;
 
-Pack a light jacket for the morning; the afternoon looks good for a walk in Alfama.`;
+// The forget request (runner.py V1-034): no model call; the reply is the host's own sentence, and the main window's
+// Forget card lists the matching records (memory_forget event, memory_forget_preview).
+const FORGET_REQUEST = "Forget my Lisbon trip plans.";
+const FORGET_SUBJECT = "my Lisbon trip plans"; // memory.py forget_request(): FORGET match, FORGET_TAIL strips the "."
+const forgetReply = (count, subject) =>
+  `I found ${count} saved memor${count === 1 ? "y" : "ies"}${subject ? " that match “" + subject + "”" : " from this conversation"}. Choose **Forget** on the ones you want gone, here or in Settings → Memory. Nothing is forgotten until you do.`;
 
-// The live sequence's reply (streamed token by token by capture.mjs through window.__pebble.emit).
-export const LIVE_PET_REPLY = PET_REPLY;
+// AgentGuard's scope challenge, as the failed step's detail in Details › Activity (release session 23:38; vendored
+// engine validate/checks.py scope_creep(): raised at DEFAULT_UNRELATED_LIMIT = 5 unrelated files;
+// challenge/renderer.py render(); guard.py refusal() prefixes "AgentGuard: ").
+const CHALLENGE_REQUEST = "Use the month-end rule for due dates in PDF invoices. The CSV export already clamps them.";
+const CHALLENGE_GOAL = CHALLENGE_REQUEST.split(/(?<=[.!?])\s+|\n/, 1)[0].slice(0, 200); // intent/extractor.py _goal()
+const CHALLENGE_SCOPE = ["invoice_kit/dates.py", "invoice_kit/pdf.py", "tests/test_pdf.py"];
+const CHALLENGE_OUTSIDE = ["README.md", "docs/billing.md", "invoice_kit/static/invoice.css", "invoice_kit/templates/invoice.html", "invoice_kit/templates/receipt.html"];
+const pySorted = (list) => [...list].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)); // Python's sorted(): code points
+function challengeText(goal, scope, outside) {
+  const s = pySorted(scope), o = pySorted(outside);
+  const summary = `${o.length} file(s) changed that the task does not reach`;
+  const detail = `The request was: "${goal}". Its evidence points at ${s.slice(0, 3).join(", ")}${s.length > 3 ? "…" : ""}. ` +
+    `These changes are outside that and outside anything connected to it: ${o.slice(0, 6).join(", ")}${o.length > 6 ? "…" : ""}.`;
+  const lines = ["AgentGuard — evidence check", "", summary, `   ${detail}`];
+  for (const path of o.slice(0, 3)) lines.push(`   Evidence: ${path}`);
+  lines.push("   Either explain what connects these to the task, or split them into a separate change.", "");
+  lines.push("Confirm this against the repository before relying on it, or state the evidence that supports it.");
+  return "AgentGuard: " + lines.join("\n").trim();
+}
+export const CHALLENGE = challengeText(CHALLENGE_GOAL, CHALLENGE_SCOPE, CHALLENGE_OUTSIDE);
+
+// P1: a terminal command in Ask for approval (terminal.py inspect_command(): risk "execution" for a non-read-only
+// program; app.py: writable when edits are on; command_plans.py from_command(): a one-step typed plan with defaults).
+const EXPORT_REQUEST = "Export January's invoices to CSV so I can check them.";
+const EXPORT_COMMAND = "python -m invoice_kit.cli export --month 2026-01 --out exports/2026-01.csv";
+const EXPORT_REPLY = `I'll run the project's own exporter for January. It writes \`exports/2026-01.csv\` inside invoice-kit, so it waits for your approval.`;
+function commandPayload() {
+  const argv = EXPORT_COMMAND.split(" ");
+  const plan = { plan_version: 1, root: WORKSPACE, pipeline: "none", process_model: "tree", interactive: false,
+    steps: [{ argv, cwd: ".", env: {}, stdin: "none",
+      executable: { realpath: "/Users/maya/Projects/invoice-kit/.venv/bin/python3.12", sha256: "4be1f0e7c2a95d3378e0b2f6c1d9a8e74b3c5d6e7f8091a2b3c4d5e6f7081920" } }],
+    writable: ["."], network: { mode: "none", destinations: [], credentials: [] },
+    resources: { timeout: 60, cpu_seconds: 60, memory_mb: 2048, nproc: 64, output_bytes: 192000 },
+    plan_hash: "7d1e04c9a2b35f6e8d0c1b2a3f4e5d6c7b8a9f0e1d2c3b4a5f6e7d8c9b0a1f2e" };
+  return { root: WORKSPACE, command: EXPORT_COMMAND, argv, network: false, risk: "execution", requires_review: true,
+    writable: true, planned: true, plan };
+}
+// P1: a reviewed Git commit (git_plans.py _plan_commit() summary and effects; payload fields from plan()).
+const COMMIT_REQUEST = "Commit both files.";
+const COMMIT_MESSAGE = "Clamp add_months() to the last day of the month\n\nFixes the CSV export crash for invoices issued on the 29th, 30th and 31st.";
+const COMMIT_REPLY = `I've prepared a commit of the two changed files on \`main\`. It runs only after you approve the Git plan in Details › Activity.`;
+function gitPayload() {
+  const parent = "8c41f0b2d9e7a6b5c4d3e2f1a0b9c8d7e6f5a4b3", identity = { name: "Maya", email: "maya@example.com", source: "repository" };
+  const paths = [
+    { path: "invoice_kit/dates.py", kind: "add", mode: "100644", blob_oid: "3f9a1c2b7d40e5f6a7b8c9d0e1f2a3b4c5d6e7f8" },
+    { path: "tests/test_dates.py", kind: "add", mode: "100644", blob_oid: "b17c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c" },
+  ];
+  return { plan_version: 1, plan_id: "f3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8", operation: "commit", root: WORKSPACE,
+    bindings: { head_ref: "refs/heads/main", head_commit: parent, paths, target_ref: "refs/heads/main", parent, new_branch: false, identity },
+    summary: `Commit ${paths.length} selected path(s) to branch main as ${identity.name} <${identity.email}>: "${COMMIT_MESSAGE.split("\n", 1)[0]}". Other staged and unstaged work stays exactly as it is.`,
+    effects: ["Write blob objects from the reviewed file bytes", `Create one commit on parent ${parent.slice(0, 12)} containing only the selected paths`,
+      `Move refs/heads/main from ${parent.slice(0, 12)} to the new commit (compare-and-swap)`, "Update the committed paths in the index only where they still hold the reviewed entry"],
+    destructive: false, publication: false, requires_review: false, hooks_run: false, network: false, sensitive_findings: [],
+    origin: "pebble_git_plan", authorization: "none", paths: paths.map((p) => p.path), message: COMMIT_MESSAGE, branch: null,
+    plan_hash: "2e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d" };
+}
 
 function profileList() {
-  return [
-    { id: "p-local-qwen", name: "Qwen3.5 4B Instruct · Q4_K_M", kind: "gguf", path: "/Users/maya/Models/qwen3.5-4b-instruct-q4_k_m.gguf", context: 4096, tools: true, local: true }, // backend: GGUF runs at 4K
-    { id: "p-chatgpt", name: "GPT-5.5", kind: "chatgpt", connection_id: "conn-chatgpt", provider_name: "ChatGPT", model: "gpt-5.5", context: 272000, tools: true, email: "maya@example.com" },
-    { id: "p-claude", name: "Claude Sonnet 4.6", kind: "anthropic", connection_id: "conn-anthropic", provider_name: "Anthropic", model: "claude-sonnet-4-6", context: 200000, tools: true, has_key: true },
-  ];
+  // providers.py profiles(): a GGUF profile gets connection_id "local" and provider_name "On this device".
+  return [{ id: "p-local-frognano", name: LOCAL_MODEL.name, kind: "gguf", path: LOCAL_MODEL.file, context: 4096, tools: true,
+    connection_id: "local", provider_name: "On this device", efforts: ["default", "quick", "think"], default_effort: "quick",
+    effort: "think", effort_parameter: "local_thinking" }];
 }
 
-function modelStatus(which) {
-  if (which === "cloud")
-    return { state: "ready", configured: true, name: "GPT-5.5", path: "", context: 272000, kind: "chatgpt", provider: "ChatGPT", local: false,
-      profile_id: "p-chatgpt", protocol: "responses", efforts: ["low", "medium", "high"], effort: "medium", default_effort: "medium" };
-  return { state: "ready", configured: true, name: "Qwen3.5 4B Instruct · Q4_K_M", path: "/Users/maya/Models/qwen3.5-4b-instruct-q4_k_m.gguf",
-    context: 4096, kind: "gguf", local: true, provider: "llama.cpp", profile_id: "p-local-qwen", efforts: ["quick", "think"], effort: "think", default_effort: "think" };
+function modelStatus() {
+  // model.py status() + capabilities.py: FrogNano GGUF offers quick/think with quick as the default; Maya chose think.
+  return { state: "ready", configured: true, name: LOCAL_MODEL.name, path: LOCAL_MODEL.file, context: 4096, kind: "gguf",
+    profile_id: "p-local-frognano", efforts: ["default", "quick", "think"], default_effort: "quick", effort: "think",
+    effort_parameter: "local_thinking" };
 }
 
-const MEMORY_TYPES = [
-  ["working", "Working context", 2], ["episodic", "Past experiences", 14], ["semantic", "Facts & knowledge", 9],
-  ["procedural", "Procedures", 3], ["temporal", "Time-sensitive information", 1], ["profile", "Your preferences", 5],
-];
+const STATIC_COUNTS = { working: 2, episodic: 14 };
+const LAYERS = [["working", "Working context"], ["episodic", "Past experiences"], ["semantic", "Facts & knowledge"],
+  ["procedural", "Procedures"], ["temporal", "Time-sensitive information"], ["profile", "Your preferences"]]; // memory.py KINDS
 
 export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null }) {
   const now = Math.floor(Date.now() / 1000);
   const ago = (s) => now - s;
-  const model = modelStatus(/cloud/.test(scene) ? "cloud" : "local");
+  const model = modelStatus();
+  const usage = (input, output, cached, tps, seconds, calls = 1) =>
+    ({ input_tokens: input, output_tokens: output, cached_tokens: cached, tokens_per_second: tps, route: "model", calls, seconds });
 
   // ---- conversations -------------------------------------------------------------------------------------------
   const codingProposed = {
     id: ID.coding, title: "Fix month-end due dates", workspace: WORKSPACE, trashed: false,
     messages: [
-      { id: "msg-c1", role: "user", created: ago(420), attachments: [],
-        content: "The CSV export crashes for invoices issued on the 31st: ValueError: day is out of range for month. Can you find the bug and fix it?" },
+      { id: "msg-c1", role: "user", created: ago(420), attachments: [], content: REQUEST },
       { id: "msg-c2", role: "assistant", created: ago(372), run_id: "run-fix-1", attachments: [], content: REPLY_PROPOSED,
-        usage: { input_tokens: 6120, output_tokens: 412, cached_tokens: 4096, tokens_per_second: 38.4, route: "model", calls: 4, seconds: 46.2 } },
+        usage: usage(3480, 412, 2048, 21.6, 46.2, 4) },
     ],
     actions: [
       { id: "act-edit-dates", chat_id: ID.coding, kind: "edit", status: "pending", payload: { path: "invoice_kit/dates.py", baseline: "9f2c41d07ab3", diff: DIFF_DATES } },
       { id: "act-edit-tests", chat_id: ID.coding, kind: "edit", status: "pending", payload: { path: "tests/test_dates.py", baseline: "51ab9e2c3d70", diff: DIFF_TESTS } },
     ],
-    runs: [{ id: "run-fix-1", state: "waiting_approval", steps: 6, elapsed: 46, created: ago(418), updated: ago(372), counts: { steps: 6, retries: 0, waited: 0 } }],
+    runs: [{ id: "run-fix-1", state: "waiting_approval", steps: 6, elapsed: 46, error: null, created: ago(418), updated: ago(372), counts: { steps: 6, retries: 0, waited: 0 } }],
     questions: [], plan: null, artifacts: [],
   };
+  const testsAction = (status, chatId = ID.coding) => ({
+    id: "act-tests-1", chat_id: chatId, kind: "tests", status,
+    payload: { recipe: "pytest",
+      plan: { recipe: "pytest", kind: "python", cwd: "snapshot", timeout: 120, output_limit: 1048576, network: false, argv: ["python", "-m", "pytest", "-q"],
+        executable: { realpath: "/Users/maya/Projects/invoice-kit/.venv/bin/python3.12", sha256: "4be1f0e7c2a95d3378e0b2f6c1d9a8e74b3c5d6e7f8091a2b3c4d5e6f7081920" } },
+      ...(status === "applied" ? { result: { outcome: "passed", exit_code: 0, tests: { passed: 42, failed: 0, skipped: 0, errors: 0, total: 42 },
+        snapshot_digest: "c0ffee5a1b2c3d4e5f60718293a4b5c6d7e8f9012a3b4c5d6e7f8091a2b3c4d5", drafts_included: [],
+        output: "..........................................  [100%]\n42 passed in 1.84s" } } : {}) },
+  });
+  const appliedEdits = codingProposed.actions.map((a) => ({ ...a, status: "applied" }));
+  const goAhead = { id: "msg-c3", role: "user", created: ago(140), attachments: [], content: "Both look right. Go ahead." };
   const codingDone = {
     ...codingProposed,
     messages: [
-      ...codingProposed.messages,
-      { id: "msg-c3", role: "user", created: ago(140), attachments: [], content: "Both look right. Go ahead." },
+      ...codingProposed.messages, goAhead,
       { id: "msg-c4", role: "assistant", created: ago(64), run_id: "run-fix-2", attachments: [], content: REPLY_DONE,
-        usage: { input_tokens: 8410, output_tokens: 236, cached_tokens: 6144, tokens_per_second: 41.7, route: "model", calls: 3, seconds: 31.5 } },
+        usage: usage(4210, 236, 3072, 23.4, 31.5, 3) },
     ],
-    actions: [
-      { id: "act-edit-dates", chat_id: ID.coding, kind: "edit", status: "applied", payload: { path: "invoice_kit/dates.py", baseline: "9f2c41d07ab3", diff: DIFF_DATES } },
-      { id: "act-edit-tests", chat_id: ID.coding, kind: "edit", status: "applied", payload: { path: "tests/test_dates.py", baseline: "51ab9e2c3d70", diff: DIFF_TESTS } },
-      { id: "act-tests-1", chat_id: ID.coding, kind: "tests", status: "applied",
-        payload: { recipe: "pytest",
-          plan: { recipe: "pytest", kind: "python", cwd: "snapshot", timeout: 120, output_limit: 1048576, network: false, argv: ["python", "-m", "pytest", "-q"],
-            executable: { realpath: "/Users/maya/Projects/invoice-kit/.venv/bin/python3.12", sha256: "4be1f0e7c2a95d3378e0b2f6c1d9a8e74b3c5d6e7f8091a2b3c4d5e6f7081920" } },
-          result: { outcome: "passed", exit_code: 0, tests: { passed: 42, failed: 0, skipped: 0, errors: 0, total: 42 },
-            snapshot_digest: "c0ffee5a1b2c3d4e5f60718293a4b5c6d7e8f9012a3b4c5d6e7f8091a2b3c4d5", drafts_included: [],
-            output: "..........................................  [100%]\n42 passed in 1.84s" } } },
-    ],
+    actions: [...appliedEdits, testsAction("applied")],
     runs: [
-      { id: "run-fix-2", state: "completed", steps: 5, elapsed: 72, created: ago(138), updated: ago(64), counts: { steps: 5, retries: 0, waited: 6 } },
-      { id: "run-fix-1", state: "completed", steps: 6, elapsed: 46, created: ago(418), updated: ago(372), counts: { steps: 6, retries: 0, waited: 0 } },
+      { id: "run-fix-2", state: "completed", steps: 5, elapsed: 72, error: null, created: ago(138), updated: ago(64), counts: { steps: 5, retries: 0, waited: 6 } },
+      { id: "run-fix-1", state: "completed", steps: 6, elapsed: 46, error: null, created: ago(418), updated: ago(372), counts: { steps: 6, retries: 0, waited: 0 } },
+    ],
+  };
+  // The same task held by AgentGuard's completion gate: edits applied, no test evidence, so the run waits for a decision
+  // (RunPanel: Run the tests / Ask Pebble to finish / Accept as unverified).
+  const codingHeld = {
+    ...codingProposed,
+    messages: [
+      ...codingProposed.messages, goAhead,
+      { id: "msg-c4", role: "assistant", created: ago(96), run_id: "run-fix-2", attachments: [], content: REPLY_HELD,
+        usage: usage(4630, 188, 3072, 22.8, 18.7, 3) },
+    ],
+    actions: appliedEdits,
+    runs: [
+      { id: "run-fix-2", state: "verification_required", steps: 3, elapsed: 41, error: HELD_ISSUE, created: ago(138), updated: ago(96), counts: { steps: 3, retries: 0, waited: 6 } },
+      { id: "run-fix-1", state: "completed", steps: 6, elapsed: 46, error: null, created: ago(418), updated: ago(372), counts: { steps: 6, retries: 0, waited: 0 } },
     ],
   };
   const trip = {
@@ -136,7 +260,7 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null }
       { id: "msg-t2", role: "assistant", created: ago(3560), run_id: "run-trip-1", attachments: [], content: TRIP_REPLY },
     ],
     actions: [], questions: [], plan: null,
-    runs: [{ id: "run-trip-1", state: "completed", steps: 2, elapsed: 18, created: ago(3590), updated: ago(3560), counts: { steps: 1, retries: 0, waited: 0 } }],
+    runs: [{ id: "run-trip-1", state: "completed", steps: 2, elapsed: 18, error: null, created: ago(3590), updated: ago(3560), counts: { steps: 1, retries: 0, waited: 0 } }],
     artifacts: [tripDashboard(ID.trip, ago(3560))],
   };
   const quiz = {
@@ -146,27 +270,60 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null }
       { id: "msg-q2", role: "assistant", created: ago(880), run_id: "run-quiz-1", attachments: [], content: QUIZ_REPLY },
     ],
     actions: [], questions: [], plan: null,
-    runs: [{ id: "run-quiz-1", state: "completed", steps: 1, elapsed: 9, created: ago(890), updated: ago(880), counts: { steps: 1, retries: 0, waited: 0 } }],
+    runs: [{ id: "run-quiz-1", state: "completed", steps: 1, elapsed: 9, error: null, created: ago(890), updated: ago(880), counts: { steps: 1, retries: 0, waited: 0 } }],
     artifacts: [datetimeQuiz(ID.quiz, ago(880))],
   };
   const pet = {
-    id: ID.pet, title: "Rain in Lisbon tomorrow?", workspace: null,
+    id: ID.pet, title: autoTitle(PET_QUESTION), workspace: null,
     messages: [
-      { id: "msg-p1", role: "user", created: ago(95), attachments: [], content: "Will it rain in Lisbon tomorrow morning?" },
-      { id: "msg-p2", role: "assistant", created: ago(80), run_id: "run-pet-1", attachments: [], content: PET_REPLY },
+      { id: "msg-p1", role: "user", created: ago(95), attachments: [], content: PET_QUESTION },
+      { id: "msg-p2", role: "assistant", created: ago(88), run_id: "run-pet-1", attachments: [], content: PET_REPLY,
+        usage: usage(1180, 52, 0, 24.5, 2.2) },
     ],
     actions: [], questions: [], plan: null, artifacts: [],
-    runs: [{ id: "run-pet-1", state: "completed", steps: 1, elapsed: 7, created: ago(92), updated: ago(80), counts: { steps: 1, retries: 0, waited: 0 } }],
+    runs: [{ id: "run-pet-1", state: "completed", steps: 0, elapsed: 4, error: null, created: ago(94), updated: ago(88), counts: { steps: 0, retries: 0, waited: 0 } }],
+  };
+  const forget = {
+    id: ID.forget, title: autoTitle(FORGET_REQUEST), workspace: null,
+    messages: [
+      { id: "msg-f1", role: "user", created: ago(12), attachments: [], content: FORGET_REQUEST },
+      { id: "msg-f2", role: "assistant", created: ago(11), run_id: "run-forget-1", attachments: [], content: forgetReply(2, FORGET_SUBJECT) },
+    ],
+    actions: [], questions: [], plan: null, artifacts: [],
+    runs: [{ id: "run-forget-1", state: "completed", steps: 0, elapsed: 0.4, error: null, created: ago(12), updated: ago(11), counts: { steps: 0, retries: 0, waited: 0 } }],
+  };
+  const challenge = {
+    id: ID.challenge, title: "New conversation", workspace: WORKSPACE, trashed: false,
+    messages: [], actions: [], questions: [], plan: null, artifacts: [],
+    runs: [],
+  };
+  const exportChat = {
+    id: ID.command, title: autoTitle(EXPORT_REQUEST), workspace: WORKSPACE, trashed: false,
+    messages: [
+      { id: "msg-e1", role: "user", created: ago(40), attachments: [], content: EXPORT_REQUEST },
+      { id: "msg-e2", role: "assistant", created: ago(31), run_id: "run-export-1", attachments: [], content: EXPORT_REPLY, usage: usage(2310, 64, 1024, 23.1, 2.9, 2) },
+    ],
+    actions: [{ id: "act-export-jan", chat_id: ID.command, kind: "command", status: "pending", payload: commandPayload() }],
+    runs: [{ id: "run-export-1", state: "waiting_approval", steps: 2, elapsed: 9, error: null, created: ago(39), updated: ago(31), counts: { steps: 2, retries: 0, waited: 0 } }],
+    questions: [], plan: null, artifacts: [],
+  };
+  const codingGit = {
+    ...codingDone,
+    messages: [...codingDone.messages,
+      { id: "msg-c5", role: "user", created: ago(30), attachments: [], content: COMMIT_REQUEST },
+      { id: "msg-c6", role: "assistant", created: ago(22), run_id: "run-fix-3", attachments: [], content: COMMIT_REPLY, usage: usage(4980, 58, 4096, 24.2, 2.4, 2) }],
+    actions: [...codingDone.actions, { id: "act-git-commit", chat_id: ID.coding, kind: "git", status: "pending", payload: gitPayload() }],
+    runs: [{ id: "run-fix-3", state: "waiting_approval", steps: 2, elapsed: 8, error: null, created: ago(29), updated: ago(22), counts: { steps: 2, retries: 0, waited: 0 } }, ...codingDone.runs],
   };
   const fresh = { id: ID.fresh, title: "New conversation", workspace: null, messages: [], actions: [], runs: [], questions: [], plan: null, artifacts: [] };
-  // Live sequences start empty; capture.mjs sends a message and then plays the backend events.
+  // Live sequences start empty; capture.mjs / record.mjs send a message and then play the backend events.
   const liveMain = { id: "chat-live-fix", title: "New conversation", workspace: WORKSPACE, messages: [], actions: [], runs: [], questions: [], plan: null, artifacts: [] };
   const livePet = { id: "chat-live-pet", title: "New conversation", workspace: null, messages: [], actions: [], runs: [], questions: [], plan: null, artifacts: [] };
 
   const chats = new Map();
   const put = (c) => chats.set(c.id, c);
-  const coding = /^approval/.test(scene) || scene === "pet-review" ? codingProposed : codingDone;
-  [coding, trip, quiz, pet, fresh, liveMain, livePet].forEach(put);
+  const coding = /^approval/.test(scene) || scene === "pet-review" ? codingProposed : /^held/.test(scene) ? codingHeld : scene === "git" ? codingGit : codingDone;
+  [coding, trip, quiz, pet, fresh, liveMain, livePet, forget, challenge, exportChat].forEach(put);
   const sidebarExtra = [
     { id: "chat-rust-lifetimes", title: "Explain Rust lifetimes simply", workspace: null },
     { id: "chat-launch-email", title: "Draft the beta launch email", workspace: null },
@@ -175,16 +332,23 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null }
 
   // Which conversation the window opens first (App.vue opens state.chats[0]; the pet reads its saved id).
   const first = {
-    welcome: fresh, approval: coding, done: coding, "settings-permissions": coding, "settings-memory": coding,
-    dashboard: trip, quiz: quiz, "approval-cloud": coding, live: liveMain, "pet-live": livePet,
+    welcome: fresh, approval: coding, done: coding, held: coding, "settings-permissions": coding, "settings-memory": coding,
+    dashboard: trip, quiz: quiz, live: liveMain, "live-film": liveMain, "pet-live": livePet, forget, challenge,
+    command: exportChat, git: coding,
   }[scene] || (surface === "pet" ? pet : coding);
-  const order = [first, ...[coding, pet, trip, quiz].filter((c) => c !== first)];
+  const recent = [coding, pet, trip, quiz].filter((c) => c !== first);
+  const order = [first, ...(["forget", "challenge", "command"].includes(scene) ? recent.slice(0, 3) : recent)];
   const listed = () => [...order.map(({ id, title, workspace }) => ({ id, title, workspace })), ...sidebarExtra];
 
   // ---- run activity (Details › Steps and the receipt's expanded timeline) ----------------------------------------
+  // Labels: run_activity.py (context_ready -> "Recalled N memories" with "Context ready in N ms"; model attempts ->
+  // "The model responded"; approvals "Approved: " + tool label; completion checks -> verdict()), app.py tool_label().
+  const recalled = (seq, at, count, ms) => item(seq, at, "context", count ? `Recalled ${count} memor${count === 1 ? "y" : "ies"}` : "Context ready", { detail: `Context ready in ${ms} ms`, duration: ms / 1000 });
+  const responded = (seq, at, seconds, headers, first) => item(seq, at, "model", "The model responded", { detail: `Headers after ${headers.toFixed(1)} s; first text after ${first.toFixed(1)} s.`, duration: seconds });
   const activity = {
     "run-fix-1": { state: "completed", started: ago(418), elapsed: 46, items: [
-      item(0, 0.4, "context", "Read your request and the project notes"),
+      recalled(0, 0.2, 3, 180),
+      responded(32, 0.4, 1.6, 0.3, 0.9),
       item(64, 2.1, "tool", "Searching project source", { activity: "searching", duration: 0.6 }),
       item(128, 3.0, "tool", "Reading invoice_kit/export.py", { activity: "reading", duration: 0.2 }),
       item(192, 3.4, "tool", "Reading invoice_kit/dates.py", { activity: "reading", duration: 0.2 }),
@@ -193,34 +357,65 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null }
       item(384, 19.9, "tool", "Preparing an edit to tests/test_dates.py", { activity: "editing", duration: 0.3, detail: "Staged for your approval." }),
       item(448, 20.4, "note", "Waiting for your approval"),
     ] },
-    "run-fix-2": { state: "completed", started: ago(138), elapsed: 72, items: [
+    "run-fix-2": scene.startsWith("held") ? heldActivity() : { state: "completed", started: ago(138), elapsed: 72, items: [
       item(0, 0.3, "approval", "Approved: Preparing an edit to invoice_kit/dates.py", { duration: 6 }),
       item(64, 0.4, "approval", "Approved: Preparing an edit to tests/test_dates.py", { duration: 0 }),
-      item(128, 6.8, "tool", "Finding project test and build recipes", { activity: "searching", duration: 0.4 }),
+      item(128, 6.8, "tool", "Finding project test and build recipes", { activity: "reading", duration: 0.4 }),
       item(192, 7.9, "tool", "Requesting isolated tests", { activity: "testing", duration: 11.2 }),
       item(256, 19.6, "tool", "Reading invoice_kit/export.py", { activity: "reading", duration: 0.2 }),
       item(320, 20.1, "tool", "Searching project source", { activity: "searching", duration: 0.5 }),
       item(384, 27.5, "check", "Verified · pytest 42 passed on current files", { duration: 2.4 }),
-      item(448, 31.0, "model", "Writing the reply", { duration: 4.1 }),
+      responded(448, 31.0, 4.1, 0.3, 0.8),
     ] },
-    "run-trip-1": { state: "completed", started: ago(3590), elapsed: 18, items: [item(0, 1.2, "tool", "Creating a dashboard view", { activity: "viewing", duration: 3.4 })] },
-    "run-quiz-1": { state: "completed", started: ago(890), elapsed: 9, items: [item(0, 1.0, "tool", "Creating a quiz view", { activity: "viewing", duration: 2.2 })] },
-    "run-pet-1": { state: "completed", started: ago(92), elapsed: 7, items: [item(0, 0.8, "tool", "Looking up current weather", { activity: "searching", duration: 1.6 })] },
+    // A view is made by the UIRender tool, which app.py tool_label() leaves under its own name.
+    "run-trip-1": { state: "completed", started: ago(3590), elapsed: 18, items: [item(0, 1.2, "tool", "UIRender", { activity: "viewing", duration: 3.4 })] },
+    "run-quiz-1": { state: "completed", started: ago(890), elapsed: 9, items: [item(0, 1.0, "tool", "UIRender", { activity: "viewing", duration: 2.2 })] },
+    "run-pet-1": { state: "completed", started: ago(94), elapsed: 4, items: [recalled(0, 0.1, 0, 120), responded(32, 0.3, 2.2, 0.2, 0.6)] },
+    "run-forget-1": { state: "completed", started: ago(12), elapsed: 0.4, items: [] },
+    "run-export-1": { state: "waiting_approval", started: ago(39), elapsed: 9, items: [
+      recalled(0, 0.2, 2, 160), responded(32, 0.4, 1.2, 0.3, 0.7),
+      item(64, 3.1, "tool", "Reviewing terminal command", { activity: "running", duration: 0.1, detail: "Staged for your approval." }),
+      item(128, 3.3, "note", "Waiting for your approval"),
+    ] },
+    "run-fix-3": { state: "waiting_approval", started: ago(29), elapsed: 8, items: [
+      recalled(0, 0.2, 3, 170), responded(32, 0.4, 1.1, 0.3, 0.7),
+      item(64, 2.9, "tool", "Preparing a reviewed Git plan", { activity: "editing", duration: 0.8, detail: "Staged for your approval." }),
+      item(128, 3.8, "note", "Waiting for your approval"),
+    ] },
   };
+  function heldActivity() {
+    // Two repair turns (runner.py: gate_repairs < 2), then the hold. completion_checked rows carry verdict(gate);
+    // withdrawn drafts are notes (WITHHELD); the final state adds STATE_NOTES["verification_required"].
+    const verdictRow = (seq, at, last) => item(seq, at, "check", "Not verified · 2 changed files, no tests run", { duration: 0.6, detail: last ? "1 item unresolved" : "1 item to resolve" });
+    const withdrawn = (seq, at) => item(seq, at, "note", "Draft withdrawn: a check asked for a fix; the reply follows it");
+    return { state: "verification_required", started: ago(138), elapsed: 41, items: [
+      item(0, 0.3, "approval", "Approved: Preparing an edit to invoice_kit/dates.py", { duration: 6 }),
+      item(64, 0.4, "approval", "Approved: Preparing an edit to tests/test_dates.py", { duration: 0 }),
+      responded(128, 6.6, 3.2, 0.3, 0.9),
+      verdictRow(192, 9.9, false), withdrawn(256, 10.5),
+      responded(320, 10.7, 4.0, 0.3, 0.8),
+      verdictRow(384, 14.8, false), withdrawn(448, 15.4),
+      responded(512, 15.6, 3.6, 0.3, 0.8),
+      verdictRow(576, 19.4, true),
+      item(640, 20.0, "note", "Verification remains incomplete"),
+    ] };
+  }
 
-  // ---- memory (Settings › Memory) --------------------------------------------------------------------------------
+  // ---- memory (Settings › Memory and the Forget card) -----------------------------------------------------------
   const memories = {
     profile: [
-      { id: "pebble-md", kind: "profile", scope: "global", origin: "curated", updated: ago(86400 * 3),
-        content: "Call me Maya. I maintain invoice-kit, a small open-source Python billing library, and I'm planning a trip to Lisbon in May." },
+      { id: "pebble-md", kind: "profile", scope: "global", origin: "curated", updated: ago(86400 * 1),
+        content: "Call me Maya. I maintain invoice-kit, a small open-source Python billing library." },
       { id: "mem-pref-1", kind: "profile", scope: "global", origin: "direct-user", updated: ago(86400 * 2),
         content: "Prefers short answers: code first, then a one-paragraph explanation." },
+      { id: "mem-pref-3", kind: "profile", scope: "global", origin: "direct-user", updated: ago(86400 * 3),
+        content: "Uses metric units and 24-hour times." },
+      { id: "mem-pref-4", kind: "profile", scope: "project:" + WORKSPACE, origin: "auto-learned", learning_status: "active", updated: ago(86400 * 4),
+        provenance: JSON.stringify({ evidence_class: "human_preference" }), content: "In invoice-kit, keep public function names stable." },
       { id: "mem-pref-2", kind: "profile", scope: "global", origin: "auto-learned", learning_status: "active", updated: ago(86400 * 5),
         provenance: JSON.stringify({ evidence_class: "human_preference" }), content: "Writes Python with type hints and runs tests with pytest." },
-      { id: "mem-pref-3", kind: "profile", scope: "global", origin: "direct-user", updated: ago(86400 * 9),
-        content: "Uses metric units and 24-hour times." },
-      { id: "mem-pref-4", kind: "profile", scope: "project:" + WORKSPACE, origin: "auto-learned", learning_status: "active", updated: ago(86400),
-        provenance: JSON.stringify({ evidence_class: "human_preference" }), content: "In invoice-kit, keep public function names stable; add a changelog line for every fix." },
+      { id: "mem-pref-5", kind: "profile", scope: "global", origin: "direct-user", updated: ago(86400 * 6),
+        content: "Planning a trip to Lisbon in May; likes walking tours and fado." },
     ],
     semantic: [
       { id: "mem-fact-1", kind: "semantic", scope: "project:" + WORKSPACE, origin: "auto-learned", learning_status: "active", updated: ago(86400 * 4),
@@ -230,11 +425,22 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null }
       { id: "mem-proc-1", kind: "procedural", scope: "project:" + WORKSPACE, origin: "auto-learned", learning_status: "active", updated: ago(3600),
         provenance: JSON.stringify({ evidence_class: "host_lesson" }), content: JSON.stringify({ recipe: "python -m pytest -q", language: "Python" }) },
     ],
+    temporal: [
+      { id: "mem-temp-1", kind: "temporal", scope: "global", origin: "direct-user", updated: ago(86400 * 6), expires: now + 86400 * 210,
+        content: "Lisbon flights on 14 May, back on 19 May." },
+    ],
   };
+  const where = (scope) => (scope === "global" ? "all" : String(scope).startsWith("chat:") ? "conversation" : "project");
+  const findMemory = (id) => Object.values(memories).flat().find((m) => m.id === id);
 
   // ---- the state() reply -----------------------------------------------------------------------------------------
-  const permissions = { mode: /full/.test(scene) ? "full" : "ask",
-    tools: { files: true, edits: true, tests: true, apps: true, web: true, terminal: true, plugins: true, views: true, screen: false } };
+  const settings = {
+    theme, reduced_motion: false, memory_enabled: true,
+    memory_layers: { working: true, episodic: true, semantic: true, procedural: true, temporal: true, profile: true },
+    permissions: { mode: scene === "challenge" ? "auto" : "ask",
+      tools: { files: true, edits: true, tests: true, apps: true, web: true, terminal: true, plugins: true, views: true, screen: false } },
+    companion: { pointer: true, reactions: true, status_words: "rotate", ui_guidance: true },
+  };
   const live = { active: null, activeRun: null };
   const state = () => ({
     job_notifications: [],
@@ -244,19 +450,14 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null }
     active: live.active,
     active_run: live.activeRun,
     runs: [...chats.values()].flatMap((c) => (c.runs || []).map((r) => ({ id: r.id, chat_id: c.id, state: r.state, created: r.created, updated: r.updated }))),
-    settings: {
-      theme, reduced_motion: false, memory_enabled: true,
-      memory_layers: { working: true, episodic: true, semantic: true, procedural: true, temporal: true, profile: true },
-      permissions,
-      companion: { pointer: true, reactions: true, status_words: "rotate", ui_guidance: true },
-    },
+    settings,
     data_dir: "/Users/maya/.pebble",
     platform: "darwin",
     version: "1.0.1",
     memory: {
-      enabled: true,
-      strategy: "SQLite FTS5 · hybrid lexical/trigram/metadata ranking · bounded retrieval · no extra model",
-      types: MEMORY_TYPES.map(([id, name, count]) => ({ id, name, count, enabled: true })),
+      enabled: settings.memory_enabled,
+      strategy: "SQLite FTS5 · hybrid lexical/trigram/metadata ranking · bounded retrieval · no extra model", // memory.py
+      types: LAYERS.map(([id, name]) => ({ id, name, count: STATIC_COUNTS[id] ?? (memories[id] || []).length, enabled: settings.memory_layers[id] !== false })),
       learning: { status_counts: { active: 11, pending: 0 }, last_error_type: null },
     },
     profiles: profileList(),
@@ -264,6 +465,7 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null }
 
   const artifactsOf = (chatId) => chats.get(chatId)?.artifacts || [];
   const findArtifact = ({ chat_id, id }) => artifactsOf(chat_id).find((a) => a.id === id);
+  const runOf = (chatId, runId) => chats.get(chatId)?.runs.find((r) => r.id === runId);
 
   const handlers = {
     state,
@@ -278,8 +480,9 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null }
       if (!c) throw "Conversation not found.";
       const message_id = "msg-live-" + (c.messages.length + 1);
       c.messages.push({ id: message_id, role: "user", content: text, created: Math.floor(Date.now() / 1000), attachments: [] });
+      if (c.title === "New conversation") c.title = autoTitle(text); // store.py message()
       const run_id = "run-live-" + (c.runs.length + 1);
-      c.runs = [{ id: run_id, state: "queued", created: Math.floor(Date.now() / 1000) }, ...c.runs];
+      c.runs = [{ id: run_id, state: "queued", error: null, created: Math.floor(Date.now() / 1000) }, ...c.runs];
       live.active = id;
       live.activeRun = run_id;
       return { message_id, run_id };
@@ -289,6 +492,39 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null }
       const a = chats.get(id)?.actions.find((x) => x.id === action_id);
       if (a) a.status = "applied";
       return true;
+    },
+    reject: ({ id, action_id }) => {
+      const a = chats.get(id)?.actions.find((x) => x.id === action_id);
+      if (a) a.status = "rejected";
+      return true;
+    },
+    undo: ({ id, action_id }) => {
+      const a = chats.get(id)?.actions.find((x) => x.id === action_id);
+      if (a) a.status = "undone";
+      return true;
+    },
+    // controller.py held(): 'tests' stages the covering recipe through the normal approval (Ask mode), and the run
+    // waits for that approval; the timeline gains the person's decision as a note (run_activity.py HELD).
+    run_held_tests: ({ id, run_id }) => {
+      const c = chats.get(id), run = runOf(id, run_id);
+      if (!c || !run || run.state !== "verification_required") throw "This task is not waiting on verification.";
+      c.actions = [...c.actions.filter((a) => a.id !== "act-tests-1"), testsAction("pending", id)];
+      run.state = "waiting_approval";
+      run.error = null;
+      const record = activity[run_id];
+      if (record) {
+        const seq = Math.max(0, ...record.items.map((i) => i.seq)) + 64, at = Math.max(0, ...record.items.map((i) => i.at)) + 26;
+        record.state = "waiting_approval";
+        record.items.push(item(seq, at, "note", "You asked Pebble to run the tests"),
+          item(seq + 64, at + 0.2, "approval", "Waiting for your approval: Requesting isolated tests", { status: "running" }));
+      }
+      return { run_id, status: "waiting_approval", action_id: "act-tests-1" };
+    },
+    run_held_finish: ({ run_id }) => ({ run_id, status: "queued" }),
+    run_held_accept: ({ id, run_id }) => {
+      const run = runOf(id, run_id);
+      if (run) run.state = "completed";
+      return { run_id, status: "completed", verified: false, origin: "human" };
     },
     run_activity: ({ run_id, after = 0 }) => {
       const a = activity[run_id];
@@ -312,33 +548,54 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null }
     memory_list: ({ kind }) => memories[kind] || [],
     memory_candidates: () => [],
     memory_contests: () => [],
-    plan_credentials: () => ({ names: ["GITHUB_TOKEN"] }),
-    notification_status: () => ({ enabled: true, muted: false, outbox: {} }),
+    // memory.py forget_preview(ids=...): records in the requested order; subject None (the event carries it).
+    memory_forget_preview: ({ ids = [] }) => ({
+      items: ids.map(findMemory).filter(Boolean).map((m) => ({ id: m.id, kind: m.kind, layer: Object.fromEntries(LAYERS)[m.kind], content: m.content,
+        origin: m.origin, where: where(m.scope), updated: m.updated, authorization: "none" })),
+      subject: null, authorization: "none",
+    }),
+    memory_delete: ({ id }) => {
+      for (const kind of Object.keys(memories)) memories[kind] = memories[kind].filter((m) => m.id !== id);
+      return { deleted: true };
+    },
+    plan_credentials: () => ({ names: [] }),
+    project_recipes: () => ({ recipes: [{ id: "pytest", kind: "python", available: true }], inventory_truncated: false }),
+    git_plan_receipts: () => ({ items: [] }),
+    agent_worktrees: () => [],
+    environment_list: () => ({ items: [] }),
+    notification_status: () => ({
+      settings: { enabled: true, kinds: { completed: true, failed: true, action_needed: true, monitor_changed: true }, preview: "title", quiet_hours: null },
+      quiet_now: false, outbox: { pending: 0, delivered: 0, suppressed: 0, failed: 0 }, deferred: 0, last_failure: null, jobs: [], actions: [],
+    }),
     telemetry_get: () => ({ enabled: false, events: 0 }),
     artifact_get: (p) => findArtifact(p) || (() => { throw "View not found."; })(),
     artifact_history: (p) => [findArtifact(p)].filter(Boolean),
     quiz_attempt: (p) => (findArtifact(p)?.kind === "quiz" ? quizAttempt(p, now) : null),
     quiz_start: (p) => quizAttempt(p, now),
     quiz_save: () => ({ saved: true }),
-    setting: () => true,
+    // A settings change takes effect in the next state() read, as the service's does.
+    setting: ({ key, value }) => {
+      if (key in settings) settings[key] = JSON.parse(JSON.stringify(value));
+      return true;
+    },
     open_url: () => null,
     remove_source: () => true,
-    chatgpt_status: () => ({ state: "signed_in", email: "maya@example.com" }),
     connector_status: () => [],
     storage_summary: () => ({}),
   };
 
   const storage = {};
   if (surface === "main") {
-    const drawer = { approval: { open: true, tab: "activity", width: 400 }, done: { open: true, tab: "activity", width: 400 }, "approval-cloud": { open: true, tab: "activity", width: 400 } }[scene];
-    const prefs = drawer || { open: false, tab: "activity", width: 360 };
+    const open = { open: true, tab: "activity", width: 400 };
+    const drawer = { approval: open, done: open, challenge: { ...open, width: 440 }, command: open, git: open }[scene];
+    const prefs = drawer ? { ...drawer } : { open: false, tab: "activity", width: 360 };
     if (drawerWidth) prefs.width = drawerWidth; // DetailsDrawer clamps it to 320..520
     storage["pebble.details.main"] = JSON.stringify(prefs);
   } else {
     storage["pebble-pet-chat"] = (scene === "pet-live" ? livePet : scene === "pet-review" ? coding : pet).id;
   }
 
-  // Called by capture.mjs (page.evaluate) between backend events, so later get_chat/state replies match them.
+  // Called by the capture scripts (page.evaluate) between backend events, so later get_chat/state replies match them.
   const liveApi = {
     message(chatId, message) {
       const c = chats.get(chatId);
@@ -349,13 +606,17 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null }
     actions(chatId, actions) { chats.get(chatId).actions = actions; },
     run(chatId, run) {
       const c = chats.get(chatId);
-      c.runs = [run, ...(c.runs || []).filter((r) => r.id !== run.id)];
+      c.runs = [{ error: null, ...run }, ...(c.runs || []).filter((r) => r.id !== run.id)];
     },
     title(chatId, title) { chats.get(chatId).title = title; },
     active(chatId, runId) { live.active = chatId; live.activeRun = runId; },
     activity(runId, record) { activity[runId] = record; },
-    reply: { pet: PET_REPLY, proposed: REPLY_PROPOSED, done: REPLY_DONE },
+    reply: { pet: PET_REPLY, proposed: REPLY_PROPOSED, done: REPLY_DONE, held: REPLY_HELD, proposedHeld: REPLY_PROPOSED_HELD,
+      continueHeld: CONTINUE_HELD, heldNotice: "\n\n> Verification remains incomplete: " + HELD_NOTICE, continueVerified: CONTINUE_VERIFIED },
+    text: { request: REQUEST, petQuestion: PET_QUESTION, challengeRequest: CHALLENGE_REQUEST, challenge: CHALLENGE, heldIssue: HELD_ISSUE },
     diffs: { dates: DIFF_DATES, tests: DIFF_TESTS },
+    forget: { subject: FORGET_SUBJECT, ids: ["mem-pref-5", "mem-temp-1"] },
+    challenge: { outside: CHALLENGE_OUTSIDE },
   };
 
   return {
