@@ -13,5 +13,5 @@
     "noUnusedLocals": true
   },
   "include": ["src", "scripts", "../shared"],
-  "exclude": ["remotion.config.ts", "node_modules", "out"]
+  "exclude": ["remotion.config.ts", "node_modules", "out", "../shared/**/*.test.ts"]
 }

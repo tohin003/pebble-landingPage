@@ -23,3 +23,23 @@ body {
   background: var(--page-bg);
   color: var(--page-fg);
 }
+
+/* The pebble's two colours (MASTER_PLAN §7.1, Pebble's --avatar and --avatar-eye), read by
+   src/components/pebble/PebbleSvg.tsx. One flat body colour; never a black circle. Keep these names when the full token
+   set lands. */
+:root {
+  --pebble: #536b54;
+  --pebble-eye: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --pebble: #b4cda6;
+    --pebble-eye: #23351f;
+  }
+}
+
+:root[data-theme="dark"] {
+  --pebble: #b4cda6;
+  --pebble-eye: #23351f;
+}

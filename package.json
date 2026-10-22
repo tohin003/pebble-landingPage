@@ -12,7 +12,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "next typegen && tsc --noEmit",
-    "test:engine": "bun test ./shared/pebble"
+    "test:engine": "bun test ./shared/pebble ./src/components/pebble"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",

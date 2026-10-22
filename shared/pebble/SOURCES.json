@@ -1,0 +1,27 @@
+{
+  "about": "Where every copied file in shared/pebble comes from. sha256 is the source file at the tag; provenance.test.ts checks the unchanged copies against it. bloub/PROVENANCE.json (bloub's own record, copied unchanged) names the upstream bloub revision.",
+  "source": {
+    "project": "Pebble",
+    "repository": "https://github.com/tohin003/Pebble",
+    "tag": "v1.0.1",
+    "license": "Apache-2.0",
+    "copyright": "Copyright 2026 Tohin Majumder"
+  },
+  "files": [
+    { "path": "bloub/engine.ts", "from": "src/vendor/bloub/engine.ts", "sha256": "d824c715b6ec38b241fc61ae2ac516d7c1623f9603f88942b4585cdd9307e638", "change": "none", "license": "MIT (bloub)" },
+    { "path": "bloub/decor.ts", "from": "src/vendor/bloub/decor.ts", "sha256": "6c300f8aaa7d2f95c13b35993753b0542779528d16bd8e1d01507e467fe52d04", "change": "none", "license": "MIT (bloub)" },
+    { "path": "bloub/expressions.ts", "from": "src/vendor/bloub/expressions.ts", "sha256": "66c5562afcf376c7fde0c83b6c9cc953f1313d9e2f910e2b94fd24098aa52ae5", "change": "none", "license": "MIT (bloub)" },
+    { "path": "bloub/eyefit.ts", "from": "src/vendor/bloub/eyefit.ts", "sha256": "8da411d7643c24f383d2d994a4668e43292c9810a6f63c257dbfd13f61284e9b", "change": "none", "license": "MIT (bloub)" },
+    { "path": "bloub/face.ts", "from": "src/vendor/bloub/face.ts", "sha256": "f9ddf7f750b101dbf6fa29acc95fe5fbdeec41c96b2873b1a844df2b5c1bd8c8", "change": "none", "license": "MIT (bloub)" },
+    { "path": "bloub/math.ts", "from": "src/vendor/bloub/math.ts", "sha256": "736be559b961109c3ca2a4c88d7992e99ceaff46450a522d47e596c1def99c0f", "change": "none", "license": "MIT (bloub)" },
+    { "path": "bloub/profiles.ts", "from": "src/vendor/bloub/profiles.ts", "sha256": "62dc55bc860b9e2b1f7a43168cee8738b68b42bf4d07f668d32984ee886f02d3", "change": "none", "license": "MIT (bloub)" },
+    { "path": "bloub/shape.ts", "from": "src/vendor/bloub/shape.ts", "sha256": "72020197e3ff117487ed670d915dfb3297b8034f7e9a803f573f15b3dd41d44e", "change": "none", "license": "MIT (bloub)" },
+    { "path": "bloub/states.ts", "from": "src/vendor/bloub/states.ts", "sha256": "7b67bfc4ee95011225a2cef542866dacde0a1c044a56f174bee4173b82cec207", "change": "none", "license": "MIT (bloub)" },
+    { "path": "bloub/LICENSE", "from": "src/vendor/bloub/LICENSE", "sha256": "d43fe2742faaf4a86210ec33bb155f101f64883e3994be9193099367940736b4", "change": "none", "license": "MIT (bloub)" },
+    { "path": "bloub/PROVENANCE.json", "from": "src/vendor/bloub/PROVENANCE.json", "sha256": "c6cb558347feca7cf221c8f1ee13568719bfdfc6067f0b99a4ca1244bd7a6b1a", "change": "none", "license": "MIT (bloub)" },
+    { "path": "bloub/skins.ts", "from": "src/vendor/bloub/skins.ts", "sha256": "2fa0f296e8a49b7b81458eebb98b6ecb44d1073bdc815a46e7846819b743b3c3", "change": "modified: SHAPES trimmed to cercle and galet (header in the file)", "license": "MIT (bloub)" },
+    { "path": "avatarMotion.ts", "from": "src/avatarMotion.ts", "sha256": "e6ac3cb25aeed53e29429acda9ff39945ab046d587dd3e3c12a1671070ae8170", "change": "none below a 2-line provenance header", "headerLines": 2, "license": "Apache-2.0 (Pebble)" },
+    { "path": "companionState.ts", "from": "src/companionState.ts", "sha256": "043d11c7f955faf4b67df861a1d1828463d1ac64b8dd87d685cbaa4becf21869", "change": "modified: pose table, poseId, visualFor and TAP_MS only (header in the file)", "license": "Apache-2.0 (Pebble)" },
+    { "path": "gaze.ts", "from": "src/companionPointer.ts", "sha256": "775fc7b8cfd20130ebb67631bca8cd65e9b580355697d48aa7a11ac81d506eef", "change": "modified: quantize, gazeToward (optional reach), sameGaze, lookFor, REACH_PX, GAZE_STEPS only (header in the file)", "license": "Apache-2.0 (Pebble)" }
+  ]
+}
