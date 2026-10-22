@@ -26,6 +26,24 @@ WAIT_SECS=${HEAVY_WAIT_SECS:-3600}
 LOCK="$REPO/.work/heavy.lock"
 LOG="$REPO/.work/heavy.log"
 mkdir -p "$REPO/.work"
+# A disk reservation for another session on this Mac: .work/RESERVE holds the GiB to keep free on line 1 and the
+# reason on the lines after. While it exists, a heavy job starts only with floor + reserve free, and a running job is
+# stopped 0.5 GiB above the usual floor.
+RESERVE_FILE="$REPO/.work/RESERVE"
+RESERVE_KB=0
+RESERVE_WHY=""
+if [ -f "$RESERVE_FILE" ]; then
+  RESERVE_KB=$(awk -v g="$(head -n 1 "$RESERVE_FILE" | tr -dc '0-9.')" 'BEGIN { printf "%d", (g + 0) * 1048576 }')
+  RESERVE_WHY="$(sed -n '2,$p' "$RESERVE_FILE" | tr '\n' ' ')"
+  START_MIN_KB=$((START_MIN_KB + RESERVE_KB))
+  FLOOR_KB=$((FLOOR_KB + 524288))
+fi
+# A CPU hold for another session's load-sensitive work: while .work/HOLD exists, no heavy job starts at all.
+# `scripts/heavy.sh --wait-hold` blocks (up to HEAVY_HOLD_WAIT_SECS, default 540 s) until the hold is lifted:
+# exit 0 when lifted, 75 when still held.
+HOLD_FILE="$REPO/.work/HOLD"
+hold_active() { [ -f "$HOLD_FILE" ]; }
+hold_reason() { sed -n '1,3p' "$HOLD_FILE" 2>/dev/null | tr '\n' ' '; }
 
 now() { date '+%Y-%m-%dT%H:%M:%S%z'; }
 free_kb() { df -k "$VOLUME" | awk 'NR == 2 { print $4 }'; }
@@ -48,7 +66,23 @@ pid_alive() { # <pid-file> <start-file>
 owner_alive() { pid_alive "$LOCK/pid" "$LOCK/start" || pid_alive "$LOCK/job" "$LOCK/jobstart"; }
 holder() { printf "'%s' (pid %s, since %s)" "$(cat "$LOCK/label" 2>/dev/null || echo '?')" "$(cat "$LOCK/pid" 2>/dev/null || echo '?')" "$(cat "$LOCK/since" 2>/dev/null || echo '?')"; }
 
+if [ "${1:-}" = "--wait-hold" ]; then
+  waited=0
+  limit=${HEAVY_HOLD_WAIT_SECS:-540}
+  while hold_active && [ "$waited" -lt "$limit" ]; do
+    sleep 15
+    waited=$((waited + 15))
+  done
+  if hold_active; then
+    say "still on hold after ${waited}s: $(hold_reason)"
+    exit 75
+  fi
+  say "no hold: heavy jobs may run"
+  exit 0
+fi
+
 if [ "${1:-}" = "--status" ]; then
+  hold_active && echo "HOLD: $(hold_reason)"
   if [ -d "$LOCK" ]; then
     if owner_alive; then echo "held by $(holder)"; else echo "stale lock left by $(holder) (the next job takes it over)"; fi
   else
@@ -68,10 +102,20 @@ shift
 
 refuse_if_low_disk() {
   local f
+  if hold_active; then
+    say "HOLD: refusing '$LABEL': $(hold_reason)"
+    say "keep doing code and text work; when only heavy work is left, run 'scripts/heavy.sh --wait-hold' (Bash timeout 600000 ms) until it exits 0, then retry"
+    log "HOLD label=$LABEL"
+    exit 73
+  fi
   f="$(free_kb)"
   if [ "$f" -lt "$START_MIN_KB" ]; then
     say "refusing '$LABEL': only $(human "$f") free on $VOLUME (a heavy job needs at least $(human "$START_MIN_KB"))"
-    log "REFUSE label=$LABEL free=$(human "$f")"
+    if [ "$RESERVE_KB" -gt 0 ]; then
+      say "$(human "$RESERVE_KB") of that is reserved for another session: $RESERVE_WHY"
+      say "do non-heavy work now and retry this job later; the lead removes .work/RESERVE when the reservation ends"
+    fi
+    log "REFUSE label=$LABEL free=$(human "$f") reserve=$(human "$RESERVE_KB")"
     exit 73
   fi
 }
