@@ -1,0 +1,9 @@
+# Not needed to build or serve the site (Vercel builds only the Next.js app at the repo root).
+video/
+capture/
+tools/
+docs/
+scripts/
+.work/
+.agents/
+.claude/

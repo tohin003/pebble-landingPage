@@ -1,0 +1,8 @@
+{
+  "name": "pebble-ui-capture",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "puppeteer-core": "25.13.0"
+  }
+}

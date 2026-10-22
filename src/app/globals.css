@@ -1,0 +1,25 @@
+@import "tailwindcss" source("..");
+
+/* Placeholder until the design decision (docs/DESIGN.md) lands: the two page colours from MASTER_PLAN §7.8. */
+:root {
+  color-scheme: light dark;
+  --page-bg: #f8f9f6;
+  --page-fg: #191e1b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page-bg: #191e1b;
+    --page-fg: #f8f9f6;
+  }
+}
+
+:root[data-theme="dark"] {
+  --page-bg: #191e1b;
+  --page-fg: #f8f9f6;
+}
+
+body {
+  background: var(--page-bg);
+  color: var(--page-fg);
+}

@@ -1,0 +1,48 @@
+# Dependencies and build output
+node_modules/
+.next/
+/out/
+*.tsbuildinfo
+next-env.d.ts
+__pycache__/
+*.pyc
+
+# Work area: caches, research copies, handoffs, logs, venvs (never committed)
+.work/
+
+# Video project: render output and large or licensed inputs
+video/out/
+video/public/ui/
+video/public/ui-frames/
+video/public/audio/
+video/public/sfx/
+
+# Capture harness output
+capture/vite-cache/
+capture/chrome-profile/
+capture/shots/
+capture/frames*/
+capture/logs/
+capture/demo-build/
+capture/previews/
+capture/sheets/
+
+# Agent tooling (project-scope skills are installed locally, never committed)
+.claude/
+.agents/
+.mcp.json
+.code-review-graph/
+skills-lock.json
+
+# OS, deploy and secrets
+.DS_Store
+.vercel
+.env*
+
+# Raw audio and video never go in git (stock music in the repo would be standalone redistribution)
+*.wav
+*.mp3
+*.flac
+*.aiff
+*.m4a
+*.mov

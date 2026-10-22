@@ -1,0 +1,11 @@
+{
+  "name": "pebble-landing-assets",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Image tooling for the landing page: posters, UI stills and icons (sharp). Not part of the Vercel build.",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "sharp": "0.35.5"
+  }
+}
