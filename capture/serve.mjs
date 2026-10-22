@@ -4,11 +4,12 @@
 //   - the dependency pre-bundle cache goes to ./vite-cache (not <repo>/node_modules/.vite),
 //   - file watching and HMR are off,
 //   - index.html is rewritten in memory only (transformIndexHtml) so that ./mock/entry.js runs first.
-// Usage: node serve.mjs            (PORT=5199 by default, PEBBLE_REPO overrides the repo path)
+// Usage: node serve.mjs            (PORT=5199 by default; the repo path comes from PEBBLE_REPO, see pebble-repo.mjs)
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { pebbleRepo } from "./pebble-repo.mjs";
 
-const REPO = process.env.PEBBLE_REPO || "/Users/xyx/Projects/AgentGuard x qwen-3.5(fine tuned)";
+const REPO = pebbleRepo();
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 5199);
 const fromRepo = (rel) => pathToFileURL(path.join(REPO, "node_modules", rel)).href;

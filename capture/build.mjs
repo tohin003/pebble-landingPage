@@ -2,8 +2,9 @@
 // for an interactive demo iframe on the landing page. Writes only to ./demo-build (and ./vite-cache); the repo is read-only.
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { pebbleRepo } from "./pebble-repo.mjs";
 
-const REPO = process.env.PEBBLE_REPO || "/Users/xyx/Projects/AgentGuard x qwen-3.5(fine tuned)";
+const REPO = pebbleRepo();
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const fromRepo = (rel) => pathToFileURL(path.join(REPO, "node_modules", rel)).href;
 const { build } = await import(fromRepo("vite/dist/node/index.js"));

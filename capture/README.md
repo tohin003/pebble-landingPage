@@ -23,5 +23,5 @@ error (its JSON report is in `capture/logs/`). Treat any of those as a failure. 
 and the scene names in `mock/fixtures.js`.
 
 Outputs stay in this repo and are gitignored: `shots/`, `frames*/`, `logs/`, `vite-cache/`, `chrome-profile/` (about
-100 MB, safe to delete), `demo-build/`, `previews/`, `sheets/`. `PEBBLE_REPO` comes from the environment (default: the
-local checkout path set in `scripts/env.sh`).
+100 MB, safe to delete), `demo-build/`, `previews/`, `sheets/`. `PEBBLE_REPO` comes from the environment, else from the
+gitignored `.work/local.env` (`PEBBLE_REPO=/path/to/the/checkout`); no local path is committed.

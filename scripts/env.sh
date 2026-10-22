@@ -18,8 +18,16 @@ fi
 unset _pebble_env_src
 export REPO
 
-# The Pebble source checkout. READ-ONLY: never write in it (no caches either). Override from the environment.
-export PEBBLE_REPO="${PEBBLE_REPO:-/Users/xyx/Projects/AgentGuard x qwen-3.5(fine tuned)}"
+# The Pebble source checkout. READ-ONLY: never write in it (no caches either). No local path is committed: it comes
+# from the environment, else from the gitignored .work/local.env (one line: PEBBLE_REPO=/path/to/the/checkout).
+if [ -z "${PEBBLE_REPO:-}" ] && [ -f "$REPO/.work/local.env" ]; then
+  PEBBLE_REPO="$(sed -n 's/^PEBBLE_REPO=//p' "$REPO/.work/local.env" | head -n 1 | sed -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/")"
+fi
+if [ -n "${PEBBLE_REPO:-}" ]; then
+  export PEBBLE_REPO
+else
+  echo "env.sh: PEBBLE_REPO is not set (export it, or add PEBBLE_REPO=/path/to/pebble to .work/local.env)" >&2
+fi
 
 # .work/bin/git -> /usr/bin/git, so that `git` (and Node's spawn('git')) never resolves to the broken /usr/local/bin/git.
 # /usr/bin itself is NOT put first: that would hide the user's own python3 behind Apple's /usr/bin/python3 3.9.
