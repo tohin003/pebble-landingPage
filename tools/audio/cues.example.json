@@ -1,0 +1,173 @@
+[
+ {
+  "file": "../../.work/audio/sfx/click_a.wav",
+  "t": 2.0333,
+  "align": "peak",
+  "gain_db": -12,
+  "pan": 0.35,
+  "duck_db": 0,
+  "event": "hook: click on the pebble"
+ },
+ {
+  "file": "../../.work/audio/sfx/riser.wav",
+  "t": 16.8,
+  "align": "end",
+  "gain_db": -10,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "riser over bars 6-7, ends on the reveal downbeat"
+ },
+ {
+  "file": "../../.work/audio/sfx/soft_hit_b.wav",
+  "t": 16.8333,
+  "align": "peak",
+  "gain_db": -6,
+  "pan": 0,
+  "duck_db": 2.5,
+  "event": "reveal: the pebble lands as the period"
+ },
+ {
+  "file": "../../.work/audio/sfx/thud_a.wav",
+  "t": 16.8333,
+  "align": "peak",
+  "gain_db": -12,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "reveal: felt texture under the hit"
+ },
+ {
+  "file": "../../.work/audio/sfx/whoosh_a.wav",
+  "t": 19.2333,
+  "align": "peak",
+  "gain_db": -14,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "cut into the main window (bar 9)"
+ },
+ {
+  "file": "../../.work/audio/sfx/click_b.wav",
+  "t": 25.3,
+  "align": "peak",
+  "gain_db": -12,
+  "pan": 0.2,
+  "duck_db": 0,
+  "event": "Apply edit"
+ },
+ {
+  "file": "../../.work/audio/sfx/pop_a.wav",
+  "t": 25.9,
+  "align": "peak",
+  "gain_db": -13,
+  "pan": 0.15,
+  "duck_db": 0,
+  "event": "Done chip"
+ },
+ {
+  "file": "../../.work/audio/sfx/click_c.wav",
+  "t": 30.7,
+  "align": "peak",
+  "gain_db": -12,
+  "pan": 0.25,
+  "duck_db": 0,
+  "event": "Run the tests"
+ },
+ {
+  "file": "../../.work/audio/sfx/tick_a.wav",
+  "t": 33.0333,
+  "align": "peak",
+  "gain_db": -24,
+  "pan": 0.1,
+  "duck_db": 0,
+  "event": "timeline row arrives"
+ },
+ {
+  "file": "../../.work/audio/sfx/tick_b.wav",
+  "t": 33.6333,
+  "align": "peak",
+  "gain_db": -24,
+  "pan": 0.1,
+  "duck_db": 0,
+  "event": "timeline row arrives"
+ },
+ {
+  "file": "../../.work/audio/sfx/tick_c.wav",
+  "t": 34.2333,
+  "align": "peak",
+  "gain_db": -24,
+  "pan": 0.1,
+  "duck_db": 0,
+  "event": "timeline row arrives"
+ },
+ {
+  "file": "../../.work/audio/sfx/shimmer_a.wav",
+  "t": 36.0333,
+  "align": "peak",
+  "gain_db": -12,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "Verified"
+ },
+ {
+  "file": "../../.work/audio/sfx/whoosh_b.wav",
+  "t": 40.8333,
+  "align": "peak",
+  "gain_db": -14,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "cut to Settings (bar 18)"
+ },
+ {
+  "file": "../../.work/audio/sfx/click_a.wav",
+  "t": 47.0333,
+  "align": "peak",
+  "gain_db": -13,
+  "pan": 0.3,
+  "duck_db": 0,
+  "event": "Auto in project"
+ },
+ {
+  "file": "../../.work/audio/sfx/click_b.wav",
+  "t": 51.0333,
+  "align": "peak",
+  "gain_db": -12,
+  "pan": 0.3,
+  "duck_db": 0,
+  "event": "Forget this memory"
+ },
+ {
+  "file": "../../.work/audio/sfx/pop_c.wav",
+  "t": 51.4333,
+  "align": "peak",
+  "gain_db": -15,
+  "pan": 0.3,
+  "duck_db": 0,
+  "event": "the record dissolves"
+ },
+ {
+  "file": "../../.work/audio/sfx/whoosh_c.wav",
+  "t": 52.8333,
+  "align": "peak",
+  "gain_db": -14,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "payoff: the chart becomes the world (bar 23)"
+ },
+ {
+  "file": "../../.work/audio/sfx/pop_b.wav",
+  "t": 67.2333,
+  "align": "peak",
+  "gain_db": -12,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "end card: the pebble lands in the lockup"
+ },
+ {
+  "file": "../../.work/audio/sfx/thud_b.wav",
+  "t": 67.2333,
+  "align": "peak",
+  "gain_db": -14,
+  "pan": 0,
+  "duck_db": 1.5,
+  "event": "end card: landing texture"
+ }
+]

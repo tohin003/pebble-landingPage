@@ -1,0 +1,1241 @@
+{
+ "schema": "pebble-media-provenance/1",
+ "updated": "2026-10-23",
+ "notice": "The films, loops and images are (c) 2026 Tohin Majumder and are not covered by the code licence (Apache-2.0). Audio is distributed only inside the rendered films, never as standalone files: no audio file is committed (.gitignore lists *.wav *.mp3 *.flac *.aiff *.m4a *.mov).",
+ "music": {
+  "selected": "original",
+  "selected_title": "Pebble launch cue (original score)",
+  "selection_method": "MASTER_PLAN 6.1: shortlist from the cached Mixkit catalogue (281 tracks parsed from 18 category pages saved 2026-10-22; no new catalogue requests), Pebble-profile ranking from tags and public waveform envelopes (tools/audio/mixkit_rank_pebble.py), then a no-ears audition of the top 5 (analyze_track.py PNGs, all looked at; Apple SoundAnalysis via sound_tags; rubric_metrics.py), scored with tools/audio/score_rubric.py and tools/audio/rubric_judgments.json.",
+  "audition_set_note": "The ranker's top three (282, 431, 79) plus the plan's two other seeds (817, 148). Places 4-5 were a four-way tie at 10.8; the waveform envelopes showed 682, 717 (and 713, 710) are solo piano with no lift to put a reveal on, 614 is melancholic with a 42 s intro, 250 repeats 282 (same artist, tags and shape), 351 has no intro and 1037 is the flattest.",
+  "rubric": {
+   "weights": {
+    "brand_fit": 30,
+    "structure": 20,
+    "tempo": 15,
+    "no_voice_or_alarm": 15,
+    "dynamics": 10,
+    "distinctiveness": 10
+   },
+   "pass_mark": 70,
+   "gates": [
+    "power share above 150 Hz >= 0.30 (critic H9 small-speaker translation)",
+    "mono fold-down loss <= 3 dB (H9)"
+   ],
+   "method": "see the docstring of tools/audio/score_rubric.py"
+  },
+  "candidates": [
+   {
+    "mixkit_id": 431,
+    "title": "Young Trizzy 02",
+    "artist": "Arulo",
+    "duration_s": 97,
+    "mixkit_tags": [
+     "hip-hop",
+     "trap",
+     "relaxed",
+     "positive",
+     "bass",
+     "bells",
+     "melodic",
+     "lifestyle"
+    ],
+    "download_url": "https://assets.mixkit.co/music/431/431.mp3",
+    "page": "https://mixkit.co/free-stock-music/download/431/",
+    "sha256": "c4289edaa3a7e9a228a27321809e379c03816f5edc355f435c1f9399aa378956",
+    "downloaded": "2026-10-23",
+    "file": "MP3 256 kb/s, decoded once with FFmpeg, resampled once to 48 kHz / 24-bit (soxr VHQ)",
+    "rubric_total": 67,
+    "rubric": {
+     "brand_fit": 17,
+     "structure": 16,
+     "tempo": 13,
+     "no_voice_or_alarm": 7,
+     "dynamics": 10,
+     "distinctiveness": 4
+    },
+    "gates": {
+     "small_speaker_share_ge_0.30": false,
+     "mono_loss_le_3db": true
+    },
+    "eligible": false,
+    "judged": {
+     "brand_fit": {
+      "mood": [
+       6,
+       "relaxed, positive, melodic (Mixkit); genre trap / hip-hop"
+      ],
+      "instrumentation": [
+       6,
+       "the bell and mallet melody fits the brief; the 808 sub and rolling trap hats do not"
+      ],
+      "register": [
+       5,
+       "a hype-adjacent trap groove; SoundAnalysis hears its bells as a ringtone or telephone in 21 of 32 windows"
+      ]
+     },
+     "structure": {
+      "intro": [
+       5,
+       "7 bars of bells, 12 dB under the body"
+      ],
+      "lift": [
+       5,
+       "a clear 808 drop at 13.76 s; the reveal would land at 18 %"
+      ],
+      "ending": [
+       2,
+       "fades over about 2.3 s; no final chord"
+      ],
+      "breakdown": [
+       4,
+       "an 8-bar breakdown at 42-54 s"
+      ]
+     },
+     "distinctiveness": [
+      4,
+      "trap with a bell hook; the hook sounds like a phone"
+     ]
+    },
+    "measured": {
+     "tempo_bpm": 139.999,
+     "onsets_within_1_frame_pct": 100.0,
+     "timing_spread_ms": 7.08,
+     "stretch_to_whole_frames_per_beat_pct": -1.098,
+     "frames_per_beat_at_30fps": 13,
+     "tempo_points": "stability 10 + frames per beat 3",
+     "integrated_lufs": -13.6,
+     "lra_lu": 6.6,
+     "true_peak_dbtp": 0.0,
+     "plr_db": 13.6,
+     "power_share_above_150hz": 0.2,
+     "lufs_lost_through_150hz_highpass_db": 2.84,
+     "mono_fold_down_loss_db": 0.83,
+     "voice_alarm_flags": [
+      "ringtone max 0.831 (21 windows >= 0.3)",
+      "telephone max 0.778 (22 windows >= 0.3)",
+      "alarm_clock max 0.305 (1 windows >= 0.3)"
+     ],
+     "top_sound_tags": [
+      "music 0.882",
+      "synthesizer 0.761",
+      "keyboard_musical 0.716",
+      "percussion 0.71",
+      "mallet_percussion 0.641",
+      "glockenspiel 0.586",
+      "marimba_xylophone 0.566",
+      "ringtone 0.392"
+     ]
+    }
+   },
+   {
+    "mixkit_id": 282,
+    "title": "Sweet September",
+    "artist": "Arulo",
+    "duration_s": 99,
+    "mixkit_tags": [
+     "hip-hop",
+     "chillout",
+     "relaxed",
+     "bass",
+     "drums",
+     "melodic",
+     "relaxation"
+    ],
+    "download_url": "https://assets.mixkit.co/music/282/282.mp3",
+    "page": "https://mixkit.co/free-stock-music/download/282/",
+    "sha256": "6ad6db61c4c9018cb9dfc99ed5c3b72f3143d3a5db31920e4f1f6b01d2f1b4a1",
+    "downloaded": "2026-10-23",
+    "file": "MP3 256 kb/s, decoded once with FFmpeg, resampled once to 48 kHz / 24-bit (soxr VHQ)",
+    "rubric_total": 66,
+    "rubric": {
+     "brand_fit": 18,
+     "structure": 13,
+     "tempo": 13,
+     "no_voice_or_alarm": 9,
+     "dynamics": 10,
+     "distinctiveness": 3
+    },
+    "gates": {
+     "small_speaker_share_ge_0.30": false,
+     "mono_loss_le_3db": true
+    },
+    "eligible": false,
+    "judged": {
+     "brand_fit": {
+      "mood": [
+       7,
+       "relaxed, calm, melodic (Mixkit); but a hip-hop / chillout beat with vinyl scratching (SoundAnalysis disc_scratching 0.15)"
+      ],
+      "instrumentation": [
+       4,
+       "chopped keys samples, hip-hop drums and a heavy sub-bass; no acoustic or mallet lead"
+      ],
+      "register": [
+       7,
+       "calm, but the intro is stop-start chopped stabs with silent gaps"
+      ]
+     },
+     "structure": {
+      "intro": [
+       4,
+       "12.6 s (4 bars at 76 BPM), 9 dB under the body, chopped"
+      ],
+      "lift": [
+       4,
+       "a clear drop at 12.66 s, but only 4 bars before it: the reveal would land at 17 % of the film"
+      ],
+      "ending": [
+       1,
+       "stops abruptly after 91.6 s (1.6 s of ring)"
+      ],
+      "breakdown": [
+       4,
+       "bars 20-23 drop back to the intro's chords"
+      ]
+     },
+     "distinctiveness": [
+      3,
+      "the lo-fi 'study beat' is the most common bed in product videos"
+     ]
+    },
+    "measured": {
+     "tempo_bpm": 76.005,
+     "onsets_within_1_frame_pct": 100.0,
+     "timing_spread_ms": 4.95,
+     "stretch_to_whole_frames_per_beat_pct": -1.322,
+     "frames_per_beat_at_30fps": 24,
+     "tempo_points": "stability 10 + frames per beat 3",
+     "integrated_lufs": -13.4,
+     "lra_lu": 8.9,
+     "true_peak_dbtp": 0.4,
+     "plr_db": 13.8,
+     "power_share_above_150hz": 0.129,
+     "lufs_lost_through_150hz_highpass_db": 6.15,
+     "mono_fold_down_loss_db": 0.19,
+     "voice_alarm_flags": [
+      "rapping max 0.303 (1 windows >= 0.3)",
+      "singing max 0.251 (0 windows >= 0.3)"
+     ],
+     "top_sound_tags": [
+      "music 0.793",
+      "keyboard_musical 0.649",
+      "synthesizer 0.577",
+      "percussion 0.337",
+      "drum 0.281",
+      "piano 0.247",
+      "bass_drum 0.205",
+      "electric_piano 0.197"
+     ]
+    }
+   },
+   {
+    "mixkit_id": 79,
+    "title": "The Journey",
+    "artist": "Ahjay Stelino",
+    "duration_s": 108,
+    "mixkit_tags": [
+     "film-score",
+     "reflective",
+     "serious",
+     "piano",
+     "mallets",
+     "cinematic",
+     "human-drama"
+    ],
+    "download_url": "https://assets.mixkit.co/music/79/79.mp3",
+    "page": "https://mixkit.co/free-stock-music/download/79/",
+    "sha256": "8833ecd8301ecb7eeba77d9c073af481cdd560319dbbe08c597dddd69a19f7f3",
+    "downloaded": "2026-10-23",
+    "file": "MP3 256 kb/s, decoded once with FFmpeg, resampled once to 48 kHz / 24-bit (soxr VHQ)",
+    "rubric_total": 64,
+    "rubric": {
+     "brand_fit": 14,
+     "structure": 14,
+     "tempo": 13,
+     "no_voice_or_alarm": 11,
+     "dynamics": 7,
+     "distinctiveness": 5
+    },
+    "gates": {
+     "small_speaker_share_ge_0.30": true,
+     "mono_loss_le_3db": true
+    },
+    "eligible": true,
+    "judged": {
+     "brand_fit": {
+      "mood": [
+       4,
+       "reflective, but 'serious' and 'human-drama' (Mixkit), genre film score"
+      ],
+      "instrumentation": [
+       6,
+       "piano and pulses fit; organ and brass-like low stabs from 21 s (SoundAnalysis foghorn 0.69, shofar 0.47) do not"
+      ],
+      "register": [
+       4,
+       "an inspirational build and the loudest master of the five (-10.5 LUFS): not low-key"
+      ]
+     },
+     "structure": {
+      "intro": [
+       3,
+       "8 pulsing bars only 4-5 dB under the body"
+      ],
+      "lift": [
+       3,
+       "a swell at 21.5 s (bar 9) but no drop"
+      ],
+      "ending": [
+       5,
+       "a final chord at 97.1 s that rings for about 10 s: ideal for back-timing"
+      ],
+      "breakdown": [
+       3,
+       "a softer passage from 64 s, then a diminuendo"
+      ]
+     },
+     "distinctiveness": [
+      5,
+      "a common 'inspirational film score' idiom"
+     ]
+    },
+    "measured": {
+     "tempo_bpm": 90.03,
+     "onsets_within_1_frame_pct": 92.3,
+     "timing_spread_ms": 15.16,
+     "stretch_to_whole_frames_per_beat_pct": -0.034,
+     "frames_per_beat_at_30fps": 20,
+     "tempo_points": "stability 8 + frames per beat 5",
+     "integrated_lufs": -10.5,
+     "lra_lu": 11.7,
+     "true_peak_dbtp": 0.1,
+     "plr_db": 10.6,
+     "power_share_above_150hz": 0.708,
+     "lufs_lost_through_150hz_highpass_db": 1.28,
+     "mono_fold_down_loss_db": 0.92,
+     "voice_alarm_flags": [
+      "foghorn max 0.688 (9 windows >= 0.3)"
+     ],
+     "top_sound_tags": [
+      "music 0.823",
+      "keyboard_musical 0.606",
+      "piano 0.437",
+      "synthesizer 0.326",
+      "electric_piano 0.302",
+      "percussion 0.241",
+      "electronic_organ 0.233",
+      "orchestra 0.199"
+     ]
+    }
+   },
+   {
+    "mixkit_id": 148,
+    "title": "Forest Mist Whispers",
+    "artist": "Alejandro Magaña (A. M.)",
+    "duration_s": 151,
+    "mixkit_tags": [
+     "ambient",
+     "hopeful",
+     "atmospheric",
+     "piano",
+     "synth",
+     "arthouse",
+     "documentary"
+    ],
+    "download_url": "https://assets.mixkit.co/music/148/148.mp3",
+    "page": "https://mixkit.co/free-stock-music/download/148/",
+    "sha256": "30232da0b9521ed35e009162bfe7c63d06c9c8e4ca81ea5137ab63a9dc66cd98",
+    "downloaded": "2026-10-23",
+    "file": "MP3 256 kb/s, decoded once with FFmpeg, resampled once to 48 kHz / 24-bit (soxr VHQ)",
+    "rubric_total": 50,
+    "rubric": {
+     "brand_fit": 20,
+     "structure": 10,
+     "tempo": 0,
+     "no_voice_or_alarm": 5,
+     "dynamics": 10,
+     "distinctiveness": 5
+    },
+    "gates": {
+     "small_speaker_share_ge_0.30": true,
+     "mono_loss_le_3db": true
+    },
+    "eligible": true,
+    "judged": {
+     "brand_fit": {
+      "mood": [
+       7,
+       "hopeful, calm, atmospheric (Mixkit); genre ambient"
+      ],
+      "instrumentation": [
+       5,
+       "piano and pads fit; organ swells and horn-like tones (SoundAnalysis train_horn 0.72 at 27 s, foghorn 0.60) do not"
+      ],
+      "register": [
+       8,
+       "low-key"
+      ]
+     },
+     "structure": {
+      "intro": [
+       2,
+       "a fade-in from silence"
+      ],
+      "lift": [
+       1,
+       "a slow growth over a minute, no lift to put a reveal on"
+      ],
+      "ending": [
+       5,
+       "an 8 s ring-out"
+      ],
+      "breakdown": [
+       2,
+       "only small dips"
+      ]
+     },
+     "distinctiveness": [
+      5,
+      "an ambient piano wash: unobtrusive but anonymous"
+     ]
+    },
+    "measured": {
+     "tempo_bpm": 117.887,
+     "onsets_within_1_frame_pct": 61.7,
+     "timing_spread_ms": 29.62,
+     "stretch_to_whole_frames_per_beat_pct": 1.792,
+     "frames_per_beat_at_30fps": 15,
+     "tempo_points": "stability 0 + frames per beat 0",
+     "integrated_lufs": -14.8,
+     "lra_lu": 8.3,
+     "true_peak_dbtp": -0.0,
+     "plr_db": 14.8,
+     "power_share_above_150hz": 0.639,
+     "lufs_lost_through_150hz_highpass_db": 1.37,
+     "mono_fold_down_loss_db": 0.31,
+     "voice_alarm_flags": [
+      "train_horn max 0.72 (2 windows >= 0.3)",
+      "foghorn max 0.601 (4 windows >= 0.3)",
+      "singing max 0.337 (1 windows >= 0.3)",
+      "car_horn max 0.288 (0 windows >= 0.3)",
+      "humming max 0.212 (0 windows >= 0.3)",
+      "air_horn max 0.2 (0 windows >= 0.3)"
+     ],
+     "top_sound_tags": [
+      "music 0.692",
+      "keyboard_musical 0.489",
+      "piano 0.322",
+      "electronic_organ 0.264",
+      "organ 0.246",
+      "bowed_string_instrument 0.207",
+      "orchestra 0.202",
+      "plucked_string_instrument 0.2"
+     ]
+    }
+   },
+   {
+    "mixkit_id": 817,
+    "title": "The Duel",
+    "artist": "Michael Ramir C.",
+    "duration_s": 103,
+    "mixkit_tags": [
+     "country-rock",
+     "rock",
+     "relaxed",
+     "positive",
+     "bass",
+     "acoustic-guitar",
+     "motivational",
+     "soft"
+    ],
+    "download_url": "https://assets.mixkit.co/music/817/817.mp3",
+    "page": "https://mixkit.co/free-stock-music/download/817/",
+    "sha256": "02085549e113770b581660ecb57b6a5615d5593d2f7b43159a8825d88320729a",
+    "downloaded": "2026-10-23",
+    "file": "MP3 256 kb/s, decoded once with FFmpeg, resampled once to 48 kHz / 24-bit (soxr VHQ)",
+    "rubric_total": 49,
+    "rubric": {
+     "brand_fit": 16,
+     "structure": 5,
+     "tempo": 8,
+     "no_voice_or_alarm": 7,
+     "dynamics": 10,
+     "distinctiveness": 3
+    },
+    "gates": {
+     "small_speaker_share_ge_0.30": true,
+     "mono_loss_le_3db": true
+    },
+    "eligible": true,
+    "judged": {
+     "brand_fit": {
+      "mood": [
+       5,
+       "relaxed, positive, but 'motivational'; genre country-rock"
+      ],
+      "instrumentation": [
+       6,
+       "acoustic guitar fits; a full rock kit (snare, cymbals, hats) does not"
+      ],
+      "register": [
+       5,
+       "a full band from bar 3, little dynamic shape"
+      ]
+     },
+     "structure": {
+      "intro": [
+       3,
+       "3 bars, 6 dB under the body"
+      ],
+      "lift": [
+       1,
+       "no drop; +4 dB at bar 3"
+      ],
+      "ending": [
+       0,
+       "stops abruptly (0.85 s of ring)"
+      ],
+      "breakdown": [
+       1,
+       "no clear break"
+      ]
+     },
+     "distinctiveness": [
+      3,
+      "the 'uplifting acoustic band' bed R5 warns against"
+     ]
+    },
+    "measured": {
+     "tempo_bpm": 87.998,
+     "onsets_within_1_frame_pct": 99.3,
+     "timing_spread_ms": 14.29,
+     "stretch_to_whole_frames_per_beat_pct": 2.274,
+     "frames_per_beat_at_30fps": 20,
+     "tempo_points": "stability 8 + frames per beat 0",
+     "integrated_lufs": -15.4,
+     "lra_lu": 5.1,
+     "true_peak_dbtp": -0.0,
+     "plr_db": 15.4,
+     "power_share_above_150hz": 0.587,
+     "lufs_lost_through_150hz_highpass_db": 1.61,
+     "mono_fold_down_loss_db": 0.67,
+     "voice_alarm_flags": [
+      "singing max 0.318 (1 windows >= 0.3)",
+      "telephone max 0.297 (0 windows >= 0.3)",
+      "telephone_bell_ringing max 0.284 (0 windows >= 0.3)"
+     ],
+     "top_sound_tags": [
+      "music 0.876",
+      "percussion 0.665",
+      "plucked_string_instrument 0.594",
+      "drum 0.592",
+      "guitar 0.576",
+      "drum_kit 0.571",
+      "bass_drum 0.559",
+      "cymbal 0.472"
+     ]
+    }
+   }
+  ],
+  "decision": "No Mixkit candidate reached 70/100: the top stock score is 67 (431), which also fails the small-speaker gate like 282 (66); the best eligible track is 79 at 64. So the MASTER_PLAN 6.2 gate sends the film to the composed fallback. B1 (huashu-motion composer mode with its CC0 sample pack) could not be run: the session's permission system blocked executing that downloaded third-party CLI, so B2 was used: an original score rendered by our own code (tools/audio/compose_score.py, numpy + scipy + pedalboard), no samples and no third-party music. B1 stays available if the user approves running huashu-motion (pinned commit 52467f99c602b76ba86d511d37acdfe93fa1e16e).",
+  "licence_check": {
+   "checked": "2026-10-23",
+   "licence_url": "https://mixkit.co/license/#musicFree",
+   "pages_read": [
+    "https://mixkit.co/license/",
+    "https://mixkit.co/license/modal/musicFree/",
+    "https://mixkit.co/terms/"
+   ],
+   "pages_identical_to_2026_10_22_copies": true,
+   "stock_music_free_license_quotes": [
+    "Stock Music Free License",
+    "Allowed: Podcasts; Social Media video posts; Online marketing ads; Educational Purposes; YouTube videos *",
+    "Not Allowed: CDs & DVDs; TV & Radio Broadcasts; Video Games",
+    "Items under the Mixkit Stock Music Free License can be used in your commercial and non-commercial projects for free.",
+    "You’re permitted to download, copy, modify, distribute and publicly perform the Music Items on any web or social media platform, including internet-based video on demand services, podcasts and advertisements.",
+    "You’re not allowed to use them in CDs or DVDs, video games or tv or radio broadcast. You’re also not allowed to remix them (or incorporate in a music-only track), claim them as your own or register them on any rights management service.",
+    "There are some important limits to these rights, described in our User Terms .",
+    "* If you receive a claim, please forward the details to team@mixkit.co for assistance."
+   ],
+   "quotes_source": "verbatim from the saved https://mixkit.co/license/modal/musicFree/ (2026-10-23)",
+   "user_terms_quotes": [
+    "9. Restrictions: You must not ... use scripts or bots to mass download Items (this includes using any means whatsoever to scrape/download the entire library and/or database of Items)",
+    "9. Restrictions: You must not ... rent, license, sublicense, sell, resell or otherwise commercially exploit or make Mixkit or any Item available to any third party (except as expressly contemplated by these User Terms) including aggregate or collate an Item(s) and make available on a stock or inventory basis"
+   ],
+   "website_video_allowed": true,
+   "linkedin_video_post_allowed": true,
+   "conclusion": "Both uses are allowed: a video on the website ('any web ... platform') and a video posted on LinkedIn ('Social Media video posts', 'any ... social media platform'). The fallback was chosen on the rubric, not on the licence. If a Mixkit alternate is switched in: no broadcast, game or CD/DVD use, no music-only remix, no Content ID or other rights-management registration, never published as a standalone file; only 5 tracks were downloaded, one request at a time."
+  },
+  "original_score": {
+   "title": "Pebble launch cue (original score)",
+   "composed_for": "this film (MASTER_PLAN 5.1 film plan, OVERRIDES 4: one timeline for 16:9 and 1:1)",
+   "generator": "tools/audio/compose_score.py --seed 7 (deterministic: the same command rebuilds the same file bit for bit)",
+   "bed": ".work/audio/render/music_bed.wav (not committed)",
+   "form": [
+    {
+     "name": "hook",
+     "first_bar": 1,
+     "last_bar": 2,
+     "start_s": 0.0
+    },
+    {
+     "name": "tension",
+     "first_bar": 3,
+     "last_bar": 5,
+     "start_s": 4.8
+    },
+    {
+     "name": "build",
+     "first_bar": 6,
+     "last_bar": 7,
+     "start_s": 12.0
+    },
+    {
+     "name": "reveal",
+     "first_bar": 8,
+     "last_bar": 8,
+     "start_s": 16.8
+    },
+    {
+     "name": "proof",
+     "first_bar": 9,
+     "last_bar": 22,
+     "start_s": 19.2
+    },
+    {
+     "name": "payoff",
+     "first_bar": 23,
+     "last_bar": 25,
+     "start_s": 52.8
+    },
+    {
+     "name": "breakdown",
+     "first_bar": 26,
+     "last_bar": 28,
+     "start_s": 60.0
+    },
+    {
+     "name": "endcard",
+     "first_bar": 29,
+     "last_bar": 30,
+     "start_s": 67.2
+    },
+    {
+     "name": "final",
+     "first_bar": 31,
+     "last_bar": 32,
+     "start_s": 72.0
+    }
+   ],
+   "key": "D major",
+   "bpm": 100.0,
+   "bars": 32,
+   "motif": "D5 A5 G#5 A5 (eighth, eighth, sixteenth, dotted eighth tied)",
+   "instruments": "modal-synthesis marimba, vibraphone, kalimba and glockenspiel; Karplus-Strong plucked bass; a soft saw pad; synthesised shaker and felt kick; a synthetic convolution reverb",
+   "third_party_material": "none (no samples, recordings or plugins)",
+   "licence": "part of the film media, (c) 2026 Tohin Majumder",
+   "rubric_total_self_assessed": 91,
+   "rubric": {
+    "brand_fit": 24,
+    "structure": 20,
+    "tempo": 15,
+    "no_voice_or_alarm": 15,
+    "dynamics": 10,
+    "distinctiveness": 7
+   },
+   "judged": {
+    "brand_fit": {
+     "mood": [
+      8,
+      "calm, warm, hopeful D major with a Lydian twinkle in the motif; the tension bars move to minor colours"
+     ],
+     "instrumentation": [
+      7,
+      "marimba, vibraphone, kalimba, plucked bass, soft pad, shaker: the brief's mallet palette (SoundAnalysis: mallet percussion 0.73, vibraphone 0.59, marimba 0.54), but synthesised, not recorded"
+     ],
+     "register": [
+      9,
+      "low-key, written under the film's picture and sound effects"
+     ]
+    },
+    "structure": {
+     "intro": [
+      5,
+      "hook and tension bars sparser than the body by 3-7 dB"
+     ],
+     "lift": [
+      6,
+      "the reveal is written on bar 8 (frame 504) after an empty breath beat"
+     ],
+     "ending": [
+      5,
+      "a final D(add9) chord on bar 31 rings for 4.8 s"
+     ],
+     "breakdown": [
+      4,
+      "bars 26-28 drop drums and bass for the trust lines"
+     ]
+    },
+    "distinctiveness": [
+     7,
+     "its own four-note motif, written for Pebble; mallet minimalism is a known idiom"
+    ]
+   },
+   "measured": {
+    "tempo_bpm": 100.02,
+    "onsets_within_1_frame_pct": 100.0,
+    "timing_spread_ms": 3.12,
+    "stretch_to_whole_frames_per_beat_pct": -0.02,
+    "frames_per_beat_at_30fps": 18,
+    "tempo_points": "stability 10 + frames per beat 5",
+    "integrated_lufs": -18.0,
+    "lra_lu": 6.4,
+    "true_peak_dbtp": -3.9,
+    "plr_db": 14.1,
+    "power_share_above_150hz": 0.855,
+    "lufs_lost_through_150hz_highpass_db": 0.46,
+    "mono_fold_down_loss_db": 0.11,
+    "voice_alarm_flags": [
+     "none"
+    ],
+    "top_sound_tags": [
+     "music 0.915",
+     "percussion 0.724",
+     "mallet_percussion 0.724",
+     "vibraphone 0.591",
+     "marimba_xylophone 0.544",
+     "glockenspiel 0.488",
+     "keyboard_musical 0.488",
+     "piano 0.354"
+    ]
+   },
+   "sound_tags_top": [
+    "music 0.915",
+    "percussion 0.724",
+    "mallet_percussion 0.724",
+    "vibraphone 0.591",
+    "marimba_xylophone 0.544",
+    "glockenspiel 0.488",
+    "keyboard_musical 0.488",
+    "piano 0.354"
+   ],
+   "validation_6_1_step_5": {
+    "median_abs_offset_ms": 1.27,
+    "max_abs_offset_ms": 30.08,
+    "within_1_frame_pct": 100.0,
+    "downbeats_measured": 32,
+    "downbeats_total": 32,
+    "reveal": {
+     "planned_frame": 504,
+     "attack_s": 16.801,
+     "attack_frame": 504,
+     "offset_ms": 1.0,
+     "strength": 439.8
+    },
+    "gates": {
+     "median_abs_offset_le_5ms": true,
+     "reveal_within_1_frame": true,
+     "duration_exact": true
+    },
+    "pass": true
+   },
+   "needs": "one human listen before the film ships (critic question 6); taste is the part an agent cannot verify"
+  },
+  "alternates": [
+   {
+    "option": "mixkit-431",
+    "title": "Young Trizzy 02",
+    "artist": "Arulo",
+    "rubric_total": 67,
+    "why_not_chosen": "Alternate 1 by rubric score (67/100): best structure, but trap 808s put 80 % of its energy below 150 Hz and SoundAnalysis hears its bells as a ringtone or telephone in 2 of 3 windows.",
+    "beatmap": "tools/audio/beatmaps/mixkit-431.json",
+    "switch_with": "tools/audio/use_music.sh mixkit-431",
+    "fit": {
+     "method": "varispeed",
+     "track_bpm": 139.9998,
+     "film_bpm": 138.461538,
+     "speed_change_pct": -1.0988,
+     "pitch_shift_cents": -19.13,
+     "film_bars": 44,
+     "reveal_bar": 9,
+     "final_chord_bar": 42,
+     "splice_bar": 37,
+     "edit": [
+      {
+       "film_in": 0.0,
+       "src_in": 0.0034,
+       "src_out": 61.7178
+      },
+      {
+       "film_in": 62.4,
+       "src_in": 84.0035,
+       "src_out": 96.9688,
+       "xfade_s": 0.12
+      }
+     ],
+     "args": [
+      "--film-bars",
+      "44",
+      "--reveal-bar",
+      "9",
+      "--bpm",
+      "139.999",
+      "--drop",
+      "13.758",
+      "--final",
+      "92.588",
+      "--ring-bars",
+      "3"
+     ]
+    },
+    "validation": {
+     "median_abs_offset_ms": 2.1,
+     "within_1_frame_pct": 81.8,
+     "downbeats_measured": 44,
+     "downbeats_total": 44,
+     "reveal": {
+      "planned_frame": 416,
+      "attack_s": 13.86656,
+      "attack_frame": 416,
+      "offset_ms": -0.1,
+      "strength": 2369.1
+     },
+     "gates": {
+      "median_abs_offset_le_5ms": true,
+      "reveal_within_1_frame": true,
+      "duration_exact": true
+     },
+     "pass": true
+    },
+    "credit_if_used": "\"Young Trizzy 02\" by Arulo, Mixkit (https://mixkit.co/free-stock-music/download/431/), Mixkit Stock Music Free License https://mixkit.co/license/#musicFree; source https://assets.mixkit.co/music/431/431.mp3, downloaded 2026-10-23, SHA-256 c4289edaa3a7e9a228a27321809e379c03816f5edc355f435c1f9399aa378956; edited to picture."
+   },
+   {
+    "option": "mixkit-282",
+    "title": "Sweet September",
+    "artist": "Arulo",
+    "rubric_total": 66,
+    "why_not_chosen": "Alternate 2 (66/100): a tight lo-fi hip-hop beat, but 87 % of its energy sits below 150 Hz (fails the small-speaker check) and it stops abruptly.",
+    "beatmap": "tools/audio/beatmaps/mixkit-282.json",
+    "switch_with": "tools/audio/use_music.sh mixkit-282",
+    "fit": {
+     "method": "varispeed",
+     "track_bpm": 76.0001,
+     "film_bpm": 75.0,
+     "speed_change_pct": -1.3159,
+     "pitch_shift_cents": -22.93,
+     "film_bars": 24,
+     "reveal_bar": 5,
+     "final_chord_bar": 23,
+     "splice_bar": 14,
+     "edit": [
+      {
+       "film_in": 0.0,
+       "src_in": 0.0064,
+       "src_out": 41.059
+      },
+      {
+       "film_in": 41.6,
+       "src_in": 60.0063,
+       "src_out": 94.7431,
+       "xfade_s": 0.12
+      }
+     ],
+     "args": [
+      "--film-bars",
+      "24",
+      "--reveal-bar",
+      "5",
+      "--bpm",
+      "76.005",
+      "--drop",
+      "12.662",
+      "--final",
+      "88.452",
+      "--ring-bars",
+      "2"
+     ]
+    },
+    "validation": {
+     "median_abs_offset_ms": 0.97,
+     "within_1_frame_pct": 100.0,
+     "downbeats_measured": 24,
+     "downbeats_total": 24,
+     "reveal": {
+      "planned_frame": 384,
+      "attack_s": 12.80083,
+      "attack_frame": 384,
+      "offset_ms": 0.83,
+      "strength": 867.1
+     },
+     "gates": {
+      "median_abs_offset_le_5ms": true,
+      "reveal_within_1_frame": true,
+      "duration_exact": true
+     },
+     "pass": true
+    },
+    "credit_if_used": "\"Sweet September\" by Arulo, Mixkit (https://mixkit.co/free-stock-music/download/282/), Mixkit Stock Music Free License https://mixkit.co/license/#musicFree; source https://assets.mixkit.co/music/282/282.mp3, downloaded 2026-10-23, SHA-256 6ad6db61c4c9018cb9dfc99ed5c3b72f3143d3a5db31920e4f1f6b01d2f1b4a1; edited to picture."
+   },
+   {
+    "option": "mixkit-79",
+    "title": "The Journey",
+    "artist": "Ahjay Stelino",
+    "rubric_total": 64,
+    "why_not_chosen": "Alternate 3 (64/100, the best that passes every gate): native 90 BPM and a long final chord, but a serious film-score mood with brass-like swells, not low-key.",
+    "beatmap": "tools/audio/beatmaps/mixkit-79.json",
+    "switch_with": "tools/audio/use_music.sh mixkit-79",
+    "fit": {
+     "method": "varispeed",
+     "track_bpm": 90.0309,
+     "film_bpm": 90.0,
+     "speed_change_pct": -0.0343,
+     "pitch_shift_cents": -0.59,
+     "film_bars": 29,
+     "reveal_bar": 7,
+     "final_chord_bar": 28,
+     "splice_bar": 28,
+     "edit": [
+      {
+       "film_in": 0.0,
+       "src_in": 5.5179,
+       "src_out": 77.4933
+      },
+      {
+       "film_in": 72.0,
+       "src_in": 97.1844,
+       "src_out": 102.5159,
+       "xfade_s": 0.12
+      }
+     ],
+     "args": [
+      "--film-bars",
+      "29",
+      "--reveal-bar",
+      "7",
+      "--bpm",
+      "90.03",
+      "--drop",
+      "21.538",
+      "--final",
+      "97.121",
+      "--ring-bars",
+      "2",
+      "--button"
+     ]
+    },
+    "validation": {
+     "median_abs_offset_ms": 5.27,
+     "within_1_frame_pct": 96.6,
+     "downbeats_measured": 29,
+     "downbeats_total": 29,
+     "reveal": {
+      "planned_frame": 480,
+      "attack_s": 16.00567,
+      "attack_frame": 480,
+      "offset_ms": 5.67,
+      "strength": 13.7
+     },
+     "gates": {
+      "median_abs_offset_le_5ms": false,
+      "reveal_within_1_frame": true,
+      "duration_exact": true
+     },
+     "pass": false,
+     "note": "median 5.27 ms is just over the 5 ms gate: this track is played with a human feel (its kick attacks scatter 6.2 ms around the fitted grid); the reveal and the length pass"
+    },
+    "credit_if_used": "\"The Journey\" by Ahjay Stelino, Mixkit (https://mixkit.co/free-stock-music/download/79/), Mixkit Stock Music Free License https://mixkit.co/license/#musicFree; source https://assets.mixkit.co/music/79/79.mp3, downloaded 2026-10-23, SHA-256 8833ecd8301ecb7eeba77d9c073af481cdd560319dbbe08c597dddd69a19f7f3; edited to picture."
+   }
+  ],
+  "mix_test": {
+   "what": "the bed plus tools/audio/cues.example.json (19 cues on the beat map's frames) through tools/audio/mix_master.py",
+   "web_master": {
+    "target": "-16 LUFS, -1.7 dBTP before AAC",
+    "integrated_lufs": -16.01,
+    "true_peak_dbtp_4x": -1.69,
+    "lra_lu": 6.4
+   },
+   "social_master": {
+    "target": "-14 LUFS (OVERRIDES 4)",
+    "integrated_lufs": -14.03,
+    "true_peak_dbtp_4x": -1.19,
+    "lra_lu": 6.3,
+    "note": "use --tp -1.5 for the social masters so the encoded AAC stays at or under -1.0 dBTP"
+   },
+   "sound_analysis": "no speech, singing, siren, alarm or ringtone label in any window"
+  }
+ },
+ "sfx": {
+  "folder": ".work/audio/sfx/ (not committed; rebuild with tools/audio/sfx_synth.py and tools/audio/sfx_foley.py)",
+  "rules": "MASTER_PLAN 6.3 and critic H9: recorded CC0 foley for taps and pops, synthesis for whooshes, riser, shimmer; 2-3 takes of anything repeated; no chimes, dings or meme sounds",
+  "synthesised": [
+   {
+    "file": "whoosh_a.wav",
+    "what": "airy sweep, 0.36 s body, peak at 60 %, pans left to right",
+    "generator": "tools/audio/sfx_synth.py --bpm 100 --riser-bars 2 --seed 7",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sound_tags": "whoosh 0.67"
+   },
+   {
+    "file": "whoosh_b.wav",
+    "what": "airy sweep, 0.32 s body, pans right to left",
+    "generator": "tools/audio/sfx_synth.py --bpm 100 --riser-bars 2 --seed 7",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sound_tags": "whoosh 0.61"
+   },
+   {
+    "file": "whoosh_c.wav",
+    "what": "airy sweep, 0.40 s body, near centre",
+    "generator": "tools/audio/sfx_synth.py --bpm 100 --riser-bars 2 --seed 7",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sound_tags": "whoosh 0.68"
+   },
+   {
+    "file": "riser.wav",
+    "what": "noise-led riser, exactly 2 bars at 100 BPM (4.8 s), loudest at its end, a held A underneath, no pitch glide",
+    "generator": "tools/audio/sfx_synth.py --bpm 100 --riser-bars 2 --seed 7",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sound_tags": "synthesizer 0.78, whoosh 0.76 (no siren)"
+   },
+   {
+    "file": "soft_hit_a.wav",
+    "what": "felt sub thump (92 to 46 Hz) for the reveal",
+    "generator": "tools/audio/sfx_synth.py --bpm 100 --riser-bars 2 --seed 7",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sound_tags": "synthesizer 0.77, keyboard 0.66"
+   },
+   {
+    "file": "soft_hit_b.wav",
+    "what": "felt sub thump (84 to 42 Hz), the cleaner of the two in SoundAnalysis: use it for the reveal",
+    "generator": "tools/audio/sfx_synth.py --bpm 100 --riser-bars 2 --seed 7",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sound_tags": "synthesizer 0.81, keyboard 0.67, whoosh 0.63"
+   },
+   {
+    "file": "shimmer_a.wav",
+    "what": "airy sparkle: granular high-noise grains over faint D6/A6/D7 partials (110 ms attacks)",
+    "generator": "tools/audio/sfx_synth.py --bpm 100 --riser-bars 2 --seed 7",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sound_tags": "music 0.92, percussion 0.71, glockenspiel 0.24 (no ringtone)"
+   },
+   {
+    "file": "shimmer_b.wav",
+    "what": "airy sparkle: grains over faint F#6/A6/D7 partials",
+    "generator": "tools/audio/sfx_synth.py --bpm 100 --riser-bars 2 --seed 7",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sound_tags": "music 0.81, percussion 0.61, mallet percussion 0.23 (no ringtone)"
+   },
+   {
+    "file": "downlifter.wav",
+    "what": "falling filtered noise, 1.2 s",
+    "generator": "tools/audio/sfx_synth.py --bpm 100 --riser-bars 2 --seed 7",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sound_tags": "whoosh 0.57"
+   }
+  ],
+  "foley": {
+   "packs": [
+    {
+     "name": "Impact Sounds (1.0)",
+     "by": "Kenney (www.kenney.nl)",
+     "page": "https://kenney.nl/assets/impact-sounds",
+     "zip": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+     "zip_sha256": "029d734af1582474edf3a694d1b0cebc97c1c152f2f39fa34d4c2bafc5de77f8",
+     "downloaded": "2026-10-23"
+    },
+    {
+     "name": "Interface Sounds (1.0)",
+     "by": "Kenney (www.kenney.nl)",
+     "page": "https://kenney.nl/assets/interface-sounds",
+     "zip": "https://kenney.nl/media/pages/assets/interface-sounds/fa43c1dd4d-1677589452/kenney_interface-sounds.zip",
+     "zip_sha256": "f2193d072726d6758a5f7871b2dcc54dcce0d5c35c6f0a62f92549b327c81232",
+     "downloaded": "2026-10-23"
+    }
+   ],
+   "licence": "CC0 1.0 (Creative Commons Zero), http://creativecommons.org/publicdomain/zero/1.0/",
+   "licence_quotes": [
+    "License: (Creative Commons Zero, CC0)",
+    "This content is free to use in personal, educational and commercial projects.",
+    "Support us by crediting Kenney or www.kenney.nl (this is not mandatory)"
+   ],
+   "files": [
+    {
+     "file": "click_a.wav",
+     "duration_s": 0.07,
+     "origin": "Kenney (CC0 1.0)",
+     "sources": [
+      {
+       "pack": "Interface Sounds",
+       "file": "switch_005.ogg",
+       "sha256": "e94dfab6fd6558068ab3ea97e22e4b4f16b83ee440e6abf33ec4c4e9fbe8a70e"
+      }
+     ],
+     "processing": "first transient only: trimmed to 70 ms, 30 ms fade, HPF 180 Hz, -2 dB shelf above 7 kHz, pitch x1.0, take gain 0.0 dB"
+    },
+    {
+     "file": "click_b.wav",
+     "duration_s": 0.07,
+     "origin": "Kenney (CC0 1.0)",
+     "sources": [
+      {
+       "pack": "Interface Sounds",
+       "file": "switch_006.ogg",
+       "sha256": "2676ddc4e341ee557b4d1dc8767ef8655540d66fb3ded6a1614080dbc4dc6f18"
+      }
+     ],
+     "processing": "first transient only: trimmed to 70 ms, 30 ms fade, HPF 180 Hz, -2 dB shelf above 7 kHz, pitch x1.02, take gain -1.5 dB"
+    },
+    {
+     "file": "click_c.wav",
+     "duration_s": 0.07,
+     "origin": "Kenney (CC0 1.0)",
+     "sources": [
+      {
+       "pack": "Interface Sounds",
+       "file": "switch_007.ogg",
+       "sha256": "eeaf60c2abc7e1b715e2b032401bcbf6b3753b77f96b238f861a034a75515967"
+      }
+     ],
+     "processing": "first transient only: trimmed to 70 ms, 30 ms fade, HPF 180 Hz, -2 dB shelf above 7 kHz, pitch x0.98, take gain -0.8 dB"
+    },
+    {
+     "file": "pop_a.wav",
+     "duration_s": 0.206,
+     "origin": "Kenney (CC0 1.0)",
+     "sources": [
+      {
+       "pack": "Interface Sounds",
+       "file": "drop_002.ogg",
+       "sha256": "4ac4d1cef7e936965cbf795852ca2020300b9e2ba7daa59f2bf4f1f7bf416218"
+      }
+     ],
+     "processing": "trimmed to 80 ms (35 ms fade), tuned from 800 Hz to MIDI 78 (740 Hz, D major), HPF 250 Hz, LPF 9 kHz, small room 8 %, take gain 0.0 dB"
+    },
+    {
+     "file": "pop_b.wav",
+     "duration_s": 0.199,
+     "origin": "Kenney (CC0 1.0)",
+     "sources": [
+      {
+       "pack": "Interface Sounds",
+       "file": "drop_003.ogg",
+       "sha256": "43d086d50f90493a98cd2e09aa6dbf150d164f1578e1ec768d21cb185571ad87"
+      }
+     ],
+     "processing": "trimmed to 80 ms (35 ms fade), tuned from 733 Hz to MIDI 78 (740 Hz, D major), HPF 250 Hz, LPF 9 kHz, small room 8 %, take gain -1.2 dB"
+    },
+    {
+     "file": "pop_c.wav",
+     "duration_s": 0.193,
+     "origin": "Kenney (CC0 1.0)",
+     "sources": [
+      {
+       "pack": "Interface Sounds",
+       "file": "drop_002.ogg",
+       "sha256": "4ac4d1cef7e936965cbf795852ca2020300b9e2ba7daa59f2bf4f1f7bf416218"
+      }
+     ],
+     "processing": "trimmed to 80 ms (35 ms fade), tuned from 800 Hz to MIDI 81 (880 Hz, D major), HPF 250 Hz, LPF 9 kHz, small room 8 %, take gain -0.6 dB"
+    },
+    {
+     "file": "tick_a.wav",
+     "duration_s": 0.023,
+     "origin": "Kenney (CC0 1.0)",
+     "sources": [
+      {
+       "pack": "Interface Sounds",
+       "file": "tick_001.ogg",
+       "sha256": "9d057b918024c787bbe6c00beed13a7ef72a3fa0c259add3cef36582792f4230"
+      }
+     ],
+     "processing": "trimmed to 60 ms, 20 ms fade, HPF 400 Hz, LPF 8 kHz, pitch x1.0"
+    },
+    {
+     "file": "tick_b.wav",
+     "duration_s": 0.023,
+     "origin": "Kenney (CC0 1.0)",
+     "sources": [
+      {
+       "pack": "Interface Sounds",
+       "file": "tick_002.ogg",
+       "sha256": "869442f54214be902ec7437f79e400dc91c1bfd90d18a6dd2d5b7e41ffbf457b"
+      }
+     ],
+     "processing": "trimmed to 60 ms, 20 ms fade, HPF 400 Hz, LPF 8 kHz, pitch x1.0"
+    },
+    {
+     "file": "tick_c.wav",
+     "duration_s": 0.01,
+     "origin": "Kenney (CC0 1.0)",
+     "sources": [
+      {
+       "pack": "Interface Sounds",
+       "file": "click_003.ogg",
+       "sha256": "2fa929138bc3a0f432696588f66eac94b8f6d463905ec8808c6461ce4b054292"
+      }
+     ],
+     "processing": "trimmed to 60 ms, 20 ms fade, HPF 400 Hz, LPF 8 kHz, pitch x0.98"
+    },
+    {
+     "file": "thud_a.wav",
+     "duration_s": 0.755,
+     "origin": "Kenney (CC0 1.0)",
+     "sources": [
+      {
+       "pack": "Impact Sounds",
+       "file": "impactSoft_heavy_000.ogg",
+       "sha256": "49e7ca88743fca974bb8676ea138b751cfd8f9033b5e7af8736c2a215d6edbc1"
+      }
+     ],
+     "processing": "trimmed to 600 ms, 250 ms fade, HPF 35 Hz, LPF 1.8 kHz, small room 12 %"
+    },
+    {
+     "file": "thud_b.wav",
+     "duration_s": 0.794,
+     "origin": "Kenney (CC0 1.0)",
+     "sources": [
+      {
+       "pack": "Impact Sounds",
+       "file": "impactSoft_heavy_003.ogg",
+       "sha256": "d00286a2dc62ee5cb4d42bf56120e7050a855f69e655fc1294410aadd337eba3"
+      }
+     ],
+     "processing": "trimmed to 600 ms, 250 ms fade, HPF 35 Hz, LPF 1.8 kHz, small room 12 %"
+    }
+   ],
+   "rejected": [
+    "impactGeneric_light (first click choice): SoundAnalysis heard beep / tuning fork / telephone (0.15-0.22)",
+    "drop_002/003 at full length: heard as bird / owl hoot (0.31-0.34); cut to 80 ms they are neutral",
+    "select_003-005 (glide 'boings'), select/toggle/pluck (tonal blips: ding-like)"
+   ]
+  }
+ },
+ "assets": [
+  {
+   "file": "public/media/v1/film-1080.hevc.mp4, film-1080.h264.mp4, film-720.hevc.mp4, film-720.h264.mp4",
+   "status": "not rendered yet (Phase 3)",
+   "music": "original (tools/audio/beatmap.json)",
+   "sfx": "from tools/audio/cues.json once the film timeline exports it",
+   "loudness": "to be measured on the final AAC: -16 +-0.5 LUFS, <= -1.5 dBTP"
+  },
+  {
+   "file": "Desktop deliverables: Pebble-launch-film-1920x1080.mp4, Pebble-launch-film-1080x1080.mp4 (LinkedIn)",
+   "status": "not rendered yet",
+   "music": "original",
+   "loudness": "-14 LUFS, <= -1.0 dBTP after encoding (OVERRIDES 4)"
+  },
+  {
+   "file": "public/media/v1/teaser-*.mp4, loop-*.mp4",
+   "status": "silent (no audio track)",
+   "music": null
+  }
+ ]
+}

@@ -1,74 +1,149 @@
-"""Procedural, license-free UI/transition SFX (whoosh, riser, soft hit, click, pop, shimmer, downlifter) with numpy + pedalboard.
-All output is our own work (no third-party samples) -> can be licensed with the site (e.g. CC0)."""
-import sys, numpy as np, soundfile as sf
-from pedalboard import Pedalboard, Reverb, Compressor, Limiter, HighpassFilter, LowpassFilter, Chorus, Delay, Gain
-SR = 48000; rng = np.random.default_rng(7); OUT = sys.argv[1]
-def env_adsr(n, a, d, s, r, sus_level=0.6):
-    a, d, r = int(a*SR), int(d*SR), int(r*SR); s = max(0, n-a-d-r)
-    return np.concatenate([np.linspace(0,1,a,endpoint=False)**2, np.linspace(1,sus_level,d,endpoint=False), np.full(s,sus_level), sus_level*np.linspace(1,0,r)**2])[:n]
+"""Synthesised sound effects for the Pebble film (MASTER_PLAN §6.3, critic H9: synthesis only for the riser, the
+shimmer, the whooshes, plus the reveal's felt sub thump and a downlifter). numpy + pedalboard only, no samples:
+our own work, released CC0 1.0. Taps and pops are recorded CC0 foley instead (tools/audio/sfx_foley.py).
+
+Usage: python -I sfx_synth.py OUT_DIR [--bpm 100] [--riser-bars 2] [--seed 7]
+Writes 48 kHz 24-bit WAVs:
+  whoosh_a/b/c   0.32-0.40 s airy, low-passed sweeps, each panned differently; the peak is the cut (align "peak")
+  riser          exactly riser_bars bars long (4.8 s at 100 BPM), noise-led with no pitch glide (a gliding tone reads
+                 as a siren to Apple's classifier); its loudest point is its last sample: put its END on the reveal
+  soft_hit_a/b   felt sub thump (sine drop + soft transient + small room); not an "epic boom"
+  shimmer_a/b    airy sparkle: granular high-noise grains over faint D-major partials (110 ms attacks, so no ding)
+  downlifter     falling filtered noise, 1.2 s
+Lessons kept from R3: pad before reverb (tails are not cut), a 10 ms fade at every end, no partials near Nyquist.
+"""
+import argparse
+import os
+
+import numpy as np
+import soundfile as sf
+from pedalboard import Chorus, Compressor, Delay, HighpassFilter, Limiter, LowpassFilter, Pedalboard, Reverb
+
+ap = argparse.ArgumentParser()
+ap.add_argument("out")
+ap.add_argument("--bpm", type=float, default=100.0)
+ap.add_argument("--riser-bars", type=int, default=2)
+ap.add_argument("--seed", type=int, default=7)
+a = ap.parse_args()
+SR = 48000
+rng = np.random.default_rng(a.seed)
+os.makedirs(a.out, exist_ok=True)
+
+
 def svf_bandpass(x, fc, q):
-    """Time-varying state-variable band-pass (Chamberlin). fc: array of cutoff Hz per sample."""
-    y = np.zeros_like(x); low = band = 0.0
-    f = 2*np.sin(np.pi*np.clip(fc, 20, SR/6)/SR); qq = 1.0/q
+    """Time-varying Chamberlin state-variable band-pass; fc in Hz per sample."""
+    y = np.zeros_like(x)
+    low = band = 0.0
+    f = 2 * np.sin(np.pi * np.clip(fc, 20, SR / 6) / SR)
+    qq = 1.0 / q
     for i in range(len(x)):
-        high = x[i] - low - qq*band; band += f[i]*high; low += f[i]*band; y[i] = band
+        high = x[i] - low - qq * band
+        band += f[i] * high
+        low += f[i] * band
+        y[i] = band
     return y
-def stereo(m, width=0.0):
-    if width <= 0: return np.stack([m, m])
-    d = int(0.012*SR*width); r = np.concatenate([np.zeros(d), m[:-d]]) if d else m
-    return np.stack([m, 0.6*m + 0.4*r])
+
+
 def fx(x, board, tail=0.6):
-    # pad with silence so reverb/delay tails are not truncated, then 10 ms fade-out to avoid an end click
-    x = np.concatenate([x, np.zeros((x.shape[0], int(tail*SR)))], axis=1).astype(np.float32)
-    y = board(x, SR); f = int(0.01*SR); y[:, -f:] *= np.linspace(1, 0, f)
+    x = np.concatenate([x, np.zeros((x.shape[0], int(tail * SR)))], axis=1).astype(np.float32)
+    y = board(x, SR).astype(np.float64)
+    f = int(0.01 * SR)
+    y[:, -f:] *= np.linspace(1, 0, f)
     return y
-def norm(x, peak_db=-3.0): return x / (np.max(np.abs(x)) + 1e-9) * 10**(peak_db/20)
-def save(name, x): sf.write(f"{OUT}/{name}.wav", norm(x).T, SR, subtype='PCM_24'); print(name, f"{x.shape[-1]/SR:.2f}s")
 
-# 1) whoosh: pink-ish noise through a band-pass sweeping up then down, amplitude swell, stereo pan movement
-n = int(0.9*SR); t = np.linspace(0, 1, n)
-noise = np.cumsum(rng.standard_normal(n)) ; noise = noise - np.convolve(noise, np.ones(400)/400, 'same')  # brown->band-limited
-fc = 300 + 3200*np.sin(np.pi*t)**2
-w = svf_bandpass(noise, fc, 1.8) * np.sin(np.pi*t)**3
-pan = 0.5 + 0.45*np.sin(np.pi*(t-0.5))
-x = np.stack([w*(1-pan), w*pan]) * 2
-save('whoosh', fx(x, Pedalboard([HighpassFilter(120), Reverb(room_size=0.35, wet_level=0.18, dry_level=0.9)])))
 
-# 2) riser (2 bars @ 120 BPM = 4 s): noise sweep + rising detuned saw, ends exactly at t=4.0 (place its END on the downbeat of the reveal)
-n = int(4.0*SR); t = np.arange(n)/SR; u = t/4.0
-f0 = 110*2**(u*2.0)  # two octaves up
-ph = 2*np.pi*np.cumsum(f0)/SR
-saw = sum((np.mod(ph*k/(2*np.pi)+0.13*j, 1.0)*2-1) for j,k in enumerate([1.0, 1.006, 0.994]))/3
-nz = svf_bandpass(rng.standard_normal(n)*0.5, 400+7000*u**2, 2.5)
-x = (0.10*saw*u**2 + 1.4*nz*u**3)   # noise-led: a pitched saw sweep alone reads as a siren (Apple's classifier tagged it 'civil_defense_siren')
-x = stereo(x, 1.0)
-save('riser_4s', fx(x, Pedalboard([HighpassFilter(150), LowpassFilter(9000), Chorus(rate_hz=0.4, depth=0.3, mix=0.4), Reverb(room_size=0.6, wet_level=0.25)])))
+def delayed(x, sec):
+    """x delayed by sec (zeros in front, same length): a stereo offset that never wraps the end round to the start."""
+    d = int(sec * SR)
+    return np.concatenate([np.zeros(d), x[:-d]]) if d else x
 
-# 3) soft hit / impact: sine drop 90->45 Hz + filtered noise transient + long reverb tail (the "reveal" hit)
-n = int(2.5*SR); t = np.arange(n)/SR
-f = 45 + 45*np.exp(-t*18); body = np.sin(2*np.pi*np.cumsum(f)/SR) * np.exp(-t*2.2)
-trans = svf_bandpass(rng.standard_normal(n), np.full(n, 2500.0), 0.8) * np.exp(-t*60)
-x = stereo(0.9*body + 0.35*trans, 0.6)
-save('soft_hit', fx(x, Pedalboard([Compressor(threshold_db=-12, ratio=3, attack_ms=5, release_ms=200), Reverb(room_size=0.8, damping=0.6, wet_level=0.22, dry_level=0.85), Limiter(threshold_db=-1)])))
 
-# 4) UI click: 2 ms filtered noise burst + 4 ms 2.2 kHz sine blip
-n = int(0.08*SR); t = np.arange(n)/SR
-x = 0.6*svf_bandpass(rng.standard_normal(n), np.full(n, 4500.0), 1.2)*np.exp(-t*900) + 0.5*np.sin(2*np.pi*2200*t)*np.exp(-t*450)
-save('ui_click', fx(stereo(x), Pedalboard([HighpassFilter(300), Reverb(room_size=0.1, wet_level=0.06)])))
+def fade_in(x, sec):
+    k = int(sec * SR)
+    x[..., :k] *= np.linspace(0, 1, k)
+    return x
 
-# 5) bubbly "pop" (fits a pebble character): fast upward pitch-swept sine with soft attack
-n = int(0.22*SR); t = np.arange(n)/SR
-f = 380 + 900*(1-np.exp(-t*40)); x = np.sin(2*np.pi*np.cumsum(f)/SR) * env_adsr(n, 0.004, 0.05, 0, 0.12, 0.4)
-save('pebble_pop', fx(stereo(x), Pedalboard([Reverb(room_size=0.25, wet_level=0.15)])))
 
-# 6) shimmer / sparkle for a logo or "ready" moment: random high partials with staggered decays + delay + big reverb
-n = int(2.0*SR); t = np.arange(n)/SR; x = np.zeros(n)
-for k in range(14):
-    st = rng.uniform(0, 0.5); fr = 1567.98 * 2**(rng.integers(0, 2))  # keep partials < ~6 kHz (no harsh near-Nyquist tones) * [1, 1.25, 1.5, 1.875][rng.integers(0, 4)]  # notes of a Gmaj7 chord
-    x += np.sin(2*np.pi*fr*np.clip(t-st, 0, None)) * np.exp(-np.clip(t-st, 0, None)*6) * (t > st) * rng.uniform(0.3, 1)
-save('shimmer', fx(stereo(x/14, 1.0), Pedalboard([HighpassFilter(1200), Delay(delay_seconds=0.125, feedback=0.35, mix=0.25), Reverb(room_size=0.9, wet_level=0.35, dry_level=0.7)])))
+def pan_move(m, p0, p1):
+    p = np.linspace(p0, p1, len(m))
+    ang = (p + 1) * np.pi / 4
+    return np.stack([m * np.cos(ang), m * np.sin(ang)]) * np.sqrt(2)
 
-# 7) downlifter (end of a section): falling filtered noise
-n = int(1.5*SR); t = np.arange(n)/SR; u = t/1.5
-x = svf_bandpass(rng.standard_normal(n), 6000*(1-u)**2+200, 2.0) * (1-u)**1.5
-save('downlifter', fx(stereo(x, 1.0), Pedalboard([Reverb(room_size=0.5, wet_level=0.2)])))
+
+def save(name, x, peak_db=-3.0):
+    x = x / (np.abs(x).max() + 1e-12) * 10 ** (peak_db / 20)
+    sf.write(os.path.join(a.out, name + ".wav"), x.T, SR, subtype="PCM_24")
+    print(f"{name}: {x.shape[1] / SR:.2f} s")
+
+
+# ---- whooshes: short airy sweeps, the peak at ~60 % (where the cut is), low-passed so they stay soft ----
+for name, dur, p0, p1, lo, hi, peak in (("whoosh_a", 0.36, -0.7, 0.6, 350, 2600, 0.6),
+                                        ("whoosh_b", 0.32, 0.6, -0.5, 450, 3200, 0.55),
+                                        ("whoosh_c", 0.40, -0.2, 0.3, 300, 2200, 0.65)):
+    n = int(dur * SR)
+    u = np.linspace(0, 1, n)
+    noise = np.cumsum(rng.standard_normal(n))
+    noise -= np.convolve(noise, np.ones(300) / 300, "same")
+    fc = lo + (hi - lo) * np.sin(np.pi * np.minimum(1, u / peak / 2 + np.where(u > peak, (u - peak) / (1 - peak) / 2, 0)))
+    env = np.where(u < peak, (u / peak) ** 2, np.exp(-((u - peak) / (1 - peak)) * 3.5))
+    m = svf_bandpass(noise, fc, 1.4) * env
+    save(name, fx(pan_move(m, p0, p1), Pedalboard([HighpassFilter(140), LowpassFilter(4500),
+                                                  Reverb(room_size=0.3, wet_level=0.12, dry_level=0.9)]), tail=0.3), -4.0)
+
+# ---- riser: riser_bars bars, noise-led, brightening and swelling to its last sample; no pitch glide ----
+dur = a.riser_bars * 4 * 60 / a.bpm
+n = int(round(dur * SR))
+u = np.arange(n) / n
+nz = rng.standard_normal(n)
+bp = svf_bandpass(nz, 300 + 6500 * u ** 2.2, 2.2)
+air = svf_bandpass(rng.standard_normal(n), 5000 + 4000 * u, 1.2) * 0.25
+drone = sum(np.sin(2 * np.pi * f * np.arange(n) / SR + rng.uniform(0, 6.28)) for f in (110.0, 220.0, 330.0)) / 3  # A, held
+x = (1.2 * bp + air) * u ** 3.2 + 0.05 * drone * u ** 2
+st = np.stack([x, delayed(x, 0.011)])
+y = Pedalboard([HighpassFilter(150), LowpassFilter(10000), Chorus(rate_hz=0.3, depth=0.25, mix=0.3)])(st.astype(np.float32), SR)
+y = np.asarray(y, dtype=np.float64)[:, :n]
+y[:, -int(0.008 * SR):] *= np.linspace(1, 0, int(0.008 * SR))   # an 8 ms close: no click, still ends on the downbeat
+save("riser", y, -3.0)                                                   # exactly riser_bars bars, no reverb tail
+
+# ---- soft hit: a felt sub thump for the reveal (and, smaller, the end-card landing) ----
+for name, f_hi, f_lo, tau in (("soft_hit_a", 92.0, 46.0, 0.34), ("soft_hit_b", 84.0, 42.0, 0.42)):
+    n = int(1.6 * SR)
+    t = np.arange(n) / SR
+    f = f_lo + (f_hi - f_lo) * np.exp(-t * 16)
+    body = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t / tau)
+    felt = svf_bandpass(rng.standard_normal(n), np.full(n, 900.0), 0.7) * np.exp(-t * 90) * 0.35
+    m = fade_in(0.95 * body + felt, 0.001)
+    save(name, fx(np.stack([m, m]), Pedalboard([Compressor(threshold_db=-14, ratio=2.5, attack_ms=6, release_ms=180),
+                                                Reverb(room_size=0.55, damping=0.7, wet_level=0.14, dry_level=0.9),
+                                                LowpassFilter(3500), Limiter(threshold_db=-1.0)]), tail=0.6), -2.0)
+
+# ---- shimmer: an airy sparkle. Granular high-noise grains carry it; the D-major partials (D6 F#6 A6 D7) sit low with
+#      110 ms attacks. (A first version led with the partials and SoundAnalysis heard a ringtone: no dings.) ----
+D6, Fs6, A6, D7 = 1174.66, 1479.98, 1760.0, 2349.32
+for name, notes, seed in (("shimmer_a", (D6, A6, D7), 3), ("shimmer_b", (Fs6, A6, D7), 5)):
+    g = np.random.default_rng(a.seed * 100 + seed)
+    n = int(1.6 * SR)
+    t = np.arange(n) / SR
+    L, R = np.zeros(n), np.zeros(n)
+    for k in range(46):                                                  # sparkle grains, densest early, thinning out
+        t0 = 0.6 * (k / 46) ** 1.6 + g.uniform(0, 0.03)
+        ln = int(g.uniform(0.012, 0.03) * SR)
+        i0 = int(t0 * SR)
+        grain = svf_bandpass(g.standard_normal(ln), np.full(ln, g.uniform(5200, 9500)), 4.0) * np.hanning(ln)
+        amp = g.uniform(0.3, 1.0) * np.exp(-t0 / 0.5)
+        p = g.uniform(-0.8, 0.8)
+        L[i0:i0 + ln] += grain * amp * np.cos((p + 1) * np.pi / 4)
+        R[i0:i0 + ln] += grain * amp * np.sin((p + 1) * np.pi / 4)
+    tone_ = np.zeros(n)
+    for fr, o in zip(notes, (0.04, 0.1, 0.17)):
+        tt = np.clip(t - o, 0, None)
+        tone_ += np.sin(2 * np.pi * fr * tt) * np.clip(tt / 0.11, 0, 1) ** 2 * np.exp(-tt / 0.45) * (t > o)
+    st = np.stack([L, R]) + 0.06 * np.stack([tone_, tone_])
+    save(name, fx(st, Pedalboard([HighpassFilter(1500), LowpassFilter(11000),
+                                  Reverb(room_size=0.85, damping=0.45, wet_level=0.35, dry_level=0.7)]), tail=1.2), -6.0)
+
+# ---- downlifter: falling filtered noise ----
+n = int(1.2 * SR)
+u = np.arange(n) / n
+x = svf_bandpass(rng.standard_normal(n), 5500 * (1 - u) ** 2 + 220, 1.8) * (1 - u) ** 1.4
+save("downlifter", fx(fade_in(np.stack([x, delayed(x, 0.009)]), 0.005), Pedalboard([Reverb(room_size=0.5, wet_level=0.18)]), tail=0.5), -5.0)

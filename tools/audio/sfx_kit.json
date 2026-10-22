@@ -1,0 +1,15 @@
+{
+ "about": "The film's sound-effect kit (MASTER_PLAN 6.3, critic H9) for the cue exporter (video/scripts/export-cues.ts -> tools/audio/cues.json, read by tools/audio/mix_master.py). Files live in .work/audio/sfx/ (not committed; rebuild: tools/audio/sfx_synth.py .work/audio/sfx --bpm 100 --riser-bars 2 and tools/audio/sfx_foley.py .work/audio/kenney .work/audio/sfx .work/audio/sfx/foley-manifest.json). Rotate the takes in order for repeated events. t = the picture event's frame / 30 + 1 frame (except the riser, whose END sits on the reveal downbeat). Gains are starting points against the -18 LUFS bed, measured in the test mix (tools/audio/cues.example.json); check hits in the final mix's spectrogram. At most 2-3 effects at once; hits 3-6 dB above the bed; duck the bed 2-3 dB for 0.6 s under the reveal hit. No chimes, dings or meme sounds.",
+ "dir": "../../.work/audio/sfx/",
+ "roles": {
+  "click":   {"takes": ["click_a.wav", "click_b.wav", "click_c.wav"], "align": "peak", "gain_db": -12, "pan": "follow the cursor (-0.4..0.4)", "when": "every cursor click-down, +1 frame", "origin": "Kenney Interface Sounds switch_005-007 (CC0)"},
+  "pop":     {"takes": ["pop_a.wav", "pop_b.wav", "pop_c.wav"], "align": "peak", "gain_db": -13, "pan": 0, "when": "the Done chip, a record dissolving, landings (layer with thud)", "origin": "Kenney Interface Sounds drop_002/003 (CC0), tuned to D major"},
+  "tick":    {"takes": ["tick_a.wav", "tick_b.wav", "tick_c.wav"], "align": "peak", "gain_db": -24, "pan": 0.1, "when": "timeline rows arriving (very low; drop them under strong music)", "origin": "Kenney Interface Sounds (CC0)"},
+  "thud":    {"takes": ["thud_a.wav", "thud_b.wav"], "align": "peak", "gain_db": -13, "pan": 0, "when": "texture under the reveal hit and the end-card landing", "origin": "Kenney Impact Sounds impactSoft_heavy (CC0)"},
+  "whoosh":  {"takes": ["whoosh_a.wav", "whoosh_b.wav", "whoosh_c.wav"], "align": "peak", "gain_db": -14, "pan": "with the motion", "when": "world changes (desktop -> window, window -> sandbox, -> sage field); the peak sits on the cut", "origin": "synthesised (CC0)"},
+  "riser":   {"takes": ["riser.wav"], "align": "end", "gain_db": -10, "pan": 0, "when": "once: bars 6-7, its end on the reveal downbeat (beatmap cues.riser_end_frame)", "origin": "synthesised (CC0), exactly 2 bars at 100 BPM"},
+  "hit":     {"takes": ["soft_hit_b.wav", "soft_hit_a.wav"], "align": "peak", "gain_db": -6, "duck_db": 2.5, "pan": 0, "when": "once: the reveal (beatmap reveal.frame + 1); the second take, smaller, may mark the end-card landing", "origin": "synthesised (CC0)"},
+  "shimmer": {"takes": ["shimmer_a.wav", "shimmer_b.wav"], "align": "peak", "gain_db": -12, "pan": 0, "when": "the Verified result", "origin": "synthesised (CC0)"},
+  "downlifter": {"takes": ["downlifter.wav"], "align": "start", "gain_db": -16, "pan": 0, "when": "optional: into the breakdown (bar 26)", "origin": "synthesised (CC0)"}
+ }
+}

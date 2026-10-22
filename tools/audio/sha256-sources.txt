@@ -1,0 +1,8 @@
+# SHA-256 of every downloaded source file: <sha256>  <file>  <url>  <first download date, IST>
+6ad6db61c4c9018cb9dfc99ed5c3b72f3143d3a5db31920e4f1f6b01d2f1b4a1  mixkit-282.mp3  https://assets.mixkit.co/music/282/282.mp3  2026-10-23
+c4289edaa3a7e9a228a27321809e379c03816f5edc355f435c1f9399aa378956  mixkit-431.mp3  https://assets.mixkit.co/music/431/431.mp3  2026-10-23
+8833ecd8301ecb7eeba77d9c073af481cdd560319dbbe08c597dddd69a19f7f3  mixkit-79.mp3  https://assets.mixkit.co/music/79/79.mp3  2026-10-23
+02085549e113770b581660ecb57b6a5615d5593d2f7b43159a8825d88320729a  mixkit-817.mp3  https://assets.mixkit.co/music/817/817.mp3  2026-10-23
+30232da0b9521ed35e009162bfe7c63d06c9c8e4ca81ea5137ab63a9dc66cd98  mixkit-148.mp3  https://assets.mixkit.co/music/148/148.mp3  2026-10-23
+029d734af1582474edf3a694d1b0cebc97c1c152f2f39fa34d4c2bafc5de77f8  kenney_impact-sounds.zip  https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip  2026-10-23
+f2193d072726d6758a5f7871b2dcc54dcce0d5c35c6f0a62f92549b327c81232  kenney_interface-sounds.zip  https://kenney.nl/media/pages/assets/interface-sounds/fa43c1dd4d-1677589452/kenney_interface-sounds.zip  2026-10-23

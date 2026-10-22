@@ -1,0 +1,31 @@
+{
+ "about": "Every music bed the film can use, with how to rebuild it. tools/audio/use_music.sh <id> rebuilds the bed in .work/audio/render/music_bed.wav, validates it and copies its beat map to tools/audio/beatmap.json. The film then re-snaps to the new map (MASTER_PLAN 6.2: a swap changes no picture work beyond that). Rubric scores and the selection are in docs/media-provenance.json.",
+ "default": "original",
+ "options": {
+  "original": {
+   "title": "Pebble launch cue (original score)",
+   "kind": "composed",
+   "beatmap": "tools/audio/beatmaps/original.json",
+   "build": ["tools/audio/compose_score.py", "--seed", "7"],
+   "why": "Chosen: no Mixkit candidate reached the 70/100 pass mark (MASTER_PLAN 6.2 gate), so the fallback score was composed to the film plan."
+  },
+  "mixkit-431": {
+   "title": "Young Trizzy 02", "artist": "Arulo", "kind": "mixkit", "mixkit_id": 431,
+   "beatmap": "tools/audio/beatmaps/mixkit-431.json",
+   "fit": ["--film-bars", "44", "--reveal-bar", "9", "--bpm", "139.999", "--drop", "13.758", "--final", "92.588", "--ring-bars", "3"],
+   "why": "Alternate 1 by rubric score (67/100): best structure, but trap 808s put 80 % of its energy below 150 Hz and SoundAnalysis hears its bells as a ringtone or telephone in 2 of 3 windows."
+  },
+  "mixkit-282": {
+   "title": "Sweet September", "artist": "Arulo", "kind": "mixkit", "mixkit_id": 282,
+   "beatmap": "tools/audio/beatmaps/mixkit-282.json",
+   "fit": ["--film-bars", "24", "--reveal-bar", "5", "--bpm", "76.005", "--drop", "12.662", "--final", "88.452", "--ring-bars", "2"],
+   "why": "Alternate 2 (66/100): a tight lo-fi hip-hop beat, but 87 % of its energy sits below 150 Hz (fails the small-speaker check) and it stops abruptly."
+  },
+  "mixkit-79": {
+   "title": "The Journey", "artist": "Ahjay Stelino", "kind": "mixkit", "mixkit_id": 79,
+   "beatmap": "tools/audio/beatmaps/mixkit-79.json",
+   "fit": ["--film-bars", "29", "--reveal-bar", "7", "--bpm", "90.03", "--drop", "21.538", "--final", "97.121", "--ring-bars", "2", "--button"],
+   "why": "Alternate 3 (64/100, the best that passes every gate): native 90 BPM and a long final chord, but a serious film-score mood with brass-like swells, not low-key."
+  }
+ }
+}

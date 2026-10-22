@@ -1,0 +1,68 @@
+{
+ "about": "The judged parts of the music rubric (MASTER_PLAN 6.1 step 3). Measured parts are computed by tools/audio/score_rubric.py from the analysis files. Brief (U1 2.3, R5 10.1): calm, organic, precise; soft and warm; acoustic or mallet; low-key; about 90-100 BPM; avoid 'uplifting corporate tech' and ukulele beds; avoid beds whose energy sits below 150 Hz. Each judgement cites what was looked at: Mixkit tags and genre, Apple SoundAnalysis labels, the analysis PNG and zoomed spectrograms.",
+ "brand_fit_max": {"mood": 10, "instrumentation": 10, "register": 10},
+ "structure_max": {"intro": 5, "lift": 6, "ending": 5, "breakdown": 4},
+ "tracks": {
+  "282": {
+   "brand_fit": {"mood": [7, "relaxed, calm, melodic (Mixkit); but a hip-hop / chillout beat with vinyl scratching (SoundAnalysis disc_scratching 0.15)"],
+                 "instrumentation": [4, "chopped keys samples, hip-hop drums and a heavy sub-bass; no acoustic or mallet lead"],
+                 "register": [7, "calm, but the intro is stop-start chopped stabs with silent gaps"]},
+   "structure": {"intro": [4, "12.6 s (4 bars at 76 BPM), 9 dB under the body, chopped"],
+                 "lift": [4, "a clear drop at 12.66 s, but only 4 bars before it: the reveal would land at 17 % of the film"],
+                 "ending": [1, "stops abruptly after 91.6 s (1.6 s of ring)"],
+                 "breakdown": [4, "bars 20-23 drop back to the intro's chords"]},
+   "distinctiveness": [3, "the lo-fi 'study beat' is the most common bed in product videos"]
+  },
+  "431": {
+   "brand_fit": {"mood": [6, "relaxed, positive, melodic (Mixkit); genre trap / hip-hop"],
+                 "instrumentation": [6, "the bell and mallet melody fits the brief; the 808 sub and rolling trap hats do not"],
+                 "register": [5, "a hype-adjacent trap groove; SoundAnalysis hears its bells as a ringtone or telephone in 21 of 32 windows"]},
+   "structure": {"intro": [5, "7 bars of bells, 12 dB under the body"],
+                 "lift": [5, "a clear 808 drop at 13.76 s; the reveal would land at 18 %"],
+                 "ending": [2, "fades over about 2.3 s; no final chord"],
+                 "breakdown": [4, "an 8-bar breakdown at 42-54 s"]},
+   "distinctiveness": [4, "trap with a bell hook; the hook sounds like a phone"]
+  },
+  "79": {
+   "brand_fit": {"mood": [4, "reflective, but 'serious' and 'human-drama' (Mixkit), genre film score"],
+                 "instrumentation": [6, "piano and pulses fit; organ and brass-like low stabs from 21 s (SoundAnalysis foghorn 0.69, shofar 0.47) do not"],
+                 "register": [4, "an inspirational build and the loudest master of the five (-10.5 LUFS): not low-key"]},
+   "structure": {"intro": [3, "8 pulsing bars only 4-5 dB under the body"],
+                 "lift": [3, "a swell at 21.5 s (bar 9) but no drop"],
+                 "ending": [5, "a final chord at 97.1 s that rings for about 10 s: ideal for back-timing"],
+                 "breakdown": [3, "a softer passage from 64 s, then a diminuendo"]},
+   "distinctiveness": [5, "a common 'inspirational film score' idiom"]
+  },
+  "817": {
+   "brand_fit": {"mood": [5, "relaxed, positive, but 'motivational'; genre country-rock"],
+                 "instrumentation": [6, "acoustic guitar fits; a full rock kit (snare, cymbals, hats) does not"],
+                 "register": [5, "a full band from bar 3, little dynamic shape"]},
+   "structure": {"intro": [3, "3 bars, 6 dB under the body"],
+                 "lift": [1, "no drop; +4 dB at bar 3"],
+                 "ending": [0, "stops abruptly (0.85 s of ring)"],
+                 "breakdown": [1, "no clear break"]},
+   "distinctiveness": [3, "the 'uplifting acoustic band' bed R5 warns against"]
+  },
+  "148": {
+   "brand_fit": {"mood": [7, "hopeful, calm, atmospheric (Mixkit); genre ambient"],
+                 "instrumentation": [5, "piano and pads fit; organ swells and horn-like tones (SoundAnalysis train_horn 0.72 at 27 s, foghorn 0.60) do not"],
+                 "register": [8, "low-key"]},
+   "structure": {"intro": [2, "a fade-in from silence"],
+                 "lift": [1, "a slow growth over a minute, no lift to put a reveal on"],
+                 "ending": [5, "an 8 s ring-out"],
+                 "breakdown": [2, "only small dips"]},
+   "distinctiveness": [5, "an ambient piano wash: unobtrusive but anonymous"]
+  },
+  "original": {
+   "note": "Self-assessed by the agent that composed it; it needs one human listen before the film ships (critic question 6).",
+   "brand_fit": {"mood": [8, "calm, warm, hopeful D major with a Lydian twinkle in the motif; the tension bars move to minor colours"],
+                 "instrumentation": [7, "marimba, vibraphone, kalimba, plucked bass, soft pad, shaker: the brief's mallet palette (SoundAnalysis: mallet percussion 0.73, vibraphone 0.59, marimba 0.54), but synthesised, not recorded"],
+                 "register": [9, "low-key, written under the film's picture and sound effects"]},
+   "structure": {"intro": [5, "hook and tension bars sparser than the body by 3-7 dB"],
+                 "lift": [6, "the reveal is written on bar 8 (frame 504) after an empty breath beat"],
+                 "ending": [5, "a final D(add9) chord on bar 31 rings for 4.8 s"],
+                 "breakdown": [4, "bars 26-28 drop drums and bass for the trust lines"]},
+   "distinctiveness": [7, "its own four-note motif, written for Pebble; mallet minimalism is a known idiom"]
+  }
+ }
+}
