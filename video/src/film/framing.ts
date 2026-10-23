@@ -46,8 +46,13 @@ const SQUARE_K = 1056 / 1032;
 
 const SETS: Record<"wide" | "square", Record<string, Framing>> = {
   wide: {
-    /** S5a: x 350–734.6, y 66–432.2 (§6's m 2.6; top moved under the top bar's hairline at y 64, which sat 62 px inside the stage) */
-    s5a: fr(2.6, 542.3, 249.1),
+    /**
+     * S5a (lane v2-film, REVIEW-G2 P2-9): m 2.5, x 345–745, y 172–552.8, the status line whole with its Stop button
+     * ("Reading · Reading invoice_kit/dates.py · 5 s › Stop", 358.7–726; type 32.5 px, ink 34) and the request bubble
+     * (its box y 97–168, x 448–1034, too wide for any readable framing) wholly above the top edge. G2a's m 2.6 on
+     * x 350–734.6, y 66–432.2 sliced the bubble's lines mid-word at the frame's right edge and cut the Stop button.
+     */
+    s5a: fr(2.5, 545, 172 + 476 / 2.5),
     /** S5b, the card's upper part: x 809.1–1160, y 199.5–533.5. m 2.85, not §6's 2.4: at 2.4 the stage shows 417 CSS px,
      *  past the window's right edge (1160) and across the drawer's border (800) */
     s5bTop: fr(2.85, 984.55, 366.5),

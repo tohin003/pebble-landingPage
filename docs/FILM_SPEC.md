@@ -277,7 +277,7 @@ share the framings of §6.1, measured on the 1.0.4 frames.
 
 **S5a Reads (648–719).**
 - **f648: the pebble carries across** (match cut on action, mid-flight); it lands f652; pose `reading`.
-- Stage: 16:9 m 2.6, ROI x 350–735, y 40–406 (fills the stage); square m 2.65, ROI x 350–712, y 120–401. The request
+- Stage: 16:9 m 2.5, ROI x 345–745, y 172–552.8 (lane v2-film, REVIEW-G2 P2-9: the status line whole with its Stop button, the request bubble wholly above the top edge; G2a's m 2.6 sliced the bubble at the right edge); the narrow aspects §6.1. The request
   bubble ("The CSV export crashes for invoices issued on the 31st: ValueError: day is out of range for month. Can you
   find the bug and fix it?") and the status line "Reading · Reading invoice_kit/dates.py · 4 s".
 - Source 3.85 → 4.73 s at 0.5× (f648–701) so the Reading detail stays ≥ 1.2 s; 4.73 → 5.93 s at 2× (f702–719).
