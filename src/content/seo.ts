@@ -110,7 +110,7 @@ Version 1.0.1, the first public release, came out on 22 October 2026. Pebble is 
 - Permissions: three modes, Ask for approval (the default), Auto in project and Full access. Approvals happen only in Pebble's main window.
 - Projects: in the default mode, every edit, test run, terminal command and Git change is a card you approve. Edits come with Undo. Tests run in a temporary copy of the project, without network access.
 - AgentGuard: an evidence layer between the model and the project. A task that changed code must have a passing test run of those changes before Pebble calls it finished, and an agent that drifts outside the files a request reaches is challenged. AgentGuard checks evidence; it is not a security layer.
-- Memory: six kinds of memory you can see, search, edit in ~/.pebble/PEBBLE.md and forget. One switch turns memory off.
+- Memory: six kinds of memory. You can see, search, add and forget memories, but not edit them; the only thing you edit is ~/.pebble/PEBBLE.md. One switch turns memory off.
 - Views: dashboards, tables, charts, plans, diagrams, quizzes and app demos, built from data. A view can never approve, run or change anything.
 - Privacy: no telemetry. Conversations and memories are stored on the Mac, and keys stay in the macOS Keychain. With a local model, the conversation stays on the Mac.
 - What leaves the Mac: with a cloud model, your message and the context sent with it (such as the recent conversation and recalled memories) go to the provider you chose; search words go to Microsoft Bing's RSS feed; web pages Pebble reads are fetched from their own sites; weather lookups go to Open-Meteo; calls go to the connectors you add.
@@ -121,7 +121,10 @@ Version 1.0.1, the first public release, came out on 22 October 2026. Pebble is 
 - SHA256SUMS shows the download is intact. It does not prove who made it.
 - No independent security audit has been done yet.
 - Apple silicon only: there is no Intel, Windows or Linux version. No automatic updates.
-- Models make mistakes. Pebble for Chrome needs Chrome's Developer mode. Scheduled tasks run only while Pebble is open.
+- Models make mistakes.
+- Pebble for Chrome needs Chrome's Developer mode. It works in one Chrome tab you share and then grant, on that tab's site, for up to 30 minutes; it can't open, close, list or switch tabs, or leave the site, and every press asks first. It has been tested against a simulated Chrome, not yet in a real one.
+- Pebble can't see or operate other apps yet. It can only open one, which in the default mode waits for your approval.
+- Scheduled tasks run only while Pebble is open. Their results show in Pebble; macOS notifications are off until you turn them on.
 - Commands run in macOS's sandbox, which limits them but is not a promise against every attack. Prompt injection from web pages or files is limited, not impossible.
 - No benchmark results have been published, and Pebble makes no speed or quality comparison with other tools.
 

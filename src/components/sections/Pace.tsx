@@ -4,6 +4,8 @@
 // - The three modes' words are Pebble's own (src/permissionModes.ts at v1.0.1), shown by the dial.
 // - The "In every mode, …" sentence is quoted and attributed ("In Pebble's Settings, under the three modes:"): it says
 //   "their switches below", which only makes sense in the app, so the next line explains where those switches are.
+//   The line after it says Pebble can't see or operate other apps yet (OVERRIDES §12), so 1.0.1's "app-window actions"
+//   in the quote never reads as app control.
 // - Approvals happen only in Pebble's main window, with the two other facts that hold in every mode.
 // The dial pebble's still frames (one per mode, eyes on it) are drawn here on the server from the same engine set-up
 // the live pebble continues from, so swapping in the live pebble moves nothing.
@@ -42,6 +44,7 @@ export function Pace() {
             <p>{dial.everyMode}</p>
           </blockquote>
           <p className={styles.note}>{dial.switchesNote}</p>
+          <p className={styles.note}>{dial.appsNote}</p>
         </figure>
         <div className={styles.fixed}>
           <p className={styles.approvals}>{approvals}</p>

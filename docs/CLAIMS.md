@@ -4,7 +4,9 @@ Every factual sentence on the site, in the film's on-screen text and transcript,
 mapped to its source. The copy lives in `src/content/` (`copy.ts`, `faq.ts`, `credits.ts`, `chapters.ts`, `seo.ts`);
 the `[C-…]` tags in those files are the IDs below. Written by Lane A on 2026-10-22 (IST). Checked sentence by sentence
 and updated by the claims review on 2026-10-23: changed rows say "(review)", new rows are in "Claims review
-(2026-10-23)" at the end, and every edit is logged with its reason in `.work/handoffs/HANDOFF-claims-review.md`.
+(2026-10-23)" at the end, and every edit is logged with its reason in `.work/handoffs/HANDOFF-claims-review.md`. The
+release session's feature corrections (OVERRIDES §12, STATUS 14:58) were applied later the same day: those rows say
+"(§12)", and "OVERRIDES §12 corrections (2026-10-23)" at the end lists every change and every withdrawn claim.
 
 **Rule:** a sentence that cannot be traced here is rewritten or removed (MASTER_PLAN §9.3). Headings, button labels,
 greetings and other sentences that state no fact ("You set the pace.", "Say hi to Pebble.") need no row.
@@ -16,6 +18,7 @@ greetings and other sentences that state no fact ("You set the pace.", "Say hi t
 | `README.md@v1.0.1:12` | Line 12 of that file at tag `v1.0.1` of github.com/tohin003/Pebble (raw: `https://raw.githubusercontent.com/tohin003/Pebble/v1.0.1/README.md`). Tag copies are immutable. Every file cited here is byte-identical to the read-only checkout `PEBBLE_REPO` (checked with `cmp` at 23:45 IST), **except `README.md`**: the release session is rewriting the checkout's README as a showcase page (393 lines at 23:38), so README citations use the 162-line tag copy. |
 | `README.md@207ec74:98` | Line 98 of the README published on `main` at commit `207ec74` (the release session's showcase README, 494 lines; raw: `https://raw.githubusercontent.com/tohin003/Pebble/207ec7400abd9d01720d8bba0b091b5a8948bc7e/README.md`). The release session gives its statements as true (STATUS 23:32, 00:00). Used for the showcase facts that the v1.0.1 tag README lacks. The checkout now also holds unreleased 1.0.2 work (`CHANGELOG.md`, `App.vue`, `AdvancedSettings.vue` differ from the tag), so 1.0.1 behaviour is still cited from the tag copies. |
 | `STATUS §Release facts`, `STATUS 23:27` | `/Users/xyx/Projects/PEBBLE_SESSIONS_STATUS.md`: the "Release facts" section, or the release session's update at that time. |
+| `CHANGELOG.md@checkout:44` | Line 44 of that file in the read-only checkout `PEBBLE_REPO` as it stood at 15:04–15:16 IST on 2026-10-23: the release session's unreleased 1.0.3 work (Phase 30; `README.md` saved 15:04, `docs/USER_GUIDE.md` 15:05, `CHANGELOG.md` 15:06). Cited only for the OVERRIDES §12 corrections, which the release session says hold for 1.0.3 (STATUS 14:58). Line numbers can move while that session edits; the quoted words are what count. |
 | `OVERRIDES §n`, `PLAN §n` | The landing session's planning docs (`OVERRIDES.md`, `MASTER_PLAN.md`; copies in `.work/research/`). |
 | `fixtures.js` | U2's capture fixtures (`capture/mock/fixtures.js`): the fictional demo world (Maya, invoice-kit, Lisbon trip, datetime quiz). |
 
@@ -50,11 +53,12 @@ Download, checksum, release and script URLs: STATUS §Release facts; all returne
 | C-LIM-7 | Models make mistakes, including confident ones, so check the evidence Pebble shows you. | `README.md@v1.0.1:150`; `src/App.vue@v1.0.1:2396` ("Pebble can make mistakes. Check the evidence.") | Q |
 | C-LIM-8 | AgentGuard checks evidence such as test runs. It is not a security layer, and it cannot make every answer right. | `README.md@v1.0.1:150-151`; `SECURITY.md@v1.0.1:54` | Q |
 | C-LIM-9 | Commands and parsers run in macOS's sandbox, which limits them but is not a promise against every attack. Prompt injection from web pages or files is limited, not impossible. | `README.md@v1.0.1:151-152`; `SECURITY.md@v1.0.1:51-53` | Q |
-| C-LIM-10 | Pebble for Chrome isn't in the Chrome Web Store for 1.0: you load it in Chrome's Developer mode. Pebble's own built-in browser is not available yet. | `README.md@v1.0.1:123-124`, `:155`; `docs/USER_GUIDE.md@v1.0.1:200-201`; `CHANGELOG.md@v1.0.1:95` | Q |
-| C-LIM-11 | Scheduled tasks run only while Pebble is open. | `README.md@v1.0.1:156`; `docs/USER_GUIDE.md@v1.0.1:182` | Q |
+| C-LIM-10 | (§12) Pebble for Chrome isn't in the Chrome Web Store for 1.0: you load it in Chrome's Developer mode. It has been tested against a simulated Chrome, not yet in a real one. Pebble's own built-in browser is not available yet. | `README.md@v1.0.1:123-124`, `:155`; `docs/USER_GUIDE.md@v1.0.1:200-201`; `CHANGELOG.md@v1.0.1:95`. Simulated Chrome: STATUS 14:58 ("It has been tested against a simulated Chrome, not yet in a real one"); OVERRIDES §12; `CHANGELOG.md@checkout:40-43`; `README.md@checkout:528-529`; `docs/USER_GUIDE.md@checkout:206-208`; `browser-extension/worker.test.mjs@checkout:1` ("the service worker against a fake Chrome"); `docs/HARNESS_BROWSER_EXTENSION.md@checkout:3` ("Nothing here has run against a real Chrome yet") | Q. OVERRIDES §12: said wherever Chrome is described at length (here, the `more` tile's limit and `llms.txt`) |
+| C-LIM-11 | (§12) Scheduled tasks run only while Pebble is open. Their results show in Pebble; macOS notifications are off until you turn them on. (Also the limit line of `orchestration` and of the unused `more` "Bigger tasks" tile, and `llms.txt`.) | `README.md@v1.0.1:156`; `docs/USER_GUIDE.md@v1.0.1:182`. Results and notifications: STATUS 14:58 ("results show in Pebble; macOS notifications are off until you turn them on"); OVERRIDES §12; `CHANGELOG.md@checkout:49` ("Results appear in Details › Tools; macOS notifications are off until you turn them on."); `docs/USER_GUIDE.md@checkout:186-187`; `README.md@checkout:268`; `backend/pebble/notifications.py@checkout:19` (settings "off until the person enables it in Settings"), `:41` (`DEFAULT_SETTINGS = {'enabled': False, …}`) | Q. 1.0.1's guide said "their results arrive as notifications" (`docs/USER_GUIDE.md@v1.0.1:182-183`); the page never used that, and now says where results go |
 | C-LIM-12 | Web search uses Bing's RSS feed, which may change or stop without notice. The free Open-Meteo weather service is for non-commercial use. | `README.md@v1.0.1:153-154`; `NOTICE.md@v1.0.1:59-61` | Q |
 | C-LIM-13 | Pebble honours Reduce Motion, and VoiceOver hears the state of every switch, tab and permission mode, but an accessibility audit is still to come. | `docs/USER_GUIDE.md@v1.0.1:28`; `CHANGELOG.md@v1.0.1:76-77`; `docs/ARCHITECTURE.md@v1.0.1:51` ("an accessibility audit … remain necessary") | Q |
 | C-LIM-14 | Other software on your Mac: Pebble doesn't defend against other software running as your own macOS user. Such software can read Pebble's data folder and change its settings, and it could make Pebble's backend use a saved key or sign-in without a prompt. | `SECURITY.md@v1.0.1:57` ("Pebble does not defend against other software running as your own macOS user. Such software can read Pebble's data folder and change its settings, and it can start Pebble's own backend so that the backend reads your saved API key or ChatGPT sign-in without a prompt …"); DESIGN §9 (lead decision: the limits add it) | Q. Shortened; "could" because it describes what such software is able to do |
+| C-LIM-15 | (§12, new) Other apps: Pebble can't see or operate other apps yet. It can only open one, which in the default mode waits for your approval. (Also `llms.txt`; the same fact under the quoted permission sentence is C-EXP-14.) | STATUS 14:58 ("Pebble can't see or operate other apps yet; it can only open one, with approval. Don't say it controls apps or windows."); OVERRIDES §12; `CHANGELOG.md@checkout:38-39`; `README.md@checkout:529` ("Pebble's own built-in browser and control of other apps' windows are not available yet."). Code: `backend/pebble/app.py@checkout:159` (screen sessions get `AppAdapter(ax_worker.BlockedBackend())` for apps); `src/components/ScreenSessions.vue@checkout:13-14` ("the app-window grant is not offered until Pebble can read app identities", Phase 24, so 1.0.1 too), `:260`; `backend/pebble/native_apps.py@checkout:15-16` ("A launch receipt never shows that the app was operated"); `backend/pebble/app.py@checkout:3181-3189` (`open_app` proposes an "app" action). When it asks: `src/permissionModes.ts@v1.0.1:24`, `:30`, `:35`; `backend/pebble/permissions.py@checkout:82-93` | Q, D. The release session's "with approval" holds in Ask for approval (the default) and Auto in project; in Full access an app launch runs without asking (`permissionModes.ts:35`), so the line says "in the default mode" (OVERRIDES §8 C2 style) and doesn't contradict the dial |
 
 ## 1. Hero, calls to action and the download notice
 
@@ -103,6 +107,12 @@ Transcript descriptions (what you see) follow the cut in `docs/FILM_SPEC.md` §1
 review): every string they quote is the real interface or the engine's verbatim text (FILM_SPEC §6, §7), with
 fixture numbers (S). The withdrawn test counter and "network off" (critic C3) are gone.
 
+(§12, 2026-10-23) No on-screen line, caption (`docs/film-captions.json`) or transcript description is affected by the
+release session's corrections: the film shows no export, no Chrome, no schedule, no ⌘+ or ⌘−, never says memories are
+edited ("Memory you can read and forget") and never scopes the model to a conversation ("Your model, your choice").
+S6b (f1332–1439) shows the real 1.0.1 Settings › Permissions, whose Full access text names "browser and app-window
+actions" (C-EXP-4..7): Pebble's own words, kept like the page's dial.
+
 ## 3. On your desktop
 
 | ID | Claim | Source | Kind / notes |
@@ -117,7 +127,7 @@ fixture numbers (S). The withdrawn test counter and "network off" (critic C3) ar
 
 | ID | Claim | Source | Kind / notes |
 |---|---|---|---|
-| C-MOD-1 | Connect a model in Settings › Models. One model runs at a time, and you pick the model and its effort for each message. | `README.md@v1.0.1:76`; `docs/USER_GUIDE.md@v1.0.1:62-63` | Q |
+| C-MOD-1 | (§12) Connect a model in Settings › Models. One model runs at a time: switch it or its effort at any time, and the choice applies to every conversation. | `README.md@v1.0.1:76`; `docs/USER_GUIDE.md@v1.0.1:62-63` (Settings › Models; one model at a time). Switch at any time, every conversation: STATUS 14:58 ("Models: 'switch at any time', not 'per conversation'; the choice applies to every conversation."); OVERRIDES §12; `CHANGELOG.md@checkout:48` ("The model you choose applies to every conversation, not to one."); `docs/USER_GUIDE.md@checkout:63-64` ("Pick the model and its effort in the composer; the choice applies to every conversation until you change it. One model runs at a time."); `README.md@checkout:73` ("Switch at any time; the choice applies to every conversation.") | Q. Withdrawn: "you pick the model and its effort for each message" (from `docs/USER_GUIDE.md@v1.0.1:62`), which read as a choice scoped to one message or conversation |
 | C-MOD-2 | Continue with ChatGPT: sign in with your ChatGPT account in your browser. | `README.md@v1.0.1:77`; label `src/components/AdvancedSettings.vue@v1.0.1:1171` | Q, V (label) |
 | C-MOD-3 | Needs an eligible Plus or Pro plan through OpenAI's preview for open-source and approved clients. Plan limits apply, and API billing is separate. | `README.md@v1.0.1:77-78`; `src/components/AdvancedSettings.vue@v1.0.1:1186-1188` | Q. Keeps "eligible Plus or Pro" (§9.3) |
 | C-MOD-4 | Connect provider: an API key for an OpenAI-compatible service, such as OpenAI, Ollama or LM Studio, an Anthropic key, or a Responses API endpoint. Keys are kept in the macOS Keychain. | `README.md@v1.0.1:79-80`; `docs/USER_GUIDE.md@v1.0.1:69-71`; label `AdvancedSettings.vue@v1.0.1:1156`, choices `:1203-1207` | Q, V (label) |
@@ -153,13 +163,14 @@ fixture numbers (S). The withdrawn test counter and "network off" (critic C3) ar
 | C-EXP-1 | Approval card words: "Needs your review", "Done", "Not allowed", "Undone"; "Changes this file in your project. You can undo it afterwards."; "Proposed source edit · original stays intact until approval"; "View diff"; "Don't allow"; "Apply edit"; "Undo this edit" | `src/App.vue@v1.0.1:718`, `:726`, `:2492-2495`, `:2498`, `:2553`, `:2565`, `:2588` | V. "Not allowed" is the app's own status after Don't allow (`:718`), so the demo shows it instead of inventing copy (§7.3) |
 | C-EXP-2 | `invoice_kit/dates.py` and its diff | `fixtures.js` (`DIFF_DATES`) | S |
 | C-EXP-3 | "Try the approval card. Its words are the ones Pebble shows." | C-EXP-1 (checked word for word by Lane A's script, see "Checks run") | I |
-| C-EXP-4..7 | The three modes' names, "Runs without asking" and "Always asks" texts, and the "In every mode, …" sentence | `src/permissionModes.ts@v1.0.1:20-38`, `:42`; labels `AdvancedSettings.vue@v1.0.1:1383-1384`; legend "How Pebble acts" from `AdvancedSettings.vue@v1.0.1:1365` ("HOW PEBBLE ACTS", set in sentence case per PLAN §7.1) | V. The app keeps these true with a test (`permissionModes.ts:1-5`) |
+| C-EXP-4..7 | The three modes' names, "Runs without asking" and "Always asks" texts, and the "In every mode, …" sentence | `src/permissionModes.ts@v1.0.1:20-38`, `:42`; labels `AdvancedSettings.vue@v1.0.1:1383-1384`; legend "How Pebble acts" from `AdvancedSettings.vue@v1.0.1:1365` ("HOW PEBBLE ACTS", set in sentence case per PLAN §7.1) | V. The app keeps these true with a test (`permissionModes.ts:1-5`). (§12) Kept word for word, as 1.0.1 shows them: Full access's "Always asks" and the "In every mode" sentence name "browser and app-window actions" (`permissionModes.ts@v1.0.1:36`, `:42`). Pebble can't see or operate other apps (STATUS 14:58), so C-EXP-14 sits right under the quote. 1.0.3 rewrites both strings without that wording (`src/permissionModes.ts@checkout:36`: "…installs, presses in a Chrome tab, network or dangerous commands…"; `:42`: "…Connector calls, installs and every press in a Chrome tab you granted always ask; looking, typing and choosing in that tab run under your grant. …"; its test `src/permissionModes.test.mjs@checkout:60` asserts "no app-window wording"): switch to them when 1.0.3 is published and the Settings › Permissions stills are retaken |
 | C-EXP-8 | "The default" (on Ask for approval) | `README.md@v1.0.1:112`; `src/permissionModes.ts@v1.0.1:44-46` | Q |
 | C-EXP-9 | Below the modes, in Settings › Permissions, a switch for each kind of tool turns it off entirely. | `docs/USER_GUIDE.md@v1.0.1:92-94` | Q. Explains the app sentence's "switches below" on a page that has none |
 | C-EXP-10 | "Full access increases the impact of mistakes and prompt injection. AgentGuard is a reliability check; it cannot guarantee that every command or answer is safe." | `src/components/AdvancedSettings.vue@v1.0.1:1389-1393` (shown when Full access is selected) | V. Allow-listed (contains "safe") |
 | C-EXP-11 | Forget card: "Saved memories about “…”"; "Nothing is forgotten until you choose Forget. These are records Pebble saved; forgetting one removes it for good."; "Forget"; "Forgotten"; "All memories in Settings"; "Done"; the aria label "Forget: …" | `src/App.vue@v1.0.1:2057`, `:2059`, `:2066`, `:2071`, `:2075`, `:2081-2082` | V |
 | C-EXP-12 | "In this project" (where a memory applies) | `src/App.vue@v1.0.1:1479` | V |
 | C-EXP-13 | The three memories and the request "Forget what you know about invoice-kit." | `fixtures.js` (`mem-pref-4`, `mem-fact-1`, `mem-proc-1`) | S |
+| C-EXP-14 | (§12, new) Under the quoted "In every mode, …" sentence (`explainers.permissionDial.appsNote`, rendered by `Pace.tsx`): "Pebble can't see or operate other apps yet: an app launch only opens one." | The sources of C-LIM-15: STATUS 14:58; OVERRIDES §12; `CHANGELOG.md@checkout:38-39`; `backend/pebble/app.py@checkout:159`, `:3181-3189`; `src/components/ScreenSessions.vue@checkout:13-14`; `backend/pebble/native_apps.py@checkout:15-16` | Q, D. Keeps 1.0.1's verbatim "app-window actions" (C-EXP-4..7) from reading as app control; says nothing about approval, because the dial above it shows when an app launch asks in each mode |
 
 ## 6. You set the pace
 
@@ -180,9 +191,10 @@ fixture numbers (S). The withdrawn test counter and "network off" (critic C3) ar
 | C-MEM-4 | Ask Pebble to forget something and it shows the memories that match. Nothing is forgotten until you confirm it in the main window. | `docs/USER_GUIDE.md@v1.0.1:155-156`; `CHANGELOG.md@v1.0.1:34` | Q |
 | C-MEM-5 | Write what Pebble should know about you in `~/.pebble/PEBBLE.md`, in your own words. It is information about you, never a permission. | `docs/USER_GUIDE.md@v1.0.1:157-158` | Q |
 | C-MEM-6 | One switch, Remember useful context, turns memory off. Forgetting removes a memory for good. | `docs/USER_GUIDE.md@v1.0.1:162`; `src/App.vue@v1.0.1:2059` ("forgetting one removes it for good") | Q |
+| C-MEM-10 | (§12, new; `llms.txt`) Six kinds of memory. You can see, search, add and forget memories, but not edit them; the only thing you edit is `~/.pebble/PEBBLE.md`. One switch turns memory off. | STATUS 14:58 ("Memory: 'add or forget', not 'edit'. The only thing you edit is PEBBLE.md."); OVERRIDES §12 (overrides §10's "see, search, edit (`~/.pebble/PEBBLE.md`)"); `CHANGELOG.md@checkout:44` ("No memory can be edited: you can add, view and forget memories, and write `PEBBLE.md`."); `docs/USER_GUIDE.md@checkout:152-162`; C-MEM-1, C-MEM-2, C-MEM-3, C-MEM-5, C-MEM-6 | Q. Replaces "six kinds of memory you can see, search, edit in ~/.pebble/PEBBLE.md and forget", which read as editing memories. The page's own memory section never said "edit" |
 | C-VIEW-1 | Ask for a dashboard, a table, a chart, a plan, a diagram, a quiz or an app demo. Pebble builds it as a view in the conversation, from data, and keeps its earlier versions. | `docs/USER_GUIDE.md@v1.0.1:167-168` | Q |
 | C-VIEW-2 | A quiz keeps its timer and your answers. | `docs/USER_GUIDE.md@v1.0.1:169` | Q |
-| C-VIEW-3 | Export a view as PDF, Word, Excel, CSV or HTML. Saving always goes through the macOS Save dialog, and nothing is uploaded. | `docs/USER_GUIDE.md@v1.0.1:171-172` | Q |
+| C-VIEW-3 | (§12) Export a view as Word, Excel, CSV or HTML. Saving always goes through the macOS Save dialog, and nothing is uploaded. | `docs/USER_GUIDE.md@v1.0.1:171-172` (Save dialog, nothing uploaded). The formats: STATUS 14:58 ("PDF export: remove it. A release build could never make the file. Exports are Word, Excel, CSV and HTML."); OVERRIDES §12; `CHANGELOG.md@checkout:27-29`, `:37`; `docs/USER_GUIDE.md@checkout:174-176`; `src/components/ExportPanel.vue@checkout:19-24` (the four formats: HTML, DOCX, XLSX, CSV; "Phase 30 (D42): no PDF"); `src/slashCommands.ts@checkout:173-174` (`EXPORT_FORMATS = ["docx", "xlsx", "csv", "html"]`); `backend/pebble/runtime_commands.py@checkout:43` | Q. Withdrawn: "PDF" (1.0.1's export panel offered it first, but a release build could never make the file) |
 | C-VIEW-4 | A view can show and collect things, but it can never approve, run or change anything. | `README.md@v1.0.1:118-119` | Q (verbatim) |
 
 ## 8. And a little more
@@ -194,7 +206,7 @@ fixture numbers (S). The withdrawn test counter and "network off" (critic C3) ar
 | C-MORE-3 | Pebble can hand parts of a larger task to agents, track a goal with criteria, and run reviewed schedules. Agents read and propose; only the main task applies changes, through your normal review. | `docs/USER_GUIDE.md@v1.0.1:176-181`; `README.md@v1.0.1:120-121` | Q |
 | C-MORE-4 | Skills (reusable instructions in Markdown) and connectors (MCP servers over HTTP). Each one starts turned off until you review it. | `docs/USER_GUIDE.md@v1.0.1:187-192` | Q |
 | C-MORE-5 | Every connector call asks for your approval. Servers started through npx, uvx or Node aren't supported yet. | `docs/USER_GUIDE.md@v1.0.1:192-193` | Q |
-| C-MORE-6 | Pebble can look at and act in a Chrome tab you share and grant, one site at a time. Sign-in, password and payment pages are handed back to you unread. | `README.md@v1.0.1:123`; `docs/USER_GUIDE.md@v1.0.1:200`, `:221` | Q |
+| C-MORE-6 | (§12) The `more` tile (not rendered: lane F2b replaced the tiles with `orchestration` and `tour`): Pebble can look at and act in one Chrome tab you share and then grant, on that tab's site, for up to 30 minutes. It can't open, close, list or switch tabs, or leave the site. Every press asks first, and pages that look like sign-in, password or payment pages are handed back to you unread. The tour's short sentence (rendered, unchanged): "Share a Chrome tab and Pebble can look at it and act in it, one site at a time, with your grant." | `README.md@v1.0.1:123`; `docs/USER_GUIDE.md@v1.0.1:200`, `:216` ("Grant it for 5, 15 or 30 minutes"), `:221`. (§12) STATUS 14:58 ("one Chrome tab you share and then grant, on one site, for up to 30 minutes. It can't open, close, list or switch tabs, or leave the site. Every press asks first." and "`copy.ts:805`'s sentence is fine as it is: keep 'share', 'one site' and 'your grant'"); OVERRIDES §12; `CHANGELOG.md@checkout:40-43`; `docs/USER_GUIDE.md@checkout:206-208`, `:224`, `:229-230` ("Pages that look like sign-in, password, payment or verification pages are handed back to you unread. Every press, and Enter, waits for your approval"); `backend/pebble/screen_session.py@checkout:62` (`MAX_TTL_SECONDS = 1800`); `browser-extension/lib/worker.mjs@checkout:137` (at most 1,800 s); `src/permissionModes.ts@checkout:42` | Q. "Pages that look like …": the 1.0.3 guide's own softening of 1.0.1's "are always handed back". The simulated-Chrome caveat is C-LIM-10, in the tile's limit line. Never compared with agents that "control your browser" (OVERRIDES §12) |
 | C-MORE-7 | ⌘. stops a task, and nothing Pebble already did is replayed when you continue. Rewind files puts back the files a task changed. | `docs/USER_GUIDE.md@v1.0.1:44`, `:118` | Q |
 | C-MORE-8 | Rewind files skips files that changed since, and lists what it can't undo, such as commands that ran. | `docs/USER_GUIDE.md@v1.0.1:118-119` | Q |
 
@@ -287,7 +299,7 @@ beside it: "Stored on your Mac" (never "Stays on your Mac") and "What leaves you
 | C-SEO-1 | Pebble is a free, open-source AI companion for Macs with Apple silicon. Chat with the model you choose; you decide what it may change. | `README.md@v1.0.1:3-10` ("work with a model you choose"; "Every change to your project or your Mac goes through a permission mode you pick"), `:12` | Q. 134 characters |
 | C-SEO-2 | (review) `operatingSystem` "macOS 12 or later on Apple silicon (built and tested on macOS 27)"; `processorRequirements` "Apple silicon (M1 or later)" | `README.md@v1.0.1:17` | Q. The macOS floor carries its "tested on macOS 27" qualifier (OVERRIDES §8 H14), as in `llms.txt` |
 | — | JSON-LD `offers` price 0, `isAccessibleForFree`, `license`, `author`, `softwareVersion`, `datePublished`; **no** `aggregateRating` or `review` | C-FAQ-1, C-FAQ-20, C-REL-1, C-REL-3; PLAN §7.8 | `downloadUrl` and `fileSize` only when Live |
-| — | `llms.txt` lines | (review: adds the macOS 27 qualifier, "through OpenAI's preview", the AgentGuard evidence layer and scope challenge (C-AG-7, C-FAQ-14), the five "What leaves the Mac" destinations (C-PRIV-6..9, C-PRIV-12) and the sandbox / prompt-injection limit (C-LIM-9)) The rows above: C-HERO-2, C-MOD-2..7, C-PROJ-1, C-PROJ-9, C-PROJ-10, C-MEM-1, C-VIEW-1, C-VIEW-4, C-PRIV-*, C-LIM-*, C-REL-4; "the first public release": `CHANGELOG.md@v1.0.1:4`; "No benchmark results have been published, and Pebble makes no speed or quality comparison with other tools": STATUS §Release facts ("Benchmarks. None are published yet."), OVERRIDES §2 | Q |
+| — | `llms.txt` lines | (§12: Memory now reads "You can see, search, add and forget memories, but not edit them; the only thing you edit is ~/.pebble/PEBBLE.md" (C-MEM-10); the Limits line "Models make mistakes. Pebble for Chrome needs Chrome's Developer mode. Scheduled tasks run only while Pebble is open." became four lines: models (C-LIM-7), Pebble for Chrome at length with the simulated-Chrome caveat (C-MORE-6, C-LIM-10), other apps (C-LIM-15), schedules with where results show (C-LIM-11)) (review: adds the macOS 27 qualifier, "through OpenAI's preview", the AgentGuard evidence layer and scope challenge (C-AG-7, C-FAQ-14), the five "What leaves the Mac" destinations (C-PRIV-6..9, C-PRIV-12) and the sandbox / prompt-injection limit (C-LIM-9)) The rows above: C-HERO-2, C-MOD-2..7, C-PROJ-1, C-PROJ-9, C-PROJ-10, C-MEM-1, C-VIEW-1, C-VIEW-4, C-PRIV-*, C-LIM-*, C-REL-4; "the first public release": `CHANGELOG.md@v1.0.1:4`; "No benchmark results have been published, and Pebble makes no speed or quality comparison with other tools": STATUS §Release facts ("Benchmarks. None are published yet."), OVERRIDES §2 | Q |
 
 ## LinkedIn post draft (`.work/social/linkedin-post.txt`, not committed)
 
@@ -301,6 +313,7 @@ beside it: "Stored on your Mac" (never "Stays on your Mac") and "What leaves you
 | Free and open source under the Apache License 2.0, with no telemetry | C-FAQ-1, C-PRIV-5 |
 | (review) Signed with its own identity rather than an Apple Developer ID, and not notarized; Apple silicon only; no independent security audit yet | C-LIM-1, C-LIM-2, C-LIM-5, C-LIM-4 |
 | (review) Links: the release page `https://github.com/tohin003/Pebble/releases/tag/v1.0.1` (OVERRIDES §4 asks for "the GitHub release") and the repository | STATUS §Release facts |
+| (§12 check, 2026-10-23) The post mentions no export, app or window control, Chrome, memory editing, per-conversation model choice, schedule or ⌘+/⌘−, so nothing in it changed | OVERRIDES §12 |
 
 ## Credits
 
@@ -548,3 +561,65 @@ C-AG, C-DESK, C-PROJ, C-MOD, C-PACE, C-EXP).
 | C-F2A-7 | You set the pace, under "Interactive example": "Choose a mode. The words are the ones Pebble shows." | C-EXP-4..7: the dial's names and texts are `src/permissionModes.ts@v1.0.1:20-38` word for word | I |
 | C-F2A-8 | "In Pebble's Settings, under the three modes:" (introduces the quoted "In every mode, …" sentence) | `src/components/AdvancedSettings.vue@v1.0.1:1366-1388`: `EVERY_MODE` is the setting note right below the three-mode radiogroup | Q |
 | — | Labels, no claim: the story's rail "How a coding task goes" with "Edits", "Tests", "Commands and Git", "AgentGuard"; the AgentGuard switch "Show the task", "Verification required" (`docs/USER_GUIDE.md@v1.0.1:122`) and "Verified"; the teaser's button name "film preview" | — | Labels |
+
+## OVERRIDES §12 corrections (2026-10-23)
+
+The release session's audit of every command, shortcut and feature claim (STATUS 14:58; OVERRIDES §12, binding, and
+true for 1.0.3). The version shown stays "v1.0.1 · 72 MB" until the 1.0.3 release post. Sources: the rows named below.
+
+### Changed
+
+| Where | Before | After | Rows |
+|---|---|---|---|
+| `copy.ts` `views.points` | "Export a view as PDF, Word, Excel, CSV or HTML. Saving always goes through …" | "Export a view as Word, Excel, CSV or HTML. Saving always goes through …" | C-VIEW-3 |
+| `copy.ts` `models.lead` | "Connect a model in Settings › Models. One model runs at a time, and you pick the model and its effort for each message." | "Connect a model in Settings › Models. One model runs at a time: switch it or its effort at any time, and the choice applies to every conversation." | C-MOD-1 |
+| `copy.ts` `honestLimits.product`, "Pebble for Chrome needs Developer mode" | "… you load it in Chrome's Developer mode. Pebble's own built-in browser is not available yet." | "… you load it in Chrome's Developer mode. It has been tested against a simulated Chrome, not yet in a real one. Pebble's own built-in browser is not available yet." | C-LIM-10 |
+| `copy.ts` `honestLimits.product`, new item after it | — | "Other apps. Pebble can't see or operate other apps yet. It can only open one, which in the default mode waits for your approval." | C-LIM-15 |
+| `copy.ts` `honestLimits.product` "Schedules need Pebble open", `orchestration.limit`, the `more` "Bigger tasks" tile's limit | "Scheduled tasks run only while Pebble is open." | "Scheduled tasks run only while Pebble is open. Their results show in Pebble; macOS notifications are off until you turn them on." | C-LIM-11 |
+| `copy.ts` `explainers.permissionDial.appsNote` (new), rendered by `Pace.tsx` under the quoted "In every mode, …" sentence | — | "Pebble can't see or operate other apps yet: an app launch only opens one." | C-EXP-14 |
+| `copy.ts` `more` "Pebble for Chrome" tile (not rendered) | "Pebble can look at and act in a Chrome tab you share and grant, one site at a time. Sign-in, password and payment pages are handed back to you unread." Limit: "For 1.0 you load it in Chrome's Developer mode; it isn't in the Chrome Web Store." | "Pebble can look at and act in one Chrome tab you share and then grant, on that tab's site, for up to 30 minutes. It can't open, close, list or switch tabs, or leave the site. Every press asks first, and pages that look like sign-in, password or payment pages are handed back to you unread." Limit: "… it isn't in the Chrome Web Store. It has been tested against a simulated Chrome, not yet in a real one." | C-MORE-6, C-LIM-10 |
+| `seo.ts` `llmsTxt`, "What it does" | "Memory: six kinds of memory you can see, search, edit in ~/.pebble/PEBBLE.md and forget. One switch turns memory off." | "Memory: six kinds of memory. You can see, search, add and forget memories, but not edit them; the only thing you edit is ~/.pebble/PEBBLE.md. One switch turns memory off." | C-MEM-10 |
+| `seo.ts` `llmsTxt`, "Limits" | "Models make mistakes. Pebble for Chrome needs Chrome's Developer mode. Scheduled tasks run only while Pebble is open." | Four lines: "Models make mistakes."; "Pebble for Chrome needs Chrome's Developer mode. It works in one Chrome tab you share and then grant, on that tab's site, for up to 30 minutes; it can't open, close, list or switch tabs, or leave the site, and every press asks first. It has been tested against a simulated Chrome, not yet in a real one."; "Pebble can't see or operate other apps yet. It can only open one, which in the default mode waits for your approval."; "Scheduled tasks run only while Pebble is open. Their results show in Pebble; macOS notifications are off until you turn them on." | C-LIM-7, C-MORE-6, C-LIM-10, C-LIM-15, C-LIM-11 |
+
+### Withdrawn
+
+- PDF export (C-VIEW-3): 1.0.1's export panel offered it, but a release build could never make the file.
+- "you pick the model and its effort for each message" (C-MOD-1): the choice applies to every conversation.
+- "edit in ~/.pebble/PEBBLE.md" in the `llms.txt` memory line, which read as editing memories (C-MEM-10).
+- In the unused Chrome tile, "Sign-in, password and payment pages are handed back to you unread" without "that look
+  like" (C-MORE-6), and "one site at a time" in the long form (now "on that tab's site").
+
+### Checked and kept
+
+- The tour's "Pebble for Chrome": "Share a Chrome tab and Pebble can look at it and act in it, one site at a time, with
+  your grant. For 1.0 it loads in Chrome's Developer mode." STATUS 14:58: "fine as it is". It is the short form; the
+  long forms (the limits list, the tile, `llms.txt`) carry the simulated-Chrome caveat.
+- The dial's and the quote's 1.0.1 words with "browser and app-window actions" (C-EXP-4..7): Pebble's own text, kept
+  word for word, with C-EXP-14 right under the quote. Switch to 1.0.3's strings when 1.0.3 is published.
+- "app launch" and "app launches" in the three modes: true, Pebble can open an app (C-LIM-15).
+- ⌘+ and ⌘−: not on the page, in the film, in `llms.txt` or in the post, and not to be added before 1.0.3 is out
+  (`CHANGELOG.md@checkout:14`, `:35`). ⌘⇧Space and ⌘. stay (`docs/USER_GUIDE.md@checkout:250`, `:252`).
+- "Drop in PDFs, documents and screenshots" (C-TOUR-4): attachments, not exports. Pebble reads PDFs
+  (`backend/pebble/attachments.py@checkout:124-142`; `docs/USER_GUIDE.md@checkout:47`).
+- The sample project's own "PDF invoices" and "CSV export" (`fixtures.js`, FILM_SPEC) describe invoice-kit, not Pebble.
+- The FAQ, the film's on-screen lines, captions and descriptions, `CREDITS.md` and the LinkedIn post: no affected
+  wording (searched for PDF, export, control or operate with app, window or browser, Chrome, tab, browser, memory with
+  edit, per or each conversation, schedule, notification, ⌘+, ⌘−, text size and zoom).
+
+### Watch items from the 1.0.3 notes (not in OVERRIDES §12, so not changed)
+
+`CHANGELOG.md@checkout:44-57` and the 1.0.3 guide correct more claims that rows above rely on. The release session
+hasn't asked the page to change these; they need its word before the 1.0.3 copy pass:
+- **AgentGuard's hold.** "Changed code without covering tests is not held." (`docs/USER_GUIDE.md@checkout:121-123`;
+  `CHANGELOG.md@checkout:50`: "holds changed code only when tests cover it"). Rows that say a task that changed code
+  must have a passing test run: C-PROJ-9, C-FAQ-13, C-AG-9, the `llms.txt` AgentGuard line, the LinkedIn post, and
+  the film's "Done means tested" (C-CH-6).
+- **Invented APIs.** "its invented-API challenge reads Python code only" (`CHANGELOG.md@checkout:50`;
+  `README.md@checkout:163`) against C-AG-8's "flags invented or broken dependencies".
+- **Agents.** "a worktree agent writes in its own copy" (`CHANGELOG.md@checkout:51-52`;
+  `docs/USER_GUIDE.md@checkout:181-182`) against C-ORC-1's "they never write".
+- **Memory.** "Remember that …" saves a preference when it is about you, and a fact otherwise (C-MEM-3); Pebble follows
+  `PEBBLE.md` as your standing instructions (C-MEM-5, C-MEM-8); after Forget all, Pebble can learn again (C-MEM-9)
+  (`CHANGELOG.md@checkout:44-47`; `docs/USER_GUIDE.md@checkout:152-162`).
+- **Exports.** A Word file turns tables into paragraphs and is labelled unverified (C-VIEW-3;
+  `CHANGELOG.md@checkout:55-56`).

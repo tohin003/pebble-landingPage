@@ -177,11 +177,15 @@ export const honestLimits = {
     },
     {
       title: "Pebble for Chrome needs Developer mode",
-      body: "For 1.0, Pebble for Chrome isn't in the Chrome Web Store: you load it in Chrome's Developer mode. Pebble's own built-in browser is not available yet.", // [C-LIM-10]
+      body: "For 1.0, Pebble for Chrome isn't in the Chrome Web Store: you load it in Chrome's Developer mode. It has been tested against a simulated Chrome, not yet in a real one. Pebble's own built-in browser is not available yet.", // [C-LIM-10] (OVERRIDES §12)
+    },
+    {
+      title: "Other apps",
+      body: "Pebble can't see or operate other apps yet. It can only open one, which in the default mode waits for your approval.", // [C-LIM-15] (OVERRIDES §12)
     },
     {
       title: "Schedules need Pebble open",
-      body: "Scheduled tasks run only while Pebble is open.", // [C-LIM-11]
+      body: "Scheduled tasks run only while Pebble is open. Their results show in Pebble; macOS notifications are off until you turn them on.", // [C-LIM-11] (OVERRIDES §12)
     },
     {
       title: "Web search depends on Bing",
@@ -362,7 +366,7 @@ export const desktop = {
 
 export const models = {
   h2: "Your model, your choice.",
-  lead: "Connect a model in Settings › Models. One model runs at a time, and you pick the model and its effort for each message.", // [C-MOD-1]
+  lead: "Connect a model in Settings › Models. One model runs at a time: switch it or its effort at any time, and the choice applies to every conversation.", // [C-MOD-1] (OVERRIDES §12)
   cards: [
     {
       id: "chatgpt",
@@ -608,6 +612,11 @@ export const explainers = {
     everyMode:
       "In every mode, reading project files, searching and reading the web, and creating views run without asking while their switches below are on. Browser and app-window actions, connector calls and installs always ask. Protected credentials stay blocked.", // permissionModes.ts:42
     switchesNote: "Below the modes, in Settings › Permissions, a switch for each kind of tool turns it off entirely.", // [C-EXP-9]
+    /**
+     * Under the quoted sentence (Pace.tsx). The modes' words above are 1.0.1's own and name "app-window actions";
+     * this keeps them from reading as app control (OVERRIDES §12). [C-EXP-14]
+     */
+    appsNote: "Pebble can't see or operate other apps yet: an app launch only opens one.",
     fullAccessNote:
       "Full access increases the impact of mistakes and prompt injection. AgentGuard is a reliability check; it cannot guarantee that every command or answer is safe.", // [C-EXP-10] AdvancedSettings.vue:1390-1392
     /** Lane F2a: the line under the "Interactive example" label (like approvalCard.intro). [C-F2A-7] */
@@ -710,7 +719,7 @@ export const views = {
     "Ask for a dashboard, a table, a chart, a plan, a diagram, a quiz or an app demo. Pebble builds it as a view in the conversation, from data, and keeps its earlier versions.", // [C-VIEW-1]
   points: [
     "A quiz keeps its timer and your answers.", // [C-VIEW-2]
-    "Export a view as PDF, Word, Excel, CSV or HTML. Saving always goes through the macOS Save dialog, and nothing is uploaded.", // [C-VIEW-3]
+    "Export a view as Word, Excel, CSV or HTML. Saving always goes through the macOS Save dialog, and nothing is uploaded.", // [C-VIEW-3] (OVERRIDES §12: the four export formats)
   ],
   limit: "A view can show and collect things, but it can never approve, run or change anything.", // [C-VIEW-4]
   chapterId: "views",
@@ -738,7 +747,7 @@ export const more = {
       title: "Bigger tasks",
       body:
         "Pebble can hand parts of a larger task to agents, track a goal with criteria, and run reviewed schedules. Agents read and propose; only the main task applies changes, through your normal review.", // [C-MORE-3]
-      limit: "Scheduled tasks run only while Pebble is open.", // [C-LIM-11]
+      limit: "Scheduled tasks run only while Pebble is open. Their results show in Pebble; macOS notifications are off until you turn them on.", // [C-LIM-11] (OVERRIDES §12)
     },
     {
       id: "skills",
@@ -753,8 +762,9 @@ export const more = {
       icon: "Browser",
       title: "Pebble for Chrome",
       body:
-        "Pebble can look at and act in a Chrome tab you share and grant, one site at a time. Sign-in, password and payment pages are handed back to you unread.", // [C-MORE-6]
-      limit: "For 1.0 you load it in Chrome's Developer mode; it isn't in the Chrome Web Store.", // [C-LIM-10]
+        "Pebble can look at and act in one Chrome tab you share and then grant, on that tab's site, for up to 30 minutes. It can't open, close, list or switch tabs, or leave the site. Every press asks first, and pages that look like sign-in, password or payment pages are handed back to you unread.", // [C-MORE-6] (OVERRIDES §12)
+      limit:
+        "For 1.0 you load it in Chrome's Developer mode; it isn't in the Chrome Web Store. It has been tested against a simulated Chrome, not yet in a real one.", // [C-LIM-10] (OVERRIDES §12)
     },
     {
       id: "stop",
@@ -780,7 +790,7 @@ export const orchestration = {
     "Reviewed schedules run a task at set times with the model, permissions and project you approved, and wait for your review again if the model or permissions change.", // [C-ORC-4]
     "If Pebble quits mid-task, it marks what was interrupted and asks before anything resumes. Rewind files puts back what a task changed, unless the files changed since.", // [C-ORC-5]
   ],
-  limit: "Scheduled tasks run only while Pebble is open.", // [C-LIM-11]
+  limit: "Scheduled tasks run only while Pebble is open. Their results show in Pebble; macOS notifications are off until you turn them on.", // [C-LIM-11] (OVERRIDES §12)
 } as const;
 
 export const tour = {
