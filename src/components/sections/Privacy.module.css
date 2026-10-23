@@ -1,24 +1,8 @@
-/* Private by default (DESIGN §5 row 11): "Stored on your Mac" as an enclosure, "What leaves your Mac" outside it, and
-   five strands branching from the small "Your Mac" pebble to the five destinations (a diagram of its own).
-   The shared .section and .section-head helpers live in src/app/globals.css. */
-.section {
-  position: relative;
-}
-
-.chip {
-  display: flex;
-  justify-content: center;
-}
-
-:global(:root[data-film="ready"]) .chip {
-  margin-top: 16px;
-}
-
-/* --- the diagram --- */
+/* Private by default (DESIGN-LEXINGTON §6 row 11): "Stored on your Mac" on the one flat surface, "What leaves your Mac"
+   on the ground beside it, and five strands branching from the small "Your Mac" pebble to the five destinations (a
+   diagram of its own). On the page's columns: "Stored" on 4–7, the strands' trunk down column 8, "What leaves" on 9–12. */
 .diagram {
   position: relative;
-  width: min(1060px, 100%);
-  margin: 60px auto 0;
 }
 
 .nodeRow {
@@ -32,13 +16,13 @@
   top: 0;
   transform: translateX(-50%);
   font-size: 14px;
-  font-weight: 550;
+  font-weight: 500;
   line-height: 1.3;
   color: var(--ink-2);
   white-space: nowrap;
 }
 
-/* the small pebble the line runs through */
+/* the small pebble the strands start from: the pebble's own colour (decorative) */
 .node {
   position: absolute;
   left: 50%;
@@ -52,35 +36,40 @@
 
 .columns {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  column-gap: 136px;
+  grid-template-columns: subgrid;
   margin-top: 30px;
+}
+
+.stored {
+  grid-column: 1 / span 4;
+}
+
+.leaves {
+  grid-column: 6 / span 4;
 }
 
 .columnTitle {
   position: relative;
-  font-size: clamp(19px, 0.4vw + 15px, 21px);
 }
 
-/* "Stored on your Mac": a quiet enclosure, the things that stay inside, as tall as its own contents */
+/* "Stored on your Mac": the one flat surface, as tall as its own contents, no ring */
 .stored {
   align-self: start;
-  padding: 28px 30px 30px;
-  border-radius: var(--r-card);
-  background: var(--bg-2);
-  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 26px 28px 28px;
+  border-radius: var(--r-panel);
+  background: var(--fill);
 }
 
 .storedList {
   display: grid;
-  gap: 13px;
-  margin-top: 18px;
+  gap: 12px;
+  margin-top: 16px;
 }
 
 .storedList li {
   position: relative;
   padding-left: 22px;
-  font-size: 15.5px;
+  font-size: 15px;
   line-height: 1.55;
   color: var(--ink-2);
 }
@@ -101,9 +90,9 @@
   color: var(--ink);
 }
 
-/* "What leaves your Mac": outside, each destination at the end of a strand */
+/* "What leaves your Mac": on the ground, each destination at the end of a strand */
 .leaves {
-  padding-top: 28px;
+  padding-top: 26px;
 }
 
 .originMark {
@@ -112,8 +101,8 @@
 
 .leavesList {
   display: grid;
-  gap: 18px;
-  margin-top: 18px;
+  gap: 16px;
+  margin-top: 16px;
 }
 
 .leavesList li {
@@ -133,8 +122,8 @@
 }
 
 .destination {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 15.5px;
+  font-weight: 500;
   line-height: 1.4;
   color: var(--ink);
 }
@@ -145,6 +134,7 @@
   color: var(--ink-2);
 }
 
+/* the strands: drawn from the start, static (Privacy.strands.tsx) */
 .strands {
   position: absolute;
   top: 0;
@@ -160,24 +150,22 @@
   stroke-width: 1.35;
   stroke-linecap: round;
   stroke-linejoin: round;
-  transition-property: stroke-dashoffset;
-  transition-timing-function: cubic-bezier(0.33, 1, 0.68, 1); /* easeOutCubic: Privacy.strands.tsx times the strands to it */
 }
 
-/* --- each column's own notes, under a hairline --- */
+/* ---- each column's own notes, under a hairline (on --fill, the cut is drawn in --bg) ---- */
 .columnNotes {
   display: grid;
   gap: 10px;
-  margin-top: 24px;
-  padding-top: 18px;
+  margin-top: 22px;
+  padding-top: 16px;
   border-top: 1px solid var(--line);
-  font-size: 15px;
+  font-size: 14.5px;
   line-height: 1.55;
   color: var(--ink-2);
 }
 
 .stored .columnNotes {
-  border-top-color: var(--line-2);
+  border-top-color: var(--bg);
 }
 
 .columnNotes .local {
@@ -188,35 +176,20 @@
   color: var(--ink);
 }
 
-.columnNotes a {
-  color: var(--ink);
-}
-
-@media (max-width: 1100px) and (min-width: 900px) {
-  .columns {
-    column-gap: 104px;
-  }
-}
-
-/* Narrow screens: no node (and so no stop); the strands become a comb down the destinations' left edge, from the
-   small mark beside the column title. */
-@media (max-width: 899px) {
+/* Narrow screens: no node; the strands become a comb down the destinations' left edge, from the small mark beside the
+   column title. */
+@media (max-width: 1023px) {
   .nodeRow {
     display: none;
   }
 
-  .diagram {
-    max-width: 620px;
-    margin-top: 44px;
-  }
-
   .columns {
-    grid-template-columns: minmax(0, 1fr);
-    row-gap: 40px;
+    display: block;
     margin-top: 0;
   }
 
   .leaves {
+    margin-top: 40px;
     padding-top: 0;
   }
 
