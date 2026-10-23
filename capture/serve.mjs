@@ -5,6 +5,9 @@
 //   - file watching and HMR are off,
 //   - index.html is rewritten in memory only (transformIndexHtml) so that ./mock/entry.js runs first.
 // Usage: node serve.mjs            (PORT=5199 by default; the repo path comes from PEBBLE_REPO, see pebble-repo.mjs)
+// PEBBLE_REPO may also be a frozen copy of one release's frontend (its index.html and src/ from the release tag, with
+// node_modules linked to a checkout's): when the checkout's working tree moves on, the captures stay on the release.
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { pebbleRepo } from "./pebble-repo.mjs";
@@ -69,10 +72,12 @@ const server = await createServer({
     strictPort: true,
     hmr: false,
     watch: null,
-    fs: { strict: true, allow: [path.join(REPO, "src"), path.join(REPO, "node_modules"), path.join(REPO, "index.html"), HERE] },
+    // node_modules may be a link (a frozen copy's): Vite checks resolved paths, so its real path is allowed too.
+    fs: { strict: true, allow: [path.join(REPO, "src"), path.join(REPO, "node_modules"), fs.realpathSync(path.join(REPO, "node_modules")), path.join(REPO, "index.html"), HERE] },
   },
 });
 await server.listen();
+console.log(`serving Pebble's frontend from ${REPO}`);
 server.printUrls();
 const stop = async () => {
   await server.close();

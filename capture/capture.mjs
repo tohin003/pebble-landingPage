@@ -119,6 +119,56 @@ async function openSettings(page, tab) {
   }
   await settle(page, 900);
 }
+// ---- 1.1.0: Stealth Lockdown, in Settings › Privacy and focus (App.vue, the section after Usage telemetry) -------
+const PRIVACY = ".modal .settings-section:has(.stealth-card)";
+// Scroll the Settings dialog until the Privacy and focus section sits in the middle of its visible height, as a
+// person scrolls to it. The dialog's title scrolls away with its content (it isn't sticky).
+async function scrollToPrivacy(page) {
+  await page.evaluate((sel) => {
+    const modal = document.querySelector(".modal"), section = document.querySelector(sel);
+    const m = modal.getBoundingClientRect(), s = section.getBoundingClientRect();
+    modal.scrollTop += Math.round(s.top + s.height / 2 - (m.top + m.height / 2));
+  }, PRIVACY);
+  await settle(page, 500);
+}
+// The switch, as a person clicks it (App.vue stealth(): the setting, then the shell's stealth_set); the pointer moves
+// on, so there is no hover or focus ring, and the avatars finish the Veil's cast (stealthVeil.ts ACTIVATE, 1.25 s).
+async function stealthSwitch(page) {
+  await click(page, `${PRIVACY} .stealth-card button[role="switch"]`);
+  await page.mouse.move(2, 2);
+  await blur(page);
+  await settle(page, 1800);
+}
+// The switch glows by CSS animation on the compositor's clock (style.css: stealth-breathe and stealth-spin while off;
+// stealth-breathe-on, stealth-sheen and a slower stealth-spin while on). Stop those animations at one instant of
+// their cycle, so light and dark, and every retake, show the same moment of the same glow.
+const GLOW_AT = { off: { "stealth-breathe": 1400, "stealth-spin": 900 }, on: { "stealth-breathe-on": 1800, "stealth-sheen": 1500, "stealth-spin": 1900 } };
+async function holdGlow(page, state) {
+  const held = await page.evaluate((times) => {
+    let n = 0;
+    for (const a of document.getAnimations()) {
+      if (!(a.animationName in times)) continue;
+      a.pause();
+      a.currentTime = times[a.animationName];
+      n++;
+    }
+    return n;
+  }, GLOW_AT[state]);
+  if (!held) throw new Error("the Stealth Lockdown switch has no running glow animation to hold");
+  await settle(page, 300);
+}
+async function privacy(page, state) {
+  await openSettings(page, "models");
+  await page.mouse.move(2, 2); // the same pointer in both states
+  await scrollToPrivacy(page);
+  if (state === "on") await stealthSwitch(page);
+  await holdGlow(page, state);
+}
+// The section alone, padded: its label, the card, the honest line and the two halves. The card overhangs the
+// dialog's content by 12 pt (style.css .stealth-card), so 12 pt more reaches within 2 pt of the dialog's edge
+// without taking in its border.
+const privacyClip = (page) => region(page, [`${PRIVACY} > .section-label`, `${PRIVACY} .stealth-card`, `${PRIVACY} .stealth-honest`, `${PRIVACY} .stealth-halves`], { pad: { x: 12, y: 14 }, within: ".modal" });
+
 // The "Your preferences" record the film and loop L7 forget (third in the list, so it is on screen before and after).
 const FORGET_RECORD = "Uses metric units and 24-hour times.";
 async function forgetRecord(page, words) {
@@ -218,6 +268,25 @@ const SCENES = [
     run: async (page, shot) => { await openSettings(page, "permissions"); await click(page, "#permission-mode-auto"); await settle(page, 900); await shot(); },
   },
   { name: "settings-memory", query: "scene=settings-memory", viewport: MAIN, run: async (page, shot) => { await openSettings(page, "Memory"); await shot(); } },
+  // 1.1.0: Settings › Privacy and focus, Stealth Lockdown off, then switched on (the page's Stealth section).
+  { name: "settings-privacy-wide", query: "scene=settings-permissions", viewport: WIDE, run: async (page, shot) => { await privacy(page, "off"); await shot(); } },
+  { name: "settings-privacy-on-wide", query: "scene=settings-permissions", viewport: WIDE, run: async (page, shot) => { await privacy(page, "on"); await shot(); } },
+  // The section alone; the clip is measured once, before the switch, so both states share one frame.
+  { name: "crop-privacy-card", query: "scene=settings-permissions", viewport: WIDE, run: async (page, shot) => { await privacy(page, "off"); await shot("", { clip: await privacyClip(page) }); } },
+  {
+    name: "crop-privacy-card-on", query: "scene=settings-permissions", viewport: WIDE,
+    run: async (page, shot) => {
+      await openSettings(page, "models");
+      await page.mouse.move(2, 2);
+      await scrollToPrivacy(page);
+      const clip = await privacyClip(page);
+      await stealthSwitch(page);
+      const after = await privacyClip(page);
+      if (after.height > clip.height) throw new Error(`the section grew when switched on (${clip.height} -> ${after.height} pt): the shared clip would cut it`);
+      await holdGlow(page, "on");
+      await shot("", { clip });
+    },
+  },
   {
     // Loop L7 / film proof 7: the same screen after Forget on one "Your preferences" record (memory_delete).
     name: "settings-memory-forgotten", query: "scene=settings-memory", viewport: MAIN,

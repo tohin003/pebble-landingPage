@@ -9,8 +9,8 @@
 //          [--hide=SELECTORS]  make these elements invisible (opacity 0: still laid out and clickable), e.g.
 //                              --hide=.pet-avatar records the companion without its pebble, which the films draw
 //                              themselves (FILM_SPEC §17 R1; lane G2b)
-// Timelines: pet-live-error (alias pet-live), main-live-film, pet-gaze. Output: numbered PNGs 00001.png... plus
-// timeline.json (for pet-gaze also the cursor position of every frame, for compositing). Encode later, e.g.
+// Timelines: pet-live-error (alias pet-live), main-live-film, pet-gaze, pet-veil. Output: numbered PNGs 00001.png...
+// plus timeline.json (for pet-gaze also the cursor position of every frame, for compositing). Encode later, e.g.
 // ffmpeg -framerate 30 -i %05d.png -c:v prores_ks -pix_fmt yuva444p10le out.mov
 import fs from "node:fs";
 import path from "node:path";
@@ -301,6 +301,34 @@ const TIMELINES = {
     },
     frameInfo: (t) => ({ t, ...cursorAt(t), reach: GAZE.reach }),
   },
+
+  // 1.1.0: the floating pebble puts on the Veil (Stealth Lockdown's look, src/stealthVeil.ts in Avatar.vue) and takes
+  // it off. The switch changes the way the host changes it for every window (main.rs stealth_toggle -> app.py
+  // setting() stores it and emits "settings" -> Pet.vue re-reads state()). Times are from the first frame:
+  //   1.0 s on: the cast (ACTIVATE 1.25 s), then the one shimmer at 0.95-2.05 s after the switch (the next would come
+  //   6 s later); 6.0 s off: the release (RELEASE 0.65 s); idle until 7.4 s. The pebble is awake throughout (its
+  //   8 s settle, HOLD_SECONDS, runs from the window's first paint, 7.5 s after frame 0). No pointer, no gaze.
+  // As 1.1.0 ships, the dusk glass and its rim arrive in the switch's first frame and leave in one frame: Avatar.vue's
+  // stealth watcher reads veilAtTime() after the prop has changed, so its starting state is already the new one and
+  // stealthVeil.ts's 0.45 s wipe and fades don't play (Pebble's own README render shows the same). The squash and
+  // stretch, the closed eyes, the ring, the shimmer, the hop and the blink do. These frames show that, as it is.
+  // It is a render of the pebble by Pebble's own code on the virtual clock, not a screen recording: a window under
+  // Stealth Lockdown can't be screen-recorded.
+  "pet-veil": {
+    url: "?pet&scene=pet-chat",
+    viewport: { width: 112, height: 112 },
+    transparent: true,
+    seconds: 7.4,
+    note: "A render of the pebble by Pebble 1.1.0's own Pet.vue, Avatar.vue and stealthVeil.ts on the virtual clock; not a screen recording.",
+    async build() {
+      const stealth = (on) => (page) =>
+        page.evaluate(async (value) => {
+          await window.__pebble.world.rpc("setting", { key: "stealth", value });
+          await window.__pebble.emit("settings", {});
+        }, on);
+      return [[1.0, stealth(true)], [6.0, stealth(false)]];
+    },
+  },
 };
 
 const spec = TIMELINES[NAME];
@@ -354,7 +382,7 @@ try {
     }
   }
   const unhandled = await page.evaluate(() => window.__pebble.unhandled.map((u) => u.method || u.cmd));
-  fs.writeFileSync(path.join(OUT, "timeline.json"), JSON.stringify({ name: NAME, theme: THEME, fps: FPS, scale: SCALE, frames: saved, from: FROM || null, at: AT, hide: HIDE || null, unhandled, problems, ...(frames.length ? { cursor: frames } : {}) }, null, 1));
+  fs.writeFileSync(path.join(OUT, "timeline.json"), JSON.stringify({ name: NAME, theme: THEME, fps: FPS, scale: SCALE, frames: saved, from: FROM || null, at: AT, hide: HIDE || null, ...(spec.note ? { note: spec.note } : {}), unhandled, problems, ...(frames.length ? { cursor: frames } : {}) }, null, 1));
   const seconds = (Date.now() - started) / 1000;
   console.log(`${NAME} [${THEME}] ${saved} ${AT ? "stills" : "frames"} at ${FPS} fps, ${SCALE}x, in ${seconds.toFixed(1)} s -> ${OUT}; unhandled IPC calls ${unhandled.length}${unhandled.length ? " (" + unhandled.join(",") + ")" : ""}; page errors ${problems.length}${problems.length ? ": " + problems.join(" | ") : ""}`);
   if (unhandled.length || problems.length) exitCode = 1;
