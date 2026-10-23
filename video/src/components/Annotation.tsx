@@ -3,8 +3,10 @@
 // an annotation that would overlap it throws, in Studio and in renders.
 //
 // - <CheckMark>: a check that draws on (stroke-dashoffset, 0.35 s, EASE.enter), in the accent colour.
-// - <Ring>: a callout ring around a control, 3 px wide on screen, offset 8 px, radius = the control's + 8, drawn on
-//   over 0.4 s and faded out over 0.2 s. At most one per shot, never pulsing.
+// - <Ring>: a callout ring around a control, 3 px wide on screen, offset 15 px, radius = the control's + 15, drawn on
+//   over 0.4 s and faded out over 0.2 s. At most one per shot, never pulsing. (Lane G-fix, REVIEW-G2 P2-12: at 8 px it
+//   hugged its control and, on a paused frame, read as a button outline or a focus ring, which is UI state; at 15 px
+//   it stands off the control and reads as the film's annotation, critic C3.)
 // Both are drawn in frame space at a world position, so their stroke keeps its on-screen width while the camera zooms.
 import { useCurrentFrame, useVideoConfig } from "remotion";
 import { intersects, type Point, type Rect } from "../motion/camera";
@@ -81,7 +83,7 @@ export interface RingProps {
   offset?: number;
 }
 
-export const Ring: React.FC<RingProps> = ({ rect, radius = 8, drawAt, outAt, color = COLOR.accent, width = 3, offset = 8 }) => {
+export const Ring: React.FC<RingProps> = ({ rect, radius = 8, drawAt, outAt, color = COLOR.accent, width = 3, offset = 15 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const cam = useCamera();

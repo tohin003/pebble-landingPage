@@ -2,8 +2,9 @@
 // on f1656 the "Spending by category" panel grows from its place in the stage to full bleed (20 frames, EASE.move,
 // its corner radius → 0) while everything else blurs to 15 px and fades over 9 frames: the object becomes the world
 // (S7b), then holds dead still (data never bounces; the app draws no growth). f1728 is a hard cut, on the bar, to the
-// datetime quiz full frame (S7c), and f1782–1795 the camera dives into the selected answer's "A" badge until its
-// #506E54 fills the frame (solid to f1799): the seam into S8.
+// datetime quiz full frame (S7c), and f1786–1799 the camera dives into the selected answer's "A" badge until its
+// #506E54 fills the frame on f1799 (lane G-fix, REVIEW-G2 P1-2: the fill lands on the bar's last frame, the world
+// changes on f1800 with the whoosh): the seam into S8.
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { Camera, UiStill, World } from "../../components";
 import { blendPose, poseAt, type CamPose, type Rect } from "../../motion/camera";
@@ -84,10 +85,13 @@ export const S7Dashboard: React.FC = () => {
 };
 
 /** S7c's dive: the aim is the badge's point farthest from its edge and from the white "A" (5.1 CSS px clear, above and
- *  left of the letter; §6's (764, 469) is 2.2 px from the edge), ×1 → ×90 in log space on EASE.exit by f1795, when the
+ *  left of the letter; §6's (764, 469) is 2.2 px from the edge), ×1 → ×90 in log space on EASE.exit by f1799, when the
  *  badge's flat colour covers the frame (needs ×83 in 16:9, ×62 in the square); the aim drifts to the frame centre on
- *  EASE.camera. Zoom blur on f1790–1795 only. */
-export const BADGE_DIVE = { from: 1782, fill: 1795, aim: { x: 765, y: 457.3 }, scale: 90, blurFrom: 1790, blurMax: 16 } as const;
+ *  EASE.camera. Zoom blur on f1794–1799 only. From f1794 the badge's colour is painted over its white "A" (REVIEW-G2
+ *  P2-7): at ×28 the blurred glyph swept the frame as a giant white shape; under the blur nobody sees it go. */
+export const BADGE_DIVE = { from: 1786, fill: 1799, aim: { x: 765, y: 457.3 }, scale: 90, blurFrom: 1794, blurMax: 16 } as const;
+/** the selected answer's white "A" (QUIZ.badge), painted over during the dive's blur */
+const BADGE_GLYPH = { x: 766, y: 456, w: 10.5, h: 11.5 } as const;
 
 export const S7Quiz: React.FC = () => {
   const frame = useCurrentFrame();
@@ -115,6 +119,9 @@ export const S7Quiz: React.FC = () => {
         <Camera pose={cam} viewport={viewport} background="#FFFFFF">
           <World>
             <UiStill name="main-quiz" focus={focus} veil="#F8F9F6" />
+            {frame >= BADGE_DIVE.blurFrom ? (
+              <div style={{ position: "absolute", left: BADGE_GLYPH.x, top: BADGE_GLYPH.y, width: BADGE_GLYPH.w, height: BADGE_GLYPH.h, background: QUIZ.badgeColour }} />
+            ) : null}
           </World>
         </Camera>
       )}

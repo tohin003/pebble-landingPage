@@ -14,7 +14,7 @@ import type { Hop } from "../../pebble/acting";
 import { PebbleOnFilm } from "../../pebble/PebbleOnFilm";
 import type { PebbleColors } from "../../pebble/PebbleSvg";
 import { filmCues } from "../gaze";
-import { DESKTOP_RECT, END, HOPS, SEAMS, TEXT, textById, type PerAspect, type TextCue } from "../timeline";
+import { DESKTOP_RECT, END, HOPS, LIST_DIM, SEAMS, TEXT, textById, type PerAspect, type TextCue } from "../timeline";
 
 /** The film's cuts (every seam that is not a camera move, FILM_SPEC §12). */
 const CUTS: readonly number[] = SEAMS.filter((s) => s.kind !== "camera").map((s) => s.frame);
@@ -72,6 +72,13 @@ export function lineBox(cue: TextCue, L: Layout): { box: Rect; size: number; ali
   const h = blockHeight(lines.length, size, typo);
   if (column) return { box: { x: L.win.text.x, y: column.top, w: L.win.text.w, h }, size, align: "left" };
   const y = (cue.y as PerAspect<number>)[L.aspect] * L.s;
+  if (cue.x) {
+    // a list item: left-aligned on the list's edge, to the safe area's right edge
+    const x = cue.x[L.aspect] * L.s;
+    const w = L.safe.x + L.safe.w - x;
+    if (cue.place === "baseline") return { box: { x, y: topForBaseline(y, size, typo), w, h }, size, align: "left" };
+    return { box: { x, y: y - h / 2, w, h }, size, align: "left" };
+  }
   if (cue.place === "baseline") return { box: { x: L.safe.x, y: topForBaseline(y, size, typo), w: L.safe.w, h }, size, align: "center" };
   return { box: { x: L.safe.x, y: y - h / 2, w: L.safe.w, h }, size, align: "center" };
 }
@@ -79,19 +86,24 @@ export function lineBox(cue: TextCue, L: Layout): { box: Rect; size: number; ali
 /**
  * One timeline line. Entrances (A) blur, (B) ink, (C) rise from §3; small print fades in over 9 frames (§6 S9). The ink
  * entrance starts from #B0C2AE on light grounds and from white at 35 % on sage (§3 B). A line is dead still once it has
- * landed and leaves with the 6-frame blur-out, unless a world move takes it (`exit={false}`).
+ * landed and leaves with the 6-frame blur-out, unless a world move takes it (`exit={false}`). A list item (lane G-fix,
+ * REVIEW-G2 P1-6) inks whole when `inkTogether`, and from `dimAt` dims to LIST_DIM over 6 frames as the next one
+ * arrives; a dimmed item is as still as a landed one (only its opacity changed).
  */
 export const FilmLine: React.FC<{ cue: TextCue; world: LineWorld; exit?: boolean; style?: CSSProperties }> = ({ cue, world, exit = true, style }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const L = useLayout();
   if (frame < cue.in - 1 || (exit && frame > cue.out + 8)) return null;
-  // a leaving line never survives a cut (T7 and T13 finish their blur-out a frame after a hard cut on the bar)
-  if (exit && CUTS.some((c) => c > cue.in && frame >= c)) return null;
+  // a leaving line never survives a cut (T7 and T13 finish their blur-out a frame after a hard cut on the bar); a line
+  // that is still holding when the stage cuts (T8 across f1008) stays, as the column does
+  if (exit && CUTS.some((c) => c > cue.in && frame >= c && cue.out < c)) return null;
   const { box, size, align } = lineBox(cue, L);
   const color = lineColour(cue, world);
   const lines = linesFor(cue, L.aspect);
   const exitAt = exit && cue.out < END ? cue.out : undefined;
+  const dim = cue.dimAt === undefined ? 1 : 1 - (1 - LIST_DIM) * ramp(frame, cue.dimAt, 6, EASE.move);
+  const wordStarts = cue.inkTogether ? lines.flatMap((l) => l.split(" ").filter((w) => w.length > 0)).map(() => cue.in) : cue.wordStarts;
   if (cue.enter === "fade") {
     // small print: opacity over 9 frames (EASE.enter), the same blur-out if it ever leaves
     const o = ramp(frame, cue.in, 9, EASE.enter);
@@ -127,12 +139,12 @@ export const FilmLine: React.FC<{ cue: TextCue; world: LineWorld; exit?: boolean
       at={cue.in}
       exitAt={exitAt}
       enter={cue.enter}
-      wordStarts={cue.wordStarts}
+      wordStarts={wordStarts}
       color={color}
       inkFrom={cue.enter === "ink" ? (world === "sage" ? "rgba(255, 255, 255, 0.35)" : COLOR.accentSoft) : undefined}
       align={align}
       box={box}
-      style={style}
+      style={dim < 1 ? { ...style, opacity: dim } : style}
     />
   );
 };

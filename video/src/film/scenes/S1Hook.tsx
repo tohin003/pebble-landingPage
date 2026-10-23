@@ -2,7 +2,7 @@
 // pointer arrives and the eyes follow it, the click on f36 opens the REAL quick chat (pet-live-error recorded at 3× with
 // the avatar hidden, R1; the film's own engine-drawn pebble sits in the avatar's place), the camera pulls back f40–63,
 // then a hard cut on bar 2 (f72) to the sent question, and from f126 the camera dives into the thinking pebble's body
-// until its sage fills the frame (f139–143 solid sage): the seam into S2.
+// until its sage fills the frame on f143 (lane G-fix: the dive runs f131–143, REVIEW-G2 P1-2): the seam into S2.
 import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { Camera, Cursor, Desktop, Vignette, World } from "../../components";
 import { useLayout } from "../../motion/layout";
@@ -21,8 +21,8 @@ export const S1Hook: React.FC = () => {
   const pointer = hookPointer(a, width, height, L.s);
   // the quick chat: shown from the click frame (the app opens it at once, no expand animation)
   const src = sourceAt(SOURCE_MAPS["pet-live-error"], frame);
-  // zoom blur on the dive's last frames only (FILM_SPEC §6: f136–143, ≤ 20 px); the frame is solid sage from f139
-  const blur = frame < 136 ? 0 : interpolate(frame, [136, ZOOM_THROUGH.fill], [ZOOM_THROUGH.blur[1], ZOOM_THROUGH.blur[2]], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  // zoom blur on the dive's fastest frames only (f141–143, ≤ 20 px; FILM_SPEC §6)
+  const blur = frame < ZOOM_THROUGH.blurFrom ? 0 : interpolate(frame, [ZOOM_THROUGH.blurFrom, ZOOM_THROUGH.fill], [ZOOM_THROUGH.blur[1], ZOOM_THROUGH.blur[2]], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   if (frame >= ZOOM_THROUGH.solidFrom) return <Solid color={COLOR.pebble} />;
   return (
     <>

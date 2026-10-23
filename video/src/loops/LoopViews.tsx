@@ -27,7 +27,9 @@ export const LoopViews: React.FC = () => {
         <Desktop />
         {quiz ? (
           <MacWindow x={q.x} y={q.y} width={q.w} height={q.h}>
-            <UiStill name="main-quiz" focus={{ rect: QUIZ, amount: 0.6, mode: "card", radius: 14, veil: 0.4 }} />
+            {/* lane G-fix (REVIEW-G2 P2-22): S7c's veil (60 % paper, 10 px blur), so the conversation's strip left of the
+                quiz card shows no readable fragments ("go, and I'll") */}
+            <UiStill name="main-quiz" focus={{ rect: QUIZ, amount: 1, mode: "card", radius: 14, veil: 0.6, blur: 10 }} />
           </MacWindow>
         ) : (
           <MacWindow x={dash.x} y={dash.y} width={dash.w} height={dash.h}>

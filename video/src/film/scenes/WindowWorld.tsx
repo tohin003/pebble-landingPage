@@ -11,12 +11,12 @@
 import type { CSSProperties } from "react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
 import { CheckMark, Cursor, Ring, UiStill, type UiStillName } from "../../components";
-import { useLayout } from "../../motion/layout";
+import { useLayout, type AspectId } from "../../motion/layout";
 import { CLICK, COLOR, EASE, ramp } from "../../motion/spec";
 import { PEBBLE_LIGHT } from "../../pebble/PebbleSvg";
 import { STAGE, STAGE_CUTS, pointerSpans, stageMotionBlur, stagePoseAt, stageToFrame } from "../framing";
 import { PEBBLE_INSTANCES, SOURCE_MAPS, sourceAt } from "../timeline";
-import { LIVE_FILM, SETTINGS, centreOf } from "../ui";
+import { DASHBOARD, LIVE_FILM, SETTINGS, centreOf } from "../ui";
 import { FilmPebble, FilmStage, Lines, RecordedUi, hopsFor, recordedFrame, WindowGround } from "./common";
 
 /** Clicks whose press is drawn over the real control, on the frozen frame before the click (FILM_SPEC §7.2, §10). */
@@ -32,7 +32,7 @@ const settingsStill = (frame: number): UiStillName =>
   frame < 1332 ? "settings-models" : frame < 1404 ? "settings-permissions" : frame < 1440 ? "settings-permissions-auto" : frame < 1542 ? "settings-memory" : "settings-memory-forgotten";
 
 /** What the stage shows on a frame, in its world units (CSS px of the capture). */
-const StageContent: React.FC<{ frame: number; zoom: number }> = ({ frame, zoom }) => {
+const StageContent: React.FC<{ frame: number; zoom: number; aspect: AspectId }> = ({ frame, zoom, aspect }) => {
   if (frame < 1224) {
     const s = sourceAt(SOURCE_MAPS["main-live-film"], frame) ?? 3.85;
     const p = PRESSES.find((x) => frame >= x.at && frame < x.at + PRESS_FRAMES);
@@ -62,7 +62,10 @@ const StageContent: React.FC<{ frame: number; zoom: number }> = ({ frame, zoom }
       </>
     );
   }
-  return <UiStill name="main-dashboard" />;
+  // S7a opens on the ask (REVIEW-G2 P1-7). In the square, the request bubble is the card in focus and the rest of the
+  // conversation recedes (its lines run into the frame's bottom edge there) until the camera leaves for the canvas
+  const ask = aspect === "square" ? 1 - ramp(frame, 1602, 12, EASE.move) : 0;
+  return <UiStill name="main-dashboard" focus={ask > 0 ? { rect: DASHBOARD.request, mode: "card", amount: ask, radius: 14, veil: 0.6, blur: 8 } : undefined} />;
 };
 
 export const WindowWorld: React.FC<{ style?: CSSProperties }> = ({ style }) => {
@@ -96,12 +99,12 @@ export const WindowWorld: React.FC<{ style?: CSSProperties }> = ({ style }) => {
           </>
         }
       >
-        <StageContent frame={frame} zoom={pose.zoom} />
+        <StageContent frame={frame} zoom={pose.zoom} aspect={a} />
       </FilmStage>
       <Lines ids={["T6", "T7", "T8", "T9", "T10", "T11", "T11s", "T12", "T13"]} world="window" />
       <Lines ids={["T14"]} world="window" exit={false} />
       {L.win.checkX !== null && frame >= 1152 && frame < 1192 ? (
-        <CheckMark at={{ x: L.win.checkX, y: verifiedY }} space="frame" size={L.win.checkSize} stroke={6 * s} drawAt={1152} outAt={1182} color={COLOR.accent} avoid={stage} />
+        <CheckMark at={{ x: L.win.checkX, y: verifiedY }} space="frame" size={L.win.checkSize} stroke={8 * s} drawAt={1152} outAt={1182} color={COLOR.accent} avoid={stage} />
       ) : null}
       <FilmPebble x={main.start[a].x * s} y={main.start[a].y * s} size={L.pebbleSize} hops={hopsFor(main.hops, a, s)} colors={PEBBLE_LIGHT} />
     </div>

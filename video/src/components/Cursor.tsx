@@ -5,6 +5,12 @@
 //
 // It lives in frame space so it keeps a readable size (4–7 % of the frame's height) while the camera zooms; with
 // space="world" its path is in world units and follows the camera.
+//
+// Motion blur (lane G-fix, REVIEW-G2 P2-2): above about 25 px a frame the arrow gets a Gaussian blur ALONG its travel
+// (σ = 0.15 × (speed − 25) px, capped at 8 px: about half a frame's smear at a 180° shutter), so a fast arc (S1's
+// pointer reaches 100 px a frame) no longer strobes at 30 fps. The arrow keeps its shape across the move; at rest and
+// at the click it is sharp.
+import { useId } from "react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
 import { useLayout } from "../motion/layout";
 import { T2, cursorPathAt, cursorPressScale, ramp, sec, type CursorKey } from "../motion/spec";
@@ -34,8 +40,15 @@ export const Cursor: React.FC<CursorProps> = ({ keys, clicks = [], space = "worl
   const { fps } = useVideoConfig();
   const layout = useLayout();
   const cam = useCamera();
+  const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const p = cursorPathAt(frame, keys, fps);
   const at = space === "world" ? cam.toFrame(p) : p;
+  const q = cursorPathAt(frame - 1, keys, fps);
+  const atPrev = space === "world" ? cam.toFrame(q) : q;
+  const vx = at.x - atPrev.x;
+  const vy = at.y - atPrev.y;
+  const speed = Math.hypot(vx, vy);
+  const sigma = Math.min(8, Math.max(0, 0.15 * (speed - 25)));
   const fade = sec(T2.cursorFade, fps);
   let opacity = 1;
   if (visible) {
@@ -68,7 +81,24 @@ export const Cursor: React.FC<CursorProps> = ({ keys, clicks = [], space = "worl
       }}
     >
       {/* black fill and a 3 px white border (FILM_SPEC §10): a 6 px stroke painted under the fill shows 3 px outside it */}
-      <path d={ARROW} fill="#141815" stroke="#FFFFFF" strokeWidth={6 / unit} strokeLinejoin="round" strokeLinecap="round" paintOrder="stroke" />
+      {sigma > 0.2 ? (
+        <>
+          {/* the blur is computed in the outer group's space, which is turned to the direction of travel, so its x axis
+              is the motion; the inner group turns the arrow back upright */}
+          <defs>
+            <filter id={`cursor-mb-${id}`} x="-100%" y="-100%" width="300%" height="300%">
+              <feGaussianBlur stdDeviation={`${(sigma / unit).toFixed(3)} 0`} />
+            </filter>
+          </defs>
+          <g transform={`rotate(${((Math.atan2(vy, vx) * 180) / Math.PI).toFixed(2)} 10 12)`} filter={`url(#cursor-mb-${id})`}>
+            <g transform={`rotate(${((-Math.atan2(vy, vx) * 180) / Math.PI).toFixed(2)} 10 12)`}>
+              <path d={ARROW} fill="#141815" stroke="#FFFFFF" strokeWidth={6 / unit} strokeLinejoin="round" strokeLinecap="round" paintOrder="stroke" />
+            </g>
+          </g>
+        </>
+      ) : (
+        <path d={ARROW} fill="#141815" stroke="#FFFFFF" strokeWidth={6 / unit} strokeLinejoin="round" strokeLinecap="round" paintOrder="stroke" />
+      )}
     </svg>
   );
 };

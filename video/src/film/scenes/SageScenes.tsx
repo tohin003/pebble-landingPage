@@ -1,10 +1,11 @@
 // The sage field (FILM_SPEC §4): S2 the three neutral questions (144–359), S3 the intent line with the pebble rising in
-// (360–503), S8 the claims (1800–2015). Flat #536B54 with one slow glow (#B0C2AE, 15 %), white type, a 6 % tinted
-// vignette, no grain (critic H8). Each field arrives from a zoom-through: its glow and vignette come up over the first
-// 18 frames (EASE.enter), so the solid colour the dive ends on becomes the world without a pop; S8 starts on the quiz
-// badge's #506E54 and eases to #536B54 by f1812 (§6 S8).
+// (360–503), S8 the claims (1800–2015). One slow glow, white type, a 6 % tinted vignette, no grain (critic H8). Each field
+// arrives from a zoom-through on the colour the dive ends on (the pebble's #536B54; S8 the quiz badge's #506E54), so the
+// world changes without a pop; its glow and vignette come up over the first 18 frames (EASE.enter) while the ground
+// deepens to the type ground (SAGE_TYPE: #425643, glow 4 %) within 12 frames, so the white lines read at ≥ 7:1 (lane
+// G-fix, the lead's addendum to REVIEW-G2). S3 sits on the type ground throughout.
 import { interpolateColors, useCurrentFrame } from "remotion";
-import { SageField, SAGE_GLOWS, Vignette } from "../../components";
+import { SageField, SAGE_TYPE, SAGE_TYPE_GLOWS, Vignette } from "../../components";
 import { useLayout } from "../../motion/layout";
 import { COLOR, EASE, ramp } from "../../motion/spec";
 import { PEBBLE_DARK } from "../../pebble/PebbleSvg";
@@ -12,12 +13,12 @@ import { PEBBLE_INSTANCES } from "../timeline";
 import { QUIZ } from "../ui";
 import { FilmPebble, Lines, hopsFor } from "./common";
 
-const SageWorld: React.FC<{ arriveAt?: number; fromColour?: string; children?: React.ReactNode }> = ({ arriveAt, fromColour, children }) => {
+const SageWorld: React.FC<{ arriveAt?: number; fromColour?: string; children?: React.ReactNode }> = ({ arriveAt, fromColour = COLOR.pebble, children }) => {
   const frame = useCurrentFrame();
   const k = arriveAt === undefined ? 1 : ramp(frame, arriveAt, 18, EASE.enter);
-  const ground = fromColour && arriveAt !== undefined ? interpolateColors(ramp(frame, arriveAt, 12, EASE.move), [0, 1], [fromColour, COLOR.pebble]) : COLOR.pebble;
+  const ground = arriveAt === undefined ? SAGE_TYPE.ground : interpolateColors(ramp(frame, arriveAt, 12, EASE.move), [0, 1], [fromColour, SAGE_TYPE.ground]);
   return (
-    <SageField glows={SAGE_GLOWS.map((g) => ({ ...g, opacity: g.opacity * k }))} style={{ backgroundColor: ground }}>
+    <SageField glows={SAGE_TYPE_GLOWS.map((g) => ({ ...g, opacity: g.opacity * k }))} style={{ backgroundColor: ground }}>
       {children}
       <Vignette amount={0.06 * k} />
     </SageField>

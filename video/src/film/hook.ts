@@ -28,22 +28,25 @@ export function hookKeys(a: AspectId, width: number, height: number, s: number):
 }
 
 /**
- * The zoom through the pebble (f126–138, then solid sage f139–143). The camera aims at a body point and dives:
- * - the aim is the point of the body farthest from both its edge and the eyes over f126–143 (28 viewBox units clear),
+ * The zoom through the pebble (f131–143). The camera aims at a body point and dives:
+ * - the aim is the point of the body farthest from both its edge and the eyes over the dive (28 viewBox units clear),
  *   (−36, −10) from the body's centre, left of the eyes: §6's (−20, +25) sits 4 units from the thinking pose's eye;
- * - zoom ×1 → ×30 in log space on EASE.exit (accelerating), reached on f138, when the body covers the whole frame
- *   (needs ×26.6 in 16:9, ×18.4 in the square for 28 units of clearance); §6's ×22 by f143 leaves the frame unfilled;
+ * - zoom ×1 → ×30 in log space on EASE.exit (accelerating), reached on f143, when the body covers the whole frame
+ *   (needs ×26.6 in 16:9, ×18.4 in the square for 28 units of clearance); §6's ×22 leaves the frame unfilled;
  * - the aim point drifts from where C2 shows it to the frame's centre on EASE.camera over the same frames.
+ * Lane G-fix (REVIEW-G2 P1-2): it starts on f131 (was f126, filled on f138 and held solid f139–143), so the fill lands
+ * on f143, the last frame before the bar line, the world changes on f144 and the whoosh peaks there (SFX f143 + 1).
  */
 export const ZOOM_THROUGH = {
-  from: S1_CAMERA.zoomThrough.from, // f126
-  fill: 138,
-  solidFrom: 139,
+  from: S1_CAMERA.zoomThrough.from, // f131
+  fill: 143,
+  solidFrom: 144,
   to: S1_CAMERA.zoomThrough.to, // f144 (exclusive)
   aim: { x: -36, y: -10 },
   scale: 30,
-  /** zoom blur on screen, px, f136 → f138 (FILM_SPEC: only on f136–143, ≤ 20 px) */
+  /** zoom blur on screen, px, f141 → f143, the dive's fastest frames (FILM_SPEC: only on its last frames, ≤ 20 px) */
   blur: [0, 8, 16] as const,
+  blurFrom: 141,
 } as const;
 
 /** The aim point in desktop units. */

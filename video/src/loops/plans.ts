@@ -118,14 +118,18 @@ export const L7 = (() => {
   const stage = STAGE.topLeft;
   const P = topLeftPose(335, 455, 3.1, stage.rect);
   const bin = { x: 799, y: 717.5 };
+  // lane G-fix (REVIEW-G2 P2-19): N 210, not 240: the forgotten state held still for 3.9 s (f72–187, R5: nothing static
+  // for more than 3 s); it now holds f84–156 (2.4 s) before the time-passage dissolve
   const plan = {
     id: "LoopMemory",
-    n: 240,
+    n: 210,
     aspects: ["wide"],
     camera: { wide: [key(0, P)] },
-    cursorVisible: [[18, 158]],
+    // lane G-fix (REVIEW-G2 P1-9): the pointer hides once it has acted (FILM_SPEC §10), fading f79–84 where it clicked,
+    // instead of parking half off the frame's bottom edge until f158
+    cursorVisible: [[18, 84]],
     clicks: [60],
-    dissolves: [[186, 198]],
+    dissolves: [[156, 168]],
   } satisfies LoopPlan;
   return {
     plan,
@@ -133,7 +137,6 @@ export const L7 = (() => {
     cursor: [
       { at: 18, x: 852, y: 790, travel: 1 }, // just off the frame's lower right
       { at: 53, x: bin.x + 1, y: bin.y + 1, travel: 35, seed: "l7-in" },
-      { at: 96, x: 772, y: 752, travel: 24, seed: "l7-away" }, // off the next record's bin; fades f153–158
     ] satisfies CursorKey[],
     bin: { at: bin, rect: box(791, 807, 709, 726) },
     /** the forgotten record (meta, text and its bin) */
@@ -159,14 +162,16 @@ export const L3 = (() => {
   const U = topLeftPose(DRAWER.x0, 202, m, stage.rect); // the card's top border, header, lead, the diff's first rows
   const L = topLeftPose(DRAWER.x0, 430, m, stage.rect); // the diff and the button row, down to the card's bottom border
   const apply = { x: 1077, y: 692 };
+  // lane G-fix (REVIEW-G2 P2-19): N 270, not 300: the applied card held still over f82–181 (3.3 s); the ring now fades
+  // at f150, the dissolve runs f160–172 and the view tilts back f180–210 (each 30 frames earlier)
   const plan = {
     id: "LoopApproveUndo",
-    n: 300,
+    n: 270,
     aspects: ["wide"],
-    camera: { wide: [key(0, U), key(44, L, 30, "direct"), key(240, U, 30, "direct")] },
+    camera: { wide: [key(0, U), key(44, L, 30, "direct"), key(210, U, 30, "direct")] },
     cursorVisible: [[26, 104]],
     clicks: [57],
-    dissolves: [[190, 202]],
+    dissolves: [[160, 172]],
   } satisfies LoopPlan;
   return {
     plan,
@@ -181,7 +186,7 @@ export const L3 = (() => {
     applyRect: box(1025, 1129, 676, 708),
     clickPoint: apply,
     cutAt: 61,
-    undoRing: { rect: box(832, 941, 681, 704), radius: 6, drawAt: 76, outAt: 180 },
+    undoRing: { rect: box(832, 941, 681, 704), radius: 6, drawAt: 76, outAt: 150 },
   };
 })();
 
@@ -240,6 +245,13 @@ export const L4 = (() => {
       { at: 58, x: 1215, y: 700, travel: 16, seed: "l4-out" },
     ] satisfies CursorKey[],
     runRect: box(1029, 1129, 497, 529),
+    /**
+     * The payoff's spotlight (lane G-fix, REVIEW-G2 P1-9): as "Verified · pytest 42 passed on current files" lands
+     * (f114), the drawer's rows above "Requesting isolated tests" (y < 378: "Not verified · 2 changed files, no tests
+     * run", "Verification remains incomplete", …) recede under S7c's veil, so on the page the loop never reads as "Not
+     * verified". f110–122 in, held through the dissolve; nothing at either end of the loop.
+     */
+    payoff: { rect: box(801, 1160, 378, 800), at: 110, dur: 12 },
   };
 })();
 
@@ -452,6 +464,14 @@ export const T0 = (() => {
     applyRect: box(1025, 1129, 676, 708),
     runRect: box(1029, 1129, 497, 529),
     clickPoint: { x: 1077, y: 692 },
+    /**
+     * Lane G-fix (REVIEW-G2 P1-9): in the close framings the conversation left of the drawer recedes under S7c's veil
+     * (60 % paper, 10 px blur; its amount follows the camera's zoom, 0 at the wide m 0.75, 1 from m 1.8), so its
+     * chopped lines never compete with the drawer in the page's most-seen motion; and as "Verified" lands (f150) the
+     * drawer's rows above "Requesting isolated tests" recede too, so the payoff never reads as "Not verified".
+     */
+    drawer: box(DRAWER.x0, DRAWER.x1, 0, 800),
+    payoff: { rect: box(DRAWER.x0, DRAWER.x1, 378, 800), at: 150, dur: 12 },
   };
 })();
 

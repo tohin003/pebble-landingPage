@@ -233,6 +233,41 @@ export const RecFrame: React.FC<{ rec: Recording; t: number; x?: number; y?: num
   );
 };
 
+/**
+ * A recorded frame with one region in focus (R5 §5.3's spotlight, as UiStill's card focus; lane G-fix, REVIEW-G2 P1-9):
+ * everything outside `rect` recedes under a paper veil and a little blur, the region stays sharp. The pixels stay the
+ * recording's own (D4, critic C3). `zoom` is the camera's, so the blur is given on screen.
+ */
+export const RecFocus: React.FC<{
+  rec: Recording;
+  t: number;
+  /** the sharp region, CSS px of the recording */
+  rect: Rect;
+  /** 0..1 */
+  amount: number;
+  zoom: number;
+  /** veil opacity at amount 1 (default 0.6, as S7c's) */
+  veil?: number;
+  /** on-screen blur at amount 1, px (default 10, as S7c's) */
+  blur?: number;
+  color?: string;
+  radius?: number;
+}> = ({ rec, t, rect, amount, zoom, veil = 0.6, blur = 10, color = WINDOW_BG, radius = 0 }) => {
+  const a = Math.max(0, Math.min(1, amount));
+  if (a <= 0.001) return <RecFrame rec={rec} t={t} />;
+  const box: CSSProperties = { position: "absolute", left: 0, top: 0, width: rec.width, height: rec.height };
+  const clip = `inset(${rect.y}px ${rec.width - rect.x - rect.w}px ${rec.height - rect.y - rect.h}px ${rect.x}px round ${radius}px)`;
+  return (
+    <>
+      <RecFrame rec={rec} t={t} style={{ filter: `blur(${((blur * a) / Math.max(0.01, zoom)).toFixed(3)}px)` }} />
+      <div style={{ ...box, background: color, opacity: veil * a }} />
+      <div style={{ ...box, clipPath: clip }}>
+        <RecFrame rec={rec} t={t} />
+      </div>
+    </>
+  );
+};
+
 /** A source-time map: [loop frame, source seconds] keys, linear between them, holding before the first and after the
  *  last. Speeds may change at a key; time never runs backwards (FILM_SPEC §7). */
 export type SrcKey = readonly [frame: number, seconds: number];

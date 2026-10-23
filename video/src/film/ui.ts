@@ -34,12 +34,32 @@ export const LIVE_FILM = {
   undoEdit: { rect: box(833, 681, 941, 704), radius: 6 },
   /** Run the tests in the held run (15.97 s): the white button with its hairline, radius 6, on the conversation ground */
   runTheTests: { rect: box(295, 545.5, 391, 578), radius: 6, ground: "#F8F9F6" },
+  /**
+   * The held run's other two choices (15.10–15.97 s, static: only the run's avatar animates; lane G-fix, ink scans of
+   * idx 453–479): "Ask Pebble to finish" is a bordered button like Run the tests; "Accept as unverified" is a text
+   * button (no border), its ink x 541.7–647. The rest of the held block: the avatar x 259.7–273.7, "Blocked" y 453–468,
+   * the sentence y 495–536 (x 296–695; 11 css px of ink a line), "Details" x 730–764 (y 510–521). Between Ask's border
+   * and Accept's first letter there are only 9 css px, so a framing that keeps Ask whole but leaves Accept out puts
+   * its edge in that gap (framing.ts s5cRead).
+   */
+  askToFinish: { rect: box(400, 545, 532.7, 577.7), radius: 6 },
+  acceptUnverified: { rect: box(541.7, 557, 647, 575) },
+  /** the held block as a whole: the avatar to the sentence's end, "Blocked" to the buttons' bottom */
+  heldBlock: box(259.7, 453, 695, 577.7),
   /** Run tests on the "Run isolated tests" card (17.77 s): the green button on the card's white */
   runTests: { rect: box(1028.8, 497.2, 1128.8, 528.8), radius: 6, ground: "#FFFFFF" },
   /** the window's Settings button (the gear) in the top bar */
   gear: { x: 1035.8, y: 31.9 } as Point,
   /** the drawer's "Verified · pytest 42 passed on current files · 2 s" step (two lines) from 20.60 s, after R2's scroll */
   verifiedStep: box(851.7, 409, 1139, 437),
+  /**
+   * The drawer's steps above it after R2's scroll (19.0–20.6 s; lane G-fix ink scans): "Not verified · 2 changed files,
+   * no tests run" y 269–280 with its "Details" 288.7–296.7, "Verification remains incomplete" 311–322, "You asked
+   * Pebble to run the tests" 336–345, "Approved: Requesting isolated tests · 2 s" 360–371. Below Verified, rows move:
+   * at 20.70 s "Waiting for the model" is inserted at 453–464 and everything under it moves down 24.7 px.
+   */
+  notVerifiedStep: box(851, 269, 1090, 296.7),
+  incompleteStep: box(851, 311, 1028, 322),
   /** the drawer's "Requesting isolated tests" step after the scroll (18.67–20.6 s) */
   requestingStep: box(834, 385, 1139, 396),
 } as const;
@@ -81,6 +101,8 @@ export const DASHBOARD = {
   canvasEdge: 640,
   /** the "Spending by category" panel, radius 12 (it runs past the window's bottom edge) */
   chartPanel: { rect: box(665, 421, 1415, 897), radius: 12 },
+  /** the request bubble "Turn my Lisbon trip spending into a dashboard…" (its #EFF2EA ground, lane G-fix) */
+  request: box(306, 97, 604.7, 192.7),
 } as const;
 
 /** main-quiz@3x (1160 × 800). */

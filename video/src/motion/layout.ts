@@ -104,8 +104,10 @@ export function layoutFor(width: number, height: number): Layout {
         stageCorners: "left",
         stageRadius: r(28, s),
         pebble: { foot: { x: r(330, s), y: r(900, s) }, size: r(210, s) },
-        checkX: r(890, s),
-        checkSize: r(56, s),
+        // REVIEW-G2 P1-5 (lane G-fix): 72 px at x 860, a clear 24 px from the stage (at 56 px on x 890 it sat 8 px from
+        // the stage's edge, in its shadow)
+        checkX: r(860, s),
+        checkSize: r(72, s),
       },
       pebbleSize: r(210, s),
       lockup: { foot: { x: r(1295, s), y: r(422, s) }, baseline: r(420, s) },

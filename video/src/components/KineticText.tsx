@@ -157,7 +157,9 @@ export const KineticText: React.FC<KineticTextProps> = ({
         const out = exitFx(li);
         if (enter === "rise") {
           const p = ramp(frame, at + sec(li * lineStagger, fps), sec(T.textIn, fps), EASE.enter);
-          const fx = mixFx(out, p >= 1 ? FX_REST : { ...FX_REST, dy: (1 - p) * px * typo.leading * 1.05 });
+          // the line starts 125 % of its line height below its clip box (FILM_SPEC §3 says 105 %): the box's bottom padding
+          // (0.16 em) showed the tip of a tall ascender on the first frame (T4 at f360, REVIEW-G2 P2-3, lane G-fix)
+          const fx = mixFx(out, p >= 1 ? FX_REST : { ...FX_REST, dy: (1 - p) * px * typo.leading * 1.25 });
           if (frame < at) return <div key={li} style={{ ...lineStyle, opacity: 0 }}>{line}</div>;
           return (
             <div key={li} style={{ overflow: "hidden", fontSize: px, lineHeight: typo.leading, padding: "0.12em 0 0.16em", margin: "-0.12em 0 -0.16em" }}>

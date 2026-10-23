@@ -131,10 +131,14 @@ export const S1_CAMERA = {
   c0: { m: 2.6, pebbleAt: both({ x: 1300, y: 640 }, { x: 640, y: 620 }) },
   /** C1, f40–63 → hold to f71: the open chat */
   c1: { m: 1.5, pebbleAt: both({ x: 1430, y: 746 }, { x: 742, y: 746 }) },
-  /** C2, f72 (hard cut, punch-in): the sent question */
-  c2: { m: 2.2, pebbleAt: both({ x: 1379, y: 866 }, { x: 837, y: 866 }) },
-  /** f126–143: the zoom through the pebble, aimed at a body point (−20, +25) viewBox units from its centre */
-  zoomThrough: { from: at(2, 4), to: at(3), aim: { x: -20, y: 25 }, scale: 22 },
+  /** C2, f72 (hard cut, punch-in): the sent question. Lane G-fix (REVIEW-G2 P1-8): the pebble at y 921, not §6's 866,
+   *  so the quick chat's top edge sits 65 px under the frame's top and its header 104 px (OVERRIDES §4's 60 px); the
+   *  pebble may sit in the caption band, it is not text */
+  c2: { m: 2.2, pebbleAt: both({ x: 1379, y: 921 }, { x: 837, y: 921 }) },
+  /** f131–143: the zoom through the pebble, aimed at a body point (−20, +25) viewBox units from its centre. Lane G-fix
+   *  (REVIEW-G2 P1-2): it starts on f131, not f126, so the body fills the frame ON f143 and the world changes on the
+   *  bar line (f144), where the whoosh peaks */
+  zoomThrough: { from: at(2, 4, 5), to: at(3), aim: { x: -20, y: 25 }, scale: 22 },
 } as const;
 
 /** The stage framings of the window world (§6 S5–S7), as G1 drew them on lane D's stills for the board-o-matic. The
@@ -271,7 +275,7 @@ export const SHOTS: readonly Shot[] = [
     beats: [
       { id: "S5a", from: 648, to: 720, note: "reads: the carry lands f652; Reading invoice_kit/dates.py; T6" },
       { id: "S5b", from: 720, to: 864, note: "the approval card; T7 with its verbs; Apply edit f810; match cut f814 to Done + Undo this edit; ring" },
-      { id: "S5c", from: 864, to: 1008, note: "hard cut (chapter tested): the reply; AgentGuard holds f931; T8; Run the tests f990" },
+      { id: "S5c", from: 864, to: 1008, note: "hard cut (chapter tested) on the whole run: the reply; AgentGuard holds f890; scrolled in by f914; push-in f954–977; T8 f936; Run the tests f990" },
       { id: "S5d", from: 1008, to: 1152, note: "the Run isolated tests card; T9; Run tests f1080; Requesting isolated tests · 11 s" },
       { id: "S5e", from: 1152, to: 1224, note: "Verified f1152; happy; T10; the check (16:9); pull back f1188–1211; to the gear" },
     ],
@@ -352,7 +356,21 @@ export interface TextCue {
   key?: boolean;
   /** column lines that sit under another cue (T11s under T11), by id */
   under?: string;
+  /**
+   * A list item (lane G-fix, REVIEW-G2 P1-6): the questions (S2) and the facts (S8) build a left-aligned list. `x` is
+   * the list's left edge (px at the aspect's reference size; the block is centred on the frame by its widest line);
+   * from `dimAt` the line dims to LIST_DIM over 6 frames, as the next item inks in, and it stays until the list leaves.
+   */
+  x?: PerAspect<number>;
+  dimAt?: number;
+  /** ink every word of the line together (the list items' (B) ink lands whole on its beat) */
+  inkTogether?: boolean;
 }
+
+/** A list's earlier items dim to 45 % (REVIEW-G2 P1-6); the current one stays at full contrast (lead addendum). */
+export const LIST_DIM = 0.45;
+/** Each list's left edge (px at the reference size), so that its widest line sits centred on the frame. */
+export const LIST_X = { questions: both(572, 222), facts: both(388, 236) } as const;
 
 export const END = GRID.frames + 6;
 
@@ -363,14 +381,18 @@ const t = (c: TextCue): TextCue => {
 };
 
 export const TEXT: readonly TextCue[] = [
-  t({ id: "T1", chapter: "desktop", lines: ["What did it change?"], role: "headline", enter: "ink", in: 144, out: 210, place: "centre", y: both(470, 470) }),
-  t({ id: "T2", chapter: "desktop", lines: ["Can I undo it?"], role: "headline", enter: "ink", in: 216, out: 282, place: "centre", y: both(470, 470) }),
-  t({ id: "T3", chapter: "desktop", lines: ["Did it run the tests?"], role: "headline", enter: "ink", in: 288, out: 354, place: "centre", y: both(470, 470) }),
+  // S2, lane G-fix (REVIEW-G2 P1-6 and the lead's addendum): the three questions build a list, the checklist the film
+  // goes on to answer. Each inks in whole, starting 3 frames before its downbeat (FILM_SPEC §1) so it reads at full
+  // contrast on the beat; the one before it dims to 45 % as it arrives; all three leave together f348–354.
+  t({ id: "T1", chapter: "desktop", lines: ["What did it change?"], role: "headline", enter: "ink", in: 144, out: 348, dimAt: 213, inkTogether: true, place: "centre", y: both(350, 360), x: LIST_X.questions }),
+  t({ id: "T2", chapter: "desktop", lines: ["Can I undo it?"], role: "headline", enter: "ink", in: 213, out: 348, dimAt: 285, inkTogether: true, place: "centre", y: both(470, 470), x: LIST_X.questions }),
+  t({ id: "T3", chapter: "desktop", lines: ["Did it run the tests?"], role: "headline", enter: "ink", in: 285, out: 348, inkTogether: true, place: "centre", y: both(590, 580), x: LIST_X.questions }),
   t({ id: "T4", chapter: "desktop", lines: ["An agent shouldn't", "grade its own work"], role: "headline", enter: "rise", in: 360, out: 462, place: "centre", y: both(420, 420) }),
   t({ id: "T5", chapter: "desktop", lines: ["A small companion for your Mac"], role: "support", enter: "blur", in: 522, out: 612, place: "baseline", y: both(560, 530) }),
   t({ id: "T6", chapter: "project", lines: ["It reads", "your project"], role: "side", enter: "blur", in: 666, out: 718, place: "column" }),
   t({ id: "T7", chapter: "project", lines: ["Review, apply,", "undo"], role: "side", enter: "blur", in: 756, out: 858, wordStarts: [756, 811, 830], place: "column" }),
-  t({ id: "T8", chapter: "tested", lines: ["AgentGuard checks", "the evidence"], role: "side", enter: "blur", in: 954, out: 1038, place: "column" }),
+  // lane G-fix (REVIEW-G2 P0-1): T8 lands on the bar-14 downbeat (f936), after the held run is in view, not mid-scroll
+  t({ id: "T8", chapter: "tested", lines: ["AgentGuard checks", "the evidence"], role: "side", enter: "blur", in: 936, out: 1038, place: "column" }),
   t({ id: "T9", chapter: "tested", lines: ["Tests run in", "an isolated copy"], role: "side", enter: "blur", in: 1044, out: 1140, place: "column" }),
   t({ id: "T10", chapter: "tested", lines: ["Done means tested"], role: "side", enter: "ink", in: 1152, out: 1212, place: "column" }),
   t({ id: "T11", chapter: "model", lines: ["Your model,", "your choice"], role: "side", enter: "blur", in: 1242, out: 1320, place: "column" }),
@@ -378,11 +400,13 @@ export const TEXT: readonly TextCue[] = [
   t({ id: "T12", chapter: "pace", lines: ["You set what", "it may do"], role: "side", enter: "rise", in: 1350, out: 1428, place: "column" }),
   t({ id: "T13", chapter: "memory", lines: ["Memory you can", "read and forget"], role: "side", enter: "blur", in: 1458, out: 1578, place: "column" }),
   t({ id: "T14", chapter: "views", lines: ["Views,", "not just text"], role: "side", enter: "blur", in: 1584, out: 1656, place: "column" }),
-  t({ id: "T15", chapter: "open-source", lines: ["Free and open source"], role: "headline", enter: "ink", in: 1800, out: 1866, place: "centre", y: both(450, 450) }),
-  // G2a: baseline 590 / 570, not §8's 560 / 540: there, "Apache-2.0"'s capitals touched the "p" of "open" above it
-  t({ id: "T15s", chapter: "open-source", lines: ["Apache-2.0"], role: "support", enter: "ink", in: 1806, out: 1866, place: "baseline", y: both(590, 570) }),
-  t({ id: "T16", chapter: "open-source", lines: ["No telemetry"], role: "headline", enter: "ink", in: 1872, out: 1935, place: "centre", y: both(450, 450) }),
-  t({ id: "T17", chapter: "open-source", lines: ["Your keys stay in your Keychain"], squareLines: ["Your keys stay", "in your Keychain"], role: "headline", enter: "ink", in: 1941, out: 2010, place: "centre", y: both(450, 450) }),
+  // S8, lane G-fix (REVIEW-G2 P1-6, P1-3): the facts build a list the same way; T16 lands on bar 27 (f1872), T17 on
+  // beat 107 (f1926); the list leaves together f1998–2004, before the end card's pebble enters the frame (≈ f2005).
+  // "Apache-2.0" keeps G2a's clearance under "open" (its capitals touched the "p" at §8's distance).
+  t({ id: "T15", chapter: "open-source", lines: ["Free and open source"], role: "headline", enter: "ink", in: 1800, out: 1998, dimAt: 1869, inkTogether: true, place: "centre", y: both(300, 280), x: LIST_X.facts }),
+  t({ id: "T15s", chapter: "open-source", lines: ["Apache-2.0"], role: "support", enter: "ink", in: 1806, out: 1998, dimAt: 1869, inkTogether: true, place: "baseline", y: both(435, 395), x: LIST_X.facts }),
+  t({ id: "T16", chapter: "open-source", lines: ["No telemetry"], role: "headline", enter: "ink", in: 1869, out: 1998, dimAt: 1923, inkTogether: true, place: "centre", y: both(545, 500), x: LIST_X.facts }),
+  t({ id: "T17", chapter: "open-source", lines: ["Your keys stay in your Keychain"], squareLines: ["Your keys stay", "in your Keychain"], role: "headline", enter: "ink", in: 1923, out: 1998, inkTogether: true, place: "centre", y: both(685, 680), x: LIST_X.facts }),
   t({ id: "T18", chapter: "get", lines: ["A little help, right here."], role: "tagline", enter: "blur", in: 2088, out: END, place: "baseline", y: both(560, 520), key: true }),
   t({ id: "T19", chapter: "get", lines: ["Free for Macs with Apple silicon"], role: "cta", enter: "rise", in: 2160, out: END, place: "baseline", y: both(690, 630), key: true }),
   t({ id: "T20", chapter: "get", lines: ["github.com/tohin003/Pebble"], role: "mono", enter: "rise", in: 2164, out: END, place: "baseline", y: both(770, 700), key: true }),
@@ -452,9 +476,9 @@ function cuesFor(square: boolean): PebbleCue[] {
     cue(652, { pose: "reading", note: "lands in the window world" }),
     cue(660, { look: square ? { x: -0.875, y: 0.5 } : { x: 0.875, y: -0.375 }, note: "toward the status line" }),
     cue(711, { pose: "editing", note: "inside the f708–714 blink" }),
-    cue(729, { pose: "review", note: "the edit card waits (\"!\")" }),
+    cue(756, { pose: "review", note: "the edit card waits (\"!\"); on f756, with \"Review,\", after the f720–753 camera move, so the morph plays on a still frame (REVIEW-G2 P1-4)" }),
     cue(864, { pose: "thinking" }),
-    cue(931, { pose: "blocked", note: "verification required" }),
+    cue(890, { pose: "blocked", note: "verification required (the hold lands at f890 on the re-keyed S5c, REVIEW-G2 P0-1)" }),
     cue(995, { pose: "review", note: "the Run isolated tests card waits" }),
     cue(1094, { pose: "testing" }),
     cue(1161, { pose: "writing", note: "after Verified, Pebble writes its final reply" }),
@@ -506,7 +530,8 @@ export interface SfxCue {
  *  animated film places it (film/framing.ts pointerSpans, film/hook.ts); §11 had estimates for five of the nine. */
 export const SFX: readonly SfxCue[] = [
   { frame: 36, role: "click", take: "click_a", event: "the pebble is clicked", pan: 0.13 },
-  { frame: 144, role: "whoosh", take: "whoosh_b", event: "into the sage field (zoom through the pebble)" },
+  // lane G-fix (REVIEW-G2 P1-2): the dives now fill the frame on f143 / f1799, so each whoosh peaks on the world change
+  { frame: 143, role: "whoosh", take: "whoosh_b", event: "into the sage field (zoom through the pebble)" },
   { frame: 504, role: "riser", take: "riser", event: "bars 6–7, its end on the reveal" },
   { frame: 504, role: "hit", take: "soft_hit_b", event: "the reveal landing", duckDb: 2.5 },
   { frame: 504, role: "thud", take: "thud_a", event: "texture under the hit" },
@@ -524,7 +549,7 @@ export const SFX: readonly SfxCue[] = [
   { frame: 1530, role: "click", take: "click_c", event: "the bin", pan: 0.37 },
   { frame: 1542, role: "pop", take: "pop_c", event: "the record dissolves" },
   { frame: 1665, role: "whoosh", take: "whoosh_c", event: "the chart becomes the world (its fastest frame)" },
-  { frame: 1800, role: "whoosh", take: "whoosh_a", event: "into the sage field (zoom through the badge)" },
+  { frame: 1799, role: "whoosh", take: "whoosh_a", event: "into the sage field (zoom through the badge)" },
   { frame: 2016, role: "pop", take: "pop_b", event: "the end-card landing" },
   { frame: 2016, role: "thud", take: "thud_b", event: "landing texture", duckDb: 1.5 },
 ];
@@ -540,7 +565,8 @@ export const SEAMS: readonly Seam[] = [
   { frame: 648, kind: "carry", cause: "the pebble's leap continues across the cut at u = 0.78" },
   { frame: 720, kind: "camera", cause: "the drawer opens; the camera follows Preparing an edit" },
   { frame: 864, kind: "hard-cut", cause: "chapter change on the bar" },
-  { frame: 1008, kind: "camera", cause: "the tests card arrives in the drawer" },
+  // lane G-fix (REVIEW-G2 P2-1): a hard cut on the bar, not a whip pan (the move from the read framing ran 202 px/frame)
+  { frame: 1008, kind: "hard-cut", cause: "the Run the tests click puts the Run isolated tests card in the drawer; cut to it on the bar" },
   { frame: 1152, kind: "camera", cause: "the Verified row appears (R2) / punch-in cut (fallback)" },
   { frame: 1224, kind: "match-cut", cause: "the Settings button" },
   { frame: 1332, kind: "match-cut", cause: "the Permissions tab" },
@@ -578,6 +604,10 @@ export const SOURCE_MAPS = {
    *   change), so each press (f810–813, f990–993, f1080–1083) is drawn over the frame BEFORE the click, and the next
    *   segment catches up at > 1× (no jump without a cut);
    * - f1094 ↔ 18.35 s ("Requesting isolated tests", pose testing) and f1146 ↔ 20.40 s ("· 11 s") are pinned.
+   * S5c re-keyed by lane G-fix (REVIEW-G2 P0-1) so the held run is on screen and still long enough to read: 2.5×
+   * through the streaming reply (11.80 → 14.50 s: the notice lands at f888, the hold at f890), the app's own scroll at
+   * 1× (14.50 → 15.10 s, f896–914), then 0.35× over the settled run (15.10 → 15.97 s, f914–989: only the run's small
+   * avatar animates there). The click frames do not move.
    */
   "main-live-film": [
     { frame: 648, s: 3.85 },
@@ -591,6 +621,8 @@ export const SOURCE_MAPS = {
     { frame: 814, s: 11.05, hold: true },
     { frame: 863, s: 11.05 },
     { frame: 864, s: 11.8, hold: true },
+    { frame: 896, s: 14.5 },
+    { frame: 914, s: 15.1 },
     { frame: 989, s: 15.9667 },
     { frame: 993, s: 15.9667 },
     { frame: 994, s: 16.0 },

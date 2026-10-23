@@ -9,7 +9,7 @@ export { UiSequence, sequenceIndex, type UiSequenceProps } from "./UiSequence";
 export { UI_STILLS, type UiStillName } from "./uiStills";
 export { Cursor, clickAfterArrival, type CursorProps } from "./Cursor";
 export { KineticText, landedAt, withAlpha, WORD_STEP_S, type KineticTextProps, type TextRole } from "./KineticText";
-export { SageField, PaperField, SAGE_GLOWS, type Glow } from "./SageField";
+export { SageField, PaperField, SAGE_GLOWS, SAGE_TYPE, SAGE_TYPE_GLOWS, type Glow } from "./SageField";
 export { ColourFlood, floodRadius, type ColourFloodProps } from "./ColourFlood";
 export { easedStops, glow } from "./gradients";
 export { Vignette, Grain } from "./Vignette";

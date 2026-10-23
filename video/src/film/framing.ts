@@ -40,11 +40,34 @@ export const FRAMINGS: PerAspect<Record<string, Framing>> = {
     s5bTop: fr(2.85, 984.55, 366.5),
     /** S5b, the card's lower part: y 408–742; Apply edit at frame (1683, 873) */
     s5bLow: fr(2.85, 984.55, 575),
-    /** S5c, the held run: x 222–676.5, y 311–743.7 (§6's m 2.2; left edge moved off the sidebar's edge at 218); Run the
-     *  tests at frame (1186, 616) */
-    s5c: fr(2.2, 449.25, 527.35),
+    /**
+     * S5c stage 1 (f864–953), the held run whole (REVIEW-G2 P0-1, lane G-fix): x 228–720.6, y 324–793, m 2.03. The
+     * whole block shows (the avatar at 259.7 to the sentence's end at 695, all three choices) with "Details" (730) just
+     * outside; the top edge sits between the reply's last line (311) and the notice (332), the bottom between the
+     * composer's footer line (ends 782.7) and the window's edge (800). The old m 2.2 (x 222–676.5) cut the sentence's
+     * tail, and no m above 2.03 has a clean top and bottom with the whole sentence in (the footer at 759.7–782.7
+     * leaves no gap a taller view can end in). The sentence's ink is 22 px here; stage 2 reads it at 35.
+     */
+    s5c: fr(2.03, 474.3, 558.5),
+    /**
+     * S5c stage 2 (pushed in f954–977, held to the f1008 move): m 3.16, x 222–538.5, y 392–693.3. "Blocked", the
+     * sentence (ink 34.8 px ≥ 28; it bleeds off the frame's right edge as the UI does) and Run the tests, with Ask
+     * Pebble to finish whole (its border 5.8 css px inside the edge) and Accept as unverified wholly outside (its first
+     * letter 3.2 css px past the edge): the edge falls in the 9 px between them, so no choice is sliced. Top between
+     * the notice (ends 380.7) and the usage line (404); bottom inside the composer, between its placeholder (ends 661.3)
+     * and its model row (713.3). Run the tests at frame (1301, 627).
+     */
+    s5cRead: fr(3.16, 380.2, 542.65),
     /** S5d, the whole "Run isolated tests" card: x 802.9–1160, y 213.5–553.5; Run tests at frame (1693, 903) */
     s5d: fr(2.8, 981.45, 383.5),
+    /**
+     * S5d → S5e, tilted f1116–1139 once R2's scroll has settled (REVIEW-G2 P1-5, lane G-fix): y 329–669. "Not verified ·
+     * 2 changed files, no tests run" (269–296.7) and "Verification remains incomplete" (311–322) leave the top before
+     * the Verified step arrives (f1152), so the climax frame reads from "You asked Pebble to run the tests" (336) down
+     * to "Verified" and what follows. The bottom edge sits in the gap under the card's lines once "Waiting for the
+     * model" moves them (f1155 on); on f1152–1154 it grazes the bottom 0.7 px of one line of the card below.
+     */
+    s5dVerified: fr(2.8, 981.45, 499),
     /** S5e pull-back: x 245.9–1086.2, y 0–800 (m 1.19 so the gear sits 60 px inside the frame and the left edge in clear
      *  space; §6's ROI cut every reply line at x 340) */
     s5eOut: fr(1.19, 666.05, 400),
@@ -54,16 +77,43 @@ export const FRAMINGS: PerAspect<Record<string, Framing>> = {
     s6c: fr(2.025, 588.9, 563.05),
     /** S7a: the canvas only, x 643.2–1440, y 70–828.6 (§6's x 612 showed the canvas border at x 640) */
     s7a: fr(1.255, 1041.6, 449.3),
+    /**
+     * S7a opens on the ask (REVIEW-G2 P1-7, lane G-fix), main-dashboard@3x's conversation: x 284–637.4, y 84–420.4, m 2.83:
+     * "Turn my Lisbon trip spending into a dashboard: what I've spent, by category, and what's left to book." with the
+     * reply's first five lines; left edge between the run's avatar (ends 275.7) and the text (295), right edge 2.6 css
+     * px before the canvas's border (640), top under the top bar's hairline (64), bottom between the reply's 5th and 6th
+     * lines (416.3 | 427.3). f1602–1625 the camera moves to the canvas (s7a).
+     */
+    s7aAsk: fr(2.83, 460.7, 252.2),
   },
   square: {
     /** S5a: x 336–725.4, y 68–348.8 (top above the request bubble: §6's y 120 cut its first line) */
     s5a: fr(2.65, 530.7, 208.4),
     /** S5b: the drawer only, x 804.1–1160 (m 2.9); upper part y 200–456.6 */
     s5bTop: fr(2.9, 982.05, 328.3),
-    /** S5b lower part y 533.9–790.5; Apply edit at frame (815, 794) */
-    s5bLow: fr(2.9, 982.05, 662.2),
-    /** S5c: x 220.5–609.9, y 400.25–681.05; Run the tests at frame (349, 764) */
-    s5c: fr(2.65, 415.2, 540.65),
+    /**
+     * S5b lower part, y 488.7–745.3 (REVIEW-G2 P0-2, lane G-fix; was cy 662.2, y 533.9–790.5): the next card's header
+     * ("tests/test_dates.py · Needs your review", y 749.3 before the click; "· Done", y 747 on the f814 match cut's
+     * 11.05 s frame) now stays 5 px below the frame, so no status changes on screen without a visible click. The top
+     * edge falls between the diff's rows (469 | 517) and, after the match cut, between EARLIER ACTIONS (481) and the
+     * applied card's header (511). Apply edit straddles the caption band (frame y 879–971); the pointer clicks its upper
+     * half at css y 689, frame y 917 (≤ 918).
+     */
+    s5bLow: fr(2.9, 982.05, 617),
+    /**
+     * S5c stage 1 (f864–953), the held run whole (REVIEW-G2 P0-1, lane G-fix): m 2.2, x 242.7–711.8, y 420.5 → the frame
+     * bottom (759.7). The avatar (259.7) and the sentence's end (695) both sit 61 px from the frame's sides, so the
+     * whole block and all three choices show inside OVERRIDES §4's 60 px; the top edge is 4.8 css px under the usage
+     * line (ends 415.7) and the composer's footer line (from 759.7) stays 2 px under the frame. Ink 24 px (stage 2: 36).
+     */
+    s5c: fr(2.2, 477.25, 589.6),
+    /**
+     * S5c stage 2: m 3.28, x 222.6–537.2, y 420.8 → 647.6: "Blocked", the sentence (ink 36 px ≥ 34; its lines run into
+     * the stage's right edge) and Run the tests, Ask Pebble to finish whole (its label 82 px from the frame's edge) and
+     * Accept as unverified wholly outside (4.5 css px past the edge). The composer's placeholder (648.7) stays under
+     * the frame. Run the tests at frame (337, 797).
+     */
+    s5cRead: fr(3.28, 379.9, 534.2),
     /** S5d upper part: y 200–456.6 */
     s5dTop: fr(2.9, 982.05, 328.3),
     /** S5d tilt (f1050–1073): y 323–579.6; Run tests at frame (815, 886) */
@@ -78,6 +128,10 @@ export const FRAMINGS: PerAspect<Record<string, Framing>> = {
     s6c: fr(2.157, 581.5, 627.45),
     /** S7a: the canvas only, x 643.1–1440, y 66–640.5 */
     s7a: fr(1.295, 1041.55, 353.25),
+    /** S7a's ask (REVIEW-G2 P1-7): x 284–637.4, y 76 → the frame bottom (330.8), m 2.92 (the 16:9 crop is too wide for the
+     *  square's stage); the request bubble is the card in focus and the rest recedes under a veil, so the reply's lines
+     *  at the frame's bottom edge never read as cut text (S7a's UiStill focus) */
+    s7aAsk: fr(2.92, 460.7, 203.4),
   },
 };
 
@@ -86,21 +140,23 @@ export const FULL_FRAME = {
   /** the chart as the world: 16:9 m 3.2 on (1059, 661.5); square m 2.55 on (1061.5, 661.5) */
   chart: { wide: fr(3.2, 1059, 661.5), square: fr(2.55, 1061.5, 661.5) },
   /** the quiz, full frame. 16:9 m 2.6: x 421.5–1160 (the window's right edge on the frame's, so nothing past the window
-   *  shows; the conversation left of the canvas recedes under a veil, S7Quiz), y 238–653.4 (the quiz's title to its
-   *  answer D; §6's y 330–665 left the title out). Square m 2.477: x 724–1160, inside the canvas (border at x 720),
-   *  y 236–672 (§6's y 260 cut the title "Python datetime check-in" through its middle) */
-  quiz: { wide: fr(2.6, 790.75, 445.7), square: fr(2.477, 942, 454) },
+   *  shows; the conversation left of the canvas recedes under a veil, S7Quiz), y 217.3–632.7 (the quiz's title to its
+   *  answer D, which may bleed off the bottom; §6's y 330–665 left the title out). Square m 2.477: x 724–1160, inside
+   *  the canvas (border at x 720), y 219–655. Lane G-fix (REVIEW-G2 P1-8): cy 425 / 437, not 445.7 / 454, so the title
+   *  "Python datetime check-in" has ≥ 64 px of headroom (it sat 17 / 21 px under the frame's top edge) */
+  quiz: { wide: fr(2.6, 790.75, 425), square: fr(2.477, 942, 437) },
 } as const;
 
 /** A camera pose for a framing at layout scale `s`. */
 export const pose = (f: Framing, s: number): CamPose => ({ x: f.cx, y: f.cy, zoom: f.m * s });
-const key = (at: number, f: Framing, s: number, dur?: number): CamKey => ({ at, x: f.cx, y: f.cy, zoom: f.m * s, dur, path: "direct", ease: EASE.camera });
+const key = (at: number, f: Framing, s: number, dur?: number, path: "direct" | "smooth" = "direct"): CamKey => ({ at, x: f.cx, y: f.cy, zoom: f.m * s, dur, path, ease: EASE.camera });
 
 /**
  * The stage camera from f648 to f1655 (S5, S6, S7a). Cuts are one-frame moves (the pose jumps on the cut's frame).
- * Moves: f720–753 into the drawer; f774–797 tilt down to Apply edit; f864 hard cut; f1008–1040 to the tests card
- * (square: tilt f1050–1073); f1188–1211 pull-back; f1224 match cut to Settings (square: tilt f1338–1361 and back
- * f1408–1431); f1476–1499 pan to the records; f1584 hard cut to the dashboard.
+ * Moves: f720–753 into the drawer; f774–797 tilt down to Apply edit; f864 hard cut to the whole held run, f954–977
+ * push-in to read it; f1008 hard cut to the tests card (square: tilt f1050–1073); f1188–1211 pull-back; f1224 match cut
+ * to Settings (square: tilt f1338–1361 and back f1408–1431); f1476–1499 pan to the records; f1584 hard cut to the
+ * dashboard.
  */
 export function windowKeys(a: AspectId, s: number): CamKey[] {
   const F = FRAMINGS[a]!;
@@ -110,18 +166,25 @@ export function windowKeys(a: AspectId, s: number): CamKey[] {
     // UI travelled up to 250 px a frame; they still land before the lines they serve (T7 at f756, T9 at f1044)
     key(753, F.s5bTop!, s, 33),
     key(797, F.s5bLow!, s, 23),
+    // S5c in two stages (REVIEW-G2 P0-1): the hard cut lands on the whole held run (stage 1), which the app has scrolled
+    // into view by f914; f954–977 the camera pushes in to read it (stage 2) and holds through the click (f990)
     key(864, F.s5c!, s, 1),
+    key(977, F.s5cRead!, s, 23),
   ];
-  if (a === "wide") keys.push(key(1040, F.s5d!, s, 32));
-  else keys.push(key(1040, F.s5dTop!, s, 32), key(1073, F.s5dTilt!, s, 23));
+  // f1008 (bar 15): a hard cut to the "Run isolated tests" card the click put in the drawer (REVIEW-G2 P2-1: from the
+  // read framing the old 32-frame move travelled 202 px a frame in 16:9 and 214 in the square, 10× R5's blur limit)
+  if (a === "wide") keys.push(key(1008, F.s5d!, s, 1), key(1139, F.s5dVerified!, s, 23));
+  else keys.push(key(1008, F.s5dTop!, s, 1), key(1073, F.s5dTilt!, s, 23));
   keys.push(key(1211, F.s5eOut!, s, 23), key(1224, F.s6a!, s, 1));
   if (a === "square") keys.push(key(1361, F.s6bTilt!, s, 23), key(1431, F.s6a!, s, 23));
-  keys.push(key(1499, F.s6c!, s, 23), key(1584, F.s7a!, s, 1));
+  // S7a: the hard cut lands on the ask; f1602–1625 the camera moves to the canvas on van Wijk's path (it pulls back as
+  // it pans, so the view never travels faster than it widens)
+  keys.push(key(1499, F.s6c!, s, 23), key(1584, F.s7aAsk!, s, 1), key(1625, F.s7a!, s, 24, "smooth"));
   return keys;
 }
 
 /** Frames where the stage's picture is CUT (hard cuts and match cuts): no motion blur there, whatever the jump. */
-export const STAGE_CUTS: readonly number[] = [814, 864, 1224, 1584];
+export const STAGE_CUTS: readonly number[] = [814, 864, 1008, 1224, 1584];
 
 /** Match cuts on a click (f814 Done, f1224 Settings): the new picture arrives at 1.04× and settles on SPRING.calm. */
 export const SETTLES: readonly { at: number; pivot: "click" }[] = [
@@ -192,8 +255,9 @@ export function pointerSpans(a: AspectId, s: number): PointerSpan[] {
   const fp = (p: Point, f: Framing) => framePoint(p, f, a, s);
   const out: PointerSpan[] = [];
   // S5b: in from the lower right f780, on Apply edit by f803 (the tilt has landed by f797), click f810; the match cut
-  // keeps it there; it drifts away and fades f826–830
-  const pA = fp(aim(C.apply), F.s5bLow!);
+  // keeps it there; it drifts away and fades f826–830. The square clicks the button's upper half (css y 689), so the
+  // click stays above the caption band with the next card's header kept out of frame (s5bLow)
+  const pA = fp(wide ? aim(C.apply) : { x: C.apply.x - 3, y: 689 }, F.s5bLow!);
   out.push({
     id: "apply",
     keys: [
@@ -204,8 +268,9 @@ export function pointerSpans(a: AspectId, s: number): PointerSpan[] {
     clicks: [810],
     visible: [780, 830],
   });
-  // S5c: in f960, on Run the tests by f985, click f990, then it leaves (fades f1000–1005)
-  const pR = fp(aim(C.runTheTests), F.s5c!);
+  // S5c: in f960, on Run the tests by f985 (the push-in to stage 2 has landed by f977), click f990, then it leaves
+  // (fades f1000–1005)
+  const pR = fp(aim(C.runTheTests), F.s5cRead!);
   out.push({
     id: "run-the-tests",
     keys: [

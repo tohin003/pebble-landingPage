@@ -31,6 +31,16 @@ const ACCENT_SOFT = "176, 194, 174"; // #B0C2AE
 /** FILM_SPEC §4: one glow, 15 %, radius 900 px, at (0.5 W, 0.42 H). The drift period is long against any shot. */
 export const SAGE_GLOWS: readonly Glow[] = [{ x: 0.5, y: 0.42, r: 900, opacity: 0.15, period: 28.8, phase: 0 }];
 
+/**
+ * The type worlds' ground (lane G-fix, the lead's addendum to REVIEW-G2): white type must read at ≥ 7:1 on the sage
+ * field. White on #536B54 is 5.8:1, and 4.8:1 at the 15 % glow's peak, where the lines sit; so the field the lines are
+ * read on settles on a deeper sage of the same hue, #425643 (L 0.082), with the glow at 4 %: white is 7.4:1 at the
+ * glow's peak and 7.9:1 off it. A field still ARRIVES on the colour it is entered through (the pebble's #536B54 after
+ * the S1 dive, the badge's #506E54 after S7c) and deepens within 12 frames, as the eye adjusts.
+ */
+export const SAGE_TYPE = { ground: "#425643", glow: 0.04 } as const;
+export const SAGE_TYPE_GLOWS: readonly Glow[] = SAGE_GLOWS.map((g) => ({ ...g, opacity: SAGE_TYPE.glow }));
+
 export const SageField: React.FC<FieldProps & { glows?: readonly Glow[]; drift?: number }> = ({ children, style, glows = SAGE_GLOWS, drift = 40 }) => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
