@@ -146,8 +146,9 @@
   border-radius: 14px;
 }
 
-/* a new step settles in when you choose it (never on load) */
-:global(:root[data-motion="on"]) .panels[data-touched] .panel[data-active] {
+/* a new step settles in when you click it (never on load, and never on arrow keys: stepping through the tabs by
+   keyboard is fast and repeated, so the stage just changes; the guide pebble's walk still answers the choice) */
+:global(:root[data-motion="on"]) .panels[data-chosen-by="click"] .panel[data-active] {
   animation: settle 240ms var(--ease-enter);
 }
 

@@ -30,7 +30,8 @@ export function Story({
   guides: Readonly<Record<GuidePose, ReactNode>>;
 }) {
   const [active, setActive] = useState(0);
-  const [touched, setTouched] = useState(false);
+  /** how the step was last chosen: the stage settles in only after a click, never on load or on arrow keys */
+  const [chosenBy, setChosenBy] = useState<"click" | "arrows" | null>(null);
   const [demo, setDemo] = useState<ApprovalStatus>("pending");
   const id = useId();
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -46,10 +47,11 @@ export function Story({
 
   const pose: GuidePose = active === 0 ? (demo === "pending" ? "editing" : "idle") : (STEP_POSES[active] ?? "idle");
 
-  const select = (index: number, focus: boolean) => {
+  const select = (index: number, by: "click" | "arrows") => {
+    if (by === "arrows") tabs.current[index]?.focus();
+    if (index === active) return; // already showing: nothing changes, so nothing replays
     setActive(index);
-    setTouched(true);
-    if (focus) tabs.current[index]?.focus();
+    setChosenBy(by);
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -70,7 +72,7 @@ export function Story({
               : -1;
     if (next < 0) return;
     event.preventDefault();
-    select(next, true);
+    select(next, "arrows");
   };
 
   return (
@@ -90,7 +92,7 @@ export function Story({
               aria-controls={`${id}-panel-${index}`}
               tabIndex={index === active ? 0 : -1}
               className={styles.tab}
-              onClick={() => select(index, false)}
+              onClick={() => select(index, "click")}
               onKeyDown={(event) => onKeyDown(event, index)}
             >
               {/* the line passes through this stone (src/components/line/PebblePath.tsx "stop") */}
@@ -112,7 +114,7 @@ export function Story({
         </div>
       </div>
 
-      <div className={styles.panels} data-touched={touched ? "" : undefined}>
+      <div className={styles.panels} data-chosen-by={chosenBy ?? undefined}>
         {steps.map((step, index) => (
           <div
             key={step.n}
