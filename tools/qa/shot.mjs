@@ -24,7 +24,7 @@
 //
 // For each shot: …-tile-NN.png (viewport screenshots taken while scrolling down, so the sticky header and call to
 // action show where a visitor sees them), optionally <page>-<width>-<theme>-<motion>.png (full page), plus report.json
-// (scroll width, page height, the pebble path's state, console errors, failed requests, CSP violations, each tile's
+// (scroll width, page height, the number of local ground lines, console errors, failed requests, CSP violations, each tile's
 // scroll position). tools/qa/sheets.mjs packs the tiles into review sheets. The server (next start on a free port) and
 // Chrome are always stopped at the end.
 import { spawn } from "node:child_process";
@@ -187,8 +187,8 @@ async function shoot(base, pagePath, width, theme, motion) {
     theme: document.documentElement.dataset.theme,
     motion: document.documentElement.dataset.motion,
     platform: document.documentElement.dataset.platform,
-    path: document.querySelector("svg[data-pebble-path]")?.getAttribute("data-pebble-path") ?? "missing",
-    pathPieces: document.querySelectorAll("svg[data-pebble-path] path").length,
+    // the pebble's local grounds (src/components/ui/Horizon.tsx; the page-wide path was retired in the v2 system)
+    horizons: document.querySelectorAll("svg[data-horizon]").length,
     csp: window.__csp ?? [],
   }));
   problems.csp = probe.csp;
@@ -222,7 +222,7 @@ async function shoot(base, pagePath, width, theme, motion) {
   const bad = problems.console.length + problems.pageErrors.length + problems.failed.length + problems.csp.length + (overflow ? 1 : 0);
   console.log(
     `${name}: ${probe.scrollHeight}px tall, scrollWidth ${probe.scrollWidth}/${probe.innerWidth}${overflow ? " OVERFLOW" : ""}, ` +
-      `theme ${probe.theme}, motion ${probe.motion}, platform ${probe.platform}, path ${probe.path} (${probe.pathPieces} pieces), ` +
+      `theme ${probe.theme}, motion ${probe.motion}, platform ${probe.platform}, ${probe.horizons} horizons, ` +
       `${tiles.length} tiles, ${bad ? `${bad} problem(s)` : "no problems"}`,
   );
   for (const [kind, items] of Object.entries(problems)) for (const item of items) console.log(`  ${kind}: ${item}`);
