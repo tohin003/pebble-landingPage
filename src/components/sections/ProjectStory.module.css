@@ -327,10 +327,30 @@
   }
 }
 
-/* below 1024 px the stage stacks: the words, then the picture at most 515 px wide (a flat panel at most 560 px) */
+/* Below 1024 px the rail spans the whole container: at a column's left edge the guide pebble (and the ground under it)
+   would run into the page's side margin, so each stone sits in the middle of its column, as on phones, and the step's
+   number goes on its own line. The stage stacks: the words, then the picture at most 515 px wide (a flat panel at
+   most 560 px). */
 @media (max-width: 1023px) {
   .railWrap {
+    --stop-w: 100%;
+    --stop-x: 50%;
+    --first: 12.5%;
     --reach: 40px;
+  }
+
+  .tab {
+    align-items: center;
+    text-align: center;
+  }
+
+  .tabLabel {
+    max-width: 100%;
+  }
+
+  .tabLabel b {
+    display: block;
+    margin: 0 0 2px;
   }
 
   .panels {
@@ -365,28 +385,12 @@
 }
 
 @media (max-width: 560px) {
-  /* phones: each stone sits in the middle of its column, and the step's number goes on its own line */
   .railWrap {
-    --stop-w: 100%;
-    --stop-x: 50%;
-    --first: 12.5%;
     --reach: 36px;
   }
 
-  .tab {
-    align-items: center;
-    text-align: center;
-  }
-
   .tabLabel {
-    max-width: 100%;
     font-size: 12.5px;
-    white-space: normal;
-  }
-
-  .tabLabel b {
-    display: block;
-    margin: 0 0 2px;
   }
 
   .guideBox {

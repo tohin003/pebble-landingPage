@@ -1,7 +1,8 @@
 "use client";
 // The project story's rail and stage (DESIGN-LEXINGTON §6 Works in your project, comp lex-A). The rail spans columns
 // 4–12: four stones on the pebble's ground (a local Horizon that runs from just before the first stone to just after the
-// last), one per step, each at its column's left edge (centred in its column on phones), and the guide pebble stands
+// last), one per step, each at its column's left edge (centred in its column below 1024 px, where the rail spans the
+// whole container and a pebble at the left edge would run into the page's margin), and the guide pebble stands
 // on the current one. The rail is the story's tablist: choose a step (click, or the arrow keys, Home and End) and the
 // guide walks along the line to it while the stage below shows that step. The rail never moves, so the line always
 // passes through its stones.
