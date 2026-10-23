@@ -19,6 +19,7 @@ export const labels = {
   memory: { name: "Memory", fact: "Six labelled layers" }, // memory.layers [C-SYS-7] (C-MEM-7)
   views: { name: "Views", fact: "Built from data" }, // views.lead "from data" [C-SYS-8] (C-VIEW-1)
   infrastructure: { name: "Engineering", fact: "Facts, not benchmarks" }, // infrastructure.note [C-SYS-9] (C-INF-6)
+  benchmarks: { name: "Benchmarks", fact: "Measured, not claimed" }, // README.md@26d7b19:366; the lead's name [C-SYS-17]
   privacy: { name: "Privacy", fact: "No telemetry" }, // privacy.stays [C-SYS-10] (C-PRIV-5)
   limits: { name: "Limits", fact: "Stated plainly" }, // honestLimits.lead [C-SYS-12]
   openSource: { name: "Open source", fact: "Apache-2.0" }, // openSource.repoCard.licence [C-SYS-13] (C-OSS-1)

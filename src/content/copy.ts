@@ -17,22 +17,24 @@
 // Sample data: everything about Maya, invoice-kit, the Lisbon trip and the datetime quiz is fictional (MASTER_PLAN
 // D21) and must sit next to the words "Shown with sample data."
 
+import { formatCount, releaseFacts } from "./releaseFacts";
+
 export type Link = Readonly<{ label: string; href: string; external?: boolean }>;
 export type TitledText = Readonly<{ title: string; body: string }>;
 
 // ---------------------------------------------------------------------------------------------------------------
-// Release facts (OVERRIDES §1; PEBBLE_SESSIONS_STATUS.md "Release facts" and the 23:27 PUBLISHED entry)
+// Release facts: the values come from src/content/releaseFacts.ts, the one source (OVERRIDES §1, §16)
 // ---------------------------------------------------------------------------------------------------------------
 
 export const release = {
-  version: "1.0.1", // [C-REL-1]
-  tag: "v1.0.1",
-  assetName: "Pebble-macos-arm64.zip",
-  sizeBytes: 71_805_116, // [C-REL-2]
-  sizeLabel: "72 MB", // [C-REL-2]
-  publishedOn: "2026-10-22", // [C-REL-3]
+  version: releaseFacts.version, // [C-REL-1]
+  tag: releaseFacts.tag,
+  assetName: releaseFacts.assetName,
+  sizeBytes: releaseFacts.sizeBytes, // [C-REL-2]
+  sizeLabel: formatMegabytes(releaseFacts.sizeBytes), // "72 MB" [C-REL-2]
+  publishedOn: releaseFacts.publishedOn, // [C-REL-3]
   repoUrl: "https://github.com/tohin003/Pebble",
-  releaseNotesUrl: "https://github.com/tohin003/Pebble/releases/tag/v1.0.1",
+  releaseNotesUrl: `https://github.com/tohin003/Pebble/releases/tag/${releaseFacts.tag}`,
   releasesUrl: "https://github.com/tohin003/Pebble/releases",
   latestReleaseUrl: "https://github.com/tohin003/Pebble/releases/latest",
   downloadUrl: "https://github.com/tohin003/Pebble/releases/latest/download/Pebble-macos-arm64.zip",
@@ -42,17 +44,17 @@ export const release = {
   installCommand: "curl -fsSL https://raw.githubusercontent.com/tohin003/Pebble/main/install.sh | bash",
 } as const;
 
-/** "72 MB" from a byte count, in decimal megabytes as the release session asked for (71,805,116 bytes → "72 MB"). */
+/** "72 MB" from a byte count, in decimal megabytes as the release session asked for (71,808,389 bytes → "72 MB"). */
 export function formatMegabytes(bytes: number): string {
   return `${Math.round(bytes / 1_000_000)} MB`;
 }
 
-/** The line under the download button: "v1.0.1 · 72 MB · Apple silicon · macOS 12 or later". [C-REL-5] */
+/** The line under the download button: "v1.0.4 · 72 MB · Apple silicon · macOS 12 or later". [C-REL-5] */
 export function releaseMeta(version: string = release.version, sizeLabel: string = release.sizeLabel): string {
   return `v${version} · ${sizeLabel} · Apple silicon · macOS 12 or later`;
 }
 
-/** The release notes page for a tag such as "v1.0.1". */
+/** The release notes page for a tag such as "v1.0.4". */
 export function releaseNotesUrl(tag: string = release.tag): string {
   return `https://github.com/tohin003/Pebble/releases/tag/${tag}`;
 }
@@ -61,12 +63,12 @@ export function releaseNotesUrl(tag: string = release.tag): string {
 export const installCommands = {
   install: release.installCommand,
   dryRun: "curl -fsSL https://raw.githubusercontent.com/tohin003/Pebble/main/install.sh | bash -s -- --dry-run",
-  version: "curl -fsSL https://raw.githubusercontent.com/tohin003/Pebble/main/install.sh | bash -s -- --version 1.0.1",
+  version: `curl -fsSL https://raw.githubusercontent.com/tohin003/Pebble/main/install.sh | bash -s -- --version ${releaseFacts.version}`,
   uninstall: "curl -fsSL https://raw.githubusercontent.com/tohin003/Pebble/main/install.sh | bash -s -- --uninstall",
   downloadFirst: "curl -fsSL -o install.sh https://raw.githubusercontent.com/tohin003/Pebble/main/install.sh",
   runDownloaded: "bash install.sh",
   checksum: "shasum -a 256 -c SHA256SUMS",
-  checksumExpected: "Pebble-macos-arm64.zip: OK",
+  checksumExpected: releaseFacts.checksumOk,
 } as const;
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -76,7 +78,7 @@ export const installCommands = {
 export const links = {
   repo: "https://github.com/tohin003/Pebble",
   releases: "https://github.com/tohin003/Pebble/releases",
-  releaseNotes: "https://github.com/tohin003/Pebble/releases/tag/v1.0.1",
+  releaseNotes: `https://github.com/tohin003/Pebble/releases/tag/${releaseFacts.tag}`,
   changelog: "https://github.com/tohin003/Pebble/blob/main/CHANGELOG.md",
   userGuide: "https://github.com/tohin003/Pebble/blob/main/docs/USER_GUIDE.md",
   security: "https://github.com/tohin003/Pebble/blob/main/SECURITY.md",
@@ -680,8 +682,8 @@ export const memory = {
   // The section lists the six layers by name right below, so the lead doesn't repeat them (lane F2b).
   lead:
     "Pebble keeps six kinds of memory on your Mac, each with its own switch in Settings › Memory, where you can see, search and forget every one.", // [C-MEM-1] [C-MEM-2] [C-PRIV-1]
-  /** The caption under the cropped Settings › Memory still (lane D's 1.0.1 capture). [C-F2B-1] */
-  settingsCaption: "Settings › Memory in Pebble 1.0.1.",
+  /** The caption under the cropped Settings › Memory still (the lane shots' Pebble 1.0.4 retake of public/ui/v1). [C-F2B-1] */
+  settingsCaption: "Settings › Memory in Pebble 1.0.4.",
   /** Under MemoryForgetDemo, after "Interactive example." (checked word for word against App.vue:2055-2084). [C-F2B-2] */
   demoWords: "The card's words are the ones Pebble shows.",
   kinds: [
@@ -838,19 +840,23 @@ export const tour = {
 } as const;
 
 // ---------------------------------------------------------------------------------------------------------------
-// Built like infrastructure (OVERRIDES §7; DESIGN §5 row 10): engineering facts about 1.0.1, not benchmarks
+// Built like infrastructure (OVERRIDES §7, §16; DESIGN §5 row 10): engineering facts about the release, not benchmarks.
+// The counts and the version come from src/content/releaseFacts.ts.
 // ---------------------------------------------------------------------------------------------------------------
 
 export const infrastructure = {
   h2: "Built like infrastructure.", // [C-F1-1] (moved from stubs.ts)
   stack:
     "Pebble is a Tauri 2 shell in Rust, a Vue 3 interface and a frozen Python service, which talk over a private stdio channel.", // [C-INF-1]
-  /** A two-column ledger on the page, with the README's own row names as the terms (README.md@207ec74:321-326). */
+  /** A ledger on the page, with the README's own row names as the terms (README.md@26d7b19:358-361). */
   facts: [
-    { term: "Tests", text: "8,421 automated tests at v1.0.1, none skipped. They never call a model or the network." }, // [C-INF-2]
+    {
+      term: "Tests",
+      text: `${formatCount(releaseFacts.tests)} automated tests at v${releaseFacts.version}, none skipped. They never call a model or the network.`,
+    }, // [C-INF-2]
     {
       term: "Service checks",
-      text: "1,772 service checks across 40 validator suites, each run against the source and the frozen, signed app.",
+      text: `${formatCount(releaseFacts.serviceChecks)} service checks across ${releaseFacts.validatorSuites} validator suites, each run against the source and the frozen, signed app.`,
     }, // [C-INF-3]
     {
       term: "Reproducible build",
@@ -861,7 +867,10 @@ export const infrastructure = {
       text: "A secret scan, a licence inventory, a scan for personal paths, and every published test run in a fresh clone.",
     }, // [C-INF-5]
   ],
-  note: "These are facts about how Pebble is built and tested, not benchmarks. No benchmark results have been published yet.", // [C-INF-6]
+  /** True whether or not the benchmark is shown (C-SYS-9's "Facts, not benchmarks" repeats it). [C-INF-6] */
+  note: "These are facts about how Pebble is built and tested, not benchmarks.",
+  /** The section's link to the next one, shown only while the benchmark is (releaseFacts.benchmarksPublic). */
+  benchmarkLink: "Read the benchmark",
 } as const;
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -994,8 +1003,7 @@ export const openSource = {
   h2: "Free and open source.",
   lead:
     "Pebble's code is on GitHub under the Apache License 2.0. Read it, build it yourself from a clean clone, or help improve it.", // [C-OSS-1]
-  tested:
-    "Before release, Pebble 1.0.1 passed 8,421 automated tests and 1,772 service checks. The tests never call a model or the network.", // [C-OSS-2]
+  tested: `Before release, Pebble ${releaseFacts.version} passed ${formatCount(releaseFacts.tests)} automated tests and ${formatCount(releaseFacts.serviceChecks)} service checks. The tests never call a model or the network.`, // [C-OSS-2]
   maintainer: "Pebble is maintained by one person. Please allow time for a reply.", // [C-OSS-3]
   repoCard: {
     name: "tohin003/Pebble",

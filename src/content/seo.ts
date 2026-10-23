@@ -4,7 +4,9 @@
 // (MASTER_PLAN §7.8). Same voice and claim rules as copy.ts; sources in docs/CLAIMS.md under "SEO" ([C-SEO-…]).
 // metadataBase comes from VERCEL_PROJECT_PRODUCTION_URL in layout.tsx (§2.2); nothing here hard-codes a domain.
 
+import { benchmarkLinks, benchmarkLlmsLines } from "./benchmarks";
 import { formatMegabytes, links, release } from "./copy";
+import { formatLongDate, releaseFacts } from "./releaseFacts";
 
 export const seo = {
   siteName: "Pebble",
@@ -102,7 +104,7 @@ export const llmsTxt = `# Pebble
 
 > Pebble is a free, open-source (Apache-2.0) AI companion for Macs with Apple silicon (M1 or later), on macOS 12 or later (built and tested on macOS 27). A small animated pebble stays on your screen; click it to chat, or open the full window to work on a project with the model you choose, under your review.
 
-Version 1.0.1, the first public release, came out on 22 October 2026. Pebble is made by Tohin Majumder and maintained by one person.
+Pebble ${releaseFacts.version} came out on ${formatLongDate(releaseFacts.publishedOn)}. Pebble is made by Tohin Majumder and maintained by one person.
 
 ## What it does
 
@@ -126,8 +128,17 @@ Version 1.0.1, the first public release, came out on 22 October 2026. Pebble is 
 - Pebble can't see or operate other apps yet. It can only open one, which in the default mode waits for your approval.
 - Scheduled tasks run only while Pebble is open. Their results show in Pebble; macOS notifications are off until you turn them on.
 - Commands run in macOS's sandbox, which limits them but is not a promise against every attack. Prompt injection from web pages or files is limited, not impossible.
-- No benchmark results have been published, and Pebble makes no speed or quality comparison with other tools.
+${
+  releaseFacts.benchmarksPublic
+    ? `
+## Benchmark
 
+${benchmarkLlmsLines.map((line) => `- ${line}`).join("\n")}
+- [The full results](${benchmarkLinks.results})
+`
+    : `- This site makes no speed or quality comparison with other tools.
+`
+}
 ## Install
 
 - One line in Terminal: ${release.installCommand}
@@ -136,7 +147,7 @@ Version 1.0.1, the first public release, came out on 22 October 2026. Pebble is 
 ## Links
 
 - [Source code](${links.repo})
-- [Release 1.0.1](${release.releaseNotesUrl})
+- [Release ${release.version}](${release.releaseNotesUrl})
 - [Download for Mac (zip)](${release.downloadUrl})
 - [User guide](${links.userGuide})
 - [Changelog](${links.changelog})
