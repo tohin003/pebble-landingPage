@@ -1,42 +1,33 @@
-// L8 loop-views (10 s, 300 frames): views Pebble builds in a conversation. The "Lisbon trip budget" dashboard's window
-// on the riverbed desktop; the camera moves into its "Spending by category" chart; a cut to the Python datetime quiz;
-// a cut back to the chart and the camera returns to the wide frame (FILM_SPEC §16). Stills main-dashboard@3x and
-// main-quiz@3x; in the close framings the rest of the window recedes under a light veil (UiStill focus, R5 §5.3), so
-// the conversation's cut-off lines never compete with the view. The data never animates. Data: plans.ts L8.
-import { useCurrentFrame, useVideoConfig } from "remotion";
-import { Camera, Desktop, MacWindow, UiStill, World } from "../components";
-import { cameraAt } from "../motion/camera";
+// L8 loop-views (6.8 s, 204 frames): two views Pebble built in a conversation, each one card on the riverbed at about
+// the app's own scale on the views slot: the "Spending by category" chart of the Lisbon trip budget dashboard (the card
+// is the chart's own panel), then the Python datetime quiz. A 0.4 s dissolve between them, each held 3 s; the data never
+// animates. DESIGN-LEXINGTON §3.8: one moment per frame, so no whole window (lane G2b's L8 opened on the dashboard's
+// window and moved into the chart). Stills main-dashboard@3x and main-quiz@3x. Data: plans.ts L8.
+import { useCurrentFrame } from "remotion";
+import { UiStill } from "../components";
+import { DISSOLVE_BLUR, Ground, LoopStage, StageLayer, SYSTEM, dissolveAt } from "./kit";
 import { L8 } from "./plans";
-
-/** The chart panel and the quiz card in their windows (CSS px), the regions that stay sharp in the close framings. */
-const CHART = { x: 676, y: 430, w: 734, h: 470 };
-const QUIZ = { x: 728, y: 206, w: 418, h: 548 };
 
 export const LoopViews: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps, width } = useVideoConfig();
-  const quiz = frame >= L8.cutToQuiz && frame < L8.cutBack;
-  const pose = quiz ? L8.poses.quiz : cameraAt(frame, L8.plan.camera.wide, fps, width);
-  // the dashboard's focus follows the camera into the chart (0 wide → 1 at the chart framing)
-  const into = (Math.log(pose.zoom) - Math.log(L8.poses.wide.zoom)) / (Math.log(L8.poses.chart.zoom) - Math.log(L8.poses.wide.zoom));
-  const focus = Math.max(0, Math.min(1, into));
-  const { dash, quiz: q } = L8;
+  const { chart, quiz } = L8;
+  const [[a0, a1], [b0, b1]] = L8.plan.dissolves as unknown as [[number, number], [number, number]];
+  // how far the quiz has replaced the chart: 0 → 1 over the first dissolve, 1 → 0 over the second
+  const q = frame < b0 ? dissolveAt(frame, a0, a1 - a0) : 1 - dissolveAt(frame, b0, b1 - b0);
+  const c = 1 - q;
   return (
-    <Camera pose={pose}>
-      <World>
-        <Desktop />
-        {quiz ? (
-          <MacWindow x={q.x} y={q.y} width={q.w} height={q.h}>
-            {/* lane G-fix (REVIEW-G2 P2-22): S7c's veil (60 % paper, 10 px blur), so the conversation's strip left of the
-                quiz card shows no readable fragments ("go, and I'll") */}
-            <UiStill name="main-quiz" focus={{ rect: QUIZ, amount: 1, mode: "card", radius: 14, veil: 0.6, blur: 10 }} />
-          </MacWindow>
-        ) : (
-          <MacWindow x={dash.x} y={dash.y} width={dash.w} height={dash.h}>
-            <UiStill name="main-dashboard" focus={focus > 0.001 ? { rect: CHART, amount: 0.6 * focus, mode: "card", radius: 12, veil: 0.4 } : undefined} />
-          </MacWindow>
-        )}
-      </World>
-    </Camera>
+    <>
+      <Ground />
+      <LoopStage stage={chart.stage} background={SYSTEM.panel} opacity={c}>
+        <StageLayer pose={chart.pose} blur={DISSOLVE_BLUR * q}>
+          <UiStill name="main-dashboard" />
+        </StageLayer>
+      </LoopStage>
+      <LoopStage stage={quiz.stage} opacity={q}>
+        <StageLayer pose={quiz.pose} blur={DISSOLVE_BLUR * c}>
+          <UiStill name="main-quiz" />
+        </StageLayer>
+      </LoopStage>
+    </>
   );
 };

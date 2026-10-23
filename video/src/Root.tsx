@@ -46,13 +46,15 @@ export const RemotionRoot: React.FC = () => {
       <Folder name="Loops">
         <Composition id="LoopCompanion" component={LoopCompanion} durationInFrames={L1.plan.n} fps={FPS.loop} width={1600} height={1000} />
         <Composition id="LoopModels" component={LoopModels} durationInFrames={L2.plan.n} fps={FPS.loop} width={1600} height={1000} />
-        <Composition id="LoopApproveUndo" component={LoopApproveUndo} durationInFrames={L3.plan.n} fps={FPS.loop} width={1600} height={1000} />
-        <Composition id="LoopIsolatedTests" component={LoopIsolatedTests} durationInFrames={L4.plan.n} fps={FPS.loop} width={1600} height={1000} />
+        {/* the project story's two loops are square: comp lex-A's tile, the card at about the app's own scale (lane v2-loops) */}
+        <Composition id="LoopApproveUndo" component={LoopApproveUndo} durationInFrames={L3.plan.n} fps={FPS.loop} width={1080} height={1080} />
+        <Composition id="LoopIsolatedTests" component={LoopIsolatedTests} durationInFrames={L4.plan.n} fps={FPS.loop} width={1080} height={1080} />
         <Composition id="LoopMemory" component={LoopMemory} durationInFrames={L7.plan.n} fps={FPS.loop} width={1600} height={1000} />
         <Composition id="LoopViews" component={LoopViews} durationInFrames={L8.plan.n} fps={FPS.loop} width={1600} height={1000} />
         <Composition id="LoopAgentGuard" component={LoopAgentGuard} durationInFrames={L6.plan.n} fps={FPS.loop} width={1600} height={1000} />
-        {/* 4:5 punch-ins for phones (critic H2), the same timelines; see HANDOFF-G2b-loops.md for why only these three */}
+        {/* 4:5 cuts for phones (critic H2), the same timelines; see HANDOFF-G2b-loops.md and HANDOFF-v2-loops.md for which */}
         <Composition id="LoopCompanionPhone" component={LoopCompanion} durationInFrames={L1.plan.n} fps={FPS.loop} width={1080} height={1350} />
+        <Composition id="LoopApproveUndoPhone" component={LoopApproveUndo} durationInFrames={L3.plan.n} fps={FPS.loop} width={1080} height={1350} />
         <Composition id="LoopIsolatedTestsPhone" component={LoopIsolatedTests} durationInFrames={L4.plan.n} fps={FPS.loop} width={1080} height={1350} />
         <Composition id="LoopAgentGuardPhone" component={LoopAgentGuard} durationInFrames={L6.plan.n} fps={FPS.loop} width={1080} height={1350} />
         <Composition id="LoopReviewCommands" component={LoopStub} durationInFrames={240} fps={FPS.loop} width={1600} height={1000} defaultProps={{ id: "LoopReviewCommands" as const }} />

@@ -1,10 +1,11 @@
-// L4 loop-isolated-tests (8 s, 240 frames; 4:5 phone cut too): the real "Run isolated tests" card in the Details
-// drawer ("Runs the project's tests in a temporary copy. Your project files don't change."), the pointer clicks Run
-// tests, the drawer's steps take the card's place and the newest arrive ("Requesting isolated tests · 11 s"), then
-// AgentGuard's check "Verified · pytest 42 passed on current files". The camera holds while the UI acts. As Verified
-// lands, the rows above "Requesting isolated tests" recede under a veil (lane G-fix, REVIEW-G2 P1-9), so "Not verified"
-// above it never reads as the payoff. No counter, nothing invented (critic C3): every pixel is main-live-film's. A
-// time-passage dissolve returns to the card. Data: plans.ts L4.
+// L4 loop-isolated-tests (8 s, 240 frames; square for the project story's tile, 4:5 for phones): the real "Run isolated
+// tests" card in the Details drawer ("Runs the project's tests in a temporary copy. Your project files don't change."),
+// one card at about the app's own scale on the riverbed (the same card as L3). The pointer comes in off the riverbed
+// and clicks Run tests, the drawer's steps take the card's place and the newest arrive ("Requesting isolated tests ·
+// 11 s"), then AgentGuard's check "Verified · pytest 42 passed on current files". The camera holds while the UI acts.
+// As Verified lands, the rows above "Requesting isolated tests" recede under the veil (lane G-fix, REVIEW-G2 P1-9), so
+// "Not verified" above it never reads as the payoff. No counter, nothing invented (critic C3): every pixel is
+// main-live-film's. A time-passage dissolve returns to the card. Data: plans.ts L4.
 import { useCurrentFrame, useVideoConfig } from "remotion";
 import { Cursor } from "../components";
 import { cameraAt } from "../motion/camera";
@@ -17,7 +18,7 @@ const REC = RECORDINGS.mainLiveFilm;
 export const LoopIsolatedTests: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const aspect = useLoopAspect();
+  const aspect = useLoopAspect() === "tall" ? "tall" : "square";
   const stage = L4.stage[aspect];
   const pose = cameraAt(frame, L4.plan.camera[aspect], fps, stage.rect.w);
   const [d0, d1] = L4.plan.dissolves[0]!;
@@ -25,12 +26,10 @@ export const LoopIsolatedTests: React.FC = () => {
   const t = srcAt(frame, L4.src);
   const click = L4.plan.clicks[0]!;
   const spot = ramp(frame, L4.payoff.at, L4.payoff.dur, EASE.move);
-  // the tall frame is taller: the pointer comes from further below
-  const cursor = aspect === "tall" ? L4.cursor.map((k, i) => (i === 0 || i === 2 ? { ...k, y: k.y + 60 } : k)) : L4.cursor;
   return (
     <>
       <Ground />
-      <LoopStage rect={stage.rect} corners={stage.corners}>
+      <LoopStage stage={stage}>
         {back < 1 ? (
           <StageLayer pose={pose} blur={DISSOLVE_BLUR * back}>
             <RecFocus rec={REC} t={t} rect={L4.payoff.rect} amount={spot} zoom={pose.zoom} />
@@ -44,7 +43,7 @@ export const LoopIsolatedTests: React.FC = () => {
         ) : null}
       </LoopStage>
       <StageOverlay rect={stage.rect} pose={pose}>
-        <Cursor keys={cursor} clicks={L4.plan.clicks} visible={L4.plan.cursorVisible} />
+        <Cursor keys={L4.cursor} clicks={L4.plan.clicks} visible={L4.plan.cursorVisible} />
       </StageOverlay>
     </>
   );

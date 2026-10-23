@@ -1,62 +1,92 @@
-// The feature loops' shared vocabulary (lane G2b; docs/FILM_SPEC.md §16, MASTER_PLAN §5.3, DESIGN.md §6).
+// The feature loops' shared vocabulary, in Pebble's design system (docs/PHILOSOPHY.md, docs/DESIGN-LEXINGTON.md
+// §3.3–§3.8 and §5). Lane G2b built the loops (docs/FILM_SPEC.md §15–§16); lane v2-loops moved them into the system.
 //
-// Every loop is FRAMED (critic H6, DESIGN §6): the riverbed desktop is its own ground, edge to edge, and the real UI sits
-// in a stage on it: a rounded viewport with the window shadow, the camera working inside it (world units = UI CSS px,
-// so the camera's zoom is the magnification m). The page then puts the whole video in its own riverbed frame.
+// THE FRAME CONTRACT (DESIGN-LEXINGTON §3.8: "a scene sits on the riverbed in a media frame"):
+// - Every loop video is a whole SCENE. The riverbed is its ground, edge to edge. The page puts the video, and nothing
+//   else, in its media frame (radius 16, a 1 px inner ring, no outer shadow), so the video draws neither.
+// - Inside, the real UI is ONE card: a region of Pebble's window, wholly inside the frame (never bleeding off an edge),
+//   with the window radius (10 page px; 7 on phones), --shadow-window and the window's 1 px inner ring. One moment per
+//   card; the camera may move inside the card (a tilt down a long card), never past its edges.
+// - Sizes are PAGE px. Each loop has a design slot (plans.ts SLOT: the CSS width the page gives it at a 1440 px window,
+//   or a 360 px phone for the 4:5 cuts), so one page px is (video width / slot) video px. Readability is a written rule
+//   too: every framing's key text renders at 12 page px or more at the slot (plans.ts `reads`, checked by check.ts).
+// - What the loops draw on top of the captures has no colour of its own (PHILOSOPHY: colour and texture live in the
+//   imagery). No callout rings in the accent (the accent has three jobs, none of them pointing): a spotlight, the rest
+//   of the same picture receding under a veil of the window's own colour, does the pointing. No vignette, glow or grain.
 //
-// Seam rules (R5 §2.2, FILM_SPEC §16), which every loop here keeps and loops.test.ts checks on the data:
+// Seam rules (R5 §2.2, FILM_SPEC §16), which every loop here keeps and check.ts verifies on the data:
 // - exactly N frames, frame N ≡ frame 0, frame N is never rendered (durationInFrames = N);
 // - the camera pose at the last frame equals frame 0's, and the return move ends at least 12 frames before N;
 // - no cursor at either end; nothing periodic (no grain, glow or drift);
 // - a reset is a real UI action or a 0.4 s time-passage dissolve (2 px blur), never a fade to a colour.
 //
-// Real UI only (D4, critic C3): captured stills (UiStill) and vclock recordings (RecFrame) of Pebble 1.0.1. A press is
-// a 4 % darkening for 4 frames drawn over the pressed control; a ring is a drawn-on annotation (components/Annotation).
+// Real UI only (D4, critic C3): captured stills (UiStill) and vclock recordings (RecFrame) of Pebble. A press is a 4 %
+// darkening for 4 frames drawn over the pressed control.
 import { createContext, useContext, type CSSProperties, type ReactNode } from "react";
 import { Img, getStaticFiles, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { Camera, Desktop, World } from "../components";
+import { Camera, Desktop, LIGHTS, World } from "../components";
 import type { CamPose, Point, Rect } from "../motion/camera";
-import { COLOR, EASE, SPRING, ramp, springAt } from "../motion/spec";
+import type { LoopAspect, SrcKey, StagePlan } from "./plans";
+import { EASE, SPRING, ramp, springAt } from "../motion/spec";
+
+/* ---------------------------------------------------------------------------------------------------------------- */
+/* The system, as the loops draw it                                                                                 */
+
+/**
+ * The tokens the loops use, with their jobs (DESIGN-LEXINGTON §3.3–§3.5 and §5; comp lex-A's `.window`). All lengths
+ * are page px; convert with `k`, the video px per page px of the loop's slot (plans.ts kOf).
+ */
+export const SYSTEM = {
+  /** --shade: the one shadow colour. Only a window inside a picture and the pebble's contact shadow use it. */
+  shade: "19, 37, 27",
+  /** Pebble's own window background, as captured: the card's ground under the UI, and the spotlight's veil */
+  window: "#F7F8F5",
+  /** the Settings sheet's panel, as captured (L2, L7: the card's ground and veil there) */
+  panel: "#FFFFFF",
+  /** --r-window: a window inside a picture, 10 page px; 7 at phone widths (≤ 560 px; the 4:5 cuts) */
+  radius: { wide: 10, tall: 7 },
+  /** --shadow-window: 0 1px 2px rgba(shade, .08), 0 14px 36px -10px rgba(shade, .22). The only shadow a loop draws. */
+  shadow: [
+    { y: 1, blur: 2, spread: 0, alpha: 0.08 },
+    { y: 14, blur: 36, spread: -10, alpha: 0.22 },
+  ],
+  /** the window's own hairline, drawn over its picture (comp lex-A `.window::after`): 1 page px of shade at 8 % */
+  ring: { width: 1, alpha: 0.08 },
+  /** the traffic lights of a whole window (T0, L8): three neutral circles, as comp lex-A draws them */
+  lights: "rgba(19, 37, 27, 0.14)",
+  /**
+   * The spotlight (R5 §5.3), the loops' one way of pointing: the rest of the same picture recedes under a veil of the
+   * window's own colour, blurred on screen. `focus` points at a moment and leaves the rest legible as context (L2, L3);
+   * `spotlight` takes rows out of the reading altogether, where they would contradict the payoff (L4, T0: "Not verified"
+   * above "Verified").
+   */
+  focus: { veil: 0.5, blur: 4 },
+  spotlight: { veil: 0.6, blur: 10 },
+} as const;
+
+/** --shadow-window at `k` video px per page px (scale `strength` for a window that is arriving or leaving). */
+export const windowShadow = (k: number, strength = 1) =>
+  SYSTEM.shadow
+    .map(
+      (s) =>
+        `0 ${(s.y * k).toFixed(2)}px ${(s.blur * k).toFixed(2)}px ${(s.spread * k).toFixed(2)}px rgba(${SYSTEM.shade}, ${(s.alpha * strength).toFixed(3)})`,
+    )
+    .join(", ");
+/** The window's inner hairline at `k` video px per page px, as an inset box-shadow. */
+export const windowRing = (k: number) => `inset 0 0 0 ${(SYSTEM.ring.width * k).toFixed(2)}px rgba(${SYSTEM.shade}, ${SYSTEM.ring.alpha})`;
 
 /* ---------------------------------------------------------------------------------------------------------------- */
 /* Aspects                                                                                                           */
 
 export const LOOP_FPS = 30;
-/** "wide": the page's 16:10 loop (1600 × 1000); "tall": the 4:5 phone punch-in (1080 × 1350, critic H2). */
-export type LoopAspect = "wide" | "tall";
-export const LOOP_SIZE = { wide: { width: 1600, height: 1000 }, tall: { width: 1080, height: 1350 } } as const;
-export type ByAspect<T> = Readonly<Record<LoopAspect, T>>;
-export const aspectOf = (width: number, height: number): LoopAspect => (width >= height ? "wide" : "tall");
+export type { LoopAspect, StagePlan } from "./plans";
+/** "wide" 16:10 (1600 × 1000), "square" 1:1 (1080 × 1080, the project story's tile), "tall" 4:5 (1080 × 1350, phones). */
+export const aspectOf = (width: number, height: number): LoopAspect => (width > height ? "wide" : width === height ? "square" : "tall");
 export const useLoopAspect = (): LoopAspect => {
   const { width, height } = useVideoConfig();
   return aspectOf(width, height);
 };
 
-/** A ROI given as x0–x1, y0–y1 (FILM_SPEC's notation), in UI CSS px. */
-export const roi = (x0: number, x1: number, y0: number, y1: number): Rect => ({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
-
-/**
- * The pose that shows the world region whose top-left corner is (x0, y0) at the stage's top-left corner, magnified m:
- * the region then spans the whole stage (stage.w / m by stage.h / m world units).
- */
-export const fromTopLeft = (x0: number, y0: number, m: number, stage: Rect): CamPose => ({
-  x: x0 + stage.w / (2 * m),
-  y: y0 + stage.h / (2 * m),
-  zoom: m,
-});
-/** The pose that puts world point `world` at stage point `at` (stage px from its top-left), magnified m. */
-export const pinAt = (world: Point, at: Point, m: number, stage: Rect): CamPose => ({
-  x: world.x - (at.x - stage.w / 2) / m,
-  y: world.y - (at.y - stage.h / 2) / m,
-  zoom: m,
-});
-/** The world region a pose shows in a stage. */
-export const viewOf = (pose: CamPose, stage: Rect): Rect => ({
-  x: pose.x - stage.w / (2 * pose.zoom),
-  y: pose.y - stage.h / (2 * pose.zoom),
-  w: stage.w / pose.zoom,
-  h: stage.h / pose.zoom,
-});
 /** Scale a pose's zoom by s about world point p, so p stays where it is in the frame (a match cut's 1.04 → 1.0). */
 export const zoomAbout = (pose: CamPose, p: Point, s: number): CamPose => ({
   x: p.x - (p.x - pose.x) / s,
@@ -70,7 +100,7 @@ export const settleScale = (frame: number, at: number, fps: number, from = 1.04)
 /* ---------------------------------------------------------------------------------------------------------------- */
 /* Ground and stage                                                                                                  */
 
-/** The riverbed desktop filling the frame, still (DESIGN §1: the world that frames product media). */
+/** The riverbed desktop filling the frame, still: Pebble's photography, the ground every loop stands on. */
 export const Ground: React.FC = () => {
   const { width, height } = useVideoConfig();
   const zoom = Math.max(width / 1600, height / 1000);
@@ -83,50 +113,91 @@ export const Ground: React.FC = () => {
   );
 };
 
-/** Which stage corners are rounded; the others bleed off the frame. */
-export type Corners = "all" | "top" | "left" | "topLeft" | "none";
-const radii = (c: Corners, r: number) =>
-  c === "all" ? `${r}px` : c === "top" ? `${r}px ${r}px 0 0` : c === "left" ? `${r}px 0 0 ${r}px` : c === "topLeft" ? `${r}px 0 0 0` : "0";
-
-/** The stage's window shadow (film-scale, tinted; the same as the film's Stage). */
-const stageShadow = (k = 1) => {
-  const rgb = COLOR.shadowRgb;
-  return `0 0 0 1px rgba(${rgb}, ${(0.08 * k).toFixed(3)}), 0 2px 4px rgba(${rgb}, ${(0.06 * k).toFixed(3)}), 0 14px 36px rgba(${rgb}, ${(0.1 * k).toFixed(3)}), 0 44px 96px rgba(${rgb}, ${(0.14 * k).toFixed(3)})`;
-};
-
 const StageContext = createContext<Rect | null>(null);
 
 export interface StageProps {
-  /** the stage's rect, frame px */
-  rect: Rect;
-  corners?: Corners;
-  radius?: number;
-  /** what shows where no layer draws (Pebble's window background) */
+  stage: StagePlan;
+  /** what shows where no layer draws: the captured window's own colour (SYSTEM.window, or SYSTEM.panel for Settings) */
   background?: string;
-  /** layers (StageLayer), drawn in order and clipped by the stage */
+  /** the whole card, its shadow included, for a dissolve between two cards (L8) */
+  opacity?: number;
+  /** layers (StageLayer), drawn in order and clipped by the card */
   children: ReactNode;
 }
 
-/** A rounded viewport into Pebble's real UI with the window shadow. Its StageLayers are clipped by it. */
-export const LoopStage: React.FC<StageProps> = ({ rect, corners = "all", radius = 28, background = "#F7F8F5", children }) => (
-  <div
-    style={{
-      position: "absolute",
-      left: rect.x,
-      top: rect.y,
-      width: rect.w,
-      height: rect.h,
-      borderRadius: radii(corners, radius),
-      overflow: "hidden",
-      background,
-      boxShadow: stageShadow(),
-      // keep the rounded clip on composited children (Chrome)
-      isolation: "isolate",
-    }}
-  >
-    <StageContext.Provider value={rect}>{children}</StageContext.Provider>
-  </div>
-);
+/**
+ * The card: a rounded viewport into Pebble's real UI, wholly inside the frame, with the system's window radius,
+ * --shadow-window and the window's 1 px inner ring (drawn over the picture, as the page draws it over a still).
+ */
+export const LoopStage: React.FC<StageProps> = ({ stage, background = SYSTEM.window, opacity = 1, children }) => {
+  const { rect, k, aspect } = stage;
+  const radius = SYSTEM.radius[aspect === "tall" ? "tall" : "wide"] * k;
+  if (opacity <= 0.001) return null;
+  return (
+    <div
+      style={{
+        opacity: opacity < 1 ? opacity : undefined,
+        position: "absolute",
+        left: rect.x,
+        top: rect.y,
+        width: rect.w,
+        height: rect.h,
+        borderRadius: radius,
+        overflow: "hidden",
+        background,
+        boxShadow: windowShadow(k),
+        // keep the rounded clip on composited children (Chrome)
+        isolation: "isolate",
+      }}
+    >
+      <StageContext.Provider value={rect}>{children}</StageContext.Provider>
+      <div style={{ position: "absolute", inset: 0, borderRadius: radius, boxShadow: windowRing(k), pointerEvents: "none" }} />
+    </div>
+  );
+};
+
+/**
+ * A whole Mac window inside the picture, in world units (T0's main window, L8's views): the system's window radius,
+ * --shadow-window and inner ring, sized for the zoom the window is SEEN at (`k` = video px per page px ÷ that zoom, so
+ * a window first seen at m 0.75 in a 1280 px teaser at a 1280 px slot has k = 1 / 0.75), and quiet traffic lights
+ * (comp lex-A's three neutral circles: the window's chrome carries no colour). Pebble's main window has an overlay
+ * title bar, so the lights sit over its sidebar, where the capture leaves room for them (LIGHTS).
+ */
+export const SceneWindow: React.FC<{
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** world units per page px at the zoom the window is seen at */
+  k: number;
+  lights?: boolean;
+  background?: string;
+  children?: ReactNode;
+}> = ({ x, y, width, height, k, lights = true, background = SYSTEM.window, children }) => {
+  const radius = SYSTEM.radius.wide * k;
+  return (
+    <div style={{ position: "absolute", left: x, top: y, width, height, borderRadius: radius, background, boxShadow: windowShadow(k) }}>
+      <div style={{ position: "absolute", inset: 0, borderRadius: radius, overflow: "hidden" }}>{children}</div>
+      {lights
+        ? LIGHTS.x.map((cx) => (
+            <div
+              key={cx}
+              style={{
+                position: "absolute",
+                left: cx - LIGHTS.d / 2,
+                top: LIGHTS.y - LIGHTS.d / 2,
+                width: LIGHTS.d,
+                height: LIGHTS.d,
+                borderRadius: "50%",
+                background: SYSTEM.lights,
+              }}
+            />
+          ))
+        : null}
+      <div style={{ position: "absolute", inset: 0, borderRadius: radius, boxShadow: windowRing(k), pointerEvents: "none" }} />
+    </div>
+  );
+};
 
 /** One camera layer inside a LoopStage: its children are in world units (UI CSS px of the capture). */
 export const StageLayer: React.FC<{ pose: CamPose; opacity?: number; blur?: number; children: ReactNode }> = ({
@@ -156,7 +227,7 @@ export const StageLayer: React.FC<{ pose: CamPose; opacity?: number; blur?: numb
 
 /**
  * Frame-space things that follow a stage's camera without its clip (the cursor, which travels in from outside the
- * stage; rings): children use useCamera(), whose world units are the stage's.
+ * card): children use useCamera(), whose world units are the stage's.
  */
 export const StageOverlay: React.FC<{ rect: Rect; pose: CamPose; children: ReactNode }> = ({ rect, pose, children }) => (
   <div style={{ position: "absolute", left: rect.x, top: rect.y, width: rect.w, height: rect.h, pointerEvents: "none" }}>
@@ -235,8 +306,9 @@ export const RecFrame: React.FC<{ rec: Recording; t: number; x?: number; y?: num
 
 /**
  * A recorded frame with one region in focus (R5 §5.3's spotlight, as UiStill's card focus; lane G-fix, REVIEW-G2 P1-9):
- * everything outside `rect` recedes under a paper veil and a little blur, the region stays sharp. The pixels stay the
- * recording's own (D4, critic C3). `zoom` is the camera's, so the blur is given on screen.
+ * everything outside `rect` recedes under a veil of the window's own colour and a little blur, the region stays sharp.
+ * The pixels stay the recording's own (D4, critic C3). `zoom` is the camera's, so the blur is given on screen. This is
+ * how a loop points at something: the system has no callout colour.
  */
 export const RecFocus: React.FC<{
   rec: Recording;
@@ -246,13 +318,13 @@ export const RecFocus: React.FC<{
   /** 0..1 */
   amount: number;
   zoom: number;
-  /** veil opacity at amount 1 (default 0.6, as S7c's) */
+  /** veil opacity at amount 1 (default SYSTEM.spotlight.veil, as S7c's) */
   veil?: number;
-  /** on-screen blur at amount 1, px (default 10, as S7c's) */
+  /** on-screen blur at amount 1, px (default SYSTEM.spotlight.blur, as S7c's) */
   blur?: number;
   color?: string;
   radius?: number;
-}> = ({ rec, t, rect, amount, zoom, veil = 0.6, blur = 10, color = WINDOW_BG, radius = 0 }) => {
+}> = ({ rec, t, rect, amount, zoom, veil = SYSTEM.spotlight.veil, blur = SYSTEM.spotlight.blur, color = SYSTEM.window, radius = 0 }) => {
   const a = Math.max(0, Math.min(1, amount));
   if (a <= 0.001) return <RecFrame rec={rec} t={t} />;
   const box: CSSProperties = { position: "absolute", left: 0, top: 0, width: rec.width, height: rec.height };
@@ -270,7 +342,7 @@ export const RecFocus: React.FC<{
 
 /** A source-time map: [loop frame, source seconds] keys, linear between them, holding before the first and after the
  *  last. Speeds may change at a key; time never runs backwards (FILM_SPEC §7). */
-export type SrcKey = readonly [frame: number, seconds: number];
+export type { SrcKey } from "./plans";
 export const srcAt = (frame: number, keys: readonly SrcKey[]): number => {
   const first = keys[0];
   if (!first) return 0;
@@ -299,7 +371,7 @@ export const PressShade: React.FC<{ rect: Rect; at: number; radius?: number; fra
         width: rect.w,
         height: rect.h,
         borderRadius: radius,
-        background: `rgba(${COLOR.shadowRgb}, 0.06)`,
+        background: `rgba(${SYSTEM.shade}, 0.06)`,
       }}
     />
   );
@@ -313,9 +385,9 @@ export const DISSOLVE_BLUR = 2;
 /** A region of a layer fading away (a forgotten record): opacity 1 → 0 and 0 → 4 px of blur, accelerating. */
 export const fadeAwayAt = (frame: number, at: number, dur: number) => ramp(frame, at, dur, EASE.exit);
 
-/** The window background colour of Pebble's main window and Settings, for veils over a region. */
-export const WINDOW_BG = "#F7F8F5";
-export const PANEL_BG = "#FFFFFF";
+/** The captured window's colours (SYSTEM.window, SYSTEM.panel), for covers and veils over a region. */
+export const WINDOW_BG = SYSTEM.window;
+export const PANEL_BG = SYSTEM.panel;
 
 /** A rect covering part of a picture with a flat colour (to hide a row in a still before it "arrives"). */
 export const Cover: React.FC<{ rect: Rect; color: string; opacity?: number; style?: CSSProperties }> = ({ rect, color, opacity = 1, style }) =>

@@ -18,7 +18,7 @@ const CUES = l1Cues().cues;
 export const LoopCompanion: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps, width } = useVideoConfig();
-  const aspect = useLoopAspect();
+  const aspect = useLoopAspect() === "tall" ? "tall" : "wide";
   const pose = cameraAt(frame, L1.plan.camera[aspect], fps, width);
   // the chat shows from the click's frame until the minimize click is released (3 frames of press)
   const open = frame >= L1.click && frame < L1.close + 3;

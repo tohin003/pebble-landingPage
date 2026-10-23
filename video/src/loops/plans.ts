@@ -1,25 +1,98 @@
-// The loops' timelines as data (lane G2b): lengths, stage rects, camera framings, cursor paths, clicks, dissolves and
-// source-time maps, per aspect. The components in this folder draw them; loops.test.ts (bun) checks the seam rules on
-// them without rendering. Numbers come from docs/FILM_SPEC.md §15–§16 and were re-measured on the real captures
-// (video/public/ui/*@3x.png, the vclock recordings in video/public/ui-frames/); every deviation is commented.
+// The loops' timelines as data: lengths, cards, camera framings, cursor paths, clicks, dissolves and source-time maps,
+// per aspect. The components in this folder draw them; check.ts (bun) checks the seam rules, the frame contract and the
+// reading floor on them without rendering. Lane G2b wrote the timelines (docs/FILM_SPEC.md §15–§16); lane v2-loops moved
+// every loop into the design system (docs/PHILOSOPHY.md, docs/DESIGN-LEXINGTON.md §3.8): one card, wholly inside the
+// frame, at about the app's own scale.
 //
-// Units: frames (30 fps); world units = CSS px of the captured UI (for L1: desktop points); stage rects in frame px.
+// Units: frames (30 fps); world units = CSS px of the captured UI (for L1: desktop points); cards in frame px.
 // Recording times are SOURCE seconds; record.mjs saves frame i at t = i / 30 AFTER the steps due at t ran, so a click
 // at t shows its result on the frame at t and its pre-click picture on the frame at t − 1/30.
-import type { CamKey, CamPose, Point, Rect } from "../motion/camera";
+// Measurements are ink scans of the captures (video/public/ui/*@3x.png, the vclock recordings in public/ui-frames/);
+// lane v2-loops re-checks them on Pebble 1.0.4's captures (HANDOFF-v2-loops.md).
+import type { CamKey, CamPose, Rect } from "../motion/camera";
 import type { CursorKey } from "../motion/spec";
 
-export type LoopAspect = "wide" | "tall";
+/** "wide": the page's 16:10 loop; "square": a 1:1 tile (the project story, comp lex-A); "tall": the 4:5 phone cut. */
+export type LoopAspect = "wide" | "square" | "tall";
 export type SrcKey = readonly [frame: number, seconds: number];
-export type Corners = "all" | "top" | "left" | "topLeft" | "none";
 
-/** Stage = a rounded viewport on the riverbed (frame px). */
+/* ================================================================================================================ */
+/* The frame contract, as numbers                                                                                  */
+
+/** Video sizes per aspect (px). */
+export const FRAME = {
+  wide: { w: 1600, h: 1000 },
+  square: { w: 1080, h: 1080 },
+  tall: { w: 1080, h: 1350 },
+} as const satisfies Record<LoopAspect, { w: number; h: number }>;
+
+/**
+ * Design slots: the CSS width the page gives each loop (DESIGN-LEXINGTON §6 and comp lex-A at a 1440 px window: a 1280 px
+ * container of 12 columns with 32 px gaps, so n columns are 77.33 n + 32 (n − 1) px), and the phone every 4:5 cut is
+ * judged on. A slot sets `k`, the video px per page px, which sizes the card's radius and shadow and the reading floor.
+ */
+export const SLOT = {
+  /** On your desktop: the vignette across columns 1–12 */
+  companion: 1280,
+  /** Models: the picture in columns 4–9 */
+  models: 624,
+  /** the project story's tile, columns 8–12, square (comp lex-A `.tile`) */
+  story: 515,
+  /** the evidence ledger's figure, columns 7–12 */
+  agentGuard: 624,
+  /** Memory: 6 columns. The records are 504 CSS px wide: at 4 columns (405 px) they would render at about 9 px */
+  memory: 624,
+  /** Views: the main column, columns 4–12. At 5 columns the chart and the quiz are pictures, not text */
+  views: 952,
+  /** every 4:5 cut, judged on a 360 px wide phone */
+  phone: 360,
+} as const;
+
+/** Video px per page px for a loop shown `slot` CSS px wide. */
+export const kOf = (slot: number, frameW: number) => frameW / slot;
+
+/**
+ * The least riverbed a card leaves on each side (video px). A card that bleeds off an edge reads as a cropped screenshot;
+ * one that sits whole on the ground reads as a moment set down on the page (comp lex-A's tile and film frame).
+ */
+export const MARGIN = {
+  wide: { x: 64, y: 48 },
+  square: { x: 64, y: 48 },
+  tall: { x: 36, y: 48 },
+} as const satisfies Record<LoopAspect, { x: number; y: number }>;
+
+/**
+ * The reading floor (DESIGN-LEXINGTON §3.8: text in a picture renders at 12 px or more): the key text of every framing,
+ * in page px at the slot. Pebble's own text is 12–13 px (RunPanel 13, ActionReview 12, the drawer's steps 12), so a
+ * card at about the app's own scale meets it. The 4:5 cuts are judged on a 360 px phone, where a card as wide as
+ * comp lex-A's phone tile (92 %) shows the app at 93 % of its scale: their floor is 11 px there (12 px on a 390 px phone).
+ */
+export const READ_FLOOR = { wide: 12, square: 12, tall: 11 } as const satisfies Record<LoopAspect, number>;
+
+/** A card: where the real UI sits on the riverbed (frame px), and how it is drawn (kit.tsx LoopStage). */
 export interface StagePlan {
   rect: Rect;
-  corners: Corners;
+  /** video px per page px at the loop's slot */
+  k: number;
+  aspect: LoopAspect;
 }
 
-/** A loop's checkable skeleton (loops.test.ts). */
+/** One line a framing must make readable: its CSS size in the app and the magnification it is seen at. */
+export interface Read {
+  aspect: LoopAspect;
+  what: string;
+  /** the app's font size, CSS px */
+  css: number;
+  /** the camera's magnification in that framing */
+  m: number;
+  k: number;
+  /** a known shortfall, explained in HANDOFF-v2-loops.md (check.ts reports it instead of failing) */
+  waived?: string;
+}
+/** The size `read` renders at on the page, px. */
+export const pagePx = (r: Read) => (r.css * r.m) / r.k;
+
+/** A loop's checkable skeleton (check.ts). */
 export interface LoopPlan {
   id: string;
   /** frames; frame N ≡ frame 0 */
@@ -28,6 +101,10 @@ export interface LoopPlan {
   aspects: readonly LoopAspect[];
   /** camera keys per aspect (local frames), first and last must be the same pose */
   camera: Partial<Record<LoopAspect, readonly CamKey[]>>;
+  /** the cards per aspect (none for L1 and T0: their scene is the desktop itself) */
+  stages: Partial<Record<LoopAspect, readonly StagePlan[]>>;
+  /** what must be readable, per aspect */
+  reads: readonly Read[];
   /** [from, to) frames when the cursor shows (fades included) */
   cursorVisible: readonly (readonly [number, number])[];
   /** click-down frames */
@@ -47,76 +124,76 @@ export const topLeftPose = (x0: number, y0: number, m: number, stage: Rect): Cam
 /** A camera arrival key; "direct" for tilts and small push-ins (the smooth path would pull back on the way). */
 const key = (at: number, pose: CamPose, dur?: number, path?: "direct"): CamKey => ({ ...pose, at, ...(dur ? { dur } : {}), ...(path ? { path } : {}) });
 
-/** Wide stages: inset 64 px from the riverbed's edges. */
-export const STAGE = {
-  /** inset left, right and top; bleeds off the bottom */
-  top: { rect: { x: 64, y: 64, w: 1472, h: 936 }, corners: "top" },
-  /** inset left and top; bleeds off the right and the bottom */
-  topLeft: { rect: { x: 64, y: 64, w: 1536, h: 936 }, corners: "topLeft" },
-  /** 4:5: inset left and top; bleeds off the right and the bottom */
-  tallTopLeft: { rect: { x: 40, y: 64, w: 1040, h: 1286 }, corners: "topLeft" },
-} as const satisfies Record<string, StagePlan>;
-
 /**
- * The Details drawer's own stage (L3, L4): exactly the drawer's width (CSS x 801–1160: its left border line is at 800, the
- * window's right edge at 1160) at
- * magnification m, centred on the riverbed, bleeding off the bottom. A wider stage would show the conversation's
- * cut-off lines on one side and nothing past the window on the other.
+ * A card centred in the frame that shows `region` (CSS px) at about magnification m. The card's width is rounded to whole
+ * px and the magnification follows it exactly, so the region's left and right edges are the card's.
  */
-export const DRAWER = { x0: 801, x1: 1160 } as const;
-export const drawerStage = (m: number, frameW: number, frameH: number, top = 64): StagePlan => {
-  const w = Math.round((DRAWER.x1 - DRAWER.x0) * m);
-  return { rect: { x: Math.round((frameW - w) / 2), y: top, w, h: frameH - top }, corners: "top" };
+export const card = (region: Rect, m: number, aspect: LoopAspect, slot: number): { stage: StagePlan; m: number; pose: CamPose } => {
+  const F = FRAME[aspect];
+  const w = Math.round(region.w * m);
+  const mm = w / region.w;
+  const h = Math.round(region.h * mm);
+  const rect = { x: Math.round((F.w - w) / 2), y: Math.round((F.h - h) / 2), w, h };
+  return { stage: { rect, k: kOf(slot, F.w), aspect }, m: mm, pose: topLeftPose(region.x, region.y, mm, rect) };
 };
 
+/**
+ * The Details drawer (L3, L4, L6's second shot): CSS x 801–1160 (its left border line is at 800, the window's right
+ * edge at 1160). Its cards fill the drawer's width, so a drawer card's left and right edges are the drawer's.
+ */
+export const DRAWER = { x0: 801, x1: 1160 } as const;
+
 /* ================================================================================================================ */
-/* L2 loop-models (6 s): Settings › Models, the three ways in, a ring on Add a model file.                          */
-/* settings-models@3x, measured by ink scan (CSS px): the modal's white x 320–840, its content x 346–814; the        */
-/* "Settings" title ends y ≈ 93; tabs box y 112–195; "YOUR MODELS" y 206–214; the model row y 228–306; the buttons    */
-/* y 318.5–351.5 (Add a model file x 346–478, Connect provider 487–625, Rest model 634–721); Continue with ChatGPT     */
-/* x 346–542, y 382–425; the explanation from y 425.                                                                 */
+/* L2 loop-models (6 s): Settings › Models, the three ways in.                                                      */
+/* settings-models@3x, measured by ink scan (CSS px): the modal's white x 320–840, its content x 346–814; "YOUR       */
+/* MODELS" y 206–214; the model row y 228–306; the buttons y 318.5–351.5 (Add a model file x 346–478, Connect         */
+/* provider 487–625, Rest model 634–721); Continue with ChatGPT x 346–542, y 382–425; its qualifier ("Use an eligible */
+/* Plus or Pro plan through OpenAI's preview …") two lines to y ≈ 472.                                               */
 
 export const L2 = (() => {
-  const stage = STAGE.top;
-  // A (poster): the modal's full width at m 2.83 (its white edges on the stage's edges), the tabs (Models selected)
-  // down to Continue with ChatGPT; buttons 14 px → 40 px. B: the view moves onto the three ways in (m 3.3, buttons
-  // 46 px) while everything else recedes under a light veil (spotlight, R5 §5.3), so the lines cut by the stage's
-  // edges never compete; then a ring on Add a model file.
-  const A = topLeftPose(320, 96, 2.83, stage.rect);
-  const B = topLeftPose(320, 229.5, 3.3, stage.rect);
+  // One card, one framing, at the app's own scale on the Models slot (k 2.56 → m 2.6): the models list, the three
+  // ways in and the ChatGPT qualifier (OVERRIDES §8 H14; REVIEW-G2 P2-16: the qualifier never recedes). The tabs stay
+  // out: with them the card could not keep the app's scale. The loop is a spotlight, no camera move: the three ways
+  // come forward (the models list recedes), hold, and go back. Lane G2b's push-in and accent ring are gone (the ring
+  // pointed in the accent, which has three other jobs).
+  const wide = card(box(336, 824, 198, 478), 2.6, "wide", SLOT.models);
   const plan = {
     id: "LoopModels",
     n: 180,
     aspects: ["wide"],
-    camera: { wide: [key(0, A), key(50, B, 35, "direct"), key(156, A, 30, "direct")] },
+    camera: { wide: [key(0, wide.pose)] },
+    stages: { wide: [wide.stage] },
+    reads: [
+      { aspect: "wide", what: "Add a model file, Connect provider, Rest model", css: 13, m: wide.m, k: wide.stage.k },
+      { aspect: "wide", what: "the ChatGPT qualifier", css: 12, m: wide.m, k: wide.stage.k },
+    ],
     cursorVisible: [],
     clicks: [],
     dissolves: [],
   } satisfies LoopPlan;
   return {
     plan,
-    stage,
-    /** "Add a model file", the ring's target (FILM_SPEC §16: Even one on your Mac) */
-    ring: { rect: box(346, 478, 318.5, 351.5), radius: 8, drawAt: 50, outAt: 120 },
-    /** the three ways in and Continue with ChatGPT: what stays sharp under the spotlight (the explanation below
-     *  starts at y 429) */
-    ways: box(338, 730, 310, 428),
+    stage: { wide: wide.stage },
+    /** the three ways in, Continue with ChatGPT and its qualifier: what stays sharp under the spotlight */
+    ways: box(338, 822, 310, 478),
+    /** the spotlight: in over 12 frames from f30, held, out over 12 frames from f132 (nothing still for more than 3 s) */
+    spot: { in: 30, out: 132, dur: 12 },
   };
 })();
 
 /* ================================================================================================================ */
-/* L7 loop-memory (8 s): Settings › Memory, the records; the pointer forgets one.                                  */
+/* L7 loop-memory (7 s): Settings › Memory, the records; the pointer forgets one.                                  */
 /* settings-memory@3x, measured by ink scan: the paragraph above ends y 452; the layer header and its switch y 480–509 */
 /* (the switch and the Search button reach x 830); search text y 531–542; records: meta y 579–592 / 644–657 / 710–723, */
-/* text 599–609 / 664–674 / 730–738; bins x 793.7–804.3 at y 581–592 / 646–657 / 712–723; the modal ends y ≈ 758.     */
-/* settings-memory-forgotten@3x has the next record in the third slot, same positions.                               */
+/* text 599–609 / 664–674 / 730–738; bins x 793.7–804.3 at y 581–592 / 646–657 / 712–723; the modal's white ends at   */
+/* x 840 and y ≈ 758. settings-memory-forgotten@3x has the next record in the third slot, same positions.            */
 
 export const L7 = (() => {
-  // One framing, m 3.1 (record text 13 px → 40 px; FILM_SPEC said m 2.8): the layer's header and switch, the search
-  // box and the three records, down to the modal's bottom edge. The stage bleeds off the right so the switch and the
-  // Search button (to x 830) stay whole.
-  const stage = STAGE.topLeft;
-  const P = topLeftPose(335, 455, 3.1, stage.rect);
+  // One card: the layer's header and switch, the search box and the three records, down to just above the modal's
+  // bottom edge (≈ 758: below it the app's blurred backdrop would show as a grey band, REVIEW-G2 P2-10), at the app's
+  // own scale on a 6-column slot (m 2.6). Its right edge is the modal's (x 840), so the switch and Search stay whole
+  // with the sheet's own margin.
+  const wide = card(box(336, 840, 466, 756), 2.6, "wide", SLOT.memory);
   const bin = { x: 799, y: 717.5 };
   // lane G-fix (REVIEW-G2 P2-19): N 210, not 240: the forgotten state held still for 3.9 s (f72–187, R5: nothing static
   // for more than 3 s); it now holds f84–156 (2.4 s) before the time-passage dissolve
@@ -124,18 +201,19 @@ export const L7 = (() => {
     id: "LoopMemory",
     n: 210,
     aspects: ["wide"],
-    camera: { wide: [key(0, P)] },
-    // lane G-fix (REVIEW-G2 P1-9): the pointer hides once it has acted (FILM_SPEC §10), fading f79–84 where it clicked,
-    // instead of parking half off the frame's bottom edge until f158
+    camera: { wide: [key(0, wide.pose)] },
+    stages: { wide: [wide.stage] },
+    reads: [{ aspect: "wide", what: "the records", css: 13, m: wide.m, k: wide.stage.k }],
+    // lane G-fix (REVIEW-G2 P1-9): the pointer hides once it has acted (FILM_SPEC §10), fading f79–84 where it clicked
     cursorVisible: [[18, 84]],
     clicks: [60],
     dissolves: [[156, 168]],
   } satisfies LoopPlan;
   return {
     plan,
-    stage,
+    stage: { wide: wide.stage },
     cursor: [
-      { at: 18, x: 852, y: 790, travel: 1 }, // just off the frame's lower right
+      { at: 18, x: 852, y: 790, travel: 1 }, // on the riverbed, off the card's lower right
       { at: 53, x: bin.x + 1, y: bin.y + 1, travel: 35, seed: "l7-in" },
     ] satisfies CursorKey[],
     bin: { at: bin, rect: box(791, 807, 709, 726) },
@@ -148,48 +226,74 @@ export const L7 = (() => {
 })();
 
 /* ================================================================================================================ */
-/* L3 loop-approve-undo (10 s): the edit card → Apply edit → Done + Undo this edit (ring) → reset.                  */
+/* L3 loop-approve-undo (9 s): the edit card → Apply edit → Done + Undo this edit → reset.                          */
 /* Source: main-live-film. 9.367 s = the last frame before the 9.40 click (the invoice_kit/dates.py card waiting,    */
 /* Apply edit active); 11.067 s = the card applied, the drawer scrolled by the person so "Undo this edit" sits on   */
 /* the row where Apply edit was (record.mjs 10.45–10.95 s, lane G2a). Measured by ink scan: card border y 211–721;    */
-/* header 227–242; lead 258–288; "Proposed source edit" 308–339; View diff 358–367; diff rows 396–469 and 517–653;     */
-/* Apply edit x 1025–1129, y 676–708; at 11.067 "Undo this edit" x 839–935, y 688–697, the next card from y 747.       */
-/* (R3 crop-approval-card-done was never captured; FILM_SPEC's fallback.)                                            */
+/* header 227–242; lead 258–288; "Proposed source edit" 308–339; View diff 358–367; diff rows 396–469 and 517–653     */
+/* (a gap between rows at 406.7 | 415.7); Apply edit x 1025–1129, y 676–708; at 11.067 "Undo this edit" x 839–935,     */
+/* y 688–697, the drawer's Pause button y 425–457.7 and the next card from y 747 (its status must never show: that    */
+/* would be a second edit applied without a click, REVIEW-G2 P0-2).                                                  */
+
+/**
+ * The project story's card (L3 and L4 share it, so switching steps keeps the same card on the same ground). Square:
+ * the drawer at m 2.2 on the 515 px tile (the app's 12 px at 12.6 px; the card 73 % of the tile, comp lex-A's is 76 %),
+ * 433 CSS px tall. Tall: the drawer at m 2.8, 93 % of the frame's width as comp lex-A's phone tile (92 %), 442 CSS px.
+ */
+const STORY = {
+  square: card(box(DRAWER.x0, DRAWER.x1, 205, 638), 2.2, "square", SLOT.story),
+  tall: card(box(DRAWER.x0, DRAWER.x1, 205, 647), 2.8, "tall", SLOT.phone),
+} as const;
 
 export const L3 = (() => {
-  const m = 3.1; // body 13 px → 40 px
-  const stage = drawerStage(m, 1600, 1000);
-  const U = topLeftPose(DRAWER.x0, 202, m, stage.rect); // the card's top border, header, lead, the diff's first rows
-  // the diff and the button row, down to the card's bottom border. Lane G-fix (REVIEW-G2 P2-21): from y 411, not 430:
-  // on the applied frame (11.067 s) the drawer's Pause button spans y 425–457.7 and the top edge at 430 sliced it; at
-  // 411 it is whole (14 css px inside), and on the waiting frame the edge still falls between two diff rows (406.7 | 415.7)
-  const L = topLeftPose(DRAWER.x0, 411, m, stage.rect);
+  // Two framings in one card: U, the card's top (its file name, "Changes this file in your project. You can undo it
+  // afterwards." and the diff's first rows); L, from "Proposed source edit" down to the buttons (Apply edit 676–708),
+  // ending before the next card (747). The view tilts U → L as a reader's eye would, and back for the seam.
+  const at = (aspect: "square" | "tall") => {
+    const s = STORY[aspect];
+    return { U: topLeftPose(DRAWER.x0, 205, s.m, s.stage.rect), L: topLeftPose(DRAWER.x0, 296, s.m, s.stage.rect) };
+  };
+  const P = { square: at("square"), tall: at("tall") };
   const apply = { x: 1077, y: 692 };
-  // lane G-fix (REVIEW-G2 P2-19): N 270, not 300: the applied card held still over f82–181 (3.3 s); the ring now fades
-  // at f150, the dissolve runs f160–172 and the view tilts back f180–210 (each 30 frames earlier)
+  // lane G-fix (REVIEW-G2 P2-19): N 270, not 300 (the applied card held still 3.3 s): the dissolve runs f160–172 and
+  // the view tilts back f180–210
   const plan = {
     id: "LoopApproveUndo",
     n: 270,
-    aspects: ["wide"],
-    camera: { wide: [key(0, U), key(44, L, 30, "direct"), key(210, U, 30, "direct")] },
+    aspects: ["square", "tall"],
+    camera: {
+      square: [key(0, P.square.U), key(44, P.square.L, 30, "direct"), key(210, P.square.U, 30, "direct")],
+      tall: [key(0, P.tall.U), key(44, P.tall.L, 30, "direct"), key(210, P.tall.U, 30, "direct")],
+    },
+    stages: { square: [STORY.square.stage], tall: [STORY.tall.stage] },
+    reads: [
+      { aspect: "square", what: "the card's lead, the diff and the buttons", css: 12, m: STORY.square.m, k: STORY.square.stage.k },
+      { aspect: "tall", what: "the card's lead, the diff and the buttons", css: 12, m: STORY.tall.m, k: STORY.tall.stage.k },
+    ],
     cursorVisible: [[26, 104]],
     clicks: [57],
     dissolves: [[160, 172]],
   } satisfies LoopPlan;
   return {
     plan,
-    stage,
+    stage: { square: STORY.square.stage, tall: STORY.tall.stage },
+    poses: P,
     waiting: 9.367,
     applied: 11.067,
     cursor: [
-      { at: 26, x: 1210, y: 790, travel: 1 }, // off the stage's lower right
+      { at: 26, x: 1210, y: 790, travel: 1 }, // on the riverbed, off the card's lower right
       { at: 51, x: apply.x + 8, y: apply.y + 3, target: 30, seed: "l3-in" },
       { at: 98, x: 1205, y: 800, travel: 26, seed: "l3-out" },
     ] satisfies CursorKey[],
     applyRect: box(1025, 1129, 676, 708),
     clickPoint: apply,
     cutAt: 61,
-    undoRing: { rect: box(832, 941, 681, 704), radius: 6, drawAt: 76, outAt: 150 },
+    /**
+     * The applied card's button row, "Undo this edit" (x 839–935, y 688–697): after the match cut it comes forward and
+     * the diff above recedes (the spotlight, in the window's own colour: what lane G2b's accent ring did), until the
+     * dissolve. `rect` is the row across the drawer's full width.
+     */
+    undo: { rect: box(DRAWER.x0, DRAWER.x1, 668, 718), in: 76, out: 150, dur: 12 },
   };
 })();
 
@@ -204,20 +308,25 @@ export const L3 = (() => {
 /* from 440 to 489). "Waiting for the model" is added at 20.70 (the hold freezes on 20.65).                          */
 
 export const L4 = (() => {
-  const m = { wide: 3.0, tall: 2.9 };
-  const stage = { wide: drawerStage(m.wide, 1600, 1000), tall: drawerStage(m.tall, 1080, 1350) };
-  // One framing (the camera holds while the UI acts): C, the card's title to its buttons (y 221–533 at m 3.0; the tall
-  // cut adds STEPS below). After the click the same region shows the drawer's steps: the newest rows (y 311–437),
-  // "Pebble is working on this." and EARLIER ACTIONS all land inside it. (R, the rows framing, is kept for reference.)
-  const C = { wide: topLeftPose(DRAWER.x0, 221, m.wide, stage.wide.rect), tall: topLeftPose(DRAWER.x0, 200, m.tall, stage.tall.rect) };
-  const R = { wide: topLeftPose(DRAWER.x0, 300, m.wide, stage.wide.rect), tall: topLeftPose(DRAWER.x0, 300, m.tall, stage.tall.rect) };
+  // One framing, the story's card (shared with L3): the card whole from its title to Run tests, with the drawer's
+  // ground below it; after the click the newest steps, "Pebble is working on this." and EARLIER ACTIONS land in the
+  // same card. The camera holds while the UI acts.
+  const C = {
+    square: topLeftPose(DRAWER.x0, 205, STORY.square.m, STORY.square.stage.rect),
+    tall: topLeftPose(DRAWER.x0, 205, STORY.tall.m, STORY.tall.stage.rect),
+  };
   const run = { x: 1079, y: 513 };
   const click = 39;
   const plan = {
     id: "LoopIsolatedTests",
     n: 240,
-    aspects: ["wide", "tall"],
-    camera: { wide: [key(0, C.wide)], tall: [key(0, C.tall)] },
+    aspects: ["square", "tall"],
+    camera: { square: [key(0, C.square)], tall: [key(0, C.tall)] },
+    stages: { square: [STORY.square.stage], tall: [STORY.tall.stage] },
+    reads: [
+      { aspect: "square", what: "the card and the drawer's steps", css: 12, m: STORY.square.m, k: STORY.square.stage.k },
+      { aspect: "tall", what: "the card and the drawer's steps", css: 12, m: STORY.tall.m, k: STORY.tall.stage.k },
+    ],
     cursorVisible: [[12, 62]],
     clicks: [click],
     dissolves: [[186, 198]],
@@ -238,23 +347,23 @@ export const L4 = (() => {
   ];
   return {
     plan,
-    stage,
-    poses: { C, R },
+    stage: { square: STORY.square.stage, tall: STORY.tall.stage },
+    poses: { C },
     src,
     resetSrc: 16.6,
     cursor: [
-      { at: 12, x: 1215, y: 640, travel: 1 },
+      { at: 12, x: 1215, y: 700, travel: 1 }, // on the riverbed, off the card's lower right
       { at: click - 6, x: run.x + 6, y: run.y + 2, target: 30, seed: "l4-in" },
-      { at: 58, x: 1215, y: 700, travel: 16, seed: "l4-out" },
+      { at: 58, x: 1215, y: 760, travel: 16, seed: "l4-out" },
     ] satisfies CursorKey[],
     runRect: box(1029, 1129, 497, 529),
     /**
      * The payoff's spotlight (lane G-fix, REVIEW-G2 P1-9): as "Verified · pytest 42 passed on current files" lands
      * (f114), the drawer's rows above "Requesting isolated tests" (y < 378: "Not verified · 2 changed files, no tests
-     * run", "Verification remains incomplete", …) recede under S7c's veil, so on the page the loop never reads as "Not
+     * run", "Verification remains incomplete", …) recede under the veil, so on the page the loop never reads as "Not
      * verified". f110–122 in, held through the dissolve; nothing at either end of the loop.
      */
-    payoff: { rect: box(801, 1160, 378, 800), at: 110, dur: 12 },
+    payoff: { rect: box(DRAWER.x0, DRAWER.x1, 378, 800), at: 110, dur: 12 },
   };
 })();
 
@@ -270,23 +379,41 @@ export const L4 = (() => {
 /* AgentGuard's check lands: "Verified · pytest 42 passed on current files · 2 s" (20.60, y 409–437; see L4).         */
 
 export const L6 = (() => {
-  const stage = { wide: STAGE.topLeft, tall: STAGE.tallTopLeft };
-  // Shot A, the hold: m 3.1 (13 px → 40 px), x 232–727 (the avatar at 260; the right edge falls just before the
-  // "Details" link at 730, so the poster frame has no cut word; after the click the banner's right end bleeds off),
-  // y 318–620 (the notice to the buttons; the reply line above ends at 311, the composer starts at 648).
-  // Shot B, the check: the drawer alone fills the stage (m = stage width / 359 = 4.28; 56 px rows).
-  // Tall (4:5): A at m 2.6 (13 px → 34 px; y 262–757), the sentence's tail bleeding off the right edge, the three
-  // buttons whole; B at the drawer's width (m 2.9).
-  const A = { wide: topLeftPose(232, 318, 3.1, stage.wide.rect), tall: topLeftPose(252, 262, 2.6, stage.tall.rect) };
-  const mB = { wide: stage.wide.rect.w / (DRAWER.x1 - DRAWER.x0), tall: stage.tall.rect.w / (DRAWER.x1 - DRAWER.x0) };
-  const B = { wide: topLeftPose(DRAWER.x0, 300, mB.wide, stage.wide.rect), tall: topLeftPose(DRAWER.x0, 300, mB.tall, stage.tall.rect) };
+  // Shot A, the hold, one card at the app's own scale on the ledger's slot (k 2.56, m 2.564): x 232–770 (the avatar at
+  // 260, "Details" ends 764, the banner after the click 765), y 318–620 (the notice to the buttons; the reply's line
+  // above ends at 311, the composer starts at 648). Shot B, the check, in the same card: the drawer fills its width
+  // (m 3.84), from "You asked Pebble to run the tests" (336) down, so "Verification remains incomplete" (311–322) is
+  // out and Verified is the newest row. Tall (4:5): A at m 2.25, the block whole, B at the drawer's width (m 2.81).
+  const A = {
+    wide: card(box(232, 770, 318, 620), 2.564, "wide", SLOT.agentGuard),
+    tall: card(box(252, 700, 318, 620), 2.25, "tall", SLOT.phone),
+  };
+  const mB = { wide: A.wide.stage.rect.w / (DRAWER.x1 - DRAWER.x0), tall: A.tall.stage.rect.w / (DRAWER.x1 - DRAWER.x0) };
+  const B = {
+    wide: topLeftPose(DRAWER.x0, 330, mB.wide, A.wide.stage.rect),
+    tall: topLeftPose(DRAWER.x0, 326, mB.tall, A.tall.stage.rect),
+  };
   const runTheTests = { x: 344, y: 562 };
   const click = 41;
   const plan = {
     id: "LoopAgentGuard",
     n: 240,
     aspects: ["wide", "tall"],
-    camera: { wide: [key(0, A.wide)], tall: [key(0, A.tall)] },
+    camera: { wide: [key(0, A.wide.pose)], tall: [key(0, A.tall.pose)] },
+    stages: { wide: [A.wide.stage], tall: [A.tall.stage] },
+    reads: [
+      { aspect: "wide", what: "Blocked, the sentence and the three choices", css: 13, m: A.wide.m, k: A.wide.stage.k },
+      { aspect: "wide", what: "the drawer's steps and Verified", css: 12, m: mB.wide, k: A.wide.stage.k },
+      {
+        aspect: "tall",
+        what: "Blocked, the sentence and the three choices",
+        css: 13,
+        m: A.tall.m,
+        k: A.tall.stage.k,
+        waived: "the held block is 448 CSS px wide and the app wraps it there: whole, it renders at 9.75 px on a 360 px phone",
+      },
+      { aspect: "tall", what: "the drawer's steps and Verified", css: 12, m: mB.tall, k: A.tall.stage.k },
+    ],
     cursorVisible: [[12, 62]],
     clicks: [click],
     dissolves: [
@@ -313,13 +440,13 @@ export const L6 = (() => {
   ];
   return {
     plan,
-    stage,
-    poses: { A, B },
+    stage: { wide: A.wide.stage, tall: A.tall.stage },
+    poses: { A: { wide: A.wide.pose, tall: A.tall.pose }, B },
     srcA,
     srcB,
     resetSrc: 15.1,
     cursor: [
-      { at: 12, x: 560, y: 720, travel: 1 }, // off the stage's lower right (wide); the tall frame starts it lower
+      { at: 12, x: 560, y: 720, travel: 1 }, // on the riverbed, below the card
       { at: click - 6, x: runTheTests.x + 6, y: runTheTests.y + 2, target: 30, seed: "l6-in" },
       { at: 58, x: 520, y: 720, travel: 16, seed: "l6-out" },
     ] satisfies CursorKey[],
@@ -339,6 +466,8 @@ export const L6 = (() => {
 /* COMPLETED_MS; the pose wins over tap and hover), and minimizing the chat doesn't end it, so the truthful loop      */
 /* closes the chat while the pebble still celebrates and lets it settle to idle on the desktop before the seam.      */
 /* Typing plays at 2× and the queued-to-first-token wait at 1.5× (the clock in the panel's status runs faster too).   */
+/* L1 is the one loop with no card: its scene IS the desktop (DESIGN-LEXINGTON §3.8, "a desktop … sits on the         */
+/* riverbed"). The quick chat is the app's own panel with its own shadow; the pebble casts the only other one.        */
 
 export const L1 = (() => {
   const n = 360;
@@ -356,16 +485,22 @@ export const L1 = (() => {
   ];
   const completed = click + 142; // 6.60 s
   const happyEnds = completed + 135; // + 4.5 s (COMPLETED_MS)
+  const k = { wide: kOf(SLOT.companion, FRAME.wide.w), tall: kOf(SLOT.phone, FRAME.tall.w) };
   const plan = {
     id: "LoopCompanion",
     n,
     aspects: ["wide", "tall"],
     camera: {
       // W: the pebble on its desktop (m 1.8, as FILM_SPEC; the panel's room above and to its left). P: the open chat,
-      // m 2.1 (the greeting 19 px → 40 px). Tall: one framing, m 2.75, the whole panel and the pebble.
+      // m 2.1. Tall: one framing, m 2.77, the whole panel and the pebble (the reply's 13 px at 12 px on a 360 px phone).
       wide: [key(0, { x: 808.4, y: 583.4, zoom: 1.8 }), key(76, { x: 945.3, y: 576.7, zoom: 2.1 }, 26), key(238, { x: 808.4, y: 583.4, zoom: 1.8 }, 26)],
-      tall: [key(0, { x: 945.3, y: 594, zoom: 2.75 })],
+      tall: [key(0, { x: 945.3, y: 594, zoom: 2.77 })],
     },
+    stages: {},
+    reads: [
+      { aspect: "wide", what: "the reply", css: 13, m: 2.1, k: k.wide },
+      { aspect: "tall", what: "the reply", css: 13, m: 2.77, k: k.tall },
+    ],
     cursorVisible: [
       [12, 70],
       [214, 292],
@@ -381,51 +516,64 @@ export const L1 = (() => {
     completed,
     happyEnds,
     /** the hidden avatar's centre in the panel (FILM_SPEC §7.1, film/timeline.ts PET.inPanel) */
-    avatarInPanel: { x: 326.7, y: 397.3 } satisfies Point,
+    avatarInPanel: { x: 326.7, y: 397.3 },
     /** "Minimize to pebble" in the panel */
     minimize: { at: { x: 347, y: 42 }, rect: box(335, 359, 30, 54) },
   };
 })();
 
 /* ================================================================================================================ */
-/* L8 loop-views (10 s): the Lisbon trip budget dashboard → into its chart → the quiz → back.                       */
-/* main-dashboard@3x (1440 × 900): the canvas's chart panel x 680–1405, y 435–900 (bars, labels, legend);           */
-/* main-quiz@3x (1160 × 800): the quiz card x 740–1130, y 215–750, the question y 372–400 (22 px).                   */
-/* Both are windows on the riverbed desktop (world = desktop px; the dashboard window at (80, 50)).                  */
+/* L8 loop-views (6.8 s): two views Pebble built, each one card: the "Spending by category" chart of the Lisbon     */
+/* trip budget dashboard, then the Python datetime quiz.                                                            */
+/* main-dashboard@3x (1440 × 900): the chart panel's border x ≈ 665–1416, from y ≈ 421 (its bottom is below the      */
+/* capture); "Spending by category" y 444, "Chart data" y 877. main-quiz@3x (1160 × 800): the canvas from x 721; the   */
+/* quiz content x 745–1136, "QUIZ · CHECKED BY PEBBLE" y 225 to the page buttons y 742–770; the question 22 px.        */
 
 export const L8 = (() => {
-  const dash = { x: 80, y: 50, w: 1440, h: 900 };
-  const quiz = { x: 220, y: 100, w: 1160, h: 800 };
-  const wide: CamPose = { x: 800, y: 500, zoom: 1 };
-  const chart: CamPose = { x: dash.x + 1040, y: dash.y + 668, zoom: 2.0 }; // the window's right edge on the frame's
-  const quizPose: CamPose = { x: quiz.x + 935, y: quiz.y + 438, zoom: 2.4 };
+  // DESIGN-LEXINGTON §3.8: one moment per frame, no full-window screenshot outside the film poster. Lane G2b's L8 opened
+  // on the whole dashboard window; now each view is its own card at the views slot (the main column, k 1.68): the
+  // chart panel (its own white; the card's edges fall just inside the panel's border, so the card IS the panel) and
+  // the quiz (on the canvas's ground). A 0.4 s dissolve between the two, each held 3 s. The data never animates.
+  const chart = card(box(668, 1413, 424, 899), 1.903, "wide", SLOT.views);
+  const quiz = card(box(733, 1148, 205, 783), 1.564, "wide", SLOT.views);
   const plan = {
     id: "LoopViews",
-    n: 300,
+    n: 204,
     aspects: ["wide"],
-    camera: { wide: [key(0, wide), key(42, chart, 24), key(234, wide, 24)] },
+    camera: { wide: [key(0, chart.pose)] },
+    stages: { wide: [chart.stage, quiz.stage] },
+    reads: [
+      { aspect: "wide", what: "the chart's title and labels", css: 12, m: chart.m, k: chart.stage.k },
+      { aspect: "wide", what: "the quiz's question and answers", css: 13, m: quiz.m, k: quiz.stage.k },
+    ],
     cursorVisible: [],
     clicks: [],
-    dissolves: [],
+    dissolves: [
+      [84, 96],
+      [186, 198],
+    ],
   } satisfies LoopPlan;
-  // three holds of 2.8 s (wide across the seam, chart, quiz) and two 0.8 s moves: nothing static for more than 3 s
-  return { plan, dash, quiz, poses: { wide, chart, quiz: quizPose }, cutToQuiz: 126, cutBack: 210 };
+  return { plan, chart, quiz };
 })();
 
 /* ================================================================================================================ */
 /* T0 FilmTeaser (8 s, 1280 × 720): approve → test → Verified, in the film poster's frame (FILM_SPEC §15).          */
-/* Window world: world = the main window's CSS px; the window at m 0.75 (870 × 600) centred, on the riverbed.        */
+/* Window world: world = the main window's CSS px; the window at m 0.75 (870 × 600) centred, on the riverbed. The   */
+/* film frame is the one place a whole window is shown (DESIGN-LEXINGTON §3.8); it plays at the container's width,  */
+/* 1280 px, so a page px is a video px and the window's radius and shadow are 10 and --shadow-window at m 0.75.      */
 
 export const T0 = (() => {
   const wide: CamPose = { x: 580, y: 400, zoom: 0.75 };
   // the card's lower half at m 1.9 (the window's right edge 34 units inside the frame); the tests card at m 1.8
-  const card: CamPose = { x: 857, y: 545, zoom: 1.9 };
+  const cardPose: CamPose = { x: 857, y: 545, zoom: 1.9 };
   const tests: CamPose = { x: 905, y: 395, zoom: 1.8 };
   const plan = {
     id: "FilmTeaser",
     n: 240,
     aspects: ["wide"],
-    camera: { wide: [key(0, wide), key(38, card, 24), key(96, tests, 1), key(209, wide, 24)] },
+    camera: { wide: [key(0, wide), key(38, cardPose, 24), key(96, tests, 1), key(209, wide, 24)] },
+    stages: {},
+    reads: [],
     cursorVisible: [
       [36, 92],
       [98, 194],
@@ -456,6 +604,8 @@ export const T0 = (() => {
     plan,
     src,
     poster: 8.3,
+    /** world units per page px for the window: it is seen at m 0.75 in a 1280 px teaser shown 1280 px wide */
+    windowK: 1 / wide.zoom,
     cursor: [
       { at: 36, x: 1290, y: 760, travel: 1 },
       { at: 55, x: 1085, y: 695, target: 30, seed: "t0-apply" },
@@ -468,10 +618,11 @@ export const T0 = (() => {
     runRect: box(1029, 1129, 497, 529),
     clickPoint: { x: 1077, y: 692 },
     /**
-     * Lane G-fix (REVIEW-G2 P1-9): in the close framings the conversation left of the drawer recedes under S7c's veil
-     * (60 % paper, 10 px blur; its amount follows the camera's zoom, 0 at the wide m 0.75, 1 from m 1.8), so its
-     * chopped lines never compete with the drawer in the page's most-seen motion; and as "Verified" lands (f150) the
-     * drawer's rows above "Requesting isolated tests" recede too, so the payoff never reads as "Not verified".
+     * Lane G-fix (REVIEW-G2 P1-9): in the close framings the conversation left of the drawer recedes under the veil
+     * (60 % of the window's colour, 10 px blur; its amount follows the camera's zoom, 0 at the wide m 0.75, 1 from
+     * m 1.8), so its chopped lines never compete with the drawer in the page's most-seen motion; and as "Verified"
+     * lands (f150) the drawer's rows above "Requesting isolated tests" recede too, so the payoff never reads as "Not
+     * verified".
      */
     drawer: box(DRAWER.x0, DRAWER.x1, 0, 800),
     payoff: { rect: box(DRAWER.x0, DRAWER.x1, 378, 800), at: 150, dur: 12 },

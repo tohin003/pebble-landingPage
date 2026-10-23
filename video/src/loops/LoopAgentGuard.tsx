@@ -1,10 +1,12 @@
-// L6 loop-agentguard (8 s, 240 frames; 4:5 phone cut too): AgentGuard's hold, resolved with one click.
+// L6 loop-agentguard (8 s, 240 frames; 4:5 phone cut too): AgentGuard's hold, resolved with one click, in one card at
+// the app's own scale on the riverbed.
 // Shot A, the conversation: the reply's own notice, then "Blocked" and "Pebble's change isn't verified yet. · 2 file(s)
 // changed and no tests were run, …" with Run the tests / Ask Pebble to finish / Accept as unverified (RunPanel, verbatim
-// from main-live-film). The pointer clicks Run the tests; Pebble asks to run them in an isolated copy ("Needs your
-// review", "1 action needs your review"). A time-passage dissolve (the person approves; the tests run) to shot B, the
-// Details drawer, where the check lands: "Requesting isolated tests · 11 s", then "Verified · pytest 42 passed on
-// current files". A second dissolve returns to the hold. Data: plans.ts L6.
+// from main-live-film). The pointer comes in off the riverbed and clicks Run the tests; Pebble asks to run them in an
+// isolated copy ("Needs your review", "1 action needs your review"). A time-passage dissolve (the person approves; the
+// tests run) to shot B in the same card, the Details drawer, where the check lands: "Requesting isolated tests · 11 s",
+// then "Verified · pytest 42 passed on current files" as the newest row (the rows above "You asked Pebble to run the
+// tests" stay out of the card). A second dissolve returns to the hold. Data: plans.ts L6.
 import { useCurrentFrame } from "remotion";
 import { Cursor } from "../components";
 import { DISSOLVE_BLUR, Ground, LoopStage, PressShade, RECORDINGS, RecFrame, StageLayer, StageOverlay, dissolveAt, srcAt, useLoopAspect } from "./kit";
@@ -14,7 +16,7 @@ const REC = RECORDINGS.mainLiveFilm;
 
 export const LoopAgentGuard: React.FC = () => {
   const frame = useCurrentFrame();
-  const aspect = useLoopAspect();
+  const aspect = useLoopAspect() === "tall" ? "tall" : "wide";
   const stage = L6.stage[aspect];
   const A = L6.poses.A[aspect];
   const B = L6.poses.B[aspect];
@@ -24,8 +26,6 @@ export const LoopAgentGuard: React.FC = () => {
   const click = L6.plan.clicks[0]!;
   const tA = frame < b0 ? srcAt(frame, L6.srcA) : L6.resetSrc;
   const tB = srcAt(frame, L6.srcB);
-  // tall: the pointer comes from below the taller frame
-  const cursor = aspect === "tall" ? L6.cursor.map((k, i) => (i === 0 || i === 2 ? { ...k, y: k.y + 150 } : k)) : L6.cursor;
   const layers: React.ReactNode[] = [];
   if (frame < a1 || frame >= b0) {
     // shot A: the hold (and, from b0, the hold coming back over B)
@@ -50,11 +50,9 @@ export const LoopAgentGuard: React.FC = () => {
   return (
     <>
       <Ground />
-      <LoopStage rect={stage.rect} corners={stage.corners}>
-        {ordered}
-      </LoopStage>
+      <LoopStage stage={stage}>{ordered}</LoopStage>
       <StageOverlay rect={stage.rect} pose={A}>
-        <Cursor keys={cursor} clicks={L6.plan.clicks} visible={L6.plan.cursorVisible} />
+        <Cursor keys={L6.cursor} clicks={L6.plan.clicks} visible={L6.plan.cursorVisible} />
       </StageOverlay>
     </>
   );

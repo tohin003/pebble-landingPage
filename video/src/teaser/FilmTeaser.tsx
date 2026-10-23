@@ -1,18 +1,20 @@
 // T0 FilmTeaser (1280 × 720, 240 frames, 8 s, silent, seamless; docs/FILM_SPEC.md §15): a recomposed excerpt of the
-// approve → test → Verified chain, playing in the film poster's frame on the page. Pebble's real window (the
-// main-live-film recording) on the riverbed desktop at m 0.75; the camera moves into the edit card, the pointer
-// clicks Apply edit, a match cut shows Done with Undo this edit, a hard cut to the "Run isolated tests" card, Run
-// tests, the drawer's newest steps, "Verified · pytest 42 passed on current files", the camera back to the wide frame
-// and a time-passage dissolve to frame 0's picture. No pebble (the page's live pebble may still be in view; one
-// animated pebble at a time) and no text (the page's label and chapter list carry the words). In the close framings
-// the conversation recedes under a veil and, at the payoff, so do the drawer's rows above the newest ones (lane G-fix,
-// REVIEW-G2 P1-9).
+// approve → test → Verified chain, playing in the film's frame on the page. Pebble's real window (the main-live-film
+// recording) on the riverbed desktop at m 0.75; the camera moves into the edit card, the pointer clicks Apply edit, a
+// match cut shows Done with Undo this edit, a hard cut to the "Run isolated tests" card, Run tests, the drawer's newest
+// steps, "Verified · pytest 42 passed on current files", the camera back to the wide frame and a time-passage dissolve
+// to frame 0's picture. No pebble (the page's live pebble may still be in view; one living thing at a time) and no text
+// (the page's caption and chapter list carry the words). In the close framings the conversation recedes under a veil
+// and, at the payoff, so do the drawer's rows above the newest ones (lane G-fix, REVIEW-G2 P1-9).
+// In the design system (lane v2-loops; docs/DESIGN-LEXINGTON.md §3.8): the film frame is the one place a whole window
+// is shown; the window has the system's radius (10 page px), --shadow-window, its 1 px inner ring and quiet traffic
+// lights (kit.tsx SceneWindow); no vignette (the page has no pool of light; the riverbed is the only picture).
 // Frame 0 is the film poster (stills/FilmPoster.tsx renders this component at frame 0). Data: loops/plans.ts T0.
 import { useCurrentFrame, useVideoConfig } from "remotion";
-import { Camera, Cursor, Desktop, MacWindow, Vignette, World } from "../components";
+import { Camera, Cursor, Desktop, World } from "../components";
 import { cameraAt, type CamPose } from "../motion/camera";
 import { EASE, ramp } from "../motion/spec";
-import { DISSOLVE_BLUR, PressShade, RECORDINGS, RecFocus, dissolveAt, settleScale, srcAt, zoomAbout } from "../loops/kit";
+import { DISSOLVE_BLUR, PressShade, RECORDINGS, RecFocus, SceneWindow, dissolveAt, settleScale, srcAt, zoomAbout } from "../loops/kit";
 import { T0 } from "../loops/plans";
 
 const REC = RECORDINGS.mainLiveFilm;
@@ -28,7 +30,7 @@ const Scene: React.FC<{ pose: CamPose; t: number; payoff?: number; children?: Re
     <Camera pose={pose}>
       <World>
         <Desktop rect={DESK} />
-        <MacWindow x={0} y={0} width={REC.width} height={REC.height}>
+        <SceneWindow x={0} y={0} width={REC.width} height={REC.height} k={T0.windowK}>
           <RecFocus rec={REC} t={t} rect={T0.drawer} amount={veil} zoom={pose.zoom} />
           {payoff > 0.001 ? (
             // the same frame with only the drawer's newest rows sharp, faded in over the first: only the rows above
@@ -38,7 +40,7 @@ const Scene: React.FC<{ pose: CamPose; t: number; payoff?: number; children?: Re
             </div>
           ) : null}
           {children}
-        </MacWindow>
+        </SceneWindow>
       </World>
     </Camera>
   );
@@ -69,10 +71,6 @@ export const FilmTeaser: React.FC = () => {
           <Scene pose={T0.plan.camera.wide[0]!} t={T0.poster} />
         </div>
       ) : null}
-      {/* the desktop world's 6 % vignette (FILM_SPEC §4), on the wide frame only: it fades out as the camera moves
-          in, so it never lies over the white UI of a punch-in, and it is a function of the pose, so the loop stays
-          seamless */}
-      <Vignette amount={0.06 * Math.max(0, Math.min(1, (1.5 - pose.zoom) / 0.75))} />
       <Camera pose={pose} background="transparent" clip={false}>
         <Cursor keys={T0.cursor} clicks={T0.plan.clicks} visible={T0.plan.cursorVisible} />
       </Camera>

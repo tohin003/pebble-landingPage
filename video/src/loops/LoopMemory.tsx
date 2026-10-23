@@ -1,18 +1,20 @@
-// L7 loop-memory (8 s, 240 frames): Settings › Memory, the saved records. The pointer clicks the bin of "Uses metric
-// units and 24-hour times." (its label: "Forget this memory"); the record fades (0.4 s, as MASTER_PLAN §5.3 asks; the
-// app itself removes it at once) and the next record takes its place, as the app re-renders
-// (settings-memory-forgotten). A time-passage dissolve brings the record back for the seam. Data: plans.ts L7.
+// L7 loop-memory (7 s, 210 frames): Settings › Memory, the saved records, one card at the app's own scale on the
+// riverbed. The pointer comes in off the riverbed and clicks the bin of "Uses metric units and 24-hour times." (its
+// label: "Forget this memory"); the record fades (0.4 s, as MASTER_PLAN §5.3 asks; the app itself removes it at once)
+// and the next record takes its place, as the app re-renders (settings-memory-forgotten). The pointer hides once it
+// has acted. A time-passage dissolve brings the record back for the seam. Data: plans.ts L7.
 import { useCurrentFrame, useVideoConfig } from "remotion";
 import { Cursor, UiStill } from "../components";
 import { cameraAt } from "../motion/camera";
-import { Cover, DISSOLVE_BLUR, Ground, LoopStage, PANEL_BG, PressShade, StageLayer, StageOverlay, dissolveAt, fadeAwayAt } from "./kit";
+import { Cover, DISSOLVE_BLUR, Ground, LoopStage, PressShade, StageLayer, StageOverlay, SYSTEM, dissolveAt, fadeAwayAt } from "./kit";
 import { L7 } from "./plans";
 
 export const LoopMemory: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { stage, record, bin } = L7;
-  const pose = cameraAt(frame, L7.plan.camera.wide, fps, stage.rect.w);
+  const card = stage.wide;
+  const pose = cameraAt(frame, L7.plan.camera.wide, fps, card.rect.w);
   const [d0, d1] = L7.plan.dissolves[0]!;
   const back = dissolveAt(frame, d0, d1 - d0); // forgotten → the original records (time passes)
   const gone = frame < L7.swapAt ? fadeAwayAt(frame, L7.fadeAt, L7.fadeFrames) : 0; // the clicked record fades
@@ -21,23 +23,23 @@ export const LoopMemory: React.FC = () => {
   return (
     <>
       <Ground />
-      <LoopStage rect={stage.rect} corners={stage.corners}>
+      <LoopStage stage={card} background={SYSTEM.panel}>
         {swapped ? (
           <>
             <StageLayer pose={pose} blur={DISSOLVE_BLUR * back}>
-              <UiStill name="settings-memory-forgotten" />
+              <UiStill name="settings-memory-forgotten" veil={SYSTEM.panel} />
             </StageLayer>
             <StageLayer pose={pose} opacity={back} blur={DISSOLVE_BLUR * (1 - back)}>
-              <UiStill name="settings-memory" />
+              <UiStill name="settings-memory" veil={SYSTEM.panel} />
             </StageLayer>
           </>
         ) : (
           <StageLayer pose={pose}>
-            <UiStill name="settings-memory" />
+            <UiStill name="settings-memory" veil={SYSTEM.panel} />
             {gone > 0 ? (
               <>
                 {/* the slot empties under the record as it fades (the panel's white) */}
-                <Cover rect={r} color={PANEL_BG} />
+                <Cover rect={r} color={SYSTEM.panel} />
                 <div
                   style={{
                     position: "absolute",
@@ -59,7 +61,7 @@ export const LoopMemory: React.FC = () => {
           </StageLayer>
         )}
       </LoopStage>
-      <StageOverlay rect={stage.rect} pose={pose}>
+      <StageOverlay rect={card.rect} pose={pose}>
         <Cursor keys={L7.cursor} clicks={L7.plan.clicks} visible={L7.plan.cursorVisible} />
       </StageOverlay>
     </>
