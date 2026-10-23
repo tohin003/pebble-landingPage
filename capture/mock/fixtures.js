@@ -1,4 +1,7 @@
-// Demo fixtures for Pebble 1.0.1's real UI. Everything here is fictional demo content (no real person's data): Maya
+// Demo fixtures for Pebble 1.0.4's real UI (re-checked against the published 1.0.4 checkout on 2026-10-23: no new or
+// changed RPC on any captured surface; the host templates cited below are unchanged since 1.0.1, and the window's own
+// 1.0.4 strings, such as the permission modes and the user bubble without its leading space, come from the
+// components). Everything here is fictional demo content (no real person's data): Maya
 // (maya@example.com, /Users/maya), her invoice-kit project, a Lisbon trip budget and a Python datetime quiz.
 //
 // What may appear on screen, and where it comes from:
@@ -453,7 +456,7 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null }
     settings,
     data_dir: "/Users/maya/.pebble",
     platform: "darwin",
-    version: "1.0.1",
+    version: "1.0.4", // backend/pebble/__init__.py VERSION (Settings' About block shows "Pebble 1.0.4")
     memory: {
       enabled: settings.memory_enabled,
       strategy: "SQLite FTS5 · hybrid lexical/trigram/metadata ranking · bounded retrieval · no extra model", // memory.py
