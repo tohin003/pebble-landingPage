@@ -102,7 +102,7 @@ above 440).
 | World | Look | Vignette | Grain |
 |---|---|---|---|
 | **Desktop** | the riverbed wallpaper (comp 2, rasterised plate `RiverbedPlate`), light; no menu bar in close framings | 6 %, `#13251B` | none (H8) |
-| **Sage field** | flat `#536B54`; one radial glow `#B0C2AE` at 15 % opacity, radius 900 px, centre (0.5 W, 0.42 H), drifting ≤ 40 px over the shot | 6 % | none |
+| **Sage field** | arrives on the colour it is entered through (`#536B54`, the pebble's body; `#506E54` after S7c) and settles within 12 frames on the type ground **`#425643`**, with one radial glow `#B0C2AE` at **4 %**, radius 900 px, centre (0.5 W, 0.42 H), drifting ≤ 40 px over the shot. White type reads at ≥ 7:1 there (the lead's addendum to REVIEW-G2; on flat `#536B54` white is 5.8:1, and 4.8:1 at the old 15 % glow's peak). S4's and S9's sage, outside the flood, is the same type ground (lane G-fix; lane E to ratify) | 6 % | none |
 | **Paper** (reveal, end card) | `#F8F9F6`; a pool of light: radial `#FFFFFF` at 70 %, radius 760 px (16:9) / 600 px (square), centred on the lockup | 6 % | none |
 | **Window** (product UI) | a **stage**: a rounded viewport into Pebble's real UI (radius 28, `SHADOW.window`) on the desktop ground | **off** (never on white UI) | none |
 
@@ -198,18 +198,23 @@ px (16:9 / square).
   pebble centre (1379, 866) / (837, 866). The ellipsis skips the typing: the question is already sent. Source 3.35 s →
   4.50 s (0.53×): the bubble "What does 'day is out of range for month' mean?", header "● Thinking", "Task: running".
   Pose `thinking` (thought dots) at f72.
-- **f126–143: zoom through the pebble.** Aim at a body point (−20, +25) viewBox units from the body's centre (below
-  and left of the eyes, never through an eye): (1349, 903) / (807, 903) at C2. Log-scale zoom ×1 → ×22, `EASE.exit`
-  (accelerating), the aim point drifting to the frame centre on `EASE.camera`. The body's `#536B54` fills the frame by
-  f138; f139–143 are solid sage. Zoom blur only on f136–143 (≤ 20 px).
+- **f131–143: zoom through the pebble** (lane G-fix, REVIEW-G2 P1-2: was f126–138 plus five solid frames, which landed
+  the dive 5 frames before the bar and the whoosh 7 frames late). Aim at a body point clear of the eyes (G2a: (−36, −10)
+  viewBox units from the body's centre). Log-scale zoom ×1 → ×30, `EASE.exit` (accelerating), the aim point drifting to
+  the frame centre on `EASE.camera`. The body's `#536B54` fills the frame **on f143**; the world changes on f144 with
+  the whoosh's peak. Zoom blur only on f141–143 (≤ 20 px). C2's pebble sits at y 921 (both aspects; P1-8), so the chat's
+  top edge is 65 px under the frame's top.
 - Focal: f72–125 the bubble (1100, 230) / (560, 230); f126–143 the aim point → frame centre.
 
 ### S2 Questions (144–359) — sage field, chapter `desktop`
 
-- **f144: seam by zoom-through** (the pebble's own sage becomes the world). Whoosh peaks f145.
-- Three neutral questions a careful person asks of any AI helper (OVERRIDES §2), one per bar, centred, line centre
-  y 470: **T1** "What did it change?" (f144), **T2** "Can I undo it?" (f216), **T3** "Did it run the tests?" (f288).
-  Entrance (B) ink; exit at bar end −6.
+- **f144: seam by zoom-through** (the pebble's own sage becomes the world). Whoosh peaks f144 (picture f143 + 1).
+- Three neutral questions a careful person asks of any AI helper (OVERRIDES §2), one per bar. **They build a list**
+  (REVIEW-G2 P1-6, lane G-fix): left-aligned, the block centred on its widest line, line centres y 350 / 470 / 590
+  (16:9) and 360 / 470 / 580 (square). Each inks in whole ((B), all words together), starting 3 frames before its
+  downbeat (§1), so it reads at full contrast on the beat: **T1** "What did it change?" (f144, the seam), **T2** "Can I
+  undo it?" (f213 → f216), **T3** "Did it run the tests?" (f285 → f288). As a question arrives, the one before dims to
+  45 % and stays; the current one is white at ≥ 7:1 (the lead's addendum). All three blur out together f348–354.
 - They are ordered as the film answers them: the approval card answers T1 and T2 (S5b); AgentGuard answers T3
   (S5c–S5e), and T3 sets up the intent line.
 - Focal: (960, 470) / (540, 470).
@@ -258,8 +263,9 @@ Layout §4 (side split / stacked). Source: `main-live-film` recorded at 3× (§7
 **S5b Review, apply, undo (720–863).**
 - **f720–743:** the camera follows "Preparing an edit" into the Details drawer, which opens at f722 (source 6.0), and
   arrives on the `invoice_kit/dates.py` card's upper part (header, lead, the diff's first lines). 16:9 m 2.4, ROI
-  x 810–1150, y 205–602; square m 2.65, ROI x 817–1143, y 205–486. Pose `review` ("!") at f729: the app shows it while
-  an edit waits.
+  x 810–1150, y 205–602; square m 2.65, ROI x 817–1143, y 205–486. Pose `review` ("!") at **f756** (with "Review,"),
+  after the camera move, so the morph plays on a still frame (REVIEW-G2 P1-4, lane G-fix): the app shows it while an
+  edit waits.
 - **T7** builds word by word with the verbs: "Review," at f756; "apply," at f811; "undo" at f830 (line 1
   "Review, apply,", line 2 "undo").
 - **f774–797:** the camera tilts down to the card's lower part as the pointer enters (16:9 ROI y 404–800; square
@@ -270,7 +276,11 @@ Layout §4 (side split / stacked). Source: `main-live-film` recorded at 3× (§7
 - **f814: match cut on the click** to the frozen 11.05 s frame: the same card, now in Earlier actions with "Done" and
   **Undo this edit**, aligned so its button row sits where Apply edit was; it arrives at 1.04× and settles on
   `SPRING.calm`. The card's width is identical (both frames come from one recording). Pop peaks f815.
-- **Callout ring** on "Undo this edit": 3 px `#506E54`, offset 8 px, radius = button radius + 8, drawn on f826–837
+- **Square, lower framing** (REVIEW-G2 P0-2, lane G-fix): drawer m 2.9 on cy 617 (y 488.7–745.3), so the next card's
+  header and status ("tests/test_dates.py · Needs your review", then "· Done" on the match cut's frame) stay below the
+  frame: one click never shows two edits applied. The pointer clicks Apply edit's upper half (css y 689, frame y 917).
+- **Callout ring** on "Undo this edit": 3 px `#506E54`, offset 15 px (lane G-fix, REVIEW-G2 P2-12: at 8 px it read as a
+  focus ring), radius = button radius + 15, drawn on f826–837
   (stroke-dashoffset, `EASE.enter`), fades f852–857. The one callout of the shot; it draws on, so it reads as an
   annotation, not a focus ring.
 - Cursor drifts away and fades f826–830. T7 exits f858.
@@ -278,23 +288,33 @@ Layout §4 (side split / stacked). Source: `main-live-film` recorded at 3× (§7
   edit (1215, 755) / (330, 794).
 
 **S5c Held (864–1007).**
-- **f864: hard cut** (chapter `tested`) to the conversation. 16:9 m 2.2, ROI x 215–670, y 300–733; square m 2.65, ROI
-  x 220–582, y 380–661. Source 11.80 → 16.57 s, 1×. Pose `thinking`.
-- The reply streams "Both edits are in: …"; at f924 the notice "Verification remains incomplete: Pebble changed
-  dates.py, test_dates.py but did not run the tests that cover them."; **at f931 AgentGuard holds the task**: "Blocked"
-  and "Pebble's change isn't verified yet. · 2 file(s) changed and no tests were run, but 1 test file(s) cover this
-  code: ["tests/test_dates.py"]. Run them (RunTests) before finishing and report what they said." with **Run the
-  tests / Ask Pebble to finish / Accept as unverified** (all verbatim, real). The app scrolls it into view f945–963.
-  Pose `blocked` at f931.
-- **T8** "AgentGuard checks" / "the evidence", in f954, out f1038.
+- **f864: hard cut** (chapter `tested`) to the conversation, on the framing of the whole held run (**stage 1**, REVIEW-G2
+  P0-1, lane G-fix): 16:9 m 2.03, ROI x 228–720.6, y 324–793; square m 2.2, ROI x 242.7–711.8, y 420.5 → the frame's
+  bottom. The whole block shows: the avatar, "Blocked", the full sentence and all three choices ("Details" just
+  outside), with clean edges (16:9: top between the reply and the notice, bottom between the composer's footer and the
+  window's edge; square: the block 61 px from both sides). Pose `thinking`.
+- Source re-keyed (§7.2): 2.5× through the streaming reply "Both edits are in: …"; the notice "Verification remains
+  incomplete: Pebble changed dates.py, test_dates.py but did not run the tests that cover them." at f888; **at f890
+  AgentGuard holds the task**: "Blocked" and "Pebble's change isn't verified yet. · 2 file(s) changed and no tests were
+  run, but 1 test file(s) cover this code: ["tests/test_dates.py"]. Run them (RunTests) before finishing and report what
+  they said." with **Run the tests / Ask Pebble to finish / Accept as unverified** (all verbatim, real). The app scrolls
+  it into view at 1× (f896–914); from f914 the run is settled (only its small avatar animates) until the click: 76
+  frames, 2.5 s. Pose `blocked` at f890 (26 frames after `thinking`).
+- **f954–977: stage 2**, a push-in on `EASE.camera` to read it, held to the cut at f1008: 16:9 m 3.16, ROI x 222–538.5,
+  y 392–693.3; square m 3.28, ROI x 222.6–537.2, y 420.8 → bottom. "Blocked", the sentence (ink 35 px in 16:9, 36 px in
+  the square; it runs off the right edge) and Run the tests, with Ask Pebble to finish whole and Accept as unverified
+  wholly outside: the edge falls in the 9 px between them, so no choice is ever sliced.
+- **T8** "AgentGuard checks" / "the evidence", in **f936** (the bar-14 downbeat, with the run in view), out f1038.
 - **Cursor** enters f960, arrives by f985, **click-down f990 on Run the tests** (source 16.0, 1:1). Run the tests is
-  at y ≈ 640 / 818. At f993–996 the "Run isolated tests" card arrives in the drawer; pose `review` at f995.
+  at frame (1301, 627) / (337, 797). At f993–996 the "Run isolated tests" card arrives in the drawer; pose `review` at
+  f995.
 - Focal: f864–930 the notice (1180, 200) / (500, 560); f931–989 "Pebble's change isn't verified yet." (1170, 480) /
   (560, 640); f990 the button.
 
 **S5d Tests (1008–1151).**
-- **f1008–1031:** the camera follows to the drawer's "Run isolated tests" card (16:9 m 2.6, ROI x 812–1150,
-  y 200–566, the whole card; square m 2.65, ROI x 817–1143, y 205–486, its upper part). Source 16.57 → 17.34 s, 1×; then
+- **f1008: hard cut** (lane G-fix, REVIEW-G2 P2-1: from stage 2 a camera move would travel about 200 px a frame) to the
+  drawer's "Run isolated tests" card the click just put there (16:9 m 2.8, ROI x 802.9–1160, y 213.5–553.5, the whole
+  card; square m 2.9, its upper part). Source 16.57 → 17.34 s, 1×; then
   a 0.25× crawl to 17.74 s (f1032–1079) so the card holds: **"Runs the project's tests in a temporary copy. Your
   project files don't change."** and "pytest in a temporary project copy. Network and original project writes are
   blocked." (real strings; no invented counter, C3).
@@ -307,6 +327,9 @@ Layout §4 (side split / stacked). Source: `main-live-film` recorded at 3× (§7
 - Fallback without R2: f1086–1109 the camera follows to the conversation's status line "Testing · Stop"; at f1152 a
   punch-in cut to `main-done-timeline@3x` on the conversation's timeline rows (same row text), the Verified row revealed
   by a mask at f1152.
+- **16:9, f1116–1139:** once R2's scroll has settled, the camera tilts down to y 329–669 (m 2.8), so "Not verified · 2
+  changed files, no tests run" and "Verification remains incomplete" have left the top before Verified lands (REVIEW-G2
+  P1-5, lane G-fix). The square's framing already leaves them out.
 - Focal: the card's lead (1400, 225) / (540, 450); Run tests (1677, 880) / (900, 895); then the newest row.
 
 **S5e Verified, the climax (1152–1223).**
@@ -315,8 +338,9 @@ Layout §4 (side split / stacked). Source: `main-live-film` recorded at 3× (§7
   run completes at f1204 (source 22.33), when the app's pebble turns **`happy`**: the film's one celebration, held
   4.5 s as in the app (to f1339). The celebration lands as the pull-back reveals the finished reply.
 - **T10** "Done means tested" (one line), entrance (B) ink, in f1152, out f1212.
-- **Check mark** (16:9 only): a stroked check, 56 px, 6 px `#506E54`, round caps, centred at (890, y of the Verified
-  row), outside the UI (C3); drawn on f1152–1162, `EASE.enter`.
+- **Check mark** (16:9 only): a stroked check, **72 px, 8 px** `#506E54`, round caps, centred at (**860**, y of the
+  Verified row), outside the UI with 24 px clear of the stage (C3; REVIEW-G2 P1-5, lane G-fix); drawn on f1152–1162,
+  `EASE.enter`.
 - **Exit move f1188–1211:** the camera pulls back to m 1.3 (16:9 ROI x 340–1110, y 0–732; square ROI x 366–1160,
   y 0–572). The final reply streams: "The tests ran in an isolated copy of your project: 42 passed. Both edits are
   verified, and the CSV export works again for invoices issued on the 29th, 30th and 31st."
@@ -366,9 +390,12 @@ Stills `settings-*@3x` (real, light). 16:9 m 2.0, ROI x 336–836 (the modal's c
 ### S7 Views, the payoff (1584–1799) — chapter `views`
 
 **S7a The dashboard (1584–1655).**
-- **f1584 (bar 23, motif): hard cut.** Side split; the stage shows `main-dashboard@3x` (the 1440×900 window): the
-  request "Turn my Lisbon trip spending into a dashboard…", and the canvas **"Lisbon trip budget"** with its tiles and
-  the "Spending by category" chart. 16:9 m 1.25, ROI x 612–1412, y 70–832; square m 1.25, ROI x 640–1408, y 62–657.
+- **f1584 (bar 23, motif): hard cut to the ask** (REVIEW-G2 P1-7, lane G-fix): the stage shows `main-dashboard@3x`
+  (the 1440×900 window) on the request "Turn my Lisbon trip spending into a dashboard: what I've spent, by category, and
+  what's left to book." and the reply's first lines (16:9 m 2.83, ROI x 284–637.4, y 84–420.4; square m 2.92, ROI
+  x 284–637.4, y 76 → bottom, the request bubble in focus and the rest under a veil). **f1602–1625:** the camera moves on
+  van Wijk's path to the canvas **"Lisbon trip budget"** with its tiles and the "Spending by category" chart (16:9
+  m 1.255, x 643.2–1440; square m 1.295), and holds to f1655: the ask, then the view, then the chart becomes the world.
 - **T14** "Views," / "not just text", in f1584 (with the cut, on the motif); the world move takes it at f1656.
 - The pebble (idle) looks at the view.
 - Focal: the canvas title and tiles (1450, 300) / (540, 520).
@@ -384,20 +411,25 @@ Stills `settings-*@3x` (real, light). 16:9 m 2.0, ROI x 336–836 (the modal's c
 - Focal: the tallest bar, "Stay" (900, 450) / (500, 480).
 
 **S7c The quiz (1728–1799).**
-- **f1728: hard cut** to `main-quiz@3x`, full frame: "Python datetime check-in", "QUESTION 1 OF 5", **"What does
+- **f1728: hard cut** to `main-quiz@3x`, full frame (lane G-fix, P1-8: 16:9 cy 425, square cy 437, so the title has
+  ≥ 64 px of headroom): "Python datetime check-in", "QUESTION 1 OF 5", **"What does
   date(2026, 1, 31) + timedelta(days=1) return?"** with A date(2026, 2, 1) selected, B, C, D. 16:9 m 2.6, ROI
   x 735–1145, y 330–665; square m 2.4, ROI x 735–1135, y 330–640. (The question rhymes with the film's bug.)
-- **f1782–1799: zoom through the selected answer's "A" badge** (`#506E54`): aim at CSS (764, 469), inside the badge
-  and away from the white "A"; ×1 → ×70, `EASE.exit`; the badge fills the frame by f1795.
+- **f1786–1799: zoom through the selected answer's "A" badge** (`#506E54`): aim inside the badge and away from the white
+  "A" (G2a: (765, 457.3)); ×1 → ×90, `EASE.exit`; the badge fills the frame **on f1799** (lane G-fix, P1-2), the world
+  changes on f1800 with the whoosh's peak. From f1794 the badge's colour covers its white "A" under the zoom blur (P2-7).
 - Focal: the question (960, 300) / (540, 330); f1782–1799 the badge → frame centre.
 
 ### S8 Claims (1800–2015) — sage field, chapter `open-source`
 
-- **f1800: seam by zoom-through.** The ground starts at the badge's `#506E54` and eases to `#536B54` by f1812
-  (imperceptible). Whoosh peaks f1801.
-- **T15** "Free and open source" (f1800) with **T15s** "Apache-2.0" (support, f1806); **T16** "No telemetry" (f1872);
-  **T17** "Your keys stay in your Keychain" (f1941; one line in 16:9, two lines in the square). Entrance (B) ink,
-  centred, headline centre y 450.
+- **f1800: seam by zoom-through.** The ground starts at the badge's `#506E54` and eases to the type ground `#425643`
+  by f1812 (§4). Whoosh peaks f1800 (picture f1799 + 1).
+- **The facts build a list** as the questions do (REVIEW-G2 P1-6, lane G-fix; left-aligned, the block centred on its
+  widest line; each inks in whole; earlier items dim to 45 %): **T15** "Free and open source" (f1800) with **T15s**
+  "Apache-2.0" (support, f1806); **T16** "No telemetry" (f1869 → f1872, bar 27); **T17** "Your keys stay in your
+  Keychain" (f1923 → f1926, beat 107; one line in 16:9, two in the square). Centres y 300 / baseline 435 / 545 / 685
+  (16:9) and 280 / 395 / 500 / 680 (square). The list leaves together f1998–2004, before the end card's pebble enters
+  the frame (≈ f2005), so it never crosses a line (P1-3).
 - Focal: (960, 450) / (540, 450).
 
 ### S9 End card (2016–2303) — paper world, chapter `get`
@@ -446,7 +478,7 @@ sharp.
 | 792–810 | 8.33 → 9.40 | ≈1.69× | the card is static; **click Apply edit 9.40 → f810** |
 | 810–813 | 9.40 | freeze | press state drawn over the frame |
 | 814–863 | 11.05 | freeze | (match cut) the Done card with Undo this edit, before new steps push it down at 11.10 |
-| 864–1007 | 11.80 → 16.57 | 1× | (cut) notice 13.80 → f924; **held 14.03 → f931**; scroll 14.50–15.10 → f945–963; **click Run the tests 16.00 → f990**; tests card 16.10–16.20 → f993–996 |
+| 864–1007 | 11.80 → 16.57 | 2.5×, 1×, 0.35×, 1× | (cut) 11.80 → 14.50 s over f864–896 (2.5×: notice 13.80 → f888, **held 14.03 → f890**); the app's scroll 14.50–15.10 → f896–914 (1×); the settled run 15.10 → 15.97 over f914–989 (0.35×; only its avatar animates); **click Run the tests 16.00 → f990** (press over 15.97, f990–993); tests card 16.10–16.20 → f996–999. Re-keyed by lane G-fix (REVIEW-G2 P0-1) |
 | 1008–1031 | 16.57 → 17.34 | 1× | camera to the tests card |
 | 1032–1079 | 17.34 → 17.74 | 0.25× | the card holds |
 | 1080 | 17.80 | — | **click Run tests** |
@@ -470,15 +502,15 @@ lines readable twice: ≥ 2 s and 0.6 s per word). Positions are given for 16:9 
 
 | Id | Text (line breaks shown with /) | Shot | Role, entrance | in | out | Hold (s) / needed | Position |
 |---|---|---|---|---|---|---|---|
-| T1 | What did it change? | S2 | headline, (B) | 144 | 210 | 2.20 / 1.70 | centred, centre y 470 |
-| T2 | Can I undo it? | S2 | headline, (B) | 216 | 282 | 2.20 / 1.70 | centred, y 470 |
-| T3 | Did it run the tests? | S2 | headline, (B) | 288 | 354 | 2.20 / 2.00 | centred, y 470 |
+| T1 | What did it change? | S2 | headline, (B) whole, list item | 144 | 348 (dims from 213) | 6.80 / 1.70 | list, centre y 350 / 360 |
+| T2 | Can I undo it? | S2 | headline, (B) whole, list item | 213 | 348 (dims from 285) | 4.50 / 1.70 | list, centre y 470 |
+| T3 | Did it run the tests? | S2 | headline, (B) whole, list item | 285 | 348 | 2.10 / 2.00 | list, centre y 590 / 580 |
 | T4 | An agent shouldn't / grade its own work | S3 | headline, (C) | 360 | 462 | 3.40 / 2.60 | centred block, centre y 420 |
 | W1 | `pebble` (wordmark, the pebble as its full stop) | S4 | wordmark, (W) | 506 | 614 (rolls back) | — | baseline y 420 / 400 |
 | T5 | A small companion for your Mac | S4 | support, (A) | 522 | 612 | 3.00 / 2.30 | centred, baseline y 560 / 530 |
 | T6 | It reads / your project | S5a | side line, (A) | 666 | 718 | 1.73 / 1.70 | column / band top-left |
 | T7 | Review, apply, / undo | S5b | side line, word by word with the verbs: 756, 811, 830 | 756 | 858 | 3.40 / 1.40 | column / band |
-| T8 | AgentGuard checks / the evidence | S5c | side line, (A) | 954 | 1038 | 2.80 / 1.70 | column / band |
+| T8 | AgentGuard checks / the evidence | S5c | side line, (A) | 936 | 1038 | 3.40 / 1.70 | column / band |
 | T9 | Tests run in / an isolated copy | S5d | side line, (A) | 1044 | 1140 | 3.20 / 2.30 | column / band |
 | T10 | Done means tested | S5e | side line, (B) | 1152 | 1212 | 2.00 / 2.00 (last of S5) | column / band |
 | T11 | Your model, / your choice | S6a | side line, (A) | 1242 | 1320 | 2.60 / 1.70 | column / band |
@@ -486,10 +518,10 @@ lines readable twice: ≥ 2 s and 0.6 s per word). Positions are given for 16:9 
 | T12 | You set what / it may do | S6b | side line, (C) | 1350 | 1428 | 2.60 / 2.00 | column / band |
 | T13 | Memory you can / read and forget | S6c | side line, (A) | 1458 | 1578 | 4.00 / 2.30 (last of S6) | column / band |
 | T14 | Views, / not just text | S7a | side line, (A) | 1584 | 1656 (taken by the world move) | 2.40 / 2.00 (last of S7) | column / band |
-| T15 | Free and open source | S8 | headline, (B) | 1800 | 1866 | 2.20 / 1.70 | centred, y 450 |
-| T15s | Apache-2.0 | S8 | support, (B) | 1806 | 1866 | 2.00 / 1.20 | under T15, baseline y 560 / 540 |
-| T16 | No telemetry | S8 | headline, (B) | 1872 | 1935 | 2.10 / 1.20 | centred, y 450 |
-| T17 | Your keys stay in your Keychain (square: Your keys stay / in your Keychain) | S8 | headline, (B) | 1941 | 2010 | 2.30 / 2.30 (last of S8) | centred, y 450 |
+| T15 | Free and open source | S8 | headline, (B) whole, list item | 1800 | 1998 (dims from 1869) | 6.60 / 1.70 | list, centre y 300 / 280 |
+| T15s | Apache-2.0 | S8 | support, (B) whole, list item | 1806 | 1998 (dims from 1869) | 6.40 / 1.20 | under T15, baseline y 435 / 395 |
+| T16 | No telemetry | S8 | headline, (B) whole, list item | 1869 | 1998 (dims from 1923) | 4.30 / 1.20 | list, centre y 545 / 500 |
+| T17 | Your keys stay in your Keychain (square: Your keys stay / in your Keychain) | S8 | headline, (B) whole, list item | 1923 | 1998 | 2.50 / 2.30 (last of S8) | list, centre y 685 / 680 |
 | W2 | `pebble` | S9 | wordmark, (W) | 2018 | end | — | baseline y 420 / 400 |
 | T18 | A little help, right here. | S9 | side line (16:9 92 px, square 72 px), (A) | 2088 | end | 7.17 / 3.00 (key) | centred, baseline y 560 / 520 |
 | T19 | Free for Macs with Apple silicon | S9 | CTA words, (C) | 2160 | end | 4.80 / 3.60 (key) | centred, baseline y 690 / 630 |
@@ -556,10 +588,10 @@ Anticipation 0.15 s (sy 0.89) before each take-off; stretch sy 1.11 / sx 0.90; l
 | 652 | 21.733 | pose `reading` | lands in the window world; the status line reads Reading |
 | 660 | 22.000 | `look {x: 0.875, y: −0.375}` (square `{−0.875, 0.5}`) | toward the status line |
 | 711 | 23.700 | pose `editing` | "Preparing an edit"; inside the f708–714 blink |
-| 729 | 24.300 | pose `review` | the edit card waits ("!") |
+| 756 | 25.200 | pose `review` | the edit card waits ("!"); on a still frame, with "Review," (lane G-fix, P1-4) |
 | 780–826 | | `look` from the pointer | Apply edit |
 | 864 | 28.800 | pose `thinking` | both edits applied; the run continues |
-| 931 | 31.033 | pose `blocked` | verification required |
+| 890 | 29.667 | pose `blocked` | verification required (the re-keyed hold, lane G-fix, P0-1) |
 | 960–1000 | | `look` from the pointer | Run the tests |
 | 995 | 33.167 | pose `review` | the "Run isolated tests" card waits ("!") |
 | 1050–1090 | | `look` from the pointer | Run tests |
@@ -618,7 +650,7 @@ at once; hits 3–6 dB over the bed; rotate takes. Pan = 0.4 × (x − W/2)/(W/2
 | Picture frame | Peak | Role, take | Event | Notes |
 |---|---|---|---|---|
 | 36 | 37 | click, click_a | the pebble is clicked | pan +0.14 |
-| 144 | 145 | whoosh, whoosh_b | into the sage field (zoom through the pebble) | |
+| 143 | 144 | whoosh, whoosh_b | into the sage field (zoom through the pebble) | the dive fills the frame on f143 (lane G-fix) |
 | 360–504 | end 504 | riser | bars 6–7 | the only riser |
 | 504 | 505 | hit, soft_hit_b | the reveal landing | duck the bed 2.5 dB for 0.6 s |
 | 504 | 505 | thud, thud_a | texture under the hit | |
@@ -636,7 +668,7 @@ at once; hits 3–6 dB over the bed; rotate takes. Pan = 0.4 × (x − W/2)/(W/2
 | 1530 | 1531 | click, click_c | the bin | |
 | 1542 | 1543 | pop, pop_c | the record dissolves | |
 | 1665 | 1666 | whoosh, whoosh_c | the chart becomes the world (its fastest frame) | |
-| 1800 | 1801 | whoosh, whoosh_a | into the sage field (zoom through the badge) | |
+| 1799 | 1800 | whoosh, whoosh_a | into the sage field (zoom through the badge) | the dive fills the frame on f1799 (lane G-fix) |
 | 2016 | 2017 | pop, pop_b | the end-card landing | |
 | 2016 | 2017 | thud, thud_b | landing texture | duck 1.5 dB |
 
@@ -655,7 +687,7 @@ cross-fade between worlds. One light leak at most (off by default).
 | 3 | 648 | reveal → window | carry across (match cut on action) | the pebble's leap continues across the cut at u = 0.78 |
 | 4 | 720 | reads → asks | camera move | the drawer opens; the camera follows "Preparing an edit" |
 | 5 | 864 | asks → held | **hard cut** | chapter change on the bar |
-| 6 | 1008 | held → tests | camera move | the tests card arrives in the drawer |
+| 6 | 1008 | held → tests | **hard cut** (lane G-fix, P2-1) | the Run the tests click puts the tests card in the drawer; cut to it on the bar |
 | 7 | 1152 | tests → Verified | continuous (R2) / punch-in cut (fallback) | the Verified row appears |
 | 8 | 1224 | Verified → Settings | match cut on a click | the Settings button |
 | 9 | 1332 | Models → Permissions | match cut on a click | the tab |
@@ -667,7 +699,7 @@ cross-fade between worlds. One light leak at most (off by default).
 | 15 | 2016 | claims → end card | colour flood + carry in | the pebble lands; paper spreads from it |
 
 Inside shots: f72 punch-in (hook), f814 match cut on the click, f1404 match cut on the click, f1542 state swap.
-**Hard cuts between beats: 2 of 15 seams (13 %), 3 counting the payoff's internal cut (20 %), 4 with the S5d fallback
+**Hard cuts between beats: 3 of 15 seams (20 %; lane G-fix made f1008 a cut), 4 counting the payoff's internal cut
 (27 %), all under R5's one-third.** Five kinds, within R5's 3–5.
 
 Cut strips (R5 §13.6): render frames −6, −3, 0, +3, +6 around frames 72, 144, 504, 648, 720, 814, 864, 1008, 1152,
@@ -675,7 +707,8 @@ Cut strips (R5 §13.6): render frames −6, −3, 0, +3, +6 around frames 72, 14
 
 ## 13. Captions and chapters
 
-**Captions:** `docs/film-captions.json` — 24 non-overlapping cues (sound descriptions in brackets, kinetic lines word
+**Captions:** `docs/film-captions.json` — 25 non-overlapping cues (lane G-fix: c12 from f936, c20 f1872–1926, c21
+f1926–2016, and c24 split so c25 carries the URL and "Shown with sample data", f2232–2304) (sound descriptions in brackets, kinetic lines word
 for word, at most two lines, each shown ≥ 1.2 s at ≤ 3 words per second). Convert to `public/media/v1/film.en.vtt`
 and `Pebble-launch-film.srt` with seconds = frame / 30 (the file states the format). No caption covers a kinetic line:
 all kinetic type sits above y 918. Whooshes and most clicks are not described; the music's changes, the reveal's thud,
@@ -745,6 +778,10 @@ frames (render T0 right after the film master, before those frames are deleted, 
 - **Layout:** the riverbed desktop with Pebble's window at m 0.75 (870×600), x 205–1075, y 60–660; framed like the
   page's media (radius 28, window shadow).
 - Text: none (the page's label and chapter list carry the words).
+- **Veils** (lane G-fix, REVIEW-G2 P1-9): in the close framings the conversation left of the drawer recedes under S7c's
+  veil (60 % paper, 10 px blur; its amount follows the camera's zoom, so frame 0 and the seam are untouched), and as
+  "Verified" lands (f150) the drawer's rows above "Requesting isolated tests" recede too, so the payoff never reads as
+  "Not verified · 2 changed files, no tests run".
 
 | Frames | What happens | Source |
 |---|---|---|
@@ -776,9 +813,9 @@ the page's HTML carries the words. Seam QA: the PSNR of frame N−1 → 0 ≥ th
 |---|---|---|---|---|---|
 | **L1** `loop-companion` | **300 (10 s)** | desktop + `pet-live-error` at 3×, avatar hidden, extended with a close click (R4); `PebbleOnFilm`, engine offset +1.0 s | 0–14 idle pet (m 1.8, size 266, centre (1289, 800)); 15–37 cursor in from the left, eyes follow; `hover` f28; **click f46** (`tap`; source 0.60); 46–261 source 0.60 → 7.77 s at 1×: typing f67–116, sent f118 (`sending`), `thinking` f136, reply streams f166–220 (`writing` f166), done f226 (`happy`); 240–255 cursor to the close control; **click f262** (source 7.80) → the chat collapses; `idle` f262; 270–285 cursor leaves and fades; `look` pinned f280 | collapsed pet, idle, pinned gaze, no cursor; blinks at f12, f127, f260–274 only | the pebble alone on its desktop |
 | **L2** `loop-models` | 180 (6 s) | `settings-models@3x` | 0–14 ROI A (x 346–814, y 190–440, m 3.0); 15–50 camera to ROI B (model row and buttons, m 3.6) on `EASE.camera`; ring on **Add a model file** f50–62; hold to f120; ring fades f120–126; 126–156 camera back to ROI A (same ease); 156–179 idle | camera identical, no ring | the ways in: the model row, Add a model file, Connect provider, Continue with ChatGPT |
-| **L3** `loop-approve-undo` | 300 (10 s) | `crop-approval-card@3x` + its Done twin `crop-approval-card-done@3x` (R3); fallback vclock frames 9.40 / 11.05 s | 0–14 the waiting card (m 2.0); 15–44 cursor arcs in from the lower right; **click f51** (press f51–54); f55 match cut to Done + Undo this edit (1.04 → 1.0); ring on Undo this edit f70–82; hold to f200; ring fades f200–206; cursor leaves f206–230; time-passage dissolve f236–248 back to the waiting card; idle tail | the waiting card, no cursor, no ring | the card with its diff and Apply edit |
-| **L4** `loop-isolated-tests` | 240 (8 s) | `main-done-timeline@3x`: the conversation's run block (ROI x 240–725, y 325–565, m 3.0) | 0–59 complete (summary, the receipt line, all seven rows); 60–71 time-passage dissolve to the "before" state (rows from "Requesting isolated tests · 11 s" on and the receipt line masked); rows reveal (mask, 0.3 s each): "Requesting isolated tests · 11 s" f84, "Explored · read 1 file, 1 search" f120, **"Verified · pytest 42 passed on current files · 2 s"** f156 with the receipt line f160, "The model responded · 4 s" f174; hold to f239 | complete state at both ends | "Verified · pytest 42 passed on current files" |
-| **L7** `loop-memory` | 240 (8 s) | `settings-memory@3x` → `settings-memory-forgotten@3x`, the records (ROI x 346–814, y 560–770, m 2.8) | 0–14 the three records; 15–50 cursor in from the right to the bin of "Uses metric units and 24-hour times."; **click f60**; dissolve f60–71 (opacity + 4 px blur); f72 swap (the next record in place); hold to f170; cursor fades f180–184; time-passage dissolve f186–197 back to frame 0's picture; idle tail | records as at frame 0, no cursor | the records with their bins |
+| **L3** `loop-approve-undo` | 300 (10 s); **270** since lane G-fix (REVIEW-G2 P2-19: the applied card held still 3.3 s; ring out f150, dissolve f160–172, tilt back f180–210) | `crop-approval-card@3x` + its Done twin `crop-approval-card-done@3x` (R3); fallback vclock frames 9.40 / 11.05 s | 0–14 the waiting card (m 2.0); 15–44 cursor arcs in from the lower right; **click f51** (press f51–54); f55 match cut to Done + Undo this edit (1.04 → 1.0); ring on Undo this edit f70–82; hold to f200; ring fades f200–206; cursor leaves f206–230; time-passage dissolve f236–248 back to the waiting card; idle tail | the waiting card, no cursor, no ring | the card with its diff and Apply edit |
+| **L4** `loop-isolated-tests` | 240 (8 s); built by G2b from the real card and drawer (see HANDOFF-G2b); lane G-fix (REVIEW-G2 P1-9): as Verified lands (f110–122) the drawer's rows above "Requesting isolated tests" recede under S7c's veil | `main-done-timeline@3x`: the conversation's run block (ROI x 240–725, y 325–565, m 3.0) | 0–59 complete (summary, the receipt line, all seven rows); 60–71 time-passage dissolve to the "before" state (rows from "Requesting isolated tests · 11 s" on and the receipt line masked); rows reveal (mask, 0.3 s each): "Requesting isolated tests · 11 s" f84, "Explored · read 1 file, 1 search" f120, **"Verified · pytest 42 passed on current files · 2 s"** f156 with the receipt line f160, "The model responded · 4 s" f174; hold to f239 | complete state at both ends | "Verified · pytest 42 passed on current files" |
+| **L7** `loop-memory` | 240 (8 s); **210** since lane G-fix (REVIEW-G2 P2-19; the pointer fades where it clicked, f79–84, P1-9; dissolve f156–168) | `settings-memory@3x` → `settings-memory-forgotten@3x`, the records (ROI x 346–814, y 560–770, m 2.8) | 0–14 the three records; 15–50 cursor in from the right to the bin of "Uses metric units and 24-hour times."; **click f60**; dissolve f60–71 (opacity + 4 px blur); f72 swap (the next record in place); hold to f170; cursor fades f180–184; time-passage dissolve f186–197 back to frame 0's picture; idle tail | records as at frame 0, no cursor | the records with their bins |
 | **L8** `loop-views` | 300 (10 s) | `main-dashboard@3x` (whole window, m 1.11) and `main-quiz@3x` | 0–29 the dashboard, wide; 30–53 camera into the chart (m 1.9); hold to f119; **f120 cut** to the quiz (m 2.4 on the question); hold to f209; **f210 cut** back to the chart framing; 210–233 camera back to wide; hold to f299 | wide dashboard at both ends | the Lisbon trip budget dashboard |
 
 MASTER_PLAN listed L1 at 8 s; the real sequence needs 10 s to open, answer and close without a jump (Root.tsx registers
