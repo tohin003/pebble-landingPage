@@ -43,12 +43,15 @@
   height: 19px;
 }
 
-/* the header's: ink, small, no icon (the hero's Download is the accent one) */
+/* the header's: small, no icon, outlined. The hero's Download is the view's one accent; a filled black pill would be
+   another product's look (PHILOSOPHY: the pebble's world is sage, never monochrome), so this is an ink hairline outline
+   that fills softly on hover. */
 .small {
   height: 36px;
   padding: 0 14px;
-  background: var(--ink);
-  color: var(--bg);
+  background: transparent;
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ink) 28%, transparent);
   font-size: 14px;
 }
 
@@ -81,6 +84,6 @@
   }
 
   .small:hover {
-    opacity: 0.85;
+    background: var(--fill);
   }
 }
