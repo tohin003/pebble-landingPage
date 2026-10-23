@@ -621,20 +621,20 @@ the "!" (`review`) appears only while an approval waits (twice: the edit card an
 | Instance | Frames | Start | Hops | Palette |
 |---|---|---|---|---|
 | P-desk | 0–143 | inside the desktop world at the pet's place (it scales with the camera) | — | light |
-| P-main | 432–1665 | off-frame below: (960, 1150) / (540, 1150) | H1, H2, H3 | dark until the reveal flood reaches it (f504), then light |
-| P-end | 1999–2303 | off-frame lower right: (2050, 1180) / (1180, 1180) | H4 | dark until f2016, then light |
+| P-main | 432–1665 | off-frame below: (960, 1200) / (540, 1200) / (540, 2050) (G2a: at 1150 its top showed) | H1, H2, H3 | dark until the reveal flood reaches it (f504), then light |
+| P-end | 1999–2303 | off-frame lower right: (2050, 1180) / (1180, 1180) / (1180, 2010) | H4 | dark until f2016, then light |
 
 All share one cue list (§9.3) in absolute composition time. P-main is covered by the chart at f1656–1665 and not drawn
 after f1665. Contact shadow on (R5 §5.9).
 
 ### 9.2 Hops (acting layer, outer transforms only)
 
-| Hop | Take-off (s / frame) | Duration | From → to (16:9) | From → to (square) | Lands |
+| Hop | Take-off (s / frame) | Duration | From → to (16:9) | From → to (square) | From → to (vertical, §22) | Lands |
 |---|---|---|---|---|---|
-| H1 rise in | 14.400 / f432 | 0.500 | (960, 1150) → (960, 880) | (540, 1150) → (540, 880) | f447 |
-| H2 the leap | 16.333 / f490 | 0.467 | (960, 880) → (1295, 422) | (540, 880) → (806, 402) | **f504** |
-| H3 the carry | 21.133 / f634 | 0.600 | (1295, 422) → (330, 900) | (806, 402) → (940, 300) | f652 (cut at f648) |
-| H4 into the end card | 66.733 / f2002 | 0.467 | (2050, 1180) → (1295, 422) | (1180, 1180) → (806, 402) | **f2016** |
+| H1 rise in | 14.400 / f432 | 0.500 | (960, 1200) → (960, 880) | (540, 1200) → (540, 880) | (540, 2050) → (540, 1300) | f447 |
+| H2 the leap | 16.333 / f490 | 0.467 | (960, 880) → (1295, 422) | (540, 880) → (806, 402) | (540, 1300) → (806, 832) | **f504** |
+| H3 the carry | 21.133 / f634 | 0.600 | (1295, 422) → (330, 900) | (806, 402) → (940, 300) | (806, 832) → (930, 660) | f652 (cut at f648) |
+| H4 into the end card | 66.733 / f2002 | 0.467 | (2050, 1180) → (1295, 422) | (1180, 1180) → (806, 402) | (1180, 2010) → (806, 832) | **f2016** |
 
 Anticipation 0.15 s (sy 0.89) before each take-off; stretch sy 1.11 / sx 0.90; landing squash sy 0.87 / sx 1.15 for
 2 frames, then `jelly`. Eyes lead each hop by 0.1 s (look cues below).
@@ -651,13 +651,13 @@ Anticipation 0.15 s (sy 0.89) before each take-off; stretch sy 1.11 / sx 0.90; l
 | 72 | 2.400 | pose `thinking` | the run has started |
 | 144 | 4.800 | pose `idle` | (not drawn until f432) |
 | 440 | 14.667 | `look {x: 0, y: −0.75}` | looks up at T4 |
-| 481 | 16.033 | `look {x: 0.625, y: −0.75}` (square `{0.5, −0.875}`) | eyes lead the leap |
+| 481 | 16.033 | `look {x: 0.625, y: −0.75}` (square and vertical `{0.5, −0.875}`) | eyes lead the leap |
 | 504 | 16.800 | pose `tap` | lands: the reveal |
 | 520 | 17.333 | `look: null` | |
 | 540 | 18.000 | pose `idle` | tap ends (1.2 s, TAP_MS) |
-| 624 | 20.800 | `look {x: −0.875, y: 0.5}` (square `{0.75, −0.625}`) | eyes lead the carry |
+| 624 | 20.800 | `look {x: −0.875, y: 0.5}` (square `{0.75, −0.625}`; vertical `{0.625, −0.75}`) | eyes lead the carry |
 | 652 | 21.733 | pose `reading` | lands in the window world; the status line reads Reading |
-| 660 | 22.000 | `look {x: 0.875, y: −0.375}` (square `{−0.875, 0.5}`) | toward the status line |
+| 660 | 22.000 | `look {x: 0.875, y: −0.375}` (square `{−0.875, 0.5}`; vertical `{−0.625, 0.75}`) | toward the status line |
 | 711 | 23.700 | pose `editing` | "Preparing an edit"; inside the f708–714 blink |
 | 756 | 25.200 | pose `review` | the edit card waits ("!"); on a still frame, with "Review," (lane G-fix, P1-4) |
 | 780–826 | | `look` from the pointer | Apply edit |
@@ -671,8 +671,8 @@ Anticipation 0.15 s (sy 0.89) before each take-off; stretch sy 1.11 / sx 0.90; l
 | 1196–1555 | | `look` from the pointer | Settings, tabs, Auto, Forget |
 | 1204 | 40.133 | pose `happy` | the verified run completes (the one celebration) |
 | 1339 | 44.633 | pose `idle` | happy ends after 4.5 s, as in the app |
-| 1584 | 52.800 | `look {x: 0.875, y: −0.375}` (square `{−0.875, 0.5}`) | the dashboard |
-| 1999 | 66.633 | `look {x: −0.75, y: −0.75}` (square `{−0.375, −0.875}`) | P-end: eyes lead the landing |
+| 1584 | 52.800 | `look {x: 0.875, y: −0.375}` (square `{−0.875, 0.5}`; vertical `{−0.75, 0.625}`) | the dashboard |
+| 1999 | 66.633 | `look {x: −0.75, y: −0.75}` (square `{−0.375, −0.875}`; vertical `{−0.25, −0.875}`) | P-end: eyes lead the landing |
 | 2016 | 67.200 | pose `tap` | lands in the end-card lockup |
 | 2030 | 67.667 | `look: null` | |
 | 2052 | 68.400 | pose `idle` | |
