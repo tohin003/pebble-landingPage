@@ -113,7 +113,9 @@ fixture numbers (S). The withdrawn test counter and "network off" (critic C3) ar
 release session's corrections: the film shows no export, no Chrome, no schedule, no ⌘+ or ⌘−, never says memories are
 edited ("Memory you can read and forget") and never scopes the model to a conversation ("Your model, your choice").
 S6b (f1332–1439) shows the real 1.0.1 Settings › Permissions, whose Full access text names "browser and app-window
-actions" (C-EXP-4..7): Pebble's own words, kept like the page's dial.
+actions" (C-EXP-4..7): Pebble's own words, kept like the page's dial. (1.0.4, lane shots) The film's stills in
+`video/public/ui/` are retaken from 1.0.4, so the next render of S6b shows 1.0.4's words ("presses in a Chrome tab"),
+the same as the page's dial.
 
 (1.0.3, 2026-10-23) The changelog's 1.0.3 "Corrections" withdraw one film line: "Done means tested" (C-CH-6), which
 the film lane changes to "Evidence before done". The same words are the chapter's title in `chapters.ts`, which /film
@@ -171,14 +173,14 @@ itself stays true: the demo project has tests that cover the change (`tests/test
 | C-EXP-1 | Approval card words: "Needs your review", "Done", "Not allowed", "Undone"; "Changes this file in your project. You can undo it afterwards."; "Proposed source edit · original stays intact until approval"; "View diff"; "Don't allow"; "Apply edit"; "Undo this edit" | `src/App.vue@v1.0.1:718`, `:726`, `:2492-2495`, `:2498`, `:2553`, `:2565`, `:2588` | V. "Not allowed" is the app's own status after Don't allow (`:718`), so the demo shows it instead of inventing copy (§7.3) |
 | C-EXP-2 | `invoice_kit/dates.py` and its diff | `fixtures.js` (`DIFF_DATES`) | S |
 | C-EXP-3 | "Try the approval card. Its words are the ones Pebble shows." | C-EXP-1 (checked word for word by Lane A's script, see "Checks run") | I |
-| C-EXP-4..7 | The three modes' names, "Runs without asking" and "Always asks" texts, and the "In every mode, …" sentence | `src/permissionModes.ts@v1.0.1:20-38`, `:42`; labels `AdvancedSettings.vue@v1.0.1:1383-1384`; legend "How Pebble acts" from `AdvancedSettings.vue@v1.0.1:1365` ("HOW PEBBLE ACTS", set in sentence case per PLAN §7.1) | V. The app keeps these true with a test (`permissionModes.ts:1-5`). (§12) Kept word for word, as 1.0.1 shows them: Full access's "Always asks" and the "In every mode" sentence name "browser and app-window actions" (`permissionModes.ts@v1.0.1:36`, `:42`). Pebble can't see or operate other apps (STATUS 14:58), so C-EXP-14 sits right under the quote. 1.0.3 rewrites both strings without that wording (`src/permissionModes.ts@checkout:36`: "…installs, presses in a Chrome tab, network or dangerous commands…"; `:42`: "…Connector calls, installs and every press in a Chrome tab you granted always ask; looking, typing and choosing in that tab run under your grant. …"; its test `src/permissionModes.test.mjs@checkout:60` asserts "no app-window wording"): switch to them when 1.0.3 is published and the Settings › Permissions stills are retaken |
+| C-EXP-4..7 | The three modes' names, "Runs without asking" and "Always asks" texts, and the "In every mode, …" sentence | (1.0.4) `src/permissionModes.ts@v1.0.4:20-38`, `:42`; labels `AdvancedSettings.vue@v1.0.4:1383-1384`; legend "How Pebble acts" from `AdvancedSettings.vue@v1.0.4:1365` ("HOW PEBBLE ACTS", set in sentence case per PLAN §7.1). Before: the same lines `@v1.0.1` | V. The app keeps these true with a test (`permissionModes.ts:1-5`). (1.0.4, lane shots) Switched to 1.0.4's words with the Settings › Permissions stills retaken from 1.0.4 (`public/ui/v1/settings-permissions-*`): Full access's "Always asks" now names "presses in a Chrome tab" (`permissionModes.ts@v1.0.4:36`), and the "In every mode" sentence reads "… Connector calls, installs and every press in a Chrome tab you granted always ask; looking, typing and choosing in that tab run under your grant. Protected credentials stay blocked." (`:42`); the app's own test asserts "no app-window wording" (`src/permissionModes.test.mjs@v1.0.4:60`). The other names and texts are unchanged since 1.0.1. (§12, history) 1.0.1's two strings named "browser and app-window actions" (`permissionModes.ts@v1.0.1:36`, `:42`) and were shown word for word until 1.0.4 was published (STATUS 20:34). C-EXP-14 stays under the quote |
 | C-EXP-8 | "The default" (on Ask for approval) | `README.md@v1.0.1:112`; `src/permissionModes.ts@v1.0.1:44-46` | Q |
 | C-EXP-9 | Below the modes, in Settings › Permissions, a switch for each kind of tool turns it off entirely. | `docs/USER_GUIDE.md@v1.0.1:92-94` | Q. Explains the app sentence's "switches below" on a page that has none |
 | C-EXP-10 | "Full access increases the impact of mistakes and prompt injection. AgentGuard is a reliability check; it cannot guarantee that every command or answer is safe." | `src/components/AdvancedSettings.vue@v1.0.1:1389-1393` (shown when Full access is selected) | V. Allow-listed (contains "safe") |
 | C-EXP-11 | Forget card: "Saved memories about “…”"; "Nothing is forgotten until you choose Forget. These are records Pebble saved; forgetting one removes it for good."; "Forget"; "Forgotten"; "All memories in Settings"; "Done"; the aria label "Forget: …" | `src/App.vue@v1.0.1:2057`, `:2059`, `:2066`, `:2071`, `:2075`, `:2081-2082` | V |
 | C-EXP-12 | "In this project" (where a memory applies) | `src/App.vue@v1.0.1:1479` | V |
 | C-EXP-13 | The three memories and the request "Forget what you know about invoice-kit." | `fixtures.js` (`mem-pref-4`, `mem-fact-1`, `mem-proc-1`) | S |
-| C-EXP-14 | (§12, new) Under the quoted "In every mode, …" sentence (`explainers.permissionDial.appsNote`, rendered by `Pace.tsx`): "Pebble can't see or operate other apps yet: an app launch only opens one." | The sources of C-LIM-15: STATUS 14:58; OVERRIDES §12; `CHANGELOG.md@checkout:38-39`; `backend/pebble/app.py@checkout:159`, `:3181-3189`; `src/components/ScreenSessions.vue@checkout:13-14`; `backend/pebble/native_apps.py@checkout:15-16` | Q, D. Keeps 1.0.1's verbatim "app-window actions" (C-EXP-4..7) from reading as app control; says nothing about approval, because the dial above it shows when an app launch asks in each mode |
+| C-EXP-14 | (§12, new) Under the quoted "In every mode, …" sentence (`explainers.permissionDial.appsNote`, rendered by `Pace.tsx`): "Pebble can't see or operate other apps yet: an app launch only opens one." | The sources of C-LIM-15: STATUS 14:58; OVERRIDES §12; `CHANGELOG.md@checkout:38-39`; `backend/pebble/app.py@checkout:159`, `:3181-3189`; `src/components/ScreenSessions.vue@checkout:13-14`; `backend/pebble/native_apps.py@checkout:15-16` | Q, D. Kept 1.0.1's verbatim "app-window actions" (C-EXP-4..7) from reading as app control. (1.0.4) The dial's words no longer name app windows, but all three modes still list app launches ("app launch", "app launches"), so the note still says what a launch is; true for 1.0.4 (STATUS 20:34: the 14:58 corrections hold). Says nothing about approval, because the dial above it shows when an app launch asks in each mode |
 
 ## 6. You set the pace
 
@@ -610,7 +612,8 @@ true for 1.0.3). The version shown stays "v1.0.1 · 72 MB" until the 1.0.3 relea
   your grant. For 1.0 it loads in Chrome's Developer mode." STATUS 14:58: "fine as it is". It is the short form; the
   long forms (the limits list, the tile, `llms.txt`) carry the simulated-Chrome caveat.
 - The dial's and the quote's 1.0.1 words with "browser and app-window actions" (C-EXP-4..7): Pebble's own text, kept
-  word for word, with C-EXP-14 right under the quote. Switch to 1.0.3's strings when 1.0.3 is published.
+  word for word, with C-EXP-14 right under the quote. Switch to 1.0.3's strings when 1.0.3 is published. (Done with
+  1.0.4's identical strings: see "Pebble 1.0.4 product shots" at the end.)
 - "app launch" and "app launches" in the three modes: true, Pebble can open an app (C-LIM-15).
 - ⌘+ and ⌘−: not on the page, in the film, in `llms.txt` or in the post, and not to be added before 1.0.3 is out
   (`CHANGELOG.md@checkout:14`, `:35`). ⌘⇧Space and ⌘. stay (`docs/USER_GUIDE.md@checkout:250`, `:252`).
@@ -702,3 +705,31 @@ release session posts 1.0.3). The rows named below carry the sources, with the 1
   `docs/film-captions.json:34`, `video/src/film/timeline.ts:399` and `docs/FILM_SPEC.md:150`, `:340`, `:515`, `:723`,
   `:846` at the time of this pass.
 - `docs/DESIGN.md:126` still says "Done means tested." stays as step 04's title.
+
+## Pebble 1.0.4 product shots (lane shots, 2026-10-23)
+
+Pebble 1.0.4 was published at 20:34 (STATUS 20:34; tag `v1.0.4`, commit `3d872bd`). Every product still was retaken
+from the read-only checkout, whose UI source (`src/`) is unchanged since 17:34:49, before the publication, so the
+captures and the `@v1.0.4` citations above are the published 1.0.4. Between 1.0.1 and 1.0.4, the captured surfaces
+changed only in the window's own words: the permission modes (C-EXP-4..7), the Chrome-tab tool switch ("Screen
+control: Chrome tabs you share", `AdvancedSettings.vue@v1.0.4:344`), the user bubble without its leading space
+(`App.vue@v1.0.4:2044`) and Settings › Models naming a local model's window once (`AdvancedSettings.vue@v1.0.4:1087-1089`).
+The service's templates that the demo fixtures copy (timeline rows, verdicts, the held-run notice, the forget reply,
+AgentGuard's challenge) are unchanged, and so is every sample (S) row.
+
+### Changed
+
+| Where | Before (1.0.1) | After (1.0.4) | Rows |
+|---|---|---|---|
+| `copy.ts` `explainers.permissionDial.modes[2].alwaysAsks` (Full access) | "Other terminal commands (including grep and builds), connector calls, installs, browser and app-window actions, network or dangerous commands, and Git changes that delete work or publish it." | "Other terminal commands (including grep and builds), connector calls, installs, presses in a Chrome tab, network or dangerous commands, and Git changes that delete work or publish it." | C-EXP-4..7 |
+| `copy.ts` `explainers.permissionDial.everyMode` (quoted by `Pace.tsx`) | "… Browser and app-window actions, connector calls and installs always ask. Protected credentials stay blocked." | "… Connector calls, installs and every press in a Chrome tab you granted always ask; looking, typing and choosing in that tab run under your grant. Protected credentials stay blocked." | C-EXP-4..7 |
+| `copy.ts` `explainers.permissionDial.appsNote` (comment only; the sentence is unchanged) | it kept "app-window actions" from reading as app control | it says what an app launch is, which all three modes still list | C-EXP-14 |
+| `public/ui/v1/*` (the nine page stills, both themes, 2400 and 1200 w) | Pebble 1.0.1 | Pebble 1.0.4; the alt texts (`media.stills`) still describe them word for word | "Alt texts added" |
+
+### Checked and kept
+
+- The other mode names and texts, "The default" (C-EXP-8), the "How Pebble acts", "Runs without asking" and "Always
+  asks" labels, and C-EXP-10 (`AdvancedSettings.vue@v1.0.4:1390-1392`): unchanged in 1.0.4.
+- C-LIM-15 and C-EXP-14 ("Pebble can't see or operate other apps yet"): STATUS 20:34 says the 14:58 corrections hold
+  for 1.0.4.
+- The copy lint's every/always rule: the new "In every mode, …" sentence starts with its own mode qualifier.

@@ -585,7 +585,7 @@ export const explainers = {
     ],
   },
 
-  /** PermissionDial: the three modes, word for word from src/permissionModes.ts. [C-EXP-4..7] */
+  /** PermissionDial: the three modes, word for word from Pebble 1.0.4's src/permissionModes.ts. [C-EXP-4..7] */
   permissionDial: {
     legend: "How Pebble acts", // AdvancedSettings.vue:1365 ("HOW PEBBLE ACTS"), in sentence case
     defaultTag: "The default", // [C-EXP-8]
@@ -611,15 +611,15 @@ export const explainers = {
         name: "Full access",
         runsWithoutAsking: "Everything Auto runs, plus app launches and Git changes that neither delete work nor publish it.",
         alwaysAsks:
-          "Other terminal commands (including grep and builds), connector calls, installs, browser and app-window actions, network or dangerous commands, and Git changes that delete work or publish it.",
+          "Other terminal commands (including grep and builds), connector calls, installs, presses in a Chrome tab, network or dangerous commands, and Git changes that delete work or publish it.", // permissionModes.ts@v1.0.4:36
       },
     ],
     everyMode:
-      "In every mode, reading project files, searching and reading the web, and creating views run without asking while their switches below are on. Browser and app-window actions, connector calls and installs always ask. Protected credentials stay blocked.", // permissionModes.ts:42
+      "In every mode, reading project files, searching and reading the web, and creating views run without asking while their switches below are on. Connector calls, installs and every press in a Chrome tab you granted always ask; looking, typing and choosing in that tab run under your grant. Protected credentials stay blocked.", // permissionModes.ts@v1.0.4:42
     switchesNote: "Below the modes, in Settings › Permissions, a switch for each kind of tool turns it off entirely.", // [C-EXP-9]
     /**
-     * Under the quoted sentence (Pace.tsx). The modes' words above are 1.0.1's own and name "app-window actions";
-     * this keeps them from reading as app control (OVERRIDES §12). [C-EXP-14]
+     * Under the quoted sentence (Pace.tsx). 1.0.4's words above no longer name app windows, but each mode still lists
+     * app launches; this says what a launch is, so it never reads as app control (OVERRIDES §12). [C-EXP-14]
      */
     appsNote: "Pebble can't see or operate other apps yet: an app launch only opens one.",
     fullAccessNote:
