@@ -257,11 +257,12 @@ export const L7 = (() => {
  * framing's edges fall between rows on every frame the loops hold still (Pebble 1.0.4, ink scans of main-live-film at
  * 9.367, 11.067, 16.6, 17.8–18.4, 19.0–20.4 and 20.65 s). `x0` is the framings' left edge, `U` and `L` their tops.
  * - Square, the 515 px tile: the drawer's full width (801–1160) and 433 CSS px of it at m 2.2, so the app's 12 px
- *   renders at 12.6 px (the card 73 % of the tile; comp lex-A's is 76 %). U 205–638 (the card's top border at 211; the
- *   diff row 619–631.7 whole, the next from 640), L 296–729 (the lead ends 288.3, "Proposed source edit" from 308; on
- *   the applied frame the steps row 299–310.3 whole, Undo this edit 688–697.3, the next card's header from 749); L4
- *   205–638 (on the card frame the last step 626–637.3 whole; at the payoff the rows 609.3–619.3 and 639 straddle the
- *   edge cleanly).
+ *   renders at 12.6 px (the card 73 % of the tile; comp lex-A's is 76 %). U 205.5–638.5 (the card's top border at 211;
+ *   the diff row 619–631.7 whole, the next from 640.3), L 296–729 (the lead ends 288.3, "Proposed source edit" from
+ *   308; on the applied frame the steps row 299–310.3 whole, Undo this edit 688–697.3, the next card's header from
+ *   749); L4 205.5–638.5 on the card (16.6 s: the last step 626–637.3 whole, the next from 644.7; 17.8–18.4 s: rows end
+ *   629.3, the next start 643), then 200.5–633.5 once the steps have scrolled (19.0–20.65 s: a row runs 203–214.3,
+ *   so 205.5 would cut it; below, rows end 626.3 / 619.3 and the next start 645 / 639): see L4.C2.
  * - Tall, the 4:5 phone cut in a 360 px phone's 328 px frame: the drawer's content only (x 811–1150; its cards span
  *   815.3–1145.7) and 376.5 CSS px of it at m 3.02 (the card 95 % of the frame's width), so the app's 12 px renders at
  *   11.0 px (12.1 px on a 390 px phone). U and L4 201–577.4 (above: the "Needs your review" label ends 197.3, the next
@@ -270,7 +271,7 @@ export const L7 = (() => {
  *   the next starts 359.7; the card's bottom border is at 721 and the next card's edge at 733).
  */
 const STORY = {
-  square: { ...card(box(DRAWER.x0, DRAWER.x1, 205, 638), 2.2, "square", SLOT.story), x0: DRAWER.x0, U: 205, L: 296 },
+  square: { ...card(box(DRAWER.x0, DRAWER.x1, 205.5, 638.5), 2.2, "square", SLOT.story), x0: DRAWER.x0, U: 205.5, L: 296 },
   tall: { ...card(box(811, 1150, 201, 577.5), 1024 / 339, "tall", SLOT.phone), x0: 811, U: 201, L: 354 },
 } as const;
 
@@ -346,13 +347,21 @@ export const L4 = (() => {
     square: topLeftPose(STORY.square.x0, STORY.square.U, STORY.square.m, STORY.square.stage.rect),
     tall: topLeftPose(STORY.tall.x0, STORY.tall.U, STORY.tall.m, STORY.tall.stage.rect),
   };
+  // The square tile's 433 CSS px can't put both edges between rows on the card (16.6 s) AND on the scrolled steps
+  // (19.0–20.65 s; a row at 203–214.3 meets the card framing's top, 205.5). So its view rises 5 CSS px (2 page px) while
+  // the drawer itself scrolls 50 px (f62–70, 18.4–19.0 s) and comes back under the reset dissolve (f186–198). The 4:5
+  // cut's top (201) suits both, so it holds.
+  const C2 = { square: topLeftPose(STORY.square.x0, 200.5, STORY.square.m, STORY.square.stage.rect) };
   const run = { x: 1079, y: 513 };
   const click = 39;
   const plan = {
     id: "LoopIsolatedTests",
     n: 240,
     aspects: ["square", "tall"],
-    camera: { square: [key(0, C.square)], tall: [key(0, C.tall)] },
+    camera: {
+      square: [key(0, C.square), key(70, C2.square, 8, "direct"), key(198, C.square, 12, "direct")],
+      tall: [key(0, C.tall)],
+    },
     stages: { square: [STORY.square.stage], tall: [STORY.tall.stage] },
     reads: [
       { aspect: "square", what: "the card and the drawer's steps", css: 12, m: STORY.square.m, k: STORY.square.stage.k },
@@ -379,7 +388,7 @@ export const L4 = (() => {
   return {
     plan,
     stage: { square: STORY.square.stage, tall: STORY.tall.stage },
-    poses: { C },
+    poses: { C, C2 },
     src,
     resetSrc: 16.6,
     cursor: [
