@@ -520,7 +520,7 @@ engine's own (V): "Blocked" and "Pebble's change isn't verified yet." with the t
 `:121-123`), and the engine strings under C-AG-10.
 
 (1.0.3) `heldUnverified` (not rendered: the AgentGuard section uses `agentGuard.media.held`) said the run was held
-"because two files changed and no tests were run", a cause that no longer holds a task by itself (C-PROJ-9). It now
+"because two files changed and no tests were run", a cause that doesn't hold a task by itself (C-PROJ-9). It now
 says "because two files changed and the tests that cover them weren't run": the capture's own reason
 (`capture/mock/fixtures.js:94-101`: `tests/test_dates.py` covers the change; "Pebble changed dates.py, test_dates.py but
 did not run the tests that cover them.").
@@ -625,8 +625,8 @@ true for 1.0.3). The version shown stays "v1.0.1 · 72 MB" until the 1.0.3 relea
 
 `CHANGELOG.md@checkout:44-57` and the 1.0.3 guide correct more claims that rows above rely on. The release session
 hasn't asked the page to change these; they need its word before the 1.0.3 copy pass. (Kept as written when the §12
-pass ended. The main loop then asked for them to be applied (STATUS 15:25); the section below lists what changed and
-what was checked and kept.)
+pass ended. The main loop then had them applied and told the release session so (STATUS 15:25, "These are being fixed
+now"); the section below lists what changed and what was checked and kept.)
 - **AgentGuard's hold.** "Changed code without covering tests is not held." (`docs/USER_GUIDE.md@checkout:121-123`;
   `CHANGELOG.md@checkout:50`: "holds changed code only when tests cover it"). Rows that say a task that changed code
   must have a passing test run: C-PROJ-9, C-FAQ-13, C-AG-9, the `llms.txt` AgentGuard line, the LinkedIn post, and
