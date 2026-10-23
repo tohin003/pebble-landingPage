@@ -1,15 +1,17 @@
-// Section 6, Your model, your choice (DESIGN §5 row 6): the three ways in, as a quiet list (no cards), beside
-// Settings › Models. The heading sits on the page's central axis; under it, a split mirrored from AgentGuard's (the
-// picture on the left), so the page is never centred all the way down.
+// Section 6, Your model, your choice (DESIGN-LEXINGTON §6 Your model): the head on the rail ("Models / Three ways
+// in"), then, from column 4, the three ways in as bare columns under hairlines (no cards, no icons): each its button's
+// own name, what it does, and its limit at the same size. Under them the picture in columns 4–9, Settings › Models on
+// the riverbed, beside the note on local models in 10–12.
 //
-// Loop L2 plays in the frame once lane G renders it; until then the real Settings › Models still, cropped to the ways
-// in, sits as a window on the riverbed. Phones keep the still (cropped tighter, to the buttons, so it stays legible)
-// unless L2 has a phone cut of its own (critic H2).
+// Loop L2 plays in the frame once it is rendered; until then the real Settings › Models still, cropped to the ways in,
+// sits as a window on the riverbed at about the app's own scale. Phones keep the still (cropped tighter, to the
+// buttons, so it stays legible) unless L2 has a phone cut of its own (critic H2).
 import { common, media, models } from "@/content/copy";
-import { ChapterChip } from "@/components/media/ChapterChip";
+import { labels } from "@/content/labels";
 import { LoopVideo } from "@/components/media/LoopVideo";
 import { MediaFrame } from "@/components/media/MediaFrame";
 import { UiCrop } from "@/components/media/UiCrop";
+import { SectionHead } from "@/components/ui/SectionHead";
 import { loopMedia } from "@/lib/media";
 import { SECTIONS } from "@/lib/sections";
 import styles from "./Models.module.css";
@@ -21,60 +23,61 @@ const WAYS_IN = { x: 384, y: 160, w: 432, h: 270 } as const;
  * since the 1.0.4 stills: the model row's meta fits on one line now, so the buttons sit 13.5 units higher (lane shots).
  */
 const WAYS_IN_PHONE = { x: 397, y: 248.5, w: 330, h: 104 } as const;
-const FRAME_SIZES = "(max-width: 899px) calc(100vw - 48px), 616px";
+/** The picture: columns 4–9 (624 px at 1440, loop L2's slot), half the container at 1024–1279, the column below. */
+const FRAME_SIZES = "(max-width: 560px) calc(100vw - 32px), (max-width: 1023px) calc(100vw - 48px), (max-width: 1279px) calc((100vw - 64px) * 0.49), 624px";
 
 export function Models() {
   const l2 = loopMedia("models");
   // with L2 rendered, the still stays only for phones, and only if L2 has no phone cut
   const still = !l2.available || l2.phoneSources.length === 0;
   return (
-    <section id={SECTIONS.models} className={`section ${styles.section}`} aria-labelledby="models-title">
-      <div className="section-head">
-        <h2 id="models-title">{models.h2}</h2>
-        <p className="lead">{models.lead}</p>
-      </div>
+    <section id={SECTIONS.models} className="sec" aria-labelledby="models-title">
+      <SectionHead id="models-title" label={labels.models} title={models.h2} lead={models.lead} chip={models.chapterId} />
 
-      <div className={styles.layout}>
-        <figure className={styles.media}>
-          <MediaFrame variant="riverbed" aspect="16 / 10" sizes={FRAME_SIZES}>
-            {l2.available ? (
-              <LoopVideo
-                loop={l2}
-                label={media.loops.models.label}
-                name={media.loops.models.name}
-                sizes={FRAME_SIZES}
-                className={`${styles.fill} ${still ? styles.wideOnly : ""}`}
-              />
-            ) : null}
-            {still ? (
-              <div className={`${styles.window} ${l2.available ? styles.phoneOnly : ""}`}>
-                <UiCrop
-                  name="settings-models"
-                  alt={models.mediaAlt}
-                  box={WAYS_IN}
-                  phone={WAYS_IN_PHONE}
-                  display={{ wide: 444, tablet: "calc((100vw - 48px) * 0.72)", phone: "calc((100vw - 32px) * 0.9)" }}
-                />
-              </div>
-            ) : null}
-          </MediaFrame>
-          <figcaption className={styles.caption}>{common.sampleData}</figcaption>
-        </figure>
-
-        <div className={styles.list}>
+      <div className="wrap grid-12 sec-body">
+        <div className="main">
           <ul className={styles.ways}>
             {models.cards.map((way) => (
               <li key={way.id}>
-                <h3 className={styles.wayTitle}>{way.title}</h3>
+                <h3>{way.title}</h3>
                 <p className={styles.wayBody}>{way.body}</p>
                 <p className={styles.wayLimit}>{way.limit}</p>
               </li>
             ))}
           </ul>
-          <p className={styles.note}>
-            {models.caption} {models.switchNote}
-          </p>
-          <ChapterChip chapterId={models.chapterId} className={styles.chip} />
+
+          <div className={styles.showcase}>
+            <figure className={styles.media}>
+              <MediaFrame variant="riverbed" aspect="16 / 10" sizes={FRAME_SIZES}>
+                {l2.available ? (
+                  <LoopVideo
+                    loop={l2}
+                    label={media.loops.models.label}
+                    name={media.loops.models.name}
+                    sizes={FRAME_SIZES}
+                    className={`${styles.fill} ${still ? styles.wideOnly : ""}`}
+                  />
+                ) : null}
+                {still ? (
+                  <div className={`${styles.window} ${l2.available ? styles.phoneOnly : ""}`}>
+                    <UiCrop
+                      name="settings-models"
+                      alt={models.mediaAlt}
+                      box={WAYS_IN}
+                      phone={WAYS_IN_PHONE}
+                      display={{ wide: 499, tablet: "calc((100vw - 48px) * 0.8)", phone: "calc((100vw - 32px) * 0.9)" }}
+                      className={styles.windowCrop}
+                    />
+                  </div>
+                ) : null}
+              </MediaFrame>
+              <figcaption className={styles.caption}>{common.sampleData}</figcaption>
+            </figure>
+
+            <p className={styles.note}>
+              {models.caption} {models.switchNote}
+            </p>
+          </div>
         </div>
       </div>
     </section>

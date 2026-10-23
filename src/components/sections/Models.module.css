@@ -1,20 +1,43 @@
-/* Section 6, Your model, your choice: the centred head, then the picture on the left and the three ways in on the
-   right; one column below 900 px. The section must not create a stacking context. */
-.section {
-  position: relative;
+/* Section 6, Your model, your choice (DESIGN-LEXINGTON §6 Your model): the three ways in as bare columns in 4–12,
+   then the picture in 4–9 beside the note in 10–12. Lines, not boxes. */
+
+/* the three ways in: three columns of the main's nine each, a hairline on top, no cards */
+.ways {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--gap);
 }
 
-.layout {
+.ways li {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.wayBody {
+  margin-top: 8px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* the way's limit, beside its promise and at the same size (PHILOSOPHY 3) */
+.wayLimit {
+  margin-top: 8px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+/* the picture (6 of the main's 9 columns) beside the note (the last 3) */
+.showcase {
   display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-  column-gap: 64px;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  column-gap: var(--gap);
   align-items: start;
-  width: min(var(--w-content), 100%);
-  margin: 56px auto 0;
-  text-align: left;
+  margin-top: 56px;
 }
 
 .media {
+  grid-column: 1 / span 6;
   margin: 0;
 }
 
@@ -23,81 +46,58 @@
   inset: 0;
 }
 
-/* until loop L2 exists: the real Settings › Models, cropped, as a window on the riverbed */
+/* until loop L2 exists: the real Settings › Models, cropped, as a window on the riverbed at about the app's scale */
 .window {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 72%;
+  width: 80%;
   transform: translate(-50%, -50%);
+}
+
+/* a window inside a picture: the window radius and its shadow (DESIGN-LEXINGTON §3.5, depth 2) */
+.window > .windowCrop[data-frame] {
+  border-radius: var(--r-window);
+  box-shadow: var(--shadow-window);
 }
 
 .caption {
   margin-top: 12px;
-  font-size: 13.5px;
-  color: var(--ink-2);
-}
-
-/* the three ways in: hairlines between them, no cards */
-.ways {
-  border-bottom: 1px solid var(--line);
-}
-
-.ways li {
-  padding: 18px 0;
-  border-top: 1px solid var(--line);
-}
-
-.ways li:first-child {
-  padding-top: 0;
-  border-top: 0;
-}
-
-.wayTitle {
-  font-size: 17px;
-  line-height: 1.4;
-}
-
-.wayBody {
-  margin-top: 6px;
-  font-size: 16px;
-  line-height: 1.6;
-  color: var(--ink);
-}
-
-.wayLimit {
-  margin-top: 6px;
-  font-size: 14.5px;
-  line-height: 1.55;
+  font-size: 13px;
+  line-height: 1.45;
   color: var(--ink-2);
 }
 
 .note {
-  margin-top: 18px;
-  font-size: 15px;
+  grid-column: 7 / -1;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: 16px;
   line-height: 1.6;
   color: var(--ink-2);
 }
 
-.chip {
-  margin-top: 14px;
-}
-
 @media (max-width: 1023px) {
-  .layout {
-    column-gap: 44px;
-  }
-}
-
-@media (max-width: 899px) {
-  .layout {
+  .ways {
     grid-template-columns: minmax(0, 1fr);
-    row-gap: 36px;
-    margin-top: 40px;
   }
 
-  .list {
+  .ways li {
+    padding-block: 16px 20px;
+  }
+
+  .ways li > * {
     max-width: 40em;
+  }
+
+  .showcase {
+    display: block;
+    margin-top: 28px;
+  }
+
+  .note {
+    max-width: 40em;
+    margin-top: 28px;
   }
 }
 
