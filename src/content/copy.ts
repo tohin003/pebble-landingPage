@@ -1117,7 +1117,8 @@ export const media = {
     },
     models: {
       name: "models",
-      label: "Pebble's Models settings. The view moves across the three ways to connect a model and stops on Add a model file.",
+      label:
+        "Pebble's Models settings. The three ways to connect a model come forward: Add a model file, Connect provider and Continue with ChatGPT.", // L2 as rendered (lane v2-loops) [C-F2A-9]
     },
     approveUndo: {
       name: "approval",
@@ -1125,7 +1126,8 @@ export const media = {
     },
     isolatedTests: {
       name: "tests",
-      label: "A task's timeline: “Requesting isolated tests”, then the check “Verified · pytest 42 passed on current files”.",
+      label:
+        "The “Run isolated tests” card. Run tests is pressed, the timeline shows “Requesting isolated tests · 11 s”, then the check “Verified · pytest 42 passed on current files”.", // L4 as rendered (lane v2-loops) [C-F2A-10]
     },
     reviewCommands: {
       name: "commands",

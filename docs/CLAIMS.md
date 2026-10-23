@@ -738,12 +738,15 @@ AgentGuard's challenge) are unchanged, and so is every sample (S) row.
 ## Sections 2–7 on the system (lane v2-sections-a, 2026-10-24)
 
 The film, AgentGuard, On your desktop, the project story, Models and You set the pace moved onto the Lexington system
-(DESIGN-LEXINGTON §6). Their words are the approved ones and only moved; one label and one alt text are new.
+(DESIGN-LEXINGTON §6). Their words are the approved ones and only moved; one label and three alt texts are new (two of
+them describe loops L2 and L4 as the loops lane rendered them).
 
 | ID | Claim | Source | Kind / notes |
 |---|---|---|---|
 | C-SYS-16 | "The film / {length}, with sound." (the film's rail label; "1:16, with sound.") | The length: `chapters.ts` `FILM_DURATION_SECONDS` (76.8 s: 2,304 frames at 30 fps, `docs/FILM_SPEC.md` §1) through `formatTimecode` (whole seconds); "with sound": `film.playNote` (C-SYS-1), `film.lead` (C-FILM-1, "with music") | I. Label; the length is data. While the length is unknown the label is C-SYS-1's "Plays with sound." |
 | C-F2A-6 (alt) | `agentGuard.media.verified`: "The head of a reply in Pebble after the tests ran: “Verified · pytest 42 passed on current files”, then “Done, and verified:”." | `public/ui/v1/main-done-*` (Pebble 1.0.4), the ledger's crop (`AgentGuard.tsx` `VERIFIED`, `VERIFIED_PHONE`) | Alt text. Before, it also named the list under the head, which the new crop leaves out |
+| C-F2A-9 (alt) | `media.loops.models.label` (loop L2): "Pebble's Models settings. The three ways to connect a model come forward: Add a model file, Connect provider and Continue with ChatGPT." | L2 as rendered (`HANDOFF-v2-loops.md`: the ways in come forward, the models list recedes; it no longer moves or stops on Add a model file); the buttons' names `src/components/AdvancedSettings.vue@v1.0.1:1150`, `:1156`, `:1171` (C-MOD-6, "Pebble interface strings") | Alt text, the loops lane's wording. Shown only once L2 is on the page |
+| C-F2A-10 (alt) | `media.loops.isolatedTests.label` (loop L4): "The “Run isolated tests” card. Run tests is pressed, the timeline shows “Requesting isolated tests · 11 s”, then the check “Verified · pytest 42 passed on current files”." | L4 as rendered (`HANDOFF-v2-loops.md`: the card, Run tests, the steps, "· 11 s", Verified); the card's title and button `src/App.vue@checkout:2492`, `:2587`; the step `backend/pebble/app.py@checkout:2464`; C-F2A-5's steps | Alt text, the loops lane's wording. Before, it left out the card and the press. Shown only once L4 is on the page |
 
 Moved, not changed:
 - AgentGuard's evidence ledger titles its three rows with strings that already have rows: the engine's summary
