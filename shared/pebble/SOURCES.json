@@ -1,5 +1,5 @@
 {
-  "about": "Where every copied file in shared/pebble comes from. sha256 is the source file at the tag; provenance.test.ts checks the unchanged copies against it. bloub/PROVENANCE.json (bloub's own record, copied unchanged) names the upstream bloub revision.",
+  "about": "Where every copied file in shared/pebble comes from. sha256 is the source file at the tag (source.tag, or the file's own tag); provenance.test.ts checks the unchanged copies against it. bloub/PROVENANCE.json (bloub's own record, copied unchanged) names the upstream bloub revision. The files copied from v1.0.1 are byte-identical at v1.1.0.",
   "source": {
     "project": "Pebble",
     "repository": "https://github.com/tohin003/Pebble",
@@ -22,6 +22,7 @@
     { "path": "bloub/skins.ts", "from": "src/vendor/bloub/skins.ts", "sha256": "2fa0f296e8a49b7b81458eebb98b6ecb44d1073bdc815a46e7846819b743b3c3", "change": "modified: SHAPES trimmed to cercle and galet (header in the file)", "license": "MIT (bloub)" },
     { "path": "avatarMotion.ts", "from": "src/avatarMotion.ts", "sha256": "e6ac3cb25aeed53e29429acda9ff39945ab046d587dd3e3c12a1671070ae8170", "change": "none below a 2-line provenance header", "headerLines": 2, "license": "Apache-2.0 (Pebble)" },
     { "path": "companionState.ts", "from": "src/companionState.ts", "sha256": "043d11c7f955faf4b67df861a1d1828463d1ac64b8dd87d685cbaa4becf21869", "change": "modified: pose table, poseId, visualFor and TAP_MS only (header in the file)", "license": "Apache-2.0 (Pebble)" },
-    { "path": "gaze.ts", "from": "src/companionPointer.ts", "sha256": "775fc7b8cfd20130ebb67631bca8cd65e9b580355697d48aa7a11ac81d506eef", "change": "modified: quantize, gazeToward (optional reach), sameGaze, lookFor, REACH_PX, GAZE_STEPS only (header in the file)", "license": "Apache-2.0 (Pebble)" }
+    { "path": "gaze.ts", "from": "src/companionPointer.ts", "sha256": "775fc7b8cfd20130ebb67631bca8cd65e9b580355697d48aa7a11ac81d506eef", "change": "modified: quantize, gazeToward (optional reach), sameGaze, lookFor, REACH_PX, GAZE_STEPS only (header in the file)", "license": "Apache-2.0 (Pebble)" },
+    { "path": "stealthVeil.ts", "from": "src/stealthVeil.ts", "tag": "v1.1.0", "sha256": "61188f77e77de870dc45c82f5cbecd06b9574461cb37d93cc63f5c58cf25f964", "change": "none below a 2-line provenance header", "headerLines": 2, "license": "Apache-2.0 (Pebble)" }
   ]
 }

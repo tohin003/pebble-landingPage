@@ -1,5 +1,5 @@
-// The copies stay honest: unchanged files match the Pebble v1.0.1 sources byte for byte, changed ones say so, the MIT
-// notice travels with bloub, and nothing here imports from outside shared/pebble.
+// The copies stay honest: unchanged files match the Pebble sources (v1.0.1, and v1.1.0 for stealthVeil.ts) byte for
+// byte, changed ones say so, the MIT notice travels with bloub, and nothing here imports from outside shared/pebble.
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -7,22 +7,31 @@ import { dirname, join, relative, resolve } from "node:path";
 
 const HERE = import.meta.dir;
 const sources = JSON.parse(readFileSync(join(HERE, "SOURCES.json"), "utf8")) as {
-  files: { path: string; sha256: string; change: string; headerLines?: number }[];
+  source: { tag: string };
+  files: { path: string; sha256: string; change: string; headerLines?: number; tag?: string }[];
 };
 const sha256 = (s: string | Buffer) => createHash("sha256").update(s).digest("hex");
 
 describe("provenance", () => {
-  test("unchanged copies match the Pebble v1.0.1 files", () => {
+  test("unchanged copies match the Pebble files at their tags", () => {
     for (const f of sources.files) {
       const body = readFileSync(join(HERE, f.path));
       if (f.change === "none") expect(`${f.path} ${sha256(body)}`).toBe(`${f.path} ${f.sha256}`);
       else if (f.headerLines) {
-        const rest = body.toString("utf8").split("\n").slice(f.headerLines).join("\n");
+        const text = body.toString("utf8");
+        const rest = text.split("\n").slice(f.headerLines).join("\n");
         expect(`${f.path} ${sha256(rest)}`).toBe(`${f.path} ${f.sha256}`);
+        // the header names the tag the hash is from
+        expect(text.split("\n").slice(0, f.headerLines).join("\n")).toContain(`Pebble ${f.tag ?? sources.source.tag},`);
       } else {
         expect(body.toString("utf8").slice(0, 400)).toContain("Modified for the Pebble site");
       }
     }
+  });
+
+  test("the Veil is Pebble 1.1.0's own stealthVeil.ts", () => {
+    const veil = sources.files.find((f) => f.path === "stealthVeil.ts");
+    expect(veil).toMatchObject({ from: "src/stealthVeil.ts", tag: "v1.1.0", headerLines: 2, license: "Apache-2.0 (Pebble)" });
   });
 
   test("bloub's MIT notice is kept with the engine", () => {
