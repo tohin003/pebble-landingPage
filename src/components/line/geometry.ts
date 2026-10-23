@@ -156,7 +156,10 @@ export function planWaypoints(anchors: readonly Anchor[], width: number): Plan {
     if (a.kind === "cross") {
       if (phone) continue;
       const gy = a.top + (a.padTop ?? 0) / 2;
-      const span = Math.min(120, gy - lastY - 40);
+      // Keep the sweep inside the gap above the section (its top padding): an end that rose above it or dropped below
+      // it runs through the last line of the section before, or this section's heading (tools/qa/line-check.mjs).
+      const band = a.padTop === undefined ? Infinity : a.padTop / 2 - 10;
+      const span = Math.min(120, gy - lastY - 40, band);
       if (span < 40) continue; // too close to the previous feature: stay on this side
       const from = xOf(side);
       const to = xOf(other(side));
