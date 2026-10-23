@@ -11,9 +11,13 @@
 // - Cookies: the cookies this page can see (document.cookie).
 // A disclosure lists the files, so the count can be checked.
 import { useEffect, useState } from "react";
+import { DataText } from "@/components/ui/Data";
 import { footer } from "@/content/copy";
 import { inline } from "@/lib/inline";
 import styles from "./Footer.module.css";
+
+/** the counted nouns: their numbers are data (Geist Mono, tabular figures) */
+const COUNTED = ["cookie", "cookies", "tracker", "trackers", "third-party"] as const;
 
 const TRACKER_HOSTS = [
   "google-analytics.com",
@@ -113,9 +117,15 @@ export function HonestyStamp() {
       <div className={styles.stampLine}>
         <span>{stamp.lead}</span>
         <ul className={`facts ${styles.stampFacts}`}>
-          <li>{stamp.cookies(counted.cookies)}</li>
-          <li>{stamp.trackers(counted.trackers)}</li>
-          <li>{stamp.thirdParty(counted.thirdParty)}</li>
+          <li>
+            <DataText text={stamp.cookies(counted.cookies)} counts={COUNTED} />
+          </li>
+          <li>
+            <DataText text={stamp.trackers(counted.trackers)} counts={COUNTED} />
+          </li>
+          <li>
+            <DataText text={stamp.thirdParty(counted.thirdParty)} counts={COUNTED} />
+          </li>
         </ul>
       </div>
       <details className={styles.stampDetails}>

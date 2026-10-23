@@ -7,11 +7,9 @@
   align-items: center;
   gap: 14px;
   padding: 6px 16px 6px 6px;
-  border-radius: 18px;
-  background: var(--panel);
-  box-shadow:
-    0 0 0 1px var(--line),
-    0 16px 40px -12px rgba(var(--shade), 0.28);
+  border-radius: var(--r-panel);
+  background: var(--bg);
+  box-shadow: var(--shadow-float); /* a floating layer: one of the four allowed kinds of depth */
   transform: translate(-50%, 16px);
   opacity: 0;
   visibility: hidden;

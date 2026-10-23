@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { stickyCta } from "@/content/copy";
 import { SECTIONS } from "@/lib/sections";
 import type { ReleaseInfo } from "@/lib/release";
+import { DataText } from "@/components/ui/Data";
 import { GetPebble } from "./GetPebble";
 import styles from "./StickyCta.module.css";
 
@@ -56,7 +57,9 @@ export function StickyCta({
       <GetPebble release={release} variant="compact" macLabel={stickyCta.download} />
       <ul className={`facts only-mac ${styles.facts}`}>
         {facts.map((fact) => (
-          <li key={fact}>{fact}</li>
+          <li key={fact}>
+            <DataText text={fact} />
+          </li>
         ))}
       </ul>
     </aside>

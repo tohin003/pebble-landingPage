@@ -1,77 +1,76 @@
-/* The hero must not create a stacking context (no z-index, transform, filter or isolation here): its backdrop sits
-   at z-index -2 under the pebble's path (-1), inside the page wrapper's stacking context. */
+/* Section 1, the hero (comp A): a 6 | 6 split. The words in columns 1–6, pinned top and bottom; the pebble's field in
+   columns 7–12. One ground: no pool of light, no grain. */
 .hero {
   position: relative;
-  padding: 8px var(--gutter) 0;
-  text-align: center;
 }
 
-/* --- the lamp's circle of light on the wall behind the pebble, and the room around it (comp 3) --- */
-.backdrop {
+.grid {
+  min-height: 600px;
+  padding-block: 72px 64px;
+}
+
+.copy {
+  position: relative; /* above the pebble's box, which hangs below its ground (phones: the field comes first) */
+  grid-column: 1 / span 6;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 56px;
+  min-width: 0;
+}
+
+.title {
+  max-width: 10.5em;
+}
+
+.lead {
+  max-width: 30em;
+}
+
+.cta {
+  margin-top: 32px;
+}
+
+/* --- the pebble's field --- */
+.field {
+  grid-column: 7 / -1;
+  align-self: center;
+  position: relative;
+  min-width: 0;
+  margin: 0;
+}
+
+/* The pebble's box is square and its body ends at 76.55 % of the box (shared/pebble BODY), so the box hangs below the
+   ground by 23.45 % of its size. --size 400px gives a body about 236 px wide. */
+.stage {
+  --size: 400px;
+  --floor: 10px; /* the ground's height above the stage's bottom edge */
+  position: relative;
+  height: calc(var(--size) * 0.58);
+}
+
+/* the ground: a Horizon is 12 px tall with the line at its middle */
+.ground {
   position: absolute;
   left: 0;
   right: 0;
-  top: calc(-1 * var(--header-h));
-  z-index: -2;
-  height: 1180px;
+  bottom: calc(var(--floor) - 6px);
+}
+
+/* the pebble's contact shadow: the only shadow on the page that isn't inside a picture or a floating layer */
+.contact {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--floor) - 12px);
+  width: calc(var(--size) * 0.55);
+  height: 24px;
+  transform: translateX(-50%);
   pointer-events: none;
-  background: radial-gradient(58% 56% at 50% 30%, transparent 0 34%, var(--room) 100%);
-  -webkit-mask-image: linear-gradient(#000 0 62%, transparent 100%);
-  mask-image: linear-gradient(#000 0 62%, transparent 100%);
+  background: radial-gradient(closest-side, rgba(var(--shade), 0.26), rgba(var(--shade), 0));
 }
 
-.backdrop::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 292px;
-  width: 760px;
-  height: 700px;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(
-    closest-side,
-    var(--pool) 0%,
-    var(--pool) 46%,
-    color-mix(in srgb, var(--pool) 55%, transparent) 70%,
-    color-mix(in srgb, var(--pool) 0%, transparent) 100%
-  );
-}
-
-.backdrop::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 422px;
-  width: 620px;
-  height: 120px;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(
-    closest-side,
-    var(--pool) 0%,
-    var(--pool) 40%,
-    color-mix(in srgb, var(--pool) 40%, transparent) 72%,
-    transparent 100%
-  );
-}
-
-.grain {
-  position: absolute;
-  inset: 0;
-  opacity: var(--grain-opacity);
-  mix-blend-mode: var(--grain-blend);
-  background-image: var(--grain);
-}
-
-/* --- the pebble on the line ---
-   The pebble's box is square and its body ends at 76.55 % of the box (shared/pebble BODY), so the box hangs below
-   the floor by 23.45 % of its size. --size 360px gives a body about 212 px wide (comp 3). */
-.stage {
-  --size: 360px;
-  --floor: 9px;
-  position: relative;
-  width: 300px;
-  height: 268px;
-  margin: 0 auto;
+:global(:root[data-theme="dark"]) .contact {
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
 }
 
 /* The pebble is the "Say hi to Pebble" button (Hero.client.tsx). The button takes the pebble's box; the focus ring is
@@ -97,7 +96,7 @@
 .hello:focus-visible::after {
   content: "";
   position: absolute;
-  inset: 21% 18% 20% 17%;
+  inset: 22% 18% 21% 17%;
   border-radius: 50%;
   outline: 2px solid var(--accent);
   outline-offset: 3px;
@@ -110,19 +109,18 @@
   height: 100%;
 }
 
-/* "Hi, I'm Pebble.": a small speech bubble at the pebble's shoulder, its tail toward the pebble. Always in the DOM
-   (a polite live region), visible only after a hello. */
+/* "Hi, I'm Pebble.": a flat bubble at the pebble's shoulder, its short corner toward the pebble. Always in the DOM (a
+   polite live region), visible only after a hello. */
 .bubble {
   position: absolute;
-  left: calc(50% + 98px);
-  top: 36px;
+  left: calc(50% + var(--size) * 0.27);
+  top: 0;
   margin: 0;
-  padding: 10px 15px;
-  border-radius: 16px 16px 16px 5px;
-  background: var(--panel);
-  box-shadow: 0 0 0 1px var(--line), 0 10px 24px rgba(var(--shade), 0.1);
+  padding: 9px 14px;
+  border-radius: 12px 12px 12px 4px;
+  background: var(--fill);
   color: var(--ink);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   line-height: 1.3;
   white-space: nowrap;
@@ -139,267 +137,59 @@
   transform: none;
 }
 
-.floor {
-  position: absolute;
-  left: 50%;
-  bottom: var(--floor);
-  width: 1px;
-  height: 0;
+.caption {
+  position: relative; /* above the pebble's box */
+  margin-top: 18px;
+  text-align: center;
 }
 
-.contact {
-  position: absolute;
-  left: 50%;
-  bottom: calc(var(--floor) - 13px);
-  width: calc(var(--size) * 0.556);
-  height: 26px;
-  transform: translateX(-50%);
-  pointer-events: none;
-  background: radial-gradient(closest-side, rgba(var(--shade), 0.3), rgba(var(--shade), 0));
-}
-
-:global(:root[data-theme="dark"]) .contact {
-  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0));
-}
-
-/* --- text --- */
-.title,
-.lead,
-.cta,
-.notice,
-.facts,
-.honest {
-  position: relative; /* above the pebble's box, which hangs below the floor */
-}
-
-.title {
-  margin: 34px auto 0;
-}
-
-.lead {
-  max-width: 34em;
-  margin: 22px auto 0;
-  font-size: 19.5px;
-  line-height: 1.55;
-  color: var(--ink-2);
-  text-wrap: balance;
-}
-
-.cta {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 30px;
-  margin-top: 34px;
-}
-
-.quiet {
-  font-size: 16px;
-  font-weight: 550;
-  color: var(--ink);
-  text-decoration-color: var(--line-2);
-  text-underline-offset: 6px;
-}
-
-.notice {
-  margin-top: 16px;
-  font-size: 14.5px;
-  color: var(--ink-2);
-}
-
-.facts {
-  margin-top: 22px;
-}
-
-.honest {
-  max-width: 34em;
-  margin: 10px auto 0;
-  font-size: 14.5px;
-  line-height: 1.55;
-  color: var(--ink-2);
-  text-wrap: balance;
-}
-
-.honest a {
-  color: var(--ink);
-}
-
-/* --- the download notice (after a click on Download): a quiet panel under the buttons, left-aligned prose --- */
-.dlSlot {
-  position: relative;
-}
-
-.dlNotice {
-  position: relative;
-  max-width: 35em;
-  margin: 26px auto 0;
-  padding: 22px 26px 22px;
-  border-radius: var(--r-card);
-  background: var(--panel);
-  box-shadow: var(--shadow-panel);
-  text-align: left;
-  font-size: 15.5px;
-  line-height: 1.6;
-  color: var(--ink-2);
-}
-
-:global(:root[data-motion="on"]) .dlNotice {
-  animation: dlIn 260ms var(--ease-enter) both;
-}
-
-@keyframes dlIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
+@media (max-width: 1279px) {
+  .stage {
+    --size: 340px;
   }
 }
 
-.dlTitle {
-  padding-right: 44px;
-  font-family: var(--font-sans);
-  font-size: 17px;
-  line-height: 1.4;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-}
-
-.dlNotice p {
-  margin-top: 10px;
-}
-
-.dlNotice a {
-  color: var(--ink);
-}
-
-.dlTip {
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-}
-
-.dlClose {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--r-control);
-  background: transparent;
-  color: var(--ink-2);
-  transition: background-color var(--dur-fast) ease;
-}
-
-.dlCloseIcon {
-  width: 18px;
-  height: 18px;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .dlClose:hover {
-    background: var(--bg-2);
-    color: var(--ink);
-  }
-}
-
-@media (max-width: 899px) {
-  .bubble {
-    left: calc(50% + 78px);
-    top: 28px;
+/* One column: the pebble first, then the words. */
+@media (max-width: 1023px) {
+  .grid {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding-block: 24px 56px;
   }
 
-  .backdrop::before {
-    top: 214px;
-    width: 560px;
-    height: 520px;
+  .field {
+    order: -1;
+    align-self: stretch;
+    margin-bottom: 28px;
   }
 
-  .backdrop::after {
-    top: 300px;
-    width: 440px;
-    height: 90px;
+  .copy {
+    gap: 24px;
   }
 
   .stage {
-    --size: 280px;
-    height: 220px;
+    --size: 300px;
   }
 }
 
 @media (max-width: 560px) {
-  .backdrop {
-    top: -64px;
-  }
-
-  .backdrop::before {
-    top: 190px;
-    width: 480px;
-    height: 460px;
-  }
-
-  .backdrop::after {
-    top: 262px;
-    width: 380px;
-    height: 80px;
-  }
-
   .stage {
-    --size: 229px;
-    width: 220px;
-    height: 196px;
+    --size: 236px;
   }
 
-  .contact {
-    height: 18px;
-    bottom: calc(var(--floor) - 9px);
+  .caption {
+    display: none;
   }
 
   .bubble {
-    left: calc(50% + 22px);
-    top: -2px;
-    padding: 8px 13px;
-    font-size: 14px;
-  }
-
-  .dlNotice {
-    margin-top: 22px;
-    padding: 18px 18px 18px 20px;
-    font-size: 15px;
-  }
-
-  .dlClose {
-    top: 6px;
-    right: 6px;
-  }
-
-  .title {
-    margin-top: 26px;
-  }
-
-  .lead {
-    margin-top: 18px;
-    font-size: 17.5px;
+    left: calc(50% + var(--size) * 0.17);
+    top: -6px;
+    padding: 8px 12px;
+    font-size: 13.5px;
   }
 
   .cta {
-    flex-direction: column;
-    gap: 18px;
     margin-top: 28px;
-  }
-
-  .primary {
-    width: 100%;
-  }
-
-  .facts {
-    margin-top: 20px;
-    font-size: 14px;
-  }
-
-  .honest {
-    font-size: 14px;
   }
 }

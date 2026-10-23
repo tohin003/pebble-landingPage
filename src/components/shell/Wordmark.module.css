@@ -1,20 +1,22 @@
+/* "pebble" in Inter 650 with the galet as its full stop: the logo, as in the app (650 is the wordmark's alone). */
 .wordmark {
   display: inline-flex;
   align-items: baseline;
   color: var(--ink);
   font-family: var(--font-sans);
-  font-size: 25px;
+  font-size: 22px;
   font-weight: 650;
   line-height: 1;
-  letter-spacing: -0.8px;
+  letter-spacing: -0.7px;
   text-decoration: none;
   white-space: nowrap;
 }
 
+/* the full stop is part of the logo, so it keeps the accent */
 .dot {
-  width: 8.4px;
-  height: 7.4px;
-  margin-left: 1.6px;
+  width: 7.4px;
+  height: 6.5px;
+  margin-left: 1.5px;
   color: var(--accent);
   overflow: visible;
 }

@@ -5,10 +5,10 @@
   z-index: 100;
   padding: 10px 16px;
   border-radius: var(--r-control);
-  background: var(--panel);
-  color: var(--ink);
-  font-size: 15px;
-  font-weight: 600;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 14px;
+  font-weight: 500;
   text-decoration: none;
   transform: translateY(calc(-100% - 40px));
 }
@@ -16,5 +16,4 @@
 .skip:focus,
 .skip:focus-visible {
   transform: none;
-  box-shadow: var(--shadow-panel);
 }
