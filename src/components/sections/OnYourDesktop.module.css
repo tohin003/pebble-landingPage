@@ -114,6 +114,20 @@
   }
 }
 
+/* The notes about the page's live pebble go with the still corner that shows it: over loop L1 the pebble is part of
+   the video (the same rules as .corner above) */
+@media (min-width: 561px) {
+  .vignette[data-loop] .pebbleNote {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .vignette[data-phone-loop] .pebbleNote {
+    display: none;
+  }
+}
+
 .facts {
   margin-top: 40px;
 }

@@ -9,6 +9,9 @@
 // - Loop L1 (the pointer arrives, a click opens the quick chat, a reply appears) plays in the same frame once it is
 //   rendered: 16:10 on wider screens and its 4:5 cut on phones (critic H2). Without a phone cut, phones keep the still
 //   corner, where the chat stays readable.
+// - The caption's two notes about the pebble ("The pebble on this page uses the same animation engine as the app.",
+//   "Move your pointer, and its eyes follow.") describe the page's live pebble, so they show only where the still
+//   corner shows it. Over L1 the pebble is part of the video, and its eyes don't follow the visitor's pointer.
 import { common, desktop, hero, media } from "@/content/copy";
 import { labels } from "@/content/labels";
 import { LoopVideo } from "@/components/media/LoopVideo";
@@ -73,7 +76,10 @@ export function OnYourDesktop() {
           <figcaption className={`grid-12 ${styles.captionRow}`}>
             <div className="main">
               <p className={styles.caption}>
-                {common.sampleData} {hero.pebble.note} <span className={styles.live}>{hero.pebble.noteLive}</span>
+                {common.sampleData}{" "}
+                <span className={styles.pebbleNote}>
+                  {hero.pebble.note} <span className={styles.live}>{hero.pebble.noteLive}</span>
+                </span>
               </p>
             </div>
           </figcaption>
