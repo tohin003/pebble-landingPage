@@ -123,8 +123,12 @@ the hero, rail and footer anchors.
   button: hero, final CTA and sticky CTA menu. The checksum limit sits next to the `shasum` instructions in Install,
   where it applies, and in the full limits list.
 - **Hero lead:** the claims review's version, aligned with the release session's showcase brief.
-- **AgentGuard H2:** "Evidence before “done”." (the README's heading). "Done means tested." stays as step 04's title and
-  the film's line.
+- **AgentGuard H2:** "Evidence before “done”." (the README's heading).
+  - Pebble's CHANGELOG [1.0.3] "Corrections" also hold for 1.0.1: AgentGuard holds changed code only when tests cover
+    it.
+  - So "Done means tested." is withdrawn. Step 04's title is "Tests that cover a change must pass.", with the limit
+    "Changed code without covering tests is not held."
+  - The film's AgentGuard line is "Evidence before done" (pending the release session's confirmation, 15:25 request).
 - **Project H2:** "Works in your project, under your review." ("Asks first" is true only in the default mode.)
 - **Limits:** adds "Other software on your Mac" (SECURITY.md:57).
 - **Never render** `copy.releasePill` ("New · …") or `hero.requirementsLine` (middle dots). Use `hero.requirements` as a
@@ -132,3 +136,8 @@ the hero, rail and footer anchors.
 - **Film end card:** keeps the small bloub credit line (FILM_SPEC T22).
 - **Music:** the film uses the original score played on recorded CC0 instruments (VCSL + VSCO 2 CE, lane C2). The
   public media README must not mention Mixkit.
+- **Pebble gaze at rest (site):** the engine's default resting gaze glances up and to the right, away from the
+  headline and the visitor. On the site, the static frame (server render, no-JS, reduced motion and paused) and the
+  live pebble's resting gaze **look straight ahead at the visitor** (centred eyes, like the app icon), using the
+  engine's own setLook with a centred target. Once the pointer moves, the live pebble follows it, and it returns to
+  centre when it settles. The footer's sleeping pebble keeps its own pose.

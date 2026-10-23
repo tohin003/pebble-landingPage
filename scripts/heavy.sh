@@ -99,6 +99,16 @@ if [ $# -lt 2 ]; then
 fi
 LABEL="$1"
 shift
+# A Remotion job downloads its headless browser (about 570 MB) when it's missing: budget for it up front, so the
+# download can't cross the disk floor halfway and leave a broken partial copy behind.
+case "$*" in
+*remotion*)
+  if [ ! -d "$REPO/video/node_modules/.remotion/chrome-headless-shell" ]; then
+    START_MIN_KB=$((START_MIN_KB + 614400))
+    say "note: Remotion's headless browser is missing and will download first; this job needs 0.6 GiB extra free"
+  fi
+  ;;
+esac
 
 refuse_if_low_disk() {
   local f
