@@ -245,12 +245,13 @@ const pad5 = (n: number) => String(n).padStart(5, "0");
 
 /**
  * How the film points (lane v2-film, as the loops do: video/src/loops/kit.tsx SYSTEM.focus): the rest of the same
- * picture recedes under a veil of the window's own colour (#F7F8F5) at 50 % and 4 px of on-screen blur, and the region
+ * picture recedes under a veil of the window's own colour (#F7F8F5) at 45 % and 2.5 px of on-screen blur (the loops' 50 % and
+ * 4 px at their smaller page size; at the film's 1080 px the card's "Done" stays legible as context), and the region
  * in focus keeps its own pixels. Nothing drawn on top has a colour of its own, so a pointer never reads as UI state:
  * the accent ring that stood 15 px off "Undo this edit" still read as that text button's own outline (REVIEW-G2
  * P2-12), and pointing is not one of the accent's three jobs (PHILOSOPHY).
  */
-export const FOCUS = { veil: 0.5, blur: 4, color: "#F7F8F5" } as const;
+export const FOCUS = { veil: 0.45, blur: 2.5, color: "#F7F8F5" } as const;
 export interface RecordedFocus {
   /** the sharp region, CSS px of the recording */
   rect: Rect;

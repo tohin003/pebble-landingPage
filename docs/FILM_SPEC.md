@@ -128,7 +128,7 @@ one scene, and the pebble, the only thing that casts a shadow.
 
 Grain: off in every master (critic H8). Annotations draw no colour of their own except the one state mark, the check
 beside "Verified" (16:9; the accent's third job). Pointing is a focus (R5 §5.3, the loops' way): the rest of the same
-picture recedes under a veil of the window's own colour (`#F7F8F5`, 50 %, 4 px on-screen blur) and the region in focus
+picture recedes under a veil of the window's own colour (`#F7F8F5`, 45 %, 2.5 px on-screen blur) and the region in focus
 keeps its own pixels.
 
 **Layouts in the window world (proof and tour shots).**
@@ -307,7 +307,7 @@ share the framings of §6.1, measured on the 1.0.4 frames.
   pointer clicks Apply edit's upper part (css y 679, frame y 915); the vertical's its centre.
 - **Focus on "Undo this edit"** (lane v2-film; it replaces G-fix's accent callout ring, which at 15 px still read as the
   text button's own outline, REVIEW-G2 P2-12, and pointing is not one of the accent's jobs): the rest of the frame
-  recedes under the window's own colour (50 %, 4 px on-screen blur) over f826–837 (`EASE.enter`) and comes back
+  recedes under the window's own colour (45 %, 2.5 px on-screen blur) over f826–837 (`EASE.enter`) and comes back
   f852–857; the button and 8 css px of air around it keep their own pixels. The loops point the same way.
 - Cursor drifts away and fades f826–830. T7 exits f858.
 - Focal: f720–773 the diff (1420, 400) / (540, 600); f774–809 Apply edit (1650, 755) / (860, 794); f814–863 Undo this
