@@ -61,13 +61,14 @@ export const FRAMINGS: PerAspect<Record<string, Framing>> = {
     /** S5d, the whole "Run isolated tests" card: x 802.9–1160, y 213.5–553.5; Run tests at frame (1693, 903) */
     s5d: fr(2.8, 981.45, 383.5),
     /**
-     * S5d → S5e, tilted f1116–1139 once R2's scroll has settled (REVIEW-G2 P1-5, lane G-fix): y 329–669. "Not verified ·
-     * 2 changed files, no tests run" (269–296.7) and "Verification remains incomplete" (311–322) leave the top before
-     * the Verified step arrives (f1152), so the climax frame reads from "You asked Pebble to run the tests" (336) down
-     * to "Verified" and what follows. The bottom edge sits in the gap under the card's lines once "Waiting for the
-     * model" moves them (f1155 on); on f1152–1154 it grazes the bottom 0.7 px of one line of the card below.
+     * S5d → S5e, tilted f1116–1139 once R2's scroll has settled (REVIEW-G2 P1-5, lane G-fix): m 2.87, x 811.6–1160,
+     * y 324–655.7. "Not verified · 2 changed files, no tests run" (269–296.7) and "Verification remains incomplete"
+     * (311–322) leave the top before the Verified step arrives (f1152), so the climax frame reads from "You asked Pebble
+     * to run the tests" (336) down to "Verified" and what follows. The rows under Verified move twice (20.60 s: the step
+     * is inserted; 20.70 s: "Waiting for the model" is), and the bottom edge sits in a gap in all three states (P: 653.7
+     * | 690.7, A: 650 | 659, B: 643 | 663); the card's left border (817) stays 15 px inside the stage.
      */
-    s5dVerified: fr(2.8, 981.45, 499),
+    s5dVerified: fr(2.87, 985.8, 489.85),
     /** S5e pull-back: x 245.9–1086.2, y 0–800 (m 1.19 so the gear sits 60 px inside the frame and the left edge in clear
      *  space; §6's ROI cut every reply line at x 340) */
     s5eOut: fr(1.19, 666.05, 400),
@@ -140,11 +141,13 @@ export const FULL_FRAME = {
   /** the chart as the world: 16:9 m 3.2 on (1059, 661.5); square m 2.55 on (1061.5, 661.5) */
   chart: { wide: fr(3.2, 1059, 661.5), square: fr(2.55, 1061.5, 661.5) },
   /** the quiz, full frame. 16:9 m 2.6: x 421.5–1160 (the window's right edge on the frame's, so nothing past the window
-   *  shows; the conversation left of the canvas recedes under a veil, S7Quiz), y 217.3–632.7 (the quiz's title to its
-   *  answer D, which may bleed off the bottom; §6's y 330–665 left the title out). Square m 2.477: x 724–1160, inside
-   *  the canvas (border at x 720), y 219–655. Lane G-fix (REVIEW-G2 P1-8): cy 425 / 437, not 445.7 / 454, so the title
-   *  "Python datetime check-in" has ≥ 64 px of headroom (it sat 17 / 21 px under the frame's top edge) */
-  quiz: { wide: fr(2.6, 790.75, 425), square: fr(2.477, 942, 437) },
+   *  shows; the conversation left of the canvas recedes under a veil, S7Quiz), y 190–605.4 (the quiz's label to its
+   *  answers; D bleeds off the bottom; §6's y 330–665 left the title out). Square m 2.477: x 724–1160, inside the canvas
+   *  (border at x 720), y 188–624. Lane G-fix (REVIEW-G2 P1-8): cy 397.7 / 406, not 445.7 / 454, so the quiz's top text
+   *  has ≥ 60 px of headroom: the label "QUIZ · CHECKED BY PEBBLE" (y 221–229.7) sits 81 px under the frame's top and
+   *  the title "Python datetime check-in" (244.3) 141 px (the title sat 17 / 21 px under it; the review's cy 425 / 437
+   *  would have put the label 10 / 5 px under it) */
+  quiz: { wide: fr(2.6, 790.75, 397.7), square: fr(2.477, 942, 406) },
 } as const;
 
 /** A camera pose for a framing at layout scale `s`. */
@@ -379,17 +382,20 @@ export function pointerFrameAt(frame: number, a: AspectId, s: number, fps: numbe
 }
 
 /**
- * Motion blur for a stage camera move: the largest per-frame travel of the content at the stage's centre and corners
- * since the previous frame, as an axis-aligned stdDeviation (travel / 16, capped at 10 px, so the blur's visible
- * reach stays within R5's 20 px). A cut (travel over 400 px in one frame) and a near-still frame (under 4 px) get none.
+ * Motion blur for a stage camera move: the largest per-frame travel of the content at the stage's centre and at four
+ * points halfway to its corners since the previous frame, as an axis-aligned stdDeviation (travel / 16, capped at 10 px,
+ * so the blur's visible reach stays within R5's 20 px). A cut (travel over 400 px in one frame) and a near-still frame
+ * (under 4 px) get none. Lane G-fix: the inner points, not the corners, so a push-in (S5c's read, f954–977), whose
+ * travel is radial and near zero where the eye is, keeps its text sharp; a pan blurs as before (its travel is the same
+ * everywhere).
  */
 export function stageMotionBlur(p: CamPose, q: CamPose, rect: Rect): { x: number; y: number } {
   const pts = [
     { x: 0, y: 0 },
-    { x: -rect.w / 2, y: -rect.h / 2 },
-    { x: rect.w / 2, y: -rect.h / 2 },
-    { x: -rect.w / 2, y: rect.h / 2 },
-    { x: rect.w / 2, y: rect.h / 2 },
+    { x: -rect.w / 4, y: -rect.h / 4 },
+    { x: rect.w / 4, y: -rect.h / 4 },
+    { x: -rect.w / 4, y: rect.h / 4 },
+    { x: rect.w / 4, y: rect.h / 4 },
   ];
   let dx = 0;
   let dy = 0;

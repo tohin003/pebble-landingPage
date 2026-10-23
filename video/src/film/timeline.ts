@@ -369,8 +369,10 @@ export interface TextCue {
 
 /** A list's earlier items dim to 45 % (REVIEW-G2 P1-6); the current one stays at full contrast (lead addendum). */
 export const LIST_DIM = 0.45;
-/** Each list's left edge (px at the reference size), so that its widest line sits centred on the frame. */
-export const LIST_X = { questions: both(572, 222), facts: both(388, 236) } as const;
+/** Each list's left edge (px at the reference size), so that its widest line sits centred on the frame (measured on the
+ *  renders: "What did it change?" 809 / 673 px wide, "Your keys stay in your Keychain" 1,297 px, "Free and open source"
+ *  719 px in the square). */
+export const LIST_X = { questions: both(554, 202), facts: both(310, 178) } as const;
 
 export const END = GRID.frames + 6;
 
@@ -384,9 +386,9 @@ export const TEXT: readonly TextCue[] = [
   // S2, lane G-fix (REVIEW-G2 P1-6 and the lead's addendum): the three questions build a list, the checklist the film
   // goes on to answer. Each inks in whole, starting 3 frames before its downbeat (FILM_SPEC §1) so it reads at full
   // contrast on the beat; the one before it dims to 45 % as it arrives; all three leave together f348–354.
-  t({ id: "T1", chapter: "desktop", lines: ["What did it change?"], role: "headline", enter: "ink", in: 144, out: 348, dimAt: 213, inkTogether: true, place: "centre", y: both(350, 360), x: LIST_X.questions }),
+  t({ id: "T1", chapter: "desktop", lines: ["What did it change?"], role: "headline", enter: "ink", in: 144, out: 348, dimAt: 213, inkTogether: true, place: "centre", y: both(325, 350), x: LIST_X.questions }),
   t({ id: "T2", chapter: "desktop", lines: ["Can I undo it?"], role: "headline", enter: "ink", in: 213, out: 348, dimAt: 285, inkTogether: true, place: "centre", y: both(470, 470), x: LIST_X.questions }),
-  t({ id: "T3", chapter: "desktop", lines: ["Did it run the tests?"], role: "headline", enter: "ink", in: 285, out: 348, inkTogether: true, place: "centre", y: both(590, 580), x: LIST_X.questions }),
+  t({ id: "T3", chapter: "desktop", lines: ["Did it run the tests?"], role: "headline", enter: "ink", in: 285, out: 348, inkTogether: true, place: "centre", y: both(615, 590), x: LIST_X.questions }),
   t({ id: "T4", chapter: "desktop", lines: ["An agent shouldn't", "grade its own work"], role: "headline", enter: "rise", in: 360, out: 462, place: "centre", y: both(420, 420) }),
   t({ id: "T5", chapter: "desktop", lines: ["A small companion for your Mac"], role: "support", enter: "blur", in: 522, out: 612, place: "baseline", y: both(560, 530) }),
   t({ id: "T6", chapter: "project", lines: ["It reads", "your project"], role: "side", enter: "blur", in: 666, out: 718, place: "column" }),
@@ -403,10 +405,10 @@ export const TEXT: readonly TextCue[] = [
   // S8, lane G-fix (REVIEW-G2 P1-6, P1-3): the facts build a list the same way; T16 lands on bar 27 (f1872), T17 on
   // beat 107 (f1926); the list leaves together f1998–2004, before the end card's pebble enters the frame (≈ f2005).
   // "Apache-2.0" keeps G2a's clearance under "open" (its capitals touched the "p" at §8's distance).
-  t({ id: "T15", chapter: "open-source", lines: ["Free and open source"], role: "headline", enter: "ink", in: 1800, out: 1998, dimAt: 1869, inkTogether: true, place: "centre", y: both(300, 280), x: LIST_X.facts }),
-  t({ id: "T15s", chapter: "open-source", lines: ["Apache-2.0"], role: "support", enter: "ink", in: 1806, out: 1998, dimAt: 1869, inkTogether: true, place: "baseline", y: both(435, 395), x: LIST_X.facts }),
-  t({ id: "T16", chapter: "open-source", lines: ["No telemetry"], role: "headline", enter: "ink", in: 1869, out: 1998, dimAt: 1923, inkTogether: true, place: "centre", y: both(545, 500), x: LIST_X.facts }),
-  t({ id: "T17", chapter: "open-source", lines: ["Your keys stay in your Keychain"], squareLines: ["Your keys stay", "in your Keychain"], role: "headline", enter: "ink", in: 1923, out: 1998, inkTogether: true, place: "centre", y: both(685, 680), x: LIST_X.facts }),
+  t({ id: "T15", chapter: "open-source", lines: ["Free and open source"], role: "headline", enter: "ink", in: 1800, out: 1998, dimAt: 1869, inkTogether: true, place: "centre", y: both(290, 285), x: LIST_X.facts }),
+  t({ id: "T15s", chapter: "open-source", lines: ["Apache-2.0"], role: "support", enter: "ink", in: 1806, out: 1998, dimAt: 1869, inkTogether: true, place: "baseline", y: both(425, 400), x: LIST_X.facts }),
+  t({ id: "T16", chapter: "open-source", lines: ["No telemetry"], role: "headline", enter: "ink", in: 1869, out: 1998, dimAt: 1923, inkTogether: true, place: "centre", y: both(530, 505), x: LIST_X.facts }),
+  t({ id: "T17", chapter: "open-source", lines: ["Your keys stay in your Keychain"], squareLines: ["Your keys stay", "in your Keychain"], role: "headline", enter: "ink", in: 1923, out: 1998, inkTogether: true, place: "centre", y: both(690, 690), x: LIST_X.facts }),
   t({ id: "T18", chapter: "get", lines: ["A little help, right here."], role: "tagline", enter: "blur", in: 2088, out: END, place: "baseline", y: both(560, 520), key: true }),
   t({ id: "T19", chapter: "get", lines: ["Free for Macs with Apple silicon"], role: "cta", enter: "rise", in: 2160, out: END, place: "baseline", y: both(690, 630), key: true }),
   t({ id: "T20", chapter: "get", lines: ["github.com/tohin003/Pebble"], role: "mono", enter: "rise", in: 2164, out: END, place: "baseline", y: both(770, 700), key: true }),

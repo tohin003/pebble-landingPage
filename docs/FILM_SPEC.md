@@ -327,7 +327,7 @@ Layout §4 (side split / stacked). Source: `main-live-film` recorded at 3× (§7
 - Fallback without R2: f1086–1109 the camera follows to the conversation's status line "Testing · Stop"; at f1152 a
   punch-in cut to `main-done-timeline@3x` on the conversation's timeline rows (same row text), the Verified row revealed
   by a mask at f1152.
-- **16:9, f1116–1139:** once R2's scroll has settled, the camera tilts down to y 329–669 (m 2.8), so "Not verified · 2
+- **16:9, f1116–1139:** once R2's scroll has settled, the camera tilts down to y 324–655.7 (m 2.87), so "Not verified · 2
   changed files, no tests run" and "Verification remains incomplete" have left the top before Verified lands (REVIEW-G2
   P1-5, lane G-fix). The square's framing already leaves them out.
 - Focal: the card's lead (1400, 225) / (540, 450); Run tests (1677, 880) / (900, 895); then the newest row.
@@ -411,8 +411,8 @@ Stills `settings-*@3x` (real, light). 16:9 m 2.0, ROI x 336–836 (the modal's c
 - Focal: the tallest bar, "Stay" (900, 450) / (500, 480).
 
 **S7c The quiz (1728–1799).**
-- **f1728: hard cut** to `main-quiz@3x`, full frame (lane G-fix, P1-8: 16:9 cy 425, square cy 437, so the title has
-  ≥ 64 px of headroom): "Python datetime check-in", "QUESTION 1 OF 5", **"What does
+- **f1728: hard cut** to `main-quiz@3x`, full frame (lane G-fix, P1-8: 16:9 cy 397.7, square cy 406, so the label
+  "QUIZ · CHECKED BY PEBBLE" sits 81 px and the title 141 px under the frame's top): "Python datetime check-in", "QUESTION 1 OF 5", **"What does
   date(2026, 1, 31) + timedelta(days=1) return?"** with A date(2026, 2, 1) selected, B, C, D. 16:9 m 2.6, ROI
   x 735–1145, y 330–665; square m 2.4, ROI x 735–1135, y 330–640. (The question rhymes with the film's bug.)
 - **f1786–1799: zoom through the selected answer's "A" badge** (`#506E54`): aim inside the badge and away from the white

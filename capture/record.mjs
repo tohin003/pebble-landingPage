@@ -2,6 +2,8 @@
 // after advancing the page's virtual clock by exactly 1/fps, with backend events played from a timeline.
 // Usage: node record.mjs <timeline> [--theme=light|dark] [--fps=30] [--scale=2] [--out=DIR]
 //          [--frames=N]        record only the first N frames (a short excerpt, e.g. to prove the pipeline)
+//          [--from=SECONDS]    play the whole timeline but save no frame before this time (the numbering is kept: a
+//                              film that reads main-live-film from 3.85 s needs no frame before it; lane G-fix)
 //          [--at=1.5,4,9.25]   do not record a sequence: play the timeline and save one still at each of these times
 //                              (<timeline>-<theme>-t<seconds>.png), to check its states cheaply
 //          [--hide=SELECTORS]  make these elements invisible (opacity 0: still laid out and clickable), e.g.
@@ -28,6 +30,7 @@ const OUT = path.resolve(opt("out", path.join(HERE, "frames-vclock", `${NAME}-${
 const LIMIT = Number(opt("frames", "0")) || Infinity;
 const AT = opt("at", "") ? opt("at", "").split(",").map(Number).filter((t) => t >= 0).sort((a, b) => a - b) : null;
 const HIDE = opt("hide", "");
+const FROM = Number(opt("from", "0")) || 0;
 
 // ---- timeline helpers --------------------------------------------------------------------------------------------
 const emit = (event, data) => (page) => page.evaluate((e, d) => window.__pebble.emit(e, d), event, data);
@@ -343,13 +346,15 @@ try {
         saved++;
       }
     } else {
-      await page.screenshot({ path: path.join(OUT, String(frame + 1).padStart(5, "0") + ".png"), omitBackground: !!spec.transparent, captureBeyondViewport: false });
+      if (t + 1e-9 >= FROM) {
+        await page.screenshot({ path: path.join(OUT, String(frame + 1).padStart(5, "0") + ".png"), omitBackground: !!spec.transparent, captureBeyondViewport: false });
+        saved++;
+      }
       if (spec.frameInfo) frames.push(spec.frameInfo(t));
-      saved++;
     }
   }
   const unhandled = await page.evaluate(() => window.__pebble.unhandled.map((u) => u.method || u.cmd));
-  fs.writeFileSync(path.join(OUT, "timeline.json"), JSON.stringify({ name: NAME, theme: THEME, fps: FPS, scale: SCALE, frames: saved, at: AT, hide: HIDE || null, unhandled, problems, ...(frames.length ? { cursor: frames } : {}) }, null, 1));
+  fs.writeFileSync(path.join(OUT, "timeline.json"), JSON.stringify({ name: NAME, theme: THEME, fps: FPS, scale: SCALE, frames: saved, from: FROM || null, at: AT, hide: HIDE || null, unhandled, problems, ...(frames.length ? { cursor: frames } : {}) }, null, 1));
   const seconds = (Date.now() - started) / 1000;
   console.log(`${NAME} [${THEME}] ${saved} ${AT ? "stills" : "frames"} at ${FPS} fps, ${SCALE}x, in ${seconds.toFixed(1)} s -> ${OUT}; unhandled IPC calls ${unhandled.length}${unhandled.length ? " (" + unhandled.join(",") + ")" : ""}; page errors ${problems.length}${problems.length ? ": " + problems.join(" | ") : ""}`);
   if (unhandled.length || problems.length) exitCode = 1;
