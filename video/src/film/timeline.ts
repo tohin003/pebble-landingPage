@@ -629,7 +629,7 @@ export interface ReviewFrame {
 /** Gate G1.5's style frames (critic H11), both aspects, full resolution. */
 export const STYLE_FRAMES: readonly ReviewFrame[] = [
   { id: "SF1", shot: "S1", frame: 0, note: "the thumbnail: the pebble on its desktop, eyes open" },
-  { id: "SF2", shot: "S4", frame: 540, note: "the reveal lockup with T5 (paper, pool of light, the period pebble)" },
+  { id: "SF2", shot: "S4", frame: 540, note: "the reveal lockup with T5 (flat paper, the pebble as the full stop on its line)" },
   { id: "SF3", shot: "S5", frame: 985, note: "a punch-in: the held run, the pointer on Run the tests, T8 in the column" },
   { id: "SF4", shot: "S5", frame: 1170, note: "the climax: the Verified row, the check, the happy pebble, T10" },
   { id: "SF5", shot: "S9", frame: 2280, note: "the end card, everything landed" },
