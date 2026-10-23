@@ -98,9 +98,12 @@ export function jsonLdString(data: Record<string, unknown>): string {
 
 /**
  * public/llms.txt: a short, factual summary so AI assistants describe Pebble accurately (llmstxt.org format).
- * Every line is sourced in docs/CLAIMS.md under "SEO" and "Honest limits".
+ * Every line is sourced in docs/CLAIMS.md under "SEO" and "Honest limits". The "## Benchmark" block is there only while
+ * the benchmark is public (releaseFacts.benchmarksPublic, the same gate as the page's section); the tests build the
+ * closed version with llmsTxtFor(false).
  */
-export const llmsTxt = `# Pebble
+export function llmsTxtFor(benchmarksPublic: boolean): string {
+  return `# Pebble
 
 > Pebble is a free, open-source (Apache-2.0) AI companion for Macs with Apple silicon (M1 or later), on macOS 12 or later (built and tested on macOS 27). A small animated pebble stays on your screen; click it to chat, or open the full window to work on a project with the model you choose, under your review.
 
@@ -129,7 +132,7 @@ Pebble ${releaseFacts.version} came out on ${formatLongDate(releaseFacts.publish
 - Scheduled tasks run only while Pebble is open. Their results show in Pebble; macOS notifications are off until you turn them on.
 - Commands run in macOS's sandbox, which limits them but is not a promise against every attack. Prompt injection from web pages or files is limited, not impossible.
 ${
-  releaseFacts.benchmarksPublic
+  benchmarksPublic
     ? `
 ## Benchmark
 
@@ -153,3 +156,6 @@ ${benchmarkLlmsLines.map((line) => `- ${line}`).join("\n")}
 - [Changelog](${links.changelog})
 - [Security policy](${links.security})
 `;
+}
+
+export const llmsTxt = llmsTxtFor(releaseFacts.benchmarksPublic);

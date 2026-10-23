@@ -18,7 +18,12 @@ import styles from "./Infrastructure.module.css";
 /** "45 validator suites": a bare number before these words is a count */
 const COUNTS = ["validator suites"];
 
-export function Infrastructure() {
+export type InfrastructureProps = Readonly<{
+  /** the benchmark gate (default: releaseFacts.benchmarksPublic); the tests pass false */
+  benchmarkShown?: boolean;
+}>;
+
+export function Infrastructure({ benchmarkShown = releaseFacts.benchmarksPublic }: InfrastructureProps = {}) {
   return (
     <section id={SECTIONS.infrastructure} className="sec" aria-labelledby="infrastructure-title">
       <SectionHead
@@ -27,9 +32,7 @@ export function Infrastructure() {
         title={infrastructure.h2}
         lead={infrastructure.stack}
         action={
-          releaseFacts.benchmarksPublic ? (
-            <TextLink href={sectionHref("benchmarks")}>{infrastructure.benchmarkLink}</TextLink>
-          ) : undefined
+          benchmarkShown ? <TextLink href={sectionHref("benchmarks")}>{infrastructure.benchmarkLink}</TextLink> : undefined
         }
       />
       <div className="wrap grid-12 sec-body">

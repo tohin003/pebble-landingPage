@@ -5,9 +5,12 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { benchmarks, run } from "@/content/benchmarks";
+import { infrastructure } from "@/content/copy";
 import { releaseFacts } from "@/content/releaseFacts";
+import { llmsTxt, llmsTxtFor } from "@/content/seo";
 import { benchSegments } from "./Benchmarks.figures";
 import { Benchmarks } from "./Benchmarks";
+import { Infrastructure } from "./Infrastructure";
 
 const render = async (props: Parameters<typeof Benchmarks>[0]) => {
   const element = await Benchmarks(props);
@@ -83,5 +86,31 @@ describe("the Benchmarks section", () => {
     expect(data("10.9 s and 39.9 s")).toEqual(["10.9 s", "39.9 s"]);
     expect(data("on Claude Opus 5.5 at medium effort")).toEqual([]);
     expect(data("so it isn't simply 79.3 minus 82.2.")).toEqual(["79.3", "82.2"]);
+  });
+});
+
+describe("with the gate closed, nothing else on the site mentions the benchmark", () => {
+  test("Built like infrastructure links to the benchmark only while it is shown", () => {
+    const closed = renderToStaticMarkup(<Infrastructure benchmarkShown={false} />);
+    expect(closed).toContain('id="infrastructure"');
+    expect(closed).not.toContain('href="/#benchmarks"');
+    expect(closed).not.toContain(infrastructure.benchmarkLink);
+    const open = renderToStaticMarkup(<Infrastructure benchmarkShown />);
+    expect(open).toContain('href="/#benchmarks"');
+    // the engineering facts say what they are either way
+    expect(closed).toContain(infrastructure.note);
+    expect(open).toContain(infrastructure.note);
+  });
+
+  test("llms.txt carries the benchmark block only while it is public", () => {
+    const closed = llmsTxtFor(false);
+    expect(closed).not.toContain("## Benchmark");
+    expect(closed).not.toMatch(/Claude Code|79\.3|−3\.3|\$0\.0\d\d/);
+    expect(closed).toContain("This site makes no speed or quality comparison with other tools.");
+    const open = llmsTxtFor(true);
+    expect(open).toContain("## Benchmark");
+    expect(open).toContain(benchmarks.h2);
+    expect(open).not.toContain("makes no speed or quality comparison");
+    expect(llmsTxt).toBe(llmsTxtFor(releaseFacts.benchmarksPublic));
   });
 });
