@@ -1,6 +1,8 @@
 """Gate checks for the film's final soundtrack masters (lane M1; critic H9/H12, OVERRIDES §4, FILM_SPEC §11 and §20).
 
-For one master (--name web|social sets the targets):
+For one master (--name web|social sets the targets; any other name, e.g. a cut's, takes them from --target):
+  length    exactly the film's frames (tools/audio/beatmap.json), or the cut's (--cut docs/film-cuts/<name>.json), at
+            its fps: 76.8 s for the film, 28.8 s for x30. Gate.
   loudness  FFmpeg ebur128 (peak=true, 4x oversampled true peak): integrated loudness, LRA, true peak.
             Gates: web -16 +-0.5 LUFS and <= -1.5 dBTP; social -14 +-0.5 LUFS and <= -1.0 dBTP.
   aac       the same measurement on an AAC 192 kb/s 48 kHz encode (FFmpeg's aac). Not a gate: it tells the encode
@@ -18,6 +20,9 @@ For one master (--name web|social sets the targets):
             here whatever its source, and so does a voice or alarm label at 0.3 or in the top 3.
             Every phone reading from 0.25 (lane M2's target) up to the gate is a warning, in every pass.
             Other watch labels (bell, horn, whistle ...) at 0.3 or more are notes; instruments (vibraphone ...) are not.
+            End card (lane fin-audio): a report; the passes above hold its gates. It lists every 'telephone' and
+            'ringtone' reading, master and bed alone, in each window of either grid that overlaps the end card. The end
+            card starts at the beat map's "endcard" section (f2016), or in a cut where it first plays a frame from there.
   mono      loudness lost when the mix folds down to mono, (L+R)/2 on both channels (gate <= 3 dB), L/R correlation.
   speaker   share of signal power above 150 Hz (H9 small-speaker translation, >= 0.30).
   cues      for every cue in cues.json, placed exactly as mix_master.py places it, around the effect's peak (30 ms for
@@ -26,11 +31,14 @@ For one master (--name web|social sets the targets):
             bands where it has energy (within 20 dB of its loudest), which is where it can be heard. FILM_SPEC §11 aims
             hits 3-6 dB over the bed. Not a gate: read it with the spectrograms.
   png       spectrograms (FFmpeg showspectrumpic): the full master, plus zooms on the reveal, the proof's hits and the end
-            card (web only). Look at them, then delete them: mix_checks.sh re-creates them.
-Usage: python -I mix_checks.py MASTER.wav OUT_DIR --name web|social [--bed BED.wav] [--cues cues.json]
-       [--sound-tags .work/audio/sound_tags] [--ffmpeg /opt/homebrew/bin/ffmpeg] [--no-png]
+            card (web; and a cut, with the film's zoom windows mapped onto the cut's timeline). Look at them, then
+            delete them: mix_checks.sh (the film) and cut_soundtrack.sh (a cut) re-create them.
+Usage: python -I mix_checks.py MASTER.wav OUT_DIR --name NAME [--target web|social] [--cut CUT.json] [--bed BED.wav]
+       [--cues cues.json] [--sound-tags .work/audio/sound_tags] [--ffmpeg /opt/homebrew/bin/ffmpeg] [--no-png]
 Writes OUT_DIR/<name>.checks.json and the raw tag JSONs <name>.{tags,tags-shift,tags-open0.75,tags-open1.5}.json and
 <name>.bed-*.json, the same for the bed alone (+ PNGs). Exit 1 when a gate fails.
+For a cut (tools/audio/cut_soundtrack.sh runs this): --name x30 --target social --cut docs/film-cuts/x30.json, with the
+cut's own bed (--bed .work/audio/render/music_bed_x30.wav) and cue list (--cues tools/audio/cues.x30.json).
 """
 import argparse
 import json
@@ -76,19 +84,51 @@ def label_kind(lab):
 ap = argparse.ArgumentParser()
 ap.add_argument("master")
 ap.add_argument("out_dir")
-ap.add_argument("--name", required=True, choices=sorted(TARGETS))
+ap.add_argument("--name", required=True, help="web, social, or a cut's name (then --target names its loudness targets)")
+ap.add_argument("--target", choices=sorted(TARGETS), help="the loudness targets (default: --name)")
+ap.add_argument("--cut", help="a cut file (docs/film-cuts/<name>.json): its length, end card and zoom windows")
 here = os.path.dirname(os.path.abspath(__file__))
 repo = os.path.abspath(os.path.join(here, "..", ".."))
+ap.add_argument("--beatmap", default=os.path.join(here, "beatmap.json"))
 ap.add_argument("--bed", default=os.path.join(repo, ".work", "audio", "render", "music_bed.wav"))
 ap.add_argument("--cues", default=os.path.join(here, "cues.json"))
 ap.add_argument("--sound-tags", default=os.path.join(repo, ".work", "audio", "sound_tags"))
 ap.add_argument("--ffmpeg", default="/opt/homebrew/bin/ffmpeg")
 ap.add_argument("--no-png", action="store_true")
 a = ap.parse_args()
-T = TARGETS[a.name]
+target = a.target or a.name
+if target not in TARGETS:
+    ap.error(f"--name {a.name!r} has no loudness targets: add --target {'|'.join(sorted(TARGETS))}")
+T = TARGETS[target]
 os.makedirs(a.out_dir, exist_ok=True)
-res = {"master": os.path.relpath(a.master, repo), "name": a.name, "targets": T}
+res = {"master": os.path.relpath(a.master, repo), "name": a.name, "target": target, "targets": T}
 fails, warnings, notes = [], [], []
+
+# The timeline: the film's (beat map), or a cut's (its ranges of film frames, in playing order)
+BM = json.load(open(a.beatmap))
+FPS = BM["fps"]
+END_CARD_FRAME = next(s["start_frame"] for s in BM["sections"] if s["name"] == "endcard")    # f2016
+if a.cut:
+    cut = json.load(open(a.cut))
+    RANGES, at = [], 0
+    for r in cut["ranges"]:
+        first, end = r if isinstance(r, list) else (r["from"], r["to"])
+        RANGES.append((first, end, at))                                    # film [first, end) plays from cut frame `at`
+        at += end - first
+    FRAMES = at
+    res["cut"] = {"file": os.path.relpath(os.path.abspath(a.cut), repo), "name": cut["name"], "frames": FRAMES}
+else:
+    RANGES, FRAMES = [(0, BM["total_frames"], 0)], BM["total_frames"]
+
+
+def film_to_cut_s(f0, f1):
+    """The cut-time span (s) where film frames [f0, f1) play, as (first, last) seconds, or None when none of them do."""
+    spans = [(at + max(f0, first) - first, at + min(f1, end) - first) for first, end, at in RANGES if f0 < end and f1 > first]
+    return (min(s for s, _ in spans) / FPS, max(e for _, e in spans) / FPS) if spans else None
+
+
+# where the end card starts on this timeline: the first frame played from the film's end card on
+END_CARD_S = next(((at + max(0, END_CARD_FRAME - first)) / FPS for first, end, at in RANGES if end > END_CARD_FRAME), None)
 
 
 def ff(*args):
@@ -118,6 +158,15 @@ def load(p, SR):
         x = resample_poly(x, SR // g, s // g, axis=1)
     return x
 
+
+# ---- length: exactly the film's (or the cut's) frames ----
+info = sf.info(a.master)
+want = round(FRAMES / FPS * info.samplerate)
+res["length"] = {"samples": info.frames, "expected_samples": want, "seconds": round(info.frames / info.samplerate, 6),
+                 "frames_at_fps": round(info.frames / info.samplerate * FPS, 3), "fps": FPS, "expected_frames": FRAMES}
+if info.frames != want:
+    fails.append(f"length {info.frames} samples ({info.frames / info.samplerate:.4f} s) is not {FRAMES} frames "
+                 f"({want} samples)")
 
 # ---- loudness (FFmpeg ebur128) ----
 L = ebur128(a.master)
@@ -256,6 +305,27 @@ res["tags"]["phone_max"]["opening"] = max(
     (p for x in OPENING_XS for lab, p in ((w["label"], w["max"]) for w in tags[("master", f"open{x}")]["watch"])
      if label_kind(lab) == "phone"), default=0.0)
 
+# the end card (a report; the passes above gate it): every phone reading, master and bed alone, in each window of
+# either grid that overlaps it
+if END_CARD_S is not None:
+    ec_rows = []
+    for view in ("main", "shift"):
+        tg, bg = tags[("master", view)], tags[("bed", view)]
+        off = SHIFT_S if view == "shift" else 0.0
+        labs = sorted({lab for t_ in (tg, bg) for lab in t_.get("watch_windows", {}) if label_kind(lab) == "phone"})
+        for w in tg["timeline"]:
+            s = w["t"] - off
+            if s + 3.0 <= END_CARD_S + 1e-9:
+                continue
+            ec_rows.append({"view": view, "window_s": [round(s, 1), round(s + 3.0, 1)],
+                            **{lab: [readings(tg, lab).get(w["t"], 0.0), readings(bg, lab).get(w["t"], 0.0)]
+                               for lab in labs}})
+    res["tags"]["end_card"] = {
+        "from_s": round(END_CARD_S, 3), "note": "per window and phone label: [master, bed alone]; 0.0 = below 0.1",
+        "windows": ec_rows,
+        "phone_max": max((v[0] for r in ec_rows for k, v in r.items() if k not in ("view", "window_s")), default=0.0)}
+    res["tags"]["phone_max"]["end_card"] = res["tags"]["end_card"]["phone_max"]
+
 # ---- mono fold-down and small-speaker share ----
 m2 = np.stack([y.mean(axis=1)] * 2, axis=1)
 res["mono"] = {"lufs_lost_db": round(full - meter.integrated_loudness(m2), 2),
@@ -357,7 +427,12 @@ if not a.no_png:
         pngs.append(os.path.relpath(out, repo))
 
     spec("full")
-    if a.name == "web":
+    if a.cut:                                       # the film's zoom windows, where the cut plays them
+        for zname, (ss, dur) in ZOOMS.items():
+            span = film_to_cut_s(int(round(ss * FPS)), int(round((ss + dur) * FPS)))
+            if span:
+                spec(zname, round(span[0], 3), round(span[1] - span[0], 3), size="1400x600")
+    elif a.name == "web":
         for zname, (ss, dur) in ZOOMS.items():
             spec(zname, ss, dur, size="1400x600")
 res["png"] = pngs
@@ -365,7 +440,7 @@ res["png"] = pngs
 res.update({"fails": fails, "warnings": warnings, "notes": notes, "pass": not fails})
 with open(os.path.join(a.out_dir, f"{a.name}.checks.json"), "w") as f:
     json.dump(res, f, indent=1, ensure_ascii=False)
-summary = {"name": a.name, "pass": not fails, "lufs": L["integrated_lufs"], "lra": L["lra_lu"],
+summary = {"name": a.name, "pass": not fails, "seconds": res["length"]["seconds"], "lufs": L["integrated_lufs"], "lra": L["lra_lu"],
            "tp": L["true_peak_dbtp"], "aac_tp": res["aac_192k"]["true_peak_dbtp"], "mono_loss_db": res["mono"]["lufs_lost_db"],
            "share_150": res["speaker"]["power_share_above_150hz"], "phone_max": res["tags"]["phone_max"],
            "fails": fails, "warnings": warnings, "notes": notes}
