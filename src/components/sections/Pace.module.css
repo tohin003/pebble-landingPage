@@ -1,37 +1,28 @@
-/* Section 7, You set the pace. The dial draws its own arch (Horizon shape="arch"). */
-.section {
-  position: relative;
-}
-
-.dial {
-  width: min(var(--w-content), 100%);
-  margin: 52px auto 0;
-}
-
-/* what holds in every mode: the quoted app sentence on the left, the fixed rules on the right (comp 3) */
+/* Section 7, You set the pace (DESIGN-LEXINGTON §6 You set the pace): the dial centred in the main column (it draws
+   its own arch), then what holds in every mode under one hairline: the quote in columns 4–8, the fixed rules in 9–12. */
 .every {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 24px 56px;
-  width: min(860px, 100%);
-  margin: 40px auto 0;
-  padding-top: 26px;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  column-gap: var(--gap);
+  margin-top: 56px;
+  padding-top: 24px;
   border-top: 1px solid var(--line);
-  text-align: left;
-  font-size: 15.5px;
+  font-size: 16px;
   line-height: 1.6;
   color: var(--ink-2);
 }
 
 .quote {
+  grid-column: 1 / span 5;
   margin: 0;
 }
 
 .attribution {
-  font-weight: 550;
+  font-weight: 500;
   color: var(--ink);
 }
 
+/* the app's own sentence, quoted */
 .everyMode {
   margin: 6px 0 0;
   quotes: "\201C" "\201D";
@@ -47,30 +38,35 @@
 
 .note {
   margin-top: 10px;
-  font-size: 14.5px;
+}
+
+.fixed {
+  grid-column: 6 / -1;
 }
 
 .approvals {
-  font-weight: 550;
+  font-weight: 500;
   color: var(--ink);
 }
 
 .fixedLine {
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
-.chip {
-  margin-top: 14px;
-}
-
-@media (max-width: 560px) {
-  .dial {
+@media (max-width: 1023px) {
+  .every {
+    display: block;
     margin-top: 40px;
   }
 
-  .every {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 22px;
-    margin-top: 32px;
+  .quote,
+  .fixed {
+    max-width: 40em;
+  }
+
+  .fixed {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
   }
 }

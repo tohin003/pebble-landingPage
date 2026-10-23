@@ -1,6 +1,8 @@
-/* The permission dial (comp 3). The arch is a local Horizon (shape "arch") inside .arc, which marks its box (2R wide,
-   R tall). The stops sit on it at fixed angles (cos and sin precomputed, so no CSS trigonometry is needed): Ask for approval
-   at 152°, Auto in project at 90°, Full access at 28° (155° and 25° on phones). */
+/* The permission dial (comp 3, DESIGN-LEXINGTON §6 You set the pace): an object like the pebble, centred in the main
+   column. The arch is a local Horizon (shape "arch") inside .arc, which marks its box (2R wide, R tall). The stops sit
+   on it at fixed angles (cos and sin precomputed, so no CSS trigonometry is needed): Ask for approval at 152°, Auto in
+   project at 90°, Full access at 28° (155° and 25° on phones). The chosen stop is the accent (a state mark, one of its
+   three jobs); the others are stones. Under the arch, the chosen mode's own words in two columns from column 4. */
 .dial {
   text-align: center;
 }
@@ -21,15 +23,16 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-weight: 550;
+  font-weight: 500;
   color: var(--ink);
 }
 
+/* the "Interactive example" mark: a stone, not the accent (a recreation is not a state) */
 .example::before {
   content: "";
   width: 11px;
   height: 9.7px;
-  background: var(--accent);
+  background: var(--stone);
   -webkit-mask: var(--galet-mask) center / contain no-repeat;
   mask: var(--galet-mask) center / contain no-repeat;
 }
@@ -127,10 +130,6 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .input:not(:checked):hover ~ .knob {
-    background: var(--accent-soft);
-  }
-
   .input:not(:checked):hover ~ .name {
     color: var(--ink);
   }
@@ -139,7 +138,7 @@
 .name {
   position: absolute;
   font-size: 16px;
-  font-weight: 550;
+  font-weight: 500;
   line-height: 1.3;
   white-space: nowrap;
   color: var(--ink-2);
@@ -209,13 +208,12 @@
   background: radial-gradient(closest-side, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
 }
 
-/* --- the chosen mode's own words --- */
+/* --- the chosen mode's own words: two columns across the main column, so they start on column 4 --- */
 .modes {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 18px 56px;
-  width: min(860px, 100%);
-  margin: 46px auto 0;
+  gap: 18px var(--gap);
+  margin-top: 44px;
   text-align: left;
 }
 
@@ -227,7 +225,7 @@
 
 .modeText {
   margin-top: 8px;
-  font-size: 17.5px;
+  font-size: 17px;
   line-height: 1.6;
   color: var(--ink-2);
 }
@@ -243,14 +241,13 @@
   }
 }
 
-/* Full access: the warning Pebble's Settings show with it */
+/* Full access: the warning Pebble's Settings show with it, on the flat panel */
 .fullNote {
   grid-column: 1 / -1;
   margin-top: 4px;
   padding: 14px 18px;
-  border-radius: 14px;
-  background: var(--bg-2);
-  box-shadow: inset 0 0 0 1px var(--line);
+  border-radius: var(--r-panel);
+  background: var(--fill);
   font-size: 15px;
   line-height: 1.55;
   color: var(--ink-2);
@@ -312,6 +309,6 @@
   }
 
   .modeText {
-    font-size: 16.5px;
+    font-size: 16px;
   }
 }
