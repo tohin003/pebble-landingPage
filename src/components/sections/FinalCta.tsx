@@ -1,47 +1,31 @@
-// Section 15, the final call to action (DESIGN §5 row 15). Centred and calm: "Say hi to Pebble.", the platform's call
-// to action (GetPebble: Download on a Mac, "Send yourself the link" elsewhere), the release facts as a list, the short
-// honest line next to the download (OVERRIDES §2) and the way to the one-line install. The footer below holds the
-// sleeping pebble where the line ends. The line sweeps across in the gap above the section (a "cross" anchor).
-import { cta, finalCta, hero, honestLimits } from "@/content/copy";
-import { ChapterChip } from "@/components/media/ChapterChip";
-import { GetPebble } from "@/components/shell/GetPebble";
-import { getRelease, releaseFacts } from "@/lib/release";
+// Section 15, the final call to action (DESIGN-LEXINGTON §6 row 15): on the grid like every section. The head is
+// "Get Pebble / 72 MB" in the rail and "Say hi to Pebble." / "Free and open source, for Macs with Apple silicon." in two
+// tones (two approved strings), with the film chapter chip. Then, from column 4, the same call to action as the hero
+// (GetPebbleCluster: the Download with its honest line and facts, the download notice, the non-Mac line) and "Or install
+// in one line ›". The footer below shows the pebble asleep.
+import { finalCta } from "@/content/copy";
+import { labels } from "@/content/labels";
+import { GetPebbleCluster } from "@/components/ui/GetPebbleCluster";
+import { SectionHead } from "@/components/ui/SectionHead";
+import { getRelease } from "@/lib/release";
 import { SECTIONS } from "@/lib/sections";
 import styles from "./FinalCta.module.css";
 
 export async function FinalCta() {
   const release = await getRelease();
-  const live = release.state === "live";
   return (
-    <section id={SECTIONS.finalCta} className={`section ${styles.section}`} aria-labelledby="finalCta-title">
-      <div className="section-head">
-        <h2 id="finalCta-title">{finalCta.h2}</h2>
-        <p className="lead">{finalCta.lead}</p>
-      </div>
-      <div className={styles.cta}>
-        <GetPebble release={release} variant="primary" />
-        <a className={styles.quiet} href={release.repoUrl}>
-          {cta.github}
-        </a>
-      </div>
-      <p className={`${styles.notice} only-other`}>{cta.nonMac.notice}</p>
-      {live ? (
-        <>
-          <ul className={`facts ${styles.facts} only-mac`}>
-            {releaseFacts(release).map((fact) => (
-              <li key={fact}>{fact}</li>
-            ))}
-          </ul>
-          <p className={styles.honest}>
-            {hero.honestLine} <a href={`#${SECTIONS.limits}`}>{honestLimits.shortLink}</a>
-          </p>
-          <p className={`${styles.install} only-mac`}>
-            <a href={`#${SECTIONS.install}`}>{cta.installLink}</a>
-          </p>
-        </>
-      ) : null}
-      <div className={styles.chip}>
-        <ChapterChip chapterId={finalCta.chapterId} />
+    <section id={SECTIONS.finalCta} className="sec" aria-labelledby="finalCta-title">
+      <SectionHead
+        id="finalCta-title"
+        label={labels.getPebble(release.sizeLabel)}
+        title={finalCta.h2}
+        then={finalCta.lead}
+        chip={finalCta.chapterId}
+      />
+      <div className={`wrap grid-12 ${styles.body}`}>
+        <div className="main">
+          <GetPebbleCluster release={release} install headingLevel={3} />
+        </div>
       </div>
     </section>
   );
