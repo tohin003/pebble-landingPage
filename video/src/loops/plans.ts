@@ -583,7 +583,7 @@ export const L1 = (() => {
 })();
 
 /* ================================================================================================================ */
-/* L8 loop-views (6.8 s): two views Pebble built, each one card: the "Spending by category" chart of the Lisbon     */
+/* L8 loop-views (6.5 s): two views Pebble built, each one card: the "Spending by category" chart of the Lisbon     */
 /* trip budget dashboard, then the Python datetime quiz.                                                            */
 /* main-dashboard@3x (1440 × 900, Pebble 1.0.4): the canvas is white from x 641; the chart panel's border x 665–666   */
 /* and 1415–1416, y 421–422, its bottom at the capture's edge (898); "Spending by category" y 436–454, "Chart data"    */
@@ -594,12 +594,14 @@ export const L8 = (() => {
   // DESIGN-LEXINGTON §3.8: one moment per frame, no full-window screenshot outside the film poster. Lane G2b's L8 opened
   // on the whole dashboard window; now each view is its own card at the views slot (the main column, k 1.68): the
   // chart panel (its own white; the card's edges fall just inside the panel's border, so the card IS the panel) and
-  // the quiz (on the canvas's own white). A 0.4 s dissolve between the two, each held 3 s. The data never animates.
+  // the quiz (on the canvas's own white). A 0.4 s dissolve between the two, each held 2.87 s (86 frames; the chart's
+  // hold runs across the seam): nothing is still for more than 3 s (R5; at N 204 each held 3.03 s on the review render).
+  // The data never animates.
   const chart = card(box(668, 1413, 424, 896), 1.915, "wide", SLOT.views);
   const quiz = card(box(733, 1148, 207, 782), 1.572, "wide", SLOT.views);
   const plan = {
     id: "LoopViews",
-    n: 204,
+    n: 194,
     aspects: ["wide"],
     camera: { wide: [key(0, chart.pose)] },
     stages: { wide: [chart.stage, quiz.stage] },
@@ -611,7 +613,7 @@ export const L8 = (() => {
     clicks: [],
     dissolves: [
       [84, 96],
-      [186, 198],
+      [181, 193],
     ],
   } satisfies LoopPlan;
   return { plan, chart, quiz };
