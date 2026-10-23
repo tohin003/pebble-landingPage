@@ -2,7 +2,11 @@
 // Plain TypeScript with no imports from outside this folder: no React, no Remotion, no DOM.
 //
 // Credit: the character engine is bloub by Jérémy Perret (MIT), vendored in ./bloub with its LICENSE. The pose table,
-// body motion and pointer gaze come from Pebble 1.0.1 (Apache-2.0). See README.md in this folder.
+// body motion and pointer gaze come from Pebble 1.0.1, the Veil (Stealth Lockdown's look) from Pebble 1.1.0
+// (Apache-2.0). See README.md in this folder.
+//
+// A renderer that only needs the Veil imports "./veil" (`@pebble/veil`) directly: this index also loads the engine,
+// whose eye-fit table is built at import.
 
 export { BotEngine } from "./bloub/engine";
 export type { BotFrame, Look, RenderedEye } from "./bloub/engine";
@@ -40,3 +44,24 @@ export type { PebbleMotion, PebbleView } from "./character";
 export { assertCues, blinkFreeOffset, blinkStarts, checkCues, pebbleAt, replayAt, snapToBlink } from "./cues";
 export type { PebbleCue } from "./cues";
 export { LivePebble, MAX_STEP, RESTART_BY, RESTART_FROM, closestEarlyTime } from "./live";
+export {
+  ACTIVATE,
+  FADE,
+  GLASS_OPACITY,
+  LiveVeil,
+  OFF,
+  ON,
+  RELEASE,
+  SHIMMER,
+  SHIMMER_EVERY,
+  SHIMMER_FROM,
+  VEIL_DARK,
+  VEIL_FINE_PX,
+  VEIL_LIGHT,
+  veilAt,
+  veilDraw,
+  veilEnd,
+  veilFrame,
+  veilVisible,
+} from "./veil";
+export type { Veil, VeilColors, VeilDraw, VeilFrame, VeilMotion, VeilShine, VeilSwitch } from "./veil";
