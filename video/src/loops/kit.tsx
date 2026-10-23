@@ -157,8 +157,9 @@ export const LoopStage: React.FC<StageProps> = ({ stage, background = SYSTEM.win
 };
 
 /**
- * A whole Mac window inside the picture, in world units (T0's main window, L8's views): the system's window radius,
- * --shadow-window and inner ring, sized for the zoom the window is SEEN at (`k` = video px per page px ÷ that zoom, so
+ * A whole Mac window inside the picture, in world units (T0's main window: the film frame is the one place the page
+ * shows a whole window): the system's window radius, --shadow-window and inner ring, sized for the zoom the window is
+ * SEEN at (`k` = video px per page px ÷ that zoom, so
  * a window first seen at m 0.75 in a 1280 px teaser at a 1280 px slot has k = 1 / 0.75), and quiet traffic lights
  * (comp lex-A's three neutral circles: the window's chrome carries no colour). Pebble's main window has an overlay
  * title bar, so the lights sit over its sidebar, where the capture leaves room for them (LIGHTS).
