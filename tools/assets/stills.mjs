@@ -6,7 +6,9 @@
 // Sources are <src>/<scene>-<theme>@3x.png (capture.mjs at --scale=3), downscaled with Lanczos so text stays crisp.
 // Outputs are <out>/<name>-<theme>-<width>.avif|webp (AVIF quality 50 effort 6, WebP quality 76; sharp writes no
 // metadata). The widths follow critic H3 (twice the largest CSS slot) and the themes H5 (switch by [data-theme]);
-// /ui/v1/ is versioned because /ui/* is served immutable (M2). A re-capture goes to /ui/v2/, never over v1.
+// /ui/v1/ is versioned because /ui/* is served immutable (M2). The Pebble 1.0.4 retake replaced v1 in place (the lead's
+// call, 2026-10-23: the site had never been deployed). Once the site is live, a re-capture goes to /ui/v2/, never over
+// v1, or returning visitors keep the old pictures for a year.
 // Budget: an AVIF at 2400 w over 300 KB (1600 w equivalent of 150 KB, scaled by area) is reported as OVER.
 import fs from "node:fs";
 import path from "node:path";
