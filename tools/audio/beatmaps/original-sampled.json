@@ -3,7 +3,7 @@
  "id": "original-sampled",
  "title": "Pebble launch cue (sampled instruments)",
  "music": {
-  "source": "the composed score (tools/audio/compose_score.py --seed 7, the same notes) played on recorded instrument samples",
+  "source": "the composed score (tools/audio/compose_score.py --seed 7, the same notes) played on recorded instrument samples; bar 1 re-voiced for the film's start from silence (lane M2: the motif on a soft upright piano, the strings under it)",
   "generator": "tools/audio/render_sampled.py --seed 7",
   "samples": "Versilian Community Sample Library (VCSL) and VS Chamber Orchestra: Community Edition (VSCO 2 CE), CC0 1.0; files, pinned commits and SHA-256: tools/audio/sample_kit.json",
   "rebuild": "tools/audio/use_music.sh original-sampled",
@@ -318,7 +318,7 @@
    "attack_s": 16.80379,
    "attack_frame": 504,
    "offset_ms": 3.79,
-   "strength": 455.1
+   "strength": 454.1
   },
   "gates": {
    "median_abs_offset_le_5ms": true,

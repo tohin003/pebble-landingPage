@@ -32,9 +32,27 @@ OFFSET_DB), a convolution hall (an impulse response synthesised here: our own, n
 ride, two touches on the final bar (touch_db), light bus compression and a brick-wall limiter, then normalised like
 compose_score.py: -18 LUFS integrated, >= 1 dB of sample-peak headroom, 48 kHz / 24-bit, exactly 76.8 s.
 
+The opening (bar 1), re-voiced for recorded instruments (lane M2; --opening warm, the default). A feed starts the film
+from silence, and there the score's first notes on a recorded marimba read as a ringtone: Apple SoundAnalysis heard
+'telephone' 0.65 in the film's first 0.75 s and 0.50 in its first 1.5 s (web master). Bar 1 is therefore played so:
+  - the motif (D-A-G#-A) moves an octave down to the upright piano (the 'kal' bus), softly: every note stays in the
+    piano's soft layer, a warm attack with a full row of harmonics instead of the marimba's bare fundamental and bright
+    4th partial (OPENING_SPEC motif_vel);
+  - legato: the D rings under the phrase; the A-G#-A turn passes from key to key with fast dampers (motif_ring,
+    motif_damp), so the semitone never beats on like a phone's warble;
+  - the strings' D(add9) (the score's own pad chord) breathe in under it from the downbeat, with the score's 0.9 s
+    swell, so the motif never sounds alone after silence;
+  - bar 2's answer stays on the marimba as written: by then the room is full (OPENING_SPEC bar2 also offers 'soft',
+    'piano' and 'duet').
+A re-voiced note keeps its place in the event list, muted: it still draws its random numbers and still calibrates its
+bus's level, and its replacement plays from its own generator. So every note from bar 2 on is played exactly as in
+lane C2's bed, and --opening mallet renders that bed bit for bit (SHA-256 69fc17d3...6153e).
+
 Usage: python -I render_sampled.py OUT.wav [--seed 7] [--events EVENTS.json] [--stems DIR] [--report DIR]
-Writes OUT.wav and OUT.score.json (form, instrument map, pitch shifts, levels). Deterministic: the same command and
-kit rebuild the same file bit for bit. Without --events it runs compose_score.py --events first (about 10 s).
+       [--opening warm|mallet] [--opening-spec JSON]
+Writes OUT.wav and OUT.score.json (form, instrument map, pitch shifts, levels, the opening's spec). Deterministic: the
+same command and kit rebuild the same file bit for bit. Without --events it runs compose_score.py --events first
+(about 10 s).
 """
 import argparse
 import hashlib
@@ -60,6 +78,10 @@ ap.add_argument("--stems")
 ap.add_argument("--report")
 ap.add_argument("--kit", default="tools/audio/sample_kit.json")
 ap.add_argument("--samples", default=".work/audio/samples")
+ap.add_argument("--opening", choices=["warm", "mallet"], default="warm",
+                help="'warm' (the default since lane M2: bar 1 re-voiced, see above) or 'mallet' (the score's hook on "
+                     "the marimba as written: lane C2's bed)")
+ap.add_argument("--opening-spec", default="{}", help="JSON overrides of OPENING_SPEC, for experiments")
 a = ap.parse_args()
 
 SR = 48000
@@ -106,6 +128,72 @@ def nm(s):
     p = NOTE[s[0]] + (1 if "#" in s else 0)
     return 12 * (int(s[-1]) + 1) + p
 
+
+# ----------------------------------------------------------------------------------------------------------------
+# the opening, re-voiced for recorded instruments (lane M2)
+# ----------------------------------------------------------------------------------------------------------------
+OPENING_SPEC = dict(                       # (lane M2's choice; the alternatives it measured are in its handoff)
+    strings_att=0.9,                       # s: bar 1's string swell, less the bow's own. 0.9 and 1.0 are the score's
+    strings_vel=1.0,                       # own values: the strings play as written (their +-6 % humanising comes
+                                           # from the opening's generator); a faster swell read as a horn
+    piano_octave=-12,                      # bar 1's motif on the upright piano, this many semitones from the score
+    motif_vel=[0.34, 0.37, 0.27, 0.35],    # D, A, G#, A: under 0.40 even after humanising, so the piano's soft layer
+    motif_ring=[1.4, 0.33, 0.18, 1.4],     # s each key is held (the A is let go as the G# sounds, the G# as the A does)
+    motif_damp=[0.2, 0.06, 0.06, 0.2],     # s the damper takes: fast on the A-G#-A turn (no semitone beating)
+    motif_pan=0.1,
+    bar2="marimba",                        # the answer: 'marimba' (as written), 'soft' (marimba, softer), 'piano'
+    bar2_vel=0.78,                         # (8vb, like bar 1) or 'duet' (soft marimba with the piano 8vb)
+    bar2_piano_vel=0.30,
+)
+OPENING_SPEC.update(json.loads(a.opening_spec))
+
+
+def revoice_opening(events, how):
+    """Bar 1 re-voiced, and bar 2 too if OPENING_SPEC['bar2'] asks ('warm'), or the score as written ('mallet'). A
+    re-voiced note keeps its place in the list with mute=True (it still sets its bus's level and draws its random
+    numbers, so every later note is played exactly as before) and its replacement is appended with added=True (played
+    from its own random generator)."""
+    if how == "mallet":
+        return events
+    S = OPENING_SPEC
+    out, added = [], []
+
+    def add(e, **kw):
+        d = {k: v for k, v in e.items() if k != "mute"}
+        d.update(kw, added=True)
+        added.append(d)
+
+    def piano(e, vel, ring=None, damp=None, octave=S["piano_octave"], pan=None):
+        m = e["midi"] + octave
+        add(e, inst="piano", bus="kal", midi=m, f=mtof(m), vel=vel, vel_nominal=vel, pan=e["pan"] if pan is None else pan,
+            **({"ring": ring} if ring else {}), **({"damp": damp} if damp else {}))
+
+    motif_i = 0
+    for e in events:
+        e = dict(e)
+        if e["bar"] == 1 and e["bus"] == "pad":
+            e["mute"] = True
+            add(e, att=S["strings_att"], vel_nominal=e["vel_nominal"] * S["strings_vel"])
+        elif e["bar"] == 1 and e["bus"] == "mallet":
+            e["mute"] = True
+            piano(e, S["motif_vel"][motif_i], S["motif_ring"][motif_i], S["motif_damp"][motif_i], pan=S["motif_pan"])
+            motif_i += 1
+        elif e["bar"] == 2 and e["bus"] == "mallet" and S["bar2"] != "marimba":
+            e["mute"] = True
+            if S["bar2"] in ("soft", "duet"):
+                v = e["vel_nominal"] * S["bar2_vel"]
+                add(e, vel=v, vel_nominal=v)
+            if S["bar2"] in ("piano", "duet"):
+                ring, damp = BAR2_LEGATO.get(e["beat"], (None, None))
+                piano(e, S["bar2_piano_vel"] * e["vel_nominal"] / 0.62, ring, damp)
+        out.append(e)
+    return out + added
+
+
+# bar 2's answer on the piano (E-B-A-B, then F#-E), legato like the motif: (s held, s the damper takes) per beat
+BAR2_LEGATO = {1.0: (1.4, 0.2), 1.5: (0.33, 0.06), 2.0: (0.18, 0.06), 2.25: (1.4, 0.2), 4.0: (0.33, 0.06), 4.5: (1.4, 0.2)}
+EVENTS = revoice_opening(EVENTS, a.opening)
+rng_open = np.random.default_rng([a.seed, 1])                      # the re-voiced notes' own humanisation
 
 # ----------------------------------------------------------------------------------------------------------------
 # the kit: load, verify, measure (onset, level, pitch)
@@ -301,9 +389,10 @@ def layer_of(part, vel):
     return 1 + sum(vel >= th for th in PARTS[part]["layers"])
 
 
-def pick(part, midi, vel, beat):
+def pick(part, midi, vel, beat, rr_count=rr_count):
     """The sample for a note: the instrument (strings split by register), the velocity layer, the nearest measured
-    pitch (ties go to the sample above: a small downward shift), then the next round robin of that note and layer."""
+    pitch (ties go to the sample above: a small downward shift), then the next round robin of that note and layer
+    (counted in rr_count: the re-voiced opening keeps its own count, so the score's notes rotate as before)."""
     P = PARTS[part]
     iname = P["kit"][0] if "split" not in P or midi < P["split"] else P["kit"][1]
     pool = samples[iname]
@@ -332,8 +421,8 @@ def pick(part, midi, vel, beat):
     return iname, cands[i % len(cands)]
 
 
-def envelope(part, ev, y, s):
-    """Release tails and caps, in place on the 48 kHz note y (2, n) played from sample s."""
+def envelope(part, ev, y, s, rng=rng):
+    """Release tails and caps, in place on the 48 kHz note y (2, n) played from sample s (rng: the motor's phase)."""
     n = y.shape[1]
     t = np.arange(n) / SR
     P = PARTS[part]
@@ -347,9 +436,9 @@ def envelope(part, ev, y, s):
         if trem:                                                   # the final chord) on the motor-off recordings
             y *= 1 + trem * np.sin(2 * np.pi * 3.2 * t + rng.uniform(0, 2 * np.pi))
     elif P.get("ring"):                                            # piano: the key is let go, the damper falls
-        off = int(P["ring"] * SR)
-        if off < n:
-            r = int(0.2 * SR)
+        off = int((ev.get("ring") or P["ring"]) * SR)              # (the opening's legato notes are let go earlier,
+        if off < n:                                                # and their dampers fall faster: no long overlap)
+            r = int((ev.get("damp") or 0.2) * SR)
             y[:, off:off + r] *= (0.5 + 0.5 * np.cos(np.pi * np.arange(min(r, n - off)) / r))
             y[:, off + r:] = 0.0
     elif part == "bass":                                           # the hand damps the string after its length
@@ -396,7 +485,13 @@ def touch_db(ev):
 
 
 timing_ms = []
-for ev in EVENTS:
+# the buses the opening re-voices also get a calibration copy that hears the score as written (see the mix)
+cal = {b: np.zeros((2, N), dtype=np.float32) for b in sorted({e["bus"] for e in EVENTS if e.get("mute") or e.get("added")})}
+
+
+def play(ev, rng, rr, heard=True):
+    """One note into its bus (heard) and its bus's calibration copy (if any). rng draws the humanisation in a fixed
+    order (timing off the grid, velocity, detune, the vibraphone's motor phase, level), rr counts round robins."""
     part = ev["bus"]
     P = PARTS[part]
     on_grid = ev["exact"] or abs(ev["beat"] - 1.0) < 1e-9
@@ -406,18 +501,19 @@ for ev in EVENTS:
         t0 = ev["t_grid"]
     else:
         t0 = ev["t_grid"] + float(np.clip(rng.normal(0, 0.0018), -0.005, 0.005))
-    timing_ms.append(1000 * (t0 - ev["t_grid"]) if not ev.get("roll") else 0.0)
     vel = float(np.clip(ev["vel_nominal"] * (1 + np.clip(rng.normal(0, 0.03), -0.06, 0.06)), 0.03, 1.0))
     midi = ev["midi"]
-    iname, s = pick(part, midi if midi is not None else 0.0, vel, ev["beat"])
+    iname, s = pick(part, midi if midi is not None else 0.0, vel, ev["beat"], rr)
     cents = 0.0
     if P.get("detune"):
         cents = float(rng.choice([-3.0, 0.0, 3.0]))
     p = 1.0 if midi is None else 2 ** ((midi + cents / 100 - s.midi) / 12)
-    if midi is not None:
-        shifts[part].append(midi - s.midi)
-    usage[s.file] = usage.get(s.file, 0) + 1
-    y = envelope(part, ev, s.at(p).copy(), s)
+    if heard:
+        timing_ms.append(1000 * (t0 - ev["t_grid"]) if not ev.get("roll") else 0.0)
+        if midi is not None:
+            shifts[part].append(midi - s.midi)
+        usage[s.file] = usage.get(s.file, 0) + 1
+    y = envelope(part, ev, s.at(p).copy(), s, rng)
     g = 10 ** ((LEVEL_REF_DB - s.level_db + touch_db(ev)) / 20) * vel ** P["gamma"]
     if P.get("detune"):
         g *= 10 ** (rng.uniform(-0.4, 0.4) / 20)
@@ -427,10 +523,22 @@ for ev in EVENTS:
     k0 = max(0, -i0)                                               # (a stroke that swells before bar 1 starts cut)
     i0 += k0
     if i0 >= N:
-        continue
+        return
     j = min(N, i0 + y.shape[1] - k0)
-    bus[part][0, i0:j] += g * np.cos(ang) * np.sqrt(2) * (mid + side)[k0:k0 + j - i0]
-    bus[part][1, i0:j] += g * np.sin(ang) * np.sqrt(2) * (mid - side)[k0:k0 + j - i0]
+    left = g * np.cos(ang) * np.sqrt(2) * (mid + side)[k0:k0 + j - i0]
+    right = g * np.sin(ang) * np.sqrt(2) * (mid - side)[k0:k0 + j - i0]
+    for target in ([bus[part]] if heard else []) + ([cal[part]] if part in cal and not ev.get("added") else []):
+        target[0, i0:j] += left
+        target[1, i0:j] += right
+
+
+for ev in EVENTS:                                                  # the score: the main generator, in score order
+    if not ev.get("added"):
+        play(ev, rng, rr_count, heard=not ev.get("mute"))
+rr_open = {}
+for ev in EVENTS:                                                  # the re-voiced opening: its own generator
+    if ev.get("added"):
+        play(ev, rng_open, rr_open)
 
 # ----------------------------------------------------------------------------------------------------------------
 # mix
@@ -504,20 +612,32 @@ dry = np.zeros((2, N))
 send = np.zeros((2, N))
 stems = {}
 for b in BUSES:
+    # a bus whose opening was re-voiced is calibrated on its copy of the score as written, so the re-voicing moves
+    # nothing outside bars 1-2: the same two gains then apply to what is heard
     x = bus.pop(b).astype(np.float64)
+    ref = cal.pop(b).astype(np.float64) if b in cal else None
     target = ORIGINAL_STEM_LUFS[b] + OFFSET_DB[b]
-    l0 = lufs(x)
-    x = x * 10 ** ((target - l0) / 20)                             # pre-gain to the target, then the chain ...
-    if b in PRE_LOWPASS:
-        x = sosfilt(butter(4, PRE_LOWPASS[b], "lowpass", fs=SR, output="sos"), x, axis=1)
-    x = P_(x, CHAIN[b])
-    l1 = lufs(x)
+    l0 = lufs(x if ref is None else ref)
+    for k, z in enumerate([x] if ref is None else [x, ref]):
+        z = z * 10 ** ((target - l0) / 20)                         # pre-gain to the target, then the chain ...
+        if b in PRE_LOWPASS:
+            z = sosfilt(butter(4, PRE_LOWPASS[b], "lowpass", fs=SR, output="sos"), z, axis=1)
+        z = P_(z, CHAIN[b])
+        if k:
+            ref = z
+        else:
+            x = z
+    l1 = lufs(x if ref is None else ref)
     x = x * 10 ** ((target - l1) / 20)                             # ... and trimmed back to it after the chain
     if a.stems:
         stems[b] = x.astype(np.float32)
     dry += x
     send += x * SEND[b]
     bus_report[b] = {"target_lufs": round(target, 2), "raw_lufs": round(l0, 2), "send": SEND[b]}
+    if ref is not None:
+        bus_report[b]["calibrated_on"] = "the score as written (bars 1-2 before the re-voicing)"
+        bus_report[b]["heard_lufs"] = round(lufs(x), 2)
+    del ref
 IR = hall_ir()
 wet = np.stack([fftconvolve(send[c], IR[c])[:N] for c in range(2)])
 wet = P_(wet, [HighpassFilter(170), LowpassFilter(9000)])
@@ -568,7 +688,7 @@ for bar in range(1, N_BARS + 1):
 mx = {p: (round(float(np.max(np.abs(v))), 3) if v else 0.0) for p, v in shifts.items()}
 info = {"title": "Pebble launch cue (sampled instruments)", "bpm": BPM, "meter": "4/4", "key": "D major", "bars": N_BARS,
         "duration_s": LEN_S, "seed": a.seed, "events_from": "tools/audio/compose_score.py --seed %d --events" % a.seed,
-        "notes": len(EVENTS), "integrated_lufs": round(lufs(mix), 2),
+        "notes": sum(1 for e in EVENTS if not e.get("mute")), "integrated_lufs": round(lufs(mix), 2),
         "sample_peak_dbfs": round(20 * np.log10(np.abs(mix).max()), 2),
         "instruments": {p: {"kit": PARTS[p]["kit"], "what": [KIT["instruments"][i]["what"] for i in PARTS[p]["kit"]]}
                         for p in PARTS},
@@ -576,6 +696,9 @@ info = {"title": "Pebble launch cue (sampled instruments)", "bpm": BPM, "meter":
         "humanisation": {"timing_ms_max_abs": round(float(np.max(np.abs(timing_ms))), 2),
                          "timing_ms_sd": round(float(np.std(timing_ms)), 2), "velocity_pct_max": 6.0,
                          "downbeats_and_exact_notes": "on the grid (0 ms)"},
+        "opening": {"how": a.opening, **({"spec": OPENING_SPEC} if a.opening != "mallet" else {}),
+                    "notes_revoiced": sum(1 for e in EVENTS if e.get("mute")),
+                    "notes_played_instead": sum(1 for e in EVENTS if e.get("added"))},
         "bus_levels": bus_report, "offset_db": OFFSET_DB, "limiter": limiter,
         "sections": score["sections"], "chords": score["chords"],
         "bar_rms_db": bar_rms}

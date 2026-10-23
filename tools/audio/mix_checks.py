@@ -13,6 +13,10 @@ For one master (--name web|social sets the targets):
             heard whole. To tell the effects from the music, the bed alone, level-matched to the master, is tagged the
             same way: a reading of 0.3 or more fails only where the bed alone stays below 0.3 (the effects push it
             over); where the bed alone is already there, it is a warning for the music, with both numbers.
+            Opening pass (lane M2): the film's first 0.75 s and first 1.5 s heard after silence (a 3 s clip, silence
+            first), master and bed alone. A feed starts the film from silence, so a phone label of 0.3 or more fails
+            here whatever its source, and so does a voice or alarm label at 0.3 or in the top 3.
+            Every phone reading from 0.25 (lane M2's target) up to the gate is a warning, in every pass.
             Other watch labels (bell, horn, whistle ...) at 0.3 or more are notes; instruments (vibraphone ...) are not.
   mono      loudness lost when the mix folds down to mono, (L+R)/2 on both channels (gate <= 3 dB), L/R correlation.
   speaker   share of signal power above 150 Hz (H9 small-speaker translation, >= 0.30).
@@ -25,8 +29,8 @@ For one master (--name web|social sets the targets):
             card (web only). Look at them, then delete them: mix_checks.sh re-creates them.
 Usage: python -I mix_checks.py MASTER.wav OUT_DIR --name web|social [--bed BED.wav] [--cues cues.json]
        [--sound-tags .work/audio/sound_tags] [--ffmpeg /opt/homebrew/bin/ffmpeg] [--no-png]
-Writes OUT_DIR/<name>.checks.json and the raw tag JSONs <name>.{tags,tags-shift,bed-tags,bed-tags-shift}.json (+ PNGs).
-Exit 1 when a gate fails.
+Writes OUT_DIR/<name>.checks.json and the raw tag JSONs <name>.{tags,tags-shift,tags-open0.75,tags-open1.5}.json and
+<name>.bed-*.json, the same for the bed alone (+ PNGs). Exit 1 when a gate fails.
 """
 import argparse
 import json
@@ -51,7 +55,9 @@ ALARM = ["siren", "alarm", "smoke", "civil", "buzzer", "beep"]
 PHONE = ["telephone", "ringtone"]
 INSTRUMENTS = {"vibraphone", "singing_bowl", "french_horn", "cowbell"}  # in the helper's watch list by substring only
 LIMIT = 0.3
+PHONE_TARGET = 0.25  # lane M2: phone readings at or above this (and under LIMIT) are warnings
 SHIFT_S = 1.5
+OPENING_XS = (0.75, 1.5)  # s of the film's start heard after silence
 ZOOMS = {"reveal": (14.0, 6.0), "proof-hits": (26.5, 13.0), "endcard": (66.0, 10.8)}
 
 
@@ -153,6 +159,20 @@ with tempfile.TemporaryDirectory(dir=a.out_dir) as tmp:
             f.write(out)
         tags[(src, view)] = json.loads(out)
 
+    # ---- the opening heard after silence (lane M2): (3 - X) s of silence, then the film's first X s ----
+    n3 = int(round(3.0 * SR))
+    for x in OPENING_XS:
+        k = int(round(x * SR))
+        for src, sig in (("master", y.T), ("bed", bed * 10 ** (bed_gain_db / 20))):
+            clip = np.zeros((2, n3))
+            clip[:, n3 - k:] = sig[:, :k]
+            path = os.path.join(tmp, f"open-{src}.wav")
+            sf.write(path, clip.T.astype(np.float32), SR, subtype="FLOAT")
+            out = subprocess.run([a.sound_tags, path], capture_output=True, text=True, check=True).stdout
+            with open(os.path.join(a.out_dir, f"{a.name}.{'bed-' if src == 'bed' else ''}tags-open{x}.json"), "w") as f:
+                f.write(out)
+            tags[(src, f"open{x}")] = json.loads(out)
+
 
 def readings(tg, lab):
     """{window start s: confidence} where the label reached 0.1 (the helper records watch labels from 0.1)."""
@@ -191,6 +211,11 @@ for view in ("main", "shift"):
                 fails.append(msg + ("" if view == "main" else ": the effects push it over"))
             else:
                 warnings.append(msg + ": from the music")
+        if kind == "phone":
+            for s, p in sorted(rm.items()):
+                if PHONE_TARGET <= p < LIMIT:
+                    warnings.append(f"{view}: phone '{lab}' {p} at {where(s)} is over the {PHONE_TARGET} target; "
+                                    f"the bed alone reads {rb.get(s, '<0.1')}")
         if kind in ("voice", "alarm"):
             for s in top_at:
                 msg = f"{view}: {kind} '{lab}' in the top 3 at {where(s)}"
@@ -203,6 +228,33 @@ for view in ("main", "shift"):
 res["tags"] = {"windows_note": "windows_over_0_1 rows: [start s in film time, master, bed alone (0.0 = below 0.1)]",
                **tag_res}
 res["tags"]["phone_max"] = {v: max([r["max"] for r in tag_res[v]["phone"]], default=0.0) for v in tag_res}
+
+# the opening heard after silence: one 3 s window each; the gate holds whatever the source (a feed starts in silence)
+opening = {}
+for x in OPENING_XS:
+    tg, bg = tags[("master", f"open{x}")], tags[("bed", f"open{x}")]
+    wm = {w["label"]: w["max"] for w in tg["watch"]}
+    wb = {w["label"]: w["max"] for w in bg["watch"]}
+    top = [t["label"] for t in tg["timeline"][0]["top"]] if tg["timeline"] else []
+    ranked = lambda d, k: sorted(([lab, p] for lab, p in d.items() if label_kind(lab) == k), key=lambda r: -r[1])  # noqa: E731
+    opening[str(x)] = {"top3": top, "top_tags": tg["tags"][:6],
+                       **{k: {"master": ranked(wm, k)[:3], "bed": ranked(wb, k)[:3]} for k in ("phone", "voice", "alarm")}}
+    for lab, p in wm.items():
+        kind = label_kind(lab)
+        msg = f"opening (the first {x} s after silence): {kind} '{lab}' {p}; the bed alone reads {wb.get(lab, 0.0)}"
+        if kind == "phone" and p >= LIMIT:
+            fails.append(msg)
+        elif kind == "phone" and p >= PHONE_TARGET:
+            warnings.append(msg + f" (over the {PHONE_TARGET} target)")
+        elif kind in ("voice", "alarm"):
+            if p >= LIMIT:
+                fails.append(msg)
+            if lab in top:
+                fails.append(f"opening (the first {x} s after silence): {kind} '{lab}' in the top 3")
+res["tags"]["opening"] = opening
+res["tags"]["phone_max"]["opening"] = max(
+    (p for x in OPENING_XS for lab, p in ((w["label"], w["max"]) for w in tags[("master", f"open{x}")]["watch"])
+     if label_kind(lab) == "phone"), default=0.0)
 
 # ---- mono fold-down and small-speaker share ----
 m2 = np.stack([y.mean(axis=1)] * 2, axis=1)

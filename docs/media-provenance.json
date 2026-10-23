@@ -992,15 +992,162 @@
   "sampled_score": {
    "title": "Pebble launch cue (sampled instruments)",
    "status": "the film's music (default since 2026-10-23, HANDOFF-C2)",
-   "what": "the composed score (tools/audio/compose_score.py --seed 7), note for note: the same pitches, rhythms, velocities, durations, pans and fader ride, played on recorded CC0 instrument samples by our own sampler",
-   "generator": "tools/audio/render_sampled.py --seed 7 (deterministic: the same command and kit rebuild the same file bit for bit)",
+   "what": "the composed score (tools/audio/compose_score.py --seed 7), note for note: the same pitches, rhythms, velocities, durations, pans and fader ride, played on recorded CC0 instrument samples by our own sampler; since lane M2 (2026-10-23) bar 1 is re-voiced for a start from silence (see opening)",
+   "generator": "tools/audio/render_sampled.py --seed 7 (deterministic: the same command and kit rebuild the same file bit for bit; --opening warm, the default since lane M2)",
    "rebuild": "tools/audio/use_music.sh original-sampled (fetches and verifies the kit, renders, validates, copies the beat map)",
    "bed": {
     "path": ".work/audio/render/music_bed.wav (not committed)",
-    "sha256": "69fc17d3c9657c42bd7b1bb3683ce6ccc23400b56fd20f6f7061648fc9d6153e",
+    "sha256": "74f88e243c4aed4298d06f189ff884769d5451eb5158848159ec9d5f64d06e5e",
     "format": "48 kHz, 24-bit, 76.8 s, -18 LUFS (un-mastered bed)"
    },
    "events_from": "compose_score.py --events (a recording-only refactor: the synthesised bed re-renders bit-identically, SHA-256 287466a9583a4d0d432d736983d316612d2a26ab59f02b50d98e245b5e44789a before and after)",
+   "opening": {
+    "status": "the film's bed since 2026-10-23 (lane M2, HANDOFF-M2-score-opening): bar 1 re-voiced, every later note as before",
+    "why": "A feed starts the film from silence. Heard that way, the score's first notes on the recorded marimba read as a ringtone in Apple SoundAnalysis (one 3 s window: silence, then the film's first 0.75 s or 1.5 s).",
+    "what": [
+     "bar 1's motif (D-A-G#-A) an octave lower, on the upright piano (VCSL) in its soft layer: a warm attack with a full row of harmonics, where the marimba gave a bare fundamental and a bright 4th partial",
+     "legato: the D rings 1.4 s under the phrase; the A-G#-A turn passes from key to key with 60 ms dampers, so the semitone does not beat on like a phone's warble",
+     "the strings' D(add9) (the score's own bar-1 pad, viola section) enter with it on the downbeat with the score's 0.9 s swell, so the motif never sounds alone after silence",
+     "bar 2's answer stays on the marimba as written; bars 8, 23 and 29 (the motif's returns) are unchanged",
+     "each re-voiced note stays in the event list, muted: it still draws its random numbers and calibrates its bus, so everything after bar 1 plays exactly as in lane C2's bed"
+    ],
+    "how": "tools/audio/render_sampled.py --opening warm (the default); OPENING_SPEC in that file",
+    "spec": {
+     "strings_att": 0.9,
+     "strings_vel": 1.0,
+     "piano_octave": -12,
+     "motif_vel": [
+      0.34,
+      0.37,
+      0.27,
+      0.35
+     ],
+     "motif_ring": [
+      1.4,
+      0.33,
+      0.18,
+      1.4
+     ],
+     "motif_damp": [
+      0.2,
+      0.06,
+      0.06,
+      0.2
+     ],
+     "motif_pan": 0.1,
+     "bar2": "marimba",
+     "bar2_vel": 0.78,
+     "bar2_piano_vel": 0.3
+    },
+    "previous_bed": {
+     "sha256": "69fc17d3c9657c42bd7b1bb3683ce6ccc23400b56fd20f6f7061648fc9d6153e",
+     "what": "lane C2's bed: the hook on the marimba as written",
+     "rebuild": "tools/audio/render_sampled.py OUT.wav --seed 7 --opening mallet (bit-identical, checked 2026-10-23)"
+    },
+    "sound_analysis_opening": {
+     "method": "tools/audio/mix_checks.py opening pass (also in the masters' checks JSON): a 3 s window, silence first",
+     "before": {
+      "web_master": {
+       "0.75 s": {
+        "telephone": 0.652,
+        "ringtone": 0.394
+       },
+       "1.5 s": {
+        "telephone": 0.497,
+        "ringtone": 0.266
+       }
+      },
+      "social_master": {
+       "0.75 s": {
+        "telephone": 0.632,
+        "ringtone": 0.378
+       },
+       "1.5 s": {
+        "telephone": 0.521,
+        "ringtone": 0.283
+       }
+      },
+      "bed_alone_web_level": {
+       "0.75 s": {
+        "telephone": 0.649,
+        "ringtone": 0.392
+       },
+       "1.5 s": {
+        "telephone": 0.335,
+        "ringtone": 0.143
+       }
+      }
+     },
+     "after": {
+      "web_master": {
+       "0.75 s": {
+        "telephone": 0.041,
+        "ringtone": 0.04
+       },
+       "1.5 s": {
+        "telephone": 0.033,
+        "ringtone": 0.025
+       }
+      },
+      "social_master": {
+       "0.75 s": {
+        "ringtone": 0.044,
+        "telephone": 0.043
+       },
+       "1.5 s": {
+        "telephone": 0.028,
+        "ringtone": 0.022
+       }
+      },
+      "bed_alone_web_level": {
+       "0.75 s": {
+        "telephone": 0.041,
+        "ringtone": 0.041
+       },
+       "1.5 s": {
+        "telephone": 0.024,
+        "ringtone": 0.018
+       }
+      },
+      "top_3": "keyboard_musical, piano, music (both masters, 0.75 s and 1.5 s)"
+     }
+    },
+    "final_masters": {
+     "mix": "tools/audio/final_mix.sh (lane M1's mix) with the click role +3 dB and the pop role -3 dB (tools/audio/sfx_kit.json); gates tools/audio/mix_checks.sh",
+     "soundtrack_web.wav": {
+      "sha256": "0dd11212f879664d37f9d7226b1e3845ad7e798c1f084f49ff7cacf602a0b715",
+      "integrated_lufs": -16.0,
+      "true_peak_dbtp": -1.7,
+      "lra_lu": 6.9,
+      "aac_192k_true_peak_dbtp": -1.7,
+      "mono_loss_db": 1.18,
+      "phone_max": {
+       "main": 0.219,
+       "shift": 0.143,
+       "opening": 0.041
+      },
+      "voice_max": 0.141,
+      "alarm_max": 0.026,
+      "pass": true
+     },
+     "soundtrack_social.wav": {
+      "sha256": "e4d4f4b7e9355244d02b5fff2f3123a4e4d49f329bfb8d940e74628dc0de2f9d",
+      "integrated_lufs": -14.1,
+      "true_peak_dbtp": -1.5,
+      "lra_lu": 6.7,
+      "aac_192k_true_peak_dbtp": -1.4,
+      "mono_loss_db": 1.18,
+      "phone_max": {
+       "main": 0.24,
+       "shift": 0.134,
+       "opening": 0.044
+      },
+      "voice_max": 0.145,
+      "alarm_max": 0.026,
+      "pass": true
+     }
+    }
+   },
    "instruments": {
     "mallet": {
      "kit": [
@@ -2005,7 +2152,7 @@
      "attack_s": 16.80379,
      "attack_frame": 504,
      "offset_ms": 3.79,
-     "strength": 455.1
+     "strength": 454.1
     },
     "gates": {
      "median_abs_offset_le_5ms": true,
@@ -2094,24 +2241,24 @@
     ]
    },
    "sound_tags_top": [
-    "music 0.803",
-    "percussion 0.421",
-    "mallet_percussion 0.397",
-    "keyboard_musical 0.361",
-    "marimba_xylophone 0.327",
-    "vibraphone 0.319",
-    "piano 0.287",
-    "glockenspiel 0.261"
+    "music 0.8",
+    "percussion 0.402",
+    "mallet_percussion 0.378",
+    "keyboard_musical 0.37",
+    "vibraphone 0.309",
+    "marimba_xylophone 0.309",
+    "piano 0.297",
+    "glockenspiel 0.246"
    ],
    "sound_tags_watch_max": {
-    "foghorn": 0.168,
+    "foghorn": 0.191,
     "telephone": 0.157,
     "ringtone": 0.127,
     "humming": 0.098,
     "singing": 0.073,
+    "bell": 0.072,
     "battle_cry": 0.068,
-    "train_whistle": 0.055,
-    "speech": 0.051,
+    "train_whistle": 0.056,
     "train_horn": 0.051
    },
    "masters": {
@@ -2136,7 +2283,7 @@
      "true_peak_dbtp": -1.7
     }
    },
-   "needs": "one human listen before the film ships (the audition set: A synthesised, B sampled, C Mixkit 79); taste is the part an agent cannot verify"
+   "needs": "one human listen before the film ships (the audition set: A synthesised, B sampled, C Mixkit 79); taste is the part an agent cannot verify; since lane M2 also: does the film's first second still sound like a phone? (audition file B carries the re-voiced opening)"
   },
   "gates_A_B_C": {
    "what": "every gate on the three beds the user auditions (2026-10-23); rubric per tools/audio/score_rubric.py",
@@ -2275,7 +2422,8 @@
       "lra_lu": 6.9,
       "true_peak_dbtp": -1.7
      }
-    }
+    },
+    "m2_update": "2026-10-23 (HANDOFF-M2-score-opening): B's bar 1 re-voiced, bed SHA-256 74f88e243c4aed4298d06f189ff884769d5451eb5158848159ec9d5f64d06e5e; validation unchanged except the reveal's strength (454.1); the new bed's own watch maxima: foghorn 0.191, telephone 0.157, ringtone 0.127 (foghorn in 0-3 s, the strings' swell: below 0.1 in both masters there). The rest of this entry measures lane C2's bed (69fc17d3..., render_sampled.py --opening mallet); the rubric was not re-scored."
    },
    "C_mixkit_79_fitted": {
     "validation": {
@@ -2333,7 +2481,7 @@
    "folder": "Desktop/Pebble launch film/music-preview/ on the build Mac (not committed)",
    "files": {
     "A-synthesised-original.m4a": "the synthesised original",
-    "B-sampled-instruments.m4a": "the sampled score (the default)",
+    "B-sampled-instruments.m4a": "the sampled score (the default), with the re-voiced opening since lane M2 (2026-10-23)",
     "C-stock-mixkit-79.m4a": "Mixkit 79 fitted to its grid: a local audition copy, never shared on its own"
    },
    "format": "each full bed fitted to its grid, mastered with mix_master.py to -16 LUFS / -1.7 dBTP, AAC 192 kb/s 48 kHz with Homebrew FFmpeg",
@@ -2341,7 +2489,8 @@
     "A": "-16.0 LUFS, -1.7 dBTP, 76.8 s",
     "B": "-16.0 LUFS, -1.6 dBTP, 76.8 s",
     "C": "-16.0 LUFS, -4.0 dBTP, 77.3 s"
-   }
+   },
+   "B_sha256": "709357d2f1337ac3473188682fca98ae00491362c6ace68842bcf6c2bbb0f175"
   }
  },
  "sfx": {
