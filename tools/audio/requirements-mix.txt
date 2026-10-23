@@ -1,0 +1,10 @@
+# The minimal venv for the final mix and its checks (lane M1): exactly what tools/audio/mix_master.py and
+# tools/audio/mix_checks.py import. Same pins as requirements.txt (checked there on PyPI, 2026-10-22). The full analysis
+# stack (librosa, numba, matplotlib ...) stays in requirements.txt for the music lanes.
+#   uv venv --python 3.13 --managed-python --no-python-downloads .work/audio/.venv
+#   uv pip install --python .work/audio/.venv/bin/python -r tools/audio/requirements-mix.txt && rm -rf "$UV_CACHE_DIR"
+numpy==2.5.4
+scipy==1.18.1
+soundfile==0.14.0
+pyloudnorm==0.2.0
+pedalboard==0.9.26
