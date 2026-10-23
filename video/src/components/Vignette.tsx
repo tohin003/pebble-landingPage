@@ -1,3 +1,5 @@
+// RETIRED from the film by lane v2-film (docs/PHILOSOPHY.md: no vignette, no grain; colour and texture live only in
+// imagery). Nothing renders these; do not use them in a film, loop or still.
 // Finishing in frame space (R5 §8, critic H8):
 // - <Vignette>: a 6–10 % darkening tinted with the brand's shadow green (#13251B), never black, with an eased falloff
 //   (no ring where it starts). A CSS radial gradient, cheaper than the WebGL effect. Use it on worlds with a ground;

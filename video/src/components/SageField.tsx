@@ -1,4 +1,7 @@
-// The film's two type worlds, in frame space, full bleed (docs/FILM_SPEC.md §4, R5 §8):
+// RETIRED from the film by lane v2-film (docs/PHILOSOPHY.md: one flat ground per world, no glow, no pool of light; the
+// film's grounds are FlatGround in film/scenes/common.tsx with system.ts's colours). Kept only for G1's ComponentCheck
+// tool; do not use these in a film, loop or still.
+// G1's two type worlds, in frame space, full bleed (docs/FILM_SPEC.md §4 before lane v2-film, R5 §8):
 // - <SageField>: flat #536B54 with one radial glow of #B0C2AE at 15 %, radius 900 px, centred at (0.5 W, 0.42 H), drifting
 //   no more than 40 px over the shot. White type. Add <Vignette amount={0.06} /> on top.
 // - <PaperField>: #F8F9F6 with a pool of light (white at 70 %, radius 760 px in 16:9, 600 px in the square) centred on
