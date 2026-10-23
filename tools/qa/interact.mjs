@@ -59,8 +59,32 @@ const focusInfo = (page) =>
     if (!el || el === document.body || el === document.documentElement) return { none: true };
     // a native radio or checkbox drawn by its label (the input itself is invisible): judge the label
     const proxy = el.matches('input[type="radio"], input[type="checkbox"]') && Number(getComputedStyle(el).opacity) === 0 ? (el.closest("label") ?? el.parentElement) : null;
-    const r = (proxy ?? el).getBoundingClientRect();
     const cs = getComputedStyle(el);
+    // a focus ring drawn by a container (`.box:has(:focus-visible)`, `:focus-within`) while the element draws none
+    // itself (the install command inside its block): judge the container that carries the ring
+    let ringHost = null;
+    if (!proxy && cs.outlineStyle === "none") {
+      for (let n = el.parentElement, k = 0; n && n !== document.body && k < 3; n = n.parentElement, k++) {
+        if (getComputedStyle(n).outlineStyle !== "none") {
+          ringHost = n;
+          break;
+        }
+      }
+    }
+    const box = (e) => {
+      const b = e.getBoundingClientRect();
+      if (b.width * b.height > 0 || e !== proxy) return b;
+      // a zero-size label that only anchors its parts (the permission dial's stops: the knob, its focus ring and its
+      // name hang around a point on the arch): judge the parts it draws
+      const parts = [...e.querySelectorAll("*")].map((c) => c.getBoundingClientRect()).filter((p) => p.width * p.height > 0);
+      if (!parts.length) return b;
+      const left = Math.min(...parts.map((p) => p.left));
+      const top = Math.min(...parts.map((p) => p.top));
+      const right = Math.max(...parts.map((p) => p.right));
+      const bottom = Math.max(...parts.map((p) => p.bottom));
+      return { left, top, right, bottom, width: right - left, height: bottom - top };
+    };
+    const r = box(proxy ?? ringHost ?? el);
     const desc = (() => {
       const label = el.getAttribute("aria-label") || el.textContent || el.getAttribute("title") || proxy?.textContent || el.getAttribute("value") || "";
       const href = el.getAttribute("href");
@@ -89,7 +113,7 @@ const focusInfo = (page) =>
     // hit-test a grid of points over the part on screen: which of them does the header or the sticky call to action
     // sit on top of? (Geometry alone would count a transparent header at the top of the page, or a skip link drawn
     // above the header.)
-    const target = proxy ?? el;
+    const target = proxy ?? ringHost ?? el;
     let points = 0;
     let underHeader = 0;
     let underSticky = 0;
@@ -258,12 +282,12 @@ async function session(base, width, theme, motion) {
     check("theme toggle back (Space)", back === theme, back);
   } else check("theme toggle in the header", false, "not found");
   if (!compact) {
-    if (await focusSel("header button[aria-pressed]")) {
+    if (await focusSel('header button[data-control="motion"]')) {
       await page.keyboard.press("Enter");
       await sleep(300);
       const m = await page.evaluate(() => ({
         motion: document.documentElement.dataset.motion,
-        pressed: document.querySelector("header button[aria-pressed]")?.getAttribute("aria-pressed"),
+        pressed: document.querySelector('header button[data-control="motion"]')?.getAttribute("aria-pressed"),
         stored: localStorage.getItem("pebble-motion"),
       }));
       if (motion === "reduced") check("Pause motion under reduced motion stays pressed and locked", m.motion === "paused" && m.pressed === "true", JSON.stringify(m));

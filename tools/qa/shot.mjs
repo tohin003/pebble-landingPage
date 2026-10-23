@@ -313,8 +313,9 @@ async function interact(base, width, theme) {
   const expected = theme === "dark" ? "light" : "dark";
   check("theme toggle", flipped.theme === expected && flipped.stored === expected, JSON.stringify(flipped));
 
-  // 5 Pause motion (in the header on desktops, in the footer everywhere)
-  const motionSelector = width < 1024 ? "footer button[aria-pressed]" : "header button[aria-pressed]";
+  // 5 Pause motion (in the header on desktops, in the footer everywhere). By its data-control: the footer's theme words
+  // (Light, Dark, System) are aria-pressed buttons too, and come first.
+  const motionSelector = width < 1024 ? 'footer button[data-control="motion"]' : 'header button[data-control="motion"]';
   await clickVisible(motionSelector);
   await sleep(300);
   const motion = await page.evaluate((sel) => ({
