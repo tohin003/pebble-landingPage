@@ -13,14 +13,14 @@
   align-items: center;
   gap: 10px;
   width: auto;
-  height: 46px;
+  height: 44px;
   padding: 0 18px 0 14px;
-  border-radius: 13px;
-  background: var(--accent);
-  color: var(--on-accent);
+  border-radius: var(--r-control);
+  background: var(--ink); /* playing the film is not one of the accent's three jobs */
+  color: var(--bg);
   filter: none;
-  font-size: 15.5px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 500;
   transition: transform var(--dur-press) var(--ease-firm);
 }
 
@@ -32,12 +32,13 @@
   flex: none;
   width: 18px;
   height: 16px;
-  background: var(--on-accent);
+  background: var(--bg);
 }
 
 .length {
   font-size: 15px;
   color: var(--ink-2);
+  font-family: var(--font-mono); /* the film's length is data */
   font-variant-numeric: tabular-nums;
 }
 
@@ -87,7 +88,7 @@
 
 .parts dt {
   font-size: 13.5px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ink-2);
 }
 

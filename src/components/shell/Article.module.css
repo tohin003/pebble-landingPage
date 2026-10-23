@@ -1,15 +1,18 @@
+/* A plain text page on the grid (Article.tsx): every child in columns 4–10. */
 .article {
-  width: min(720px, 100%);
-  margin: 0 auto;
-  padding: clamp(56px, 6vw + 24px, 104px) var(--gutter) 0;
+  align-content: start;
+  padding-top: 72px;
+}
+
+.article > * {
+  grid-column: 4 / span 7;
+  min-width: 0;
 }
 
 .head {
   margin-bottom: 48px;
-}
-
-.title {
-  font-size: clamp(40px, 3vw + 26px, 58px);
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
 }
 
 .lead {
@@ -21,9 +24,12 @@
   gap: 18px;
 }
 
+/* sub-heads at the footer statement's size (globals.css .display-3: 30 / 30 / 27 / 24) */
 .body h2 {
   margin-top: 36px;
-  font-size: clamp(26px, 1vw + 20px, 32px);
+  font-size: 30px;
+  line-height: 1.15;
+  letter-spacing: -0.014em;
 }
 
 .body h3 {
@@ -44,14 +50,34 @@
 .pre {
   padding: 18px 20px;
   overflow-x: auto;
-  border-radius: var(--r-card);
-  background: var(--code-bg);
-  font-size: 13.5px;
+  border-radius: var(--r-panel);
+  background: var(--fill);
+  font-size: 13px;
   line-height: 1.55;
   white-space: pre-wrap;
 }
 
 .back {
   margin-top: 48px;
-  font-weight: 550;
+  font-weight: 500;
+}
+
+@media (max-width: 1023px) {
+  .article {
+    padding-top: 48px;
+  }
+
+  .body h2 {
+    font-size: 27px;
+  }
+}
+
+@media (max-width: 560px) {
+  .article {
+    padding-top: 32px;
+  }
+
+  .body h2 {
+    font-size: 24px;
+  }
 }

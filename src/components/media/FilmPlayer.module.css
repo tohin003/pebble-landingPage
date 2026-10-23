@@ -121,7 +121,7 @@
   background: rgba(255, 255, 255, 0.1);
   color: inherit;
   font-size: 14px;
-  font-weight: 550;
+  font-weight: 500;
 }
 
 .toggle[aria-pressed="true"] {
