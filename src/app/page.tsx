@@ -4,6 +4,7 @@
 import { formatTimecode, timedChapters } from "@/content/chapters";
 import { FilmPlayer, type TimedChapter } from "@/components/media/FilmPlayer";
 import { AgentGuard } from "@/components/sections/AgentGuard";
+import { Benchmarks } from "@/components/sections/Benchmarks";
 import { Film } from "@/components/sections/Film";
 import { FinalCta } from "@/components/sections/FinalCta";
 import { Hero } from "@/components/sections/Hero";
@@ -40,6 +41,7 @@ export default async function Home() {
       <Memory />
       <ViewsAndTour />
       <Infrastructure />
+      <Benchmarks />
       <Privacy />
       <Install />
       <Limits />

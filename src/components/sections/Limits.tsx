@@ -12,7 +12,7 @@ import styles from "./Limits.module.css";
 
 export function Limits() {
   return (
-    <section id={SECTIONS.limits} className={`section ${styles.section}`} aria-labelledby="limits-title" data-path-anchor="cross">
+    <section id={SECTIONS.limits} className={`section ${styles.section}`} aria-labelledby="limits-title">
       <div className={styles.inner}>
         <div className={styles.head}>
           <h2 id="limits-title">{honestLimits.heading}</h2>

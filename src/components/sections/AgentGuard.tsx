@@ -32,7 +32,7 @@ const TABLET = "calc(100vw - 48px)";
 export function AgentGuard() {
   const held = agentGuard.held;
   return (
-    <section id={SECTIONS.agentGuard} className={`section ${styles.section}`} aria-labelledby="agentGuard-title" data-path-anchor="margin">
+    <section id={SECTIONS.agentGuard} className={`section ${styles.section}`} aria-labelledby="agentGuard-title">
       <div className={styles.split}>
         <div className={styles.text}>
           <h2 id="agentGuard-title" className={styles.title}>

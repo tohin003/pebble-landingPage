@@ -1,5 +1,5 @@
 /* Section 3, AgentGuard: a split (comp 2's graft, DESIGN §1). Text on the left, real captures on the right; one column
-   below 900 px. The section must not create a stacking context (the pebble's path runs behind it). */
+   below 900 px. */
 .section {
   position: relative;
 }
@@ -298,13 +298,5 @@
   .segmentText {
     padding: 8px 11px;
     font-size: 14px;
-  }
-}
-
-/* 900–1279 px: the pebble's path runs in the page's gutter (src/components/line/geometry.ts, margins()), so the
-   content keeps 48 px further in on each side, clear of its sway (as sections 8–15 do; QA lane F3). */
-@media (min-width: 900px) and (max-width: 1279px) {
-  .split {
-    width: min(var(--w-content), calc(100% - 96px));
   }
 }

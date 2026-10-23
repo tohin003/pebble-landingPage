@@ -13,7 +13,7 @@ export async function FinalCta() {
   const release = await getRelease();
   const live = release.state === "live";
   return (
-    <section id={SECTIONS.finalCta} className={`section ${styles.section}`} aria-labelledby="finalCta-title" data-path-anchor="cross">
+    <section id={SECTIONS.finalCta} className={`section ${styles.section}`} aria-labelledby="finalCta-title">
       <div className="section-head">
         <h2 id="finalCta-title">{finalCta.h2}</h2>
         <p className="lead">{finalCta.lead}</p>

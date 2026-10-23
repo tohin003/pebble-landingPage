@@ -43,7 +43,7 @@ const CROP_SIZES = [
 export function ViewsAndTour() {
   const loop = loopMedia("views");
   return (
-    <section id={SECTIONS.views} className={`section ${styles.section}`} aria-labelledby="views-title" data-path-anchor="cross">
+    <section id={SECTIONS.views} className={`section ${styles.section}`} aria-labelledby="views-title">
       <div className={styles.viewsRow}>
         <div className={styles.viewsText}>
           <h2 id="views-title">{views.h2}</h2>

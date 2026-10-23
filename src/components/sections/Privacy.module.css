@@ -1,20 +1,8 @@
 /* Private by default (DESIGN §5 row 11): "Stored on your Mac" as an enclosure, "What leaves your Mac" outside it, and
-   the page's line passing through the small "Your Mac" pebble and branching to the five destinations.
+   five strands branching from the small "Your Mac" pebble to the five destinations (a diagram of its own).
    The shared .section and .section-head helpers live in src/app/globals.css. */
 .section {
   position: relative;
-}
-
-/* The line's sweep above the section, for narrow screens only: a zero-height box at the section's top whose padding
-   copies the section's, so PebblePath centres the sweep exactly as it would on the section itself. */
-.crossAnchor {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 1px;
-  height: 0;
-  padding-top: var(--section-pad);
-  pointer-events: none;
 }
 
 .chip {
@@ -204,13 +192,6 @@
   color: var(--ink);
 }
 
-/* Wide screens: the line's stop is the node; no sweep above the section. */
-@media (min-width: 900px) {
-  .crossAnchor {
-    display: none;
-  }
-}
-
 @media (max-width: 1100px) and (min-width: 900px) {
   .columns {
     column-gap: 104px;
@@ -270,13 +251,5 @@
 @media (max-width: 560px) {
   .stored {
     padding: 22px 18px 24px;
-  }
-}
-
-/* 900–1279 px: the pebble's path runs in the page's gutter (src/components/line/geometry.ts, margins()), so the
-   diagram keeps 48 px further in on each side, clear of its sway. */
-@media (min-width: 900px) and (max-width: 1279px) {
-  .diagram {
-    width: min(1060px, calc(100% - 96px));
   }
 }

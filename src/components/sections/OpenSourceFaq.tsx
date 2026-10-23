@@ -29,7 +29,7 @@ export async function OpenSourceFaq() {
   const release = await getRelease();
   const card = openSource.repoCard;
   return (
-    <section id={SECTIONS.openSource} className={`section ${styles.section}`} aria-labelledby="openSource-title" data-path-anchor="margin">
+    <section id={SECTIONS.openSource} className={`section ${styles.section}`} aria-labelledby="openSource-title">
       <div className={styles.inner}>
         <div className={styles.aside}>
           <h2 id="openSource-title">{openSource.h2}</h2>

@@ -1,17 +1,22 @@
 "use client";
 // The privacy diagram's strands (DESIGN §2, §5 row 11): the page's line, branching. From the "Your Mac" pebble (or,
 // below 900 px, the small mark beside "What leaves your Mac") a trunk runs down and one strand turns off it to each of
-// the five destinations. Drawn in the line's own hand: 1.35 px in --trail, with the same slow sine wobble as the page's
-// line (src/components/line/geometry.ts), tapered to nothing at each end so the joins meet.
+// the five destinations. Drawn in the line's own hand: 1.35 px in --trail, with the slow sine wobble the page-wide line
+// had (wobbleAt below, kept from its geometry when that line was retired), tapered to nothing at each end so the joins
+// meet.
 //
 // Measured from the real layout (the origin is the first visible [data-strand-origin] in the diagram, the targets its
 // visible [data-strand-target] marks) and rebuilt when the diagram resizes. When the diagram first comes into view the
 // trunk draws down and each strand follows as the trunk reaches it (stroke-dashoffset, about a second, once). Reduced
 // motion or Pause motion: drawn from the start, without the wobble, as the page's line is. Decorative: aria-hidden.
 import { useEffect, useRef, useState } from "react";
-import { wobbleAt } from "@/components/line/geometry";
 import { useMotionMode } from "@/lib/hooks";
 import styles from "./Privacy.module.css";
+
+/** The hand-drawn wobble (comp 3): two slow sines along the arc length, about ±1.35 px. */
+function wobbleAt(s: number): number {
+  return 0.9 * Math.sin(s / 61 + 1.3) + 0.45 * Math.sin(s / 23.5 + 0.4);
+}
 
 type Pt = readonly [number, number];
 type Piece = Readonly<{ d: string; length: number; delay: number; duration: number }>;

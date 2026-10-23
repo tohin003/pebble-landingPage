@@ -1,5 +1,5 @@
-/* The page wrapper: its own stacking context, so the pebble's path (z-index -1) and section backdrops (-2) stay
-   above the body's background and below the content. overflow-x: clip, not hidden, keeps position: sticky working. */
+/* The page wrapper: its own stacking context, so anything a section layers behind its content (z-index -1) stays above
+   the body's background. overflow-x: clip, not hidden, keeps position: sticky working. */
 .page {
   position: relative;
   isolation: isolate;

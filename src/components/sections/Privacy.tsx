@@ -3,11 +3,10 @@
 // "Private by default." always sits with both columns beside it, so it is never read as "nothing leaves":
 // "Stored on your Mac" and "What leaves your Mac", with all five destinations.
 //
-// The line becomes the diagram (DESIGN §2, §5 row 11). On wide screens the page's line runs straight through the small
-// "Your Mac" pebble above the columns (a "stop" anchor), and five strands, drawn in the line's own hand
-// (Privacy.strands.tsx), branch from that pebble to the five destinations. Below 900 px the node and its stop are
-// hidden, the line keeps to the margins (a "cross" anchor, used only there), and the strands become a comb down the
-// destinations' left edge. The diagram is decorative: the two lists carry every word.
+// The strands are a diagram of their own (DESIGN-LEXINGTON §3.9): on wide screens five strands, drawn in the line's
+// hand (Privacy.strands.tsx), branch from the small "Your Mac" pebble above the columns to the five destinations.
+// Below 900 px the node is hidden and the strands become a comb down the destinations' left edge. The diagram is
+// decorative: the two lists carry every word.
 // Each column ends with the notes that qualify it: how Pebble's own tools treat its folders (and the data-folders
 // guide) under "Stored on your Mac"; the local model and web search under "What leaves your Mac".
 import { privacy } from "@/content/copy";
@@ -23,9 +22,6 @@ const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 export function Privacy() {
   return (
     <section id={SECTIONS.privacy} className={`section ${styles.section}`} aria-labelledby="privacy-title">
-      {/* the line's sweep above the section, used only where the diagram's node is hidden (below 900 px) */}
-      <span className={styles.crossAnchor} data-path-anchor="cross" aria-hidden="true" />
-
       <div className="section-head">
         <h2 id="privacy-title">{privacy.h2}</h2>
         <p className="lead">{privacy.lead}</p>
@@ -37,8 +33,8 @@ export function Privacy() {
       <div className={styles.diagram}>
         <div className={styles.nodeRow} aria-hidden="true">
           <span className={styles.nodeLabel}>{privacy.diagram.mac}</span>
-          {/* the line passes through this pebble (src/components/line/PebblePath.tsx, "stop") */}
-          <span className={`galet ${styles.node}`} data-path-anchor="stop" data-strand-origin="" />
+          {/* the strands' origin (Privacy.strands.tsx) */}
+          <span className={`galet ${styles.node}`} data-strand-origin="" />
         </div>
 
         <div className={styles.columns}>

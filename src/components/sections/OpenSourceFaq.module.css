@@ -261,11 +261,3 @@
     font-size: 16.5px;
   }
 }
-
-/* 900–1279 px: the pebble's path runs in the page's gutter (src/components/line/geometry.ts, margins()), so the
-   section keeps 48 px further in on each side, clear of its sway. */
-@media (min-width: 900px) and (max-width: 1279px) {
-  .inner {
-    width: min(var(--w-content), calc(100% - 96px));
-  }
-}

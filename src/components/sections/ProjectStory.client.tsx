@@ -1,6 +1,6 @@
 "use client";
-// The project story's rail and stage (DESIGN §2 and §5 row 5, comp 3). The pebble's path runs through the rail: four
-// stones, one per step, each a "stop" anchor, and the guide pebble stands on the current one. The rail is the story's
+// The project story's rail and stage (DESIGN §2 and §5 row 5, comp 3). A local ground line (Horizon) runs through the
+// rail's four stones, one per step, and the guide pebble stands on the current one. The rail is the story's
 // tablist: choose a step (click, or the arrow keys, Home and End) and the guide walks along the line to it while the
 // stage below shows that step. The rail never moves, so the line always passes through its stones.
 //
@@ -12,6 +12,7 @@ import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEv
 import type { PoseId } from "@pebble/index";
 import { APPROVAL_DEMO_EVENT, type ApprovalStatus } from "@/components/explainers/ApprovalCardDemo";
 import { PebbleLiveSlot } from "@/components/pebble/PebbleLiveSlot";
+import { Horizon } from "@/components/ui/Horizon";
 import styles from "./ProjectStory.module.css";
 
 export type StoryStep = Readonly<{ n: string; name: string; panel: ReactNode }>;
@@ -78,6 +79,8 @@ export function Story({
   return (
     <div className={styles.story}>
       <div className={styles.railWrap}>
+        {/* the ground through the stones' centres; the guide pebble stands on it */}
+        <Horizon variant={1} className={styles.ground} />
         <div role="tablist" aria-label={label} className={styles.rail}>
           {steps.map((step, index) => (
             <button
@@ -95,8 +98,7 @@ export function Story({
               onClick={() => select(index, "click")}
               onKeyDown={(event) => onKeyDown(event, index)}
             >
-              {/* the line passes through this stone (src/components/line/PebblePath.tsx "stop") */}
-              <span className={styles.stop} data-path-anchor="stop" aria-hidden="true">
+              <span className={styles.stop} aria-hidden="true">
                 <span className={`galet ${styles.stone}`} />
               </span>
               <span className={styles.tabLabel}>

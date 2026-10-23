@@ -32,7 +32,7 @@ export function EvidenceToggle({
   const [state, setState] = useState<EvidenceState>("held");
   const id = useId();
   return (
-    <figure className={styles.evidence} data-state={state} data-path-anchor="gate">
+    <figure className={styles.evidence} data-state={state}>
       <div className={styles.toggle} role="radiogroup" aria-labelledby={`${id}-label`}>
         <p id={`${id}-label`} className={styles.toggleLabel}>
           <span className={styles.example}>{example}</span>

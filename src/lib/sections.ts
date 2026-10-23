@@ -16,6 +16,7 @@ export const SECTIONS = {
   memory: sectionIds.memory,
   views: sectionIds.views,
   infrastructure: "infrastructure",
+  benchmarks: "benchmarks", // shown only while src/content/release.ts says the benchmark is public
   privacy: sectionIds.privacy,
   install: sectionIds.install,
   limits: sectionIds.limits,

@@ -39,7 +39,7 @@ export function Film() {
       : null;
 
   return (
-    <section id={SECTIONS.film} className={styles.film} aria-labelledby="film-title" data-path-anchor="margin">
+    <section id={SECTIONS.film} className={styles.film} aria-labelledby="film-title">
       {/* No fetch priority on the frame's pictures: on phones the frame is below the fold, where "high" put about 45 KB
           on the first screen's critical path (Lighthouse mobile LCP); where it peeks above the fold, the browser raises
           an image in view to high priority by itself (QA lane F3). */}

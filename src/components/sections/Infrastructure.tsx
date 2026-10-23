@@ -13,7 +13,6 @@ export function Infrastructure() {
       id={SECTIONS.infrastructure}
       className={`section ${styles.section}`}
       aria-labelledby="infrastructure-title"
-      data-path-anchor="margin"
     >
       <div className="section-head">
         <h2 id="infrastructure-title">{infrastructure.h2}</h2>

@@ -27,7 +27,7 @@ export function Pace() {
   const dial = explainers.permissionDial;
   const [approvals, ...always] = pace.fixed;
   return (
-    <section id={SECTIONS.pace} className={`section ${styles.section}`} aria-labelledby="pace-title" data-path-anchor="cross">
+    <section id={SECTIONS.pace} className={`section ${styles.section}`} aria-labelledby="pace-title">
       <div className="section-head">
         <h2 id="pace-title">{pace.h2}</h2>
         <p className="lead">{pace.lead}</p>

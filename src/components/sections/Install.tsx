@@ -39,7 +39,7 @@ export async function Install() {
   ];
   const [checkStep, ...otherSteps] = install.byHand.steps;
   return (
-    <section id={SECTIONS.install} className={`section ${styles.section}`} aria-labelledby="install-title" data-path-anchor="margin">
+    <section id={SECTIONS.install} className={`section ${styles.section}`} aria-labelledby="install-title">
       <div className={styles.inner}>
         <header className={styles.head}>
           <h2 id="install-title">{install.h2}</h2>

@@ -1,5 +1,5 @@
-/* The permission dial (comp 3). The arch is the pebble's path itself: .arc only marks its box (2R wide, R tall).
-   The stops sit on it at fixed angles (cos and sin precomputed, so no CSS trigonometry is needed): Ask for approval
+/* The permission dial (comp 3). The arch is a local Horizon (shape "arch") inside .arc, which marks its box (2R wide,
+   R tall). The stops sit on it at fixed angles (cos and sin precomputed, so no CSS trigonometry is needed): Ask for approval
    at 152°, Auto in project at 90°, Full access at 28° (155° and 25° on phones). */
 .dial {
   text-align: center;

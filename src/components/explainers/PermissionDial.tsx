@@ -1,7 +1,8 @@
 "use client";
 // PermissionDial (MASTER_PLAN §7.3, DESIGN §2 and §5 row 7, comp 3's arc dial): Pebble's three permission modes as
-// three stops on an arch, labelled "Interactive example". The pebble's path itself draws the arch (the "arc" anchor
-// below, kept on phones too); the three knobs are galets on it, and the pebble under the arch looks at the chosen mode.
+// three stops on an arch, labelled "Interactive example". The arch is the pebble's ground in the line's own hand (a
+// local Horizon, shape "arch", on phones too); the three knobs are galets on it, and the pebble under the arch looks at
+// the chosen mode.
 // Under the dial, the mode's own two texts, word for word from Pebble's src/permissionModes.ts at v1.0.1, and, for
 // Full access, the warning Pebble's Settings show with it.
 //
@@ -9,6 +10,7 @@
 // change answers the press; the pebble's eyes turn with the engine's own short morph, instantly when motion is paused.
 import { lazy, Suspense, useEffect, useId, useState, type ReactNode } from "react";
 import { explainers } from "@/content/copy";
+import { Horizon } from "@/components/ui/Horizon";
 import { MODE_GAZE, type DialModeId } from "./PermissionDial.modes";
 import styles from "./PermissionDial.module.css";
 
@@ -42,8 +44,10 @@ export function PermissionDial({ stills }: { stills: Readonly<Record<DialModeId,
 
       <fieldset className={styles.arch}>
         <legend className="sr-only">{dial.legend}</legend>
-        {/* the pebble's path rises over this box: 2R wide, R tall, the arch's baseline at its bottom */}
-        <span className={styles.arc} data-path-anchor="arc" data-path-phone="keep" aria-hidden="true" />
+        {/* the arch's box: 2R wide, R tall, its baseline at the bottom; the Horizon fills it and runs out its feet */}
+        <span className={styles.arc} aria-hidden="true">
+          <Horizon shape="arch" />
+        </span>
         {dial.modes.map((m) => (
           <label key={m.id} className={styles.detent} data-mode={m.id}>
             <input

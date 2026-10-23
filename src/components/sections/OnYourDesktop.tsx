@@ -42,7 +42,6 @@ export function OnYourDesktop() {
       id={SECTIONS.desktop}
       className={`section ${styles.section}`}
       aria-labelledby="desktop-title"
-      data-path-anchor="cross"
     >
       <div className="section-head">
         <h2 id="desktop-title">{desktop.h2}</h2>

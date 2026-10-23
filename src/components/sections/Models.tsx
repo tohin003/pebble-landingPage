@@ -28,7 +28,7 @@ export function Models() {
   // with L2 rendered, the still stays only for phones, and only if L2 has no phone cut
   const still = !l2.available || l2.phoneSources.length === 0;
   return (
-    <section id={SECTIONS.models} className={`section ${styles.section}`} aria-labelledby="models-title" data-path-anchor="margin">
+    <section id={SECTIONS.models} className={`section ${styles.section}`} aria-labelledby="models-title">
       <div className="section-head">
         <h2 id="models-title">{models.h2}</h2>
         <p className="lead">{models.lead}</p>

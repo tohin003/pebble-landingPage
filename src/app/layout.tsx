@@ -1,10 +1,9 @@
-// The root layout: fonts, metadata, the theme / motion / platform bootstrap, the skip link, the header, the pebble's
-// path, the footer and the JSON-LD record (MASTER_PLAN §2.2, §7.8; docs/DESIGN.md).
+// The root layout: fonts, metadata, the theme / motion / platform bootstrap, the skip link, the header, the footer and
+// the JSON-LD record (MASTER_PLAN §2.2, §7.8; docs/DESIGN.md).
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { hero, honestLimits } from "@/content/copy";
 import { seo, jsonLdString, softwareApplicationJsonLd } from "@/content/seo";
-import { PebblePath } from "@/components/line/PebblePath";
 import { Footer } from "@/components/shell/Footer";
 import { ShellSync } from "@/components/shell/ShellSync";
 import { SiteHeader } from "@/components/shell/SiteHeader";
@@ -65,7 +64,6 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body>
         <SkipLink />
         <div className={styles.page}>
-          <PebblePath />
           <SiteHeader
             release={{ state: release.state, downloadUrl: release.downloadUrl }}
             honest={{ line: hero.honestLine, link: honestLimits.shortLink, href: `#${SECTIONS.limits}` }}

@@ -13,7 +13,7 @@
     "start": "next start",
     "typecheck": "next typegen && tsc --noEmit",
     "test:engine": "bun test ./shared/pebble ./src/components/pebble",
-    "test:site": "bun test ./src/lib ./src/components/line ./src/components/ui ./src/content"
+    "test:site": "bun test ./src/lib ./src/components/ui ./src/content"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",

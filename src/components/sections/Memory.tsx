@@ -42,7 +42,7 @@ const cropStyle = {
 export function Memory() {
   const loop = loopMedia("memory");
   return (
-    <section id={SECTIONS.memory} className={`section ${styles.section}`} aria-labelledby="memory-title" data-path-anchor="margin">
+    <section id={SECTIONS.memory} className={`section ${styles.section}`} aria-labelledby="memory-title">
       <div className="section-head">
         <h2 id="memory-title">{memory.h2}</h2>
         <p className="lead">{memory.lead}</p>
