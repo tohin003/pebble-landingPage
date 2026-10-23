@@ -54,9 +54,13 @@ job; the copy lint and the sheets only read files. Each file's header lists its 
 | `copy-lint.mjs` | the voice and claim rules on the built HTML and `llms.txt` (`--src` adds `src/content`); light work | stdout |
 | `sheets.mjs` | review sheets from a shot.mjs run; light work | `.work/qa/screens/<run>/sheets/` |
 
+`all.sh` runs every gate in order on one build, each heavy step as its own `scripts/heavy.sh` job, and stops when a
+CPU hold (`.work/HOLD`) appears, printing the command that runs the steps left (it never bypasses a hold):
+
 ```bash
-cd /path/to/pebble-landingPage && source scripts/env.sh && \
-  scripts/heavy.sh qa-a11y node tools/qa/a11y.mjs --run=a11y-1 && \
-  H2=1 scripts/heavy.sh qa-lh bash tools/qa/lighthouse.sh lh-1 3 && \
-  node tools/qa/copy-lint.mjs --src
+cd /path/to/pebble-landingPage && source scripts/env.sh && bash tools/qa/all.sh qa-r2             # everything
+cd /path/to/pebble-landingPage && source scripts/env.sh && bash tools/qa/all.sh qa-r2 a11y lh-h2  # some steps, last build
 ```
+
+Steps: `shot` (builds first), `sheets`, `a11y`, `interact`, `requests`, `lh-h2`, `lh`, `line`, `lint`. One line per
+step goes to `.work/qa/logs/<run>-all.out`, the full output to `.work/qa/logs/<run>-<step>.out`.
