@@ -142,8 +142,9 @@ export function layoutFor(width: number, height: number): Layout {
     };
   }
   if (aspect === "vertical") {
-    // FILM_SPEC §22: the text band at the top of the central band, the pebble at the band's right end, the stage under
-    // them, framed on three sides and bleeding off the right edge (as 16:9's does), ending on the caption band (y 1460),
+    // FILM_SPEC §22: the text band in the upper part of the central band, the pebble at the band's right end on its
+    // line, and under them the stage, the square's 1,056 × 744 (so the two narrow aspects share their framings), framed
+    // on three sides and bleeding off the right edge as 16:9's does; it ends at y 1444, above the caption band (1460),
     // so nothing essential reaches the phone UI below y 1670 (or above y 250)
     const s = Math.min(width / 1080, height / 1920);
     return {
@@ -159,12 +160,12 @@ export function layoutFor(width: number, height: number): Layout {
       gap: r(22, s),
       cursor: r(52, s),
       win: {
-        text: { x: r(80, s), y: r(310, s), w: r(780, s), h: r(250, s) },
-        stage: { x: r(24, s), y: r(600, s), w: width - r(24, s), h: r(860, s) },
+        text: { x: r(80, s), y: r(380, s), w: r(780, s), h: r(310, s) },
+        stage: { x: r(24, s), y: r(700, s), w: width - r(24, s), h: r(744, s) },
         stageCorners: "left",
         stageRadius: r(16, s),
-        pebble: { foot: { x: r(940, s), y: r(560, s) }, size: r(170, s) },
-        ground: { x0: r(850, s), x1: r(1030, s) },
+        pebble: { foot: { x: r(930, s), y: r(660, s) }, size: r(170, s) },
+        ground: { x0: r(840, s), x1: r(1020, s) },
         checkX: null,
         checkSize: r(56, s),
       },

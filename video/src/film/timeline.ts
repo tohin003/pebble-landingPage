@@ -395,11 +395,12 @@ export interface HopSpec {
 }
 /** G2a: H1 starts at y 1200, not §9.2's 1150: at 1150 the 210 px pebble's top (y 1041) showed at the frame's bottom
  *  edge through S3's first bar; at 1200 it is fully below the frame until it rises. The vertical's (§22) rise starts
- *  under the frame (y 2050) and lands at y 1300, above the caption band; its lockup foot is (806, 832). */
+ *  under the frame (y 2050) and lands at y 1300, above the caption band; its lockup foot is (806, 832) and its spot in
+ *  the window world (930, 660), on its line at the text band's right end. */
 export const HOPS: readonly HopSpec[] = [
   { id: "H1", at: 14.4, duration: 0.5, from: per({ x: 960, y: 1200 }, { x: 540, y: 1200 }, { x: 540, y: 2050 }), to: per({ x: 960, y: 880 }, { x: 540, y: 880 }, { x: 540, y: 1300 }) },
   { id: "H2", at: time(490), duration: 0.467, from: per({ x: 960, y: 880 }, { x: 540, y: 880 }, { x: 540, y: 1300 }), to: per({ x: 1295, y: 422 }, { x: 806, y: 402 }, { x: 806, y: 832 }) },
-  { id: "H3", at: time(634), duration: 0.6, from: per({ x: 1295, y: 422 }, { x: 806, y: 402 }, { x: 806, y: 832 }), to: per({ x: 330, y: 900 }, { x: 940, y: 300 }, { x: 940, y: 560 }) },
+  { id: "H3", at: time(634), duration: 0.6, from: per({ x: 1295, y: 422 }, { x: 806, y: 402 }, { x: 806, y: 832 }), to: per({ x: 330, y: 900 }, { x: 940, y: 300 }, { x: 930, y: 660 }) },
   { id: "H4", at: time(2002), duration: 0.467, from: per({ x: 2050, y: 1180 }, { x: 1180, y: 1180 }, { x: 1180, y: 2010 }), to: per({ x: 1295, y: 422 }, { x: 806, y: 402 }, { x: 806, y: 832 }) },
 ];
 
@@ -431,7 +432,7 @@ function cuesFor(a: Aspect): PebbleCue[] {
     cue(504, { pose: "tap", note: "lands: the reveal" }),
     cue(520, { look: null }),
     cue(540, { pose: "idle", note: "tap ends (1.2 s)" }),
-    cue(624, { look: look(a, { x: -0.875, y: 0.5 }, { x: 0.75, y: -0.625 }, { x: 0.5, y: -0.875 }), note: "eyes lead the carry" }),
+    cue(624, { look: look(a, { x: -0.875, y: 0.5 }, { x: 0.75, y: -0.625 }, { x: 0.625, y: -0.75 }), note: "eyes lead the carry" }),
     cue(652, { pose: "reading", note: "lands in the window world" }),
     cue(660, { look: look(a, { x: 0.875, y: -0.375 }, { x: -0.875, y: 0.5 }, { x: -0.625, y: 0.75 }), note: "toward the status line" }),
     cue(711, { pose: "editing", note: "inside the f708–714 blink" }),
@@ -443,7 +444,7 @@ function cuesFor(a: Aspect): PebbleCue[] {
     cue(1161, { pose: "writing", note: "after Verified, Pebble writes its final reply" }),
     cue(1204, { pose: "happy", note: "the verified run completes (the one celebration)" }),
     cue(1339, { pose: "idle", note: "happy ends after 4.5 s, as in the app" }),
-    cue(1584, { look: look(a, { x: 0.875, y: -0.375 }, { x: -0.875, y: 0.5 }, { x: -0.625, y: 0.75 }), note: "the dashboard" }),
+    cue(1584, { look: look(a, { x: 0.875, y: -0.375 }, { x: -0.875, y: 0.5 }, { x: -0.75, y: 0.625 }), note: "the dashboard" }),
     cue(1999, { look: look(a, { x: -0.75, y: -0.75 }, { x: -0.375, y: -0.875 }, { x: -0.25, y: -0.875 }), note: "P-end: eyes lead the landing" }),
     cue(2016, { pose: "tap", note: "lands in the end-card lockup" }),
     cue(2030, { look: null }),

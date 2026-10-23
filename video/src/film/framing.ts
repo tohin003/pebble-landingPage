@@ -39,12 +39,12 @@ type PerAspect<T> = Record<AspectId, T>;
 export const STAGE: PerAspect<Rect> = {
   wide: { x: 920, y: 64, w: 1000, h: 952 },
   square: { x: 24, y: 336, w: 1056, h: 744 },
-  vertical: { x: 24, y: 600, w: 1056, h: 860 },
+  vertical: { x: 24, y: 700, w: 1056, h: 744 },
 };
 /** The square's old stage width: framings written for it keep their visible width at m × SQUARE_K. */
 const SQUARE_K = 1056 / 1032;
 
-export const FRAMINGS: PerAspect<Record<string, Framing>> = {
+const SETS: Record<"wide" | "square", Record<string, Framing>> = {
   wide: {
     /** S5a: x 350–734.6, y 66–432.2 (§6's m 2.6; top moved under the top bar's hairline at y 64, which sat 62 px inside the stage) */
     s5a: fr(2.6, 542.3, 249.1),
@@ -100,94 +100,85 @@ export const FRAMINGS: PerAspect<Record<string, Framing>> = {
      */
     s7aAsk: fr(2.83, 460.7, 252.2),
   },
-  // the square's framings as edge-checked on its old 1,032 px stage (the visible rects in the comments are theirs), each
-  // converted by sq() to the 1,056 px stage: the same left, right and top edges
+  // The narrow aspects (lane v2-film). The square and the vertical have the same stage, 1,056 × 744 (the square's
+  // bleeds off the frame's right and bottom edges; the vertical's off the right only, its bottom a visible hairline),
+  // so they share one set of framings, each written as its visible rect (nr: m, left, top) and checked on the 1.0.4
+  // recording and stills with .work/film/v2/stageview.py. Every shot whose text is the point of the shot is at m ≥ 3.0,
+  // so the app's 12.5 px text (11.33 CSS px of ink) reads at ≥ 34 px (the lead's floor for 1:1 and 9:16): the status
+  // line, the edit card and its buttons, the held sentence, the tests card, the Verified step, Models' ways in and the
+  // permission modes. Edges: top and left always in clear space; the bottom too wherever it can be (the vertical shows it);
+  // a click target ≥ 60 px inside the frame. The documented exceptions (FILM_SPEC §22): the six memory layers (all six
+  // must show together: the grid is 468 CSS px wide, so their 10.67 px ink reads at 32 px, the right column's names
+  // 27 px from the frame's edge), the forget click (the bin and the record are 450 CSS px apart: m 2.21, 23 px; the
+  // action carries it), and the wide transitions (S5c stage 1, the S5e pull-back, the S7a canvas, a picture).
   square: {
-    /** S5a: x 336–725.4, y 68–348.8 (top above the request bubble: §6's y 120 cut its first line) */
-    s5a: sq(2.65, 530.7, 208.4),
-    /** S5b: the drawer only, x 804.1–1160 (m 2.9); upper part y 200–456.6 */
-    s5bTop: sq(2.9, 982.05, 328.3),
+    /** S5a: the status line alone, x 340–692, y 158–406 ("Reading · Reading invoice_kit/dates.py · 5 s" at 238–249.3,
+     *  ink 34 px; the request bubble, too wide to fit at the floor, stays above the top edge: its last line ends 152.7) */
+    s5a: nr(3.0, 340, 158),
+    /** S5b, the card's upper part: x 808–1160 (the drawer's border at 800.5 outside, the cards' at 817 inside), y 202–450:
+     *  top between NEEDS YOUR REVIEW (ends 197.3) and the card's top border (211); bottom between the diff's rows
+     *  (448.7 | 456.7) */
+    s5bTop: nr(3.0, 808, 202),
     /**
-     * S5b lower part, y 488.7–745.3 (REVIEW-G2 P0-2, lane G-fix; was cy 662.2, y 533.9–790.5): the next card's header
-     * ("tests/test_dates.py · Needs your review", y 749.3 before the click; "· Done", y 747 on the f814 match cut's
-     * 11.05 s frame) now stays 5 px below the frame, so no status changes on screen without a visible click. The top
-     * edge falls between the diff's rows (469 | 517) and, after the match cut, between EARLIER ACTIONS (481) and the
-     * applied card's header (511). Apply edit straddles the caption band (frame y 879–971); the pointer clicks its upper
-     * half at css y 689, frame y 917 (≤ 918).
+     * S5b, the card's lower part (REVIEW-G2 P0-2): y 486–734. The bottom sits in the drawer's ground between the cards
+     * (716.7–737.3 before the click, 714.7–735.3 after it), so the next card's header ("tests/test_dates.py · Needs your
+     * review", 746) and status never show; the top falls in the diff's blank line (468.7 | 517) and, after the f814
+     * match cut, under EARLIER ACTIONS (ends 481.3). Apply edit (676–708) at frame y 906–1002 in the square: the pointer
+     * clicks its upper part (css y 679, frame y 915 ≤ 918)
      */
-    s5bLow: sq(2.9, 982.05, 617),
+    s5bLow: nr(3.0, 808, 486),
     /**
-     * S5c stage 1 (f864–953), the held run whole (REVIEW-G2 P0-1, lane G-fix): m 2.2, x 242.7–711.8, y 420.5 → the frame
-     * bottom (759.7). The avatar (259.7) and the sentence's end (695) both sit 61 px from the frame's sides, so the
-     * whole block and all three choices show inside OVERRIDES §4's 60 px; the top edge is 4.8 css px under the usage
-     * line (ends 415.7) and the composer's footer line (from 759.7) stays 2 px under the frame. Ink 24 px (stage 2: 36).
+     * S5c stage 1 (f864–953), the held run whole (REVIEW-G2 P0-1, lane G-fix): m 2.25, x 242.7–711.8, y 420.5–751. The
+     * avatar (259.7) and the sentence's end (695) both sit 61 px from the frame's sides; the top 4.8 css px under the
+     * usage line (ends 415.7), the bottom between the composer's model row (ends 734.3) and its footer (759.7). A
+     * transition: stage 2 reads the sentence.
      */
     s5c: sq(2.2, 477.25, 589.6),
     /**
-     * S5c stage 2: m 3.28, x 222.6–537.2, y 420.8 → 647.6: "Blocked", the sentence (ink 36 px ≥ 34; its lines run into
-     * the stage's right edge) and Run the tests, Ask Pebble to finish whole (its label 82 px from the frame's edge) and
-     * Accept as unverified wholly outside (4.5 css px past the edge). The composer's placeholder (648.7) stays under
-     * the frame. Run the tests at frame (337, 797).
+     * S5c stage 2: m 3.36, x 222.6–537.2, y 420.8–642.5: "Blocked", the sentence (ink 38 px; its lines run into the
+     * frame's right edge) and Run the tests, Ask Pebble to finish whole and Accept as unverified wholly outside (4.5 css
+     * px past the edge). The composer's placeholder (648.7) stays under the bottom edge.
      */
     s5cRead: sq(3.28, 379.9, 534.2),
-    /** S5d upper part: y 200–456.6 */
-    s5dTop: sq(2.9, 982.05, 328.3),
-    /** S5d tilt (f1050–1073): y 323–579.6; Run tests at frame (815, 886) */
-    s5dTilt: sq(2.9, 982.05, 451.3),
-    /** S5e pull-back: x 230–1160, y 0–670.3 (m 1.11); the gear at frame (918, 371) */
+    /** S5d, the tests card's upper part: y 202–450: its title, the lead (258–290.7, ink 34 px), the sandbox note, the
+     *  recipe and the command, the bottom under the command's box */
+    s5dTop: nr(3.0, 808, 202),
+    /** S5d tilt (f1050–1073) for the click: y 374–622, top between the recipe (ends 370.7) and Command (387), bottom
+     *  between the first two steps (612 | 626); Run tests (497–529) at frame y 753 in the square */
+    s5dTilt: nr(3.0, 808, 374),
+    /**
+     * S5d → S5e, after R2's scroll (tilt f1116–1139, as 16:9's): y 380–628, the newest steps down to "Verified · pytest
+     * 42 passed on current files · 2 s" (409–437, ink 34 px). The top sits above "Requesting isolated tests" (385) in all
+     * three states of the drawer (before 20.60 s, at 20.60 s, after 20.70 s); the bottom in a gap in all three (626 |
+     * 645, 619.3 | 639, 625.3 | 633).
+     */
+    s5dVerified: nr(3.0, 808, 380),
+    /** S5e pull-back: x 230–1160, y 0–655 (m 1.14); the gear at frame (918, 371) */
     s5eOut: sq(1.11, 695, 335.15),
-    /** S6a: x 341.5–810.6, y 100–438.2 (m 2.2: the tabs and every row's text fit, §6's 2.27 cut "Skills & connectors") */
-    s6a: sq(2.2, 576.05, 269.1),
-    /** S6b tilt: y 193–531.2; the Auto in project label at frame (219, 711) */
-    s6bTilt: sq(2.2, 576.05, 362.1),
-    /** S6c, the records: x 342.3–820.7, y 455–800 (top below the description paragraph; §6's y 442 cut its last line) */
-    s6c: sq(2.157, 581.5, 627.45),
-    /** S7a: the canvas only, x 643.1–1440, y 66–640.5 */
+    /** S6a, Models' ways in (from the f1224 match cut, T11): y 195–443: YOUR MODELS, the model row, Add a model file,
+     *  Connect provider (Rest model bleeds off the frame) and Continue with ChatGPT; the bottom between the note's lines */
+    s6aWays: nr(3.0, 340, 195),
+    /** S6, the tabs (the Permissions, Memory clicks): y 100–348, the tab row (124–138) to the buttons (bottom 337) */
+    s6a: nr(3.0, 340, 100),
+    /** S6b tilt (f1338–1361): y 218–466, the Ask and Auto cards ("Auto in project" 357.7–369.3, ink 35 px), the top
+     *  under HOW PEBBLE ACTS (ends 214.3), the bottom under Auto's last line (461.3) */
+    s6bTilt: nr(3.0, 340, 218),
+    /** S6c, the six layers (tilt f1446–1469): y 190–438, "Remember useful context" and the six chips (the documented
+     *  exception above: 32 px) */
+    s6cLayers: nr(3.0, 340, 190),
+    /** S6c, the records (the forget click, f1530): m 2.21, x 342.3–820.7, y 418–755: top in the paragraph's gap (415 |
+     *  422.7), bottom on the modal's lower edge, so the blurred app behind it never shows (REVIEW-G2 P2-10); the bin at
+     *  frame x 1022 (the documented exception above) */
+    s6c: nr(2.157 * SQUARE_K, 342.3, 418),
+    /** S7a: the canvas only, x 643.1–1440, y 66–627.5 (a picture: the line carries the words) */
     s7a: sq(1.295, 1041.55, 353.25),
-    /** S7a's ask (REVIEW-G2 P1-7): x 284–637.4, y 76 → the frame bottom (330.8), m 2.92 (the 16:9 crop is too wide for the
-     *  square's stage); the request bubble is the card in focus and the rest recedes under a veil, so the reply's lines
-     *  at the frame's bottom edge never read as cut text (S7a's UiStill focus) */
+    /** S7a's ask (REVIEW-G2 P1-7): x 284–637.4, y 76–325, the request at 40 px; the reply's lines at the bottom edge
+     *  recede under a veil (S7a's UiStill focus) */
     s7aAsk: sq(2.92, 460.7, 203.4),
   },
-  // the vertical (§22): each framing by its magnification, centre x and TOP edge (vt), on the 1,056 × 860 stage. The
-  // m and x come from the square's framings (same stage width, so the same left and right edges); the top and bottom
-  // are this aspect's own: both are visible edges here and must fall in clear space, and none may pass the window's
-  // bottom (y 800)
-  vertical: {
-    /** S5a: x 336–725.4, y 68–385.2 */
-    s5a: vt(2.65 * SQUARE_K, 530.7, 68),
-    /** S5b, the card's upper part: x 804.1–1160, y 200–489.8 */
-    s5bTop: vt(2.9 * SQUARE_K, 982.05, 200),
-    /**
-     * S5b, the card's lower part (REVIEW-G2 P0-2 in 9:16): the bottom edge stays where the square's does (≈ 742), above
-     * the next card's header (y 747–749.3 before and after the click), so no status changes without a visible click;
-     * y 452–742
-     */
-    s5bLow: vt(2.9 * SQUARE_K, 982.05, 452.2),
-    /** S5c stage 1, the held run whole: x 242.7–711.8, y 418 → the window's bottom edge (800): top under the usage line
-     *  (ends 415.7), the composer whole at the bottom */
-    s5c: vt(2.2 * SQUARE_K, 477.25, 418),
-    /** S5c stage 2: x 222.6–537.2, y 420.8–677: bottom inside the composer, between its placeholder (ends 661.3) and its
-     *  model row (713.3) */
-    s5cRead: vt(3.28 * SQUARE_K, 379.9, 420.8),
-    /** S5d upper part: y 200–489.8 */
-    s5dTop: vt(2.9 * SQUARE_K, 982.05, 200),
-    /** S5d tilt (f1050–1073): y 323–612.8 */
-    s5dTilt: vt(2.9 * SQUARE_K, 982.05, 323),
-    /** S5e pull-back: x 230–1160, y 0–757.2 */
-    s5eOut: vt(1.11 * SQUARE_K, 695, 0),
-    /** S6a: x 341.5–810.6, y 100–482 */
-    s6a: vt(2.2 * SQUARE_K, 576.05, 100),
-    /** S6b tilt: y 193–575 */
-    s6bTilt: vt(2.2 * SQUARE_K, 576.05, 193),
-    /** S6c, the records: y 410.4–800 (the window's bottom edge) */
-    s6c: vt(2.157 * SQUARE_K, 581.5, 410.4),
-    /** S7a: the canvas only, x 643.1–1440, y 66–715 */
-    s7a: vt(1.295 * SQUARE_K, 1041.55, 66),
-    /** S7a's ask: x 284–637.4, y 76–363.8 (the rest of the conversation recedes under the square's veil) */
-    s7aAsk: vt(2.92 * SQUARE_K, 460.7, 76),
-  },
 };
+/** Every aspect's stage framings. The vertical's stage is the square's size (§22), so it shares the square's set. */
+export const FRAMINGS: PerAspect<Record<string, Framing>> = { wide: SETS.wide, square: SETS.square, vertical: SETS.square };
 
 /** A square framing written for the old 1,032 × 744 stage, converted to the 1,056 px stage with the same visible width
  *  and the same top edge (the bottom bleeds off the frame). */
@@ -196,9 +187,10 @@ function sq(m: number, cx: number, cy: number): Framing {
   const m2 = m * SQUARE_K;
   return fr(m2, cx, top + 372 / m2);
 }
-/** A vertical framing by its top edge on the 860 px stage. */
-function vt(m: number, cx: number, top: number): Framing {
-  return fr(m, cx, top + 430 / m);
+/** A narrow framing (the 1,056 × 744 stage of the square and the vertical) by its magnification and its visible rect's
+ *  left and top edges, CSS px. */
+function nr(m: number, left: number, top: number): Framing {
+  return fr(m, left + 528 / m, top + 372 / m);
 }
 
 /** S7b's end framing (G1.5, ratified by lane E) and S7c's full-frame quiz: frame-centred poses. */
@@ -212,8 +204,11 @@ export const FULL_FRAME = {
    *  (border at x 720), y 188–624. Lane G-fix (REVIEW-G2 P1-8): cy 397.7 / 406, not 445.7 / 454, so the quiz's top text
    *  has ≥ 60 px of headroom: the label "QUIZ · CHECKED BY PEBBLE" (y 221–229.7) sits 81 px under the frame's top and
    *  the title "Python datetime check-in" (244.3) 141 px (the title sat 17 / 21 px under it; the review's cy 425 / 437
-   *  would have put the label 10 / 5 px under it) */
-  quiz: { wide: fr(2.6, 790.75, 397.7), square: fr(2.477, 942, 406), vertical: fr(2.477, 942, 412) },
+   *  would have put the label 10 / 5 px under it). Lane v2-film, the narrow aspects at the 34 px floor: m 3.0, x 725–1085
+   *  (the content from 745, 60 px inside the frame; the question's lines end ≈ 1000; the answers' boxes bleed off the
+   *  right edge); the square y 198–558 (the label 69 px under the top, A and B whole, C's box bleeding off the bottom),
+   *  the vertical y 110–750 (the label at frame y 333, inside the central band; D under the caption band) */
+  quiz: { wide: fr(2.6, 790.75, 397.7), square: fr(3.0, 905, 378), vertical: fr(3.0, 905, 430) },
 } as const;
 /**
  * The vertical's chart world (§22): FULL_FRAME.chart.vertical holds Flights, Stay and Food at m 3.7 (x 758–1050: the
@@ -251,13 +246,23 @@ export function windowKeys(a: AspectId, s: number): CamKey[] {
   ];
   // f1008 (bar 15): a hard cut to the "Run isolated tests" card the click put in the drawer (REVIEW-G2 P2-1: from the
   // read framing the old 32-frame move travelled 202 px a frame in 16:9 and 214 in the square, 10× R5's blur limit)
-  if (a === "wide") keys.push(key(1008, F.s5d!, s, 1), key(1139, F.s5dVerified!, s, 23));
-  else keys.push(key(1008, F.s5dTop!, s, 1), key(1073, F.s5dTilt!, s, 23));
-  keys.push(key(1211, F.s5eOut!, s, 23), key(1224, F.s6a!, s, 1));
-  if (a !== "wide") keys.push(key(1361, F.s6bTilt!, s, 23), key(1431, F.s6a!, s, 23));
+  if (a === "wide") {
+    keys.push(key(1008, F.s5d!, s, 1), key(1139, F.s5dVerified!, s, 23));
+    keys.push(key(1211, F.s5eOut!, s, 23), key(1224, F.s6a!, s, 1));
+    keys.push(key(1499, F.s6c!, s, 23));
+  } else {
+    // the narrow aspects (lane v2-film): the tests card's top, the tilt to Run tests (f1050–1073), and once R2's scroll
+    // has settled the tilt to the newest steps (f1116–1139, as 16:9 does), so Verified lands at 34 px
+    keys.push(key(1008, F.s5dTop!, s, 1), key(1073, F.s5dTilt!, s, 23), key(1139, F.s5dVerified!, s, 23));
+    // S6 at the 34 px floor: the match cut lands on Models' ways in (T11), the camera tilts up to the tabs f1290–1313
+    // before the pointer leaves for Permissions; Auto in project f1338–1361 and back f1408–1431 (as before); after the
+    // Memory click, f1446–1469 to the six layers, then f1476–1499 out to the records for the forget click
+    keys.push(key(1211, F.s5eOut!, s, 23), key(1224, F.s6aWays!, s, 1), key(1313, F.s6a!, s, 23));
+    keys.push(key(1361, F.s6bTilt!, s, 23), key(1431, F.s6a!, s, 23), key(1469, F.s6cLayers!, s, 23), key(1499, F.s6c!, s, 23));
+  }
   // S7a: the hard cut lands on the ask; f1602–1625 the camera moves to the canvas on van Wijk's path (it pulls back as
   // it pans, so the view never travels faster than it widens)
-  keys.push(key(1499, F.s6c!, s, 23), key(1584, F.s7aAsk!, s, 1), key(1625, F.s7a!, s, 24, "smooth"));
+  keys.push(key(1584, F.s7aAsk!, s, 1), key(1625, F.s7a!, s, 24, "smooth"));
   return keys;
 }
 
@@ -334,10 +339,10 @@ export function pointerSpans(a: AspectId, s: number): PointerSpan[] {
   const fp = (p: Point, f: Framing) => framePoint(p, f, a, s);
   const out: PointerSpan[] = [];
   // S5b: in from the lower right f780, on Apply edit by f803 (the tilt has landed by f797), click f810; the match cut
-  // keeps it there; it drifts away and fades f826–830. The square clicks the button's upper half (css y 689), so the
-  // click stays above the caption band with the next card's header kept out of frame (s5bLow); the vertical's stage
-  // ends on its caption band, so it clicks the button's centre
-  const pA = fp(a === "square" ? { x: C.apply.x - 3, y: 689 } : aim(C.apply), F.s5bLow!);
+  // keeps it there; it drifts away and fades f826–830. The square clicks the button's upper part (css y 679, frame
+  // y 915), so the click stays above the caption band with the next card's header kept out of frame (s5bLow); the
+  // vertical's stage ends above its caption band, so it clicks the button's centre
+  const pA = fp(a === "square" ? { x: C.apply.x - 3, y: 679 } : aim(C.apply), F.s5bLow!);
   out.push({
     id: "apply",
     keys: [
