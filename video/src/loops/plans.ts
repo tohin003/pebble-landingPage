@@ -447,7 +447,7 @@ export const T0 = (() => {
       { at: 90, x: 1290, y: 820, travel: 24, seed: "t0-away" },
       { at: 98, x: 1290, y: 600, travel: 1 },
       { at: 120, x: 1086, y: 514, target: 30, seed: "t0-run" },
-      { at: 190, x: 1290, y: 640, travel: 40, seed: "t0-out" },
+      { at: 150, x: 1128, y: 572, travel: 16, seed: "t0-out" }, // off the button, clear of the steps; fades f189–194
     ] satisfies CursorKey[],
     applyRect: box(1025, 1129, 676, 708),
     runRect: box(1029, 1129, 497, 529),
