@@ -67,6 +67,11 @@ for (const plan of LOOP_PLANS as readonly LoopPlan[]) {
   }
 }
 
+// L6's 4:5 cut has its own dissolves (into the drawer right after the click): the same rules
+for (const [a, b] of L6.tallDissolves) {
+  if (!(a > L6.plan.clicks[0]! && b < L6.plan.n && b - a === 12)) fail(`L6 tall: dissolve [${a}, ${b}) must be 12 frames, after the click, inside the loop`);
+}
+
 // The camera inside a card never shows past the capture (no empty margin inside the card).
 const CAPTURE = { live: { w: 1160, h: 800 }, settings: { w: 1160, h: 800 }, dashboard: { w: 1440, h: 900 }, quiz: { w: 1160, h: 800 } } as const;
 const viewOf = (pose: CamPose, stage: Rect): Rect => ({

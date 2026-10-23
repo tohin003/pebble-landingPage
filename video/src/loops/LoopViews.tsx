@@ -23,7 +23,7 @@ export const LoopViews: React.FC = () => {
           <UiStill name="main-dashboard" />
         </StageLayer>
       </LoopStage>
-      <LoopStage stage={quiz.stage} opacity={q}>
+      <LoopStage stage={quiz.stage} background={SYSTEM.panel} opacity={q}>
         <StageLayer pose={quiz.pose} blur={DISSOLVE_BLUR * c}>
           <UiStill name="main-quiz" />
         </StageLayer>

@@ -20,7 +20,9 @@ export const LoopAgentGuard: React.FC = () => {
   const stage = L6.stage[aspect];
   const A = L6.poses.A[aspect];
   const B = L6.poses.B[aspect];
-  const [[a0, a1], [b0, b1]] = L6.plan.dissolves as unknown as [[number, number], [number, number]];
+  // the 4:5 cut dissolves into the drawer right after the click (plans.ts L6.tallDissolves)
+  const dissolves = aspect === "tall" ? L6.tallDissolves : L6.plan.dissolves;
+  const [[a0, a1], [b0, b1]] = dissolves as unknown as [[number, number], [number, number]];
   const toB = dissolveAt(frame, a0, a1 - a0);
   const toA = dissolveAt(frame, b0, b1 - b0);
   const click = L6.plan.clicks[0]!;

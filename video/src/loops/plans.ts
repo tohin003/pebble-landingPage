@@ -145,10 +145,11 @@ export const DRAWER = { x0: 801, x1: 1160 } as const;
 
 /* ================================================================================================================ */
 /* L2 loop-models (6 s): Settings › Models, the three ways in.                                                      */
-/* settings-models@3x, measured by ink scan (CSS px): the modal's white x 320–840, its content x 346–814; "YOUR       */
-/* MODELS" y 206–214; the model row y 228–306; the buttons y 318.5–351.5 (Add a model file x 346–478, Connect         */
-/* provider 487–625, Rest model 634–721); Continue with ChatGPT x 346–542, y 382–425; its qualifier ("Use an eligible */
-/* Plus or Pro plan through OpenAI's preview …") two lines to y ≈ 472.                                               */
+/* settings-models@3x (Pebble 1.0.4), measured by ink scan (CSS px): the modal's white x 321–839, its content          */
+/* x 346–814; "YOUR MODELS" y 206–214.3; the model row y 228–290 (one line since 1.0.4: the duplicated "4,096-token    */
+/* window" of 1.0.1 is gone, REVIEW-G2 P2-13); the buttons y 302–336 (Add a model file x 346–479, Connect provider    */
+/* 487–626, Rest model 634–721); Continue with ChatGPT x 346–542, y 366–410; its qualifier ("Use an eligible Plus or  */
+/* Pro plan through OpenAI's preview …") x 346.7–801, two lines y 425.7–455; the next paragraph from y 473.7.         */
 
 export const L2 = (() => {
   // One card, one framing, at the app's own scale on the Models slot (k 2.56 → m 2.6): the models list, the three
@@ -156,7 +157,7 @@ export const L2 = (() => {
   // out: with them the card could not keep the app's scale. The loop is a spotlight, no camera move: the three ways
   // come forward (the models list recedes), hold, and go back. Lane G2b's push-in and accent ring are gone (the ring
   // pointed in the accent, which has three other jobs).
-  const wide = card(box(336, 824, 198, 478), 2.6, "wide", SLOT.models);
+  const wide = card(box(336, 824, 198, 464), 2.6, "wide", SLOT.models);
   const plan = {
     id: "LoopModels",
     n: 180,
@@ -175,7 +176,7 @@ export const L2 = (() => {
     plan,
     stage: { wide: wide.stage },
     /** the three ways in, Continue with ChatGPT and its qualifier: what stays sharp under the spotlight */
-    ways: box(338, 822, 310, 478),
+    ways: box(338, 822, 294, 464),
     /** the spotlight: in over 12 frames from f30, held, out over 12 frames from f132 (nothing still for more than 3 s) */
     spot: { in: 30, out: 132, dur: 12 },
   };
@@ -183,17 +184,18 @@ export const L2 = (() => {
 
 /* ================================================================================================================ */
 /* L7 loop-memory (7 s): Settings › Memory, the records; the pointer forgets one.                                  */
-/* settings-memory@3x, measured by ink scan: the paragraph above ends y 452; the layer header and its switch y 480–509 */
-/* (the switch and the Search button reach x 830); search text y 531–542; records: meta y 579–592 / 644–657 / 710–723, */
-/* text 599–609 / 664–674 / 730–738; bins x 793.7–804.3 at y 581–592 / 646–657 / 712–723; the modal's white ends at   */
-/* x 840 and y ≈ 758. settings-memory-forgotten@3x has the next record in the third slot, same positions.            */
+/* settings-memory@3x (Pebble 1.0.4; the tab now opens on "Remember useful context" and the six layers' tiles, the   */
+/* records below), measured by ink scan: the layer header and its switch y 479.7–509; the search box and Search      */
+/* y 519–552 (both to x 814); records: meta y 578.7–592.3 / 643.3–657.3 / 709.3–723.3, text 598.7–609 / 663.7–674 /   */
+/* 729.7–738.3, dividers 626 and 692; bins x 793.7–804.3; the modal's white ends at x 839 and y 757.7.                */
+/* settings-memory-forgotten@3x has the next record in the third slot, same positions (the layer's tile reads 5).    */
 
 export const L7 = (() => {
-  // One card: the layer's header and switch, the search box and the three records, down to just above the modal's
-  // bottom edge (≈ 758: below it the app's blurred backdrop would show as a grey band, REVIEW-G2 P2-10), at the app's
-  // own scale on a 6-column slot (m 2.6). Its right edge is the modal's (x 840), so the switch and Search stay whole
-  // with the sheet's own margin.
-  const wide = card(box(336, 840, 466, 756), 2.6, "wide", SLOT.memory);
+  // One card: the layer's header ("Learning and recall in this layer / Your preferences") and switch, the search box
+  // and the three records, down to just above the modal's bottom edge (757.7: below it the app's blurred backdrop would
+  // show as a grey band, REVIEW-G2 P2-10), at the app's own scale on a 6-column slot (m 2.6), with the sheet's own
+  // 10 px either side of its content (x 346–814), as L2's card.
+  const wide = card(box(336, 824, 466, 756), 2.6, "wide", SLOT.memory);
   const bin = { x: 799, y: 717.5 };
   // lane G-fix (REVIEW-G2 P2-19): N 210, not 240: the forgotten state held still for 3.9 s (f72–187, R5: nothing static
   // for more than 3 s); it now holds f84–156 (2.4 s) before the time-passage dissolve
@@ -236,13 +238,17 @@ export const L7 = (() => {
 /* would be a second edit applied without a click, REVIEW-G2 P0-2).                                                  */
 
 /**
- * The project story's card (L3 and L4 share it, so switching steps keeps the same card on the same ground). Square:
- * the drawer at m 2.2 on the 515 px tile (the app's 12 px at 12.6 px; the card 73 % of the tile, comp lex-A's is 76 %),
- * 433 CSS px tall. Tall: the drawer at m 2.8, 93 % of the frame's width as comp lex-A's phone tile (92 %), 442 CSS px.
+ * The project story's card (L3 and L4 share it, so switching steps keeps the same card on the same ground), 433 CSS px
+ * of the drawer tall. Square: at m 2.2 on the 515 px tile (the app's 12 px at 12.6 px; the card 73 % of the tile, comp
+ * lex-A's is 76 %). Tall: at m 2.8, 93 % of the frame's width, as comp lex-A's phone tile (92 %). Its edges fall
+ * between rows on every frame the loops hold (1.0.4, measured): U 205–638 (the card's top border at 211; the diff row
+ * 619–631.7 whole, the next from 640), L 296–729 (the lead ends 288.3, "Proposed source edit" from 308; on the applied
+ * frame the steps row 299–310.3 whole, Undo this edit 688–697.3, the next card's header from 749); L4 205–638 (on the
+ * card frame the last step 626–637.3 whole; at the payoff the rows 609.3–619.3 and 639 straddle the edge cleanly).
  */
 const STORY = {
   square: card(box(DRAWER.x0, DRAWER.x1, 205, 638), 2.2, "square", SLOT.story),
-  tall: card(box(DRAWER.x0, DRAWER.x1, 205, 647), 2.8, "tall", SLOT.phone),
+  tall: card(box(DRAWER.x0, DRAWER.x1, 205, 638), 2.8, "tall", SLOT.phone),
 } as const;
 
 export const L3 = (() => {
@@ -369,21 +375,25 @@ export const L4 = (() => {
 
 /* ================================================================================================================ */
 /* L6 loop-agentguard (8 s): "Pebble's change isn't verified yet." → Run the tests → Verified.                      */
-/* Source: main-live-film, measured by ink scan. The held run in the conversation (15.10 s, static until the 16.00    */
-/* click): the reply's last line ends y 311; its notice "Verification remains incomplete: …" y 332–381 (x 295–688);   */
-/* the usage line 404–416; the avatar and "Blocked" 453–468 (from x 260); the sentence 495–536 (to x 695), "Details"   */
-/* x 730–764; the buttons' text y 557–566 (Run the tests ≈ x 297–391, y 547–577); the composer from y 648. After the  */
-/* click (16.0) the conversation moves down 44 px and shows "Needs your review" (497–509) and the banner "1 action     */
-/* needs your review / Nothing changes until you approve." (536–596, x 295–765): Pebble asks to run the tests in an    */
-/* isolated copy. Then a time-passage dissolve (the person approves; the tests run) to the Details drawer, where       */
-/* AgentGuard's check lands: "Verified · pytest 42 passed on current files · 2 s" (20.60, y 409–437; see L4).         */
+/* Source: main-live-film (Pebble 1.0.4), measured by ink scan. The held run in the conversation (15.10 s, static     */
+/* until the 16.00 click): the reply's last line ends y 311.3; its notice "Verification remains incomplete: …"         */
+/* y 332–381; the usage line 404–416; the avatar and "Blocked" 453–468.3 (from x 265); the sentence 495–536.3 (x 295–  */
+/* 697, three lines), "Details" x 754–764; the buttons y 545–578 (Run the tests x 295–394.7); the composer from y 627. */
+/* After the click the conversation scrolls (16.0–16.3) and settles with "Needs your review" (497–508.7) and the       */
+/* banner "1 action needs your review / Nothing changes until you approve." (536–596, x 295–765), the reply's line     */
+/* 319.3–332.7 just inside the card's top: Pebble asks to run the tests in an isolated copy. Then a time-passage       */
+/* dissolve (the person approves; the tests run) to the Details drawer, where AgentGuard's check lands: "Verified ·   */
+/* pytest 42 passed on current files · 2 s" (20.60, y 409–437.3; see L4), EARLIER ACTIONS 520–528.3 below it.         */
 
 export const L6 = (() => {
   // Shot A, the hold, one card at the app's own scale on the ledger's slot (k 2.56, m 2.564): x 232–770 (the avatar at
   // 260, "Details" ends 764, the banner after the click 765), y 318–620 (the notice to the buttons; the reply's line
-  // above ends at 311, the composer starts at 648). Shot B, the check, in the same card: the drawer fills its width
-  // (m 3.84), from "You asked Pebble to run the tests" (336) down, so "Verification remains incomplete" (311–322) is
-  // out and Verified is the newest row. Tall (4:5): A at m 2.25, the block whole, B at the drawer's width (m 2.81).
+  // above ends at 311.3, the composer starts at 627). Shot B, the check, in the same card: the drawer fills its width
+  // (m 3.84), from "You asked Pebble to run the tests" (336) down to EARLIER ACTIONS (528.3), so "Verification remains
+  // incomplete" (311–322.3) is out and Verified is the newest row. Tall (4:5): A at m 2.25, the block whole, B at the
+  // drawer's width (m 2.81, 330–572.2: the card header at 558.7–571.7 whole). The banner that follows the click is
+  // 470 CSS px wide and the phone card shows 448, so the tall cut goes from the click straight into its time-passage
+  // dissolve (`tallDissolves`): the approval it elides is the one the wide cut elides too.
   const A = {
     wide: card(box(232, 770, 318, 620), 2.564, "wide", SLOT.agentGuard),
     tall: card(box(252, 700, 318, 620), 2.25, "tall", SLOT.phone),
@@ -391,7 +401,7 @@ export const L6 = (() => {
   const mB = { wide: A.wide.stage.rect.w / (DRAWER.x1 - DRAWER.x0), tall: A.tall.stage.rect.w / (DRAWER.x1 - DRAWER.x0) };
   const B = {
     wide: topLeftPose(DRAWER.x0, 330, mB.wide, A.wide.stage.rect),
-    tall: topLeftPose(DRAWER.x0, 326, mB.tall, A.tall.stage.rect),
+    tall: topLeftPose(DRAWER.x0, 330, mB.tall, A.tall.stage.rect),
   };
   const runTheTests = { x: 344, y: 562 };
   const click = 41;
@@ -451,6 +461,12 @@ export const L6 = (() => {
       { at: 58, x: 520, y: 720, travel: 16, seed: "l6-out" },
     ] satisfies CursorKey[],
     runRect: box(297, 391, 547, 577),
+    /** the 4:5 cut's dissolves: into the drawer as the click's press ends (f44–56, so the conversation's jump at f45
+     *  is under it), back to the hold as in the wide cut */
+    tallDissolves: [
+      [44, 56],
+      [190, 202],
+    ] as const,
   };
 })();
 
@@ -525,17 +541,18 @@ export const L1 = (() => {
 /* ================================================================================================================ */
 /* L8 loop-views (6.8 s): two views Pebble built, each one card: the "Spending by category" chart of the Lisbon     */
 /* trip budget dashboard, then the Python datetime quiz.                                                            */
-/* main-dashboard@3x (1440 × 900): the chart panel's border x ≈ 665–1416, from y ≈ 421 (its bottom is below the      */
-/* capture); "Spending by category" y 444, "Chart data" y 877. main-quiz@3x (1160 × 800): the canvas from x 721; the   */
-/* quiz content x 745–1136, "QUIZ · CHECKED BY PEBBLE" y 225 to the page buttons y 742–770; the question 22 px.        */
+/* main-dashboard@3x (1440 × 900, Pebble 1.0.4): the canvas is white from x 641; the chart panel's border x 665–666   */
+/* and 1415–1416, y 421–422, its bottom at the capture's edge (898); "Spending by category" y 436–454, "Chart data"    */
+/* y 872–881. main-quiz@3x (1160 × 800): the canvas is white from x 721, its header's rule at y 199–200; the quiz       */
+/* x 745–1136, "QUIZ · CHECKED BY PEBBLE" y 221–230 to the page buttons y 742–770; the question (22 px) y 370–416.     */
 
 export const L8 = (() => {
   // DESIGN-LEXINGTON §3.8: one moment per frame, no full-window screenshot outside the film poster. Lane G2b's L8 opened
   // on the whole dashboard window; now each view is its own card at the views slot (the main column, k 1.68): the
   // chart panel (its own white; the card's edges fall just inside the panel's border, so the card IS the panel) and
-  // the quiz (on the canvas's ground). A 0.4 s dissolve between the two, each held 3 s. The data never animates.
-  const chart = card(box(668, 1413, 424, 899), 1.903, "wide", SLOT.views);
-  const quiz = card(box(733, 1148, 205, 783), 1.564, "wide", SLOT.views);
+  // the quiz (on the canvas's own white). A 0.4 s dissolve between the two, each held 3 s. The data never animates.
+  const chart = card(box(668, 1413, 424, 896), 1.915, "wide", SLOT.views);
+  const quiz = card(box(733, 1148, 207, 782), 1.572, "wide", SLOT.views);
   const plan = {
     id: "LoopViews",
     n: 204,
