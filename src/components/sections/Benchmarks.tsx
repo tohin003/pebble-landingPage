@@ -36,6 +36,37 @@ export type BenchmarksProps = Readonly<{
   offered?: string;
 }>;
 
+/**
+ * A measured value in the table, set as lines on purpose instead of wrapping wherever the column ends: "88.9 % (32 of
+ * 36)" is the rate, then its count on a line of its own in muted ink; "82.2 % and 75.6 %" is two lines (the row's note
+ * says which is which; "and" stays for screen readers). The words are benchmarks.ts's, unchanged.
+ */
+function Value({ text }: { text: string }) {
+  const parts = text.split(" and ");
+  return (
+    <>
+      {parts.map((part, i) => {
+        const counted = /^(.*?) \((.*)\)$/.exec(part);
+        return (
+          <span key={part} className={styles.valueLine}>
+            {i > 0 ? <span className="sr-only">and </span> : null}
+            {counted ? (
+              <>
+                <Figures text={counted[1]!} />{" "}
+                <span className={styles.count}>
+                  (<Figures text={counted[2]!} />)
+                </span>
+              </>
+            ) : (
+              <Figures text={part} />
+            )}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
 function Row({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <div className={styles.row}>
@@ -142,10 +173,10 @@ export async function Benchmarks({ open = releaseFacts.benchmarksPublic, offered
                         </span>
                       </th>
                       <td className={styles.value}>
-                        <Figures text={row.pebble} />
+                        <Value text={row.pebble} />
                       </td>
                       <td className={styles.value}>
-                        <Figures text={row.other} />
+                        <Value text={row.other} />
                       </td>
                     </tr>
                   ))}

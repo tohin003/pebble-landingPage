@@ -41,6 +41,11 @@
 }
 
 @media (max-width: 1279px) {
+  /* a 3:2 frame, so the chart at 92 % of its width keeps riverbed above and below it */
+  .frame {
+    --views-aspect: 3 / 2;
+  }
+
   .loop {
     display: none;
   }

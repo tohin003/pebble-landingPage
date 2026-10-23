@@ -306,6 +306,12 @@
   color: var(--ink);
 }
 
+/* the count beside the rate: a clear word space after the mono "%", in muted ink */
+.rateCount {
+  margin-left: 0.2em;
+  color: var(--ink-2);
+}
+
 .track {
   position: relative;
   display: block;
@@ -433,6 +439,17 @@
 
 .value {
   color: var(--ink);
+}
+
+/* a value's lines (Benchmarks.tsx Value): the rate, then its count in muted ink; or the two values of a pair */
+.valueLine,
+.count {
+  display: block;
+  white-space: nowrap;
+}
+
+.count {
+  color: var(--ink-2);
 }
 
 /* a value may wrap between its rate and its count, never inside either */

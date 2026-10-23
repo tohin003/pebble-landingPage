@@ -108,7 +108,9 @@ function SuccessRow({ product, tone }: { product: ProductRun; tone: "pebble" | "
           <span className={styles.key} />
           {product.name} <Figures text={product.build} className={styles.build} />
         </span>
-        <Figures text={`${pct(product.rate)} (${of(product.passed, run.runsPerProduct)})`} className={styles.rate} />
+        <span className={styles.rate}>
+          <Figures text={pct(product.rate)} /> <span className={styles.rateCount}>(<Figures text={of(product.passed, run.runsPerProduct)} />)</span>
+        </span>
       </p>
       <span className={styles.track}>
         <svg

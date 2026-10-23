@@ -5,7 +5,8 @@
 // 1. The six layers as a two-column ruled list (columns 4–7 and 8–11), each with the app's own name, the README's
 //    layer name and what it holds. Read row by row, it is the order of the Settings sheet's own two-column grid below.
 // 2. The real Settings › Memory on the riverbed in columns 4–9 (loop L7's 624 px slot; L7 plays there once rendered)
-//    beside the recall rule in 10–12: the sheet itself says that retrieved text never becomes permission.
+//    beside the recall rule in 10–12: the sheet itself says that retrieved text never becomes permission. Below
+//    1280 px six columns are too narrow for L7, so the picture takes the main column and the rule goes under it.
 //    The still floats from the frame's top and runs off its bottom edge, because the sheet goes on. Phones keep the
 //    still (L7 has no 4:5 cut) at the app's own size in a 4:5 frame: the sheet runs off the right edge too, so its
 //    11 px text stays at 11 px instead of shrinking the whole sheet to fit.
@@ -35,8 +36,8 @@ const SETTINGS_ID = "memory-settings";
  * tiles and the note, AdvancedSettings.vue@1.0.4) at 12.4 px. Phones draw it at its own 431 px.
  */
 const SHEET = { x: 384.5, y: 39.5, w: 431, h: 600 } as const;
-/** The frame: columns 4–9 (624 px at 1440), the column below 1024 px. */
-const FRAME_SIZES = "(max-width: 560px) calc(100vw - 32px), (max-width: 1023px) calc(100vw - 48px), (max-width: 1279px) calc((100vw - 64px) * 0.49), 624px";
+/** The frame: columns 4–9 (624 px at 1440); the main column below 1280 px (Memory.module.css), the column below 1024. */
+const FRAME_SIZES = "(max-width: 560px) calc(100vw - 32px), (max-width: 1023px) calc(100vw - 48px), (max-width: 1279px) calc((100vw - 64px) * 0.75), 624px";
 
 export function Memory() {
   const l7 = loopMedia("memory");

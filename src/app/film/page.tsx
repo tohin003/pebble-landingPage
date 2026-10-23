@@ -15,6 +15,7 @@ import { FilmPlayer, type TimedChapter } from "@/components/media/FilmPlayer";
 import { FilmTrigger } from "@/components/media/FilmTrigger";
 import { Article, articleStyles } from "@/components/shell/Article";
 import { Icon } from "@/components/shell/icons";
+import { DataText } from "@/components/ui/Data";
 import { filmMedia } from "@/lib/media";
 import styles from "./film.module.css";
 
@@ -41,7 +42,11 @@ export default function FilmPage() {
           <Icon name="PlayFill" className={styles.playMark} />
           <span>{filmPage.play}</span>
         </FilmTrigger>
-        {duration ? <p className={styles.length}>{filmPage.durationLabel(duration)}</p> : null}
+        {duration ? (
+          <p className={styles.length}>
+            <DataText text={filmPage.durationLabel(duration)} />
+          </p>
+        ) : null}
       </div>
 
       <h2 className={styles.transcriptTitle}>{filmPage.transcriptHeading}</h2>

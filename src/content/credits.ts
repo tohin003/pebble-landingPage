@@ -132,7 +132,7 @@ export const creditSections: readonly CreditSection[] = [
         licence: "SIL Open Font License 1.1",
         licenceUrl: "https://openfontlicense.org",
         url: "https://github.com/vercel/geist-font",
-        use: "Commands and file paths.",
+        use: "Commands, file paths and the numbers on this site: versions, sizes, counts and rates.",
         notice: "Copyright 2024 The Geist Project Authors (https://github.com/vercel/geist-font.git)",
       },
     ],

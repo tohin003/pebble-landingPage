@@ -45,11 +45,10 @@
   height: 14px;
 }
 
+/* "Length: 1:16": the length is data (DataText sets it in Geist Mono), the word stays Inter */
 .length {
   font-size: 15px;
   color: var(--ink-2);
-  font-family: var(--font-mono); /* the film's length is data */
-  font-variant-numeric: tabular-nums;
 }
 
 /* the page's sub-head: the footer statement's size (globals.css .display-3: 30 / 30 / 27 / 24) */
