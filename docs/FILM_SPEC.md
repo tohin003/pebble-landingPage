@@ -450,8 +450,8 @@ Each tab change is a **match cut on the click**: the frame holds still and the c
   x 421.5–1160, y 190–605.4 (the conversation left of the canvas recedes under a veil). The narrow aspects at the 34 px
   floor (lane v2-film, measured on the 1.0.4 still): the left edge 2 css px inside the canvas's border, the right edge
   before the timer "07:39 left" (x 1078), which an edge at 1085 cut to a lone "0"; square m 3.08, y 186–536.6 (the
-  label 108 px under the top); vertical m 3.1, y 120–739.4, the canvas's toolbar in the phone UI's top zone receding
-  under the same veil, the label at y 313 inside the band. (The question rhymes with the film's bug.)
+  label 108 px under the top); vertical m 3.17, y 120–725.7, the canvas's toolbar in the phone UI's top zone receding
+  under the same veil, the label at y 320 inside the band. (The question rhymes with the film's bug.)
 - **f1786–1799: zoom through the selected answer's "A" badge** (`#506E54`): aim inside the badge and away from the white
   "A" (G2a: (765, 457.3)); ×1 → ×90, `EASE.exit`; the badge fills the frame **on f1799** (lane G-fix, P1-2), the world
   changes on f1800 with the whoosh's peak. From f1794 the badge's colour covers its white "A" under the zoom blur (P2-7).
@@ -1029,7 +1029,7 @@ the chart's white), and nothing outside the band asks to be read.
 | S4 reveal, S9 end card | the lockup's foot (806, 832), its baseline y 830; T5 baseline 960; T18 950, T19 1060, T20 1130, T21 1250, T22 1290; H4 from (1180, 2010) |
 | S5–S7a window world | the text band x 80–860 from y 380; the pebble's spot (930, 660) on its line x 840–1020; the stage x 24–1080, y 700–1444, the square's size, so the two share §6.1's framings (the vertical's own for S6c's records); no check mark (no room outside the stage) |
 | S7b chart world | m 3.7 on (904, 680): Flights, Stay and Food, their labels at 44 px; a 9:16 frame is taller than the panel's bars and labels at that magnification, so the panel grows only to its rows (y 500–815) and the world around them is the panel's own white |
-| S7c quiz | m 3.1, x 722–1070.4, y 120–739.4; the canvas's toolbar in the top zone recedes under a veil; the label at y 313 |
+| S7c quiz | m 3.17, x 722–1062.7, y 120–725.7; the canvas's toolbar in the top zone recedes under a veil; the label at y 320 |
 | S8 claims | the list's centres at y 735 / 955 / 1140, "Apache-2.0" on 850, its left edge at x 178 |
 
 **Review.** `FilmFramesVertical` samples any list of frames (as `FilmFrames` and `FilmFramesSquare` do); the

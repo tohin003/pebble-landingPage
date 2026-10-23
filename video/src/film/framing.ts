@@ -233,11 +233,12 @@ export const FULL_FRAME = {
    *  - Square: m 3.08, x 722–1072.6, y 186–536.6: the top between "Details" (ends 176.3) and the divider (199), so the
    *    label "QUIZ · CHECKED BY PEBBLE" (221) sits 108 px under the frame's top; B's text whole, its box bleeding off
    *    the bottom.
-   *  - Vertical: m 3.1, x 722–1070.4, y 120–739.4. A 9:16 view is taller than the canvas under its toolbar, so the top
+   *  - Vertical: m 3.17, x 722–1062.7, y 120–725.7. A 9:16 view is taller than the canvas under its toolbar, so the top
    *    falls between "Version 1" (ends 115.3) and the toolbar's buttons (126), which show whole in the top 250 px (the
-   *    phone's UI zone), and the label lands at frame y 313, inside the central band; the bottom between Back / Next
-   *    (ends 720) and the page pills (742). (y 110 cut "Version 1" at the frame's top edge.) */
-  quiz: { wide: fr(2.6, 790.75, 397.7), square: fr(3.08, 722 + 540 / 3.08, 186 + 540 / 3.08), vertical: fr(3.1, 722 + 540 / 3.1, 120 + 960 / 3.1) },
+   *    phone's UI zone, under S7Quiz's veil), and the label lands at frame y 320, inside the central band; the bottom
+   *    between Back / Next (ends 720) and the page pills (742); the right edge before the Next button's box (1066),
+   *    which m 3.1 left as a sliver. (y 110 cut "Version 1" at the frame's top edge.) */
+  quiz: { wide: fr(2.6, 790.75, 397.7), square: fr(3.08, 722 + 540 / 3.08, 186 + 540 / 3.08), vertical: fr(3.17, 722 + 540 / 3.17, 120 + 960 / 3.17) },
 } as const;
 /**
  * The vertical's chart world (§22): FULL_FRAME.chart.vertical holds Flights, Stay and Food at m 3.7 (x 758–1050: the
