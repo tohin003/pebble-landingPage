@@ -8,7 +8,8 @@
 //             hero and the final call to action. A primary Download always has the honest line under it: render it
 //             through <GetPebbleCluster> (src/components/ui), which keeps the button, its honest line and the facts
 //             together, or put <HonestLine> right under it yourself.
-//   small     36 px, radius 8, ink with --bg text, no icon: the header's.
+//   small     36 px, radius 8, an ink hairline outline with ink text, no icon, filling with --fill under the pointer:
+//             the header's. Never an ink fill: no filled black buttons or pills anywhere (OVERRIDES §17).
 //   compact   44 px, radius 8, the accent: the sticky call to action's.
 //   ghost     the old name of small.
 import { Icon } from "./icons";

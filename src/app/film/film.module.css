@@ -7,32 +7,42 @@
 }
 
 /* FilmTrigger's own box is the large galet over a poster; here it is a plain text button (hidden until the film
-   exists, by FilmTrigger's own rule). Two classes, so these rules win over the component's. */
+   exists, by FilmTrigger's own rule). Two classes, so these rules win over the component's. Playing the film is not
+   one of the accent's three jobs, and no button is filled with ink (OVERRIDES §17): an ink hairline outline, like the
+   header's Download, that fills softly with --fill under the pointer. */
 .top .play {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   width: auto;
   height: 44px;
-  padding: 0 18px 0 14px;
+  padding: 0 18px 0 15px;
   border-radius: var(--r-control);
-  background: var(--ink); /* playing the film is not one of the accent's three jobs */
-  color: var(--bg);
+  background: transparent;
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ink) 28%, transparent);
   filter: none;
   font-size: 15px;
   font-weight: 500;
-  transition: transform var(--dur-press) var(--ease-firm);
+  transition:
+    background-color var(--dur-hover) var(--ease-out),
+    transform var(--dur-press) var(--ease-firm);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .top .play:hover {
+    background: var(--fill);
+  }
 }
 
 .top .play:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 
 .playMark {
   flex: none;
-  width: 18px;
-  height: 16px;
-  background: var(--bg);
+  width: 14px;
+  height: 14px;
 }
 
 .length {

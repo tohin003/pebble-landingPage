@@ -1,6 +1,9 @@
-// The system's pure rules: the two-tone heading check, numbers as data, the horizon's path data, and the rail labels.
+// The system's pure rules: the two-tone heading check, numbers as data, the horizon's path data, the rail labels, and
+// the colour roles' fills (no ink buttons or pills).
 // Run: bun test ./src/components/ui
 import { describe, expect, test } from "bun:test";
+import { readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
 import { agentGuard, finalCta, footer, honestLimits, install, openSource, pace, privacy } from "@/content/copy";
 import { labels } from "@/content/labels";
 import { splitData } from "./numbers";
@@ -118,5 +121,25 @@ describe("rail labels (DESIGN-LEXINGTON §11)", () => {
       expect((name + fact).length).toBeLessThanOrEqual(48);
       expect(/^[A-Z]/.test(name)).toBe(true);
     }
+  });
+});
+
+describe("colour roles (OVERRIDES §17, PHILOSOPHY: the pebble's world is sage, never monochrome)", () => {
+  // Ink is for text, headings and hairline outlines. A filled black button or pill is another product's look: the
+  // primary Download and Copy are sage, the header's Download is an ink outline, everything else is a text link.
+  test("nothing on the site is filled with ink", () => {
+    const src = path.resolve(import.meta.dir, "../..");
+    const inkFill = new RegExp(String.raw`background(?:-color)?\s*:\s*var\(--ink\)`);
+    const inkClass = new RegExp(String.raw`\bbg-ink(?![-\w])`); // Tailwind's bg-ink (bg-ink-2 is a different role)
+    const found: string[] = [];
+    for (const file of readdirSync(src, { recursive: true }) as string[]) {
+      if (!/\.(css|tsx?)$/.test(file) || file.endsWith(".test.ts")) continue;
+      readFileSync(path.join(src, file), "utf8")
+        .split("\n")
+        .forEach((line, i) => {
+          if (inkFill.test(line) || inkClass.test(line)) found.push(`src/${file}:${i + 1}: ${line.trim()}`);
+        });
+    }
+    expect(found).toEqual([]);
   });
 });

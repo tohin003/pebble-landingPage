@@ -1,3 +1,6 @@
+/* The skip link: off screen until it takes focus, then a floating chip over the header's left end. A floating layer, so
+   it may cast --shadow-float (its 1 px --line ring and soft drop); never an ink fill (OVERRIDES §17: no filled black
+   buttons or pills). The accent's focus ring (globals.css :focus-visible) marks it as the focused stop. */
 .skip {
   position: fixed;
   top: 12px;
@@ -5,8 +8,9 @@
   z-index: 100;
   padding: 10px 16px;
   border-radius: var(--r-control);
-  background: var(--ink);
-  color: var(--bg);
+  background: var(--bg);
+  color: var(--ink);
+  box-shadow: var(--shadow-float);
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;

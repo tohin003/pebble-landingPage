@@ -14,6 +14,7 @@ import { seo } from "@/content/seo";
 import { FilmPlayer, type TimedChapter } from "@/components/media/FilmPlayer";
 import { FilmTrigger } from "@/components/media/FilmTrigger";
 import { Article, articleStyles } from "@/components/shell/Article";
+import { Icon } from "@/components/shell/icons";
 import { filmMedia } from "@/lib/media";
 import styles from "./film.module.css";
 
@@ -37,7 +38,7 @@ export default function FilmPage() {
     <Article title={filmPage.h1} lead={filmPage.lead}>
       <div className={styles.top}>
         <FilmTrigger label={filmCopy.play} className={styles.play}>
-          <span className={`galet ${styles.playMark}`} aria-hidden="true" />
+          <Icon name="PlayFill" className={styles.playMark} />
           <span>{filmPage.play}</span>
         </FilmTrigger>
         {duration ? <p className={styles.length}>{filmPage.durationLabel(duration)}</p> : null}

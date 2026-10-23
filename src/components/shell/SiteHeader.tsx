@@ -1,7 +1,8 @@
 "use client";
 // The header (DESIGN-LEXINGTON §6 Header, comp A): small text on the page's grid. The wordmark sits over the label rail
-// (columns 1–3), the section links start on column 4, and GitHub, Pause motion, the theme and the small ink Download
-// sit at the right (9–12). Always on the page ground with a hairline under it: no blur, no change on scroll.
+// (columns 1–3), the section links start on column 4, and GitHub, Pause motion, the theme and the Download (an ink
+// hairline outline: the hero's sage Download stays the view's one accent) sit at the right (9–12). Always on the page
+// ground with a hairline under it: no blur, no change on scroll.
 // Below 1024 px: the wordmark, then the theme and a menu that opens a sheet (a modal <dialog>: focus stays inside, Esc
 // and the backdrop close it, focus returns to the menu button). The sheet's Download has the honest line under it.
 //

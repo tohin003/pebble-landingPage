@@ -91,7 +91,8 @@
   --bg: #f8f9f6; /*        page: the one ground, top to bottom. No pools of light, no vignettes, no grain. */
   --fill: #edf0eb; /*      panel: the one flat surface (explainers, the command block, segmented controls, code).
                                    Muted ink on it 5.2:1. On --fill, draw cuts in --bg, not --line. */
-  --ink: #1d2520; /*       ink: text and headings, and the header's small Download. 14.9:1 on --bg; never black. */
+  --ink: #1d2520; /*       ink: text and headings, and hairline outlines (the header's Download). 14.9:1 on --bg;
+                                   never black, and never a fill: no ink buttons or pills (OVERRIDES §17). */
   --ink-2: #5d665e; /*     muted ink: a heading's second line, leads, captions, labels, fine print. 5.6:1 on --bg. */
   --line: #dbe1d9; /*      rule: the one hairline, only where a line means something (a section's top edge, ledger
                                    rows, the requirements strip, the FAQ, the chapter index). No boxes around text. */
@@ -114,7 +115,8 @@
   /* ---- Depth. No resting shadows on page chrome. Exactly four kinds of depth are allowed:
           (1) the pebble's contact shadow: part of the character, a radial gradient under each pebble;
           (2) --shadow-window: an app window inside a riverbed picture (part of the picture);
-          (3) --shadow-float: floating layers only (the sticky call to action, the menu sheet, the film dialog);
+          (3) --shadow-float: floating layers only (the sticky call to action, the menu sheet, the film dialog, the
+              skip link while it has focus);
           (4) 1 px rings: --ring over a media frame's picture and inside a crop (drawn by ::after).
           Anything else is flat. ---- */
   --shade: 19, 37, 27; /*  the green-tinted shadow colour of (1) to (3): rgba(var(--shade), a) */
