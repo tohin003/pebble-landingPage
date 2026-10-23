@@ -28,14 +28,16 @@ const MAX_PLAYING = 2;
 const PHONE_QUERY = "(max-width: 560px)";
 
 // ---- one conductor for every loop on the page: the two most visible eligible loops play -----------------------
-type Entry = { ratio: number; order: number; eligible: () => boolean; play: () => void; pause: () => void };
+// A loop the visitor started with its button plays while any of it is on screen and goes first: a press must never
+// be undone by the visibility rule (pressing Play on a frame 30 % in view used to pause it again at once).
+type Entry = { ratio: number; order: number; eligible: () => boolean; chosen: () => boolean; play: () => void; pause: () => void };
 const entries = new Map<string, Entry>();
 let order = 0;
 
 function arbitrate() {
   const ranked = [...entries.values()]
-    .filter((e) => e.ratio >= PLAY_RATIO && e.eligible())
-    .sort((a, b) => b.ratio - a.ratio || a.order - b.order)
+    .filter((e) => e.eligible() && (e.ratio >= PLAY_RATIO || (e.chosen() && e.ratio > 0)))
+    .sort((a, b) => Number(b.chosen()) - Number(a.chosen()) || b.ratio - a.ratio || a.order - b.order)
     .slice(0, MAX_PLAYING);
   for (const entry of entries.values()) {
     if (ranked.includes(entry)) entry.play();
@@ -148,8 +150,10 @@ export function LoopVideo({ loop, label, name, caption, sizes = "(max-width: 900
 
   // register with the conductor
   const eligibleRef = useRef<() => boolean>(() => false);
+  const chosenRef = useRef(false);
   useEffect(() => {
     eligibleRef.current = () => attached && !userPaused && (autoplay || userStarted) && document.visibilityState === "visible";
+    chosenRef.current = userStarted && !userPaused;
   });
   useEffect(() => {
     const el = figure.current;
@@ -160,6 +164,7 @@ export function LoopVideo({ loop, label, name, caption, sizes = "(max-width: 900
       ratio: 0,
       order: order++,
       eligible: () => eligibleRef.current(),
+      chosen: () => chosenRef.current,
       play: () => {
         if (v.paused) void v.play().catch(() => {});
       },
