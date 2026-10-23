@@ -15,7 +15,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/shell/icons";
 import { filmDialog } from "@/content/copy";
-import { filmDialogStub } from "@/content/stubs";
 import type { FilmMedia, FilmQuality, VideoSource } from "@/lib/media";
 import { FILM_OPEN, type FilmOpenDetail } from "./film-events";
 import styles from "./FilmPlayer.module.css";
@@ -167,7 +166,7 @@ export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: read
         <div className={styles.below}>
           {canSpeak ? (
             <button type="button" className={styles.toggle} aria-pressed={describe} onClick={() => setDescribe((on) => !on)}>
-              {filmDialogStub.audioDescription}
+              {filmDialog.audioDescription}
             </button>
           ) : null}
           {chapters.length > 0 ? (
