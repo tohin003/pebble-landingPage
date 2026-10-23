@@ -22,7 +22,14 @@ function href(link: string): string {
   return link.startsWith("#") ? `/${link}` : link;
 }
 
-export function SiteHeader({ release }: { release: Pick<ReleaseInfo, "state" | "downloadUrl"> }) {
+export function SiteHeader({
+  release,
+  honest,
+}: {
+  release: Pick<ReleaseInfo, "state" | "downloadUrl">;
+  /** the short honest line under the sheet's Download button (DESIGN §9), and its link to the limits */
+  honest?: Readonly<{ line: string; link: string; href: string }>;
+}) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const sheet = useRef<HTMLDialogElement>(null);
@@ -117,6 +124,14 @@ export function SiteHeader({ release }: { release: Pick<ReleaseInfo, "state" | "
           </nav>
           <div className={styles.sheetCta}>
             <GetPebble release={release} variant="primary" macLabel={header.cta} block />
+            {honest && release.state === "live" ? (
+              <p className={`only-mac ${styles.sheetHonest}`}>
+                {honest.line}{" "}
+                <a href={href(honest.href)} onClick={closeSheet}>
+                  {honest.link}
+                </a>
+              </p>
+            ) : null}
           </div>
           <div className={styles.sheetToggles}>
             <MotionToggle variant="pill" />

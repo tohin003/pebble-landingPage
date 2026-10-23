@@ -1,7 +1,9 @@
 "use client";
 // The compact call to action that follows the reader (MASTER_PLAN §7.4): it appears once the hero has left the
-// screen and steps aside while the Install section or the final call to action is in view. Hidden, it is invisible to
-// everyone (visibility: hidden), so it never takes focus; html's scroll-padding-bottom keeps it off focused elements.
+// screen and steps aside while the Install section, the final call to action or the footer is in view (at the very
+// end of the page nothing can scroll out from under it, so over the footer it would hide the fine print for good).
+// Hidden, it is invisible to everyone (visibility: hidden), so it never takes focus; html's scroll-padding-bottom keeps
+// it off focused elements.
 import { useEffect, useState } from "react";
 import { stickyCta } from "@/content/copy";
 import { SECTIONS } from "@/lib/sections";
@@ -21,9 +23,10 @@ export function StickyCta({
 
   useEffect(() => {
     const hero = document.getElementById(SECTIONS.hero);
-    const blockers = [SECTIONS.install, SECTIONS.finalCta]
-      .map((id) => document.getElementById(id))
-      .filter((el): el is HTMLElement => !!el);
+    const blockers = [
+      ...[SECTIONS.install, SECTIONS.finalCta].map((id) => document.getElementById(id)),
+      document.querySelector("body footer"),
+    ].filter((el): el is HTMLElement => el instanceof HTMLElement);
     if (!hero) return;
     let heroGone = false;
     const blocking = new Set<Element>();

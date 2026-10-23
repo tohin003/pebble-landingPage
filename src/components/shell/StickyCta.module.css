@@ -15,10 +15,11 @@
   transform: translate(-50%, 16px);
   opacity: 0;
   visibility: hidden;
+  /* leaving: a quick ease-out (an ease-in curve would hold still exactly while it is being watched) */
   transition:
-    transform var(--dur-base) var(--ease-exit),
+    transform var(--dur-fast) var(--ease-firm),
     opacity var(--dur-fast) ease,
-    visibility 0s linear var(--dur-base);
+    visibility 0s linear var(--dur-fast);
 }
 
 .sticky[data-visible] {

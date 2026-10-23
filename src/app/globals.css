@@ -284,7 +284,8 @@
 
   p,
   li,
-  dd {
+  dd,
+  figcaption {
     text-wrap: pretty;
   }
 

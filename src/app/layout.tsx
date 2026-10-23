@@ -2,6 +2,7 @@
 // path, the footer and the JSON-LD record (MASTER_PLAN §2.2, §7.8; docs/DESIGN.md).
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { hero, honestLimits } from "@/content/copy";
 import { seo, jsonLdString, softwareApplicationJsonLd } from "@/content/seo";
 import { PebblePath } from "@/components/line/PebblePath";
 import { Footer } from "@/components/shell/Footer";
@@ -10,6 +11,7 @@ import { SiteHeader } from "@/components/shell/SiteHeader";
 import { SkipLink } from "@/components/shell/SkipLink";
 import { BOOTSTRAP_SCRIPT } from "@/lib/bootstrap";
 import { getRelease } from "@/lib/release";
+import { SECTIONS } from "@/lib/sections";
 import { siteUrl } from "@/lib/site";
 import { fontVariables } from "./fonts";
 import styles from "./layout.module.css";
@@ -64,7 +66,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <SkipLink />
         <div className={styles.page}>
           <PebblePath />
-          <SiteHeader release={{ state: release.state, downloadUrl: release.downloadUrl }} />
+          <SiteHeader
+            release={{ state: release.state, downloadUrl: release.downloadUrl }}
+            honest={{ line: hero.honestLine, link: honestLimits.shortLink, href: `#${SECTIONS.limits}` }}
+          />
           <main id="main" className={styles.main}>
             {children}
           </main>

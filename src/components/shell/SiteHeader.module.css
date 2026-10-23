@@ -187,6 +187,16 @@
   display: grid;
 }
 
+/* the three trust limits under the sheet's Download button, as under every primary Download (DESIGN §9) */
+.sheetHonest {
+  margin: 10px 4px 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  text-align: center;
+  text-wrap: pretty;
+}
+
 .sheetToggles {
   display: flex;
   flex-wrap: wrap;

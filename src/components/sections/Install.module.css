@@ -183,6 +183,19 @@
   border-radius: 4px;
 }
 
+/* Where the command overflows, its fade mask (data-more) clips its own focus ring away: ring the whole pill instead
+   (QA lane F3: the keyboard walk found no visible focus on phones). */
+@supports selector(:has(*)) {
+  .pill:has(.command:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  .pill .command:focus-visible {
+    outline: none;
+  }
+}
+
 .copy {
   flex: none;
   display: inline-flex;
