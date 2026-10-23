@@ -334,15 +334,19 @@
   color: var(--ink-2);
 }
 
-/* the correction sits beside the results, in plain words, never in a box */
+/* the correction sits beside the results, in plain words, never in a box; its hairline runs the column's width and
+   the words keep the measure */
 .correction {
   margin-top: 24px;
   padding-top: 16px;
   border-top: 1px solid var(--line);
-  max-width: 40em;
   font-size: 15px;
   line-height: 1.55;
   color: var(--ink-2);
+}
+
+.correction > p {
+  max-width: 40em;
 }
 
 .correctionTitle {
@@ -458,13 +462,14 @@
     font-size: 14px;
   }
 
+  /* the values are set as lines (rate, then count), so they need less width: give it to the measures' notes */
   .table .measureHead {
-    width: 46%;
+    width: 50%;
   }
 
   .table .valueHead,
   .table .value {
-    width: 27%;
+    width: 25%;
     padding-left: 10px;
   }
 }
