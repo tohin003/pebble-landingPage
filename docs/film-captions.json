@@ -31,7 +31,7 @@
     { "id": "c11", "start": 756, "end": 864, "chapter": "project", "kind": "line", "lines": ["Review, apply, undo"] },
     { "id": "c12", "start": 936, "end": 1044, "chapter": "tested", "kind": "line", "lines": ["AgentGuard checks the evidence"] },
     { "id": "c13", "start": 1044, "end": 1146, "chapter": "tested", "kind": "line", "lines": ["Tests run in an isolated copy"] },
-    { "id": "c14", "start": 1152, "end": 1218, "chapter": "tested", "kind": "mixed", "lines": ["[Soft shimmer]", "Done means tested"] },
+    { "id": "c14", "start": 1152, "end": 1218, "chapter": "tested", "kind": "mixed", "lines": ["[Soft shimmer]", "Evidence before done"] },
     { "id": "c15", "start": 1230, "end": 1332, "chapter": "model", "kind": "line", "lines": ["Your model, your choice", "Even one on your Mac"] },
     { "id": "c16", "start": 1350, "end": 1434, "chapter": "pace", "kind": "line", "lines": ["You set what it may do"] },
     { "id": "c17", "start": 1458, "end": 1584, "chapter": "memory", "kind": "line", "lines": ["Memory you can read and forget"] },

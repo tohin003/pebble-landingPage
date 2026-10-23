@@ -66,11 +66,11 @@ export const chapters: readonly Chapter[] = [
   },
   {
     id: "tested",
-    title: "Done means tested",
+    title: "Evidence before done", // was "Done means tested": withdrawn after Pebble 1.0.3's Corrections (AgentGuard holds only covered code)
     startSeconds: 28.8, // frame 864
     bars: "13–17",
     sectionIds: ["project"],
-    onScreen: ["AgentGuard checks the evidence", "Tests run in an isolated copy", "Done means tested"], // [C-CH-17] [C-CH-5] [C-CH-6]
+    onScreen: ["AgentGuard checks the evidence", "Tests run in an isolated copy", "Evidence before done"], // [C-CH-17] [C-CH-5] [C-CH-6]
     description:
       "Pebble's reply says both edits are in, but the task is held: “Blocked” and “Pebble's change isn't verified yet.”, with Run the tests, Ask Pebble to finish and Accept as unverified. The pointer clicks Run the tests. A “Run isolated tests” card reads “Runs the project's tests in a temporary copy. Your project files don't change.” The pointer clicks Run tests; the steps show “Requesting isolated tests · 11 s”, then “Verified · pytest 42 passed on current files”. Pebble's final reply says the tests ran in an isolated copy and both edits are verified, and the pebble celebrates.",
     sounds: [],

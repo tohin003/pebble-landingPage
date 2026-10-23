@@ -147,7 +147,7 @@ world 210 (16:9) / 170 (square).
 | 14 | 936–1007 | proof | S5c | "AgentGuard checks the evidence"; Run the tests (f990) | tested |
 | 15 | 1008–1079 | proof | S5d | the "Run isolated tests" card; "Tests run in an isolated copy" | tested |
 | 16 | 1080–1151 | proof | S5d | Run tests (f1080); the tests run | tested |
-| 17 | 1152–1223 | proof | S5e | **"Verified · pytest 42 passed on current files"** (f1152); happy; "Done means tested" | tested |
+| 17 | 1152–1223 | proof | S5e | **"Verified · pytest 42 passed on current files"** (f1152); happy; "Evidence before done" | tested |
 | 18 | 1224–1295 | proof | S6a | Settings (f1224) › Models; "Your model, your choice" / "Even one on your Mac" | model |
 | 19 | 1296–1367 | proof | S6a/S6b | Permissions tab (f1332) | model → pace |
 | 20 | 1368–1439 | proof | S6b | Auto in project (f1404); "You set what it may do" | pace |
@@ -337,7 +337,7 @@ Layout §4 (side split / stacked). Source: `main-live-film` recorded at 3× (§7
   f1153. The run is not finished yet: Pebble writes its final reply (pose `writing` at f1161, source 20.90), and the
   run completes at f1204 (source 22.33), when the app's pebble turns **`happy`**: the film's one celebration, held
   4.5 s as in the app (to f1339). The celebration lands as the pull-back reveals the finished reply.
-- **T10** "Done means tested" (one line), entrance (B) ink, in f1152, out f1212.
+- **T10** "Evidence before done" (one line), entrance (B) ink, in f1152, out f1212.
 - **Check mark** (16:9 only): a stroked check, **72 px, 8 px** `#506E54`, round caps, centred at (**860**, y of the
   Verified row), outside the UI with 24 px clear of the stage (C3; REVIEW-G2 P1-5, lane G-fix); drawn on f1152–1162,
   `EASE.enter`.
@@ -512,7 +512,7 @@ lines readable twice: ≥ 2 s and 0.6 s per word). Positions are given for 16:9 
 | T7 | Review, apply, / undo | S5b | side line, word by word with the verbs: 756, 811, 830 | 756 | 858 | 3.40 / 1.40 | column / band |
 | T8 | AgentGuard checks / the evidence | S5c | side line, (A) | 936 | 1038 | 3.40 / 1.70 | column / band |
 | T9 | Tests run in / an isolated copy | S5d | side line, (A) | 1044 | 1140 | 3.20 / 2.30 | column / band |
-| T10 | Done means tested | S5e | side line, (B) | 1152 | 1212 | 2.00 / 2.00 (last of S5) | column / band |
+| T10 | Evidence before done | S5e | side line, (B) | 1152 | 1212 | 2.00 / 2.00 (last of S5) | column / band |
 | T11 | Your model, / your choice | S6a | side line, (A) | 1242 | 1320 | 2.60 / 1.70 | column / band |
 | T11s | Even one on your Mac | S6a | support, (A) | 1260 | 1320 | 2.00 / 2.00 | under T11 |
 | T12 | You set what / it may do | S6b | side line, (C) | 1350 | 1428 | 2.60 / 2.00 | column / band |
@@ -720,7 +720,7 @@ the Verified shimmer, the end-card pop and the final chord are.
 |---|---|---|---|
 | On your desktop | 0.0 s | 0 | 0:00 |
 | Works in your project | 21.6 s | 648 | 0:21 |
-| Done means tested | 28.8 s | 864 | 0:28 |
+| Evidence before done | 28.8 s | 864 | 0:28 |
 | Your model | 40.8 s | 1224 | 0:40 |
 | You set the pace | 44.4 s | 1332 | 0:44 |
 | Memory | 48.0 s | 1440 | 0:48 |
@@ -843,7 +843,7 @@ re-derives the timeline:
 |---|---|---|
 | desktop | "What did it change?", "Can I undo it?", "Did it run the tests?", "An agent shouldn't grade its own work", "A small companion for your Mac" | A calm sage-green desktop with the pebble in its lower-right corner. The pointer moves in and the pebble's eyes follow it. A click opens the quick chat, the question “What does ‘day is out of range for month’ mean?” is sent, and the pebble starts thinking. The camera moves into the pebble. Three questions appear one at a time on a sage background, then the line “An agent shouldn't grade its own work”. The pebble hops in, leaps and lands as the full stop of the word “pebble.”, and the screen turns light. |
 | project | (unchanged) "It reads your project", "Review, apply, undo" | The pebble hops into Pebble's window on the invoice-kit project; the status line reads “Reading invoice_kit/dates.py”. An approval card for invoice_kit/dates.py shows the change. The pointer clicks Apply edit, and the card shows Done, with Undo this edit. |
-| tested | "AgentGuard checks the evidence", "Tests run in an isolated copy", "Done means tested" | Pebble's reply says both edits are in, but the task is held: “Blocked” and “Pebble's change isn't verified yet.”, with Run the tests, Ask Pebble to finish and Accept as unverified. The pointer clicks Run the tests. A “Run isolated tests” card reads “Runs the project's tests in a temporary copy. Your project files don't change.” The pointer clicks Run tests; the steps show “Requesting isolated tests · 11 s”, then “Verified · pytest 42 passed on current files”. Pebble's final reply says the tests ran in an isolated copy and both edits are verified, and the pebble celebrates. |
+| tested | "AgentGuard checks the evidence", "Tests run in an isolated copy", "Evidence before done" | Pebble's reply says both edits are in, but the task is held: “Blocked” and “Pebble's change isn't verified yet.”, with Run the tests, Ask Pebble to finish and Accept as unverified. The pointer clicks Run the tests. A “Run isolated tests” card reads “Runs the project's tests in a temporary copy. Your project files don't change.” The pointer clicks Run tests; the steps show “Requesting isolated tests · 11 s”, then “Verified · pytest 42 passed on current files”. Pebble's final reply says the tests ran in an isolated copy and both edits are verified, and the pebble celebrates. |
 | model | (unchanged) | Settings › Models: the model on this Mac, and the ways to add one: Add a model file, Connect provider and Continue with ChatGPT. |
 | pace | (unchanged) | Settings › Permissions. The pointer chooses Auto in project instead of Ask for approval, with each mode's own words on screen. |
 | memory | (unchanged) | Settings › Memory shows the six kinds of memory and the saved records. The pointer clicks the bin next to “Uses metric units and 24-hour times.”, and the record disappears. |
