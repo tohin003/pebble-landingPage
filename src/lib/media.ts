@@ -35,15 +35,37 @@ export type LoopId =
 
 export type LoopMedia = Readonly<{
   id: LoopId;
+  /** the main cut's frame: 16:10 for the wide slots, square for the project story's tile (LOOP_FRAMES) */
   width: number;
   height: number;
   /** HEVC first, then H.264 (MASTER_PLAN §5.5); only the available ones */
   sources: readonly VideoSource[];
-  /** 4:5 punch-ins for phones (critic H2); empty until rendered, and then phones show the poster and the caption */
+  /** 4:5 punch-ins for phones (critic H2, LOOP_PHONE_FRAME); empty until rendered, and then phones show the poster */
   phoneSources: readonly VideoSource[];
   poster: ImageSet;
+  /** the 4:5 cut's own poster (its frame 0), shown on phones while the phone cut loads */
+  phonePoster?: ImageSet;
   available: boolean;
 }>;
+
+/**
+ * Each loop's frame, as rendered (video/src/Root.tsx, video/src/stills/LoopPosters.tsx, loops/plans.ts FRAME): 16:10
+ * for the wide slots, square for the project story's tile (comp lex-A, lane v2-loops). A poster file has its loop's
+ * size, so these also size the posters' srcset.
+ */
+const LOOP_FRAMES: Readonly<Record<LoopId, Readonly<{ width: number; height: number }>>> = {
+  companion: { width: 1600, height: 1000 },
+  models: { width: 1600, height: 1000 },
+  "approve-undo": { width: 1080, height: 1080 },
+  "isolated-tests": { width: 1080, height: 1080 },
+  "review-commands": { width: 1600, height: 1000 },
+  agentguard: { width: 1600, height: 1000 },
+  memory: { width: 1600, height: 1000 },
+  views: { width: 1600, height: 1000 },
+};
+
+/** Every loop's phone cut (critic H2): 4:5, 1080 × 1350 (loops/plans.ts FRAME.tall). */
+export const LOOP_PHONE_FRAME = { width: 1080, height: 1350 } as const;
 
 export type FilmQuality = "720" | "1080";
 
@@ -106,14 +128,16 @@ function videoSources(base: string): VideoSource[] {
 }
 
 export function loopMedia(id: LoopId): LoopMedia {
+  const frame = LOOP_FRAMES[id];
   const sources = videoSources(`${MEDIA}/loop-${id}`);
   return {
     id,
-    width: 1600,
-    height: 1000,
+    width: frame.width,
+    height: frame.height,
     sources,
     phoneSources: videoSources(`${MEDIA}/loop-${id}-phone`),
-    poster: imageSet(`${MEDIA}/loop-${id}.poster`, 1600, 1000),
+    poster: imageSet(`${MEDIA}/loop-${id}.poster`, frame.width, frame.height),
+    phonePoster: imageSet(`${MEDIA}/loop-${id}-phone.poster`, LOOP_PHONE_FRAME.width, LOOP_PHONE_FRAME.height),
     available: sources.length > 0,
   };
 }

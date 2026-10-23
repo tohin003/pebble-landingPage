@@ -6,11 +6,30 @@
   position: relative;
 }
 
+/* The loop's own shape (LoopVideo.tsx sets --loop-aspect from src/lib/media.ts LOOP_FRAMES); a loop with a phone cut
+   takes the cut's 4:5 (LOOP_PHONE_FRAME) on phones. */
 .stage {
   position: relative;
   overflow: hidden;
   border-radius: inherit;
-  background: var(--bg-2);
+  background: var(--fill);
+  aspect-ratio: var(--loop-aspect, 16 / 10);
+}
+
+@media (max-width: 560px) {
+  .stage[data-phone-cut] {
+    aspect-ratio: 4 / 5;
+  }
+
+  .widePoster {
+    display: none;
+  }
+}
+
+@media (min-width: 561px) {
+  .phonePoster {
+    display: none;
+  }
 }
 
 .video,
@@ -32,7 +51,8 @@
   transition: opacity var(--dur-crossfade) ease;
 }
 
-/* Pause and play: a 44 px target, drawn as a small galet (critic M9). */
+/* Pause and play: a 44 px target, drawn as a small galet (critic M9) on the picture. No shadow (DESIGN-LEXINGTON
+   §3.5): a galet 1 px larger in --line behind it is its ring, so it holds its edge on any frame of the loop. */
 .control {
   position: absolute;
   right: 10px;
@@ -46,13 +66,22 @@
   border-radius: 50%;
   background: transparent;
   color: var(--ink);
-  filter: drop-shadow(0 4px 8px rgba(var(--shade), 0.2)); /* a mask would clip a box-shadow */
+}
+
+.control::before {
+  content: "";
+  position: absolute;
+  inset: 5px 3px;
+  background: var(--line);
+  -webkit-mask: var(--galet-mask) center / contain no-repeat;
+  mask: var(--galet-mask) center / contain no-repeat;
+  transition: transform var(--dur-press) var(--ease-firm);
 }
 
 .controlShape {
   position: absolute;
   inset: 6px 4px;
-  background: color-mix(in srgb, var(--panel) 90%, transparent);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
   transition: transform var(--dur-press) var(--ease-firm);
 }
 
@@ -62,6 +91,7 @@
   height: 15px;
 }
 
+.control:active::before,
 .control:active .controlShape {
   transform: scale(0.94);
 }

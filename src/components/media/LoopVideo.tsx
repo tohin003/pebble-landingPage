@@ -10,9 +10,12 @@
 //   play at once (the two most visible).
 // - A visible pause and play button (WCAG 2.2.2). Reduced motion or Pause motion: no autoplay; the poster stays with a
 //   play button, and the visitor can still start it.
-// - Phones (<= 560 px): the 4:5 punch-in when one exists, otherwise the poster and the caption only (critic H2).
+// - Phones (<= 560 px): the 4:5 punch-in when one exists, in its own shape and with its own poster; otherwise the
+//   poster and the caption only (critic H2). A loop's shape is its frame's (src/lib/media.ts LOOP_FRAMES: 16:10, or
+//   square for the project story's tile).
 // - Nothing rendered yet: the poster alone, or `fallback` (for example a real-UI still). Never a broken player.
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+// - The pause and play galet floats on the picture with a 1 px ring, no shadow (DESIGN-LEXINGTON §3.5).
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Icon } from "@/components/shell/icons";
 import { media as mediaCopy } from "@/content/copy";
 import { useMotionMode } from "@/lib/hooks";
@@ -203,10 +206,16 @@ export function LoopVideo({ loop, label, name, caption, sizes = "(max-width: 900
   };
 
   const posterAvailable = loop.poster.available;
+  // A loop with a 4:5 phone cut takes the cut's shape on phones (CSS, so the server's HTML is already right), and its
+  // own poster there; the hidden poster is never fetched (lazy, display: none).
+  const phoneCut = loop.phoneSources.length > 0;
+  const phonePoster = phoneCut && loop.phonePoster?.available ? loop.phonePoster : null;
+  const fade = started ? { opacity: 0 } : undefined;
+  const stageStyle = { "--loop-aspect": `${loop.width} / ${loop.height}` } as CSSProperties;
   return (
     <figure ref={figure} className={`${styles.loop} ${className ?? ""}`} data-playing={playing ? "" : undefined}>
       <div className={styles.box}>
-        <div className={styles.stage} role="img" aria-label={label} style={{ aspectRatio: `${loop.width} / ${loop.height}` }}>
+        <div className={styles.stage} role="img" aria-label={label} data-phone-cut={phoneCut ? "" : undefined} style={stageStyle}>
           {hasVideo ? (
             <video
               ref={video}
@@ -234,13 +243,23 @@ export function LoopVideo({ loop, label, name, caption, sizes = "(max-width: 900
               sets={[loop.poster]}
               alt=""
               sizes={sizes}
-              className={styles.poster}
+              className={`${styles.poster} ${phonePoster ? styles.widePoster : ""}`}
               imgClassName={styles.posterImg}
-              style={started ? { opacity: 0 } : undefined}
+              style={fade}
             />
           ) : hasVideo ? null : (
             fallback
           )}
+          {phonePoster ? (
+            <Picture
+              sets={[phonePoster]}
+              alt=""
+              sizes="calc(100vw - 32px)"
+              className={`${styles.poster} ${styles.phonePoster}`}
+              imgClassName={styles.posterImg}
+              style={fade}
+            />
+          ) : null}
         </div>
         {hasVideo ? (
           <button
