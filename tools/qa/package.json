@@ -1,0 +1,11 @@
+{
+  "name": "pebble-landing-qa",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "QA tooling for the landing page: axe-core for the accessibility pass (tools/qa/a11y.mjs). Puppeteer comes from capture/, sharp from tools/assets/. Not part of the Vercel build.",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "axe-core": "4.14.0"
+  }
+}

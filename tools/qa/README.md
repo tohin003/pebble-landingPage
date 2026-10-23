@@ -4,9 +4,11 @@
 
 Builds the site (`next build`), serves it with `next start` on a free port, and screenshots each page at the given
 widths × themes × motion settings with the installed Chrome (puppeteer-core from `capture/node_modules`, no browser
-download). Each shot is a full-page PNG plus viewport-sized tiles (critic H10: an agent can't judge a 1440 × 12,000 px
-image shrunk to fit; it can read the tiles), and `report.json` records the page height, horizontal overflow, the pebble
-path's state, console errors, failed requests and CSP violations. The server and Chrome always stop at the end.
+download). Each shot is a series of viewport screenshots taken while scrolling down (critic H10: an agent can't judge a
+1440 × 12,000 px image shrunk to fit; it can read the tiles, and they show the sticky header and call to action where a
+visitor sees them), and `report.json` records the page height, horizontal overflow, the pebble path's state, console
+errors, failed requests, CSP violations and each tile's scroll position. The server and Chrome always stop at the end.
+`node tools/qa/sheets.mjs <run>` packs the light and dark tiles side by side into review sheets at full resolution.
 
 Run it through the heavy-job runner (the build, the server and Chrome are one heavy job):
 
@@ -27,15 +29,34 @@ Output: `.work/qa/screens/<run>/` (gitignored). Logs: `.work/qa/logs/`.
 | `--height=N` | 844 / 900 / 1080 | viewport height (phones / up to 1600 px / wider) |
 | `--dpr=2` | 1 | device pixel ratio |
 | `--no-build` | | reuse the last build |
-| `--no-tiles` | | full-page shots only |
+| `--no-tiles` | | no tiles (use with `--full`) |
+| `--full` | | also one full-page capture per shot, as an overview only: Chrome can blank long pages below about 16,000 px |
+| `--tile-wait=450` | 450 | ms to wait after each scroll step before a tile is taken |
 | `--lenient` | | exit 0 even when a shot reports problems |
 | `--interactions` | | also check the shell per width and theme, with a viewport shot of each state: the skip link is the first Tab stop, the sticky call to action appears after the hero, the phone menu opens and Esc closes it with focus back on its button, the theme toggle flips and stores the theme, Pause motion sets `data-motion="paused"` and `aria-pressed` |
 
 Each shot scrolls through the page once before the capture, so lazy images load and the pebble's path is drawn (it
 draws on with scrolling and never retracts), then returns to the top.
 
-## Later (Phase 4, MASTER_PLAN §9)
+## The other gates (MASTER_PLAN §9.1–§9.3)
 
-Playwright and axe on the installed Chrome (`channel: "chrome"`, no browser download), Lighthouse, copy-lint, video-frame
-and loudness checks; install here with `npm install --save-exact @playwright/test@1.64.1 @axe-core/playwright@4.14.0`
-when Phase 4 starts, and run every suite through `scripts/heavy.sh`.
+Each serves the last `next build` (shot.mjs builds; `scripts/heavy.sh qa-build npx next build` also works) with
+`next start` on a free port and drives the installed Chrome through puppeteer-core (`lib.mjs`), so each one is a heavy
+job; the copy lint and the sheets only read files. Each file's header lists its options.
+
+| Tool | Checks | Output |
+|---|---|---|
+| `a11y.mjs` | axe-core 4.14 (pinned here: run `npm ci` in this folder), WCAG 2.0–2.2 A and AA plus best practices, light and dark, at the top, mid-page and after a full scroll, plus the open states (menu sheet, download notice, FAQ answer, honesty stamp, film theatre); a contrast pass with the decorative line and grain set aside | `.work/qa/a11y/<run>.json` |
+| `interact.mjs` | the keyboard walk (every Tab stop shown, on screen, not under the sticky header or call to action, with a visible focus change), the skip link, header toggles, the phone menu, the three explainers, the story tabs and AgentGuard's switch, the film dialog with focus return, the install Copy button and its live region, the loop pause buttons | `.work/qa/screens/<run>/report-interact.json` |
+| `requests.mjs` | every request same-origin, no cookies (document, browser jar, Set-Cookie), zero console errors and failed requests, first-load JS and transfer budgets, a link crawl | `.work/qa/requests/<run>.json` |
+| `lighthouse.sh` | Lighthouse 13.5.0, mobile and desktop, N runs each, medians against MASTER_PLAN §7.7; `H2=1` puts `h2proxy.mjs` (HTTP/2, TLS, Brotli, as Vercel serves the site) in front of `next start` | `.work/qa/lighthouse/<run>/` |
+| `line-check.mjs` | the pebble's path never runs through text (and, as a softer check, product media) | `.work/qa/screens/<run>/` |
+| `copy-lint.mjs` | the voice and claim rules on the built HTML and `llms.txt` (`--src` adds `src/content`); light work | stdout |
+| `sheets.mjs` | review sheets from a shot.mjs run; light work | `.work/qa/screens/<run>/sheets/` |
+
+```bash
+cd /path/to/pebble-landingPage && source scripts/env.sh && \
+  scripts/heavy.sh qa-a11y node tools/qa/a11y.mjs --run=a11y-1 && \
+  H2=1 scripts/heavy.sh qa-lh bash tools/qa/lighthouse.sh lh-1 3 && \
+  node tools/qa/copy-lint.mjs --src
+```

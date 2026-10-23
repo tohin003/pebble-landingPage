@@ -1,5 +1,5 @@
 // tools/qa/shot.mjs: build the site, serve it, and screenshot it at given widths × themes × motion settings
-// (MASTER_PLAN §9.1, critic H10: full page plus viewport-sized tiles, which an agent can actually read).
+// (MASTER_PLAN §9.1, critic H10: viewport-sized tiles taken while scrolling, which an agent can actually read).
 //
 // Always run it through the heavy-job runner, which holds the lock for the build, the server and Chrome together:
 //   cd <repo> && source scripts/env.sh && scripts/heavy.sh qa-shot node tools/qa/shot.mjs --widths=390,1440 --themes=light,dark
@@ -14,14 +14,19 @@
 //   --height=N            viewport height (default: 844 for phones, 900 up to 1600 px wide, 1080 above)
 //   --dpr=1               device pixel ratio
 //   --no-build            reuse the last `next build`
-//   --no-tiles            full-page shots only
+//   --no-tiles            no viewport tiles (use with --full)
+//   --full                also save one full-page capture per shot (an overview only: Chrome can blank long pages
+//                         below ~16,000 px, so judge from the tiles)
+//   --tile-wait=450       ms to wait after each scroll step before a tile is taken
 //   --lenient             exit 0 even when a shot has console errors, failed requests or horizontal overflow
 //   --interactions        also run the shell's interaction checks per width and theme (skip link, sticky call to
 //                         action, phone menu, theme and motion toggles), with viewport shots of each state
 //
-// For each shot: <page>-<width>-<theme>-<motion>.png (full page) and …-tile-NN.png (viewport-sized slices), plus
-// report.json (scroll width, page height, the pebble path's state, console errors, failed requests, CSP violations).
-// The server (next start on a free port) and Chrome are always stopped at the end.
+// For each shot: …-tile-NN.png (viewport screenshots taken while scrolling down, so the sticky header and call to
+// action show where a visitor sees them), optionally <page>-<width>-<theme>-<motion>.png (full page), plus report.json
+// (scroll width, page height, the pebble path's state, console errors, failed requests, CSP violations, each tile's
+// scroll position). tools/qa/sheets.mjs packs the tiles into review sheets. The server (next start on a free port) and
+// Chrome are always stopped at the end.
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { createServer } from "node:net";
@@ -33,7 +38,6 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "../..");
 const require = createRequire(path.join(REPO, "capture", "package.json"));
 const puppeteer = require("puppeteer-core");
-const sharp = createRequire(path.join(REPO, "tools", "assets", "package.json"))("sharp");
 
 const args = process.argv.slice(2);
 const flag = (name) => args.includes(`--${name}`);
@@ -53,6 +57,7 @@ const THEMES = list(opt("themes", "light,dark"));
 const MOTIONS = list(opt("motion", "on"));
 const DPR = Number(opt("dpr", "1"));
 const FIXED_HEIGHT = opt("height", "");
+const TILE_WAIT = Number(opt("tile-wait", "450")); // ms after each scroll step (the sticky call to action fades in 300 ms)
 const CHROME = process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const IPHONE_UA =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1";
@@ -189,17 +194,28 @@ async function shoot(base, pagePath, width, theme, motion) {
   problems.csp = probe.csp;
   delete probe.csp;
   const name = `${slug(pagePath)}-${width}-${theme}-${motion}`;
-  const full = path.join(OUT, `${name}.png`);
-  await page.screenshot({ path: full, fullPage: true, captureBeyondViewport: true });
+  // Tiles are viewport screenshots taken while scrolling down, so each one is what a visitor sees there, sticky header
+  // and sticky call to action included. (Slicing one full-page capture fails on long pages: past Chrome's ~16,384 px
+  // texture limit the capture comes out blank below a point, lane F2a's open issue 2.)
   const tiles = [];
   if (!flag("no-tiles")) {
-    const meta = await sharp(full).metadata();
-    const tileH = Math.round(height * DPR);
-    for (let top = 0, i = 1; top < meta.height; top += tileH, i++) {
+    for (let i = 1, y = 0; i < 200; i++, y += height) {
+      const at = await page.evaluate(async (top) => {
+        window.scrollTo({ top, left: 0, behavior: "instant" });
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        return { y: Math.round(window.scrollY), end: window.scrollY + innerHeight >= document.documentElement.scrollHeight - 1 };
+      }, y);
+      await sleep(TILE_WAIT);
       const tile = path.join(OUT, `${name}-tile-${String(i).padStart(2, "0")}.png`);
-      await sharp(full).extract({ left: 0, top, width: meta.width, height: Math.min(tileH, meta.height - top) }).toFile(tile);
-      tiles.push(path.basename(tile));
+      await page.screenshot({ path: tile });
+      tiles.push({ file: path.basename(tile), y: at.y });
+      if (at.end) break;
     }
+    await page.evaluate(() => window.scrollTo({ top: 0, left: 0, behavior: "instant" }));
+  }
+  if (flag("full")) {
+    // optional overview (may come out blank below ~16,000 px; judge from the tiles)
+    await page.screenshot({ path: path.join(OUT, `${name}.png`), fullPage: true, captureBeyondViewport: true });
   }
   await page.close();
   const overflow = probe.scrollWidth > probe.innerWidth;
