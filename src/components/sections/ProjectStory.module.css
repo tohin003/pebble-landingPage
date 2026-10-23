@@ -1,27 +1,31 @@
-/* Section 5, the project story. The line through the rail's stones is a local Horizon (src/components/ui). */
-.section {
-  position: relative;
-}
+/* Section 5, the project story (DESIGN-LEXINGTON §6 Works in your project, comp lex-A), inside the main column
+   (columns 4–12): the rail of four stones on the pebble's ground, then the stage, one step at a time, as a 4 | 5 split
+   under a hairline. */
 
+/* a grid item of the main column: it may shrink below the rail's unbroken step names */
 .story {
-  width: min(var(--w-content), 100%);
-  margin: 0 auto;
+  min-width: 0;
 }
 
-/* --- the rail (comp 3): four stones on the line, the step names under them --- */
+/* --- the rail: four stones on the ground, the step names under them --- */
 .railWrap {
+  --stop-w: 40px; /* a stone's slot, at the left edge of its column */
+  --stop-x: 20px; /* the slot's centre in its column: where the stone sits and the guide pebble stands */
+  --first: 20px; /* the first stone's centre on the rail (the others follow 25 % apart) */
+  --reach: 68px; /* how far the ground runs past the outer stones: wider than half the guide pebble's body */
   position: relative;
-  width: min(780px, 100%);
-  margin: 64px auto 0;
 }
 
-/* the ground (Horizon, 12 px tall, the line at its middle) through the stones' centres, 32 px down a 64 px stop;
-   a little wider than the rail, so its faded ends fall outside the first and last stone */
-.ground {
+/* The ground (Horizon, 12 px tall, the line at its middle) through the stones' centres, 32 px down a 64 px stop. It
+   runs from just before the first stone to just after the last, fully drawn wherever the guide pebble can stand, and
+   fades out at both ends (a shorter fade than Horizon's own, so the first stone is on drawn ground). */
+.railWrap .ground {
   position: absolute;
-  left: -2%;
   top: 26px;
-  width: 104%;
+  left: calc(var(--first) - var(--reach));
+  width: calc(75% + 2 * var(--reach));
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent);
 }
 
 .rail {
@@ -33,29 +37,28 @@
 .tab {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   min-width: 0;
-  padding: 0 2px 6px;
+  padding: 0 0 4px;
   border: 0;
   background: none;
   color: var(--ink-2);
+  text-align: left;
   -webkit-tap-highlight-color: transparent;
 }
 
 .stop {
   display: grid;
   place-items: center;
-  width: 100%;
+  width: var(--stop-w);
   height: 64px;
 }
 
 .stone {
-  width: 15px;
-  height: 13.3px;
+  width: 14px;
+  height: 12.4px;
   background: var(--stone);
-  transition:
-    opacity var(--dur-fast) ease,
-    background-color var(--dur-fast) ease;
+  transition: opacity var(--dur-fast) var(--ease-out);
 }
 
 /* the guide pebble stands where the current stone is */
@@ -64,25 +67,24 @@
 }
 
 .tabLabel {
-  margin-top: 8px;
-  font-size: 14.5px;
-  line-height: 1.3;
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.35;
   white-space: nowrap;
+  transition: color var(--dur-hover) var(--ease-out);
 }
 
+/* the step's number: a sequence, so a number here is a place, not data */
 .tabLabel b {
-  margin-right: 6px;
-  font-weight: 600;
+  margin-right: 8px;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
 }
 
 .tab[aria-selected="true"] .tabLabel {
   color: var(--ink);
-  font-weight: 600;
-}
-
-.tab[aria-selected="true"] .tabLabel b {
-  color: var(--accent);
+  font-weight: 500;
 }
 
 .tab:focus-visible {
@@ -92,21 +94,17 @@
 .tab:focus-visible .tabLabel {
   outline: 2px solid var(--accent);
   outline-offset: 4px;
-  border-radius: 6px;
+  border-radius: var(--r-chip);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .tab:hover .tabLabel {
     color: var(--ink);
   }
-
-  .tab[aria-selected="false"]:hover .stone {
-    background: var(--accent-soft);
-  }
 }
 
-/* The guide walks along the line to the chosen stone (motion that answers the choice; instant when paused). Its
-   box hangs below the line by 23.45 % of its size, so the body rests on it (shared/pebble BODY). */
+/* The guide walks along the ground to the chosen stone (motion that answers the choice; instant when paused). Its box
+   hangs below the line by 23.45 % of its size, so the body rests on it (shared/pebble BODY). */
 .guide {
   position: absolute;
   left: 0;
@@ -121,7 +119,7 @@
 .guideBox {
   --g: 104px;
   position: absolute;
-  left: 50%;
+  left: var(--stop-x);
   bottom: calc(50% - var(--g) * 0.2345);
   width: var(--g);
   height: var(--g);
@@ -134,16 +132,18 @@
   height: 100%;
 }
 
-/* --- the stage: one step at a time, words on the left, its picture on the right --- */
+/* --- the stage: one step at a time, under a hairline; its words in columns 4–7, its picture in 8–12 --- */
 .panels {
-  margin-top: 60px;
+  margin-top: 48px;
 }
 
 .panel {
   display: none;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: 56px;
-  align-items: center;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  column-gap: var(--gap);
+  align-items: start;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
 }
 
 .panel[data-active] {
@@ -151,8 +151,8 @@
 }
 
 .panel:focus-visible {
-  outline-offset: 10px;
-  border-radius: 14px;
+  outline-offset: 6px;
+  border-radius: var(--r-chip);
 }
 
 /* a new step settles in when you click it (never on load, and never on arrow keys: stepping through the tabs by
@@ -169,62 +169,46 @@
 }
 
 .words {
-  text-align: left;
+  grid-column: 1 / span 4;
+}
+
+.picture {
+  grid-column: 5 / -1;
+  margin: 0;
 }
 
 .stepTitle {
-  font-size: clamp(20px, 0.45vw + 16px, 24px);
-  line-height: 1.32;
+  font-size: 19px;
+  line-height: 1.35;
 }
 
 .body {
-  margin-top: 12px;
-  color: var(--ink-2);
+  margin-top: 14px;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
+/* the step's limit, beside its promise and at the same size (PHILOSOPHY 3) */
 .limit {
   margin-top: 10px;
-  font-size: 15px;
-  line-height: 1.55;
+  font-size: 16px;
+  line-height: 1.6;
   color: var(--ink-2);
 }
 
 .more {
-  margin-top: 14px;
-  font-weight: 550;
-}
-
-.more a {
-  color: var(--ink);
-}
-
-.chip {
   margin-top: 16px;
 }
 
-.thumb {
-  margin: 26px 0 0;
+.chip {
+  margin-top: 18px;
 }
 
-.caption {
-  margin-top: 10px;
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: var(--ink-2);
-  text-align: left;
-}
-
-.fill {
-  position: absolute;
-  inset: 0;
-}
-
-/* the plain sage stage for the explainer and the quotes (real captures get the riverbed or a window instead) */
-.sage {
-  margin: 0;
-  padding: 40px clamp(18px, 3.4vw, 48px);
-  border-radius: var(--r-media);
-  background: var(--soft);
+/* the flat panel for the explainer and the quotes (a recreation is never put on the riverbed) */
+.flat {
+  padding: 32px;
+  border-radius: var(--r-panel);
+  background: var(--fill);
 }
 
 .demo {
@@ -232,26 +216,39 @@
   margin: 0 auto;
 }
 
-.shot {
-  margin: 0;
+/* the riverbed tile for a real capture: square (4:5 on phones), one card centred at about the app's own scale */
+.tileFigure {
+  --tile-aspect: 1 / 1;
 }
 
-/* until loop L4 exists: the real steps as a window on the riverbed */
-.window {
+.fill {
+  position: absolute;
+  inset: 0;
+}
+
+.card {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 72%;
+  width: 77%; /* 396 px of a 515 px tile: the still's 330 units at the app's own scale */
   transform: translate(-50%, -50%);
 }
 
-.quote,
-.verdicts {
-  text-align: left;
+/* a window inside a picture: the window radius and its shadow (DESIGN-LEXINGTON §3.5, depth 2) */
+.card > .cardCrop[data-frame] {
+  border-radius: var(--r-window);
+  box-shadow: var(--shadow-window);
+}
+
+.caption {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
 }
 
 .quoteIntro {
-  font-size: 14.5px;
+  font-size: 14px;
   line-height: 1.5;
   color: var(--ink-2);
 }
@@ -259,13 +256,10 @@
 .quoteText {
   margin: 14px 0 0;
   quotes: "\201C" "\201D";
-  font-family: var(--font-display);
-  font-weight: 350;
-  font-size: clamp(24px, 0.9vw + 16px, 31px);
-  line-height: 1.24;
-  letter-spacing: -0.012em;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.5;
   color: var(--ink);
-  text-wrap: balance;
 }
 
 .quoteText p::before {
@@ -283,7 +277,6 @@
   font-size: 16px;
   line-height: 1.45;
   color: var(--ink-2);
-  font-variant-numeric: tabular-nums;
 }
 
 .verdictList li {
@@ -291,11 +284,12 @@
   padding-left: 24px;
 }
 
+/* a small stone as the list mark; the verified line's is the accent galet (a state mark) */
 .verdictList li::before {
   content: "";
   position: absolute;
   left: 2px;
-  top: 0.45em;
+  top: 0.42em;
   width: 11px;
   height: 9.7px;
   background: var(--stone);
@@ -305,7 +299,7 @@
 
 .verdictList li[data-verified] {
   color: var(--ink);
-  font-weight: 550;
+  font-weight: 500;
 }
 
 .verdictList li[data-verified]::before {
@@ -314,35 +308,73 @@
 
 .sample {
   margin-top: 18px;
-  font-size: 13.5px;
+  font-size: 13px;
+  line-height: 1.45;
   color: var(--ink-2);
 }
 
-@media (max-width: 899px) {
+/* 1024–1279 px: the tile is 381–488 px wide, so the still's card takes more of it to keep the app's text near 12 px */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .card {
+    width: 86%;
+  }
+}
+
+/* below 1024 px the stage stacks: the words, then the picture at most 515 px wide (a flat panel at most 560 px) */
+@media (max-width: 1023px) {
+  .railWrap {
+    --reach: 40px;
+  }
+
+  .panels {
+    margin-top: 40px;
+  }
+
   .panel {
     grid-template-columns: minmax(0, 1fr);
-    gap: 32px;
+    padding-top: 28px;
+  }
+
+  .words,
+  .picture {
+    grid-column: 1 / -1;
   }
 
   .words {
     max-width: 40em;
   }
+
+  .picture {
+    margin-top: 28px;
+  }
+
+  .tileFigure {
+    max-width: 515px;
+  }
+
+  .flat {
+    max-width: 560px;
+  }
 }
 
 @media (max-width: 560px) {
+  /* phones: each stone sits in the middle of its column, and the step's number goes on its own line */
   .railWrap {
-    margin-top: 48px;
+    --stop-w: 100%;
+    --stop-x: 50%;
+    --first: 12.5%;
+    --reach: 36px;
   }
 
   .tab {
-    padding-bottom: 4px;
+    align-items: center;
+    text-align: center;
   }
 
   .tabLabel {
     max-width: 100%;
-    font-size: 13px;
+    font-size: 12.5px;
     white-space: normal;
-    text-align: center;
   }
 
   .tabLabel b {
@@ -355,16 +387,25 @@
   }
 
   .panels {
-    margin-top: 40px;
+    margin-top: 32px;
   }
 
-  .sage {
-    padding: 26px 14px;
-    border-radius: 20px;
+  .picture {
+    margin-top: 24px;
   }
 
-  .window {
+  .tileFigure {
+    --tile-aspect: 4 / 5;
+    max-width: none;
+  }
+
+  .card {
     width: 92%;
+  }
+
+  .flat {
+    max-width: none;
+    padding: 24px 14px;
   }
 }
 

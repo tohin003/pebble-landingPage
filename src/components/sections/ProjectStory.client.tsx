@@ -1,8 +1,10 @@
 "use client";
-// The project story's rail and stage (DESIGN §2 and §5 row 5, comp 3). A local ground line (Horizon) runs through the
-// rail's four stones, one per step, and the guide pebble stands on the current one. The rail is the story's
-// tablist: choose a step (click, or the arrow keys, Home and End) and the guide walks along the line to it while the
-// stage below shows that step. The rail never moves, so the line always passes through its stones.
+// The project story's rail and stage (DESIGN-LEXINGTON §6 Works in your project, comp lex-A). The rail spans columns
+// 4–12: four stones on the pebble's ground (a local Horizon that runs from just before the first stone to just after the
+// last), one per step, each at its column's left edge (centred in its column on phones), and the guide pebble stands
+// on the current one. The rail is the story's tablist: choose a step (click, or the arrow keys, Home and End) and the
+// guide walks along the line to it while the stage below shows that step. The rail never moves, so the line always
+// passes through its stones.
 //
 // The guide is lane B's live pebble (PebbleLiveSlot, one animated pebble at a time) over the server's still frames.
 // Its pose follows the step: editing at 01 while the example card waits (comp 3: the app's "!" review pose is the
