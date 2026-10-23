@@ -9,7 +9,8 @@
 #     HEAVY_WAIT_SECS, default 3600 s). A stale lock (its runner and its job are both dead) is taken over.
 #   - Disk: refuses to start below 1.7 GiB free on /System/Volumes/Data, and stops the job if free space falls below the
 #     1.5 GiB floor while it runs.
-#   - Memory: warns when memory_pressure reports less than 20 % free.
+#   - Memory: refuses to start when memory_pressure reports less than 20 % free. When swap has less than 0.75 GiB
+#     left, macOS is likely to add another 1 GiB swap file to the same disk, so a job then needs 1 GiB more free.
 #   - Log: start, end, exit code, duration and free disk go to $REPO/.work/heavy.log.
 # Exit status: the job's own; or 64 usage, 73 too little disk to start, 74 stopped at the disk floor, 75 lock wait timed out.
 # Example, from the repo root: source scripts/env.sh && scripts/heavy.sh next-build npm run build
@@ -47,6 +48,8 @@ hold_reason() { sed -n '1,3p' "$HOLD_FILE" 2>/dev/null | tr '\n' ' '; }
 
 now() { date '+%Y-%m-%dT%H:%M:%S%z'; }
 free_kb() { df -k "$VOLUME" | awk 'NR == 2 { print $4 }'; }
+swap_free_kb() { sysctl -n vm.swapusage 2>/dev/null | awk '{ for (i = 1; i < NF; i++) if ($i == "free") { v = $(i + 2); sub("M", "", v); printf "%d", v * 1024 } }'; }
+mem_free_pct() { memory_pressure 2>/dev/null | awk -F': ' '/System-wide memory free percentage/ { gsub("%", "", $2); print $2 }'; }
 human() { awk -v k="$1" 'BEGIN { printf "%.2f GiB", k / 1048576 }'; }
 log() { printf '%s %s\n' "$(now)" "$*" >>"$LOG"; }
 say() { printf 'heavy.sh: %s\n' "$*" >&2; }
@@ -118,14 +121,27 @@ refuse_if_low_disk() {
     log "HOLD label=$LABEL"
     exit 73
   fi
+  local need="$START_MIN_KB" sw mem
+  mem="$(mem_free_pct)"
+  if [ -n "$mem" ] && [ "$mem" -lt 20 ]; then
+    say "refusing '$LABEL': memory is tight (${mem}% free), and a heavy job now would grow swap on this small disk"
+    say "close Studio, next dev and spare Chrome tabs, or retry later"
+    log "REFUSE label=$LABEL mem_free=${mem}%"
+    exit 73
+  fi
+  sw="$(swap_free_kb)"
+  if [ -n "$sw" ] && [ "$sw" -lt 786432 ]; then
+    need=$((need + 1048576)) # room for the next 1 GiB swap file
+  fi
   f="$(free_kb)"
-  if [ "$f" -lt "$START_MIN_KB" ]; then
-    say "refusing '$LABEL': only $(human "$f") free on $VOLUME (a heavy job needs at least $(human "$START_MIN_KB"))"
+  if [ "$f" -lt "$need" ]; then
+    say "refusing '$LABEL': only $(human "$f") free on $VOLUME (a heavy job needs at least $(human "$need"))"
+    [ "$need" -gt "$START_MIN_KB" ] && say "that includes 1 GiB for the next swap file: swap has only $(human "$sw") left"
     if [ "$RESERVE_KB" -gt 0 ]; then
       say "$(human "$RESERVE_KB") of that is reserved for another session: $RESERVE_WHY"
       say "do non-heavy work now and retry this job later; the lead removes .work/RESERVE when the reservation ends"
     fi
-    log "REFUSE label=$LABEL free=$(human "$f") reserve=$(human "$RESERVE_KB")"
+    log "REFUSE label=$LABEL free=$(human "$f") reserve=$(human "$RESERVE_KB") swap_free=$(human "${sw:-0}")"
     exit 73
   fi
 }
@@ -181,10 +197,7 @@ trap release EXIT
 refuse_if_low_disk # the disk may have changed while waiting
 
 FREE0="$(free_kb)"
-MEM="$(memory_pressure 2>/dev/null | awk -F': ' '/System-wide memory free percentage/ { gsub("%", "", $2); print $2 }')"
-if [ -n "$MEM" ] && [ "$MEM" -lt 20 ]; then
-  say "warning: memory is tight (${MEM}% free); close Studio, next dev and spare Chrome tabs first"
-fi
+MEM="$(mem_free_pct)"
 log "START label=$LABEL pid=$$ free=$(human "$FREE0") mem_free=${MEM:-?}% cwd=$PWD cmd=$*"
 say "start '$LABEL' ($(human "$FREE0") free, ${MEM:-?}% memory free)"
 T0=$(date +%s)
