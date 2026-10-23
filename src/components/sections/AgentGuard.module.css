@@ -119,9 +119,13 @@
     padding-top: 28px;
   }
 
+  /* the body keeps a measure; its three points span the column, so their hairlines end where the row's does */
   .reliabilityBody {
-    max-width: 48em;
     margin-top: 10px;
+  }
+
+  .reliabilityBody > p {
+    max-width: 48em;
   }
 }
 
@@ -133,6 +137,7 @@
 
   .points li {
     padding-block: 12px;
+    padding-right: max(0px, calc(100% - 40em));
   }
 }
 

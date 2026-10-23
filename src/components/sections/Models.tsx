@@ -19,10 +19,12 @@ import styles from "./Models.module.css";
 /** settings-models: the dialog's "Your models" block, the model row, the buttons and Continue with ChatGPT (16:10) */
 const WAYS_IN = { x: 384, y: 160, w: 432, h: 270 } as const;
 /**
- * phones: the ways in alone, Add a model file, Connect provider (and Rest model) and Continue with ChatGPT. y 248.5
- * since the 1.0.4 stills: the model row's meta fits on one line now, so the buttons sit 13.5 units higher (lane shots).
+ * phones: the three ways in alone: Add a model file and Connect provider (x 405–638.5), then Continue with ChatGPT
+ * (y 308–346). The crop ends in the gap before Rest model (x 645), which isn't a way in: 242 units at 90 % of a 390 px
+ * phone's frame put the app's 12 px text at 13 px (330 units, with Rest model, gave 9.8 px, under the 11 px floor).
+ * y 248.5 since the 1.0.4 stills: the model row's meta fits on one line now, so the buttons sit 13.5 units higher.
  */
-const WAYS_IN_PHONE = { x: 397, y: 248.5, w: 330, h: 104 } as const;
+const WAYS_IN_PHONE = { x: 400, y: 248.5, w: 242, h: 104 } as const;
 /** The picture: columns 4–9 (624 px at 1440, loop L2's slot), half the container at 1024–1279, the column below. */
 const FRAME_SIZES = "(max-width: 560px) calc(100vw - 32px), (max-width: 1023px) calc(100vw - 48px), (max-width: 1279px) calc((100vw - 64px) * 0.49), 624px";
 

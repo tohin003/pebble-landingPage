@@ -95,9 +95,10 @@
     margin-top: 28px;
   }
 
+  /* the hairline runs the column's full width, as every rule does; the words keep a 40 em measure */
   .note {
-    max-width: 40em;
     margin-top: 28px;
+    padding-right: max(0px, calc(100% - 40em));
   }
 }
 

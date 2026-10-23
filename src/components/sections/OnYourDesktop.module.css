@@ -155,13 +155,16 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* the hairlines run the column's full width; the words keep a 40 em measure (a 720 px tablet line was 95 characters) */
   .points li {
     padding-block: 14px;
+    padding-right: max(0px, calc(100% - 40em));
   }
 
   .limit {
     margin-top: 6px;
     padding-top: 14px;
+    padding-right: max(0px, calc(100% - 40em));
     border-top: 1px solid var(--line);
   }
 }
