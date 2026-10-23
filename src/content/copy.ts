@@ -973,11 +973,16 @@ export const install = {
     downloadChecksums: "SHA256SUMS",
     /** Three steps; the checksum note sits under the first, where it applies (DESIGN §9). [C-INST-11] [C-DL-1] [C-DL-2] */
     steps: [
-      "Download both into one folder. In Terminal, in that folder, run `shasum -a 256 -c SHA256SUMS`. It should print `Pebble-macos-arm64.zip: OK`.",
+      `Download both into one folder. In Terminal, in that folder, run \`shasum -a 256 -c SHA256SUMS\`. It should print \`${releaseFacts.checksumOk}\`.`,
       "Double-click the zip and drag `Pebble.app` to Applications.",
       "The first time you open it, macOS may say it cannot verify the app, because Pebble is not notarized. Allow Pebble alone: Control-click `Pebble.app`, choose Open, then Open again. On recent macOS versions, open System Settings › Privacy & Security and click Open Anyway next to the message about Pebble.",
     ],
     checksumNote: "The checksum shows the download arrived intact. It does not prove who made it.", // [C-LIM-3]
+    /**
+     * Before the zip's line from SHA256SUMS (releaseFacts.ts), under the checksum step, shown only while the release
+     * the page offers is the one releaseFacts.ts describes. [C-REL-6]
+     */
+    sha256Intro: (version: string) => `For v${version}, \`SHA256SUMS\` lists the zip as:`,
     gatekeeper: "Never turn Gatekeeper off.", // [C-DL-3]
   },
   firstRun: {
