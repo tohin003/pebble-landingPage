@@ -301,9 +301,7 @@ export const benchmarks = {
   /** 4. The cost, printed plainly with its caveats. [C-BENCH-14] [C-BENCH-15] */
   cost: {
     title: "What it cost",
-    perTask: "Per task, at list prices",
-    pebble: money(P.costPerTask),
-    other: money(C.costPerTask),
+    line: `Per task, at list prices: Pebble ${money(P.costPerTask)}, Claude Code ${money(C.costPerTask)}.`,
     caveats: [
       `One formula prices both products' tokens at Anthropic's list prices for ${run.model}, read on ${run.date}. Pebble's figure is an upper bound.`,
       `Claude Code ran on a subscription; its own API-equivalent figure for the whole run is ${money(run.claudeCodeReportedCost, 2)}.`,

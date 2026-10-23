@@ -1,0 +1,529 @@
+/* Benchmarks, "Measured, not claimed" (PHILOSOPHY "Evidence, presented"; DESIGN-LEXINGTON §3.6): six ruled rows in the
+   main column, each a 3 | 6 split (the row's title, then its evidence); one column below 1024 px. Type, colour roles
+   and hairlines are the system's; numbers are data (globals.css .data: Geist Mono, tabular figures). */
+
+/* The chart's two series marks: the only colours in this section beside the system's roles (PHILOSOPHY: "Sage for
+   Pebble, a warm grey for the other agent"). Marks only: every word, value and label stays in ink or muted ink.
+   Checked with the dataviz palette validator against --bg: light, the pair is 15.7 ΔE apart (13.5 under protan) and
+   each mark is at least 3:1; dark, 21.3 ΔE apart and each at least 3:1. The paired difference is drawn in ink: it
+   belongs to neither product. */
+.section {
+  --mark-pebble: var(--pebble);
+  --mark-other: #998e80; /* warm grey, 3.2:1 on --bg */
+}
+
+:global(:root[data-theme="dark"]) .section {
+  --mark-other: #8a8378; /* warm grey, 4.6:1 on the night ground */
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .section {
+    --mark-other: #8a8378;
+  }
+}
+
+/* a measured number never breaks inside itself ("79.3 %", "−3.3 points", "107 of 135") */
+.section :global(.data) {
+  white-space: nowrap;
+}
+
+/* ---- the ledger: one ruled row per step of the method ---- */
+.ledger {
+  border-bottom: 1px solid var(--line);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  column-gap: var(--gap);
+  padding-block: 32px 36px;
+  border-top: 1px solid var(--line);
+}
+
+.rowTitle {
+  grid-column: 1 / span 3;
+  max-width: 15em;
+}
+
+/* the evidence: six columns, a grid of its own so the method's terms sit on the page's columns */
+.rowBody {
+  grid-column: 4 / -1;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  column-gap: var(--gap);
+  align-content: start;
+  min-width: 0;
+}
+
+.rowBody > * {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+@media (max-width: 1023px) {
+  .row {
+    display: block;
+    padding-block: 24px 28px;
+  }
+
+  .rowTitle {
+    max-width: none;
+  }
+
+  .rowBody {
+    display: block;
+    margin-top: 16px;
+  }
+}
+
+/* ---- 1. the method: terms on the evidence's first two columns, the text on the other four ---- */
+.method {
+  display: grid;
+  grid-template-columns: subgrid;
+}
+
+.methodItem {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  padding-block: 11px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.methodItem:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.methodItem dt {
+  grid-column: 1 / span 2;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.methodItem dd {
+  grid-column: 3 / -1;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+@media (max-width: 1023px) {
+  .method,
+  .methodItem {
+    display: block;
+  }
+
+  .methodItem dd {
+    margin-top: 2px;
+  }
+}
+
+/* ---- 2. the overall result: two panels drawn in hairlines, then the figure's words and the correction ---- */
+.figure {
+  margin: 0;
+}
+
+.charts {
+  display: grid;
+  gap: 40px;
+}
+
+.panelTitle {
+  margin-bottom: 14px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+/* the lines: x in per cent of the box, y in pixels, strokes that keep their width */
+.lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  overflow: visible;
+}
+
+.lines line {
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: butt;
+}
+
+.axis {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.tick {
+  stroke: var(--ink-2);
+  stroke-width: 1;
+}
+
+/* the centred zero: no difference */
+.zero {
+  stroke: var(--ink-2);
+  stroke-width: 1;
+}
+
+.whisker {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.baseline {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.interval {
+  stroke: var(--mark);
+  stroke-width: 2;
+}
+
+/* a mark: a 12 px dot, ringed in the page's colour so it reads where it crosses a line (an outline, not a shadow) */
+.dot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: var(--mark);
+  outline: 2px solid var(--bg);
+}
+
+.dotInk {
+  --mark: var(--ink);
+}
+
+/* the paired difference */
+.diffPlot {
+  position: relative;
+}
+
+.markLabel,
+.endLabel {
+  position: absolute;
+  transform: translateX(-50%);
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.markLabel {
+  top: 2px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.endLabel {
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.ticks {
+  position: relative;
+  height: 18px;
+  margin-top: 6px;
+  font-size: 12.5px;
+  line-height: 18px;
+  color: var(--ink-2);
+}
+
+.ticks > span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+}
+
+.ticks > span[data-edge="start"] {
+  transform: none;
+}
+
+.ticks > span[data-edge="end"] {
+  transform: translateX(-100%);
+}
+
+.sides {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 4px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+/* the success rates */
+.success {
+  display: grid;
+  gap: 18px;
+}
+
+.successRow[data-tone="pebble"] {
+  --mark: var(--mark-pebble);
+}
+
+.successRow[data-tone="other"] {
+  --mark: var(--mark-other);
+}
+
+.successHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 16px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.who {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.build {
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+/* the series key beside a name: the mark's colour carries identity, the words stay in ink */
+.key {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--mark);
+}
+
+.rate {
+  color: var(--ink);
+}
+
+.track {
+  position: relative;
+  display: block;
+  height: 38px; /* the whisker zone (20 px) and the end labels under it */
+  margin-top: 6px;
+}
+
+.successAxis {
+  position: relative;
+  height: 6px;
+  margin-top: 2px;
+}
+
+/* the figure's words: every number of the drawing, for every reader */
+.caption {
+  margin-top: 26px;
+  max-width: 40em;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+/* the correction sits beside the results, in plain words, never in a box */
+.correction {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  max-width: 40em;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.correctionTitle {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.correctionLink {
+  margin-top: 10px;
+}
+
+/* ---- 3. ahead and behind: one table, the same type for every row ---- */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.table th,
+.table td {
+  padding: 12px 0 13px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.table thead th {
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+  vertical-align: bottom;
+}
+
+.table .measureHead {
+  width: 52%;
+}
+
+.table .valueHead,
+.table .value {
+  width: 24%;
+  padding-left: 16px;
+  text-align: right;
+}
+
+.valueHead {
+  white-space: nowrap;
+}
+
+.valueHead .key {
+  display: inline-block;
+  margin-right: 7px;
+  vertical-align: 0;
+}
+
+.valueHead[data-tone="pebble"] {
+  --mark: var(--mark-pebble);
+}
+
+.valueHead[data-tone="other"] {
+  --mark: var(--mark-other);
+}
+
+.table .groupTitle {
+  padding: 20px 0 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.group tr + tr > th,
+.group tr + tr > td {
+  border-top: 1px solid var(--line);
+}
+
+.measure {
+  font-weight: 400;
+}
+
+.measureName {
+  display: block;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.measureNote {
+  display: block;
+  margin-top: 2px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.value {
+  color: var(--ink);
+}
+
+/* a value may wrap between its rate and its count, never inside either */
+@media (max-width: 560px) {
+  .table {
+    font-size: 14px;
+  }
+
+  .table .measureHead {
+    width: 46%;
+  }
+
+  .table .valueHead,
+  .table .value {
+    width: 27%;
+    padding-left: 10px;
+  }
+}
+
+/* ---- notes and lists: the galet as the mark ---- */
+.notes,
+.list {
+  display: grid;
+  gap: 9px;
+}
+
+.notes {
+  margin-top: 20px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.list {
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.notes li,
+.list li {
+  position: relative;
+  padding-left: 22px;
+}
+
+.notes li::before,
+.list li::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: 0.62em;
+  width: 9px;
+  height: 8px;
+  background: var(--stone);
+  -webkit-mask: var(--galet-mask) center / contain no-repeat;
+  mask: var(--galet-mask) center / contain no-repeat;
+}
+
+/* ---- 4. the cost, printed plainly ---- */
+.costLine {
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+/* ---- 6. the data ---- */
+.stamp {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.links {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  font-size: 15.5px;
+  line-height: 1.45;
+}
+
+/* long link labels wrap (TextLink's chevron stays on the last word's line) */
+.links :global(.chev) {
+  white-space: normal;
+}
+
+@media (max-width: 560px) {
+  .costLine {
+    font-size: 17px;
+  }
+
+  .row {
+    padding-block: 22px 26px;
+  }
+}
