@@ -41,7 +41,7 @@
     { "id": "c21", "start": 1926, "end": 2016, "chapter": "open-source", "kind": "line", "lines": ["Your keys stay in your Keychain"] },
     { "id": "c22", "start": 2016, "end": 2088, "chapter": "get", "kind": "sound", "lines": ["[Soft pop]"] },
     { "id": "c23", "start": 2088, "end": 2160, "chapter": "get", "kind": "line", "lines": ["A little help, right here."] },
-    { "id": "c24", "start": 2160, "end": 2232, "chapter": "get", "kind": "mixed", "lines": ["[Final chord rings out]", "Free for Macs with Apple silicon"] },
-    { "id": "c25", "start": 2232, "end": 2304, "chapter": "get", "kind": "line", "lines": ["github.com/tohin003/Pebble", "Shown with sample data"] }
+    { "id": "c24", "start": 2160, "end": 2250, "chapter": "get", "kind": "mixed", "lines": ["[Final chord]", "Free for Macs with Apple silicon"] },
+    { "id": "c25", "start": 2250, "end": 2304, "chapter": "get", "kind": "line", "lines": ["github.com/tohin003/Pebble", "Shown with sample data"] }
   ]
 }
