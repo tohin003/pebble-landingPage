@@ -2,7 +2,7 @@
    ruled row of what a view keeps and its limit, then bigger tasks (title | points) and the tour as a two-column ruled
    list. Lines, not boxes: no tiles, no icons, no hover lifts. */
 
-/* ---- 1. a view Pebble built: the main column, 16:10 (loop L8's frame); 4:5 on phones, for the quiz ---- */
+/* ---- 1. a view Pebble built: the main column, 16:10 (loop L8's frame); a square, then 4:5, for the quiz ---- */
 .media {
   margin: 0;
 }
@@ -23,6 +23,50 @@
   top: 50%;
   width: calc(var(--share) * 100%);
   transform: translate(-50%, -50%);
+}
+
+/* which picture shows where: L8 at 1280 px and up (the main column's 952 px), the chart from 768 px (and wherever L8
+   is missing), the quiz below 768 px. A hidden loop is never loaded (LoopVideo waits for it to near the screen). */
+.chart {
+  --share: 0.84;
+}
+
+.chart[data-loop],
+.quiz {
+  display: none;
+}
+
+.quiz {
+  --share: 0.6;
+}
+
+@media (max-width: 1279px) {
+  .loop {
+    display: none;
+  }
+
+  .chart[data-loop] {
+    display: block;
+  }
+
+  .chart {
+    --share: 0.92;
+  }
+}
+
+@media (max-width: 767px) {
+  .frame {
+    --views-aspect: 1 / 1;
+  }
+
+  .chart,
+  .chart[data-loop] {
+    display: none;
+  }
+
+  .quiz {
+    display: block;
+  }
 }
 
 /* a window inside a picture: the window radius and its shadow (DESIGN-LEXINGTON §3.5, depth 2) */
@@ -216,6 +260,10 @@
     --views-aspect: 4 / 5;
   }
 
+  .quiz {
+    --share: 0.9;
+  }
+
   .more {
     margin-top: 64px;
   }
@@ -231,18 +279,5 @@
 
   .tourItem {
     padding: 14px 0 16px;
-  }
-}
-
-/* loop L8 has no 4:5 cut: phones show the quiz still instead of the loop (critic H2; HANDOFF-v2-loops) */
-@media (max-width: 560px) {
-  .wideOnly {
-    display: none;
-  }
-}
-
-@media (min-width: 561px) {
-  .phoneOnly {
-    display: none;
   }
 }

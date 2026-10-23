@@ -7,11 +7,11 @@
 // 2. The real Settings › Memory on the riverbed in columns 4–9 (loop L7's 624 px slot; L7 plays there once rendered)
 //    beside the recall rule in 10–12: the sheet itself says that retrieved text never becomes permission.
 //    The still floats from the frame's top and runs off its bottom edge, because the sheet goes on. Phones keep the
-//    still, cut to the switch and the six layers so the app's text stays near its own size (L7 has no 4:5 cut).
+//    still (L7 has no 4:5 cut) at the app's own size in a 4:5 frame: the sheet runs off the right edge too, so its
+//    11 px text stays at 11 px instead of shrinking the whole sheet to fit.
 // 3. The forget card, an interactive recreation on the flat panel (columns 4–8), beside what you control in 9–12 and
 //    the limit in ink under a hairline, at the same size (PHILOSOPHY 3).
 // No tiles and no icons; the galet marks the list items.
-import type { CSSProperties } from "react";
 import { common, media, memory } from "@/content/copy";
 import { labels } from "@/content/labels";
 import { MemoryForgetDemo } from "@/components/explainers/MemoryForgetDemo";
@@ -29,15 +29,12 @@ import styles from "./Memory.module.css";
 const SETTINGS_ID = "memory-settings";
 
 /**
- * settings-memory, in the still's 1200 × 750 units (both themes share the layout). SHEET: the Settings sheet from its
- * top edge, taller than the frame shows, so its bottom corners fall outside the frame and the sheet runs on. Its
- * width is 78 % of the frame (Memory.module.css .sheet), 487 px at 1440: the app's text at about 1.13 times its size.
- * TILES (phones): "Remember useful context" and the six layers, 94 % of a phone's frame (about 0.84 times).
+ * settings-memory, in the still's 1200 × 750 units (both themes share the layout): the Settings sheet from its top
+ * edge, 600 units tall, more than any frame shows, so its bottom corners always fall outside and the sheet runs on.
+ * Drawn 487 px wide (Memory.module.css .sheet; 78 % of the 624 px frame at 1440): the app's 11 px text (the layer
+ * tiles and the note, AdvancedSettings.vue@1.0.4) at 12.4 px. Phones draw it at its own 431 px.
  */
-const SHEET = { x: 384.5, y: 39.5, w: 431, h: 340 } as const;
-const TILES = { x: 398, y: 170, w: 404, h: 146 } as const;
-/** The sheet's own corner radius in the still's units (24 px on the 2400 px files), so the crop's corner is the sheet's. */
-const stageStyle = { "--sheet-radius": 12, "--sheet-units": SHEET.w } as CSSProperties;
+const SHEET = { x: 384.5, y: 39.5, w: 431, h: 600 } as const;
 /** The frame: columns 4–9 (624 px at 1440), the column below 1024 px. */
 const FRAME_SIZES = "(max-width: 560px) calc(100vw - 32px), (max-width: 1023px) calc(100vw - 48px), (max-width: 1279px) calc((100vw - 64px) * 0.49), 624px";
 
@@ -68,7 +65,7 @@ export function Memory() {
           {/* 2. where you see it: the real Settings sheet, beside the recall rule */}
           <div className={styles.showcase}>
             <figure id={SETTINGS_ID} className={styles.media} tabIndex={-1}>
-              <MediaFrame variant="riverbed" aspect="16 / 10" sizes={FRAME_SIZES}>
+              <MediaFrame variant="riverbed" aspect="var(--memory-aspect)" sizes={FRAME_SIZES} className={styles.frame}>
                 {l7.available ? (
                   <LoopVideo
                     loop={l7}
@@ -79,13 +76,12 @@ export function Memory() {
                   />
                 ) : null}
                 {still ? (
-                  <div className={`${styles.stage} ${l7.available ? styles.phoneOnly : ""}`} style={stageStyle}>
+                  <div className={`${styles.stage} ${l7.available ? styles.phoneOnly : ""}`}>
                     <UiCrop
                       name="settings-memory"
                       alt={media.stills.settingsMemory}
                       box={SHEET}
-                      phone={TILES}
-                      display={{ wide: 487, tablet: "calc((100vw - 48px) * 0.78)", phone: "calc((100vw - 32px) * 0.94)" }}
+                      display={{ wide: 487, tablet: "487px", phone: "431px" }}
                       className={styles.sheet}
                     />
                   </div>

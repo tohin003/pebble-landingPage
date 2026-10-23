@@ -1,15 +1,15 @@
 // Section 9, Views, and what else is inside (DESIGN-LEXINGTON §6 Views; OVERRIDES §10, §12).
 //
 // The head on the rail ("Views / Built from data", the film chip under it), then from column 4:
-// 1. A view Pebble built, on the riverbed across the main column (952 px at 1440: loop L8's slot, where its quiz
-//    reads). L8 plays there once rendered; until then the real "Spending by category" chart of the Lisbon trip budget,
-//    cut from its dashboard and set as a window at about 1.25 times the app's size. L8 has no 4:5 cut, so phones show
-//    the quiz Pebble built instead, cut to its question and answers (a narrow view stays legible at 328 px).
+// 1. A view Pebble built, on the riverbed across the main column. Loop L8 plays only where that column is its full
+//    952 px (1280 px and up): its quiz is drawn to read there, and narrower it falls under the 12 px floor
+//    (HANDOFF-v2-loops). Elsewhere, and until L8 is rendered, real stills cut to what still reads: the "Spending by
+//    category" chart of the Lisbon trip budget as a window, at about 1.26 times the app's size at 1440 and at least
+//    1.04 times from 768 px; below 768 px the quiz Pebble built, cut to its question and answers (L8 has no 4:5 cut).
 // 2. What a view keeps and how it leaves the app, and its limit, as one ruled row of three columns at the same size
 //    (PHILOSOPHY 3: the limit beside the promise).
 // 3. #more: bigger tasks (the title on columns 4–6, the points on 7–12, the schedules' limit under them), then the rest
 //    of the tour as a two-column ruled list (columns 4–7 and 8–11). Text only: no tiles, no icons.
-import type { CSSProperties } from "react";
 import { common, media, orchestration, sectionIds, tour, views } from "@/content/copy";
 import { labels } from "@/content/labels";
 import { LoopVideo } from "@/components/media/LoopVideo";
@@ -24,8 +24,9 @@ import styles from "./ViewsAndTour.module.css";
 /**
  * In the stills' 1200 × 750 units (both themes share the layout), measured on the 2400 px files.
  * CHART (main-dashboard): the "Spending by category" card with 6 units of its panel around it, down to the window's
- * bottom edge; 84 % of the frame's width, 800 px at 1440 (the app's text at about 1.26 times its size).
- * QUIZ (main-quiz, phones): the quiz from its "Quiz" line to Back and Next; 90 % of a phone's frame (about 0.92 times).
+ * bottom edge; 84 % of the frame's width at 1280 px and up (800 px at 1440: the app's text at 1.26 times its size),
+ * 92 % below. QUIZ (main-quiz, below 768 px): the quiz from its "Quiz" line to Back and Next, 60 % of a square frame
+ * on narrow tablets and 90 % of a phone's 4:5 frame (0.92 times on a 390 px phone, 0.84 on a 360 px one).
  */
 const CHART = { x: 548.5, y: 345, w: 637, h: 405 } as const;
 const QUIZ = { x: 842, y: 168, w: 350, h: 432 } as const;
@@ -48,26 +49,25 @@ export function ViewsAndTour() {
                   loop={l8}
                   label={media.loops.views.label}
                   name={media.loops.views.name}
-                  sizes={FRAME_SIZES}
-                  className={`${styles.fill} ${styles.wideOnly}`}
+                  sizes="952px"
+                  className={`${styles.fill} ${styles.loop}`}
                 />
-              ) : (
-                <div className={`${styles.window} ${styles.wideOnly}`} style={{ "--share": 0.84 } as CSSProperties}>
-                  <UiCrop
-                    name="main-dashboard"
-                    alt={media.stills.viewsChart}
-                    box={CHART}
-                    display={{ wide: 800, tablet: "calc((100vw - 48px) * 0.84)" }}
-                    className={styles.windowCrop}
-                  />
-                </div>
-              )}
-              <div className={`${styles.window} ${styles.phoneOnly}`} style={{ "--share": 0.9 } as CSSProperties}>
+              ) : null}
+              <div className={`${styles.window} ${styles.chart}`} data-loop={l8.available ? "" : undefined}>
+                <UiCrop
+                  name="main-dashboard"
+                  alt={media.stills.viewsChart}
+                  box={CHART}
+                  display={{ wide: 800, tablet: "calc((100vw - 48px) * 0.92)" }}
+                  className={styles.windowCrop}
+                />
+              </div>
+              <div className={`${styles.window} ${styles.quiz}`}>
                 <UiCrop
                   name="main-quiz"
                   alt={media.stills.mainQuiz}
                   box={QUIZ}
-                  display={{ wide: 322, phone: "calc((100vw - 32px) * 0.9)" }}
+                  display={{ wide: 322, tablet: "calc((100vw - 48px) * 0.6)", phone: "calc((100vw - 32px) * 0.9)" }}
                   className={styles.windowCrop}
                 />
               </div>

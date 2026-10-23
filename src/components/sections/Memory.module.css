@@ -81,9 +81,16 @@
   inset: 0;
 }
 
-/* The still: the Settings sheet floats from the frame's top at 78 % of its width and runs off its bottom edge (its
-   crop is taller than the frame). The stage is the query container, so the crop's corner follows the sheet's own
-   corner (12 of the still's 431 units across) at every size; it is a window inside a picture, with that shadow. */
+/* the frame keeps the loop's 16:10, so nothing moves when L7 arrives; phones get 4:5 for the sheet (MediaFrame reads
+   --memory-aspect) */
+.frame {
+  --memory-aspect: 16 / 10;
+}
+
+/* The still: the Settings sheet floats from the frame's top and runs off its bottom edge (its crop is taller than
+   any frame). 487 px wide, or 94 % of a narrower frame: the app's 11 px text at 12 px or more. Its corner is the
+   sheet's own (12 of the still's 431 units across), and it is a window inside a picture, with that shadow. The
+   stage is the query container for the 94 %. */
 .stage {
   position: absolute;
   inset: 0;
@@ -94,9 +101,9 @@
   position: absolute;
   left: 50%;
   top: 9%;
-  width: 78%;
+  width: min(487px, 94cqi);
   transform: translateX(-50%);
-  border-radius: calc(var(--sheet-radius) / var(--sheet-units) * 78cqi);
+  border-radius: calc(min(487px, 94cqi) * 12 / 431);
   box-shadow: var(--shadow-window);
 }
 
@@ -226,12 +233,18 @@
     padding: 14px 0 16px;
   }
 
-  /* phones: the switch and the six layers, centred, at 94 % of the frame (TILES in Memory.tsx) */
+  /* phones: a 4:5 frame, and the sheet at the app's own size from the frame's top left, running off its right and
+     bottom edges, so the left column of layers reads at 11 px and the right one shows its names */
+  .frame {
+    --memory-aspect: 4 / 5;
+  }
+
   .stage > .sheet[data-frame] {
-    top: 50%;
-    width: 94%;
-    transform: translate(-50%, -50%);
-    border-radius: var(--r-window);
+    left: 6%;
+    top: 7%;
+    width: 431px;
+    transform: none;
+    border-radius: 12px;
   }
 
   .note {
