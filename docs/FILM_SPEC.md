@@ -5,13 +5,14 @@ Lane E, 2026-10-23. **This file is the source of truth for the films** (gate G1)
 Captions live in `docs/film-captions.json`. Chapter timings live in `src/content/chapters.ts`.
 
 Precedence: `OVERRIDES.md` > this file > `MASTER_PLAN.md` §5 > the research reports. Where this file departs from
-MASTER_PLAN §5.1, §19 below says why.
+MASTER_PLAN §5.1, §19 below says why. The look is `docs/PHILOSOPHY.md`'s (lane v2-film, 2026-10-23): the film uses
+the page's identity, so any frame of it could sit on the page without restyling (§4 says how).
 
 Contents: 1 Grid · 2 Compositions and safe areas · 3 Type · 4 Worlds and layouts · 5 Bar map · 6 Shot list ·
 7 Source-time maps · 8 On-screen text · 9 The pebble · 10 Cursor and clicks · 11 Sound effects · 12 Transitions ·
 13 Captions and chapters · 14 Review frames · 15 Teaser T0 · 16 Loops · 17 Capture requests · 18 Copy deltas for
 chapters.ts · 19 Departures from MASTER_PLAN · 20 Self-review (R5 §13.6) · 21 Alternate (scope challenge) and open
-issues.
+issues · 22 The vertical (9:16).
 
 ---
 
@@ -45,42 +46,57 @@ issues.
 
 | Composition | Size | Frames | Use |
 |---|---|---|---|
-| `LaunchFilm` | 1920×1080 | 2,304 | website film (−16 LUFS, D10), LinkedIn 16:9 master (−14 LUFS) |
+| `LaunchFilm` | 1920×1080 | 2,304 | website film (−16 LUFS, D10), X and LinkedIn 16:9 master (−14 LUFS) |
 | `LaunchFilmSquare` | 1080×1080 | 2,304 | LinkedIn feed (−14 LUFS, OVERRIDES §4) |
+| `LaunchFilmVertical` | 1080×1920 | 2,304 | X and LinkedIn on phones (−14 LUFS, OVERRIDES §14; §22) |
 | `FilmTeaser` (T0) | 1280×720 | 240 | silent, seamless, in the film's poster frame (§15) |
 | `FilmPoster` | 1280×720 | still | = T0 frame 0 |
 | Loops L1–L4, L7, L8 | 1600×1000 | §16 | silent, seamless |
 
-One timeline, one music bed, one caption track for both film compositions. Layout reads `useVideoConfig()`;
-`video/src/motion/layout.ts` holds the numbers below.
+One timeline, one music bed, one caption track for the three film compositions. Layout reads `useVideoConfig()`;
+`video/src/motion/layout.ts` holds the numbers below. Each aspect has its own framing, never a crop of another
+(OVERRIDES §14); the square and the vertical are both 1,080 px wide and share a stage size, so they share the window
+world's stage framings where their edges allow (§6.1).
 
-| | 16:9 (1920×1080) | Square (1080×1080) |
-|---|---|---|
-| Text safe | x 96–1824, y 64–1016 | x 80–1000, y 80–1000 (stricter than OVERRIDES' 60) |
-| **Caption band** (no kinetic type, no click target) | y > 918 | y > 918 |
-| UI ROI inside a stage | ≥ 60 px from every frame edge | ≥ 60 px from every frame edge |
-| Smallest UI text a viewer must read, after magnification | ≥ 28 px | ≥ 34 px (judged at 360 px wide) |
-| Cursor height | 56 px | 52 px |
+| | 16:9 (1920×1080) | Square (1080×1080) | Vertical (1080×1920, §22) |
+|---|---|---|---|
+| Text safe | x 96–1824, y 64–1016 | x 80–1000, y 80–1000 (stricter than OVERRIDES' 60) | x 80–1000, y 290–1630 |
+| **The band** every essential element stays in | the frame | the frame | **y 250–1670** (1080 × 1420): X's and LinkedIn's phone UI covers the rest |
+| **Caption band** (no kinetic type, no click target) | y > 918 | y > 918 | y > 1460 |
+| UI ROI inside a stage | ≥ 60 px from every frame edge | ≥ 60 px from every frame edge | ≥ 60 px from every frame edge |
+| Smallest UI text a viewer must read, after magnification | ≥ 28 px | ≥ 34 px (judged at 360 px wide) | ≥ 34 px (judged at 360 px wide) |
+| Cursor height | 56 px | 52 px | 52 px |
 
-The caption band keeps the bottom 15 % free for player captions (website VTT, LinkedIn SRT). UI may bleed into it;
-kinetic type and click targets may not.
+The caption band keeps the bottom of the picture free for player captions (website VTT, X and LinkedIn SRT). UI may
+bleed into it; kinetic type and click targets may not. UI text sizes are type size × magnification, as R5 §4 counts
+them (the app's 12.5 px text at m 3.0 is 37.5 px, its ink 34 px; its 12 px labels at m 2.85, 34.2 px).
 
 ## 3. Type
 
-Faces: **Fraunces** (variable, `font-variation-settings: "SOFT" 100, "WONK" 0`, weight 350 to match the site,
-never italic), **Inter** (variable), **Geist Mono** (URL only). From `video/public/fonts/` via `@remotion/fonts`.
-No accent-coloured words (DESIGN.md). No trailing periods except the app's own tagline "A little help, right here."
-(verbatim). ≤ 6 words per line. Lines are dead still once they land.
+Faces, PHILOSOPHY's three voices (`video/src/motion/system.ts` writes each value with its job): **Fraunces**
+(variable, `font-variation-settings: "SOFT" 100, "WONK" 0`, weight 350 as on the page, never italic) for every line,
+the stone's voice; **Inter** 500/400 for support, the CTA's words and the small print, the app's voice; **Geist Mono**
+500 with tabular numerals for anything that carries a digit, the data's voice: the URL and "Apache-2.0". From
+`video/public/fonts/` via `@remotion/fonts`. No accent-coloured words. No trailing periods except the app's own
+tagline "A little help, right here." (verbatim). ≤ 6 words per line. Lines are dead still once they land.
 
-| Role | Face | 16:9 px | Square px | Colour |
+**No numbers on film** (PHILOSOPHY, "Film and social"): the film's own words carry no version, size, count, test
+number or benchmark; the only digits in its type are names (the licence, the URL's account). Numbers inside the real
+UI captures are sample data, and the end card says so ("Shown with sample data").
+
+| Role | Face | 16:9 px | Square and vertical px | Colour |
 |---|---|---|---|---|
-| Wordmark `pebble` | Inter 650, tracking −0.035 em, lowercase | 216 | 172 | `#252C28` |
-| Headline (sage field, full frame) | Fraunces 350, leading 1.05, tracking −0.02 em | 112 | 92 | `#FFFFFF` on sage |
-| Side line (proof/tour column, end-card tagline) | Fraunces 350 | 92 | 92 (tagline 72) | `#252C28` |
-| Support | Inter 500, tracking −0.01 em | 58 | 50 | `#5D665E` on light; `#FFFFFF` at 80 % on sage |
+| Wordmark `pebble` | Inter 650, tracking −0.035 em, lowercase | 216 | 172 | ink `#1D2520` |
+| Headline (sage field, full frame) | Fraunces 350, leading 1.05, tracking −0.02 em | 112 | 92 | `#FFFFFF` on sage (7.9:1) |
+| Side line (proof/tour column, end-card tagline) | Fraunces 350 | 92 | 92 (tagline 72) | ink `#1D2520` |
+| Support | Inter 500, tracking −0.01 em | 58 | 50 | `#5D665E` on paper; `#FFFFFF` at 80 % on sage |
+| Data ("Apache-2.0") | Geist Mono 500, tabular | 54 | 46 | `#FFFFFF` at 80 % on sage |
 | CTA words | Inter 500 | 56 | 48 | `#5D665E` |
-| URL | Geist Mono 500 | 52 | 44 | `#252C28` |
+| URL | Geist Mono 500, tabular | 52 | 44 | ink `#1D2520` |
 | Small print | Inter 400 | 32 | 34 | `#5D665E` |
+
+The ink is the page's (`#1D2520`, 14.9:1 on paper; DESIGN-LEXINGTON §3.3), not the app's `#252C28`: the film follows
+the page.
 
 Fit rule: if a line overflows its box at the listed size, step down 4 px at a time; never re-break a line differently
 from §8. Check legibility at G1.5 at 360 px wide; if Fraunces 350 strokes break up after encoding, raise to 400 (never
@@ -99,33 +115,40 @@ above 440).
 
 **Worlds.**
 
-| World | Look | Vignette | Grain |
-|---|---|---|---|
-| **Desktop** | the riverbed wallpaper (comp 2, rasterised plate `RiverbedPlate`), light; no menu bar in close framings | 6 %, `#13251B` | none (H8) |
-| **Sage field** | arrives on the colour it is entered through (`#536B54`, the pebble's body; `#506E54` after S7c) and settles within 12 frames on the type ground **`#425643`**, with one radial glow `#B0C2AE` at **4 %**, radius 900 px, centre (0.5 W, 0.42 H), drifting ≤ 40 px over the shot. White type reads at ≥ 7:1 there (the lead's addendum to REVIEW-G2; on flat `#536B54` white is 5.8:1, and 4.8:1 at the old 15 % glow's peak). S4's and S9's sage, outside the flood, is the same type ground (lane G-fix; lane E to ratify) | 6 % | none |
-| **Paper** (reveal, end card) | `#F8F9F6`; a pool of light: radial `#FFFFFF` at 70 %, radius 760 px (16:9) / 600 px (square), centred on the lockup | 6 % | none |
-| **Window** (product UI) | a **stage**: a rounded viewport into Pebble's real UI (radius 28, `SHADOW.window`) on the desktop ground | **off** (never on white UI) | none |
+Lane v2-film restyled the worlds to PHILOSOPHY ("A precise world, and one soft stone"): one flat ground per world,
+no grain, no glow, no vignette, no pool of light. Colour and texture live only in imagery: the riverbed, behind the
+one scene, and the pebble, the only thing that casts a shadow.
 
-Grain: off in every master by default (critic H8). If G2's 10 s sage-field test keeps it, 2 %, `soft-light`, seed
-changing at 15 Hz (every second frame), film only.
+| World | Look |
+|---|---|
+| **Desktop** (S1, the film's one scene) | the riverbed wallpaper (comp 2, rasterised plate `RiverbedPlate`), light, full frame; no menu bar in close framings; nothing laid over it |
+| **Sage field** (S2, S3, S8; S4 and S9 outside the flood) | **flat** type ground `#425643` (white type 7.9:1, the lead's ≥ 7:1). A field arrives on the colour it is entered through (the pebble's `#536B54`; the quiz badge's `#506E54` after S7c) and settles on the type ground within 12 frames: a colour change, never a gradient |
+| **Paper** (S4 reveal, S9 end card) | **flat** `#F8F9F6`, the page's ground. The lockup stands on the pebble's line (the page's hand-drawn stroke, 2.5 px `#AABDA7`, faded over its first and last 12 %), as the page's footer wordmark does with the sleeping pebble as its full stop, so the film's last frame is the page's last screen |
+| **Window** (product UI, S5–S7a) | a **moment in a hairline frame** on the paper ground: the stage, a viewport into Pebble's real UI, radius 16 on its framed corners, a 2 px `#DBE1D9` ring drawn over the picture's edge (the page's 1 px `::after` ring at the film's scale), **no shadow**. The pebble stands at its spot on a short stretch of its line |
+
+Grain: off in every master (critic H8). Annotations draw no colour of their own except the one state mark, the check
+beside "Verified" (16:9; the accent's third job). Pointing is a focus (R5 §5.3, the loops' way): the rest of the same
+picture recedes under a veil of the window's own colour (`#F7F8F5`, 50 %, 4 px on-screen blur) and the region in focus
+keeps its own pixels.
 
 **Layouts in the window world (proof and tour shots).**
 
-| | 16:9: side split | Square: stacked |
-|---|---|---|
-| Text | column x 96–860, line block top y 300 | band x 80–860, line block top y 96 |
-| Stage | x 920–1920 (bleeds off the right), y 64–1016, left corners radius 28 | x 24–1056, y 336 → bleeds off the bottom, top corners radius 28 |
-| Pebble | foot (330, 900), size 210 | foot (940, 300), size 170 |
-| Check-mark annotation (S5e) | centre (890, y of the Verified row), 56 px | none |
+| | 16:9: side split | Square: stacked | Vertical: stacked in the band (§22) |
+|---|---|---|---|
+| Text | column x 96–860, line block top y 300 | band x 80–860, line block top y 96 | band x 80–860, line block top y 380 |
+| Stage | x 920–1920 (bleeds off the right), y 64–1016, left corners radius 16 | x 24–1080 (bleeds off the right), y 336 → bleeds off the bottom, top-left corner radius 16 | x 24–1080 (bleeds off the right), y 700–1444 (its bottom a visible hairline above the caption band), left corners radius 16 |
+| Pebble | foot (330, 900), size 210, on its line x 150–510 | foot (940, 300), size 170, on its line x 850–1030 | foot (930, 660), size 170, on its line x 840–1020 |
+| Check-mark annotation (S5e) | centre (860, y of the Verified row), 72 px, 8 px stroke | none | none |
 
-The same line breaks work in both aspects (column 764 px, band 780 px). The camera works *inside* the stage: a
+The same line breaks work in the three aspects (column 764 px, band 780 px), except where §8 gives the narrow
+compositions their own (T10, T17). The camera works *inside* the stage: a
 framing is a magnification `m` (frame px per UI CSS px) plus a region of interest (ROI, UI CSS px of the 1160×800
 window, or 1440×900 for the dashboard) fitted to the stage. Stage ROIs bleed; a ROI never extends past the captured
 window (y ≤ 800).
 
 **Pebble sizes** (`PebbleOnFilm.size`, the 220-unit viewBox box; the body is about 0.59 of it): desktop scenes at the
-desktop's scale (148 desktop units, so 385 px at m 2.6, 222 px at m 1.5, 326 px at m 2.2); type worlds and the window
-world 210 (16:9) / 170 (square).
+desktop's scale (148 desktop units, so 385 px at m 2.6, 222 px at m 1.5, 326 px at m 2.2; the vertical's frame 0 at
+m 3.4, 503 px); type worlds and the window world 210 (16:9) / 170 (square and vertical).
 
 ## 5. Bar map
 
@@ -247,8 +270,10 @@ px (16:9 / square).
 
 ### S5 Window (648–1223) — window world, chapters `project` (648) and `tested` (864)
 
-Layout §4 (side split / stacked). Source: `main-live-film` recorded at 3× (§7.2). The pebble keeps the spot
-(330, 900) / (940, 300) from its landing at f652 to the end of S7a, acting the app's real poses.
+Layout §4 (side split / stacked). Source: `main-live-film` recorded at 3× (§7.2; re-recorded from Pebble 1.0.4 by
+lane v2-shots). The pebble keeps the spot (330, 900) / (940, 300) / (930, 660) from its landing at f652 to the end of
+S7a, acting the app's real poses. The ROIs below are the 16:9's and G-fix's square; the square and the vertical now
+share the framings of §6.1, measured on the 1.0.4 frames.
 
 **S5a Reads (648–719).**
 - **f648: the pebble carries across** (match cut on action, mid-flight); it lands f652; pose `reading`.
@@ -276,13 +301,14 @@ Layout §4 (side split / stacked). Source: `main-live-film` recorded at 3× (§7
 - **f814: match cut on the click** to the frozen 11.05 s frame: the same card, now in Earlier actions with "Done" and
   **Undo this edit**, aligned so its button row sits where Apply edit was; it arrives at 1.04× and settles on
   `SPRING.calm`. The card's width is identical (both frames come from one recording). Pop peaks f815.
-- **Square, lower framing** (REVIEW-G2 P0-2, lane G-fix): drawer m 2.9 on cy 617 (y 488.7–745.3), so the next card's
-  header and status ("tests/test_dates.py · Needs your review", then "· Done" on the match cut's frame) stay below the
-  frame: one click never shows two edits applied. The pointer clicks Apply edit's upper half (css y 689, frame y 917).
-- **Callout ring** on "Undo this edit": 3 px `#506E54`, offset 15 px (lane G-fix, REVIEW-G2 P2-12: at 8 px it read as a
-  focus ring), radius = button radius + 15, drawn on f826–837
-  (stroke-dashoffset, `EASE.enter`), fades f852–857. The one callout of the shot; it draws on, so it reads as an
-  annotation, not a focus ring.
+- **Narrow aspects, lower framing** (REVIEW-G2 P0-2): the card's lower part at m 3.0, y 486–734 (§6.1), its bottom in
+  the drawer's ground between the cards, so the next card's header and status ("tests/test_dates.py · Needs your
+  review", then "· Done" on the match cut's frame) never show: one click never shows two edits applied. The square's
+  pointer clicks Apply edit's upper part (css y 679, frame y 915); the vertical's its centre.
+- **Focus on "Undo this edit"** (lane v2-film; it replaces G-fix's accent callout ring, which at 15 px still read as the
+  text button's own outline, REVIEW-G2 P2-12, and pointing is not one of the accent's jobs): the rest of the frame
+  recedes under the window's own colour (50 %, 4 px on-screen blur) over f826–837 (`EASE.enter`) and comes back
+  f852–857; the button and 8 css px of air around it keep their own pixels. The loops point the same way.
 - Cursor drifts away and fades f826–830. T7 exits f858.
 - Focal: f720–773 the diff (1420, 400) / (540, 600); f774–809 Apply edit (1650, 755) / (860, 794); f814–863 Undo this
   edit (1215, 755) / (330, 794).
@@ -337,10 +363,12 @@ Layout §4 (side split / stacked). Source: `main-live-film` recorded at 3× (§7
   f1153. The run is not finished yet: Pebble writes its final reply (pose `writing` at f1161, source 20.90), and the
   run completes at f1204 (source 22.33), when the app's pebble turns **`happy`**: the film's one celebration, held
   4.5 s as in the app (to f1339). The celebration lands as the pull-back reveals the finished reply.
-- **T10** "Evidence before done" (one line), entrance (B) ink, in f1152, out f1212.
-- **Check mark** (16:9 only): a stroked check, **72 px, 8 px** `#506E54`, round caps, centred at (**860**, y of the
-  Verified row), outside the UI with 24 px clear of the stage (C3; REVIEW-G2 P1-5, lane G-fix); drawn on f1152–1162,
-  `EASE.enter`.
+- **T10** "Evidence" / "before done" (16:9: two lines, as the column's other statements; one line in the narrow
+  aspects), entrance (B) ink, in f1152, out f1212. On one line its "done" ended 6 px from the check, which then read as
+  "done✓" (lane v2-film).
+- **Check mark** (16:9 only, the accent's state-mark job): a stroked check, **72 px, 8 px** `#506E54`, round caps,
+  centred at (**860**, y of the Verified row), outside the UI with 24 px clear of the stage (C3; REVIEW-G2 P1-5, lane
+  G-fix); drawn on f1152–1162, `EASE.enter`.
 - **Exit move f1188–1211:** the camera pulls back to m 1.3 (16:9 ROI x 340–1110, y 0–732; square ROI x 366–1160,
   y 0–572). The final reply streams: "The tests ran in an isolated copy of your project: 42 passed. Both edits are
   verified, and the CSV export works again for invoices issued on the 29th, 30th and 31st."
@@ -351,9 +379,10 @@ Layout §4 (side split / stacked). Source: `main-live-film` recorded at 3× (§7
 
 ### S6 Settings (1224–1583) — window world, chapters `model` (1224), `pace` (1332), `memory` (1440)
 
-Stills `settings-*@3x` (real, light). 16:9 m 2.0, ROI x 336–836 (the modal's content, so the bins at x 799 stay
-74 px inside the frame edge); square m 2.27, ROI x 346–769 (S6c's records: m 2.08, x 343–805). Each tab change is a
-**match cut on the click**: the frame holds still and the content changes, as a tab does.
+Stills `settings-*@3x` (real, light; retaken from Pebble 1.0.4). 16:9 m 2.025, ROI x 342–835.8 (the modal's content,
+so the bins at x 799 stay 79 px inside the frame edge); the narrow aspects at the 34 px floor, §6.1 (the match cut
+lands on Models' ways in, the camera tilts to the tabs before each tab click, to the modes, and to the six layers).
+Each tab change is a **match cut on the click**: the frame holds still and the content changes, as a tab does.
 
 **S6a Your model (1224–1331).**
 - **f1224: match cut on the Settings click** to `settings-models@3x`; it arrives at 1.04× and settles (`SPRING.calm`).
@@ -378,10 +407,14 @@ Stills `settings-*@3x` (real, light). 16:9 m 2.0, ROI x 336–836 (the modal's c
 - **f1440: match cut** to `settings-memory@3x`: "Remember useful context" and **the six layers** (Working context,
   Past experiences, Facts & knowledge, Procedures, Time-sensitive information, Your preferences).
 - **T13** "Memory you can" / "read and forget", in f1458, out f1578.
-- **f1476–1499:** the camera pans down to the records (16:9 ROI y 324–800; square m 2.08, ROI x 343–805, y 442–800;
-  31 px UI text in the square, the one place below 34 px).
+- Narrow aspects (lane v2-film): f1444–1467 the camera tilts from the tabs to the six layers (m 2.85: all six names
+  whole, 60 px inside the frame, at 34 px) and holds them 1.1 s; **f1500–1523** it pans out to the records (m 2.12, the
+  most that keeps the records' text and the bin's click 60 px inside the frame; 26.5 px, the one documented exception:
+  the action carries the shot), landing before the pointer reaches the bin.
+- **16:9, f1476–1499:** the camera pans down to the records (ROI y 328–798.1).
 - Cursor f1500–1525 to the bin icon next to "Uses metric units and 24-hour times." (its accessible label is "Forget
-  this memory"; no tooltip is drawn), **click-down f1530** at (1846, 850) / (1008, 908).
+  this memory"; no tooltip is drawn), **click-down f1530** at (1841, 853) / (1018, 892) / (1018, 1373), above each
+  aspect's caption band.
 - **f1530–1541:** the record dissolves: opacity 1 → 0 and blur 0 → 4 px, `EASE.exit`. **f1542:** swap to
   `settings-memory-forgotten@3x` (the app re-renders at once: the next record, "In invoice-kit, keep public function
   names stable.", takes its place). Pop peaks f1543. Cursor fades f1550–1555.
@@ -414,7 +447,11 @@ Stills `settings-*@3x` (real, light). 16:9 m 2.0, ROI x 336–836 (the modal's c
 - **f1728: hard cut** to `main-quiz@3x`, full frame (lane G-fix, P1-8: 16:9 cy 397.7, square cy 406, so the label
   "QUIZ · CHECKED BY PEBBLE" sits 81 px and the title 141 px under the frame's top): "Python datetime check-in", "QUESTION 1 OF 5", **"What does
   date(2026, 1, 31) + timedelta(days=1) return?"** with A date(2026, 2, 1) selected, B, C, D. 16:9 m 2.6, ROI
-  x 735–1145, y 330–665; square m 2.4, ROI x 735–1135, y 330–640. (The question rhymes with the film's bug.)
+  x 421.5–1160, y 190–605.4 (the conversation left of the canvas recedes under a veil). The narrow aspects at the 34 px
+  floor (lane v2-film, measured on the 1.0.4 still): the left edge 2 css px inside the canvas's border, the right edge
+  before the timer "07:39 left" (x 1078), which an edge at 1085 cut to a lone "0"; square m 3.08, y 186–536.6 (the
+  label 108 px under the top); vertical m 3.1, y 120–739.4, the canvas's toolbar in the phone UI's top zone receding
+  under the same veil, the label at y 313 inside the band. (The question rhymes with the film's bug.)
 - **f1786–1799: zoom through the selected answer's "A" badge** (`#506E54`): aim inside the badge and away from the white
   "A" (G2a: (765, 457.3)); ×1 → ×90, `EASE.exit`; the badge fills the frame **on f1799** (lane G-fix, P1-2), the world
   changes on f1800 with the whoosh's peak. From f1794 the badge's colour covers its white "A" under the zoom blur (P2-7).
@@ -426,10 +463,10 @@ Stills `settings-*@3x` (real, light). 16:9 m 2.0, ROI x 336–836 (the modal's c
   by f1812 (§4). Whoosh peaks f1800 (picture f1799 + 1).
 - **The facts build a list** as the questions do (REVIEW-G2 P1-6, lane G-fix; left-aligned, the block centred on its
   widest line; each inks in whole; earlier items dim to 45 %): **T15** "Free and open source" (f1800) with **T15s**
-  "Apache-2.0" (support, f1806); **T16** "No telemetry" (f1869 → f1872, bar 27); **T17** "Your keys stay in your
-  Keychain" (f1923 → f1926, beat 107; one line in 16:9, two in the square). Centres y 300 / baseline 435 / 545 / 685
-  (16:9) and 280 / 395 / 500 / 680 (square). The list leaves together f1998–2004, before the end card's pebble enters
-  the frame (≈ f2005), so it never crosses a line (P1-3).
+  "Apache-2.0" (data: Geist Mono, f1806); **T16** "No telemetry" (f1869 → f1872, bar 27); **T17** "Your keys stay in
+  your Keychain" (f1923 → f1926, beat 107; one line in 16:9, two in the narrow aspects). Centres y 290 / baseline 425 /
+  530 / 690 (16:9), 285 / 400 / 505 / 690 (square) and 735 / 850 / 955 / 1140 (vertical). The list leaves together
+  f1998–2004, before the end card's pebble enters the frame (≈ f2005), so it never crosses a line (P1-3).
 - Focal: (960, 450) / (540, 450).
 
 ### S9 End card (2016–2303) — paper world, chapter `get`
@@ -440,15 +477,49 @@ Stills `settings-*@3x` (real, light). 16:9 m 2.0, ROI x 336–836 (the modal's c
 - **Colour flood** sage → paper from the landing point (same as the reveal, deliberately: the visual motif repeats
   with the musical motif), f2016–2029; the palette changes with the light.
 - **(W)** `pebble` unrolls out of the pebble f2018–2032 (no tracking settle this time).
-- **T18** "A little help, right here." (side-line size, (A)), in f2088, holds to the end. Baseline y 560 / 520.
-- **f2160 (bar 31, the final chord): T19** "Free for Macs with Apple silicon" (CTA words, (C)) baseline y 690 / 630
-  and **T20** `github.com/tohin003/Pebble` (URL, (C), f2164) baseline y 770 / 700. 26 characters, held 4.8 s.
+- The flat paper of the page; the lockup stands on the pebble's line (§4), the page footer's picture.
+- **T18** "A little help, right here." (side-line size, (A)), in f2088, holds to the end. Baseline y 560 / 520 / 950.
+- **f2160 (bar 31, the final chord): T19** "Free for Macs with Apple silicon" (CTA words, (C)) baseline y 690 / 630 /
+  1060 and **T20** `github.com/tohin003/Pebble` (URL, Geist Mono, (C), f2164) baseline y 770 / 700 / 1130. 26
+  characters, held 4.8 s.
 - **f2196: T21** "Shown with sample data" and **T22** "Pebble's character engine: bloub by Jérémy Perret (MIT)" (small
-  print, fade 9 frames), baselines y 852 / 892 (16:9) and 820 / 860 (square).
+  print, fade 9 frames), baselines y 852 / 892 (16:9), 820 / 860 (square) and 1250 / 1290 (vertical).
 - The pebble: `idle` at f2052; glances at the URL at f2166; looks at the viewer at f2214 to the end. **Last frame
   f2303: everything landed, the eyes open** (the last blink ends f2278).
 - Focal: f2016–2087 the lockup (960, 380) / (540, 360); f2088–2159 the tagline; f2160+ the URL (960, 750) /
   (540, 690).
+
+### 6.1 The narrow framings (1:1 and 9:16), lane v2-film
+
+The square's and the vertical's stages are both 1,056 × 744 (the square's at y 336, bleeding off the right and bottom
+edges; the vertical's at y 700, bleeding off the right, its bottom a visible hairline at y 1444), so they share one
+set of framings (`video/src/film/framing.ts` SETS.square; the vertical's own in VERTICAL_ONLY). Each is written as its
+visible rect and was checked on Pebble 1.0.4's recording and stills: top and left edges in clear space, the bottom too
+(the vertical shows it), click targets ≥ 60 px inside the frame and above the caption band, and every shot whose text
+is the point at m ≥ 2.85 so the app's 12–12.5 px type reads at ≥ 34 px.
+
+| Framing | Frames | m | Visible rect (css px) | What it shows |
+|---|---|---|---|---|
+| s5a | 648–719 | 3.02 | x 328–677.7, y 172–418.4 | the status line alone ("Reading · Reading invoice_kit/dates.py · 5 s", ink 41 px); the request bubble and the long line's Stop button wholly outside |
+| s5bTop | 753–773 | 3.0 | x 808–1160, y 202–450 | the edit card's upper part: header, lead, the diff's first lines |
+| s5bLow | 797–863 | 3.0 | x 808–1160, y 486–734 | the diff's last lines, Don't allow / Apply edit; after the match cut, Done and Undo this edit; the next card never shows (P0-2) |
+| s5c (stage 1) | 864–953 | 2.25 | x 242.7–711.8, y 420.5–751 | the whole held run, all three choices whole (a transition: 27 px) |
+| s5cRead (stage 2) | 977–1007 | 3.36 | x 222.6–537.2, y 420.8–642.5 | "Blocked", the sentence (ink 38 px), Run the tests and Ask Pebble to finish whole, Accept as unverified wholly outside (P0-1) |
+| s5dTop | 1008–1050 | 3.0 | x 808–1160, y 202–450 | the "Run isolated tests" card: title, lead, the sandbox note, recipe, command |
+| s5dTilt | 1073–1116 | 3.0 | x 808–1160, y 374–622 | Command, Technical details, Don't allow / Run tests (the click), the first steps |
+| s5dVerified | 1139–1188 | 3.0 | x 808–1160, y 380–628 | the newest steps down to "Verified · pytest 42 passed on current files · 2 s" |
+| s5eOut | 1211–1223 | 1.14 | x 230–1160, y 0–655 | the pull-back to the whole window and the gear (a transition) |
+| s6aWays | 1224–1290 | 3.0 | x 340–692, y 195–443 | YOUR MODELS, the model row, Add a model file, Connect provider, Continue with ChatGPT |
+| s6a | 1313–1338, 1431–1444 | 3.0 | x 340–692, y 100–348 | the tabs (the Permissions and Memory clicks) |
+| s6bTilt | 1361–1408 | 3.0 | x 340–692, y 218–466 | Ask for approval and Auto in project (the click) with their own words |
+| s6cLayers | 1467–1500 | 2.85 | x 335–705.5, y 195–456 | "Remember useful context", the six layers, all six names whole |
+| s6c (square) | 1523–1583 | 2.12 | x 328–826.1, y 455–806 | the records and their bins (the forget click at y 892); the blurred app under the modal shows in the caption band |
+| s6c (vertical) | 1523–1583 | 2.12 | x 328–826.1, y 400–750.9 | the records, the bottom before the modal's edge |
+| s7aAsk | 1584–1602 | 2.99 | x 284–637.4, y 76–325 | the request, the reply under a veil |
+| s7a | 1625–1655 | 1.33 | x 643.1–1440, y 66–627.5 | the canvas (a picture) |
+
+The full-frame worlds have their own: the chart (square m 2.55; vertical m 3.7 on Flights, Stay and Food, the panel
+growing only to its rows, §22) and the quiz (S7c).
 
 ## 7. Source-time maps (real UI sequences)
 
@@ -512,20 +583,20 @@ lines readable twice: ≥ 2 s and 0.6 s per word). Positions are given for 16:9 
 | T7 | Review, apply, / undo | S5b | side line, word by word with the verbs: 756, 811, 830 | 756 | 858 | 3.40 / 1.40 | column / band |
 | T8 | AgentGuard checks / the evidence | S5c | side line, (A) | 936 | 1038 | 3.40 / 1.70 | column / band |
 | T9 | Tests run in / an isolated copy | S5d | side line, (A) | 1044 | 1140 | 3.20 / 2.30 | column / band |
-| T10 | Evidence before done | S5e | side line, (B) | 1152 | 1212 | 2.00 / 2.00 (last of S5) | column / band |
+| T10 | Evidence / before done (narrow: Evidence before done) | S5e | side line, (B) | 1152 | 1212 | 2.00 / 2.00 (last of S5) | column / band |
 | T11 | Your model, / your choice | S6a | side line, (A) | 1242 | 1320 | 2.60 / 1.70 | column / band |
 | T11s | Even one on your Mac | S6a | support, (A) | 1260 | 1320 | 2.00 / 2.00 | under T11 |
 | T12 | You set what / it may do | S6b | side line, (C) | 1350 | 1428 | 2.60 / 2.00 | column / band |
 | T13 | Memory you can / read and forget | S6c | side line, (A) | 1458 | 1578 | 4.00 / 2.30 (last of S6) | column / band |
 | T14 | Views, / not just text | S7a | side line, (A) | 1584 | 1656 (taken by the world move) | 2.40 / 2.00 (last of S7) | column / band |
 | T15 | Free and open source | S8 | headline, (B) whole, list item | 1800 | 1998 (dims from 1869) | 6.60 / 1.70 | list, centre y 300 / 280 |
-| T15s | Apache-2.0 | S8 | support, (B) whole, list item | 1806 | 1998 (dims from 1869) | 6.40 / 1.20 | under T15, baseline y 435 / 395 |
+| T15s | Apache-2.0 | S8 | data (Geist Mono), (B) whole, list item | 1806 | 1998 (dims from 1869) | 6.40 / 1.20 | under T15, baseline y 425 / 400 / 850 |
 | T16 | No telemetry | S8 | headline, (B) whole, list item | 1869 | 1998 (dims from 1923) | 4.30 / 1.20 | list, centre y 545 / 500 |
-| T17 | Your keys stay in your Keychain (square: Your keys stay / in your Keychain) | S8 | headline, (B) whole, list item | 1923 | 1998 | 2.50 / 2.30 (last of S8) | list, centre y 685 / 680 |
+| T17 | Your keys stay in your Keychain (square and vertical: Your keys stay / in your Keychain) | S8 | headline, (B) whole, list item | 1923 | 1998 | 2.50 / 2.30 (last of S8) | list, centre y 690 / 690 / 1140 |
 | W2 | `pebble` | S9 | wordmark, (W) | 2018 | end | — | baseline y 420 / 400 |
 | T18 | A little help, right here. | S9 | side line (16:9 92 px, square 72 px), (A) | 2088 | end | 7.17 / 3.00 (key) | centred, baseline y 560 / 520 |
 | T19 | Free for Macs with Apple silicon | S9 | CTA words, (C) | 2160 | end | 4.80 / 3.60 (key) | centred, baseline y 690 / 630 |
-| T20 | github.com/tohin003/Pebble | S9 | URL, (C) | 2164 | end | 4.67 / 2.00 (key) | centred, baseline y 770 / 700 |
+| T20 | github.com/tohin003/Pebble | S9 | URL (Geist Mono), (C) | 2164 | end | 4.67 / 2.00 (key) | centred, baseline y 770 / 700 / 1130 |
 | T21 | Shown with sample data | S9 | small, fade | 2196 | end | — | centred, baseline y 852 / 820 |
 | T22 | Pebble's character engine: bloub by Jérémy Perret (MIT) | S9 | small, fade | 2196 | end | — | centred, baseline y 892 / 860 |
 
@@ -735,7 +806,7 @@ Verified shimmer, the end-card pop and the final chord are.
 
 ## 14. Review frames
 
-**G1.5 style frames** (critic H11), both aspects, full resolution, reviewed before animating:
+**G1.5 style frames** (critic H11), every aspect (`StyleFrames`, `StyleFramesSquare`, `StyleFramesVertical`), full resolution, reviewed before animating:
 
 | Id | Frame | What it proves |
 |---|---|---|
@@ -906,10 +977,11 @@ No reviewer may change these back.**
 | Each effect peaks at picture + 1; one riser; rotated takes; no chimes | ✓ §11 |
 | Final chord under the logo; loudness per the overrides above | ✓ f2160 with the lockup on screen |
 | Brand tokens only; accent on ≤ 1 focus per frame | ✓ the ring or the check is the frame's one accent |
-| Grain / vignette / shadows / banding | grain off (H8); 6 % tinted vignette, never on UI shots; `SHADOW.window` on stages; radial grounds only (check banding at G2) |
+| Grain / vignette / shadows / banding | lane v2-film (PHILOSOPHY): no grain, no vignette, no glow, no pool of light; flat grounds (nothing to band); stages are hairline frames without a shadow; the pebble casts the only shadow |
 | Review pass: cut strips, banned list, notes format, remove a third if busy, no scores | ✓ §12, §14; banned looks absent (no void/glow, no glass, no 3D, no cubes/flips/clock wipes/glitch, no logo bug, nothing all-centred-and-fading) |
 | OVERRIDES §2 tension; one comparative framing as intent; no benchmarks | ✓ T1–T4; nothing else compares |
-| OVERRIDES §4 aspect-aware square; nothing within 60 px; same timeline and music | ✓ §2, §4, every shot's square framing |
+| OVERRIDES §4 aspect-aware square; nothing within 60 px; same timeline and music | ✓ §2, §4, §6.1, every shot's square framing |
+| OVERRIDES §14 the vertical: its own framing, text and the pebble in the central 1080 × 1420 band, readable on a phone | ✓ §2, §6.1, §22 (lane v2-film) |
 | OVERRIDES §7 AgentGuard climax order | ✓ change → held → Run the tests → isolated tests → Verified |
 | D6 Pebble's own poses only | ✓ §9.3 |
 
@@ -931,8 +1003,34 @@ read, and keep the film's climax as specified.
 1. R1–R4 are capture changes for lanes D/G; each has a fallback above.
 2. `chapters.ts` text deltas (§18): applied by the claims review on 2026-10-23, so `video/src/film/timeline.ts`'s
    `line()` check finds every on-screen line in `chapters.ts`.
-3. The square's S6c records sit at 31 px UI text (target 34); acceptable because T13 carries the meaning.
+3. The narrow aspects' S6c records sit at 26.5 px UI text (target 34; §6.1: m 2.12 is the most that keeps the records'
+   text and the bin's click 60 px inside the frame); acceptable because T13 and the action carry the meaning.
 4. T22 (the bloub credit) follows OVERRIDES §2's "wherever the character appears"; the main loop may move it to the
    LinkedIn post text instead, then drop it from the end card and from chapters.ts.
 5. A music change (the C2 pass now running) keeps this spec valid if the grid stays 100 BPM / 32 bars; otherwise
    re-snap by (bar, beat, offset) as §1 says.
+
+## 22. The vertical (9:16), lane v2-film
+
+`LaunchFilmVertical`, 1080 × 1920: the same timeline, music and captions as the 16:9 and the square (OVERRIDES §14:
+X and LinkedIn take 9:16 on phones), with its own framing per shot through `useLayout()` (`video/src/motion/layout.ts`),
+never a crop of another aspect.
+
+**The band.** X's and LinkedIn's phone UI covers the top and bottom of a 9:16 picture (the status and header bars,
+the post text, the actions). Every line of text and the pebble stay inside the central **1080 × 1420 band, y 250–1670**;
+player captions own y > 1460. Imagery may fill the rest of the frame (the riverbed in S1, the sage and paper grounds,
+the chart's white), and nothing outside the band asks to be read.
+
+| Shot | The vertical's framing |
+|---|---|
+| S1 desktop | the wallpaper is 1,000 desktop points tall and the frame 1,920 px, so no view zooms out below m 1.92. C0 (frame 0, the thumbnail) m 3.4 with the pebble's centre at (540, 1080); C1 m 2.2 on the open chat (its greeting at 29 px), the pebble at (836, 1370); C2 m 2.6 on the sent question, the panel's top 117 px inside the band, the pebble at (890, 1400). The pointer enters from (−70, 700) |
+| S2 questions | the list's centres at y 840 / 960 / 1080, its left edge at x 202 (the square's) |
+| S3 build | T4 centred on y 820; H1 rises from (540, 2050) to (540, 1300), above the caption band; H2 to the lockup |
+| S4 reveal, S9 end card | the lockup's foot (806, 832), its baseline y 830; T5 baseline 960; T18 950, T19 1060, T20 1130, T21 1250, T22 1290; H4 from (1180, 2010) |
+| S5–S7a window world | the text band x 80–860 from y 380; the pebble's spot (930, 660) on its line x 840–1020; the stage x 24–1080, y 700–1444, the square's size, so the two share §6.1's framings (the vertical's own for S6c's records); no check mark (no room outside the stage) |
+| S7b chart world | m 3.7 on (904, 680): Flights, Stay and Food, their labels at 44 px; a 9:16 frame is taller than the panel's bars and labels at that magnification, so the panel grows only to its rows (y 500–815) and the world around them is the panel's own white |
+| S7c quiz | m 3.1, x 722–1070.4, y 120–739.4; the canvas's toolbar in the top zone recedes under a veil; the label at y 313 |
+| S8 claims | the list's centres at y 735 / 955 / 1140, "Apache-2.0" on 850, its left edge at x 178 |
+
+**Review.** `FilmFramesVertical` samples any list of frames (as `FilmFrames` and `FilmFramesSquare` do); the
+half-scale animatic is `.work/film/animatic-9x16.mp4`. Judge every bar frame at 360 px wide with the band marked.

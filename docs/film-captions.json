@@ -1,7 +1,7 @@
 {
   "schema": "pebble-film-captions/1",
-  "about": "The launch film's captions: sound descriptions plus the on-screen kinetic lines, word for word. The single source for public/media/v1/film.en.vtt (website) and Pebble-launch-film.srt (LinkedIn). Written by lane E from docs/FILM_SPEC.md section 13; the frames follow tools/audio/beatmap.json (100 BPM, 18 frames per beat, 72 per bar, 30 fps). Both compositions (LaunchFilm 1920x1080 and LaunchFilmSquare 1080x1080) use the same timeline, so one track serves both.",
-  "film": "LaunchFilm and LaunchFilmSquare",
+  "about": "The launch film's captions: sound descriptions plus the on-screen kinetic lines, word for word. The single source for public/media/v1/film.en.vtt (website) and Pebble-launch-film.srt (LinkedIn). Written by lane E from docs/FILM_SPEC.md section 13; the frames follow tools/audio/beatmap.json (100 BPM, 18 frames per beat, 72 per bar, 30 fps). The three compositions (LaunchFilm 1920x1080, LaunchFilmSquare 1080x1080 and LaunchFilmVertical 1080x1920) use the same timeline, so one track serves all three.",
+  "film": "LaunchFilm, LaunchFilmSquare and LaunchFilmVertical",
   "language": "en-GB",
   "fps": 30,
   "total_frames": 2304,
@@ -11,7 +11,7 @@
     "lines": "1 or 2 caption lines, shown together; a sound description is in square brackets and comes first",
     "overlap": "no two cues overlap, so the SRT needs no stacking",
     "pace": "every cue is shown for at least 1.2 s and at no more than 3 words per second",
-    "position": "bottom (player default); every kinetic line on screen sits above the bottom 15 % of the frame, so captions never cover it",
+    "position": "bottom (player default); every kinetic line on screen sits above y 918 in 16:9 and 1:1 and above y 1460 in 9:16, so captions never cover it",
     "vtt_time": "HH:MM:SS.mmm, milliseconds = round(frame * 1000 / 30)",
     "srt_time": "HH:MM:SS,mmm, same rounding; SRT cue numbers count from 1 in this order",
     "style": "British spelling, sentence case, no exclamation marks; a kinetic line is copied exactly as it appears on screen, with its on-screen line break removed; whooshes and most clicks are not described (they carry no meaning the picture does not show)",
