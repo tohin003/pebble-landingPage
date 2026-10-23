@@ -31,10 +31,13 @@
   margin-left: 1px;
 }
 
+/* the start time is data: Geist Mono, tabular (globals.css .data; the film's chapter index sets its times the same) */
 .time {
   color: var(--ink-2);
+  font-family: var(--font-mono);
   font-weight: 400;
   font-variant-numeric: tabular-nums;
+  font-variant-ligatures: none;
 }
 
 @media (hover: hover) and (pointer: fine) {

@@ -320,6 +320,13 @@
   }
 }
 
+/* narrow tablets: a column is under 180 px, so a long step name wraps instead of running into the next */
+@media (max-width: 767px) {
+  .tabLabel {
+    white-space: normal;
+  }
+}
+
 /* below 1024 px the stage stacks: the words, then the picture at most 515 px wide (a flat panel at most 560 px) */
 @media (max-width: 1023px) {
   .railWrap {
