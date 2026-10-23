@@ -3,7 +3,9 @@ import { DURATION_FRAMES, FPS as FILM_FPS, STYLE_FRAMES } from "./film/timeline"
 import { FPS } from "./motion/spec";
 import { Placeholder } from "./Placeholder";
 import { PEBBLE_DEMO_FRAMES, PebbleDemo } from "./pebble/PebbleDemo";
-import { FilmBoard, StyleFrames } from "./stills/FilmBoard";
+// lane G2a: the animated film (video/src/film/scenes) and its review samplers
+import { LaunchFilm } from "./film/scenes/LaunchFilm";
+import { FilmFrames, FilmStyleFrames, filmFramesMetadata } from "./film/scenes/FilmFrames";
 import { FilmPoster } from "./stills/FilmPoster";
 import { FontMetrics } from "./stills/FontMetrics";
 import { LoopStub } from "./stills/LoopStub";
@@ -23,17 +25,19 @@ import { FilmTeaser } from "./teaser/FilmTeaser";
 
 // Compositions (MASTER_PLAN §5.4, OVERRIDES §4). The film is aspect-aware: LaunchFilm and LaunchFilmSquare render the
 // same timeline (film/timeline.ts, 2,304 frames from the beat map) and every scene adapts through useLayout().
-// Today the film is the board-o-matic (stills/FilmBoard.tsx: the built looks plus slates); lane G2 swaps in the
-// animated film here. Loops and the teaser are registered at their final sizes and lengths, with stub pictures.
+// The film is the animated cut (film/scenes, lane G2a); FilmFrames samples any list of its frames for review
+// (--props='{"frames":[…]}'), and StyleFrames samples gate G1.5's frames of it. Loops and the teaser are lane G2b's.
 export const RemotionRoot: React.FC = () => {
   return (
     <>
       <Folder name="Film">
-        <Composition id="LaunchFilm" component={FilmBoard} durationInFrames={DURATION_FRAMES} fps={FILM_FPS} width={1920} height={1080} />
-        <Composition id="LaunchFilmSquare" component={FilmBoard} durationInFrames={DURATION_FRAMES} fps={FILM_FPS} width={1080} height={1080} />
+        <Composition id="LaunchFilm" component={LaunchFilm} durationInFrames={DURATION_FRAMES} fps={FILM_FPS} width={1920} height={1080} />
+        <Composition id="LaunchFilmSquare" component={LaunchFilm} durationInFrames={DURATION_FRAMES} fps={FILM_FPS} width={1080} height={1080} />
         <Composition id="FilmTeaser" component={FilmTeaser} durationInFrames={T0.plan.n} fps={FPS.film} width={1280} height={720} />
-        <Composition id="StyleFrames" component={StyleFrames} durationInFrames={STYLE_FRAMES.length} fps={FILM_FPS} width={1920} height={1080} />
-        <Composition id="StyleFramesSquare" component={StyleFrames} durationInFrames={STYLE_FRAMES.length} fps={FILM_FPS} width={1080} height={1080} />
+        <Composition id="StyleFrames" component={FilmStyleFrames} durationInFrames={STYLE_FRAMES.length} fps={FILM_FPS} width={1920} height={1080} />
+        <Composition id="StyleFramesSquare" component={FilmStyleFrames} durationInFrames={STYLE_FRAMES.length} fps={FILM_FPS} width={1080} height={1080} />
+        <Composition id="FilmFrames" component={FilmFrames} calculateMetadata={filmFramesMetadata} defaultProps={{ frames: [0] }} durationInFrames={1} fps={FILM_FPS} width={1920} height={1080} />
+        <Composition id="FilmFramesSquare" component={FilmFrames} calculateMetadata={filmFramesMetadata} defaultProps={{ frames: [0] }} durationInFrames={1} fps={FILM_FPS} width={1080} height={1080} />
       </Folder>
       <Folder name="Loops">
         <Composition id="LoopCompanion" component={LoopCompanion} durationInFrames={L1.plan.n} fps={FPS.loop} width={1600} height={1000} />

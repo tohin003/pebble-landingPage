@@ -1,0 +1,88 @@
+// S1, the hook (FILM_SPEC §6 S1, §7.1), lane G2a: the desktop world's camera, the pointer and the zoom through the
+// pebble, as pure arithmetic shared by the scene, the gaze cues and the motion audit. World units are the riverbed
+// desktop's points (1600 × 1000); the pet's panel and the pebble live at their place on it (timeline PET).
+import type { CamKey, CamPose, Point } from "../motion/camera";
+import { cameraAt, poseAt } from "../motion/camera";
+import { EASE, type CursorKey } from "../motion/spec";
+import type { AspectId } from "../motion/layout";
+import { PET, S1_CAMERA } from "./timeline";
+
+/** C0 (frame 0), C1 (the open chat), C2 (the punch-in at f72): poses that put the pebble's centre where §6 says. */
+export function hookPoses(a: AspectId, width: number, height: number, s: number) {
+  const at = (p: Point) => ({ x: p.x * s, y: p.y * s });
+  return {
+    c0: poseAt(PET.centre, at(S1_CAMERA.c0.pebbleAt[a]), S1_CAMERA.c0.m * s, width, height),
+    c1: poseAt(PET.centre, at(S1_CAMERA.c1.pebbleAt[a]), S1_CAMERA.c1.m * s, width, height),
+    c2: poseAt(PET.centre, at(S1_CAMERA.c2.pebbleAt[a]), S1_CAMERA.c2.m * s, width, height),
+  };
+}
+
+/** C0 holds f0–39, the log-space pull-back to C1 runs f40–63 (EASE.camera), and f72 is a hard cut to C2. */
+export function hookKeys(a: AspectId, width: number, height: number, s: number): CamKey[] {
+  const { c0, c1, c2 } = hookPoses(a, width, height, s);
+  return [
+    { at: 0, ...c0 },
+    { at: 63, ...c1, dur: 23, path: "direct" },
+    { at: 72, ...c2, dur: 1, path: "direct" },
+  ];
+}
+
+/**
+ * The zoom through the pebble (f126–138, then solid sage f139–143). The camera aims at a body point and dives:
+ * - the aim is the point of the body farthest from both its edge and the eyes over f126–143 (28 viewBox units clear),
+ *   (−36, −10) from the body's centre, left of the eyes: §6's (−20, +25) sits 4 units from the thinking pose's eye;
+ * - zoom ×1 → ×30 in log space on EASE.exit (accelerating), reached on f138, when the body covers the whole frame
+ *   (needs ×26.6 in 16:9, ×18.4 in the square for 28 units of clearance); §6's ×22 by f143 leaves the frame unfilled;
+ * - the aim point drifts from where C2 shows it to the frame's centre on EASE.camera over the same frames.
+ */
+export const ZOOM_THROUGH = {
+  from: S1_CAMERA.zoomThrough.from, // f126
+  fill: 138,
+  solidFrom: 139,
+  to: S1_CAMERA.zoomThrough.to, // f144 (exclusive)
+  aim: { x: -36, y: -10 },
+  scale: 30,
+  /** zoom blur on screen, px, f136 → f138 (FILM_SPEC: only on f136–143, ≤ 20 px) */
+  blur: [0, 8, 16] as const,
+} as const;
+
+/** The aim point in desktop units. */
+export const zoomAim = (): Point => {
+  const k = PET.size / 220; // desktop units per viewBox unit
+  return { x: PET.centre.x + ZOOM_THROUGH.aim.x * k, y: PET.centre.y + ZOOM_THROUGH.aim.y * k };
+};
+
+/** The hook camera on any frame of S1 (0–143), the zoom-through included. */
+export function hookPoseAt(frame: number, a: AspectId, width: number, height: number, s: number, fps: number): CamPose {
+  const { c2 } = hookPoses(a, width, height, s);
+  if (frame < ZOOM_THROUGH.from) return cameraAt(frame, hookKeys(a, width, height, s), fps, width);
+  const u = Math.min(1, Math.max(0, (frame - ZOOM_THROUGH.from) / (ZOOM_THROUGH.fill - ZOOM_THROUGH.from)));
+  const A = zoomAim();
+  const p0 = { x: width / 2 + (A.x - c2.x) * c2.zoom, y: height / 2 + (A.y - c2.y) * c2.zoom };
+  const d = EASE.camera(u);
+  const where = { x: p0.x + (width / 2 - p0.x) * d, y: p0.y + (height / 2 - p0.y) * d };
+  const zoom = c2.zoom * Math.exp(Math.log(ZOOM_THROUGH.scale) * EASE.exit(u));
+  return poseAt(A, where, zoom, width, height);
+}
+
+/**
+ * The pointer (FILM_SPEC §6 S1a): from off frame upper left (§6: (−70, 210) / (−70, 160) frame px at f2, at C0) on a
+ * minimum-jerk arc to the pebble by f28, a dwell, the click-down on f36; it fades f44–48. World units (it rides the
+ * camera's pull-back while it fades, as a pointer on the desktop does).
+ */
+export function hookPointer(a: AspectId, width: number, height: number, s: number): { keys: CursorKey[]; clicks: number[]; visible: [number, number] } {
+  const { c0 } = hookPoses(a, width, height, s);
+  const startFrame = { x: -70 * s, y: (a === "wide" ? 210 : 160) * s };
+  const start = { x: c0.x + (startFrame.x - width / 2) / c0.zoom, y: c0.y + (startFrame.y - height / 2) / c0.zoom };
+  return {
+    keys: [
+      { at: 2, ...start },
+      { at: 28, x: PET.centre.x - 9, y: PET.centre.y + 6, travel: 26, seed: "hook" },
+    ],
+    clicks: [36],
+    visible: [2, 48],
+  };
+}
+
+/** The collapsed pet window around the pebble (pet-collapsed is 112 × 112 pt, the body's centre at (55.3, 56.8)). */
+export const PET_WINDOW = { x: PET.centre.x - 55.3, y: PET.centre.y - 56.8, w: 112, h: 112 } as const;

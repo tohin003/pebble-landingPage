@@ -1,0 +1,29 @@
+// Review samplers for the animated film (lane G2a): frame i of these compositions IS film frame `frames[i]` (a
+// Sequence shifted by i − target makes every useCurrentFrame() inside read the film's absolute frame), so contact
+// sheets, cut strips and full-resolution crops are exact frames of LaunchFilm / LaunchFilmSquare without rendering
+// the whole film. Render with --props='{"frames":[0,72,144]}' --sequence. FilmStyleFrames is gate G1.5's sampler
+// (stills/FilmBoard.tsx StyleFrames) pointed at the animated film.
+import { Sequence, useCurrentFrame, type CalculateMetadataFunction } from "remotion";
+import { StyleFrames } from "../../stills/FilmBoard";
+import { LaunchFilm } from "./LaunchFilm";
+
+export interface FilmFramesProps {
+  frames: number[];
+  [key: string]: unknown;
+}
+
+export const FilmFrames: React.FC<FilmFramesProps> = ({ frames }) => {
+  const i = useCurrentFrame();
+  const target = frames[Math.min(i, frames.length - 1)] ?? 0;
+  return (
+    <Sequence from={i - target} layout="absolute-fill">
+      <LaunchFilm />
+    </Sequence>
+  );
+};
+
+export const filmFramesMetadata: CalculateMetadataFunction<FilmFramesProps> = ({ props }) => ({
+  durationInFrames: Math.max(1, props.frames.length),
+});
+
+export const FilmStyleFrames: React.FC = () => <StyleFrames film={LaunchFilm} />;

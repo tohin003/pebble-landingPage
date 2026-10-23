@@ -137,7 +137,8 @@ export const S1_CAMERA = {
   zoomThrough: { from: at(2, 4), to: at(3), aim: { x: -20, y: 25 }, scale: 22 },
 } as const;
 
-/** The stage framings of the window world (§6 S5–S7). */
+/** The stage framings of the window world (§6 S5–S7), as G1 drew them on lane D's stills for the board-o-matic. The
+ *  animated film frames the REAL recording with film/framing.ts (lane G2a), edge-checked frame by frame. */
 export const FRAMING = {
   s5a: both(fr(2.6, roi(350, 735, 40, 406)), fr(2.65, roi(350, 712, 120, 401))),
   s5bTop: both(fr(2.4, roi(810, 1150, 205, 602)), fr(2.65, roi(817, 1143, 205, 486))),
@@ -159,9 +160,11 @@ export const FRAMING = {
    */
   s5eRows: both(fr(2.4, roi(246, 662, 225, 622)), fr(2.5, roi(248, 661, 282, 580))),
   s5eOut: both(fr(1.3, roi(340, 1110, 0, 732)), fr(1.3, roi(366, 1160, 0, 572))),
-  s6a: both(fr(2.1, roi(346, 822, 96, 549)), fr(2.27, roi(346, 769, 100, 428))),
+  /** §6 S6 (G2a: back to the spec's 16:9 m 2.0, ROI x 336–836, from G1's 2.1; at 2.1 the bins sat 55 px from the
+   *  frame's right edge, at 2.0 they sit 80 px inside, as §6 asks) */
+  s6a: both(fr(2.0, roi(336, 836, 96, 572)), fr(2.27, roi(346, 769, 100, 428))),
   s6bSquareTilt: fr(2.27, roi(346, 769, 200, 528)),
-  s6cRecords: both(fr(2.1, roi(346, 822, 330, 783)), fr(2.08, roi(343, 805, 442, 800))),
+  s6cRecords: both(fr(2.0, roi(336, 836, 324, 800)), fr(2.08, roi(343, 805, 442, 800))),
   s7a: both(fr(1.25, roi(612, 1412, 70, 832)), fr(1.25, roi(640, 1408, 62, 657))),
   /**
    * S7b's end framing: full bleed, m and the CSS point at the frame's centre. A G1.5 deviation from §6 (16:9 m 2.56 on
@@ -365,7 +368,7 @@ export const TEXT: readonly TextCue[] = [
   t({ id: "T3", chapter: "desktop", lines: ["Did it run the tests?"], role: "headline", enter: "ink", in: 288, out: 354, place: "centre", y: both(470, 470) }),
   t({ id: "T4", chapter: "desktop", lines: ["An agent shouldn't", "grade its own work"], role: "headline", enter: "rise", in: 360, out: 462, place: "centre", y: both(420, 420) }),
   t({ id: "T5", chapter: "desktop", lines: ["A small companion for your Mac"], role: "support", enter: "blur", in: 522, out: 612, place: "baseline", y: both(560, 530) }),
-  t({ id: "T6", chapter: "project", lines: ["It reads", "your project"], role: "side", enter: "blur", in: 660, out: 712, place: "column" }),
+  t({ id: "T6", chapter: "project", lines: ["It reads", "your project"], role: "side", enter: "blur", in: 666, out: 718, place: "column" }),
   t({ id: "T7", chapter: "project", lines: ["Review, apply,", "undo"], role: "side", enter: "blur", in: 756, out: 858, wordStarts: [756, 811, 830], place: "column" }),
   t({ id: "T8", chapter: "tested", lines: ["AgentGuard checks", "the evidence"], role: "side", enter: "blur", in: 954, out: 1038, place: "column" }),
   t({ id: "T9", chapter: "tested", lines: ["Tests run in", "an isolated copy"], role: "side", enter: "blur", in: 1044, out: 1140, place: "column" }),
@@ -374,9 +377,10 @@ export const TEXT: readonly TextCue[] = [
   t({ id: "T11s", chapter: "model", lines: ["Even one on your Mac"], role: "support", enter: "blur", in: 1260, out: 1320, place: "column", under: "T11" }),
   t({ id: "T12", chapter: "pace", lines: ["You set what", "it may do"], role: "side", enter: "rise", in: 1350, out: 1428, place: "column" }),
   t({ id: "T13", chapter: "memory", lines: ["Memory you can", "read and forget"], role: "side", enter: "blur", in: 1458, out: 1578, place: "column" }),
-  t({ id: "T14", chapter: "views", lines: ["Views,", "not just text"], role: "side", enter: "blur", in: 1590, out: 1656, place: "column" }),
+  t({ id: "T14", chapter: "views", lines: ["Views,", "not just text"], role: "side", enter: "blur", in: 1584, out: 1656, place: "column" }),
   t({ id: "T15", chapter: "open-source", lines: ["Free and open source"], role: "headline", enter: "ink", in: 1800, out: 1866, place: "centre", y: both(450, 450) }),
-  t({ id: "T15s", chapter: "open-source", lines: ["Apache-2.0"], role: "support", enter: "ink", in: 1809, out: 1866, place: "baseline", y: both(560, 540) }),
+  // G2a: baseline 590 / 570, not §8's 560 / 540: there, "Apache-2.0"'s capitals touched the "p" of "open" above it
+  t({ id: "T15s", chapter: "open-source", lines: ["Apache-2.0"], role: "support", enter: "ink", in: 1806, out: 1866, place: "baseline", y: both(590, 570) }),
   t({ id: "T16", chapter: "open-source", lines: ["No telemetry"], role: "headline", enter: "ink", in: 1872, out: 1935, place: "centre", y: both(450, 450) }),
   t({ id: "T17", chapter: "open-source", lines: ["Your keys stay in your Keychain"], squareLines: ["Your keys stay", "in your Keychain"], role: "headline", enter: "ink", in: 1941, out: 2010, place: "centre", y: both(450, 450) }),
   t({ id: "T18", chapter: "get", lines: ["A little help, right here."], role: "tagline", enter: "blur", in: 2088, out: END, place: "baseline", y: both(560, 520), key: true }),
@@ -410,8 +414,10 @@ export interface HopSpec {
   from: PerAspect<Point>;
   to: PerAspect<Point>;
 }
+/** G2a: H1 starts at y 1200, not §9.2's 1150: at 1150 the 210 px pebble's top (y 1041) showed at the frame's bottom
+ *  edge through S3's first bar; at 1200 it is fully below the frame until it rises. */
 export const HOPS: readonly HopSpec[] = [
-  { id: "H1", at: 14.4, duration: 0.5, from: both({ x: 960, y: 1150 }, { x: 540, y: 1150 }), to: both({ x: 960, y: 880 }, { x: 540, y: 880 }) },
+  { id: "H1", at: 14.4, duration: 0.5, from: both({ x: 960, y: 1200 }, { x: 540, y: 1200 }), to: both({ x: 960, y: 880 }, { x: 540, y: 880 }) },
   { id: "H2", at: time(490), duration: 0.467, from: both({ x: 960, y: 880 }, { x: 540, y: 880 }), to: both({ x: 1295, y: 422 }, { x: 806, y: 402 }) },
   { id: "H3", at: time(634), duration: 0.6, from: both({ x: 1295, y: 422 }, { x: 806, y: 402 }), to: both({ x: 330, y: 900 }, { x: 940, y: 300 }) },
   { id: "H4", at: time(2002), duration: 0.467, from: both({ x: 2050, y: 1180 }, { x: 1180, y: 1180 }), to: both({ x: 1295, y: 422 }, { x: 806, y: 402 }) },
@@ -421,7 +427,7 @@ export const PEBBLE_INSTANCES = {
   /** inside the desktop world at the pet's place, scaled by the camera, light palette */
   desk: { from: 0, to: 144 },
   /** off-frame below, rises in (H1), leaps (H2), carries (H3); dark until the reveal flood (f504), then light */
-  main: { from: 432, to: 1666, start: both({ x: 960, y: 1150 }, { x: 540, y: 1150 }), hops: ["H1", "H2", "H3"], lightFrom: 504 },
+  main: { from: 432, to: 1666, start: both({ x: 960, y: 1200 }, { x: 540, y: 1200 }), hops: ["H1", "H2", "H3"], lightFrom: 504 },
   /** the end card's: off-frame lower right, H4; dark until f2016, then light */
   end: { from: 1999, to: GRID.frames, start: both({ x: 2050, y: 1180 }, { x: 1180, y: 1180 }), hops: ["H4"], lightFrom: 2016 },
 } as const;
@@ -432,7 +438,7 @@ const cue = (frame: number, c: Omit<PebbleCue, "at">): PebbleCue => ({ at: time(
 function cuesFor(square: boolean): PebbleCue[] {
   return [
     cue(-15, { look: { x: -0.625, y: -0.375 }, note: "G1.5: before frame 0 the eyes turn to where the pointer will enter (upper left), so the thumbnail looks somewhere" }),
-    cue(18, { pose: "hover", note: "the pointer enters the pet window" }),
+    cue(22, { pose: "hover", note: "the pointer enters the pet window" }),
     cue(36, { pose: "tap", note: "click" }),
     cue(48, { look: null, note: "the pointer has faded" }),
     cue(72, { pose: "thinking", note: "the run has started" }),
@@ -444,17 +450,18 @@ function cuesFor(square: boolean): PebbleCue[] {
     cue(540, { pose: "idle", note: "tap ends (1.2 s)" }),
     cue(624, { look: square ? { x: 0.75, y: -0.625 } : { x: -0.875, y: 0.5 }, note: "eyes lead the carry" }),
     cue(652, { pose: "reading", note: "lands in the window world" }),
-    cue(660, { look: square ? { x: -0.75, y: 0.625 } : { x: 0.875, y: -0.375 }, note: "toward the stage" }),
+    cue(660, { look: square ? { x: -0.875, y: 0.5 } : { x: 0.875, y: -0.375 }, note: "toward the status line" }),
     cue(711, { pose: "editing", note: "inside the f708–714 blink" }),
     cue(729, { pose: "review", note: "the edit card waits (\"!\")" }),
     cue(864, { pose: "thinking" }),
     cue(931, { pose: "blocked", note: "verification required" }),
     cue(995, { pose: "review", note: "the Run isolated tests card waits" }),
     cue(1094, { pose: "testing" }),
-    cue(1152, { pose: "happy", note: "Verified (the one celebration)" }),
-    cue(1287, { pose: "idle", note: "happy ends after 4.5 s, as in the app" }),
-    cue(1584, { look: square ? { x: -0.25, y: 0.75 } : { x: 0.875, y: -0.25 }, note: "the dashboard" }),
-    cue(1999, { look: { x: -0.75, y: -0.5 }, note: "P-end: eyes lead the landing" }),
+    cue(1161, { pose: "writing", note: "after Verified, Pebble writes its final reply" }),
+    cue(1204, { pose: "happy", note: "the verified run completes (the one celebration)" }),
+    cue(1339, { pose: "idle", note: "happy ends after 4.5 s, as in the app" }),
+    cue(1584, { look: square ? { x: -0.875, y: 0.5 } : { x: 0.875, y: -0.375 }, note: "the dashboard" }),
+    cue(1999, { look: square ? { x: -0.375, y: -0.875 } : { x: -0.75, y: -0.75 }, note: "P-end: eyes lead the landing" }),
     cue(2016, { pose: "tap", note: "lands in the end-card lockup" }),
     cue(2030, { look: null }),
     cue(2052, { pose: "idle" }),
@@ -495,8 +502,10 @@ export interface SfxCue {
   pan?: number;
   duckDb?: number;
 }
+/** G2a: every click's pan is §11's 0.4 × (x − W/2)/(W/2) at the pointer's 16:9 frame x on its click-down frame, as the
+ *  animated film places it (film/framing.ts pointerSpans, film/hook.ts); §11 had estimates for five of the nine. */
 export const SFX: readonly SfxCue[] = [
-  { frame: 36, role: "click", take: "click_a", event: "the pebble is clicked", pan: 0.14 },
+  { frame: 36, role: "click", take: "click_a", event: "the pebble is clicked", pan: 0.13 },
   { frame: 144, role: "whoosh", take: "whoosh_b", event: "into the sage field (zoom through the pebble)" },
   { frame: 504, role: "riser", take: "riser", event: "bars 6–7, its end on the reveal" },
   { frame: 504, role: "hit", take: "soft_hit_b", event: "the reveal landing", duckDb: 2.5 },
@@ -504,15 +513,15 @@ export const SFX: readonly SfxCue[] = [
   { frame: 648, role: "whoosh", take: "whoosh_a", event: "the carry into the window world" },
   { frame: 810, role: "click", take: "click_b", event: "Apply edit", pan: 0.3 },
   { frame: 814, role: "pop", take: "pop_a", event: "Done" },
-  { frame: 990, role: "click", take: "click_c", event: "Run the tests", pan: 0.1 },
-  { frame: 1080, role: "click", take: "click_a", event: "Run tests", pan: 0.32 },
+  { frame: 990, role: "click", take: "click_c", event: "Run the tests", pan: 0.09 },
+  { frame: 1080, role: "click", take: "click_a", event: "Run tests", pan: 0.3 },
   { frame: 1094, role: "tick", take: "tick_a", event: "\"Requesting isolated tests\" row" },
   { frame: 1152, role: "shimmer", take: "shimmer_a", event: "Verified" },
-  { frame: 1224, role: "click", take: "click_b", event: "Settings", pan: 0.33 },
-  { frame: 1332, role: "click", take: "click_c", event: "Permissions tab" },
-  { frame: 1404, role: "click", take: "click_a", event: "Auto in project" },
-  { frame: 1440, role: "click", take: "click_b", event: "Memory tab" },
-  { frame: 1530, role: "click", take: "click_c", event: "the bin" },
+  { frame: 1224, role: "click", take: "click_b", event: "Settings", pan: 0.37 },
+  { frame: 1332, role: "click", take: "click_c", event: "Permissions tab", pan: 0.12 },
+  { frame: 1404, role: "click", take: "click_a", event: "Auto in project", pan: 0.06 },
+  { frame: 1440, role: "click", take: "click_b", event: "Memory tab", pan: 0.21 },
+  { frame: 1530, role: "click", take: "click_c", event: "the bin", pan: 0.37 },
   { frame: 1542, role: "pop", take: "pop_c", event: "the record dissolves" },
   { frame: 1665, role: "whoosh", take: "whoosh_c", event: "the chart becomes the world (its fastest frame)" },
   { frame: 1800, role: "whoosh", take: "whoosh_a", event: "into the sage field (zoom through the badge)" },
@@ -560,23 +569,41 @@ export const SOURCE_MAPS = {
     { frame: 72, s: 3.35, hold: true },
     { frame: 143, s: 4.5 },
   ],
+  /**
+   * Re-keyed by G2a on the R2 recording (3×, 690 frames; source frame index = round(s × 30)), within §7's ± 3 frames
+   * except where §7 assumed timings the app does not have:
+   * - the status line coalesces "Reading invoice_kit/dates.py" to source 4.50–4.67 s (idx 135–140), so S5a crawls
+   *   over those six frames for 1.2 s (f664–700) instead of §7's 0.5× from 3.85 s;
+   * - every click re-renders on its own frame (idx 282 at 9.40 s, 480 at 16.00 s, 534 at 17.80 s already show the
+   *   change), so each press (f810–813, f990–993, f1080–1083) is drawn over the frame BEFORE the click, and the next
+   *   segment catches up at > 1× (no jump without a cut);
+   * - f1094 ↔ 18.35 s ("Requesting isolated tests", pose testing) and f1146 ↔ 20.40 s ("· 11 s") are pinned.
+   */
   "main-live-film": [
     { frame: 648, s: 3.85 },
-    { frame: 701, s: 4.73 },
+    { frame: 664, s: 4.5 },
+    { frame: 700, s: 4.6667 },
+    { frame: 701, s: 4.7 },
     { frame: 719, s: 5.93 },
     { frame: 791, s: 8.3 },
-    { frame: 810, s: 9.4 },
-    { frame: 813, s: 9.4 },
+    { frame: 809, s: 9.3667 },
+    { frame: 813, s: 9.3667 },
     { frame: 814, s: 11.05, hold: true },
     { frame: 863, s: 11.05 },
     { frame: 864, s: 11.8, hold: true },
-    { frame: 1007, s: 16.57 },
-    { frame: 1031, s: 17.34 },
-    { frame: 1079, s: 17.74 },
-    { frame: 1080, s: 17.8 },
-    { frame: 1151, s: 20.55 },
+    { frame: 989, s: 15.9667 },
+    { frame: 993, s: 15.9667 },
+    { frame: 994, s: 16.0 },
+    { frame: 1008, s: 16.5667 },
+    { frame: 1031, s: 17.3333 },
+    { frame: 1079, s: 17.7667 },
+    { frame: 1083, s: 17.7667 },
+    { frame: 1084, s: 17.8 },
+    { frame: 1094, s: 18.35 },
+    { frame: 1146, s: 20.4 },
+    { frame: 1151, s: 20.5667 },
     { frame: 1152, s: 20.6 },
-    { frame: 1223, s: 22.97 },
+    { frame: 1223, s: 22.9667 },
   ],
 } as const satisfies Record<string, readonly SourceKey[]>;
 

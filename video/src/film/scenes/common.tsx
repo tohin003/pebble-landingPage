@@ -1,0 +1,338 @@
+// Shared pieces of the animated film's scenes (lane G2a): on-screen lines placed and coloured as FILM_SPEC §3 and §8
+// say, the window world's ground, the film pebble with the merged cue list, real recorded UI frames, and the press a
+// click draws over a real control. Every scene reads the ABSOLUTE film frame (LaunchFilm wraps each shot so that
+// useCurrentFrame() inside is the composition's frame) and adapts to the aspect through useLayout().
+import type { CSSProperties, ReactNode } from "react";
+import { AbsoluteFill, Img, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import type { PebbleCue } from "../../../../shared/pebble";
+import { Camera, Desktop, KineticText, World, blockHeight, topForBaseline } from "../../components";
+import { FONT } from "../../fonts";
+import type { CamPose, Rect } from "../../motion/camera";
+import { useLayout, type AspectId, type Layout } from "../../motion/layout";
+import { COLOR, EASE, LOOK, TYPO, blurOut, fxStyle, ramp, type TypoRole } from "../../motion/spec";
+import type { Hop } from "../../pebble/acting";
+import { PebbleOnFilm } from "../../pebble/PebbleOnFilm";
+import type { PebbleColors } from "../../pebble/PebbleSvg";
+import { filmCues } from "../gaze";
+import { DESKTOP_RECT, END, HOPS, SEAMS, TEXT, textById, type PerAspect, type TextCue } from "../timeline";
+
+/** The film's cuts (every seam that is not a camera move, FILM_SPEC §12). */
+const CUTS: readonly number[] = SEAMS.filter((s) => s.kind !== "camera").map((s) => s.frame);
+
+/* ================================================================================================================
+ * On-screen lines (FILM_SPEC §3, §8)
+ * ============================================================================================================== */
+
+const ROLE_TYPO: Record<TextCue["role"], TypoRole> = {
+  hero: "display",
+  headline: "display",
+  side: "display",
+  tagline: "display",
+  support: "text",
+  cta: "text",
+  mono: "mono",
+  small: "small",
+};
+
+export const linesFor = (c: TextCue, a: AspectId) => (a === "square" && c.squareLines ? c.squareLines : c.lines);
+
+/**
+ * The window world's text column (16:9) or band (square), FILM_SPEC §4: a cue's lines start at the block's top; a cue
+ * marked `under` sits a gap under its anchor. §3's fit rule: if the group overflows its room (in the square, the band
+ * ends above the stage), the anchor steps down 4 px at a time; a line is never re-broken.
+ */
+function columnPlacement(cue: TextCue, L: Layout): { top: number; size: number } {
+  const anchor = cue.under ? textById(cue.under) : cue;
+  const under = TEXT.filter((c) => c.under === anchor.id);
+  const gap = Math.round(L.gap * 0.5);
+  const room = L.aspect === "square" ? L.win.stage.y - L.win.text.y - Math.round(10 * L.s) : L.win.text.h;
+  const underH = under.reduce((h, u) => h + gap + blockHeight(linesFor(u, L.aspect).length, L.type[u.role], ROLE_TYPO[u.role]), 0);
+  let size = L.type[anchor.role];
+  while (size > Math.round(64 * L.s) && blockHeight(linesFor(anchor, L.aspect).length, size, ROLE_TYPO[anchor.role]) + underH > room) size -= 4;
+  if (cue === anchor) return { top: L.win.text.y, size };
+  const anchorH = blockHeight(linesFor(anchor, L.aspect).length, size, ROLE_TYPO[anchor.role]);
+  return { top: L.win.text.y + anchorH + gap, size: L.type[cue.role] };
+}
+
+export type LineWorld = "sage" | "paper" | "window";
+
+/** Colours by role and ground: white on sage (support at 80 %), ink on light grounds (support in the secondary grey). */
+export const lineColour = (cue: TextCue, world: LineWorld) => {
+  const strong = cue.role === "headline" || cue.role === "side" || cue.role === "tagline" || cue.role === "mono" || cue.role === "hero";
+  if (world === "sage") return strong ? LOOK.onSage : "rgba(255, 255, 255, 0.8)";
+  return strong ? COLOR.ink : COLOR.secondary;
+};
+
+/** Where a cue's line block sits, frame px (the box KineticText lays its lines into) and its type size. */
+export function lineBox(cue: TextCue, L: Layout): { box: Rect; size: number; align: "left" | "center" } {
+  const lines = linesFor(cue, L.aspect);
+  const typo = ROLE_TYPO[cue.role];
+  const column = cue.place === "column" ? columnPlacement(cue, L) : null;
+  const size = column ? column.size : L.type[cue.role];
+  const h = blockHeight(lines.length, size, typo);
+  if (column) return { box: { x: L.win.text.x, y: column.top, w: L.win.text.w, h }, size, align: "left" };
+  const y = (cue.y as PerAspect<number>)[L.aspect] * L.s;
+  if (cue.place === "baseline") return { box: { x: L.safe.x, y: topForBaseline(y, size, typo), w: L.safe.w, h }, size, align: "center" };
+  return { box: { x: L.safe.x, y: y - h / 2, w: L.safe.w, h }, size, align: "center" };
+}
+
+/**
+ * One timeline line. Entrances (A) blur, (B) ink, (C) rise from §3; small print fades in over 9 frames (§6 S9). The ink
+ * entrance starts from #B0C2AE on light grounds and from white at 35 % on sage (§3 B). A line is dead still once it has
+ * landed and leaves with the 6-frame blur-out, unless a world move takes it (`exit={false}`).
+ */
+export const FilmLine: React.FC<{ cue: TextCue; world: LineWorld; exit?: boolean; style?: CSSProperties }> = ({ cue, world, exit = true, style }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const L = useLayout();
+  if (frame < cue.in - 1 || (exit && frame > cue.out + 8)) return null;
+  // a leaving line never survives a cut (T7 and T13 finish their blur-out a frame after a hard cut on the bar)
+  if (exit && CUTS.some((c) => c > cue.in && frame >= c)) return null;
+  const { box, size, align } = lineBox(cue, L);
+  const color = lineColour(cue, world);
+  const lines = linesFor(cue, L.aspect);
+  const exitAt = exit && cue.out < END ? cue.out : undefined;
+  if (cue.enter === "fade") {
+    // small print: opacity over 9 frames (EASE.enter), the same blur-out if it ever leaves
+    const o = ramp(frame, cue.in, 9, EASE.enter);
+    const out = exitAt !== undefined ? blurOut(frame, exitAt, fps) : { opacity: 1, blur: 0, dx: 0, dy: 0, scale: 1 };
+    const typo = TYPO[ROLE_TYPO[cue.role]];
+    return (
+      <div style={{ position: "absolute", left: box.x, top: box.y, width: box.w, textAlign: align, ...style }}>
+        {lines.map((l, i) => (
+          <div
+            key={i}
+            style={{
+              fontFamily: FONT[typo.family],
+              fontWeight: typo.weight,
+              fontSize: size,
+              lineHeight: typo.leading,
+              letterSpacing: typo.tracking,
+              color,
+              whiteSpace: "pre",
+              ...fxStyle({ ...out, opacity: o * out.opacity }),
+            }}
+          >
+            {l}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <KineticText
+      lines={lines}
+      role={cue.role}
+      size={size}
+      at={cue.in}
+      exitAt={exitAt}
+      enter={cue.enter}
+      wordStarts={cue.wordStarts}
+      color={color}
+      inkFrom={cue.enter === "ink" ? (world === "sage" ? "rgba(255, 255, 255, 0.35)" : COLOR.accentSoft) : undefined}
+      align={align}
+      box={box}
+      style={style}
+    />
+  );
+};
+
+/** Several timeline lines by id. */
+export const Lines: React.FC<{ ids: readonly string[]; world: LineWorld; exit?: boolean }> = ({ ids, world, exit }) => (
+  <>
+    {ids.map((id) => (
+      <FilmLine key={id} cue={textById(id)} world={world} exit={exit} />
+    ))}
+  </>
+);
+
+/* ================================================================================================================
+ * Grounds
+ * ============================================================================================================== */
+
+/** The desktop ground around the stage: the whole riverbed, as a Mac shows it (no vignette in the window world). */
+export const WindowGround: React.FC = () => {
+  const { width, height } = useVideoConfig();
+  const zoom = Math.max(width / DESKTOP_RECT.w, height / DESKTOP_RECT.h);
+  return (
+    <Camera pose={{ x: DESKTOP_RECT.w / 2, y: DESKTOP_RECT.h / 2, zoom }}>
+      <World>
+        <Desktop />
+      </World>
+    </Camera>
+  );
+};
+
+/* ================================================================================================================
+ * The film pebble
+ * ============================================================================================================== */
+
+/** Hops of an instance in the aspect's frame px. */
+export const hopsFor = (ids: readonly string[], a: AspectId, s: number): Hop[] =>
+  HOPS.filter((h) => ids.includes(h.id)).map((h) => ({ at: h.at, to: { x: h.to[a].x * s, y: h.to[a].y * s }, duration: h.duration }));
+
+/** PebbleOnFilm with the film's merged cue list (timeline cues + pointer-driven looks) for this aspect. */
+export const FilmPebble: React.FC<{
+  x: number;
+  y: number;
+  size: number;
+  hops?: readonly Hop[];
+  colors?: PebbleColors;
+  shadow?: boolean;
+  cues?: readonly PebbleCue[];
+}> = ({ x, y, size, hops, colors, shadow, cues }) => {
+  const L = useLayout();
+  return <PebbleOnFilm cues={cues ?? filmCues(L.aspect)} size={size} x={x} y={y} hops={hops} colors={colors} shadow={shadow} />;
+};
+
+/* ================================================================================================================
+ * Real recorded UI (record.mjs vclock frames) and presses drawn over it
+ * ============================================================================================================== */
+
+const pad5 = (n: number) => String(n).padStart(5, "0");
+/** The PNG of a recorded sequence showing source second `s` (index = round(s × 30)). */
+export const recordedFrame = (dir: string, frames: number, s: number) =>
+  staticFile(`${dir}/${pad5(Math.max(0, Math.min(frames - 1, Math.round(s * 30))) + 1)}.png`);
+
+/**
+ * A recorded frame placed in world units (one unit = one CSS px of the recorded viewport), with an optional press
+ * drawn over one control (FILM_SPEC §10: the target at 0.97 and about 4 % darker while held). The press re-uses the
+ * frame's own pixels: the control is cut out of the same image and scaled about its centre over a patch of its ground,
+ * so nothing is redrawn.
+ */
+export const RecordedUi: React.FC<{
+  src: string;
+  width: number;
+  height: number;
+  x?: number;
+  y?: number;
+  press?: { rect: Rect; radius: number; ground: string; scale: number; darken: number } | null;
+  children?: ReactNode;
+  style?: CSSProperties;
+}> = ({ src, width, height, x = 0, y = 0, press, children, style }) => {
+  const img = <Img src={src} style={{ position: "absolute", left: 0, top: 0, width, height, display: "block" }} />;
+  return (
+    <div style={{ position: "absolute", left: x, top: y, width, height, ...style }}>
+      {img}
+      {press ? (
+        <>
+          <div
+            style={{
+              position: "absolute",
+              left: press.rect.x - 1.5,
+              top: press.rect.y - 1.5,
+              width: press.rect.w + 3,
+              height: press.rect.h + 3,
+              borderRadius: press.radius + 1.5,
+              background: press.ground,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              transformOrigin: `${press.rect.x + press.rect.w / 2}px ${press.rect.y + press.rect.h / 2}px`,
+              transform: `scale(${press.scale.toFixed(4)})`,
+              clipPath: `inset(${press.rect.y}px ${width - press.rect.x - press.rect.w}px ${height - press.rect.y - press.rect.h}px ${press.rect.x}px round ${press.radius}px)`,
+            }}
+          >
+            {img}
+            <div style={{ position: "absolute", left: press.rect.x, top: press.rect.y, width: press.rect.w, height: press.rect.h, background: `rgba(${COLOR.shadowRgb}, ${press.darken.toFixed(3)})` }} />
+          </div>
+        </>
+      ) : null}
+      {children}
+    </div>
+  );
+};
+
+/* ================================================================================================================
+ * The stage with motion blur
+ * ============================================================================================================== */
+
+const radii = (corners: "left" | "top", r: number) => (corners === "left" ? `${r}px 0 0 ${r}px` : `${r}px ${r}px 0 0`);
+
+/**
+ * The window world's stage (G1's <Stage>, FILM_SPEC §4: a rounded viewport into the real UI with the window shadow),
+ * plus motion blur on its content only (R5 §6.3: fast camera moves only, ≤ 20 px on the frame, ≤ 12 px on text): an
+ * axis-aligned Gaussian (SVG feGaussianBlur, duplicate edges) in frame px, sized from how far the content moved since
+ * the last frame. The stage's frame, shadow and the overlay (pointer, ring) stay sharp.
+ */
+export const FilmStage: React.FC<{
+  rect: Rect;
+  pose: CamPose;
+  /** stdDeviation in frame px along x and y (0 = none) */
+  blur?: { x: number; y: number };
+  background?: string;
+  children: ReactNode;
+  overlay?: ReactNode;
+}> = ({ rect, pose, blur, background = "#F7F8F5", children, overlay }) => {
+  const L = useLayout();
+  const viewport = { width: rect.w, height: rect.h };
+  const rgb = COLOR.shadowRgb;
+  const on = !!blur && (blur.x > 0.15 || blur.y > 0.15);
+  const id = "film-stage-motion-blur";
+  return (
+    <>
+      <div
+        style={{
+          position: "absolute",
+          left: rect.x,
+          top: rect.y,
+          width: rect.w,
+          height: rect.h,
+          borderRadius: radii(L.win.stageCorners, L.win.stageRadius),
+          overflow: "hidden",
+          background,
+          boxShadow: `0 0 0 1px rgba(${rgb}, 0.08), 0 2px 4px rgba(${rgb}, 0.06), 0 14px 36px rgba(${rgb}, 0.1), 0 44px 96px rgba(${rgb}, 0.14)`,
+        }}
+      >
+        {on ? (
+          <svg width={0} height={0} style={{ position: "absolute" }} aria-hidden>
+            <defs>
+              <filter id={id} x="-2%" y="-2%" width="104%" height="104%" colorInterpolationFilters="sRGB">
+                <feGaussianBlur stdDeviation={`${blur!.x.toFixed(2)} ${blur!.y.toFixed(2)}`} edgeMode="duplicate" />
+              </filter>
+            </defs>
+          </svg>
+        ) : null}
+        <div style={{ position: "absolute", left: 0, top: 0, width: rect.w, height: rect.h, filter: on ? `url(#${id})` : undefined }}>
+          <Camera pose={pose} viewport={viewport} background={background}>
+            <World>{children}</World>
+          </Camera>
+        </div>
+      </div>
+      {overlay ? (
+        <div style={{ position: "absolute", left: rect.x, top: rect.y, width: rect.w, height: rect.h, pointerEvents: "none" }}>
+          <Camera pose={pose} viewport={viewport} background="transparent" clip={false}>
+            {overlay}
+          </Camera>
+        </div>
+      ) : null}
+    </>
+  );
+};
+
+/** A full-frame flat colour (the solid frames at the end of a zoom-through). */
+export const Solid: React.FC<{ color: string; opacity?: number }> = ({ color, opacity = 1 }) => (
+  <AbsoluteFill style={{ backgroundColor: color, opacity }} />
+);
+
+/**
+ * A frame-sized blur for the zoom-throughs (FILM_SPEC §6: only on their last frames, ≤ 20 px). Its content is drawn
+ * BLEED px past every frame edge (the child camera gets a viewport that much larger), so the blur's soft edge falls
+ * outside the frame: blurring a frame-sized layer pulls transparency in at the edges, a light rim around a dive into a
+ * dark colour (Chrome ignores feGaussianBlur's edgeMode). `children(viewport)` renders the camera for that viewport.
+ */
+export const BLEED = 48;
+export const FrameBlur: React.FC<{ px: number; children: (viewport: { width: number; height: number }) => ReactNode }> = ({ px, children }) => {
+  const { width, height } = useVideoConfig();
+  const viewport = { width: width + 2 * BLEED, height: height + 2 * BLEED };
+  return (
+    <AbsoluteFill style={{ overflow: "hidden" }}>
+      <div style={{ position: "absolute", left: -BLEED, top: -BLEED, width: viewport.width, height: viewport.height, filter: px > 0.15 ? `blur(${(px / 2).toFixed(2)}px)` : undefined }}>
+        {children(viewport)}
+      </div>
+    </AbsoluteFill>
+  );
+};

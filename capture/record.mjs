@@ -4,6 +4,9 @@
 //          [--frames=N]        record only the first N frames (a short excerpt, e.g. to prove the pipeline)
 //          [--at=1.5,4,9.25]   do not record a sequence: play the timeline and save one still at each of these times
 //                              (<timeline>-<theme>-t<seconds>.png), to check its states cheaply
+//          [--hide=SELECTORS]  make these elements invisible (opacity 0: still laid out and clickable), e.g.
+//                              --hide=.pet-avatar records the companion without its pebble, which the films draw
+//                              themselves (FILM_SPEC §17 R1; lane G2b)
 // Timelines: pet-live-error (alias pet-live), main-live-film, pet-gaze. Output: numbered PNGs 00001.png... plus
 // timeline.json (for pet-gaze also the cursor position of every frame, for compositing). Encode later, e.g.
 // ffmpeg -framerate 30 -i %05d.png -c:v prores_ks -pix_fmt yuva444p10le out.mov
@@ -24,6 +27,7 @@ const BASE = opt("base", "http://127.0.0.1:5199/");
 const OUT = path.resolve(opt("out", path.join(HERE, "frames-vclock", `${NAME}-${THEME}`)));
 const LIMIT = Number(opt("frames", "0")) || Infinity;
 const AT = opt("at", "") ? opt("at", "").split(",").map(Number).filter((t) => t >= 0).sort((a, b) => a - b) : null;
+const HIDE = opt("hide", "");
 
 // ---- timeline helpers --------------------------------------------------------------------------------------------
 const emit = (event, data) => (page) => page.evaluate((e, d) => window.__pebble.emit(e, d), event, data);
@@ -51,6 +55,30 @@ function scrollToEnd(steps, t0, t1, selector, fps) {
     }, selector, e, i === 0)]);
   }
   return from;
+}
+// Scroll a panel between t0 and t1 (ease-in-out, one step per frame), as a person scrolls (FILM_SPEC §17 R2, lane
+// G2a). `to.frac`: the chosen element's bottom ends at that fraction of the panel's visible height; `to.y`: its centre
+// ends at that viewport y (CSS px); `to.top`: the panel returns to its top. `to.pick` ("last" by default or "first")
+// chooses among the elements matching `target`. The end position is measured once, on the scroll's first frame.
+function scrollPanel(steps, t0, t1, panel, target, to, fps) {
+  const n = Math.max(1, Math.round((t1 - t0) * fps));
+  for (let i = 0; i <= n; i++) {
+    const k = i / n, e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    steps.push([t0 + (t1 - t0) * k, (page) => page.evaluate((sel, tsel, o, ease, first) => {
+      const el = document.querySelector(sel);
+      if (!el) return;
+      if (first || el.dataset.scrollTo === undefined) {
+        const items = tsel ? el.querySelectorAll(tsel) : [], one = o.pick === "first" ? items[0] : items[items.length - 1];
+        let end = o.top ? 0 : el.scrollTop;
+        if (one && o.frac !== undefined) end += one.getBoundingClientRect().bottom - el.getBoundingClientRect().top - o.frac * el.clientHeight;
+        if (one && o.y !== undefined) { const r = one.getBoundingClientRect(); end += (r.top + r.bottom) / 2 - o.y; }
+        el.dataset.scrollFrom = String(el.scrollTop);
+        el.dataset.scrollTo = String(Math.max(0, Math.min(el.scrollHeight - el.clientHeight, end)));
+      }
+      const a = Number(el.dataset.scrollFrom), b = Number(el.dataset.scrollTo);
+      el.scrollTop = a + (b - a) * ease;
+    }, panel, target, to, e, i === 0)]);
+  }
 }
 // Type `text` one character at a time from t0, `gap` seconds apart.
 function typeChars(steps, t0, gap, text) {
@@ -119,7 +147,8 @@ const TIMELINES = {
       const items = []; // the host record so far, for run_activity reads after idle
       // keep(): play an activity row and remember it (at play time) for the host record that later reads return.
       const keep = (t, item) => [t, async (page) => { items.push(item); await A(item)(page); }];
-      const record = (state) => live("activity", run, { state, started: null, elapsed: null, items: dedupe(items) });
+      // heldGap: the fixture dates the "You asked Pebble to run the tests" note 2 s after the hold (the 16.0 s click).
+      const record = (state) => live("activity", run, { state, started: null, elapsed: null, items: dedupe(items), heldGap: 2 });
       const dedupe = (list) => [...new Map(list.map((i) => [i.seq, i])).values()].sort((a, b) => a.seq - b.seq);
       const edit = (id, file, baseline, diff, status) => ({ id, chat_id: chat, kind: "edit", status, payload: { path: file, baseline, diff } });
       const pending = [edit("act-film-dates", "invoice_kit/dates.py", "9f2c41d07ab3", diffs.dates, "pending"), edit("act-film-tests", "tests/test_dates.py", "51ab9e2c3d70", diffs.tests, "pending")];
@@ -166,6 +195,13 @@ const TIMELINES = {
         // The person applies both edits (App.vue decide(): approve, then get_chat).
         [9.4, (page) => page.click("#details-drawer .action-card.pending .primary-button")],
         [10.3, (page) => page.click("#details-drawer .action-card.pending .primary-button")],
+      );
+      // The person scrolls the drawer a little to look at the applied card, so its "Undo this edit" sits where Apply
+      // edit was (centre y 692; the film's match cut on the click uses the 11.05 s frame), then back to the top before
+      // the next steps arrive (lane G2a; the film shows neither scroll).
+      scrollPanel(steps, 10.45, 10.95, "#details-drawer .details-panel", "#details-drawer .undo-button", { pick: "first", y: 692 }, 30);
+      scrollPanel(steps, 11.25, 11.75, "#details-drawer .details-panel", null, { top: true }, 30);
+      steps.push(
         // The run continues (controller.py dispatch_now), finishes without test evidence and is held by the gate.
         [10.8, live("active", chat, run)],
         [10.85, live("actions", chat, applied)], [10.9, emit("actions", { chat_id: chat, actions: applied })],
@@ -213,6 +249,11 @@ const TIMELINES = {
         [18.25, emit("run", { chat_id: chat, run_id: run, state: "running" })],
         keep(18.3, row(1152, 18.5, "approval", "Approved: Requesting isolated tests", "done", null, 1.6)),
         [18.35, P("RunTests", "testing", "Requesting isolated tests")], keep(18.35, row(1216, 18.6, "tool", "Requesting isolated tests", "running", "testing")),
+      );
+      // R2 (FILM_SPEC §17): the person scrolls the Details drawer down to its newest steps, so the rows that follow
+      // ("Requesting isolated tests · 11 s", "Verified · …") arrive in view, in the drawer's lower half.
+      scrollPanel(steps, 18.4, 19.0, "#details-drawer .details-panel", "#drawer-thinking .thinking-steps > li", { frac: 0.42 }, 30);
+      steps.push(
         keep(20.4, row(1216, 18.6, "tool", "Requesting isolated tests", "done", "testing", 11.2)), [20.4, P("RunTests", "testing", "Requesting isolated tests", "done")],
         [20.45, live("actions", chat, [...applied, tests("applied", passed)])], [20.5, emit("actions", { chat_id: chat, actions: [...applied, tests("applied", passed)] })],
         keep(20.6, row(1280, 30.0, "check", "Verified · pytest 42 passed on current files", "done", null, 2.4)),
@@ -283,6 +324,7 @@ try {
   await page.emulateTimezone("Europe/London");
   await page.goto(`${BASE}${spec.url}&theme=${THEME}&vclock`, { waitUntil: "networkidle0" });
   await page.waitForSelector(".pet-root, .app-shell");
+  if (HIDE) await page.addStyleTag({ content: `${HIDE} { opacity: 0 !important; }` });
   if (!(await page.evaluate(() => !!window.__pebbleClock))) throw new Error("vclock is not installed");
   await page.evaluate(() => window.__pebbleClock.advance(500)); // boot: first paint of the pebble
   const steps = (await spec.build(page)).sort((a, b) => a[0] - b[0]);
@@ -307,7 +349,7 @@ try {
     }
   }
   const unhandled = await page.evaluate(() => window.__pebble.unhandled.map((u) => u.method || u.cmd));
-  fs.writeFileSync(path.join(OUT, "timeline.json"), JSON.stringify({ name: NAME, theme: THEME, fps: FPS, scale: SCALE, frames: saved, at: AT, unhandled, problems, ...(frames.length ? { cursor: frames } : {}) }, null, 1));
+  fs.writeFileSync(path.join(OUT, "timeline.json"), JSON.stringify({ name: NAME, theme: THEME, fps: FPS, scale: SCALE, frames: saved, at: AT, hide: HIDE || null, unhandled, problems, ...(frames.length ? { cursor: frames } : {}) }, null, 1));
   const seconds = (Date.now() - started) / 1000;
   console.log(`${NAME} [${THEME}] ${saved} ${AT ? "stills" : "frames"} at ${FPS} fps, ${SCALE}x, in ${seconds.toFixed(1)} s -> ${OUT}; unhandled IPC calls ${unhandled.length}${unhandled.length ? " (" + unhandled.join(",") + ")" : ""}; page errors ${problems.length}${problems.length ? ": " + problems.join(" | ") : ""}`);
   if (unhandled.length || problems.length) exitCode = 1;

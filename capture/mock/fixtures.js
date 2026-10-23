@@ -513,7 +513,9 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null }
       run.error = null;
       const record = activity[run_id];
       if (record) {
-        const seq = Math.max(0, ...record.items.map((i) => i.seq)) + 64, at = Math.max(0, ...record.items.map((i) => i.at)) + 26;
+        // The decision comes `heldGap` s after the record's last row: 26 s in the static scenes; record.mjs main-live-film
+        // passes 2 (held 14.03 s, click 16.0 s), so the drawer's offsets stay in order (+16.4 s, then +18.5 s …).
+        const seq = Math.max(0, ...record.items.map((i) => i.seq)) + 64, at = Math.max(0, ...record.items.map((i) => i.at)) + (record.heldGap ?? 26);
         record.state = "waiting_approval";
         record.items.push(item(seq, at, "note", "You asked Pebble to run the tests"),
           item(seq + 64, at + 0.2, "approval", "Waiting for your approval: Requesting isolated tests", { status: "running" }));
