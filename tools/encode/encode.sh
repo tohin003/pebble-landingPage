@@ -29,7 +29,8 @@
 #                                                                          hard limit = §5.5's 20 / 30 / 12 / 18 MB
 #     loop HEVC CRF 27 <= 0.9 MB; loop H.264 CRF 23 <= 1.2 MB (hard 1.5)   (and the -phone 4:5 cuts the same)
 #     teaser-720 HEVC CRF 26, H.264 CRF 21 (the film-720 settings) <= 1.5 MB each
-#     posters: AVIF q50 effort 6 <= 60 KB, WebP q76 <= 90 KB, quality lowered stepwise to fit (tools/encode/poster.mjs)
+#     posters: AVIF q50 effort 6 <= 60 KB, WebP q76 <= 90 KB, quality lowered stepwise to fit (tools/encode/poster.mjs);
+#              a simple picture (under 1/4 of its budget at q50 / q76) gets more quality, up to q80 / q90, within 1/4
 # - Every encode: yuv420p, BT.709 tags put on the frames with setparams (so they reach the VUI and the MP4 colr box),
 #   +faststart, no global metadata (Remotion's "Made with Remotion" comment is dropped); x264 at -level:v 4.0.
 #   Film: AAC 160 kb/s 48 kHz from the web soundtrack (one AAC generation). Loops and teaser: -an.

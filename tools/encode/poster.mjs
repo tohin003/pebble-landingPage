@@ -5,9 +5,14 @@
 //
 // MASTER_PLAN §5.5: AVIF quality 50 effort 6 (<= 60 KB) and WebP quality 76 (<= 90 KB), with sharp from
 // tools/assets/node_modules (the same encoder settings as tools/assets/stills.mjs; no new dependency). Over budget,
-// the quality steps down by 2 (AVIF to 30 at the lowest, WebP to 50) until the file fits. The PNG must have the
-// poster's aspect ratio (within 1 %): it is resized with Lanczos, never cropped or stretched, and an opaque PNG loses
-// its alpha channel. sharp writes no metadata. Files are written through a dot-file and a rename.
+// the quality steps down by 2 (AVIF to 30 at the lowest, WebP to 50) until the file fits. A simple picture (flat
+// fields and soft gradients, such as L1's riverbed) comes out under a quarter of its budget at the start quality, and
+// that is where the start quality shows: banding, block columns and lost texture (measured on loop-companion.poster:
+// AVIF q50 2.9 KB with streaks along the stone's edge, WebP q76 6.4 KB with block columns, while the loop's own frame 0
+// keeps the texture). Such a poster gets the highest quality, in steps of 2 up to AVIF 80 / WebP 90, whose file still
+// stays under that quarter. The PNG must have the poster's aspect ratio (within 1 %): it is resized with Lanczos, never
+// cropped or stretched, and an opaque PNG loses its alpha channel. sharp writes no metadata. Files are written through
+// a dot-file and a rename.
 // Exit 0: both fit. Exit 1: a file is over budget even at the lowest quality (it is written anyway, for a look).
 import fs from "node:fs";
 import path from "node:path";
@@ -18,9 +23,11 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "../..");
 const KB = 1000;
 export const POSTER = {
-  avif: { start: 50, floor: 30, step: 2, effort: 6, budget: 60 * KB },
-  webp: { start: 76, floor: 50, step: 2, effort: 6, budget: 90 * KB },
+  avif: { start: 50, floor: 30, ceiling: 80, step: 2, effort: 6, budget: 60 * KB },
+  webp: { start: 76, floor: 50, ceiling: 90, step: 2, effort: 6, budget: 90 * KB },
 };
+/** Under this share of its budget at the start quality, a poster is a simple picture and its quality is raised. */
+export const SIMPLE_SHARE = 0.25;
 
 async function loadSharp() {
   const require = createRequire(path.join(REPO, "tools/assets/package.json"));
@@ -68,20 +75,39 @@ async function main() {
   let over = 0;
   for (const format of ["avif", "webp"]) {
     const spec = { ...POSTER[format], budget: Math.round(POSTER[format].budget * scale) };
+    const encode = (q) => raw()[format]({ quality: q, effort: spec.effort }).toBuffer();
     let quality = spec.start;
-    let buffer;
-    for (;;) {
-      buffer = await raw()[format]({ quality, effort: spec.effort }).toBuffer();
-      if (buffer.length <= spec.budget || quality - spec.step < spec.floor) break;
-      quality -= spec.step;
+    let buffer = await encode(quality);
+    const simpleCap = Math.floor(spec.budget * SIMPLE_SHARE);
+    const simple = buffer.length <= simpleCap;
+    if (simple) {
+      // The highest quality on the start + k * step grid (up to the ceiling) whose file stays under the cap. The size
+      // rises with the quality, so a binary search over the grid finds it in a few encodes.
+      let lo = 0;
+      let hi = Math.floor((spec.ceiling - spec.start) / spec.step);
+      while (lo < hi) {
+        const mid = Math.ceil((lo + hi) / 2);
+        const candidate = await encode(spec.start + mid * spec.step);
+        if (candidate.length <= simpleCap) {
+          lo = mid;
+          quality = spec.start + mid * spec.step;
+          buffer = candidate;
+        } else hi = mid - 1;
+      }
+    } else {
+      while (buffer.length > spec.budget && quality - spec.step >= spec.floor) {
+        quality -= spec.step;
+        buffer = await encode(quality);
+      }
     }
     const file = `${base}.${format}`;
     writeAtomic(file, buffer);
     const fits = buffer.length <= spec.budget;
     if (!fits) over++;
     const shown = file.startsWith(REPO + path.sep) ? path.relative(REPO, file) : file;
+    const how = quality === spec.start ? "" : simple ? ` (from q${spec.start}: a simple picture, kept under ${simpleCap / KB} KB)` : ` (from q${spec.start})`;
     console.error(
-      `poster.mjs: ${fits ? "ok  " : "OVER"} ${shown} ${width}x${height} q${quality}${quality === spec.start ? "" : ` (from q${spec.start})`} ` +
+      `poster.mjs: ${fits ? "ok  " : "OVER"} ${shown} ${width}x${height} q${quality}${how} ` +
         `${(buffer.length / KB).toFixed(1)} KB, budget ${spec.budget / KB} KB${isOpaque ? "" : ", with alpha"}`,
     );
   }

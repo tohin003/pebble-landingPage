@@ -79,7 +79,7 @@ that, the command fails and the last try is kept in `.work/tmp/encode-rejected/`
 | `teaser-720.{hevc,h264}.mp4` | the film-720 CRFs (26 / 21), `-an`, scaled only if the master is bigger | 1.5 MB | 1.5 MB |
 | `loop-<id>[-phone].hevc.mp4` | x265 slow CRF 27, `-an` | 0.9 MB | 0.9 MB |
 | `loop-<id>[-phone].h264.mp4` | x264 slow CRF 23, High, `-an` | 1.2 MB | 1.5 MB |
-| `<name>.poster.avif` / `.webp` | sharp AVIF q50 effort 6 / WebP q76 effort 6; quality down by 2 to fit (AVIF to q30, WebP to q50) | 60 KB / 90 KB | |
+| `<name>.poster.avif` / `.webp` | sharp AVIF q50 effort 6 / WebP q76 effort 6; quality down by 2 to fit (AVIF to q30, WebP to q50). A simple picture (under a quarter of its budget at the start quality: flat fields, soft gradients) gets the highest quality up to AVIF q80 / WebP q90 that stays under that quarter, because the start quality bands there | 60 KB / 90 KB | |
 | social (`encode.sh social`) | x264 slow CRF 18, High, VBV 20 Mb/s (inside level 4.0), AAC-LC 192k 48 kHz stereo | X: 512 MB, 3 to 140 s | |
 
 - **The film budgets** are critic C6's (12 / 18 / 6 / 9 MB = 45 MB), adopted by OVERRIDES §8 ("film set <= ~45 MB
