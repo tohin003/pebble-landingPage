@@ -104,13 +104,13 @@ const SETS: Record<"wide" | "square", Record<string, Framing>> = {
   // bleeds off the frame's right and bottom edges; the vertical's off the right only, its bottom a visible hairline),
   // so they share one set of framings, each written as its visible rect (nr: m, left, top) and checked on the 1.0.4
   // recording and stills with .work/film/v2/stageview.py. Every shot whose text is the point of the shot is at m ≥ 3.0,
-  // so the app's 12.5 px text (11.33 CSS px of ink) reads at ≥ 34 px (the lead's floor for 1:1 and 9:16): the status
-  // line, the edit card and its buttons, the held sentence, the tests card, the Verified step, Models' ways in and the
-  // permission modes. Edges: top and left always in clear space; the bottom too wherever it can be (the vertical shows it);
-  // a click target ≥ 60 px inside the frame. The documented exceptions (FILM_SPEC §22): the six memory layers (all six
-  // must show together: the grid is 468 CSS px wide, so their 10.67 px ink reads at 32 px, the right column's names
-  // 27 px from the frame's edge), the forget click (the bin and the record are 450 CSS px apart: m 2.21, 23 px; the
-  // action carries it), and the wide transitions (S5c stage 1, the S5e pull-back, the S7a canvas, a picture).
+  // so the app's 12.5 px text (11.33 CSS px of ink) reads at ≥ 34 px (the lead's floor for 1:1 and 9:16; R5 measures
+  // type size × m, here 37.5 px): the status line, the edit card and its buttons, the held sentence, the tests card, the
+  // Verified step, Models' ways in and the permission modes; the six memory layers' 12 px names at m 2.85 (34.2 px).
+  // Edges: top and left always in clear space; the bottom too wherever it can be (the vertical shows it); a click target
+  // ≥ 60 px inside the frame and above the caption band. The documented exceptions (FILM_SPEC §22): the forget click
+  // (the records' text and the bin are 451 CSS px apart, so m 2.12 at most: 26.5 px; the action carries it), and the
+  // wide transitions (S5c stage 1, the S5e pull-back, the S7a canvas: a picture).
   square: {
     /** S5a: the status line alone, m 3.02, x 328–677.7, y 172–418.4. The request bubble (its box y 97–168, x 448–1034,
      *  too wide to fit at the floor) stays wholly above the top edge (a top at 158 left its bottom as a sliver); the
@@ -166,13 +166,22 @@ const SETS: Record<"wide" | "square", Record<string, Framing>> = {
     /** S6b tilt (f1338–1361): y 218–466, the Ask and Auto cards ("Auto in project" 357.7–369.3, ink 35 px), the top
      *  under HOW PEBBLE ACTS (ends 214.3), the bottom under Auto's last line (461.3) */
     s6bTilt: nr(3.0, 340, 218),
-    /** S6c, the six layers (tilt f1446–1469): y 190–438, "Remember useful context" and the six chips (the documented
-     *  exception above: 32 px) */
-    s6cLayers: nr(3.0, 340, 190),
-    /** S6c, the records (the forget click, f1530): m 2.21, x 342.3–820.7, y 418–755: top in the paragraph's gap (415 |
-     *  422.7), bottom on the modal's lower edge, so the blurred app behind it never shows (REVIEW-G2 P2-10); the bin at
-     *  frame x 1022 (the documented exception above) */
-    s6c: nr(2.157 * SQUARE_K, 342.3, 418),
+    /** S6c, the six layers (tilt f1444–1467, held to f1500): m 2.85, x 335–705.5, y 195–456: "Remember useful context",
+     *  the six chips and the paragraph under them; the top between the tab bar (ends 185) and the heading (209), the
+     *  bottom in the gap after the paragraph (452 | 479.7). All six names show whole inside OVERRIDES §4's 60 px (the
+     *  left column's from 357, frame x 87; the right column's end at 683, 64 px from the edge), their 12 px type at 34 px
+     *  (at m 3.0 the right column's names ended 27 px from the frame's edge) */
+    s6cLayers: nr(2.85, 335, 195),
+    /**
+     * S6c, the records (the forget click, f1530), square: m 2.12, x 328–826.1, y 455–806. m 2.12 is the most that keeps
+     * both the records' text (from 346, frame x 62) and the bin's click (aimed at 796.7, frame x 1018) 60 px inside
+     * the frame (at m 2.21 the click sat 47–53 px from the edge); the top is low enough for the click to land above the
+     * caption band (frame y 892 ≤ 918; at y 418 it landed at 995, under the captions). Its 12.5 px records read at 26.5
+     * px (the documented exception: the action carries the shot). The bottom passes the modal's lower edge (757), so
+     * the blurred app behind it shows in the frame's bottom 104 px, inside the caption band (the vertical, whose bottom
+     * edge is a visible hairline, has its own framing: VERTICAL_ONLY below).
+     */
+    s6c: nr(2.12, 328, 455),
     /** S7a: the canvas only, x 643.1–1440, y 66–627.5 (a picture: the line carries the words) */
     s7a: sq(1.295, 1041.55, 353.25),
     /** S7a's ask (REVIEW-G2 P1-7): x 284–637.4, y 76–325, the request at 40 px; the reply's lines at the bottom edge
@@ -180,8 +189,18 @@ const SETS: Record<"wide" | "square", Record<string, Framing>> = {
     s7aAsk: sq(2.92, 460.7, 203.4),
   },
 };
-/** Every aspect's stage framings. The vertical's stage is the square's size (§22), so it shares the square's set. */
-export const FRAMINGS: PerAspect<Record<string, Framing>> = { wide: SETS.wide, square: SETS.square, vertical: SETS.square };
+/**
+ * The vertical's own framings, where its visible bottom edge and its caption band (y 1460, below the stage's bottom at
+ * 1444) change the answer. S6c, the records: m 2.12, x 328–826.1 (as the square's), y 400–750.9: the bottom in the gap
+ * between the last record (ends 738.3) and the modal's lower edge (757.3), so the blurred app behind the modal never
+ * shows (REVIEW-G2 P2-10); the top in the description's line gap (396.3 | 404.7); the bin's click at frame (1018, 1373).
+ */
+const VERTICAL_ONLY: Record<string, Framing> = {
+  s6c: nr(2.12, 328, 400),
+};
+/** Every aspect's stage framings. The vertical's stage is the square's size (§22), so it shares the square's set but
+ *  for VERTICAL_ONLY. */
+export const FRAMINGS: PerAspect<Record<string, Framing>> = { wide: SETS.wide, square: SETS.square, vertical: { ...SETS.square, ...VERTICAL_ONLY } };
 
 /** A square framing written for the old 1,032 × 744 stage, converted to the 1,056 px stage with the same visible width
  *  and the same top edge (the bottom bleeds off the frame). */
@@ -266,9 +285,11 @@ export function windowKeys(a: AspectId, s: number): CamKey[] {
     keys.push(key(1008, F.s5dTop!, s, 1), key(1073, F.s5dTilt!, s, 23), key(1139, F.s5dVerified!, s, 23));
     // S6 at the 34 px floor: the match cut lands on Models' ways in (T11), the camera tilts up to the tabs f1290–1313
     // before the pointer leaves for Permissions; Auto in project f1338–1361 and back f1408–1431 (as before); after the
-    // Memory click, f1446–1469 to the six layers, then f1476–1499 out to the records for the forget click
+    // Memory click (f1440), f1444–1467 to the six layers, held 1.1 s (an OVERRIDES §10 headline fact: REVIEW-G2 P2-18
+    // asked for about 1.2 s), then f1500–1523 out to the records; the pointer comes in from f1500 and reaches the bin by
+    // f1525, after the camera has landed
     keys.push(key(1211, F.s5eOut!, s, 23), key(1224, F.s6aWays!, s, 1), key(1313, F.s6a!, s, 23));
-    keys.push(key(1361, F.s6bTilt!, s, 23), key(1431, F.s6a!, s, 23), key(1469, F.s6cLayers!, s, 23), key(1499, F.s6c!, s, 23));
+    keys.push(key(1361, F.s6bTilt!, s, 23), key(1431, F.s6a!, s, 23), key(1467, F.s6cLayers!, s, 23), key(1523, F.s6c!, s, 23));
   }
   // S7a: the hard cut lands on the ask; f1602–1625 the camera moves to the canvas on van Wijk's path (it pulls back as
   // it pans, so the view never travels faster than it widens)
