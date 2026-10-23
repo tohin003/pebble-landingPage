@@ -1,9 +1,10 @@
 /* /privacy, in the plain-page column (src/components/shell/Article). */
+/* three short paragraphs at the lead's size, in ink: the page is only these */
 .body {
   display: grid;
   gap: 18px;
-  font-size: 17.5px;
-  line-height: 1.65;
+  font-size: 18px;
+  line-height: 1.6;
   color: var(--ink);
 }
 

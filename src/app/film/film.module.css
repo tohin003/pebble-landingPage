@@ -52,9 +52,12 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* the page's sub-head: the footer statement's size (globals.css .display-3: 30 / 30 / 27 / 24) */
 .transcriptTitle {
   margin-top: 44px;
-  font-size: clamp(26px, 1vw + 20px, 32px);
+  font-size: 30px;
+  line-height: 1.15;
+  letter-spacing: -0.014em;
 }
 
 .chapters {
@@ -67,11 +70,12 @@
   border-top: 1px solid var(--line);
 }
 
+/* a chapter's title at the stage titles' size (19 px, Inter 500) */
 .chapterTitle {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  font-size: 20px;
+  font-size: 19px;
 }
 
 .chapterMark {
@@ -82,12 +86,15 @@
   background: var(--stone);
 }
 
+/* the chapter's start time is data: Geist Mono, tabular (globals.css .data) */
 .time {
   margin-left: auto;
+  font-family: var(--font-mono);
   font-size: 15px;
   font-weight: 400;
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
+  font-variant-ligatures: none;
 }
 
 .parts {
@@ -97,8 +104,9 @@
 }
 
 .parts dt {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 500;
+  line-height: 1.45;
   color: var(--ink-2);
 }
 
@@ -130,7 +138,7 @@
   width: 7px;
   height: 1.5px;
   border-radius: 1px;
-  background: var(--line-2);
+  background: var(--line);
 }
 
 .sounds li {
@@ -139,6 +147,23 @@
 
 .sample {
   margin-top: 24px;
-  font-size: 14.5px;
+  font-size: 14px;
+  line-height: 1.5;
   color: var(--ink-2);
+}
+
+@media (max-width: 1023px) {
+  .transcriptTitle {
+    font-size: 27px;
+  }
+}
+
+@media (max-width: 560px) {
+  .transcriptTitle {
+    font-size: 24px;
+  }
+
+  .chapterTitle {
+    font-size: 17px;
+  }
 }
