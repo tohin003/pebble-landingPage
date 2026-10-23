@@ -48,7 +48,7 @@ function Value({ text }: { text: string }) {
       {parts.map((part, i) => {
         const counted = /^(.*?) \((.*)\)$/.exec(part);
         return (
-          <span key={part} className={styles.valueLine}>
+          <span key={i} className={styles.valueLine}>
             {i > 0 ? <span className="sr-only">and </span> : null}
             {counted ? (
               <>
