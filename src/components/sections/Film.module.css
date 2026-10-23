@@ -23,6 +23,18 @@
   object-fit: cover;
 }
 
+/* the film's poster is a light frame (the film has no dark version): dimmed a little on the night ground, like the
+   teaser and the loops (LoopVideo.module.css) */
+:global(:root[data-theme="dark"]) .posterImg {
+  filter: brightness(0.88);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .posterImg {
+    filter: brightness(0.88);
+  }
+}
+
 .window {
   position: absolute;
   left: 50%;

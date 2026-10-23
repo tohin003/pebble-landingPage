@@ -51,6 +51,21 @@
   transition: opacity var(--dur-crossfade) ease;
 }
 
+/* The loops and their posters are light captures on the light riverbed (lane v2-loops renders no dark versions): on the
+   night ground they're dimmed a little, so a 1280 px light frame doesn't glare. The app's grey text stays above 4.5:1.
+   The pause and play galet keeps its own colours. */
+:global(:root[data-theme="dark"]) .video,
+:global(:root[data-theme="dark"]) .poster {
+  filter: brightness(0.88);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .video,
+  :global(:root:not([data-theme])) .poster {
+    filter: brightness(0.88);
+  }
+}
+
 /* Pause and play: a 44 px target, drawn as a small galet (critic M9) on the picture. No shadow (DESIGN-LEXINGTON
    §3.5): a galet 1 px larger in --line behind it is its ring, so it holds its edge on any frame of the loop. */
 .control {
