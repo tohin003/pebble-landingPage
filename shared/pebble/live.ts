@@ -50,14 +50,27 @@ export class LivePebble {
   private look: Look | null = null;
   private lookAt = -Infinity;
   private inputAt: number;
+  /** Where the eyes rest when nothing draws them (null: the pose's own direction). */
+  private readonly rest: Gaze | null;
   /** How many times the timeline has restarted (tests and diagnostics). */
   restarts = 0;
 
-  constructor(pose: PoseId = "idle") {
+  /**
+   * `rest`: a resting gaze (screen terms) used instead of the pose's own direction whenever the gaze is let go
+   * (setGaze(null)) and when the pebble settles (relax()). The site passes { x: 0, y: 0 }, straight ahead
+   * (docs/DESIGN.md §9); the first frame then matches staticView(pose, rest).
+   */
+  constructor(pose: PoseId = "idle", rest: Gaze | null = null) {
     this.pose = pose;
     this.engine = createPebbleEngine(pose);
     this.time = staticTime(pose);
     this.inputAt = this.time;
+    this.rest = rest ? { x: rest.x, y: rest.y } : null;
+    if (this.rest) {
+      this.gaze = { ...this.rest };
+      this.look = lookFor(this.gaze);
+      this.engine.setLook(this.look, Math.max(0, this.time - 1)); // arrived before the first frame, as staticView
+    }
   }
 
   /** Show `pose` from now on (a 0.45 s morph). Returns false if it was already showing. */
@@ -72,12 +85,26 @@ export class LivePebble {
 
   /** Turn the eyes toward a quantised gaze, or rest them (null). Returns false if the gaze did not change. */
   setGaze(gaze: Gaze | null): boolean {
-    if (sameGaze(gaze, this.gaze)) return false;
-    this.gaze = gaze ? { x: gaze.x, y: gaze.y } : null;
+    const target = gaze ?? this.rest;
+    if (sameGaze(target, this.gaze)) return false;
+    this.gaze = target ? { x: target.x, y: target.y } : null;
     this.look = lookFor(this.gaze);
     this.engine.setLook(this.look, this.time);
     this.lookAt = this.time;
     this.inputAt = this.time;
+    return true;
+  }
+
+  /**
+   * Settling: bring the eyes back to the resting gaze without counting it as input, so the pebble holds right after
+   * the look morph. Returns false (and does nothing) when there is no resting gaze or the eyes are already there.
+   */
+  relax(): boolean {
+    if (!this.rest || sameGaze(this.rest, this.gaze)) return false;
+    this.gaze = { ...this.rest };
+    this.look = lookFor(this.gaze);
+    this.engine.setLook(this.look, this.time);
+    this.lookAt = this.time;
     return true;
   }
 

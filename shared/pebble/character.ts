@@ -7,6 +7,7 @@ import { liveliness } from "./bloub/face";
 import { SHAPE_BY_ID } from "./bloub/skins";
 import { avatarMotion } from "./avatarMotion";
 import { visualFor, type PoseId } from "./companionState";
+import { lookFor, type Gaze } from "./gaze";
 
 /** Body radius in viewBox units (Pebble: `new BotEngine(65, …)`). */
 export const PEBBLE_SCALE = 65;
@@ -79,10 +80,17 @@ export function staticTime(pose: PoseId = "idle"): number {
   return eyesOpenFrom(visualFor(pose).engine === "idle" ? STATIC_AT : settleDelay(pose));
 }
 
-/** The static frame of a pose: what PebbleStatic renders, and the frame PebbleLive starts from. */
-export function staticView(pose: PoseId = "idle"): PebbleView & { t: number } {
+/**
+ * The static frame of a pose: what PebbleStatic renders, and the frame PebbleLive starts from. `rest` turns the eyes
+ * to a resting gaze (screen terms, as from the pointer) instead of the pose's own direction: the site rests them
+ * straight ahead, { x: 0, y: 0 } (docs/DESIGN.md §9). The look is set a second before the frame, so bloub's 0.24 s look
+ * morph is over by then (as LivePebble's timeline restart does). Without `rest`, the frame is unchanged.
+ */
+export function staticView(pose: PoseId = "idle", rest: Gaze | null = null): PebbleView & { t: number } {
   const t = staticTime(pose);
-  return { frame: createPebbleEngine(pose).sample(t), motion: avatarMotion(pose, t, true), still: true, t };
+  const engine = createPebbleEngine(pose);
+  if (rest) engine.setLook(lookFor(rest), Math.max(0, t - 1));
+  return { frame: engine.sample(t), motion: avatarMotion(pose, t, true), still: true, t };
 }
 
 /**

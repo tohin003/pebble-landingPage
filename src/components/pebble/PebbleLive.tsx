@@ -9,16 +9,21 @@
 // - It stops when the tab is hidden or it is off-screen, and settles to a still after HOLD_SECONDS (8 s) without input
 //   on a calm pose (critic H4); pointer movement, scrolling it into view or a pose change wakes it.
 // - Reduced motion or html[data-motion="paused"]: a settled still frame, no animation loop, no gaze.
+// - At rest the eyes look straight ahead (rest.ts, DESIGN §9): from the first frame, when the pointer leaves, and when
+//   the pebble settles (it turns back to centre, then holds).
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import { LivePebble, MAX_FPS, POSES, TAP_MS, type PebbleView, type PoseId } from "@pebble/index";
+import { LivePebble, MAX_FPS, POSES, TAP_MS, type Gaze, type PebbleView, type PoseId } from "@pebble/index";
 import { PEBBLE_TAP, PEBBLE_TAPPED, type PebbleEventDetail } from "./events";
 import { PebbleSvg } from "./PebbleSvg";
 import { followPointer } from "./pointer";
+import { restFor } from "./rest";
 import { useMotionAllowed, usePebbleConductor } from "./usePebbleConductor";
 
 export interface PebbleLiveProps {
   /** the pose to show (default idle); hover and tap reactions show on top of calm poses */
   pose?: PoseId;
+  /** where the eyes rest (default: straight ahead; null: the pose's own direction) */
+  restGaze?: Gaze | null;
   /** width and height in px; without it the pebble fills its box (size it with CSS through className) */
   size?: number;
   /** hover and tap reactions (default true) */
@@ -46,6 +51,7 @@ function shownPose(base: PoseId, hovered: boolean, tapping: boolean): PoseId {
 
 export function PebbleLive({
   pose = "idle",
+  restGaze,
   size,
   interactive = true,
   followPointer: follow = true,
@@ -54,7 +60,7 @@ export function PebbleLive({
   style,
 }: PebbleLiveProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [pebble] = useState(() => new LivePebble(pose));
+  const [pebble] = useState(() => new LivePebble(pose, restFor(pose, restGaze)));
   const [view, setView] = useState<PebbleView>(() => pebble.still());
   const [hovered, setHovered] = useState(false);
   const [tapping, setTapping] = useState(false);
@@ -100,7 +106,8 @@ export function PebbleLive({
         pebble.advance(last < 0 ? 0 : (ts - last) / 1000);
         last = ts;
         setView(pebble.view());
-        if (pebble.shouldHold()) {
+        // settled: turn the eyes back to rest first (a 0.24 s look morph), then hold
+        if (pebble.shouldHold() && !pebble.relax()) {
           setAwake(false);
           return;
         }

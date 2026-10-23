@@ -7,18 +7,27 @@ import { Pebble } from "./Pebble";
 import { PebbleLive } from "./PebbleLive";
 import { PebbleStatic } from "./PebbleStatic";
 import { PebbleSvg } from "./PebbleSvg";
+import { SITE_REST } from "./rest";
 
 const geometry = (html: string) => [...html.matchAll(/ (d|transform|opacity|cx|cy|r)="([^"]*)"/g)].map((m) => `${m[1]}=${m[2]}`);
 
 describe("PebbleStatic", () => {
-  test("draws the engine's idle frame at 1.0 s, the reference frame, exactly", () => {
-    const html = renderToStaticMarkup(<PebbleStatic size={240} />);
+  test("draws the engine's idle frame at 1.0 s, the reference frame, exactly (with the engine's own resting gaze)", () => {
+    const html = renderToStaticMarkup(<PebbleStatic size={240} restGaze={null} />);
     expect(html).toContain(`d="${fixture.bodyPath}"`);
     for (const eye of fixture.eyes) {
       expect(html).toContain(`d="${eye.d}"`);
       expect(html).toContain(`transform="${eye.matrix}"`);
     }
     expect(html).toContain('transform="translate(0.00 0.00) rotate(0.00) scale(1.000 1.000)"');
+  });
+
+  test("rests its eyes straight ahead by default (DESIGN §9); the sleepy pose keeps its own", () => {
+    const html = renderToStaticMarkup(<PebbleStatic size={240} />);
+    for (const eye of staticView("idle", SITE_REST).frame.eyes) expect(html).toContain(`transform="${eye.matrix}"`);
+    for (const eye of fixture.eyes) expect(html).not.toContain(`transform="${eye.matrix}"`);
+    const sleepy = renderToStaticMarkup(<PebbleStatic pose="sleepy" size={240} />);
+    for (const eye of staticView("sleepy").frame.eyes) expect(sleepy).toContain(`transform="${eye.matrix}"`);
   });
 
   test("is decorative, sized, and coloured from the theme", () => {
@@ -34,7 +43,7 @@ describe("PebbleStatic", () => {
     for (const pose of Object.keys(POSES) as PoseId[]) {
       const html = renderToStaticMarkup(<PebbleStatic pose={pose} size={100} />);
       expect(html).toContain(`data-pose="${pose}"`);
-      expect(html).toContain(staticView(pose).frame.bodyPath.slice(0, 40));
+      expect(html).toContain(staticView(pose, pose === "sleepy" ? null : SITE_REST).frame.bodyPath.slice(0, 40));
     }
   });
 });
