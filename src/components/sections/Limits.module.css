@@ -1,92 +1,63 @@
-/* What Pebble isn't (yet) (DESIGN §5 row 13, design comp 2): the head on the left, the limits in two columns on the
-   right, marked with the galet. The shared .section helper lives in src/app/globals.css. */
-.section {
-  position: relative;
-}
-
-.inner {
-  display: grid;
-  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
-  gap: 32px 64px;
-  width: min(var(--w-content), 100%);
-  margin: 0 auto;
-}
-
-.lead {
-  max-width: 22em;
-  margin-top: 18px;
-}
-
+/* What Pebble isn't (yet) (DESIGN-LEXINGTON §6 row 13): a two-column ruled list on the page's columns, each column four
+   columns wide (4–7 and 8–11), each item a hairline row, no marks. One column below 1024 px. */
 .list {
-  columns: 2;
-  column-gap: 48px;
-  padding-top: 8px;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: start;
 }
 
 .list li {
-  position: relative;
-  padding: 0 0 16px 22px;
-  break-inside: avoid;
-  font-size: 15.5px;
+  min-width: 0;
+  padding: 15px 0 17px;
+  border-top: 1px solid var(--line);
+  font-size: 15px;
   line-height: 1.55;
   color: var(--ink-2);
 }
 
-.list li::before {
-  content: "";
-  position: absolute;
-  left: 1px;
-  top: 0.62em;
-  width: 9px;
-  height: 8px;
-  background: var(--stone);
-  -webkit-mask: var(--galet-mask) center / contain no-repeat;
-  mask: var(--galet-mask) center / contain no-repeat;
+.list li:nth-child(odd) {
+  grid-column: 1 / span 4;
 }
 
-.list strong {
-  font-weight: 600;
+.list li:nth-child(even) {
+  grid-column: 5 / span 4;
+}
+
+/* each column ends on its own rule */
+.list li:nth-last-child(-n + 2) {
+  border-bottom: 1px solid var(--line);
+}
+
+/* the four release limits: the ones to know before installing, in ink (OVERRIDES §2) */
+.list .release {
   color: var(--ink);
+}
+
+.title {
+  display: block;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.text {
+  display: block;
+  margin-top: 2px;
 }
 
 .list code {
   color: var(--ink);
 }
 
-/* the four release limits: the ones to know before installing, in the darker ink */
-.list .release {
-  color: var(--ink);
-}
-
-.list .release::before {
-  background: var(--accent-soft);
-}
-
-/* Below 1100 px the head goes above the list, so the two columns of limits keep a readable width. */
-@media (max-width: 1100px) {
-  .inner {
-    grid-template-columns: minmax(0, 1fr);
-    row-gap: 28px;
-  }
-
-  .lead {
-    max-width: 34em;
-  }
-
+@media (max-width: 1023px) {
   .list {
-    column-gap: 40px;
-    padding-top: 0;
+    display: block;
   }
-}
 
-@media (max-width: 899px) {
-  .inner {
-    max-width: 680px;
+  .list li:nth-last-child(2) {
+    border-bottom: 0;
   }
-}
 
-@media (max-width: 600px) {
-  .list {
-    columns: 1;
+  .list li {
+    padding: 14px 0 15px;
   }
 }
