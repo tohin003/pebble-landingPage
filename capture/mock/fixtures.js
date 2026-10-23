@@ -1,7 +1,9 @@
-// Demo fixtures for Pebble 1.0.4's real UI (re-checked against the published 1.0.4 checkout on 2026-10-23: no new or
-// changed RPC on any captured surface; the host templates cited below are unchanged since 1.0.1, and the window's own
-// 1.0.4 strings, such as the permission modes and the user bubble without its leading space, come from the
-// components). Everything here is fictional demo content (no real person's data): Maya
+// Demo fixtures for Pebble 1.1.0's real UI (re-checked against the published source, tag v1.1.0 at commit 07886c7, on
+// 2026-10-24). 1.1.0 adds one setting and one shell command to the captured surfaces: Stealth Lockdown, kept by the
+// host as settings.stealth (app.py state() default False; setting() accepts the boolean and emits "settings", after
+// which every window re-reads state()), and the shell's `stealth_set` (entry.js). The host templates cited below are
+// unchanged since 1.0.1, and the window's own strings, such as the Privacy and focus card, come from the components.
+// Everything here is fictional demo content (no real person's data): Maya
 // (maya@example.com, /Users/maya), her invoice-kit project, a Lisbon trip budget and a Python datetime quiz.
 //
 // What may appear on screen, and where it comes from:
@@ -15,7 +17,8 @@
 //   - Model labels are provider-neutral: only the local GGUF file the project tests with (docs/MODEL_SELECTION.md,
 //     config/model.json) is connected, so no cloud model name dates the captures (critic H14).
 //
-// buildWorld({scene, theme, surface, drawer}) returns { storage, has(method), rpc(method, params), live, ... }.
+// buildWorld({scene, theme, surface, drawer, stealth}) returns { storage, has(method), rpc(method, params), live, ... }.
+// `stealth` starts the world with Stealth Lockdown already on (the host keeps it across a restart).
 
 const ID = {
   coding: "chat-invoice-fix", trip: "chat-lisbon-trip", quiz: "chat-datetime-quiz", pet: "chat-pet-dates",
@@ -191,11 +194,28 @@ function modelStatus() {
     effort_parameter: "local_thinking" };
 }
 
+// Usage telemetry as a fresh install reports it, off: backend/pebble/telemetry.py _status() with no state, its
+// CONSENT_TEXT, FIELDS (sorted names) and _limits() copied as they are. Settings › Usage telemetry shows the notice, the
+// limits ("1000 events or 256 KB, for 30 days") and the fields from it; the 1.1.0 Privacy and focus stills show its end.
+const TELEMETRY_OFF = {
+  schema: "pebble.telemetry/1", enabled: false, consent_version: null, consented_at: null,
+  current_consent_version: "pebble.telemetry.consent/1",
+  consent_text: "Pebble can keep a private usage log on this Mac to help measure its reliability. It records only counts and rounded values: how each task ended, how many steps it took, which built-in tools it used and how often, approvals and questions, and rounded durations, token counts and memory or CPU use. It never records your messages, the model's replies, files, memory notes, web addresses, account details or credentials. Nothing is sent anywhere: you can save the log to a file you choose and share it yourself. At most 1,000 events or 256 KB are kept, for 30 days. Turning this off deletes the log.",
+  consent_sha256: "ca91c602ce91528b85b88fd60ec46694883904f3110242a383216a68fa4d9d24",
+  install_id: null, events: 0, bytes: 0, kinds: { run_settled: 0, resource_sample: 0, error: 0 }, dropped: 0, expired: 0, refused: 0,
+  fields: {
+    run_settled: ["approvals", "input_tokens_log2", "model_ms_log2", "output_tokens_log2", "questions", "rejections", "state", "steps", "tools", "uncertain", "wall_ms_log2"],
+    resource_sample: ["cpu_percent_bucket", "footprint_mb_log2"],
+    error: ["code"],
+  },
+  limits: { max_events: 1000, max_bytes: 262144, retention_days: 30 }, destination: null, network_upload: false, export: "native_save_dialog",
+};
+
 const STATIC_COUNTS = { working: 2, episodic: 14 };
 const LAYERS = [["working", "Working context"], ["episodic", "Past experiences"], ["semantic", "Facts & knowledge"],
   ["procedural", "Procedures"], ["temporal", "Time-sensitive information"], ["profile", "Your preferences"]]; // memory.py KINDS
 
-export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null }) {
+export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null, stealth = false }) {
   const now = Math.floor(Date.now() / 1000);
   const ago = (s) => now - s;
   const model = modelStatus();
@@ -438,7 +458,8 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null }
 
   // ---- the state() reply -----------------------------------------------------------------------------------------
   const settings = {
-    theme, reduced_motion: false, memory_enabled: true,
+    // stealth: Stealth Lockdown (1.1.0), off by default (app.py state()); the switch is in Settings › Privacy and focus.
+    theme, reduced_motion: false, stealth: !!stealth, memory_enabled: true,
     memory_layers: { working: true, episodic: true, semantic: true, procedural: true, temporal: true, profile: true },
     permissions: { mode: scene === "challenge" ? "auto" : "ask",
       tools: { files: true, edits: true, tests: true, apps: true, web: true, terminal: true, plugins: true, views: true, screen: false } },
@@ -456,7 +477,7 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null }
     settings,
     data_dir: "/Users/maya/.pebble",
     platform: "darwin",
-    version: "1.0.4", // backend/pebble/__init__.py VERSION (Settings' About block shows "Pebble 1.0.4")
+    version: "1.1.0", // backend/pebble/__init__.py VERSION (Settings' About block shows "Pebble 1.1.0")
     memory: {
       enabled: settings.memory_enabled,
       strategy: "SQLite FTS5 · hybrid lexical/trigram/metadata ranking · bounded retrieval · no extra model", // memory.py
@@ -572,13 +593,14 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null }
       settings: { enabled: true, kinds: { completed: true, failed: true, action_needed: true, monitor_changed: true }, preview: "title", quiet_hours: null },
       quiet_now: false, outbox: { pending: 0, delivered: 0, suppressed: 0, failed: 0 }, deferred: 0, last_failure: null, jobs: [], actions: [],
     }),
-    telemetry_get: () => ({ enabled: false, events: 0 }),
+    telemetry_get: () => TELEMETRY_OFF,
     artifact_get: (p) => findArtifact(p) || (() => { throw "View not found."; })(),
     artifact_history: (p) => [findArtifact(p)].filter(Boolean),
     quiz_attempt: (p) => (findArtifact(p)?.kind === "quiz" ? quizAttempt(p, now) : null),
     quiz_start: (p) => quizAttempt(p, now),
     quiz_save: () => ({ saved: true }),
-    // A settings change takes effect in the next state() read, as the service's does.
+    // A settings change takes effect in the next state() read, as the service's does. (The service then emits
+    // "settings"; a timeline that changes a setting for another window emits it itself, as record.mjs pet-veil does.)
     setting: ({ key, value }) => {
       if (key in settings) settings[key] = JSON.parse(JSON.stringify(value));
       return true;

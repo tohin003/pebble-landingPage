@@ -2,7 +2,8 @@
 // It installs Tauri v2's official IPC mocks (@tauri-apps/api/mocks: mockWindows + mockIPC) and answers every
 // `invoke("rpc", {method, params})` from the demo fixtures in ./fixtures.js, so App.vue / Pet.vue render real states.
 //
-// URL parameters:  ?scene=<name>  &theme=light|dark  [&pet]  [&drawer=320..520]  (`pet` is Pebble's own companion switch)
+// URL parameters:  ?scene=<name>  &theme=light|dark  [&pet]  [&drawer=320..520]  [&stealth]
+//   (`pet` is Pebble's own companion switch; `stealth` starts with Stealth Lockdown on, as after a restart, 1.1.0)
 // Debug/automation handle: window.__pebble = { world, calls, unhandled, emit(event, data) }
 import "./vclock.js"; // first: with ?vclock it replaces the page clock before any Pebble module reads it
 import { mockIPC, mockWindows } from "pebble-tauri-mocks";
@@ -17,7 +18,7 @@ const theme = params.get("theme") === "dark" ? "dark" : "light";
 // `native = isTauri()` once at import time, so it must be true before /src/main.ts loads App.vue or Pet.vue.
 window.isTauri = true;
 
-const world = buildWorld({ scene, theme, surface, drawer: Number(params.get("drawer")) || null });
+const world = buildWorld({ scene, theme, surface, drawer: Number(params.get("drawer")) || null, stealth: params.has("stealth") });
 
 // Deterministic per-scene browser storage (drawer state, the pet's remembered conversation, quiz drafts).
 try {
@@ -79,6 +80,9 @@ mockIPC(
       case "show_pet":
       case "open_workspace":
       case "service_restart":
+      // 1.1.0 (main.rs stealth_set): the shell applies Stealth Lockdown to its windows (content protection, Dock, ⌘Tab,
+      // Mission Control, no focus). A browser page has no such windows; the switch's own state is the backend setting.
+      case "stealth_set":
         return null;
       case "login_item_status":
         return { status: "enabled" };
