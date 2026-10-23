@@ -434,10 +434,11 @@ export const project = {
     {
       n: "04",
       kicker: "AgentGuard",
-      title: "Done means tested.",
+      // 1.0.3 Corrections: AgentGuard holds changed code only when tests cover it; the old title said more.
+      title: "Tests that cover a change must pass.", // [C-PROJ-9]
       body:
-        "A task that changed code must have a passing test run of those changes before Pebble calls it finished. Written JSON and CSV files must parse. When the evidence is missing, the task is held at “verification required”, and you choose what happens next.", // [C-PROJ-9]
-      limit: "AgentGuard checks evidence; it is not a security layer.", // [C-PROJ-10]
+        "Before Pebble calls a task finished, tests that cover the code it changed must have passed since the change, and written JSON and CSV files must parse. When the evidence is missing, the task is held at “verification required”, and you choose what happens next.", // [C-PROJ-9] (1.0.3)
+      limit: "Changed code without covering tests is not held. AgentGuard checks evidence; it is not a security layer.", // [C-PROJ-9] [C-PROJ-10]
     },
   ],
   chapterIds: { steps01to03: "project", step04: "tested" },
@@ -474,11 +475,15 @@ export const agentGuard = {
     "AgentGuard reads the evidence before Pebble calls a task finished. Its one-line result says which tests ran and whether they passed on the current files.", // [C-AG-1]
   /** The one comparative framing the release session allows, and only as intent (OVERRIDES §2). [C-AG-6] */
   intent: "An agent shouldn't grade its own work.",
-  /** What the evidence layer does (OVERRIDES §7, the release session's brief). [C-AG-7] [C-AG-8] [C-AG-9] */
+  /**
+   * What the evidence layer does (OVERRIDES §7, the release session's brief), with the scope the 1.0.3 Corrections
+   * give it: the invented-API check reads Python code only, and only changed code that tests cover is held.
+   * [C-AG-7] [C-AG-8] [C-AG-9]
+   */
   layer: [
     "AgentGuard is built into Pebble as an evidence layer between the model and your project.",
-    "It indexes your project and grounds each request in the files that request reaches. It challenges an agent that drifts outside that scope, and flags invented or broken dependencies.",
-    "It reads test results as Pebble observed them, never as the model reports them. When a task changed code and no fresh passing test run covers the change, Pebble holds it at “verification required”: you run the tests, ask Pebble to finish, or accept it as unverified.",
+    "It indexes your project and grounds each request in the files that request reaches. It challenges an agent that drifts outside that scope. It also challenges an invented API, such as a call to a function that doesn't exist, but that check reads Python code only.",
+    "It reads test results as Pebble observed them, never as the model reports them. When tests cover the code a task changed and haven't passed since the change, Pebble holds the task at “verification required”: you run the tests, ask Pebble to finish, or accept it as unverified. Changed code without covering tests is not held.",
   ],
   /**
    * The scope challenge. There is no card for it: it is the refused step's error in Details › Activity, and the
@@ -699,15 +704,18 @@ export const memory = {
     { layer: "Temporal", name: "Time-sensitive information", holds: "Dates and temporary arrangements, each with an expiry." },
     { layer: "Profile", name: "Your preferences", holds: "How you like to work, and what you asked Pebble to remember about you." },
   ],
-  /** How recalled memory reaches the model (OVERRIDES §10). [C-MEM-8] */
+  /**
+   * How recalled memory reaches the model (OVERRIDES §10). "Recalls": PEBBLE.md is the exception, followed as your
+   * standing instructions (points below; 1.0.3 Corrections). [C-MEM-8]
+   */
   recall:
-    "Each memory reaches the model as labelled data, with where it came from and when, never as an instruction or a permission.",
-  relearn: "Pebble remembers what you forgot, so it doesn't learn it again from the same place.", // [C-MEM-9]
+    "Each memory Pebble recalls for a task reaches the model as labelled data, with where it came from and when, never as an instruction or a permission.",
+  relearn: "A memory you forget isn't learnt again from the same place. Forget all memories starts over, so Pebble can learn again.", // [C-MEM-9] (1.0.3)
   points: [
     "See and search every memory in Settings › Memory, with where it came from. Forget one, or all of them.", // [C-MEM-2]
-    "Start a message with “Remember that …” to save a preference. Pebble still answers the rest.", // [C-MEM-3]
+    "Start a message with “Remember that …” to save something right away: a preference when it is about you, otherwise a fact. Pebble still answers the rest.", // [C-MEM-3] (1.0.3)
     "Ask Pebble to forget something and it shows the memories that match. Nothing is forgotten until you confirm it in the main window.", // [C-MEM-4]
-    "Write what Pebble should know about you in `~/.pebble/PEBBLE.md`, in your own words. It is information about you, never a permission.", // [C-MEM-5]
+    "Write what Pebble should know about you in `~/.pebble/PEBBLE.md`, in your own words. Pebble follows it as your standing instructions, and it never grants a permission.", // [C-MEM-5] (1.0.3)
   ],
   limit: "One switch, Remember useful context, turns memory off. Forgetting removes a memory for good.", // [C-MEM-6]
   chapterId: "memory",
@@ -746,7 +754,7 @@ export const more = {
       icon: "ListChecks",
       title: "Bigger tasks",
       body:
-        "Pebble can hand parts of a larger task to agents, track a goal with criteria, and run reviewed schedules. Agents read and propose; only the main task applies changes, through your normal review.", // [C-MORE-3]
+        "Pebble can hand parts of a larger task to agents, track a goal with criteria, and run reviewed schedules. Agents read and propose (a worktree agent writes only in its own copy); only the main task changes your project, through your normal review.", // [C-MORE-3] (1.0.3)
       limit: "Scheduled tasks run only while Pebble is open. Their results show in Pebble; macOS notifications are off until you turn them on.", // [C-LIM-11] (OVERRIDES §12)
     },
     {
@@ -784,7 +792,7 @@ export const more = {
 export const orchestration = {
   title: "Bigger tasks, kept in bounds",
   points: [
-    "A task can hand parts to agents, each with steps, time and tokens reserved from the task. Agents read, search, ask and propose; they never write, run commands or call connectors.", // [C-ORC-1]
+    "A task can hand parts to agents, each with steps, time and tokens reserved from the task. Agents read, search, ask and propose. They never change your project, run commands or call connectors themselves; a worktree agent writes only in its own copy.", // [C-ORC-1] (1.0.3)
     "The main task re-checks each proposal against the latest files, then applies it through AgentGuard and your normal review. You can watch, message or stop each agent.", // [C-ORC-2]
     "`/goal` gives a conversation a checklist of criteria and blockers. A goal tracks progress; it is never a permission.", // [C-ORC-3]
     "Reviewed schedules run a task at set times with the model, permissions and project you approved, and wait for your review again if the model or permissions change.", // [C-ORC-4]
@@ -1087,7 +1095,7 @@ export const media = {
     mainApproval:
       "Pebble's main window on the invoice-kit project, with two edit cards waiting for approval, each with its diff.",
     heldUnverified:
-      "A reply in Pebble held by AgentGuard: “Blocked” and “Pebble's change isn't verified yet.”, because two files changed and no tests were run, with the buttons Run the tests, Ask Pebble to finish and Accept as unverified.",
+      "A reply in Pebble held by AgentGuard: “Blocked” and “Pebble's change isn't verified yet.”, because two files changed and the tests that cover them weren't run, with the buttons Run the tests, Ask Pebble to finish and Accept as unverified.",
     mainChallenge:
       "Pebble's Details drawer on the Activity tab. After edits to five files the request doesn't reach, the next edit is refused: “AgentGuard — evidence check”, “5 file(s) changed that the task does not reach” and “Either explain what connects these to the task, or split them into a separate change.”",
     settingsMemory:

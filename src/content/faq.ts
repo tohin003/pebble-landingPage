@@ -76,7 +76,7 @@ export const faq: readonly FaqItem[] = [
     id: "faq-agentguard",
     question: "Is AgentGuard a security feature?",
     answer: [
-      "No. AgentGuard is a reliability check, not a security layer. Before Pebble calls a task finished, it checks the evidence: a task that changed code must have a passing test run of those changes, and written JSON or CSV files must parse.", // [C-FAQ-13]
+      "No. AgentGuard is a reliability check, not a security layer. Before Pebble calls a task finished, it checks the evidence: when tests cover the code the task changed, they must have passed since the change, and written JSON or CSV files must parse. Changed code without covering tests is not held.", // [C-FAQ-13] (1.0.3)
       "It also indexes your project, grounds each request in the files it reaches, and challenges an agent that drifts outside that scope.", // [C-FAQ-14]
       "When the evidence is missing, the task is held at “verification required”, and you choose: run the covering tests, ask Pebble to finish, or accept the change as not verified.", // [C-FAQ-15]
       "Protection comes from elsewhere: the permission mode you pick, approvals that happen only in Pebble's main window, and macOS's sandbox, which limits commands and tests but is not a promise against every attack.", // [C-FAQ-16]
