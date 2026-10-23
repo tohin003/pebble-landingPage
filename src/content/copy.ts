@@ -1113,6 +1113,9 @@ export const media = {
       "Pebble's Details drawer on the Activity tab. After edits to five files the request doesn't reach, the next edit is refused: “AgentGuard — evidence check”, “5 file(s) changed that the task does not reach” and “Either explain what connects these to the task, or split them into a separate change.”",
     settingsMemory:
       "Pebble's Settings, on the Memory tab: the Remember useful context switch, the six kinds of memory and the saved records, each with a button to forget it.",
+    /** The Views section's cut of main-dashboard: the chart card alone (ViewsAndTour.tsx CHART). [C-F2B-5] */
+    viewsChart:
+      "The “Spending by category” chart of a Lisbon trip budget, a view Pebble built: euros planned against spent for flights, stay, food, tours, transit and other.",
   },
   loops: {
     companion: {
@@ -1149,7 +1152,7 @@ export const media = {
     views: {
       name: "views",
       label:
-        "The Lisbon trip budget dashboard Pebble built as a view. The view moves into its chart, cuts to a Python quiz, then returns to the dashboard.", // FILM_SPEC §16 L8
+        "Two views Pebble built: the “Spending by category” chart of a Lisbon trip budget, then a Python datetime quiz.", // L8 as rendered (lane v2-loops) [C-F2B-6]
     },
   },
   teaser: "A silent preview: an edit is approved, the tests run, and the check reads Verified.",
