@@ -59,8 +59,9 @@
     margin-top: 40px;
   }
 
-  .quote,
-  .fixed {
+  /* the measure goes on the words, so the hairline between the two runs the column's full width, as every rule does */
+  .quote > *,
+  .fixed > * {
     max-width: 40em;
   }
 

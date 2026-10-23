@@ -82,13 +82,13 @@ export function PermissionDial({ stills }: { stills: Readonly<Record<DialModeId,
       </fieldset>
 
       <div className={styles.modes} aria-live="polite" data-changed={changed ? "" : undefined}>
-        <div className={styles.column}>
+        <div className={styles.runs}>
           <h3 className={styles.columnTitle}>{dial.runsWithoutAsking}</h3>
           <p key={`runs-${mode}`} className={styles.modeText}>
             {current.runsWithoutAsking}
           </p>
         </div>
-        <div className={styles.column}>
+        <div className={styles.asks}>
           <h3 className={styles.columnTitle}>{dial.alwaysAsks}</h3>
           <p key={`asks-${mode}`} className={styles.modeText}>
             {current.alwaysAsks}

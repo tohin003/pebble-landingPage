@@ -1,9 +1,12 @@
 /* The permission dial (comp 3, DESIGN-LEXINGTON §6 You set the pace): an object like the pebble, centred in the main
    column. The arch is a local Horizon (shape "arch") inside .arc, which marks its box (2R wide, R tall). The stops sit
    on it at fixed angles (cos and sin precomputed, so no CSS trigonometry is needed): Ask for approval at 152°, Auto in
-   project at 90°, Full access at 28° (155° and 25° on phones). The chosen stop is the accent (a state mark, one of its
-   three jobs); the others are stones. Under the arch, the chosen mode's own words in two columns from column 4. */
+   project at 90°, Full access at 28° (155° and 25° below 768 px). The chosen stop is the accent (a state mark, one of
+   its three jobs); the others are stones. Under the arch, the chosen mode's own words in the main column's 5 | 4 split.
+   The arch with its feet is 3.04 R wide (2 R, plus 26 % of that on each side), so R follows the dial's own width
+   (cqi): the arch never runs past the main column, from a 320 px phone through the 561–767 px tablets. */
 .dial {
+  container-type: inline-size;
   text-align: center;
 }
 
@@ -38,7 +41,7 @@
 }
 
 .arch {
-  --R: 232px;
+  --R: min(232px, calc(100cqi / 3.04));
   --top: 72px;
   --pb: 190px; /* the pebble's box (body 112 px wide, as comp 3's dial pebble) */
   position: relative;
@@ -208,13 +211,22 @@
   background: radial-gradient(closest-side, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
 }
 
-/* --- the chosen mode's own words: two columns across the main column, so they start on column 4 --- */
+/* --- the chosen mode's own words, from column 4: on the main column's nine columns, split 5 | 4 like the "In every
+   mode" block under the dial, so both share one vertical at column 9 (two equal columns below 1024 px) --- */
 .modes {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: repeat(9, minmax(0, 1fr));
   gap: 18px var(--gap);
   margin-top: 44px;
   text-align: left;
+}
+
+.runs {
+  grid-column: 1 / span 5;
+}
+
+.asks {
+  grid-column: 6 / -1;
 }
 
 .columnTitle {
@@ -253,11 +265,22 @@
   color: var(--ink-2);
 }
 
-@media (max-width: 560px) {
+/* below 1024 px the main column is the whole container: the mode's words in two equal columns */
+@media (max-width: 1023px) {
+  .modes {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .runs,
+  .asks {
+    grid-column: auto;
+  }
+}
+
+/* Below 768 px the outer names don't fit beside the knobs (R shrinks with the column): they go under the arch's feet,
+   inside the column, and the outer stops move a little lower on the arch to leave them room. */
+@media (max-width: 767px) {
   .arch {
-    --R: 128px;
-    --top: 56px;
-    --pb: 116px;
     height: calc(var(--top) + var(--R) + 74px);
   }
 
@@ -271,15 +294,6 @@
     --sin: 0.4226;
   }
 
-  .name {
-    font-size: 14.5px;
-  }
-
-  .tag {
-    font-size: 12.5px;
-  }
-
-  /* the outer names go under the arch's feet, inside the screen */
   .detent[data-mode="ask"] .name,
   .detent[data-mode="full"] .name {
     top: calc(var(--sin) * var(--R) + 18px);
@@ -296,6 +310,22 @@
     left: auto;
     right: -16px;
     text-align: right;
+  }
+}
+
+@media (max-width: 560px) {
+  .arch {
+    --R: min(128px, calc(100cqi / 3.04));
+    --top: 56px;
+    --pb: 116px;
+  }
+
+  .name {
+    font-size: 14.5px;
+  }
+
+  .tag {
+    font-size: 12.5px;
   }
 
   .detent[data-mode="auto"] .name {
