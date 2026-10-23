@@ -221,8 +221,15 @@
     margin-top: 28px;
   }
 
+  /* the hairlines run the column's full width; the words keep a 40 em measure (a 720 px line is 95 characters) */
   .facts li {
     padding-block: 14px;
+    padding-right: max(0px, calc(100% - 40em));
+  }
+
+  .points li,
+  .limit {
+    padding-right: max(0px, calc(100% - 40em));
   }
 
   .more {

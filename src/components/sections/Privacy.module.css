@@ -219,6 +219,13 @@
   .leaves .columnNotes {
     margin-left: 44px;
   }
+
+  /* one column: the words keep a 40 em measure; the panel and the hairlines keep the column's width */
+  .storedList li,
+  .leavesList li,
+  .columnNotes p {
+    padding-right: max(0px, calc(100% - 40em));
+  }
 }
 
 @media (max-width: 560px) {

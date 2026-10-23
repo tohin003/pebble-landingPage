@@ -203,9 +203,10 @@
     margin-top: 40px;
   }
 
+  /* the hairlines run the column's full width, as every rule does; the words keep a measure (padding) */
   .note {
-    max-width: 36em;
     margin-top: 28px;
+    padding-right: max(0px, calc(100% - 36em));
   }
 
   .control {
@@ -213,9 +214,13 @@
   }
 
   .rules {
-    max-width: 40em;
     margin-top: 28px;
     padding-top: 0;
+  }
+
+  .points li,
+  .limit {
+    padding-right: max(0px, calc(100% - 40em));
   }
 }
 

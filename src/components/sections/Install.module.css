@@ -494,6 +494,14 @@
     flex-direction: column;
     gap: 6px;
   }
+
+  /* one column: the words keep a 40 em measure; the hairlines keep the column's width */
+  .ticks li,
+  .steps li,
+  .way > .small,
+  .after p {
+    padding-right: max(0px, calc(100% - 40em));
+  }
 }
 
 @media (max-width: 560px) {
