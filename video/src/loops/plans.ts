@@ -44,8 +44,11 @@ export const SLOT = {
   memory: 624,
   /** Views: the main column, columns 4–12. At 5 columns the chart and the quiz are pictures, not text */
   views: 952,
-  /** every 4:5 cut, judged on a 360 px wide phone */
-  phone: 360,
+  /**
+   * Every 4:5 cut, judged on a 360 px wide phone, where the page's frame is 328 px wide: the system's 16 px phone gutters
+   * (--pad) on each side. (Lane v2-loops first judged them at 360 px, as if they ran edge to edge; they never do.)
+   */
+  phone: 328,
 } as const;
 
 /** Video px per page px for a loop shown `slot` CSS px wide. */
@@ -53,19 +56,22 @@ export const kOf = (slot: number, frameW: number) => frameW / slot;
 
 /**
  * The least riverbed a card leaves on each side (video px). A card that bleeds off an edge reads as a cropped screenshot;
- * one that sits whole on the ground reads as a moment set down on the page (comp lex-A's tile and film frame).
+ * one that sits whole on the ground reads as a moment set down on the page (comp lex-A's tile and film frame). On the
+ * 4:5 cuts the sides are 28 px (8.5 page px in a 328 px frame): the card gets the width the phone needs to read it, and
+ * the 4:5 frame's extra height keeps the ground above and below it (comp lex-A's phone tile does the same).
  */
 export const MARGIN = {
   wide: { x: 64, y: 48 },
   square: { x: 64, y: 48 },
-  tall: { x: 36, y: 48 },
+  tall: { x: 28, y: 48 },
 } as const satisfies Record<LoopAspect, { x: number; y: number }>;
 
 /**
  * The reading floor (DESIGN-LEXINGTON §3.8: text in a picture renders at 12 px or more): the key text of every framing,
  * in page px at the slot. Pebble's own text is 12–13 px (RunPanel 13, ActionReview 12, the drawer's steps 12), so a
- * card at about the app's own scale meets it. The 4:5 cuts are judged on a 360 px phone, where a card as wide as
- * comp lex-A's phone tile (92 %) shows the app at 93 % of its scale: their floor is 11 px there (12 px on a 390 px phone).
+ * card at about the app's own scale meets it. The 4:5 cuts are judged in a 360 px phone's 328 px frame, where the page's
+ * own phone crop of the story's steps (ProjectStory STEPS: 330 CSS px at 92 % of the frame) renders the app's 12 px at
+ * 11 px: their floor is 11 px there, and the same cuts render 12 px on a 390 px phone (358 px frame).
  */
 export const READ_FLOOR = { wide: 12, square: 12, tall: 11 } as const satisfies Record<LoopAspect, number>;
 
@@ -177,8 +183,11 @@ export const L2 = (() => {
     stage: { wide: wide.stage },
     /** the three ways in, Continue with ChatGPT and its qualifier: what stays sharp under the spotlight */
     ways: box(338, 822, 294, 464),
-    /** the spotlight: in over 12 frames from f30, held, out over 12 frames from f132 (nothing still for more than 3 s) */
-    spot: { in: 30, out: 132, dur: 12 },
+    /**
+     * the spotlight: in over 12 frames from f30, held f42–126 (2.8 s), out over 12 frames from f126. Nothing is still for
+     * more than 3 s (R5): with the way out at f132 the hold measured 3.03 s on the review render (lane v2-loops)
+     */
+    spot: { in: 30, out: 126, dur: 12 },
   };
 })();
 
@@ -238,26 +247,35 @@ export const L7 = (() => {
 /* would be a second edit applied without a click, REVIEW-G2 P0-2).                                                  */
 
 /**
- * The project story's card (L3 and L4 share it, so switching steps keeps the same card on the same ground), 433 CSS px
- * of the drawer tall. Square: at m 2.2 on the 515 px tile (the app's 12 px at 12.6 px; the card 73 % of the tile, comp
- * lex-A's is 76 %). Tall: at m 2.8, 93 % of the frame's width, as comp lex-A's phone tile (92 %). Its edges fall
- * between rows on every frame the loops hold (1.0.4, measured): U 205–638 (the card's top border at 211; the diff row
- * 619–631.7 whole, the next from 640), L 296–729 (the lead ends 288.3, "Proposed source edit" from 308; on the applied
- * frame the steps row 299–310.3 whole, Undo this edit 688–697.3, the next card's header from 749); L4 205–638 (on the
- * card frame the last step 626–637.3 whole; at the payoff the rows 609.3–619.3 and 639 straddle the edge cleanly).
+ * The project story's card (L3 and L4 share it, so switching steps keeps the same card on the same ground). Each
+ * framing's edges fall between rows on every frame the loops hold still (Pebble 1.0.4, ink scans of main-live-film at
+ * 9.367, 11.067, 16.6, 17.8–18.4, 19.0–20.4 and 20.65 s). `x0` is the framings' left edge, `U` and `L` their tops.
+ * - Square, the 515 px tile: the drawer's full width (801–1160) and 433 CSS px of it at m 2.2, so the app's 12 px
+ *   renders at 12.6 px (the card 73 % of the tile; comp lex-A's is 76 %). U 205–638 (the card's top border at 211; the
+ *   diff row 619–631.7 whole, the next from 640), L 296–729 (the lead ends 288.3, "Proposed source edit" from 308; on
+ *   the applied frame the steps row 299–310.3 whole, Undo this edit 688–697.3, the next card's header from 749); L4
+ *   205–638 (on the card frame the last step 626–637.3 whole; at the payoff the rows 609.3–619.3 and 639 straddle the
+ *   edge cleanly).
+ * - Tall, the 4:5 phone cut in a 360 px phone's 328 px frame: the drawer's content only (x 811–1150; its cards span
+ *   815.3–1145.7) and 376.5 CSS px of it at m 3.02 (the card 95 % of the frame's width), so the app's 12 px renders at
+ *   11.0 px (12.1 px on a 390 px phone). U and L4 201–577.4 (above: the "Needs your review" label ends 197.3, the next
+ *   row starts 203 after the scroll; below: rows end 571.3–576.3 and the next start 578.7–584 on every held frame), L
+ *   354–730.4 ("Proposed source edit" ends 339.3 and View diff starts 358; on the applied frame a step ends 351.3 and
+ *   the next starts 359.7; the card's bottom border is at 721 and the next card's edge at 733).
  */
 const STORY = {
-  square: card(box(DRAWER.x0, DRAWER.x1, 205, 638), 2.2, "square", SLOT.story),
-  tall: card(box(DRAWER.x0, DRAWER.x1, 205, 638), 2.8, "tall", SLOT.phone),
+  square: { ...card(box(DRAWER.x0, DRAWER.x1, 205, 638), 2.2, "square", SLOT.story), x0: DRAWER.x0, U: 205, L: 296 },
+  tall: { ...card(box(811, 1150, 201, 577.5), 1024 / 339, "tall", SLOT.phone), x0: 811, U: 201, L: 354 },
 } as const;
 
 export const L3 = (() => {
   // Two framings in one card: U, the card's top (its file name, "Changes this file in your project. You can undo it
-  // afterwards." and the diff's first rows); L, from "Proposed source edit" down to the buttons (Apply edit 676–708),
-  // ending before the next card (747). The view tilts U → L as a reader's eye would, and back for the seam.
+  // afterwards." and the diff's first rows); L, from "Proposed source edit" (square; View diff on the 4:5 cut) down to
+  // the buttons (Apply edit 676–708), ending before the next card (733). The view tilts U → L as a reader's eye would,
+  // and back for the seam.
   const at = (aspect: "square" | "tall") => {
     const s = STORY[aspect];
-    return { U: topLeftPose(DRAWER.x0, 205, s.m, s.stage.rect), L: topLeftPose(DRAWER.x0, 296, s.m, s.stage.rect) };
+    return { U: topLeftPose(s.x0, s.U, s.m, s.stage.rect), L: topLeftPose(s.x0, s.L, s.m, s.stage.rect) };
   };
   const P = { square: at("square"), tall: at("tall") };
   const apply = { x: 1077, y: 692 };
@@ -319,8 +337,8 @@ export const L4 = (() => {
   // ground below it; after the click the newest steps, "Pebble is working on this." and EARLIER ACTIONS land in the
   // same card. The camera holds while the UI acts.
   const C = {
-    square: topLeftPose(DRAWER.x0, 205, STORY.square.m, STORY.square.stage.rect),
-    tall: topLeftPose(DRAWER.x0, 205, STORY.tall.m, STORY.tall.stage.rect),
+    square: topLeftPose(STORY.square.x0, STORY.square.U, STORY.square.m, STORY.square.stage.rect),
+    tall: topLeftPose(STORY.tall.x0, STORY.tall.U, STORY.tall.m, STORY.tall.stage.rect),
   };
   const run = { x: 1079, y: 513 };
   const click = 39;
@@ -421,9 +439,17 @@ export const L6 = (() => {
         css: 13,
         m: A.tall.m,
         k: A.tall.stage.k,
-        waived: "the held block is 448 CSS px wide and the app wraps it there: whole, it renders at 9.75 px on a 360 px phone",
+        waived:
+          "L6 is not on the page (the AgentGuard section shows static phone crops). The held block is 448 CSS px wide and the app wraps it there: whole, it renders at 8.9 px in a 360 px phone's 328 px frame",
       },
-      { aspect: "tall", what: "the drawer's steps and Verified", css: 12, m: mB.tall, k: A.tall.stage.k },
+      {
+        aspect: "tall",
+        what: "the drawer's steps and Verified",
+        css: 12,
+        m: mB.tall,
+        k: A.tall.stage.k,
+        waived: "L6 is not on the page; shot B fills the held block's card, so the drawer renders at 10.2 px in a 328 px frame (11.2 px on a 390 px phone)",
+      },
     ],
     cursorVisible: [[12, 62]],
     clicks: [click],
@@ -509,14 +535,16 @@ export const L1 = (() => {
     aspects: ["wide", "tall"],
     camera: {
       // W: the pebble on its desktop (m 1.8, as FILM_SPEC; the panel's room above and to its left). P: the open chat,
-      // m 2.1. Tall: one framing, m 2.77, the whole panel and the pebble (the reply's 13 px at 12 px on a 360 px phone).
+      // m 2.1. Tall: one framing, m 2.79, the whole panel and the pebble, the panel's card centred in the frame's height
+      // (y 580: 66 px of ground above the card, 62 px below it); the reply's 13 px renders at 11.0 px in a 360 px phone's
+      // 328 px frame (12.0 px on a 390 px phone).
       wide: [key(0, { x: 808.4, y: 583.4, zoom: 1.8 }), key(76, { x: 945.3, y: 576.7, zoom: 2.1 }, 26), key(238, { x: 808.4, y: 583.4, zoom: 1.8 }, 26)],
-      tall: [key(0, { x: 945.3, y: 594, zoom: 2.77 })],
+      tall: [key(0, { x: 945.3, y: 580, zoom: 2.79 })],
     },
     stages: {},
     reads: [
       { aspect: "wide", what: "the reply", css: 13, m: 2.1, k: k.wide },
-      { aspect: "tall", what: "the reply", css: 13, m: 2.77, k: k.tall },
+      { aspect: "tall", what: "the reply", css: 13, m: 2.79, k: k.tall },
     ],
     cursorVisible: [
       [12, 70],
