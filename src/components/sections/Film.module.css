@@ -1,14 +1,16 @@
+/* Section 2, the film (DESIGN-LEXINGTON §6 Film, comp lex-A): the frame spans the container, then its caption on the
+   page's grid. No hairline above the caption: the frame is the section's edge. */
 .film {
   position: relative;
-  padding: 58px var(--gutter) 0;
+  /* the hero's own bottom padding is the space above: the poster's top shows above the fold at 1440 × 900 (H7) */
+  padding-top: 8px;
 }
 
-.screen {
-  width: min(var(--w-content), 100%);
-  margin: 0 auto;
+.figure {
+  margin: 0;
 }
 
-/* --- the screen: the film's poster, or a real-UI still in a window on the riverbed until it exists --- */
+/* --- the frame: the film's poster, or a real-UI still in a window on the riverbed until it exists --- */
 .poster,
 .posterImg {
   position: absolute;
@@ -30,7 +32,7 @@
 }
 
 /* the pebble on the desktop: an 8.5 %-wide box (body about 5 % of the frame), its body resting 7.5 % above the
-   bottom edge (the box hangs 23.45 % of its height below the body) */
+   bottom edge (the box hangs 23.45 % of its height below the body); its soft shadow is the pebble's own */
 .deskPet {
   position: absolute;
   right: 5.5%;
@@ -41,7 +43,7 @@
   filter: drop-shadow(0 6px 6px rgba(var(--shade), 0.16));
 }
 
-/* T0 fills the screen; LoopVideo's own pause button sits in its corner */
+/* T0 fills the frame; LoopVideo's own pause button sits in its corner */
 .teaser {
   position: absolute;
   inset: 0;
@@ -54,101 +56,99 @@
   transform: translate(-50%, -50%);
 }
 
-/* --- the label under the screen --- */
+/* --- the caption, on the grid: the label in the rail, the H2, the lead, the transcript, the chapters --- */
 .caption {
-  margin-top: 44px;
-  text-align: center;
+  margin-top: 32px;
 }
 
 .title {
-  font-size: clamp(30px, 1.4vw + 20px, 40px);
-  line-height: 1.08;
-  letter-spacing: -0.014em;
+  grid-column: 1 / span 6;
 }
 
 .lead {
-  max-width: 40em;
-  margin: 12px auto 0;
-  font-size: 16.5px;
-  color: var(--ink-2);
-}
-
-/* The length, "Plays with sound." and the transcript, then the chapters: only once the film exists, and invisible
-   (space kept, so nothing moves) until the player is on the page. */
-.extras {
+  grid-column: 1 / span 5;
   margin-top: 16px;
 }
 
-:global(:root:not([data-film="ready"])) .extras {
+.actions {
+  margin-top: 20px;
+  font-size: 15px;
+}
+
+/* The chapter index: ruled rows, three columns. It keeps its space but stays invisible until the player is on the page
+   (each row is a button that opens it). */
+.chapters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--gap);
+  margin-top: 40px;
+}
+
+:global(:root:not([data-film="ready"])) .chapters {
   visibility: hidden;
 }
 
-.meta a {
-  color: var(--ink);
-}
-
-.chapters {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 2px 24px;
-  max-width: 54em;
-  margin: 18px auto 0;
+.chapters li {
+  border-top: 1px solid var(--line);
 }
 
 .chapter {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  min-height: 40px;
-  padding: 4px 2px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 0;
   border: 0;
   background: none;
   color: var(--ink);
-  font-size: 15px;
-  font-weight: 500;
-  white-space: nowrap;
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: left;
 }
 
-.chapterMark {
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 17.7px;
-  background: var(--stone);
-  color: var(--ink);
-  transition: background-color var(--dur-fast) ease;
-}
-
-.chapterIcon {
-  width: 8px;
+/* a small stone before the time: the chapter is a place on the film's line (the galet, never the accent) */
+.stone {
+  flex: none;
+  align-self: center;
+  width: 9px;
   height: 8px;
-  margin-left: 1px;
+  background: var(--stone);
 }
 
-.chapterTime {
+.time {
+  flex: none;
+  min-width: 2.6em;
   color: var(--ink-2);
-  font-variant-numeric: tabular-nums;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .chapter:hover .chapterTitle {
-    text-decoration: underline;
-    text-decoration-color: var(--line-2);
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
     text-underline-offset: 4px;
   }
+}
 
-  .chapter:hover .chapterMark {
-    background: var(--accent);
-    color: var(--on-accent);
+@media (max-width: 1023px) {
+  .caption {
+    margin-top: 24px;
+  }
+
+  .label {
+    margin-bottom: 14px;
+  }
+
+  .lead {
+    max-width: 36em;
+  }
+
+  .chapters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 560px) {
-  .film {
-    padding-top: 56px;
-  }
-
   .window {
     width: 78%;
     top: 9%;
@@ -160,14 +160,11 @@
   }
 
   .caption {
-    margin-top: 30px;
+    margin-top: 20px;
   }
 
   .chapters {
-    gap: 0 18px;
-  }
-
-  .chapter {
-    font-size: 14.5px;
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 28px;
   }
 }

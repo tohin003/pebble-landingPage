@@ -1,53 +1,62 @@
+/* The film's play button over the poster: the galet on the page's ground with an ink play mark (DESIGN-LEXINGTON §6
+   Film). Playing the film is not one of the accent's three jobs, and no control casts a shadow (§3.5): the riverbed
+   behind it is the contrast. The world snaps: a 3 % swell under the pointer, a press to 0.98. */
 .trigger {
   position: relative;
   display: grid;
   place-items: center;
-  width: 132px;
-  height: 116px;
+  width: 116px;
+  height: 102px;
   padding: 0;
   border: 0;
   background: none;
-  color: var(--accent);
-  filter: drop-shadow(0 18px 30px rgba(var(--shade), 0.22));
+  color: var(--ink);
 }
 
 :global(:root:not([data-film="ready"])) .trigger {
   display: none;
 }
 
+/* the focus ring follows the stone's oval, not the button's box */
+.trigger[data-shape="galet"]:focus-visible {
+  border-radius: 50%;
+  outline-offset: 3px;
+}
+
 .galet {
   position: absolute;
   inset: 0;
-  background: var(--panel);
-  transition: transform var(--dur-crossfade) var(--ease-enter);
+  background: var(--bg);
+  transition: transform var(--dur-hover) var(--ease-out);
 }
 
 .icon {
   position: relative;
-  width: 34px;
-  height: 34px;
-  margin-left: 6px;
+  width: 30px;
+  height: 30px;
+  margin-left: 5px;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .trigger:hover .galet {
-    transform: scale(1.04);
+    transform: scale(1.03);
   }
 }
 
 .trigger:active .galet {
-  transform: scale(0.97);
+  transform: scale(0.98);
+  transition-duration: var(--dur-press);
 }
 
 @media (max-width: 560px) {
   .trigger {
-    width: 76px;
-    height: 67px;
+    width: 72px;
+    height: 63px;
   }
 
   .icon {
-    width: 22px;
-    height: 22px;
-    margin-left: 4px;
+    width: 20px;
+    height: 20px;
+    margin-left: 3px;
   }
 }

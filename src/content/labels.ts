@@ -11,6 +11,8 @@ export type RailLabelText = Readonly<{ name: string; fact: string }>;
 
 export const labels = {
   film: { name: "The film", fact: "Plays with sound." }, // film.playNote [C-SYS-1]
+  /** "The film / 1:16, with sound.": the film's length (chapters.ts FILM_DURATION_SECONDS, as data) and film.playNote. [C-SYS-16] */
+  filmLength: (duration: string): RailLabelText => ({ name: "The film", fact: `${duration}, with sound.` }),
   agentGuard: { name: "AgentGuard", fact: "The evidence layer" }, // agentGuard.layer[0] "an evidence layer" [C-SYS-2] (C-AG-7)
   desktop: { name: "On your desktop", fact: "Joins every Space" }, // desktop.lead [C-SYS-3] (C-DESK-1)
   project: { name: "In your project", fact: "How a coding task goes" }, // project.rail.label [C-SYS-4]
