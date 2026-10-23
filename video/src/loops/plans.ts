@@ -160,7 +160,10 @@ export const L3 = (() => {
   const m = 3.1; // body 13 px → 40 px
   const stage = drawerStage(m, 1600, 1000);
   const U = topLeftPose(DRAWER.x0, 202, m, stage.rect); // the card's top border, header, lead, the diff's first rows
-  const L = topLeftPose(DRAWER.x0, 430, m, stage.rect); // the diff and the button row, down to the card's bottom border
+  // the diff and the button row, down to the card's bottom border. Lane G-fix (REVIEW-G2 P2-21): from y 411, not 430:
+  // on the applied frame (11.067 s) the drawer's Pause button spans y 425–457.7 and the top edge at 430 sliced it; at
+  // 411 it is whole (14 css px inside), and on the waiting frame the edge still falls between two diff rows (406.7 | 415.7)
+  const L = topLeftPose(DRAWER.x0, 411, m, stage.rect);
   const apply = { x: 1077, y: 692 };
   // lane G-fix (REVIEW-G2 P2-19): N 270, not 300: the applied card held still over f82–181 (3.3 s); the ring now fades
   // at f150, the dissolve runs f160–172 and the view tilts back f180–210 (each 30 frames earlier)
