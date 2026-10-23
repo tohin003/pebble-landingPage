@@ -1,15 +1,37 @@
-"""Flag frames whose pebble (bottom-right avatar) is missing: a sign of an incompletely rasterized screenshot."""
+"""Flag frames whose pebble (bottom-right avatar) is missing: a sign of an incompletely rasterized screenshot.
+
+Usage: python3 -I check_frames.py <frames-dir> [start] [--box=x0,y0,x1,y1] [--ink]
+  start   the first frame to check (1-based; default 1)
+  --box   check this region instead (fractions of the frame), e.g. the quick chat's card when the pebble was recorded
+          hidden (record.mjs --hide=.pet-avatar): --box=0.06,0.06,0.94,0.74
+  --ink   also flag a frame whose dark pixels (text) in the region drop below half of both neighbours' (text that
+          failed to paint on one frame)
+"""
 import sys
 from pathlib import Path
 from PIL import Image
-folder = Path(sys.argv[1]); start = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+
+args = [a for a in sys.argv[1:] if not a.startswith("--")]
+opts = dict((a[2:].split("=", 1) + [""])[:2] for a in sys.argv[1:] if a.startswith("--"))
+folder = Path(args[0]); start = int(args[1]) if len(args) > 1 else 1
+region = tuple(float(v) for v in opts["box"].split(",")) if opts.get("box") else (0.80, 0.82, 0.95, 0.97)
+what = "an opaque check region" if opts.get("box") else "the pebble"
 bad = []
+ink = []
 files = sorted(folder.glob("*.png"))
 for f in files[start - 1:]:
     im = Image.open(f).convert("RGBA")
     w, h = im.size
-    box = im.crop((int(w * 0.80), int(h * 0.82), int(w * 0.95), int(h * 0.97))).getchannel("A")
-    opaque = sum(1 for v in box.tobytes() if v > 200) / (box.width * box.height)
+    crop = im.crop((int(w * region[0]), int(h * region[1]), int(w * region[2]), int(h * region[3])))
+    alpha = crop.getchannel("A").tobytes()
+    opaque = sum(1 for v in alpha if v > 200) / (crop.width * crop.height)
     if opaque < 0.3:
         bad.append(f.name)
-print(f"{len(bad)} of {len(files) - start + 1} frames missing the pebble:", " ".join(bad[:40]))
+    if "ink" in opts:
+        lum = crop.convert("L").tobytes()
+        ink.append(sum(1 for a, l in zip(alpha, lum) if a > 200 and l < 128))
+print(f"{len(bad)} of {len(files) - start + 1} frames missing {what}:", " ".join(bad[:40]))
+if "ink" in opts:
+    names = [f.name for f in files[start - 1:]]
+    drops = [names[i] for i in range(1, len(ink) - 1) if ink[i] < 0.5 * min(ink[i - 1], ink[i + 1])]
+    print(f"{len(drops)} frames whose text fails to paint:", " ".join(drops[:40]))

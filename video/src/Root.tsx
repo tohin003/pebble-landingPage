@@ -6,10 +6,20 @@ import { PEBBLE_DEMO_FRAMES, PebbleDemo } from "./pebble/PebbleDemo";
 import { FilmBoard, StyleFrames } from "./stills/FilmBoard";
 import { FilmPoster } from "./stills/FilmPoster";
 import { FontMetrics } from "./stills/FontMetrics";
-import { LoopStub, TeaserStub } from "./stills/LoopStub";
+import { LoopStub } from "./stills/LoopStub";
 import { COMPONENT_CHECK_FRAMES, ComponentCheck } from "./stills/ComponentCheck";
 import { OgImage } from "./stills/OgImage";
 import { RIVERBED_PLATE, RiverbedPlate } from "./stills/RiverbedPlate";
+// lane G2b: the feature loops, the teaser T0 and their posters (video/src/loops, video/src/teaser)
+import { LoopAgentGuard } from "./loops/LoopAgentGuard";
+import { LoopApproveUndo } from "./loops/LoopApproveUndo";
+import { LoopCompanion } from "./loops/LoopCompanion";
+import { LoopIsolatedTests } from "./loops/LoopIsolatedTests";
+import { LoopMemory } from "./loops/LoopMemory";
+import { LoopModels } from "./loops/LoopModels";
+import { LoopViews } from "./loops/LoopViews";
+import { L1, L2, L3, L4, L6, L7, L8, T0 } from "./loops/plans";
+import { FilmTeaser } from "./teaser/FilmTeaser";
 
 // Compositions (MASTER_PLAN §5.4, OVERRIDES §4). The film is aspect-aware: LaunchFilm and LaunchFilmSquare render the
 // same timeline (film/timeline.ts, 2,304 frames from the beat map) and every scene adapts through useLayout().
@@ -21,23 +31,28 @@ export const RemotionRoot: React.FC = () => {
       <Folder name="Film">
         <Composition id="LaunchFilm" component={FilmBoard} durationInFrames={DURATION_FRAMES} fps={FILM_FPS} width={1920} height={1080} />
         <Composition id="LaunchFilmSquare" component={FilmBoard} durationInFrames={DURATION_FRAMES} fps={FILM_FPS} width={1080} height={1080} />
-        <Composition id="FilmTeaser" component={TeaserStub} durationInFrames={240} fps={FPS.film} width={1280} height={720} />
+        <Composition id="FilmTeaser" component={FilmTeaser} durationInFrames={T0.plan.n} fps={FPS.film} width={1280} height={720} />
         <Composition id="StyleFrames" component={StyleFrames} durationInFrames={STYLE_FRAMES.length} fps={FILM_FPS} width={1920} height={1080} />
         <Composition id="StyleFramesSquare" component={StyleFrames} durationInFrames={STYLE_FRAMES.length} fps={FILM_FPS} width={1080} height={1080} />
       </Folder>
       <Folder name="Loops">
-        <Composition id="LoopCompanion" component={LoopStub} durationInFrames={300} fps={FPS.loop} width={1600} height={1000} defaultProps={{ id: "LoopCompanion" as const }} />
-        <Composition id="LoopModels" component={LoopStub} durationInFrames={180} fps={FPS.loop} width={1600} height={1000} defaultProps={{ id: "LoopModels" as const }} />
-        <Composition id="LoopApproveUndo" component={LoopStub} durationInFrames={300} fps={FPS.loop} width={1600} height={1000} defaultProps={{ id: "LoopApproveUndo" as const }} />
-        <Composition id="LoopIsolatedTests" component={LoopStub} durationInFrames={240} fps={FPS.loop} width={1600} height={1000} defaultProps={{ id: "LoopIsolatedTests" as const }} />
-        <Composition id="LoopMemory" component={LoopStub} durationInFrames={240} fps={FPS.loop} width={1600} height={1000} defaultProps={{ id: "LoopMemory" as const }} />
-        <Composition id="LoopViews" component={LoopStub} durationInFrames={300} fps={FPS.loop} width={1600} height={1000} defaultProps={{ id: "LoopViews" as const }} />
-        <Composition id="LoopAgentGuard" component={LoopStub} durationInFrames={240} fps={FPS.loop} width={1600} height={1000} defaultProps={{ id: "LoopAgentGuard" as const }} />
+        <Composition id="LoopCompanion" component={LoopCompanion} durationInFrames={L1.plan.n} fps={FPS.loop} width={1600} height={1000} />
+        <Composition id="LoopModels" component={LoopModels} durationInFrames={L2.plan.n} fps={FPS.loop} width={1600} height={1000} />
+        <Composition id="LoopApproveUndo" component={LoopApproveUndo} durationInFrames={L3.plan.n} fps={FPS.loop} width={1600} height={1000} />
+        <Composition id="LoopIsolatedTests" component={LoopIsolatedTests} durationInFrames={L4.plan.n} fps={FPS.loop} width={1600} height={1000} />
+        <Composition id="LoopMemory" component={LoopMemory} durationInFrames={L7.plan.n} fps={FPS.loop} width={1600} height={1000} />
+        <Composition id="LoopViews" component={LoopViews} durationInFrames={L8.plan.n} fps={FPS.loop} width={1600} height={1000} />
+        <Composition id="LoopAgentGuard" component={LoopAgentGuard} durationInFrames={L6.plan.n} fps={FPS.loop} width={1600} height={1000} />
+        {/* 4:5 punch-ins for phones (critic H2), the same timelines; see HANDOFF-G2b-loops.md for why only these three */}
+        <Composition id="LoopCompanionPhone" component={LoopCompanion} durationInFrames={L1.plan.n} fps={FPS.loop} width={1080} height={1350} />
+        <Composition id="LoopIsolatedTestsPhone" component={LoopIsolatedTests} durationInFrames={L4.plan.n} fps={FPS.loop} width={1080} height={1350} />
+        <Composition id="LoopAgentGuardPhone" component={LoopAgentGuard} durationInFrames={L6.plan.n} fps={FPS.loop} width={1080} height={1350} />
         <Composition id="LoopReviewCommands" component={LoopStub} durationInFrames={240} fps={FPS.loop} width={1600} height={1000} defaultProps={{ id: "LoopReviewCommands" as const }} />
       </Folder>
       <Folder name="Stills">
-        <Still id="FilmPoster" component={FilmPoster} width={1280} height={720} />
-        <Still id="OgImage" component={OgImage} width={1200} height={630} />
+        {/* one-frame compositions at 30 fps, not <Still> (1 fps): engine and camera time stay right (lane G2b) */}
+        <Composition id="FilmPoster" component={FilmPoster} durationInFrames={1} fps={FPS.film} width={1280} height={720} />
+        <Composition id="OgImage" component={OgImage} durationInFrames={1} fps={FPS.film} width={1200} height={630} />
       </Folder>
       <Folder name="Tools">
         <Composition id="ComponentCheck" component={ComponentCheck} durationInFrames={COMPONENT_CHECK_FRAMES} fps={FPS.film} width={1920} height={1080} />
