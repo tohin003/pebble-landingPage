@@ -1,12 +1,19 @@
 // The pebble's SVG: a pure renderer of one engine frame, ported from Pebble's Avatar.vue template (Pebble v1.0.1,
-// Apache-2.0). No hooks and no state, so server components (PebbleStatic) and client components (PebbleLive) render
-// the same markup. The film has its own copy (video/src/pebble/PebbleSvg.tsx); keep the two in step.
+// Apache-2.0). No state, so server components (PebbleStatic) and client components (PebbleLive) render the same
+// markup. The film has its own copy (video/src/pebble/PebbleSvg.tsx); keep the two in step.
+//
+// Modified for the Pebble site with Pebble v1.1.0's Veil, Stealth Lockdown's look: given a `veil` frame
+// (shared/pebble/veil.ts), the body is drawn by PebbleVeil.tsx, layer for layer as Avatar.vue 1.1.0 draws it, and the
+// SVG carries data-stealth="on" | "off". Without `veil`, or while the Veil looks exactly like the plain pebble, the
+// body's markup is the plain pebble's, unchanged.
 //
 // Colours come from the page theme: the body is `--pebble` (light #536B54, dark #B4CDA6) and the eyes `--pebble-eye`
-// (light #FFFFFF, dark #23351F), one flat colour each. The fallbacks are the light values. It is always aria-hidden:
-// anything a person can do with the pebble is mirrored by a real button elsewhere.
+// (light #FFFFFF, dark #23351F), one flat colour each; the Veil's are in PebbleVeil.tsx. The fallbacks are the light
+// values. It is always aria-hidden: anything a person can do with the pebble is mirrored by a real button elsewhere.
 import type { CSSProperties } from "react";
 import type { BotFrame, PebbleMotion } from "@pebble/index";
+import { veilVisible, type VeilFrame } from "@pebble/veil";
+import { PebbleVeil } from "./PebbleVeil";
 
 const VIEWBOX = "-110 -110 220 220"; // shared/pebble VIEWBOX (kept literal so this file pulls in no engine code)
 const SPARKS: readonly [number, number][] = [
@@ -24,11 +31,15 @@ export interface PebbleSvgProps {
   size?: number;
   /** written to data-pose, for tests and debugging */
   pose?: string;
+  /** Stealth Lockdown's Veil (veilEnd, veilFrame, veilAt or LiveVeil); absent: no Veil and no data-stealth */
+  veil?: VeilFrame;
+  /** the rendered width in px when the SVG is sized by its box (the Veil leaves out its fine layers under 64 px) */
+  renderedSize?: number;
   className?: string;
   style?: CSSProperties;
 }
 
-export function PebbleSvg({ frame, motion, still = false, size, pose, className, style }: PebbleSvgProps) {
+export function PebbleSvg({ frame, motion, still = false, size, pose, veil, renderedSize, className, style }: PebbleSvgProps) {
   const p = motion.pulse;
   const dots =
     frame.dots.length > 0 ? (
@@ -48,15 +59,20 @@ export function PebbleSvg({ frame, motion, still = false, size, pose, className,
       className={className}
       data-pose={pose}
       data-animated={still ? "false" : "true"}
+      data-stealth={veil ? (veil.on ? "on" : "off") : undefined}
       style={{ display: "block", overflow: "visible", color: "var(--pebble, #536b54)", ...style }}
     >
       {frame.dotsBehind && dots}
-      <g transform={motion.transform}>
-        <path d={frame.bodyPath} opacity={frame.bodyAlpha} fill="currentColor" />
-        {frame.eyes.map((e, i) => (
-          <path key={i} d={e.d} transform={e.matrix} opacity={e.alpha} fill="var(--pebble-eye, #ffffff)" />
-        ))}
-      </g>
+      {veil && veilVisible(veil.veil) ? (
+        <PebbleVeil frame={frame} motion={motion} veil={veil} size={size ?? renderedSize} />
+      ) : (
+        <g transform={motion.transform}>
+          <path d={frame.bodyPath} opacity={frame.bodyAlpha} fill="currentColor" />
+          {frame.eyes.map((e, i) => (
+            <path key={i} d={e.d} transform={e.matrix} opacity={e.alpha} fill="var(--pebble-eye, #ffffff)" />
+          ))}
+        </g>
+      )}
       {motion.cue ? (
         <g fill="currentColor" stroke="currentColor" strokeLinecap="round">
           {motion.cue === "thought" &&

@@ -11,8 +11,23 @@
 // - Reduced motion or html[data-motion="paused"]: a settled still frame, no animation loop, no gaze.
 // - At rest the eyes look straight ahead (rest.ts, DESIGN §9): from the first frame, when the pointer leaves, and when
 //   the pebble settles (it turns back to centre, then holds).
+// - `stealth` (Pebble 1.1.0's Veil, shared/pebble/veil.ts): flipping it plays the cast (1.25 s) or the release (0.65 s)
+//   from wherever the Veil is, so a reversal mid-transition never jumps; while on, the animated pebble shimmers once
+//   every 6 s, and it never settles mid-cast or mid-shimmer. Reduced motion or Pause motion: a 0.3 s cross-fade and no
+//   shimmer. A pebble that isn't the animated one shows the settled look at once, as in the app.
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import { LivePebble, MAX_FPS, POSES, TAP_MS, type Gaze, type PebbleView, type PoseId } from "@pebble/index";
+import {
+  LivePebble,
+  LiveVeil,
+  MAX_FPS,
+  POSES,
+  TAP_MS,
+  type Gaze,
+  type PebbleView,
+  type PoseId,
+  type VeilFrame,
+  type VeilMotion,
+} from "@pebble/index";
 import { PEBBLE_TAP, PEBBLE_TAPPED, type PebbleEventDetail } from "./events";
 import { PebbleSvg } from "./PebbleSvg";
 import { followPointer } from "./pointer";
@@ -32,6 +47,8 @@ export interface PebbleLiveProps {
   followPointer?: boolean;
   /** names this pebble in pebble:tap / pebble:tapped events (events.ts) */
   name?: string;
+  /** Stealth Lockdown's Veil: on wears the dusk glass, and a flip plays the cast or release (absent: no Veil at all) */
+  stealth?: boolean;
   className?: string;
   style?: CSSProperties;
 }
@@ -56,12 +73,16 @@ export function PebbleLive({
   interactive = true,
   followPointer: follow = true,
   name,
+  stealth,
   className,
   style,
 }: PebbleLiveProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [pebble] = useState(() => new LivePebble(pose, restFor(pose, restGaze)));
   const [view, setView] = useState<PebbleView>(() => pebble.still());
+  const [veil] = useState(() => new LiveVeil(stealth ?? false));
+  const [veilView, setVeilView] = useState<VeilFrame>(() => veil.frame("still"));
+  const [veilFlips, setVeilFlips] = useState(0);
   const [hovered, setHovered] = useState(false);
   const [tapping, setTapping] = useState(false);
   const [awake, setAwake] = useState(true);
@@ -81,6 +102,46 @@ export function PebbleLive({
         : awake
           ? "animate"
           : "hold";
+  // The Veil plays on the animated pebble (paused where it stands while held), cross-fades under reduced or paused
+  // motion, and shows its settled look on a pebble that another one outshines.
+  const veilMotion: VeilMotion = !motionAllowed ? "reduced" : mode === "still" ? "still" : "animate";
+
+  // The switch: start from wherever the Veil is now. A held pebble animates again until the cast or release is over.
+  useEffect(() => {
+    if (stealth === undefined || !veil.set(stealth, veilMotion)) return;
+    setVeilView(veil.frame(veilMotion));
+    setVeilFlips((n) => n + 1);
+    setAwake(true);
+  }, [veil, stealth, veilMotion]);
+
+  // How the Veil is drawn changed (motion paused or allowed, another pebble animated): a transition under way ends on
+  // its settled look, as the app's still frames do.
+  useEffect(() => {
+    veil.settle();
+    setVeilView(veil.frame(veilMotion));
+  }, [veil, veilMotion]);
+
+  // Reduced or paused motion: the Veil's 0.3 s cross-fade at up to 30 fps; nothing else moves.
+  useEffect(() => {
+    if (veilMotion !== "reduced" || !veil.moving("reduced")) return;
+    let raf = 0;
+    let last = -1;
+    const tick = (ts: number) => {
+      raf = requestAnimationFrame(tick);
+      if (last >= 0 && ts - last < FRAME_MS) return;
+      veil.advance(last < 0 ? 0 : (ts - last) / 1000);
+      last = ts;
+      setVeilView(veil.frame("reduced"));
+      if (!veil.moving("reduced")) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [veil, veilMotion, veilFlips]);
 
   // Pose changes (from props, hover or tap).
   useEffect(() => {
@@ -103,11 +164,14 @@ export function PebbleLive({
     const tick = (ts: number) => {
       raf = 0;
       if (last < 0 || ts - last >= FRAME_MS) {
-        pebble.advance(last < 0 ? 0 : (ts - last) / 1000);
+        const dt = last < 0 ? 0 : (ts - last) / 1000;
+        pebble.advance(dt);
+        veil.advance(dt);
         last = ts;
         setView(pebble.view());
-        // settled: turn the eyes back to rest first (a 0.24 s look morph), then hold
-        if (pebble.shouldHold() && !pebble.relax()) {
+        setVeilView(veil.frame("animate"));
+        // settled: never mid-cast or mid-shimmer; turn the eyes back to rest first (a 0.24 s look morph), then hold
+        if (pebble.shouldHold() && !veil.busy("animate") && !pebble.relax()) {
           setAwake(false);
           return;
         }
@@ -125,7 +189,7 @@ export function PebbleLive({
       if (raf) cancelAnimationFrame(raf);
       if (gap !== undefined) clearTimeout(gap);
     };
-  }, [pebble, mode]);
+  }, [pebble, veil, mode]);
 
   // Pointer gaze, while this pebble is the animated one (awake or settled: a pointer move wakes it).
   const following = follow && motionAllowed && active && visible && pageVisible;
@@ -206,7 +270,14 @@ export function PebbleLive({
         document.dispatchEvent(new CustomEvent<PebbleEventDetail>(PEBBLE_TAPPED, { detail: { name } }));
       }}
     >
-      <PebbleSvg frame={view.frame} motion={view.motion} still={view.still} pose={shown} />
+      <PebbleSvg
+        frame={view.frame}
+        motion={view.motion}
+        still={view.still}
+        pose={shown}
+        veil={stealth === undefined ? undefined : veilView}
+        renderedSize={size}
+      />
     </div>
   );
 }

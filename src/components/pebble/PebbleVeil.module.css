@@ -1,0 +1,32 @@
+/*
+ * The Veil's colours: Pebble 1.1.0's src/tokens.css dusk family (--avatar-stealth, -hi, -eye, -rim, -glow), as the
+ * pebble's own defaults for the page's theme. PebbleVeil.tsx reads --pebble-veil, --pebble-veil-hi, --pebble-veil-eye,
+ * --pebble-veil-rim and --pebble-veil-glow first: set those on any ancestor to scope your own; these private ones only
+ * fill in where the page sets nothing. The values are shared/pebble/veil.ts's VEIL_LIGHT and VEIL_DARK (a test keeps
+ * them in step). The dusk blue is Stealth Lockdown's own accent: show it only inside the Stealth section.
+ */
+.veil {
+  --_pebble-veil: #44528c;
+  --_pebble-veil-hi: #7684c6;
+  --_pebble-veil-eye: #fff;
+  --_pebble-veil-rim: #d6ddff;
+  --_pebble-veil-glow: #7d8df2;
+}
+
+:global(:root[data-theme="dark"]) .veil {
+  --_pebble-veil: #a3aeea;
+  --_pebble-veil-hi: #ccd4fb;
+  --_pebble-veil-eye: #1c2246;
+  --_pebble-veil-rim: #fff;
+  --_pebble-veil-glow: #8494f7;
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .veil {
+    --_pebble-veil: #a3aeea;
+    --_pebble-veil-hi: #ccd4fb;
+    --_pebble-veil-eye: #1c2246;
+    --_pebble-veil-rim: #fff;
+    --_pebble-veil-glow: #8494f7;
+  }
+}
