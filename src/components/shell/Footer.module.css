@@ -26,6 +26,8 @@
   white-space: nowrap;
   user-select: none;
   -webkit-user-select: none;
+  /* the "p" hangs 0.176 em below the 0.86 line (Inter's descender 0.242 − 0.066): clear it before the statement */
+  margin-bottom: calc(0.176em + 20px);
 }
 
 /* The baseline: Inter's ascender (0.969) and descender (0.242) in a 0.86 line put it 0.066 em above the line box's
@@ -73,7 +75,7 @@
 }
 
 .resting {
-  margin-top: 18px;
+  margin-top: 0;
 }
 
 /* --- the colophon on the page's grid: the links and Appearance from column 4, the fine print under them --- */
@@ -213,8 +215,3 @@
   }
 }
 
-@media (max-width: 560px) {
-  .resting {
-    margin-top: 14px;
-  }
-}

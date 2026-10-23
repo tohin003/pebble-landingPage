@@ -11,10 +11,16 @@ export function Data({ children, className }: { children: ReactNode; className?:
   return <span className={`data ${className ?? ""}`}>{children}</span>;
 }
 
-export function DataText({ text, counts }: { text: string; counts?: readonly string[] }) {
+/**
+ * One <span> around the segments, so the spaces between a number and its words survive inside a flex container
+ * (a .facts item is one: there, bare text beside a span would become its own flex item and lose its leading space).
+ */
+export function DataText({ text, counts, className }: { text: string; counts?: readonly string[]; className?: string }) {
+  const segments = splitData(text, counts);
+  if (segments.length === 1 && segments[0]!.data) return <span className={`data ${className ?? ""}`}>{text}</span>;
   return (
-    <>
-      {splitData(text, counts).map((segment, i) =>
+    <span className={className}>
+      {segments.map((segment, i) =>
         segment.data ? (
           <span key={i} className="data">
             {segment.text}
@@ -23,6 +29,6 @@ export function DataText({ text, counts }: { text: string; counts?: readonly str
           segment.text
         ),
       )}
-    </>
+    </span>
   );
 }

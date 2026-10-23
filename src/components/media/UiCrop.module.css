@@ -31,7 +31,7 @@
 
 /* A window on the sage field: rounded, a window shadow and a hairline edge drawn inside (DESIGN §6). */
 .crop[data-frame="window"] {
-  border-radius: 14px;
+  border-radius: var(--r-panel);
   box-shadow: var(--shadow-frame);
 }
 

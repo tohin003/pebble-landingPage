@@ -7,8 +7,8 @@
   border: 0;
   background: none;
   color: var(--ink);
-  font-size: 14.5px;
-  font-weight: 550;
+  font-size: 14px;
+  font-weight: 500;
   white-space: nowrap;
 }
 
@@ -21,8 +21,8 @@
   place-items: center;
   width: 22px;
   height: 19.5px;
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--stone); /* playing the film is not one of the accent's three jobs */
+  color: var(--ink);
 }
 
 .icon {

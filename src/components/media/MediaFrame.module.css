@@ -5,11 +5,21 @@
   isolation: isolate;
   border-radius: var(--r-media);
   background: var(--wallpaper-tint);
-  box-shadow: var(--shadow-media);
+}
+
+/* the 1 px ring over the picture (globals.css --ring): a hairline, not a shadow; no outer shadow on page chrome */
+.frame:not([data-shape="galet"])::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: var(--ring);
 }
 
 .frame[data-variant="panel"] {
-  background: var(--panel);
+  background: var(--fill);
 }
 
 .frame[data-shape="galet"] {
@@ -19,22 +29,12 @@
   mask: var(--galet-mask) center / 100% 100% no-repeat;
 }
 
-/* Without the raster (not rendered yet): comp 3's soft sage gradient stands in. */
+/* Without the raster: the riverbed's own ground colour (a token) stands in. */
 .wallpaper {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background:
-    radial-gradient(90% 75% at 22% 8%, #eef3ea 0%, transparent 62%),
-    radial-gradient(80% 80% at 88% 96%, #afc3a8 0%, transparent 62%),
-    linear-gradient(158deg, #dce6d5 0%, #c4d4bd 100%);
-}
-
-:global(:root[data-theme="dark"]) .wallpaper {
-  background:
-    radial-gradient(90% 75% at 22% 8%, #34422f 0%, transparent 62%),
-    radial-gradient(80% 80% at 88% 96%, #141b15 0%, transparent 62%),
-    linear-gradient(158deg, #2a3628 0%, #1c251d 100%);
+  background: var(--wallpaper-tint);
 }
 
 .wallPicture {
@@ -60,7 +60,7 @@
 .window {
   position: relative;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: var(--r-window);
   background: var(--panel);
   box-shadow: var(--shadow-window);
 }
