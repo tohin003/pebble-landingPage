@@ -233,6 +233,12 @@ export const L7 = (() => {
     fadeAt: 60,
     fadeFrames: 12,
     swapAt: 72,
+    /**
+     * The next record arrives in the emptied slot as a 200 ms opacity change (the system's "the world snaps"), not in a
+     * single frame: after the 0.4 s fade a pop of new words read as a text swap (REVIEW-G2 P2-19). The app re-renders
+     * the list at once; the pixels are the forgotten still's own.
+     */
+    arriveFrames: 6,
   };
 })();
 
