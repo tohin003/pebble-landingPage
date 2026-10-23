@@ -544,16 +544,24 @@ export const L1 = (() => {
   const completed = click + 142; // 6.60 s
   const happyEnds = completed + 135; // + 4.5 s (COMPLETED_MS)
   const k = { wide: kOf(SLOT.companion, FRAME.wide.w), tall: kOf(SLOT.phone, FRAME.tall.w) };
+  /** the resting framing: the pebble (1080, 750) at frame (1067, 667) at m 2.4 (see camera) */
+  const W: CamPose = { x: 1080 - (1067 - 800) / 2.4, y: 750 - (667 - 500) / 2.4, zoom: 2.4 };
+  /** the open chat */
+  const P: CamPose = { x: 945.3, y: 576.7, zoom: 2.1 };
   const plan = {
     id: "LoopCompanion",
     n,
     aspects: ["wide", "tall"],
     camera: {
-      // W: the pebble on its desktop (m 1.8, as FILM_SPEC; the panel's room above and to its left). P: the open chat,
-      // m 2.1. Tall: one framing, m 2.79, the whole panel and the pebble, the panel's card centred in the frame's height
+      // W: the pebble on its desktop, m 2.4, standing on the frame's lower-right thirds (1067, 667) with the riverbed's
+      // stones along the bottom: frame 0 is the section's poster and its only picture under Pause motion, and at m 1.8
+      // (FILM_SPEC) it was a 125 px pebble in a pale, empty 1280 × 800 field (REVIEW-G2 P2-20). P: the open chat, m 2.1.
+      // The click opens the chat and the camera pulls back to it (f46–76, the click is the cause); it holds P through
+      // the minimize click (its button is above W's frame) and pushes back in while the pebble celebrates (f258–288).
+      // Tall: one framing, m 2.79, the whole panel and the pebble, the panel's card centred in the frame's height
       // (y 580: 66 px of ground above the card, 62 px below it); the reply's 13 px renders at 11.0 px in a 360 px phone's
       // 328 px frame (12.0 px on a 390 px phone).
-      wide: [key(0, { x: 808.4, y: 583.4, zoom: 1.8 }), key(76, { x: 945.3, y: 576.7, zoom: 2.1 }, 26), key(238, { x: 808.4, y: 583.4, zoom: 1.8 }, 26)],
+      wide: [key(0, W), key(76, P, 30, "direct"), key(288, W, 30, "direct")],
       tall: [key(0, { x: 945.3, y: 580, zoom: 2.79 })],
     },
     stages: {},

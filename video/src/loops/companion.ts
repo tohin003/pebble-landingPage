@@ -15,7 +15,7 @@ import { L1 } from "./plans";
 
 export const L1_ENGINE_OFFSET = 49.5;
 
-/** The pointer, in desktop points. It rests off the frame's left edge at both ends (frame px (−60, 560) at m 1.8). */
+/** The pointer, in desktop points. It rests off the frame's left edge at both ends (frame px (−733, 348) in L1's resting framing, m 2.4). */
 export const L1_CURSOR: readonly CursorKey[] = [
   { at: 12, x: 330, y: 617, travel: 1 },
   { at: 34, x: 1058, y: 768, target: 60, seed: "l1-pet" }, // onto the pebble's lower left (not over its eyes); click f46
