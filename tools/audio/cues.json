@@ -94,7 +94,7 @@
   "file": "../../.work/audio/sfx/pop_a.wav",
   "t": 27.1667,
   "align": "peak",
-  "gain_db": -16,
+  "gain_db": -13,
   "pan": 0,
   "duck_db": 0,
   "event": "Done",
@@ -224,7 +224,7 @@
   "file": "../../.work/audio/sfx/pop_c.wav",
   "t": 51.4333,
   "align": "peak",
-  "gain_db": -16,
+  "gain_db": -13,
   "pan": 0,
   "duck_db": 0,
   "event": "the record dissolves",
@@ -258,19 +258,6 @@
   "peak_frame": 1800,
   "role": "whoosh",
   "take": "whoosh_a"
- },
- {
-  "file": "../../.work/audio/sfx/pop_b.wav",
-  "t": 67.2333,
-  "align": "peak",
-  "gain_db": -16,
-  "pan": 0,
-  "duck_db": 0,
-  "event": "the end-card landing",
-  "frame": 2016,
-  "peak_frame": 2017,
-  "role": "pop",
-  "take": "pop_b"
  },
  {
   "file": "../../.work/audio/sfx/thud_b.wav",

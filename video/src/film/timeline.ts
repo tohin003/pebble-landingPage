@@ -513,7 +513,8 @@ export const SFX: readonly SfxCue[] = [
   { frame: 1542, role: "pop", take: "pop_c", event: "the record dissolves" },
   { frame: 1665, role: "whoosh", take: "whoosh_c", event: "the chart becomes the world (its fastest frame)" },
   { frame: 1799, role: "whoosh", take: "whoosh_a", event: "into the sage field (zoom through the badge)" },
-  { frame: 2016, role: "pop", take: "pop_b", event: "the end-card landing" },
+  // lane fin-audio (OVERRIDES §19): no pop on the end-card landing. pop_b's F♯5 plip over the motif's D5 downbeat read
+  // as 'telephone' in the social master's 66–69 s window; the thud and its duck alone keep the landing's weight.
   { frame: 2016, role: "thud", take: "thud_b", event: "landing texture", duckDb: 1.5 },
 ];
 
