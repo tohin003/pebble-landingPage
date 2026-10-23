@@ -23,6 +23,8 @@ export type UiCropProps = Readonly<{
   display: Readonly<{ wide: number; tablet?: string; phone?: string }>;
   /** "window": rounded, with the window shadow (default); "bare": the caller frames it */
   frame?: "window" | "bare";
+  /** hold the picture back until the crop is near the screen (UiImage `defer`) */
+  defer?: boolean;
   className?: string;
 }>;
 
@@ -36,7 +38,7 @@ function cropSizes(box: CropBox, phone: CropBox | undefined, display: UiCropProp
   return parts.join(", ");
 }
 
-export function UiCrop({ name, alt, box, phone, display, frame = "window", className }: UiCropProps) {
+export function UiCrop({ name, alt, box, phone, display, frame = "window", defer = false, className }: UiCropProps) {
   const vars: Record<string, number> = { "--x": box.x, "--y": box.y, "--w": box.w, "--h": box.h };
   if (phone) Object.assign(vars, { "--px": phone.x, "--py": phone.y, "--pw": phone.w, "--ph": phone.h });
   return (
@@ -46,7 +48,7 @@ export function UiCrop({ name, alt, box, phone, display, frame = "window", class
       data-phone={phone ? "" : undefined}
       style={vars as CSSProperties}
     >
-      <UiImage name={name} alt={alt} sizes={cropSizes(box, phone, display)} className={styles.image} />
+      <UiImage name={name} alt={alt} sizes={cropSizes(box, phone, display)} defer={defer} className={styles.image} />
     </div>
   );
 }

@@ -1,6 +1,9 @@
 // Self-hosted fonts (src/fonts, SIL OFL 1.1), loaded with next/font/local: no request leaves the site (DESIGN §8).
 // Budget (MASTER_PLAN §7.7, critic M4): at most 160 KB preloaded. Fraunces Display (an instance, 32.9 KB) plus Inter
-// with its optical-size axis (72.9 KB) is 105.8 KB; Geist Mono (two static weights, about 10 KB each) loads on demand.
+// (the wght-only file, 48.3 KB) is 81.2 KB; Geist Mono (two static weights, about 10 KB each) loads on demand.
+// Inter's optical-size file (72.9 KB) was dropped by QA lane F3: on the site Inter is never larger than 25 px (the
+// headings are Fraunces; the wordmark is 25 px), so its display cut barely shows, and the 24.6 KB it adds to the first
+// screen kept Lighthouse's mobile LCP over the 2.5 s limit (2.63 s → 2.48 s over HTTP/2). The film keeps the opsz file.
 
 import localFont from "next/font/local";
 
@@ -14,9 +17,9 @@ export const fraunces = localFont({
   adjustFontFallback: "Times New Roman",
 });
 
-/** Text and labels: Inter, weights 100–900, optical sizes 14–32. */
+/** Text and labels: Inter, weights 100–900 (the text design, opsz 14). */
 export const inter = localFont({
-  src: [{ path: "../fonts/Inter-Variable-opsz-latin.woff2", weight: "100 900", style: "normal" }],
+  src: [{ path: "../fonts/Inter-Variable-latin.woff2", weight: "100 900", style: "normal" }],
   variable: "--font-inter",
   display: "swap",
   preload: true,

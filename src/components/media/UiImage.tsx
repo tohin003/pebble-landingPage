@@ -2,8 +2,11 @@
 // the HTML and CSS shows the one that matches html[data-theme] (critic H5: <picture media> would ignore the site's own
 // theme toggle). Lazy by default: the hidden theme's image is never fetched, because a display: none image is never
 // near the viewport (so even a priority still stays lazy: an image in the first viewport still loads at once). If a
-// theme is missing, the other one stands in (dimmed a little on the dark page).
+// theme is missing, the other one stands in (dimmed a little on the dark page). `defer` holds the pictures back until
+// the still is near the screen (DeferredStill), for large stills that native lazy loading would fetch before the first
+// paint.
 import { uiStill, type UiStillName } from "@/lib/media";
+import { DeferredStill } from "./DeferredStill";
 import { Picture } from "./Picture";
 import styles from "./UiImage.module.css";
 
@@ -14,12 +17,14 @@ export type UiImageProps = Readonly<{
   sizes?: string;
   /** near the top of the page: fetch it with high priority */
   priority?: boolean;
+  /** mount the pictures only when the still comes near the screen (after the first paint) */
+  defer?: boolean;
   className?: string;
 }>;
 
 export const CONTENT_SIZES = "(max-width: 1168px) calc(100vw - 48px), 1120px";
 
-export function UiImage({ name, alt, sizes = CONTENT_SIZES, priority = false, className }: UiImageProps) {
+export function UiImage({ name, alt, sizes = CONTENT_SIZES, priority = false, defer = false, className }: UiImageProps) {
   const still = uiStill(name);
   const light = [still.files.light[1200], still.files.light[2400]];
   const dark = [still.files.dark[1200], still.files.dark[2400]];
@@ -29,8 +34,8 @@ export function UiImage({ name, alt, sizes = CONTENT_SIZES, priority = false, cl
     // Nothing rendered yet: keep the space, so the layout doesn't jump when the still arrives.
     return <span className={`${styles.missing} ${className ?? ""}`} role="img" aria-label={alt} />;
   }
-  return (
-    <span className={`${styles.still} ${className ?? ""}`}>
+  const pictures = (
+    <>
       <Picture
         sets={hasLight ? light : dark}
         alt={alt}
@@ -47,6 +52,15 @@ export function UiImage({ name, alt, sizes = CONTENT_SIZES, priority = false, cl
         className={`only-dark ${styles.picture} ${hasDark ? "" : styles.dimmed}`}
         imgClassName={styles.img}
       />
-    </span>
+    </>
   );
+  const cls = `${styles.still} ${className ?? ""}`;
+  if (defer) {
+    return (
+      <DeferredStill alt={alt} className={cls}>
+        {pictures}
+      </DeferredStill>
+    );
+  }
+  return <span className={cls}>{pictures}</span>;
 }

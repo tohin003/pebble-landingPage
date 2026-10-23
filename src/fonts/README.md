@@ -23,6 +23,8 @@ Notes:
   no wght, SOFT or WONK axis any more, so set `font-weight: 350` and no `font-variation-settings`; the film keeps the
   full variable file in `video/public/fonts/`. The OFL names no Reserved Font Name, so the instance keeps the name.
 - Pick one Inter file per surface: the opsz file adds Inter Display (opsz 32) for large text; the wght file is smaller.
+  The site loads the wght file (its Inter is never larger than 25 px, and the 24.6 KB saved keeps Lighthouse's mobile
+  LCP under 2.5 s); the films load the opsz file. `Inter-Variable-opsz-latin.woff2` stays here for the films' copy.
 
 SHA-256:
 ```

@@ -65,6 +65,7 @@ export function AgentGuard() {
               box={CHALLENGE}
               phone={CHALLENGE_PHONE}
               display={{ wide: 560, tablet: "560px", phone: PHONE }}
+              defer
             />
             <figcaption className={styles.caption}>
               <p>{agentGuard.challenge.caption}</p>
@@ -88,6 +89,7 @@ export function AgentGuard() {
                   box={HELD}
                   phone={HELD_PHONE}
                   display={{ wide: 616, tablet: TABLET, phone: PHONE }}
+                  defer
                 />
               ),
               verified: (
@@ -97,6 +99,7 @@ export function AgentGuard() {
                   box={VERIFIED}
                   phone={VERIFIED_PHONE}
                   display={{ wide: 616, tablet: TABLET, phone: PHONE }}
+                  defer
                 />
               ),
             }}

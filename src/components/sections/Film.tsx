@@ -40,14 +40,16 @@ export function Film() {
 
   return (
     <section id={SECTIONS.film} className={styles.film} aria-labelledby="film-title" data-path-anchor="margin">
+      {/* No fetch priority on the frame's pictures: on phones the frame is below the fold, where "high" put about 45 KB
+          on the first screen's critical path (Lighthouse mobile LCP); where it peeks above the fold, the browser raises
+          an image in view to high priority by itself (QA lane F3). */}
       <figure className={styles.screen}>
-        <MediaFrame variant="riverbed" aspect="16 / 9" priority sizes={FRAME_SIZES}>
+        <MediaFrame variant="riverbed" aspect="16 / 9" sizes={FRAME_SIZES}>
           {files.poster.available ? (
             <Picture
               sets={[files.poster]}
               alt={film.posterAlt}
               sizes={FRAME_SIZES}
-              fetchPriority="high"
               className={styles.poster}
               imgClassName={styles.posterImg}
             />
@@ -58,7 +60,6 @@ export function Film() {
                   name="main-done"
                   alt={media.stills.mainDone}
                   sizes="(max-width: 560px) 78vw, (max-width: 1168px) 66vw, 740px"
-                  priority
                 />
               </AppWindow>
               <Pebble pose="happy" live={false} className={styles.deskPet} />
