@@ -109,6 +109,10 @@ export const DASHBOARD = {
 export const QUIZ = {
   /** the canvas panel right of the conversation (its border at x 720; content from x 745) */
   canvas: box(720, 0, 1160, 800),
+  /** the quiz itself, under the canvas's toolbar: from the divider (y 199) to the window's edge (ink scans of the 1.0.4
+   *  still: the label "QUIZ · CHECKED BY PEBBLE" 221–230, the title 244–265.3, the timer "07:39 left" x 1078–1135.7,
+   *  the question 370–415.7, the answers A–D from 437, Back / Next 682–720, the page pills 742–770) */
+  body: box(720, 199, 1160, 800),
   /** the selected answer's "A" badge (#506E54) and the white "A" inside it (x 767–775, y 457–466) */
   badge: box(760, 451.2, 782, 471.8),
   badgeColour: "#506E54",

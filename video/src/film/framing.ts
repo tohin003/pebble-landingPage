@@ -18,9 +18,9 @@
 //   (x 24 → 1080, 1,056 px), so a moment magnified to the floor runs off the frame as a screen does. Every square
 //   framing keeps its left, right and top edges: m × 1056 / 1032 (the same visible width, 2.3 % larger text) and the
 //   centre re-solved for the same top;
-// - the vertical's stage (§22) is 1,056 × 860 at (24, 600): framed on the left, top and bottom, bleeding off the right.
-//   Its framings start from the square's (the same width, so the same m and the same left and right edges) with
-//   their own top and bottom, which must both fall in clear space (the bottom is a visible edge in 9:16).
+// - the vertical's stage (§22) is the square's 1,056 × 744, at (24, 700): framed on the left, top and bottom (a visible
+//   hairline at y 1444, above the caption band), bleeding off the right. The two narrow aspects share one set of
+//   framings, so each one's bottom must fall in clear space too (the vertical shows it).
 import type { CamKey, CamPose, Point, Rect } from "../motion/camera";
 import { cameraAt } from "../motion/camera";
 import { EASE, SPRING, cursorPathAt, springAt, type CursorKey } from "../motion/spec";
@@ -112,9 +112,12 @@ const SETS: Record<"wide" | "square", Record<string, Framing>> = {
   // 27 px from the frame's edge), the forget click (the bin and the record are 450 CSS px apart: m 2.21, 23 px; the
   // action carries it), and the wide transitions (S5c stage 1, the S5e pull-back, the S7a canvas, a picture).
   square: {
-    /** S5a: the status line alone, x 340–692, y 158–406 ("Reading · Reading invoice_kit/dates.py · 5 s" at 238–249.3,
-     *  ink 34 px; the request bubble, too wide to fit at the floor, stays above the top edge: its last line ends 152.7) */
-    s5a: nr(3.0, 340, 158),
+    /** S5a: the status line alone, m 3.02, x 328–677.7, y 172–418.4. The request bubble (its box y 97–168, x 448–1034,
+     *  too wide to fit at the floor) stays wholly above the top edge (a top at 158 left its bottom as a sliver); the
+     *  long status line (f664–700: "Reading · Reading invoice_kit/dates.py · 5 s ›", the avatar at 358.7 to the
+     *  chevron at 665.3, ink 41 px) fits, and its Stop button (680–726) stays wholly outside the frame's edge (at 692 it
+     *  showed as a sliver with an "S"); the short form's Stop (503–549, f648–663 and f701–719) shows whole */
+    s5a: nr(3.02, 328, 172),
     /** S5b, the card's upper part: x 808–1160 (the drawer's border at 800.5 outside, the cards' at 817 inside), y 202–450:
      *  top between NEEDS YOUR REVIEW (ends 197.3) and the card's top border (211); bottom between the diff's rows
      *  (448.7 | 456.7) */
@@ -204,11 +207,18 @@ export const FULL_FRAME = {
    *  (border at x 720), y 188–624. Lane G-fix (REVIEW-G2 P1-8): cy 397.7 / 406, not 445.7 / 454, so the quiz's top text
    *  has ≥ 60 px of headroom: the label "QUIZ · CHECKED BY PEBBLE" (y 221–229.7) sits 81 px under the frame's top and
    *  the title "Python datetime check-in" (244.3) 141 px (the title sat 17 / 21 px under it; the review's cy 425 / 437
-   *  would have put the label 10 / 5 px under it). Lane v2-film, the narrow aspects at the 34 px floor: m 3.0, x 725–1085
-   *  (the content from 745, 60 px inside the frame; the question's lines end ≈ 1000; the answers' boxes bleed off the
-   *  right edge); the square y 198–558 (the label 69 px under the top, A and B whole, C's box bleeding off the bottom),
-   *  the vertical y 110–750 (the label at frame y 333, inside the central band; D under the caption band) */
-  quiz: { wide: fr(2.6, 790.75, 397.7), square: fr(3.0, 905, 378), vertical: fr(3.0, 905, 430) },
+   *  would have put the label 10 / 5 px under it). Lane v2-film, the narrow aspects at the 34 px floor (measured on
+   *  main-quiz@3x from Pebble 1.0.4): the left edge at x 722, 2 css px inside the canvas's border (720), so the content
+   *  starts 69 px inside the frame; the right edge before the timer "07:39 left" (1078–1135.7), which a right edge at
+   *  1085 cut to a lone "0"; the question's lines end at 996.3 and the answers' boxes bleed off the right edge.
+   *  - Square: m 3.08, x 722–1072.6, y 186–536.6: the top between "Details" (ends 176.3) and the divider (199), so the
+   *    label "QUIZ · CHECKED BY PEBBLE" (221) sits 108 px under the frame's top; B's text whole, its box bleeding off
+   *    the bottom.
+   *  - Vertical: m 3.1, x 722–1070.4, y 120–739.4. A 9:16 view is taller than the canvas under its toolbar, so the top
+   *    falls between "Version 1" (ends 115.3) and the toolbar's buttons (126), which show whole in the top 250 px (the
+   *    phone's UI zone), and the label lands at frame y 313, inside the central band; the bottom between Back / Next
+   *    (ends 720) and the page pills (742). (y 110 cut "Version 1" at the frame's top edge.) */
+  quiz: { wide: fr(2.6, 790.75, 397.7), square: fr(3.08, 722 + 540 / 3.08, 186 + 540 / 3.08), vertical: fr(3.1, 722 + 540 / 3.1, 120 + 960 / 3.1) },
 } as const;
 /**
  * The vertical's chart world (§22): FULL_FRAME.chart.vertical holds Flights, Stay and Food at m 3.7 (x 758–1050: the

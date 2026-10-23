@@ -120,8 +120,15 @@ export const S7Quiz: React.FC = () => {
   }
   const blur = frame < BADGE_DIVE.blurFrom ? 0 : interpolate(frame, [BADGE_DIVE.blurFrom, BADGE_DIVE.fill], [2, BADGE_DIVE.blurMax], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   // 16:9 shows the conversation left of the canvas: it recedes under a paper veil and a blur (R5 §5.3's spotlight on
-  // the capture's own pixels), so no cut line of its text competes with the quiz
-  const focus = a === "wide" ? { rect: QUIZ.canvas, mode: "card" as const, amount: 1, veil: 0.6, blur: 10, radius: 0 } : undefined;
+  // the capture's own pixels), so no cut line of its text competes with the quiz. The vertical (lane v2-film) shows the
+  // canvas's toolbar (Refresh, Export…, Copy, Details) in its top 250 px, the phone UI's zone: it recedes the same way,
+  // so the quiz itself starts at the band's top with nothing above it asking to be read
+  const focus =
+    a === "wide"
+      ? { rect: QUIZ.canvas, mode: "card" as const, amount: 1, veil: 0.6, blur: 10, radius: 0 }
+      : a === "vertical"
+        ? { rect: QUIZ.body, mode: "card" as const, amount: 1, veil: 0.6, blur: 10, radius: 0 }
+        : undefined;
   return (
     <FrameBlur px={blur}>
       {(viewport) => (

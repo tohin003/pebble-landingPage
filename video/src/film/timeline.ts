@@ -348,7 +348,10 @@ export const TEXT: readonly TextCue[] = [
   // lane G-fix (REVIEW-G2 P0-1): T8 lands on the bar-14 downbeat (f936), after the held run is in view, not mid-scroll
   t({ id: "T8", chapter: "tested", lines: ["AgentGuard checks", "the evidence"], role: "side", enter: "blur", in: 936, out: 1038, place: "column" }),
   t({ id: "T9", chapter: "tested", lines: ["Tests run in", "an isolated copy"], role: "side", enter: "blur", in: 1044, out: 1140, place: "column" }),
-  t({ id: "T10", chapter: "tested", lines: ["Evidence before done"], role: "side", enter: "ink", in: 1152, out: 1212, place: "column" }),
+  // lane v2-film: in 16:9 T10 breaks after "Evidence", as the column's other statements do, so the check beside the
+  // Verified step (frame x 860, at the step's y, which the tilt puts level with the column's first line) stands clear
+  // of the words: on one line, "done" ended 6 px from the check and read as "done✓". The narrow aspects keep one line.
+  t({ id: "T10", chapter: "tested", lines: ["Evidence", "before done"], squareLines: ["Evidence before done"], role: "side", enter: "ink", in: 1152, out: 1212, place: "column" }),
   t({ id: "T11", chapter: "model", lines: ["Your model,", "your choice"], role: "side", enter: "blur", in: 1242, out: 1320, place: "column" }),
   t({ id: "T11s", chapter: "model", lines: ["Even one on your Mac"], role: "support", enter: "blur", in: 1260, out: 1320, place: "column", under: "T11" }),
   t({ id: "T12", chapter: "pace", lines: ["You set what", "it may do"], role: "side", enter: "rise", in: 1350, out: 1428, place: "column" }),

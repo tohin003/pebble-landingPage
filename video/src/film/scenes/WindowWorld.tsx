@@ -1,8 +1,8 @@
 // The window world (FILM_SPEC §4, §6 S5–S7a; 648–1665): the paper ground, a stage into Pebble's REAL UI (the
 // main-live-film recording for the coding story, lane D's Settings and dashboard stills after it), the text column
-// (16:9) or band (square, vertical), the pebble at its spot on its line acting the app's poses, the pointer, and the
-// film's two annotations (the ring on Undo this edit, the check beside the Verified step, 16:9 only), both drawn
-// outside or around the UI, never inside it (critic C3).
+// (16:9) or band (square, vertical), the pebble at its spot on its line acting the app's poses, the pointer, the focus
+// on Undo this edit (the rest of the frame recedes, FOCUS in common.tsx) and the film's one annotation, the check beside
+// the Verified step (16:9 only), drawn outside the UI, never inside it (critic C3).
 //
 // Lane v2-film (docs/PHILOSOPHY.md, "Imagery"): every shot here is a moment (one card, one step, one tab), so the stage
 // is a hairline frame on the page's flat paper, without a shadow, and the riverbed stays behind the one scene (S1). The
@@ -14,7 +14,7 @@
 // f1584 hard cut to the dashboard on the payoff's downbeat.
 import type { CSSProperties } from "react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
-import { CheckMark, Cursor, Ring, UiStill, type UiStillName } from "../../components";
+import { CheckMark, Cursor, UiStill, type UiStillName } from "../../components";
 import { useLayout, type AspectId } from "../../motion/layout";
 import { CLICK, EASE, ramp } from "../../motion/spec";
 import { SYSTEM } from "../../motion/system";
@@ -32,6 +32,15 @@ const PRESSES = [
 ] as const;
 const PRESS_FRAMES = 4; // 0.12 s at 30 fps (CLICK.uiPressS)
 
+/**
+ * After the f814 match cut, "Undo this edit" comes forward as T7's "undo" lands (f830): the rest of the frame recedes
+ * f826–837 (EASE.enter, 0.4 s) and comes back f852–857 (0.2 s), the timing of the ring it replaces (lane v2-film). The
+ * region is the text button with 8 css px of air (LIVE_FILM.undoEdit).
+ */
+const UNDO_FOCUS = { from: 826, inDur: 12, outAt: 852, outDur: 6, pad: 8 } as const;
+const undoFocusAmount = (frame: number) =>
+  ramp(frame, UNDO_FOCUS.from, UNDO_FOCUS.inDur, EASE.enter) * (1 - ramp(frame, UNDO_FOCUS.outAt, UNDO_FOCUS.outDur, EASE.exit));
+
 /** The Settings still on screen (each click swaps it on its own frame; f1542 after the dissolve). */
 const settingsStill = (frame: number): UiStillName =>
   frame < 1332 ? "settings-models" : frame < 1404 ? "settings-permissions" : frame < 1440 ? "settings-permissions-auto" : frame < 1542 ? "settings-memory" : "settings-memory-forgotten";
@@ -42,7 +51,17 @@ const StageContent: React.FC<{ frame: number; zoom: number; aspect: AspectId }> 
     const s = sourceAt(SOURCE_MAPS["main-live-film"], frame) ?? 3.85;
     const p = PRESSES.find((x) => frame >= x.at && frame < x.at + PRESS_FRAMES);
     const press = p ? { rect: p.control.rect, radius: p.control.radius, ground: p.control.ground, scale: CLICK.uiPressScale, darken: 0.05 } : null;
-    return <RecordedUi src={recordedFrame(LIVE_FILM.dir, LIVE_FILM.frames, s)} width={LIVE_FILM.width} height={LIVE_FILM.height} press={press} />;
+    const u = LIVE_FILM.undoEdit;
+    const focus =
+      frame >= UNDO_FOCUS.from && frame < UNDO_FOCUS.outAt + UNDO_FOCUS.outDur
+        ? {
+            rect: { x: u.rect.x - UNDO_FOCUS.pad, y: u.rect.y - UNDO_FOCUS.pad, w: u.rect.w + 2 * UNDO_FOCUS.pad, h: u.rect.h + 2 * UNDO_FOCUS.pad },
+            amount: undoFocusAmount(frame),
+            zoom,
+            radius: u.radius + UNDO_FOCUS.pad,
+          }
+        : null;
+    return <RecordedUi src={recordedFrame(LIVE_FILM.dir, LIVE_FILM.frames, s)} width={LIVE_FILM.width} height={LIVE_FILM.height} press={press} focus={focus} />;
   }
   if (frame < 1584) {
     const name = settingsStill(frame);
@@ -99,7 +118,6 @@ export const WindowWorld: React.FC<{ style?: CSSProperties }> = ({ style }) => {
         clipOverlay={a === "vertical"}
         overlay={
           <>
-            {frame >= 826 && frame < 860 ? <Ring rect={LIVE_FILM.undoEdit.rect} radius={LIVE_FILM.undoEdit.radius} drawAt={826} outAt={852} color={SYSTEM.accent} /> : null}
             {spans.map((sp) => (
               <Cursor key={sp.id} space="frame" keys={sp.keys} clicks={sp.clicks} visible={[sp.visible]} />
             ))}

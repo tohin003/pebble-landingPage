@@ -242,6 +242,24 @@ export const FilmPebble: React.FC<{
  * ============================================================================================================== */
 
 const pad5 = (n: number) => String(n).padStart(5, "0");
+
+/**
+ * How the film points (lane v2-film, as the loops do: video/src/loops/kit.tsx SYSTEM.focus): the rest of the same
+ * picture recedes under a veil of the window's own colour (#F7F8F5) at 50 % and 4 px of on-screen blur, and the region
+ * in focus keeps its own pixels. Nothing drawn on top has a colour of its own, so a pointer never reads as UI state:
+ * the accent ring that stood 15 px off "Undo this edit" still read as that text button's own outline (REVIEW-G2
+ * P2-12), and pointing is not one of the accent's three jobs (PHILOSOPHY).
+ */
+export const FOCUS = { veil: 0.5, blur: 4, color: "#F7F8F5" } as const;
+export interface RecordedFocus {
+  /** the sharp region, CSS px of the recording */
+  rect: Rect;
+  /** 0..1 */
+  amount: number;
+  /** the camera's zoom (the blur is given on screen) */
+  zoom: number;
+  radius?: number;
+}
 /** The PNG of a recorded sequence showing source second `s` (index = round(s × 30)). */
 export const recordedFrame = (dir: string, frames: number, s: number) =>
   staticFile(`${dir}/${pad5(Math.max(0, Math.min(frames - 1, Math.round(s * 30))) + 1)}.png`);
@@ -259,13 +277,32 @@ export const RecordedUi: React.FC<{
   x?: number;
   y?: number;
   press?: { rect: Rect; radius: number; ground: string; scale: number; darken: number } | null;
+  /** one region in focus (R5 §5.3's spotlight, FOCUS below): the rest of the same frame recedes */
+  focus?: RecordedFocus | null;
   children?: ReactNode;
   style?: CSSProperties;
-}> = ({ src, width, height, x = 0, y = 0, press, children, style }) => {
+}> = ({ src, width, height, x = 0, y = 0, press, focus, children, style }) => {
   const img = <Img src={src} style={{ position: "absolute", left: 0, top: 0, width, height, display: "block" }} />;
+  const a = focus ? Math.max(0, Math.min(1, focus.amount)) : 0;
+  const box: CSSProperties = { position: "absolute", left: 0, top: 0, width, height };
   return (
     <div style={{ position: "absolute", left: x, top: y, width, height, ...style }}>
-      {img}
+      {focus && a > 0.001 ? (
+        <>
+          <div style={{ ...box, filter: `blur(${((FOCUS.blur * a) / Math.max(0.01, focus.zoom)).toFixed(3)}px)` }}>{img}</div>
+          <div style={{ ...box, background: FOCUS.color, opacity: FOCUS.veil * a }} />
+          <div
+            style={{
+              ...box,
+              clipPath: `inset(${focus.rect.y}px ${width - focus.rect.x - focus.rect.w}px ${height - focus.rect.y - focus.rect.h}px ${focus.rect.x}px round ${focus.radius ?? 0}px)`,
+            }}
+          >
+            {img}
+          </div>
+        </>
+      ) : (
+        img
+      )}
       {press ? (
         <>
           <div
