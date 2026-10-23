@@ -5,12 +5,16 @@
 // datetime quiz full frame (S7c), and f1786–1799 the camera dives into the selected answer's "A" badge until its
 // #506E54 fills the frame on f1799 (lane G-fix, REVIEW-G2 P1-2: the fill lands on the bar's last frame, the world
 // changes on f1800 with the whoosh): the seam into S8.
+//
+// The vertical (§22): a 9:16 frame is taller than the chart's bars and labels at the magnification that makes them the
+// world, so there the panel grows into the rows CHART_ROWS_VERTICAL (its title and legend close off as it grows) and
+// the white around them is the panel's own.
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { Camera, UiStill, World } from "../../components";
 import { blendPose, poseAt, type CamPose, type Rect } from "../../motion/camera";
-import { useLayout } from "../../motion/layout";
+import { useLayout, type AspectId } from "../../motion/layout";
 import { EASE, ramp } from "../../motion/spec";
-import { FULL_FRAME, FRAMINGS, STAGE, pose } from "../framing";
+import { CHART_ROWS_VERTICAL, FULL_FRAME, FRAMINGS, STAGE, pose } from "../framing";
 import { DASHBOARD, QUIZ } from "../ui";
 import { FrameBlur, Solid } from "./common";
 import { WindowWorld } from "./WindowWorld";
@@ -22,7 +26,7 @@ const GROW = { at: 1656, dur: 20, fadeDur: 9 } as const;
 const framePose = (f: { m: number; cx: number; cy: number }, s: number): CamPose => ({ x: f.cx, y: f.cy, zoom: f.m * s });
 
 /** The stage camera's S7a framing expressed as a full-frame pose (the same world point under the same frame point). */
-function stageAsFramePose(a: "wide" | "square", width: number, height: number, s: number): CamPose {
+function stageAsFramePose(a: AspectId, width: number, height: number, s: number): CamPose {
   const st = STAGE[a];
   const sp = pose(FRAMINGS[a].s7a!, s);
   const stageCentre = { x: (st.x + st.w / 2) * s, y: (st.y + st.h / 2) * s };
@@ -53,7 +57,12 @@ export const S7Dashboard: React.FC = () => {
   const t = EASE.move(Math.min(1, (frame - GROW.at) / GROW.dur));
   const k = ramp(frame, GROW.at, GROW.fadeDur, EASE.enter);
   const cam = growth(frame);
-  const panel = DASHBOARD.chartPanel.rect;
+  const whole = DASHBOARD.chartPanel.rect;
+  // the vertical closes the panel down to its rows as it grows (its top and bottom edges travel in with the growth)
+  const panel: Rect =
+    a === "vertical"
+      ? { x: whole.x, y: lerp(whole.y, CHART_ROWS_VERTICAL.y0, t), w: whole.w, h: lerp(whole.y + whole.h, CHART_ROWS_VERTICAL.y1, t) - lerp(whole.y, CHART_ROWS_VERTICAL.y0, t) }
+      : whole;
   const mapped: Rect = { x: width / 2 + (panel.x - cam.x) * cam.zoom, y: height / 2 + (panel.y - cam.y) * cam.zoom, w: panel.w * cam.zoom, h: panel.h * cam.zoom };
   // motion blur while it grows (R5 §6.3: ≤ 12 px on text): from how far the panel's corner moved since the last frame
   const prev = growth(frame - 1);

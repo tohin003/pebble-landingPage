@@ -1,20 +1,22 @@
-// Shared pieces of the animated film's scenes (lane G2a): on-screen lines placed and coloured as FILM_SPEC §3 and §8
-// say, the window world's ground, the film pebble with the merged cue list, real recorded UI frames, and the press a
-// click draws over a real control. Every scene reads the ABSOLUTE film frame (LaunchFilm wraps each shot so that
+// Shared pieces of the animated film's scenes (lane G2a; restyled to docs/PHILOSOPHY.md by lane v2-film): on-screen
+// lines placed and coloured as FILM_SPEC §3 and §8 say, the window world's flat paper ground, the stage as a hairline
+// frame, the line the pebble stands on, the film pebble with the merged cue list, real recorded UI frames, and the press
+// a click draws over a real control. Every scene reads the ABSOLUTE film frame (LaunchFilm wraps each shot so that
 // useCurrentFrame() inside is the composition's frame) and adapts to the aspect through useLayout().
 import type { CSSProperties, ReactNode } from "react";
 import { AbsoluteFill, Img, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import type { PebbleCue } from "../../../../shared/pebble";
-import { Camera, Desktop, KineticText, World, blockHeight, topForBaseline } from "../../components";
+import { Camera, KineticText, World, blockHeight, topForBaseline } from "../../components";
 import { FONT } from "../../fonts";
 import type { CamPose, Rect } from "../../motion/camera";
-import { useLayout, type AspectId, type Layout } from "../../motion/layout";
-import { COLOR, EASE, LOOK, TYPO, blurOut, fxStyle, ramp, type TypoRole } from "../../motion/spec";
+import { useLayout, type AspectId, type Layout, type StageCorners } from "../../motion/layout";
+import { COLOR, EASE, TYPO, blurOut, fxStyle, ramp, type TypoRole } from "../../motion/spec";
+import { FRAME, SYSTEM } from "../../motion/system";
 import type { Hop } from "../../pebble/acting";
 import { PebbleOnFilm } from "../../pebble/PebbleOnFilm";
 import type { PebbleColors } from "../../pebble/PebbleSvg";
 import { filmCues } from "../gaze";
-import { DESKTOP_RECT, END, HOPS, LIST_DIM, SEAMS, TEXT, textById, type PerAspect, type TextCue } from "../timeline";
+import { END, HOPS, LIST_DIM, SEAMS, TEXT, textById, type PerAspect, type TextCue } from "../timeline";
 
 /** The film's cuts (every seam that is not a camera move, FILM_SPEC §12). */
 const CUTS: readonly number[] = SEAMS.filter((s) => s.kind !== "camera").map((s) => s.frame);
@@ -23,29 +25,32 @@ const CUTS: readonly number[] = SEAMS.filter((s) => s.kind !== "camera").map((s)
  * On-screen lines (FILM_SPEC §3, §8)
  * ============================================================================================================== */
 
+/** PHILOSOPHY's three voices: Fraunces 350 for the lines, Inter for support, Geist Mono for anything with a number. */
 const ROLE_TYPO: Record<TextCue["role"], TypoRole> = {
   hero: "display",
   headline: "display",
   side: "display",
   tagline: "display",
   support: "text",
+  data: "data",
   cta: "text",
   mono: "mono",
   small: "small",
 };
 
-export const linesFor = (c: TextCue, a: AspectId) => (a === "square" && c.squareLines ? c.squareLines : c.lines);
+/** The lines as they break in this aspect: the 16:9 breaks, or the narrow compositions' (1:1, 9:16) where given. */
+export const linesFor = (c: TextCue, a: AspectId) => (a !== "wide" && c.squareLines ? c.squareLines : c.lines);
 
 /**
- * The window world's text column (16:9) or band (square), FILM_SPEC §4: a cue's lines start at the block's top; a cue
- * marked `under` sits a gap under its anchor. §3's fit rule: if the group overflows its room (in the square, the band
- * ends above the stage), the anchor steps down 4 px at a time; a line is never re-broken.
+ * The window world's text column (16:9) or band (square, vertical), FILM_SPEC §4: a cue's lines start at the block's
+ * top; a cue marked `under` sits a gap under its anchor. §3's fit rule: if the group overflows its room (in the narrow
+ * aspects, the band ends above the stage), the anchor steps down 4 px at a time; a line is never re-broken.
  */
 function columnPlacement(cue: TextCue, L: Layout): { top: number; size: number } {
   const anchor = cue.under ? textById(cue.under) : cue;
   const under = TEXT.filter((c) => c.under === anchor.id);
   const gap = Math.round(L.gap * 0.5);
-  const room = L.aspect === "square" ? L.win.stage.y - L.win.text.y - Math.round(10 * L.s) : L.win.text.h;
+  const room = L.aspect === "wide" ? L.win.text.h : L.win.stage.y - L.win.text.y - Math.round(10 * L.s);
   const underH = under.reduce((h, u) => h + gap + blockHeight(linesFor(u, L.aspect).length, L.type[u.role], ROLE_TYPO[u.role]), 0);
   let size = L.type[anchor.role];
   while (size > Math.round(64 * L.s) && blockHeight(linesFor(anchor, L.aspect).length, size, ROLE_TYPO[anchor.role]) + underH > room) size -= 4;
@@ -56,11 +61,12 @@ function columnPlacement(cue: TextCue, L: Layout): { top: number; size: number }
 
 export type LineWorld = "sage" | "paper" | "window";
 
-/** Colours by role and ground: white on sage (support at 80 %), ink on light grounds (support in the secondary grey). */
+/** Colours by role and ground (motion/system.ts): white on sage (support and data at 80 %); on paper, ink for the lines
+ *  and the URL, muted ink for support, the CTA's words and the small print. */
 export const lineColour = (cue: TextCue, world: LineWorld) => {
   const strong = cue.role === "headline" || cue.role === "side" || cue.role === "tagline" || cue.role === "mono" || cue.role === "hero";
-  if (world === "sage") return strong ? LOOK.onSage : "rgba(255, 255, 255, 0.8)";
-  return strong ? COLOR.ink : COLOR.secondary;
+  if (world === "sage") return strong ? SYSTEM.onSage : SYSTEM.onSageMuted;
+  return strong ? SYSTEM.ink : SYSTEM.ink2;
 };
 
 /** Where a cue's line block sits, frame px (the box KineticText lays its lines into) and its type size. */
@@ -85,8 +91,8 @@ export function lineBox(cue: TextCue, L: Layout): { box: Rect; size: number; ali
 
 /**
  * One timeline line. Entrances (A) blur, (B) ink, (C) rise from §3; small print fades in over 9 frames (§6 S9). The ink
- * entrance starts from #B0C2AE on light grounds and from white at 35 % on sage (§3 B). A line is dead still once it has
- * landed and leaves with the 6-frame blur-out, unless a world move takes it (`exit={false}`). A list item (lane G-fix,
+ * entrance starts from #B0C2AE on paper and from white at 35 % on sage (§3 B). A line is dead still once it has landed
+ * and leaves with the 6-frame blur-out, unless a world move takes it (`exit={false}`). A list item (lane G-fix,
  * REVIEW-G2 P1-6) inks whole when `inkTogether`, and from `dimAt` dims to LIST_DIM over 6 frames as the next one
  * arrives; a dimmed item is as still as a landed one (only its opacity changed).
  */
@@ -141,7 +147,7 @@ export const FilmLine: React.FC<{ cue: TextCue; world: LineWorld; exit?: boolean
       enter={cue.enter}
       wordStarts={wordStarts}
       color={color}
-      inkFrom={cue.enter === "ink" ? (world === "sage" ? "rgba(255, 255, 255, 0.35)" : COLOR.accentSoft) : undefined}
+      inkFrom={cue.enter === "ink" ? (world === "sage" ? SYSTEM.inkFromSage : SYSTEM.inkFromPaper) : undefined}
       align={align}
       box={box}
       style={dim < 1 ? { ...style, opacity: dim } : style}
@@ -159,19 +165,53 @@ export const Lines: React.FC<{ ids: readonly string[]; world: LineWorld; exit?: 
 );
 
 /* ================================================================================================================
- * Grounds
+ * Grounds: one flat ground per world (PHILOSOPHY "Surface": no grain, no glow, no vignette; the riverbed only behind
+ * scenes)
  * ============================================================================================================== */
 
-/** The desktop ground around the stage: the whole riverbed, as a Mac shows it (no vignette in the window world). */
-export const WindowGround: React.FC = () => {
-  const { width, height } = useVideoConfig();
-  const zoom = Math.max(width / DESKTOP_RECT.w, height / DESKTOP_RECT.h);
+/** A flat ground. The window world's is the page's paper (`SYSTEM.bg`): its moments sit in hairline frames on it. */
+export const FlatGround: React.FC<{ color?: string; children?: ReactNode; style?: CSSProperties }> = ({ color = SYSTEM.bg, children, style }) => (
+  <AbsoluteFill style={{ backgroundColor: color, ...style }}>{children}</AbsoluteFill>
+);
+
+/**
+ * The line the pebble stands on (DESIGN-LEXINGTON §3.9, the page's Horizon): the page's hand-drawn path (comp lex-A's,
+ * a slight wobble across a 1000 × 12 box) in `SYSTEM.trail`, faded over its first and last 12 %, static (no wobble, no
+ * draw-on: the motion budget belongs to the pebble). From x0 to x1 at the foot's y, frame px; drawn at FRAME.horizon
+ * (2.5 px at the reference size) so a phone's downscale keeps it.
+ */
+export const Horizon: React.FC<{ x0: number; x1: number; y: number; stroke?: number; color?: string; id: string; style?: CSSProperties }> = ({
+  x0,
+  x1,
+  y,
+  stroke,
+  color = SYSTEM.trail,
+  id,
+  style,
+}) => {
+  const L = useLayout();
+  const w = Math.max(1, x1 - x0);
+  const sw = stroke ?? FRAME.horizon * L.s;
+  const d = "M0 6.6C70 5.4 150 7.2 230 6.4S390 5.3 470 6S560 6.2 640 6.1S800 7.3 880 6.4S960 5.6 1000 6.2";
   return (
-    <Camera pose={{ x: DESKTOP_RECT.w / 2, y: DESKTOP_RECT.h / 2, zoom }}>
-      <World>
-        <Desktop />
-      </World>
-    </Camera>
+    <svg
+      width={w}
+      height={12 * L.s}
+      viewBox="0 0 1000 12"
+      preserveAspectRatio="none"
+      style={{ position: "absolute", left: x0, top: y - 6 * L.s, overflow: "visible", ...style }}
+      aria-hidden
+    >
+      <defs>
+        <linearGradient id={id} x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0" stopColor={color} stopOpacity={0} />
+          <stop offset="0.12" stopColor={color} />
+          <stop offset="0.88" stopColor={color} />
+          <stop offset="1" stopColor={color} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <path d={d} fill="none" stroke={`url(#${id})`} strokeWidth={sw} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+    </svg>
   );
 };
 
@@ -259,16 +299,21 @@ export const RecordedUi: React.FC<{
 };
 
 /* ================================================================================================================
- * The stage with motion blur
+ * The stage: a moment in a hairline frame, with motion blur
  * ============================================================================================================== */
 
-const radii = (corners: "left" | "top", r: number) => (corners === "left" ? `${r}px 0 0 ${r}px` : `${r}px ${r}px 0 0`);
+/** CSS border-radius for the stage's rounded corners (the others bleed off the frame). */
+export const stageRadii = (corners: StageCorners, r: number) =>
+  corners === "left" ? `${r}px 0 0 ${r}px` : corners === "top" ? `${r}px ${r}px 0 0` : corners === "topLeft" ? `${r}px 0 0 0` : `${r}px`;
 
 /**
- * The window world's stage (G1's <Stage>, FILM_SPEC §4: a rounded viewport into the real UI with the window shadow),
- * plus motion blur on its content only (R5 §6.3: fast camera moves only, ≤ 20 px on the frame, ≤ 12 px on text): an
- * axis-aligned Gaussian (SVG feGaussianBlur, duplicate edges) in frame px, sized from how far the content moved since
- * the last frame. The stage's frame, shadow and the overlay (pointer, ring) stay sharp.
+ * The window world's stage (FILM_SPEC §4; PHILOSOPHY "Imagery": a moment sits in a hairline frame): a rounded viewport
+ * into the real UI on the paper ground, its edge a 2 px ring in `SYSTEM.line` drawn OVER the picture's edge (the
+ * page's ::after ring), no shadow (the pebble casts the only one). Plus motion blur on its content only (R5 §6.3: fast
+ * camera moves only, ≤ 20 px on the frame, ≤ 12 px on text): an axis-aligned Gaussian (SVG feGaussianBlur, duplicate
+ * edges) in frame px, sized from how far the content moved since the last frame. The ring and the overlay (pointer,
+ * callout ring) stay sharp. `clipOverlay` keeps the pointer inside the frame (the vertical, whose stage has a visible
+ * bottom edge).
  */
 export const FilmStage: React.FC<{
   rect: Rect;
@@ -278,12 +323,14 @@ export const FilmStage: React.FC<{
   background?: string;
   children: ReactNode;
   overlay?: ReactNode;
-}> = ({ rect, pose, blur, background = "#F7F8F5", children, overlay }) => {
+  clipOverlay?: boolean;
+}> = ({ rect, pose, blur, background = "#F7F8F5", children, overlay, clipOverlay = false }) => {
   const L = useLayout();
   const viewport = { width: rect.w, height: rect.h };
-  const rgb = COLOR.shadowRgb;
   const on = !!blur && (blur.x > 0.15 || blur.y > 0.15);
   const id = "film-stage-motion-blur";
+  const radius = stageRadii(L.win.stageCorners, L.win.stageRadius);
+  const ring = Math.max(1, FRAME.ring * L.s);
   return (
     <>
       <div
@@ -293,10 +340,9 @@ export const FilmStage: React.FC<{
           top: rect.y,
           width: rect.w,
           height: rect.h,
-          borderRadius: radii(L.win.stageCorners, L.win.stageRadius),
+          borderRadius: radius,
           overflow: "hidden",
           background,
-          boxShadow: `0 0 0 1px rgba(${rgb}, 0.08), 0 2px 4px rgba(${rgb}, 0.06), 0 14px 36px rgba(${rgb}, 0.1), 0 44px 96px rgba(${rgb}, 0.14)`,
         }}
       >
         {on ? (
@@ -313,9 +359,22 @@ export const FilmStage: React.FC<{
             <World>{children}</World>
           </Camera>
         </div>
+        {/* the hairline, over the picture's edge */}
+        <div style={{ position: "absolute", inset: 0, borderRadius: radius, boxShadow: `inset 0 0 0 ${ring}px ${SYSTEM.line}`, pointerEvents: "none" }} />
       </div>
       {overlay ? (
-        <div style={{ position: "absolute", left: rect.x, top: rect.y, width: rect.w, height: rect.h, pointerEvents: "none" }}>
+        <div
+          style={{
+            position: "absolute",
+            left: rect.x,
+            top: rect.y,
+            width: rect.w,
+            height: rect.h,
+            pointerEvents: "none",
+            overflow: clipOverlay ? "hidden" : undefined,
+            borderRadius: clipOverlay ? radius : undefined,
+          }}
+        >
           <Camera pose={pose} viewport={viewport} background="transparent" clip={false}>
             {overlay}
           </Camera>

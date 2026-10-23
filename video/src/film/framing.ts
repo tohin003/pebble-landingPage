@@ -11,6 +11,16 @@
 // - click targets stay above the caption band (y ≤ 918) and ≥ 60 px from the frame's edges.
 // Where this departs from FILM_SPEC §6's ROIs, the comment at the framing says why (the spec centred ROIs narrower
 // than the stage, which showed past the window's right edge or cut the sidebar or the drawer border into a sliver).
+//
+// Lane v2-film (PHILOSOPHY: "moments sit in hairline frames"; OVERRIDES §14: 9:16; the lead's 34 px floor for the
+// square and the vertical):
+// - the stage is a hairline frame on the paper ground, no shadow; in the square it now bleeds off the RIGHT edge too
+//   (x 24 → 1080, 1,056 px), so a moment magnified to the floor runs off the frame as a screen does. Every square
+//   framing keeps its left, right and top edges: m × 1056 / 1032 (the same visible width, 2.3 % larger text) and the
+//   centre re-solved for the same top;
+// - the vertical's stage (§22) is 1,056 × 860 at (24, 600): framed on the left, top and bottom, bleeding off the right.
+//   Its framings start from the square's (the same width, so the same m and the same left and right edges) with
+//   their own top and bottom, which must both fall in clear space (the bottom is a visible edge in 9:16).
 import type { CamKey, CamPose, Point, Rect } from "../motion/camera";
 import { cameraAt } from "../motion/camera";
 import { EASE, SPRING, cursorPathAt, springAt, type CursorKey } from "../motion/spec";
@@ -25,11 +35,14 @@ export interface Framing {
 const fr = (m: number, cx: number, cy: number): Framing => ({ m, cx, cy });
 type PerAspect<T> = Record<AspectId, T>;
 
-/** The stage in each aspect at the reference sizes (FILM_SPEC §4; layout.ts scales them by `s`). */
+/** The stage in each aspect at the reference sizes (FILM_SPEC §4, §22; layout.ts scales them by `s`). */
 export const STAGE: PerAspect<Rect> = {
   wide: { x: 920, y: 64, w: 1000, h: 952 },
-  square: { x: 24, y: 336, w: 1032, h: 744 },
+  square: { x: 24, y: 336, w: 1056, h: 744 },
+  vertical: { x: 24, y: 600, w: 1056, h: 860 },
 };
+/** The square's old stage width: framings written for it keep their visible width at m × SQUARE_K. */
+const SQUARE_K = 1056 / 1032;
 
 export const FRAMINGS: PerAspect<Record<string, Framing>> = {
   wide: {
@@ -87,11 +100,13 @@ export const FRAMINGS: PerAspect<Record<string, Framing>> = {
      */
     s7aAsk: fr(2.83, 460.7, 252.2),
   },
+  // the square's framings as edge-checked on its old 1,032 px stage (the visible rects in the comments are theirs), each
+  // converted by sq() to the 1,056 px stage: the same left, right and top edges
   square: {
     /** S5a: x 336–725.4, y 68–348.8 (top above the request bubble: §6's y 120 cut its first line) */
-    s5a: fr(2.65, 530.7, 208.4),
+    s5a: sq(2.65, 530.7, 208.4),
     /** S5b: the drawer only, x 804.1–1160 (m 2.9); upper part y 200–456.6 */
-    s5bTop: fr(2.9, 982.05, 328.3),
+    s5bTop: sq(2.9, 982.05, 328.3),
     /**
      * S5b lower part, y 488.7–745.3 (REVIEW-G2 P0-2, lane G-fix; was cy 662.2, y 533.9–790.5): the next card's header
      * ("tests/test_dates.py · Needs your review", y 749.3 before the click; "· Done", y 747 on the f814 match cut's
@@ -100,46 +115,97 @@ export const FRAMINGS: PerAspect<Record<string, Framing>> = {
      * applied card's header (511). Apply edit straddles the caption band (frame y 879–971); the pointer clicks its upper
      * half at css y 689, frame y 917 (≤ 918).
      */
-    s5bLow: fr(2.9, 982.05, 617),
+    s5bLow: sq(2.9, 982.05, 617),
     /**
      * S5c stage 1 (f864–953), the held run whole (REVIEW-G2 P0-1, lane G-fix): m 2.2, x 242.7–711.8, y 420.5 → the frame
      * bottom (759.7). The avatar (259.7) and the sentence's end (695) both sit 61 px from the frame's sides, so the
      * whole block and all three choices show inside OVERRIDES §4's 60 px; the top edge is 4.8 css px under the usage
      * line (ends 415.7) and the composer's footer line (from 759.7) stays 2 px under the frame. Ink 24 px (stage 2: 36).
      */
-    s5c: fr(2.2, 477.25, 589.6),
+    s5c: sq(2.2, 477.25, 589.6),
     /**
      * S5c stage 2: m 3.28, x 222.6–537.2, y 420.8 → 647.6: "Blocked", the sentence (ink 36 px ≥ 34; its lines run into
      * the stage's right edge) and Run the tests, Ask Pebble to finish whole (its label 82 px from the frame's edge) and
      * Accept as unverified wholly outside (4.5 css px past the edge). The composer's placeholder (648.7) stays under
      * the frame. Run the tests at frame (337, 797).
      */
-    s5cRead: fr(3.28, 379.9, 534.2),
+    s5cRead: sq(3.28, 379.9, 534.2),
     /** S5d upper part: y 200–456.6 */
-    s5dTop: fr(2.9, 982.05, 328.3),
+    s5dTop: sq(2.9, 982.05, 328.3),
     /** S5d tilt (f1050–1073): y 323–579.6; Run tests at frame (815, 886) */
-    s5dTilt: fr(2.9, 982.05, 451.3),
+    s5dTilt: sq(2.9, 982.05, 451.3),
     /** S5e pull-back: x 230–1160, y 0–670.3 (m 1.11); the gear at frame (918, 371) */
-    s5eOut: fr(1.11, 695, 335.15),
+    s5eOut: sq(1.11, 695, 335.15),
     /** S6a: x 341.5–810.6, y 100–438.2 (m 2.2: the tabs and every row's text fit, §6's 2.27 cut "Skills & connectors") */
-    s6a: fr(2.2, 576.05, 269.1),
+    s6a: sq(2.2, 576.05, 269.1),
     /** S6b tilt: y 193–531.2; the Auto in project label at frame (219, 711) */
-    s6bTilt: fr(2.2, 576.05, 362.1),
+    s6bTilt: sq(2.2, 576.05, 362.1),
     /** S6c, the records: x 342.3–820.7, y 455–800 (top below the description paragraph; §6's y 442 cut its last line) */
-    s6c: fr(2.157, 581.5, 627.45),
+    s6c: sq(2.157, 581.5, 627.45),
     /** S7a: the canvas only, x 643.1–1440, y 66–640.5 */
-    s7a: fr(1.295, 1041.55, 353.25),
+    s7a: sq(1.295, 1041.55, 353.25),
     /** S7a's ask (REVIEW-G2 P1-7): x 284–637.4, y 76 → the frame bottom (330.8), m 2.92 (the 16:9 crop is too wide for the
      *  square's stage); the request bubble is the card in focus and the rest recedes under a veil, so the reply's lines
      *  at the frame's bottom edge never read as cut text (S7a's UiStill focus) */
-    s7aAsk: fr(2.92, 460.7, 203.4),
+    s7aAsk: sq(2.92, 460.7, 203.4),
+  },
+  // the vertical (§22): each framing by its magnification, centre x and TOP edge (vt), on the 1,056 × 860 stage. The
+  // m and x come from the square's framings (same stage width, so the same left and right edges); the top and bottom
+  // are this aspect's own: both are visible edges here and must fall in clear space, and none may pass the window's
+  // bottom (y 800)
+  vertical: {
+    /** S5a: x 336–725.4, y 68–385.2 */
+    s5a: vt(2.65 * SQUARE_K, 530.7, 68),
+    /** S5b, the card's upper part: x 804.1–1160, y 200–489.8 */
+    s5bTop: vt(2.9 * SQUARE_K, 982.05, 200),
+    /**
+     * S5b, the card's lower part (REVIEW-G2 P0-2 in 9:16): the bottom edge stays where the square's does (≈ 742), above
+     * the next card's header (y 747–749.3 before and after the click), so no status changes without a visible click;
+     * y 452–742
+     */
+    s5bLow: vt(2.9 * SQUARE_K, 982.05, 452.2),
+    /** S5c stage 1, the held run whole: x 242.7–711.8, y 418 → the window's bottom edge (800): top under the usage line
+     *  (ends 415.7), the composer whole at the bottom */
+    s5c: vt(2.2 * SQUARE_K, 477.25, 418),
+    /** S5c stage 2: x 222.6–537.2, y 420.8–677: bottom inside the composer, between its placeholder (ends 661.3) and its
+     *  model row (713.3) */
+    s5cRead: vt(3.28 * SQUARE_K, 379.9, 420.8),
+    /** S5d upper part: y 200–489.8 */
+    s5dTop: vt(2.9 * SQUARE_K, 982.05, 200),
+    /** S5d tilt (f1050–1073): y 323–612.8 */
+    s5dTilt: vt(2.9 * SQUARE_K, 982.05, 323),
+    /** S5e pull-back: x 230–1160, y 0–757.2 */
+    s5eOut: vt(1.11 * SQUARE_K, 695, 0),
+    /** S6a: x 341.5–810.6, y 100–482 */
+    s6a: vt(2.2 * SQUARE_K, 576.05, 100),
+    /** S6b tilt: y 193–575 */
+    s6bTilt: vt(2.2 * SQUARE_K, 576.05, 193),
+    /** S6c, the records: y 410.4–800 (the window's bottom edge) */
+    s6c: vt(2.157 * SQUARE_K, 581.5, 410.4),
+    /** S7a: the canvas only, x 643.1–1440, y 66–715 */
+    s7a: vt(1.295 * SQUARE_K, 1041.55, 66),
+    /** S7a's ask: x 284–637.4, y 76–363.8 (the rest of the conversation recedes under the square's veil) */
+    s7aAsk: vt(2.92 * SQUARE_K, 460.7, 76),
   },
 };
 
+/** A square framing written for the old 1,032 × 744 stage, converted to the 1,056 px stage with the same visible width
+ *  and the same top edge (the bottom bleeds off the frame). */
+function sq(m: number, cx: number, cy: number): Framing {
+  const top = cy - 372 / m;
+  const m2 = m * SQUARE_K;
+  return fr(m2, cx, top + 372 / m2);
+}
+/** A vertical framing by its top edge on the 860 px stage. */
+function vt(m: number, cx: number, top: number): Framing {
+  return fr(m, cx, top + 430 / m);
+}
+
 /** S7b's end framing (G1.5, ratified by lane E) and S7c's full-frame quiz: frame-centred poses. */
 export const FULL_FRAME = {
-  /** the chart as the world: 16:9 m 3.2 on (1059, 661.5); square m 2.55 on (1061.5, 661.5) */
-  chart: { wide: fr(3.2, 1059, 661.5), square: fr(2.55, 1061.5, 661.5) },
+  /** the chart as the world: 16:9 m 3.2 on (1059, 661.5); square m 2.55 on (1061.5, 661.5); vertical m 3.7 on
+   *  (904, 680), the rows CHART_ROWS_VERTICAL only (below) */
+  chart: { wide: fr(3.2, 1059, 661.5), square: fr(2.55, 1061.5, 661.5), vertical: fr(3.7, 904, 680) },
   /** the quiz, full frame. 16:9 m 2.6: x 421.5–1160 (the window's right edge on the frame's, so nothing past the window
    *  shows; the conversation left of the canvas recedes under a veil, S7Quiz), y 190–605.4 (the quiz's label to its
    *  answers; D bleeds off the bottom; §6's y 330–665 left the title out). Square m 2.477: x 724–1160, inside the canvas
@@ -147,8 +213,17 @@ export const FULL_FRAME = {
    *  has ≥ 60 px of headroom: the label "QUIZ · CHECKED BY PEBBLE" (y 221–229.7) sits 81 px under the frame's top and
    *  the title "Python datetime check-in" (244.3) 141 px (the title sat 17 / 21 px under it; the review's cy 425 / 437
    *  would have put the label 10 / 5 px under it) */
-  quiz: { wide: fr(2.6, 790.75, 397.7), square: fr(2.477, 942, 406) },
+  quiz: { wide: fr(2.6, 790.75, 397.7), square: fr(2.477, 942, 406), vertical: fr(2.477, 942, 412) },
 } as const;
+/**
+ * The vertical's chart world (§22): FULL_FRAME.chart.vertical holds Flights, Stay and Food at m 3.7 (x 758–1050: the
+ * left edge between the y axis's numbers (end 748.6) and Flights (773), the right in the gap after Food (1018 | 1085);
+ * the bar labels at 44 px). A 9:16 frame is 519 CSS px tall there, taller than the panel's bars and labels, so the panel
+ * grows only to these rows (Stay's top at 519 to the labels at ≈ 808), and the world around them is the panel's own
+ * white: the bars become the world without the panel's title, legend or edges. The labels end at frame y ≈ 1440, above
+ * the caption band.
+ */
+export const CHART_ROWS_VERTICAL = { y0: 500, y1: 815 } as const;
 
 /** A camera pose for a framing at layout scale `s`. */
 export const pose = (f: Framing, s: number): CamPose => ({ x: f.cx, y: f.cy, zoom: f.m * s });
@@ -179,7 +254,7 @@ export function windowKeys(a: AspectId, s: number): CamKey[] {
   if (a === "wide") keys.push(key(1008, F.s5d!, s, 1), key(1139, F.s5dVerified!, s, 23));
   else keys.push(key(1008, F.s5dTop!, s, 1), key(1073, F.s5dTilt!, s, 23));
   keys.push(key(1211, F.s5eOut!, s, 23), key(1224, F.s6a!, s, 1));
-  if (a === "square") keys.push(key(1361, F.s6bTilt!, s, 23), key(1431, F.s6a!, s, 23));
+  if (a !== "wide") keys.push(key(1361, F.s6bTilt!, s, 23), key(1431, F.s6a!, s, 23));
   // S7a: the hard cut lands on the ask; f1602–1625 the camera moves to the canvas on van Wijk's path (it pulls back as
   // it pans, so the view never travels faster than it widens)
   keys.push(key(1499, F.s6c!, s, 23), key(1584, F.s7aAsk!, s, 1), key(1625, F.s7a!, s, 24, "smooth"));
@@ -241,12 +316,13 @@ export function framePoint(p: Point, f: Framing, a: AspectId, s: number): Point 
   return { x: (st.w * s) / 2 + (p.x - f.cx) * f.m * s, y: (st.h * s) / 2 + (p.y - f.cy) * f.m * s };
 }
 
-/** Where the pointer comes from (stage-local px): 16:9, past the frame's right edge; square, past its bottom edge. */
+/** Where the pointer comes from (stage-local px): 16:9 and the vertical, past the frame's right edge (the stage bleeds
+ *  off it, so the pointer never crosses the hairline frame); the square, past its bottom edge. */
 function entry(a: AspectId, s: number, side: "lowerRight" | "right"): Point {
   const st = STAGE[a]!;
   const w = st.w * s;
   const h = st.h * s;
-  if (a === "wide") return side === "right" ? { x: w + 50 * s, y: h * 0.3 } : { x: w + 50 * s, y: h * 0.85 };
+  if (a !== "square") return side === "right" ? { x: w + 50 * s, y: h * 0.3 } : { x: w + 50 * s, y: h * 0.85 };
   return side === "right" ? { x: w * 0.92, y: h + 50 * s } : { x: w * 0.8, y: h + 50 * s };
 }
 const off = (p: Point, dx: number, dy: number, s: number): Point => ({ x: p.x + dx * s, y: p.y + dy * s });
@@ -259,8 +335,9 @@ export function pointerSpans(a: AspectId, s: number): PointerSpan[] {
   const out: PointerSpan[] = [];
   // S5b: in from the lower right f780, on Apply edit by f803 (the tilt has landed by f797), click f810; the match cut
   // keeps it there; it drifts away and fades f826–830. The square clicks the button's upper half (css y 689), so the
-  // click stays above the caption band with the next card's header kept out of frame (s5bLow)
-  const pA = fp(wide ? aim(C.apply) : { x: C.apply.x - 3, y: 689 }, F.s5bLow!);
+  // click stays above the caption band with the next card's header kept out of frame (s5bLow); the vertical's stage
+  // ends on its caption band, so it clicks the button's centre
+  const pA = fp(a === "square" ? { x: C.apply.x - 3, y: 689 } : aim(C.apply), F.s5bLow!);
   out.push({
     id: "apply",
     keys: [

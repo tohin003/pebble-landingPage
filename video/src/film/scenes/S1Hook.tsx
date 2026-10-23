@@ -3,10 +3,13 @@
 // the avatar hidden, R1; the film's own engine-drawn pebble sits in the avatar's place), the camera pulls back f40–63,
 // then a hard cut on bar 2 (f72) to the sent question, and from f126 the camera dives into the thinking pebble's body
 // until its sage fills the frame on f143 (lane G-fix: the dive runs f131–143, REVIEW-G2 P1-2): the seam into S2.
+//
+// Lane v2-film (docs/PHILOSOPHY.md): this is the film's one scene, so it is the one place the riverbed shows full
+// frame; it is the imagery, so nothing is laid over it (no vignette).
 import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
-import { Camera, Cursor, Desktop, Vignette, World } from "../../components";
+import { Camera, Cursor, Desktop, World } from "../../components";
 import { useLayout } from "../../motion/layout";
-import { COLOR, ramp } from "../../motion/spec";
+import { COLOR } from "../../motion/spec";
 import { hookPointer, hookPoseAt, ZOOM_THROUGH } from "../hook";
 import { PET, PET_FOOT, PET_PANEL, SOURCE_MAPS, sourceAt } from "../timeline";
 import { PET_FILM } from "../ui";
@@ -25,23 +28,20 @@ export const S1Hook: React.FC = () => {
   const blur = frame < ZOOM_THROUGH.blurFrom ? 0 : interpolate(frame, [ZOOM_THROUGH.blurFrom, ZOOM_THROUGH.fill], [ZOOM_THROUGH.blur[1], ZOOM_THROUGH.blur[2]], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   if (frame >= ZOOM_THROUGH.solidFrom) return <Solid color={COLOR.pebble} />;
   return (
-    <>
-      {/* the blur is applied in frame px on a frame-sized wrapper, never on the magnified world layer */}
-      <FrameBlur px={blur}>
-        {(viewport) => (
-          <Camera pose={cam} viewport={viewport}>
-            <World>
-              <Desktop />
-              {src !== null ? (
-                <RecordedUi src={recordedFrame(PET_FILM.dir, PET_FILM.frames, src)} width={PET_FILM.width} height={PET_FILM.height} x={PET_PANEL.x} y={PET_PANEL.y} />
-              ) : null}
-              <FilmPebble x={PET_FOOT.x} y={PET_FOOT.y} size={PET.size} />
-            </World>
-            <Cursor keys={pointer.keys} clicks={pointer.clicks} visible={[pointer.visible]} />
-          </Camera>
-        )}
-      </FrameBlur>
-      <Vignette amount={0.06 * (1 - ramp(frame, ZOOM_THROUGH.from, 12))} />
-    </>
+    // the blur is applied in frame px on a frame-sized wrapper, never on the magnified world layer
+    <FrameBlur px={blur}>
+      {(viewport) => (
+        <Camera pose={cam} viewport={viewport}>
+          <World>
+            <Desktop />
+            {src !== null ? (
+              <RecordedUi src={recordedFrame(PET_FILM.dir, PET_FILM.frames, src)} width={PET_FILM.width} height={PET_FILM.height} x={PET_PANEL.x} y={PET_PANEL.y} />
+            ) : null}
+            <FilmPebble x={PET_FOOT.x} y={PET_FOOT.y} size={PET.size} />
+          </World>
+          <Cursor keys={pointer.keys} clicks={pointer.clicks} visible={[pointer.visible]} />
+        </Camera>
+      )}
+    </FrameBlur>
   );
 };

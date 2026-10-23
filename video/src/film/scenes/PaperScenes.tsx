@@ -3,13 +3,18 @@
 // The sage field stays outside the circle; the pebble is drawn twice, dark on sage and light inside the flood, so its
 // palette changes with the light (§6 S4). The same colour flood performs the end card on bar 29, deliberately: the
 // visual motif repeats with the musical motif.
+//
+// Lane v2-film (docs/PHILOSOPHY.md; the page's footer graft): both grounds are flat (no pool of light, no vignette),
+// and the lockup stands on the pebble's line, the hand-drawn stroke the page draws under the hero's pebble and along
+// the footer wordmark's baseline, so the film's last frame and the page's last screen are the same picture.
 import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
-import { ColourFlood, PaperField, SAGE_TYPE, SAGE_TYPE_GLOWS, SageField, Vignette, Wordmark, floodRadius, lockupGeometry } from "../../components";
+import { ColourFlood, Wordmark, floodRadius, lockupGeometry, type LockupGeometry } from "../../components";
 import { useLayout } from "../../motion/layout";
 import { EASE, ramp } from "../../motion/spec";
+import { SYSTEM } from "../../motion/system";
 import { PEBBLE_DARK, PEBBLE_LIGHT } from "../../pebble/PebbleSvg";
 import { PEBBLE_INSTANCES, WORDMARK } from "../timeline";
-import { FilmPebble, Lines, hopsFor } from "./common";
+import { FilmPebble, FlatGround, Horizon, Lines, hopsFor } from "./common";
 
 /**
  * The floods' timing (lane G-fix, REVIEW-G2 P1-1): 13 frames on EASE.enter turned 75 % of the frame white in two frames,
@@ -24,6 +29,11 @@ const useLockup = () => {
   const L = useLayout();
   return lockupGeometry({ fontSize: L.type.hero, foot: L.lockup.foot, baseline: L.lockup.baseline, pebbleSize: L.pebbleSize });
 };
+
+/** The line under the lockup: from a third of an em before the word to a third of an em past the pebble, at its foot. */
+const LockupLine: React.FC<{ g: LockupGeometry; id: string }> = ({ g, id }) => (
+  <Horizon id={id} x0={g.box.x - 0.35 * g.fontSize} x1={g.period.x + g.body.w / 2 + 0.35 * g.fontSize} y={g.period.y} />
+);
 
 /** One pebble instance drawn dark on the sage and light inside the flood. */
 const TwoTonePebble: React.FC<{ instance: "main" | "end"; light: boolean }> = ({ instance, light }) => {
@@ -53,17 +63,16 @@ export const S4Reveal: React.FC = () => {
   const tracking = `${interpolate(settle, [0, 1], [0.04, -0.035]).toFixed(4)}em`;
   return (
     <>
-      <SageField glows={SAGE_TYPE_GLOWS} style={{ backgroundColor: SAGE_TYPE.ground }}>
+      <FlatGround color={SYSTEM.sage}>
         <TwoTonePebble instance="main" light={false} />
-        <Vignette amount={0.06} />
-      </SageField>
+      </FlatGround>
       <ColourFlood from={g.period} at={504} dur={FLOOD.dur} ease={FLOOD.ease} radius={floodRadius(g.period, width, height)}>
-        <PaperField pool={{ x: width / 2, y: g.baseline - g.fontSize * 0.25 }}>
-          <Wordmark geometry={g} reveal={unroll} tracking={tracking} pebble={null} />
+        <FlatGround color={SYSTEM.bg}>
+          <LockupLine g={g} id="reveal-line" />
+          <Wordmark geometry={g} reveal={unroll} tracking={tracking} pebble={null} color={SYSTEM.ink} />
           <Lines ids={["T5"]} world="paper" />
-          <Vignette amount={0.06} />
           <TwoTonePebble instance="main" light />
-        </PaperField>
+        </FlatGround>
       </ColourFlood>
     </>
   );
@@ -78,17 +87,16 @@ export const S9EndCard: React.FC = () => {
   const unroll = ramp(frame, WORDMARK.w2.unroll.at, WORDMARK.w2.unroll.dur, EASE.enter);
   return (
     <>
-      <SageField glows={SAGE_TYPE_GLOWS} style={{ backgroundColor: SAGE_TYPE.ground }}>
+      <FlatGround color={SYSTEM.sage}>
         <TwoTonePebble instance="end" light={false} />
-        <Vignette amount={0.06} />
-      </SageField>
+      </FlatGround>
       <ColourFlood from={g.period} at={2016} dur={FLOOD.dur} ease={FLOOD.ease} radius={floodRadius(g.period, width, height)}>
-        <PaperField pool={{ x: width / 2, y: g.baseline - g.fontSize * 0.25 }}>
-          {frame >= WORDMARK.w2.unroll.at ? <Wordmark geometry={g} reveal={unroll} pebble={null} /> : null}
+        <FlatGround color={SYSTEM.bg}>
+          <LockupLine g={g} id="end-card-line" />
+          {frame >= WORDMARK.w2.unroll.at ? <Wordmark geometry={g} reveal={unroll} pebble={null} color={SYSTEM.ink} /> : null}
           <Lines ids={["T18", "T19", "T20", "T21", "T22"]} world="paper" />
-          <Vignette amount={0.06} />
           <TwoTonePebble instance="end" light />
-        </PaperField>
+        </FlatGround>
       </ColourFlood>
     </>
   );

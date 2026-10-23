@@ -17,7 +17,7 @@ import type { Rect } from "../motion/camera";
 import { useLayout, type TypeScale } from "../motion/layout";
 import { COLOR, EASE, FX_REST, T, T2, TYPO, blurIn, blurOut, fadeIn, fadeOut, fxStyle, mixFx, ramp, sec, type Fx, type TypoRole } from "../motion/spec";
 
-export type TextRole = "hero" | "headline" | "side" | "tagline" | "support" | "cta" | "mono" | "small";
+export type TextRole = "hero" | "headline" | "side" | "tagline" | "support" | "data" | "cta" | "mono" | "small";
 
 const ROLE_TYPO: Record<TextRole, TypoRole> = {
   hero: "display",
@@ -25,6 +25,7 @@ const ROLE_TYPO: Record<TextRole, TypoRole> = {
   side: "display",
   tagline: "display",
   support: "text",
+  data: "data",
   cta: "text",
   mono: "mono",
   small: "small",
@@ -35,6 +36,7 @@ const ROLE_SIZE: Record<TextRole, keyof TypeScale> = {
   side: "side",
   tagline: "tagline",
   support: "support",
+  data: "data",
   cta: "cta",
   mono: "mono",
   small: "small",
@@ -153,6 +155,8 @@ export const KineticText: React.FC<KineticTextProps> = ({
           whiteSpace: "pre",
           color,
           fontKerning: "normal",
+          // the data's voice sets its figures in tabular numerals (docs/PHILOSOPHY.md, "Type")
+          fontVariantNumeric: typo.family === "mono" ? "tabular-nums" : undefined,
         };
         const out = exitFx(li);
         if (enter === "rise") {

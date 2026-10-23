@@ -11,9 +11,9 @@ import { PET, S1_CAMERA } from "./timeline";
 export function hookPoses(a: AspectId, width: number, height: number, s: number) {
   const at = (p: Point) => ({ x: p.x * s, y: p.y * s });
   return {
-    c0: poseAt(PET.centre, at(S1_CAMERA.c0.pebbleAt[a]), S1_CAMERA.c0.m * s, width, height),
-    c1: poseAt(PET.centre, at(S1_CAMERA.c1.pebbleAt[a]), S1_CAMERA.c1.m * s, width, height),
-    c2: poseAt(PET.centre, at(S1_CAMERA.c2.pebbleAt[a]), S1_CAMERA.c2.m * s, width, height),
+    c0: poseAt(PET.centre, at(S1_CAMERA.c0.pebbleAt[a]), S1_CAMERA.c0.m[a] * s, width, height),
+    c1: poseAt(PET.centre, at(S1_CAMERA.c1.pebbleAt[a]), S1_CAMERA.c1.m[a] * s, width, height),
+    c2: poseAt(PET.centre, at(S1_CAMERA.c2.pebbleAt[a]), S1_CAMERA.c2.m[a] * s, width, height),
   };
 }
 
@@ -69,13 +69,14 @@ export function hookPoseAt(frame: number, a: AspectId, width: number, height: nu
 }
 
 /**
- * The pointer (FILM_SPEC §6 S1a): from off frame upper left (§6: (−70, 210) / (−70, 160) frame px at f2, at C0) on a
- * minimum-jerk arc to the pebble by f28, a dwell, the click-down on f36; it fades f44–48. World units (it rides the
- * camera's pull-back while it fades, as a pointer on the desktop does).
+ * The pointer (FILM_SPEC §6 S1a): from off frame upper left (§6: (−70, 210) / (−70, 160) frame px at f2, at C0; the
+ * vertical's (−70, 700), §22, inside its central band) on a minimum-jerk arc to the pebble by f28, a dwell, the
+ * click-down on f36; it fades f44–48. World units (it rides the camera's pull-back while it fades, as a pointer on the
+ * desktop does).
  */
 export function hookPointer(a: AspectId, width: number, height: number, s: number): { keys: CursorKey[]; clicks: number[]; visible: [number, number] } {
   const { c0 } = hookPoses(a, width, height, s);
-  const startFrame = { x: -70 * s, y: (a === "wide" ? 210 : 160) * s };
+  const startFrame = { x: -70 * s, y: (a === "wide" ? 210 : a === "square" ? 160 : 700) * s };
   const start = { x: c0.x + (startFrame.x - width / 2) / c0.zoom, y: c0.y + (startFrame.y - height / 2) / c0.zoom };
   return {
     keys: [

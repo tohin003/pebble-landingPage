@@ -1,7 +1,7 @@
-// The film's shared Remotion components (lane G1). Scenes import from here.
+// The film's shared Remotion components (lane G1). Scenes import from here. (G1's <Stage> went with its board-o-matic;
+// the film's stage is film/scenes/common.tsx's FilmStage, a hairline frame: lane v2-film.)
 export { Camera, useCamera, type CameraProps, type CameraState } from "./Camera";
 export { World, Place } from "./World";
-export { Stage, roiPose, type StageProps } from "./Stage";
 export { Desktop, MenuBar, DESKTOP, RIVERBED, MENUBAR_HEIGHT, type DesktopProps } from "./Desktop";
 export { MacWindow, LIGHTS, windowShadow, type MacWindowProps } from "./MacWindow";
 export { UiStill, uiStillSrc, uiStillSize, type UiStillProps, type UiFocus, type UiPress } from "./UiStill";

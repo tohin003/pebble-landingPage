@@ -1,8 +1,12 @@
-// The window world (FILM_SPEC §4, §6 S5–S7a; 648–1665): the riverbed ground, a stage into Pebble's REAL UI (the
+// The window world (FILM_SPEC §4, §6 S5–S7a; 648–1665): the paper ground, a stage into Pebble's REAL UI (the
 // main-live-film recording for the coding story, lane D's Settings and dashboard stills after it), the text column
-// (16:9) or band (square), the pebble at its spot acting the app's poses, the pointer, and the film's two annotations
-// (the ring on Undo this edit, the check beside the Verified step, 16:9 only), both drawn outside or around the UI,
-// never inside it (critic C3).
+// (16:9) or band (square, vertical), the pebble at its spot on its line acting the app's poses, the pointer, and the
+// film's two annotations (the ring on Undo this edit, the check beside the Verified step, 16:9 only), both drawn
+// outside or around the UI, never inside it (critic C3).
+//
+// Lane v2-film (docs/PHILOSOPHY.md, "Imagery"): every shot here is a moment (one card, one step, one tab), so the stage
+// is a hairline frame on the page's flat paper, without a shadow, and the riverbed stays behind the one scene (S1). The
+// pebble's spot is a short stretch of its line, as on the page.
 //
 // Seams inside: f720 and f1008 camera moves; f814 match cut on the Apply edit click (the Done card, settling from
 // 1.04×); f864 hard cut (chapter `tested`); f1224 match cut on the gear (Settings › Models); f1332, f1404, f1440 tab
@@ -12,12 +16,13 @@ import type { CSSProperties } from "react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
 import { CheckMark, Cursor, Ring, UiStill, type UiStillName } from "../../components";
 import { useLayout, type AspectId } from "../../motion/layout";
-import { CLICK, COLOR, EASE, ramp } from "../../motion/spec";
+import { CLICK, EASE, ramp } from "../../motion/spec";
+import { SYSTEM } from "../../motion/system";
 import { PEBBLE_LIGHT } from "../../pebble/PebbleSvg";
 import { STAGE, STAGE_CUTS, pointerSpans, stageMotionBlur, stagePoseAt, stageToFrame } from "../framing";
 import { PEBBLE_INSTANCES, SOURCE_MAPS, sourceAt } from "../timeline";
 import { DASHBOARD, LIVE_FILM, SETTINGS, centreOf } from "../ui";
-import { FilmPebble, FilmStage, Lines, RecordedUi, hopsFor, recordedFrame, WindowGround } from "./common";
+import { FilmPebble, FilmStage, FlatGround, Horizon, Lines, RecordedUi, hopsFor, recordedFrame } from "./common";
 
 /** Clicks whose press is drawn over the real control, on the frozen frame before the click (FILM_SPEC §7.2, §10). */
 const PRESSES = [
@@ -62,9 +67,9 @@ const StageContent: React.FC<{ frame: number; zoom: number; aspect: AspectId }> 
       </>
     );
   }
-  // S7a opens on the ask (REVIEW-G2 P1-7). In the square, the request bubble is the card in focus and the rest of the
-  // conversation recedes (its lines run into the frame's bottom edge there) until the camera leaves for the canvas
-  const ask = aspect === "square" ? 1 - ramp(frame, 1602, 12, EASE.move) : 0;
+  // S7a opens on the ask (REVIEW-G2 P1-7). In the narrow aspects, the request bubble is the card in focus and the rest
+  // of the conversation recedes (its lines run into the stage's bottom edge there) until the camera leaves for the canvas
+  const ask = aspect !== "wide" ? 1 - ramp(frame, 1602, 12, EASE.move) : 0;
   return <UiStill name="main-dashboard" focus={ask > 0 ? { rect: DASHBOARD.request, mode: "card", amount: ask, radius: 14, veil: 0.6, blur: 8 } : undefined} />;
 };
 
@@ -83,16 +88,18 @@ export const WindowWorld: React.FC<{ style?: CSSProperties }> = ({ style }) => {
   const stage = { x: st.x * s, y: st.y * s, w: st.w * s, h: st.h * s };
   // the check beside the Verified step: its centre y is the step's, seen by the camera on f1152 (it holds to f1187)
   const verifiedY = stageToFrame(centreOf(LIVE_FILM.verifiedStep), stagePoseAt(1152, a, s, fps), stage).y;
+  const foot = L.win.pebble.foot;
   return (
     <div style={{ position: "absolute", inset: 0, ...style }}>
-      <WindowGround />
+      <FlatGround />
       <FilmStage
         rect={stage}
         pose={pose}
         blur={blur}
+        clipOverlay={a === "vertical"}
         overlay={
           <>
-            {frame >= 826 && frame < 860 ? <Ring rect={LIVE_FILM.undoEdit.rect} radius={LIVE_FILM.undoEdit.radius} drawAt={826} outAt={852} color={COLOR.accent} /> : null}
+            {frame >= 826 && frame < 860 ? <Ring rect={LIVE_FILM.undoEdit.rect} radius={LIVE_FILM.undoEdit.radius} drawAt={826} outAt={852} color={SYSTEM.accent} /> : null}
             {spans.map((sp) => (
               <Cursor key={sp.id} space="frame" keys={sp.keys} clicks={sp.clicks} visible={[sp.visible]} />
             ))}
@@ -104,8 +111,10 @@ export const WindowWorld: React.FC<{ style?: CSSProperties }> = ({ style }) => {
       <Lines ids={["T6", "T7", "T8", "T9", "T10", "T11", "T11s", "T12", "T13"]} world="window" />
       <Lines ids={["T14"]} world="window" exit={false} />
       {L.win.checkX !== null && frame >= 1152 && frame < 1192 ? (
-        <CheckMark at={{ x: L.win.checkX, y: verifiedY }} space="frame" size={L.win.checkSize} stroke={8 * s} drawAt={1152} outAt={1182} color={COLOR.accent} avoid={stage} />
+        <CheckMark at={{ x: L.win.checkX, y: verifiedY }} space="frame" size={L.win.checkSize} stroke={8 * s} drawAt={1152} outAt={1182} color={SYSTEM.accent} avoid={stage} />
       ) : null}
+      {/* the pebble's spot is a short stretch of its line (the page's local ground); the carry lands on it at f652 */}
+      <Horizon id="window-ground" x0={L.win.ground.x0} x1={L.win.ground.x1} y={foot.y} />
       <FilmPebble x={main.start[a].x * s} y={main.start[a].y * s} size={L.pebbleSize} hops={hopsFor(main.hops, a, s)} colors={PEBBLE_LIGHT} />
     </div>
   );

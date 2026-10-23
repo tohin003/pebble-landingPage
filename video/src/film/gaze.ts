@@ -10,7 +10,7 @@
 import { BODY, VIEWBOX_SIZE, gazeToward, sameGaze, type Gaze, type PebbleCue } from "../../../shared/pebble";
 import type { Point } from "../motion/camera";
 import type { AspectId } from "../motion/layout";
-import { layoutFor } from "../motion/layout";
+import { REFERENCE, layoutFor } from "../motion/layout";
 import { cursorPathAt } from "../motion/spec";
 import { mergeCues } from "../pebble/acting";
 import { pointerFrameAt } from "./framing";
@@ -73,7 +73,7 @@ const cache = new Map<string, PebbleCue[]>();
 export function filmCues(a: AspectId): readonly PebbleCue[] {
   const hit = cache.get(a);
   if (hit) return hit;
-  const L = layoutFor(a === "wide" ? 1920 : 1080, 1080);
+  const L = layoutFor(REFERENCE[a].width, REFERENCE[a].height);
   const statics = FILM_PEBBLE_CUES[a];
   // S1: the desk pebble in the desktop world, seen through the hook camera (f2–47; the timeline's f48 cue returns the look)
   const hp = hookPointer(a, L.width, L.height, L.s);

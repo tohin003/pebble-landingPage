@@ -344,7 +344,8 @@ export const LOOK = {
 
 /**
  * Faces, weights, tracking and leading per role. Sizes are aspect-aware and come from useLayout().type. Fraunces is
- * never italic and never accent-coloured (DESIGN.md §3); Geist Mono is for commands and paths only.
+ * never italic and never accent-coloured (DESIGN.md §3); Geist Mono, with tabular numerals, is the data's voice: the
+ * URL and anything that carries a number (docs/PHILOSOPHY.md, "Type"; lane v2-film).
  */
 export const TYPO = {
   /** kinetic headlines and the claim: calm at 350 */
@@ -355,6 +356,8 @@ export const TYPO = {
   wordmark: {family: 'sans', weight: 650, tracking: '-0.035em', leading: 1, axes: undefined},
   /** URLs and paths */
   mono: {family: 'mono', weight: 500, tracking: '0em', leading: 1.3, axes: undefined},
+  /** a support line that carries a number ("Apache-2.0"): Geist Mono at the support line's place */
+  data: {family: 'mono', weight: 500, tracking: '0em', leading: 1.25, axes: undefined},
   /** small print ("Shown with sample data") */
   small: {family: 'sans', weight: 400, tracking: '0em', leading: 1.3, axes: undefined},
 } as const;

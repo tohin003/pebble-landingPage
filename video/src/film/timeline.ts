@@ -94,20 +94,14 @@ export interface Point {
   x: number;
   y: number;
 }
+/** The film's three compositions (FILM_SPEC §2, §22): 16:9, 1:1 and 9:16. */
+export type Aspect = "wide" | "square" | "vertical";
 export interface PerAspect<T> {
   wide: T;
   square: T;
+  vertical: T;
 }
-const both = <T,>(wide: T, square: T): PerAspect<T> => ({ wide, square });
-/** A ROI given as x0–x1, y0–y1 (FILM_SPEC's notation). */
-const roi = (x0: number, x1: number, y0: number, y1: number): Rect => ({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
-
-/** A framing inside the stage: magnification m and the region of interest (its centre at the stage's centre). */
-export interface Framing {
-  m: number;
-  roi: Rect;
-}
-const fr = (m: number, r: Rect): Framing => ({ m, roi: r });
+const per = <T,>(wide: T, square: T, vertical: T): PerAspect<T> => ({ wide, square, vertical });
 
 /** The pet in the desktop world (S1). The desktop placement is ours (FILM_SPEC gives frame positions only): its
  *  centre sits where every S1 framing stays inside the wallpaper and frame 0 has the riverbed's lower stones in view. */
@@ -125,76 +119,29 @@ export const PET_FOOT: Point = { x: PET.centre.x, y: PET.centre.y + PET.centreTo
 export const PET_PANEL: Rect = { x: PET.centre.x - PET.inPanel.x, y: PET.centre.y - PET.inPanel.y, w: 384, h: 456 };
 export const DESKTOP_RECT: Rect = { x: 0, y: 0, w: 1600, h: 1000 };
 
-/** S1's camera states: magnification and where the pebble's centre sits in the frame (§6 S1). */
+/**
+ * S1's camera states: magnification and where the pebble's centre sits in the frame (§6 S1, §22). The stage framings
+ * of the window world are film/framing.ts's (edge-checked on the real frames); G1's board-o-matic framings that lived
+ * here went with the board (lane v2-film).
+ *
+ * The vertical (§22) has its own: the wallpaper is 1,000 desktop points tall and the frame 1,920 px, so no 9:16 view
+ * may zoom out below m 1.92 and every view's centre sits where the riverbed still fills the frame (frame 0: m 3.4 with
+ * the pebble at (540, 1080), the wallpaper's bottom edge 3 px under the frame's; C1 m 2.2 on the panel, its greeting
+ * at 45 px; C2 m 2.6, the question at ≥ 34 px, the panel's top 117 px under the band's top).
+ */
 export const S1_CAMERA = {
   /** C0, f0–39: frame 0, the thumbnail */
-  c0: { m: 2.6, pebbleAt: both({ x: 1300, y: 640 }, { x: 640, y: 620 }) },
+  c0: { m: per(2.6, 2.6, 3.4), pebbleAt: per({ x: 1300, y: 640 }, { x: 640, y: 620 }, { x: 540, y: 1080 }) },
   /** C1, f40–63 → hold to f71: the open chat */
-  c1: { m: 1.5, pebbleAt: both({ x: 1430, y: 746 }, { x: 742, y: 746 }) },
+  c1: { m: per(1.5, 1.5, 2.2), pebbleAt: per({ x: 1430, y: 746 }, { x: 742, y: 746 }, { x: 836, y: 1370 }) },
   /** C2, f72 (hard cut, punch-in): the sent question. Lane G-fix (REVIEW-G2 P1-8): the pebble at y 921, not §6's 866,
    *  so the quick chat's top edge sits 65 px under the frame's top and its header 104 px (OVERRIDES §4's 60 px); the
    *  pebble may sit in the caption band, it is not text */
-  c2: { m: 2.2, pebbleAt: both({ x: 1379, y: 921 }, { x: 837, y: 921 }) },
+  c2: { m: per(2.2, 2.2, 2.6), pebbleAt: per({ x: 1379, y: 921 }, { x: 837, y: 921 }, { x: 890, y: 1400 }) },
   /** f131–143: the zoom through the pebble, aimed at a body point (−20, +25) viewBox units from its centre. Lane G-fix
    *  (REVIEW-G2 P1-2): it starts on f131, not f126, so the body fills the frame ON f143 and the world changes on the
    *  bar line (f144), where the whoosh peaks */
   zoomThrough: { from: at(2, 4, 5), to: at(3), aim: { x: -20, y: 25 }, scale: 22 },
-} as const;
-
-/** The stage framings of the window world (§6 S5–S7), as G1 drew them on lane D's stills for the board-o-matic. The
- *  animated film frames the REAL recording with film/framing.ts (lane G2a), edge-checked frame by frame. */
-export const FRAMING = {
-  s5a: both(fr(2.6, roi(350, 735, 40, 406)), fr(2.65, roi(350, 712, 120, 401))),
-  s5bTop: both(fr(2.4, roi(810, 1150, 205, 602)), fr(2.65, roi(817, 1143, 205, 486))),
-  s5bLow: both(fr(2.4, roi(810, 1150, 404, 800)), fr(2.65, roi(817, 1143, 519, 800))),
-  /**
-   * 16:9 ROI y 313–745, not §6's 300–733: on the held-unverified still that puts Run the tests at §6's frame y ≈ 640 (the
-   * spec's ROI gives 668) and both stage edges in clear space (the spec's top edge halves the "tests/test_dates.py"
-   * bullet and its bottom edge halves the composer's model row). Re-check against the R-recording when G2 has it.
-   */
-  s5c: both(fr(2.2, roi(215, 670, 313, 745)), fr(2.65, roi(220, 582, 380, 661))),
-  s5d: both(fr(2.6, roi(812, 1150, 200, 566)), fr(2.65, roi(817, 1143, 205, 486))),
-  s5dSquareTilt: fr(2.65, roi(817, 1143, 300, 581)),
-  /**
-   * the S5d fallback (no R2 recording): main-done-timeline@3x on the conversation's run block, the Verified row. Edges
-   * measured on the still: the run's avatar spans x 258.5–275.2 and the pill starts at 288; the rows end by x 645; the
-   * user's bubble ends at y 266, the pill starts at 325, "Done, and verified:" ends at 605.7 and the composer starts at
-   * 627. 16:9 keeps the avatar 12 css px inside the stage; the square (m 2.5) holds the avatar, the whole pill (with air
-   * above it) and the rows down to Details.
-   */
-  s5eRows: both(fr(2.4, roi(246, 662, 225, 622)), fr(2.5, roi(248, 661, 282, 580))),
-  s5eOut: both(fr(1.3, roi(340, 1110, 0, 732)), fr(1.3, roi(366, 1160, 0, 572))),
-  /** §6 S6 (G2a: back to the spec's 16:9 m 2.0, ROI x 336–836, from G1's 2.1; at 2.1 the bins sat 55 px from the
-   *  frame's right edge, at 2.0 they sit 80 px inside, as §6 asks) */
-  s6a: both(fr(2.0, roi(336, 836, 96, 572)), fr(2.27, roi(346, 769, 100, 428))),
-  s6bSquareTilt: fr(2.27, roi(346, 769, 200, 528)),
-  s6cRecords: both(fr(2.0, roi(336, 836, 324, 800)), fr(2.08, roi(343, 805, 442, 800))),
-  s7a: both(fr(1.25, roi(612, 1412, 70, 832)), fr(1.25, roi(640, 1408, 62, 657))),
-  /**
-   * S7b's end framing: full bleed, m and the CSS point at the frame's centre. A G1.5 deviation from §6 (16:9 m 2.56 on
-   * (1041, 640), square m 2.26 on (1041, 661)), measured on main-dashboard@3x: the spec's 16:9 crop shows the panel's
-   * right border as a 1 px line and cuts the legend through its middle, and its square crop cuts Flights mid-bar and
-   * leaves "…ry" / "…st spent" title fragments top left. These crops make the bars and their labels the world (as §6
-   * words it) and keep every edge in clear space: 16:9 holds all six groups between the subtitle (ends y 480.3) and the
-   * legend (starts y 842), with the y-axis numbers (end x 748.6) outside and the gridlines (x 758.2–1381) bleeding off
-   * both sides; the square holds Stay → Transit with its side edges in the bar gaps (x 848–877, 1246–1292). The 16:9
-   * m 3.2 upsamples the @3x still by 7 %. Lane E to ratify.
-   */
-  s7b: both({ m: 3.2, centre: { x: 1059, y: 661.5 } }, { m: 2.55, centre: { x: 1061.5, y: 661.5 } }),
-  s7c: both(fr(2.6, roi(735, 1145, 330, 665)), fr(2.4, roi(735, 1135, 330, 640))),
-} as const;
-
-/** UI points the film touches, CSS px of the captured window (measured on the @2x stills). */
-export const UI_POINTS = {
-  /** held-unverified: the held panel ("Blocked" through the three buttons) and Run the tests */
-  heldPanel: { x: 342, y: 470, w: 700, h: 128 } as Rect,
-  runTests: { x: 386, y: 558, w: 96, h: 32 } as Rect,
-  /** main-done-timeline: the conversation's "Verified · pytest 42 passed on current files · 2 s" row */
-  verifiedRow: { x: 310, y: 506, w: 420, h: 22 } as Rect,
-  /** main-done-timeline: the run block (the receipt line and the timeline rows) */
-  runBlock: { x: 255, y: 325, w: 470, h: 245 } as Rect,
-  /** the window's Settings button (the gear) */
-  gear: { x: 1036, y: 32 } as Point,
 } as const;
 
 /* ================================================================================================================
@@ -332,13 +279,16 @@ export const SHOTS: readonly Shot[] = [
  * §8 On-screen text
  * ============================================================================================================== */
 
-export type TextRole = "hero" | "headline" | "side" | "tagline" | "support" | "cta" | "mono" | "small";
+/** Roles (§3; PHILOSOPHY's three voices): Fraunces 350 for hero/headline/side/tagline lines, Inter for support, cta
+ *  and small, Geist Mono with tabular numerals for anything carrying a number ("data": "Apache-2.0"; "mono": the URL). */
+export type TextRole = "hero" | "headline" | "side" | "tagline" | "support" | "data" | "cta" | "mono" | "small";
 export type Entrance = "blur" | "ink" | "rise" | "fade";
 
 export interface TextCue {
   id: string;
   chapter: ChapterId;
-  /** the lines as they break on screen (16:9; `squareLines` when the square breaks differently) */
+  /** the lines as they break on screen (16:9; `squareLines` when the narrow compositions, 1:1 and 9:16, both 1,080 px
+   *  wide, break differently) */
   lines: readonly string[];
   squareLines?: readonly string[];
   role: TextRole;
@@ -371,8 +321,8 @@ export interface TextCue {
 export const LIST_DIM = 0.45;
 /** Each list's left edge (px at the reference size), so that its widest line sits centred on the frame (measured on the
  *  renders: "What did it change?" 809 / 673 px wide, "Your keys stay in your Keychain" 1,297 px, "Free and open source"
- *  719 px in the square). */
-export const LIST_X = { questions: both(554, 202), facts: both(310, 178) } as const;
+ *  719 px in the square; the vertical is 1,080 px wide with the square's type, so its edges are the square's). */
+export const LIST_X = { questions: per(554, 202, 202), facts: per(310, 178, 178) } as const;
 
 export const END = GRID.frames + 6;
 
@@ -386,11 +336,13 @@ export const TEXT: readonly TextCue[] = [
   // S2, lane G-fix (REVIEW-G2 P1-6 and the lead's addendum): the three questions build a list, the checklist the film
   // goes on to answer. Each inks in whole, starting 3 frames before its downbeat (FILM_SPEC §1) so it reads at full
   // contrast on the beat; the one before it dims to 45 % as it arrives; all three leave together f348–354.
-  t({ id: "T1", chapter: "desktop", lines: ["What did it change?"], role: "headline", enter: "ink", in: 144, out: 348, dimAt: 213, inkTogether: true, place: "centre", y: both(325, 350), x: LIST_X.questions }),
-  t({ id: "T2", chapter: "desktop", lines: ["Can I undo it?"], role: "headline", enter: "ink", in: 213, out: 348, dimAt: 285, inkTogether: true, place: "centre", y: both(470, 470), x: LIST_X.questions }),
-  t({ id: "T3", chapter: "desktop", lines: ["Did it run the tests?"], role: "headline", enter: "ink", in: 285, out: 348, inkTogether: true, place: "centre", y: both(615, 590), x: LIST_X.questions }),
-  t({ id: "T4", chapter: "desktop", lines: ["An agent shouldn't", "grade its own work"], role: "headline", enter: "rise", in: 360, out: 462, place: "centre", y: both(420, 420) }),
-  t({ id: "T5", chapter: "desktop", lines: ["A small companion for your Mac"], role: "support", enter: "blur", in: 522, out: 612, place: "baseline", y: both(560, 530) }),
+  // The vertical (§22) centres each type world in the central band (y 250–1670): the questions on y 960, T4 above the
+  // pebble's rise, the lockup's baseline on y 830 with its lines under it, all above the caption band (y 1460).
+  t({ id: "T1", chapter: "desktop", lines: ["What did it change?"], role: "headline", enter: "ink", in: 144, out: 348, dimAt: 213, inkTogether: true, place: "centre", y: per(325, 350, 840), x: LIST_X.questions }),
+  t({ id: "T2", chapter: "desktop", lines: ["Can I undo it?"], role: "headline", enter: "ink", in: 213, out: 348, dimAt: 285, inkTogether: true, place: "centre", y: per(470, 470, 960), x: LIST_X.questions }),
+  t({ id: "T3", chapter: "desktop", lines: ["Did it run the tests?"], role: "headline", enter: "ink", in: 285, out: 348, inkTogether: true, place: "centre", y: per(615, 590, 1080), x: LIST_X.questions }),
+  t({ id: "T4", chapter: "desktop", lines: ["An agent shouldn't", "grade its own work"], role: "headline", enter: "rise", in: 360, out: 462, place: "centre", y: per(420, 420, 820) }),
+  t({ id: "T5", chapter: "desktop", lines: ["A small companion for your Mac"], role: "support", enter: "blur", in: 522, out: 612, place: "baseline", y: per(560, 530, 960) }),
   t({ id: "T6", chapter: "project", lines: ["It reads", "your project"], role: "side", enter: "blur", in: 666, out: 718, place: "column" }),
   t({ id: "T7", chapter: "project", lines: ["Review, apply,", "undo"], role: "side", enter: "blur", in: 756, out: 858, wordStarts: [756, 811, 830], place: "column" }),
   // lane G-fix (REVIEW-G2 P0-1): T8 lands on the bar-14 downbeat (f936), after the held run is in view, not mid-scroll
@@ -404,16 +356,17 @@ export const TEXT: readonly TextCue[] = [
   t({ id: "T14", chapter: "views", lines: ["Views,", "not just text"], role: "side", enter: "blur", in: 1584, out: 1656, place: "column" }),
   // S8, lane G-fix (REVIEW-G2 P1-6, P1-3): the facts build a list the same way; T16 lands on bar 27 (f1872), T17 on
   // beat 107 (f1926); the list leaves together f1998–2004, before the end card's pebble enters the frame (≈ f2005).
-  // "Apache-2.0" keeps G2a's clearance under "open" (its capitals touched the "p" at §8's distance).
-  t({ id: "T15", chapter: "open-source", lines: ["Free and open source"], role: "headline", enter: "ink", in: 1800, out: 1998, dimAt: 1869, inkTogether: true, place: "centre", y: both(290, 285), x: LIST_X.facts }),
-  t({ id: "T15s", chapter: "open-source", lines: ["Apache-2.0"], role: "support", enter: "ink", in: 1806, out: 1998, dimAt: 1869, inkTogether: true, place: "baseline", y: both(425, 400), x: LIST_X.facts }),
-  t({ id: "T16", chapter: "open-source", lines: ["No telemetry"], role: "headline", enter: "ink", in: 1869, out: 1998, dimAt: 1923, inkTogether: true, place: "centre", y: both(530, 505), x: LIST_X.facts }),
-  t({ id: "T17", chapter: "open-source", lines: ["Your keys stay in your Keychain"], squareLines: ["Your keys stay", "in your Keychain"], role: "headline", enter: "ink", in: 1923, out: 1998, inkTogether: true, place: "centre", y: both(690, 690), x: LIST_X.facts }),
-  t({ id: "T18", chapter: "get", lines: ["A little help, right here."], role: "tagline", enter: "blur", in: 2088, out: END, place: "baseline", y: both(560, 520), key: true }),
-  t({ id: "T19", chapter: "get", lines: ["Free for Macs with Apple silicon"], role: "cta", enter: "rise", in: 2160, out: END, place: "baseline", y: both(690, 630), key: true }),
-  t({ id: "T20", chapter: "get", lines: ["github.com/tohin003/Pebble"], role: "mono", enter: "rise", in: 2164, out: END, place: "baseline", y: both(770, 700), key: true }),
-  t({ id: "T21", chapter: "get", lines: ["Shown with sample data"], role: "small", enter: "fade", in: 2196, out: END, place: "baseline", y: both(852, 820) }),
-  t({ id: "T22", chapter: "get", lines: [bloubCredit], role: "small", enter: "fade", in: 2196, out: END, place: "baseline", y: both(892, 860) }),
+  // "Apache-2.0" keeps G2a's clearance under "open" (its capitals touched the "p" at §8's distance). Lane v2-film: it is
+  // set in Geist Mono (role "data"), the system's voice for anything that carries a number (PHILOSOPHY, "Type").
+  t({ id: "T15", chapter: "open-source", lines: ["Free and open source"], role: "headline", enter: "ink", in: 1800, out: 1998, dimAt: 1869, inkTogether: true, place: "centre", y: per(290, 285, 735), x: LIST_X.facts }),
+  t({ id: "T15s", chapter: "open-source", lines: ["Apache-2.0"], role: "data", enter: "ink", in: 1806, out: 1998, dimAt: 1869, inkTogether: true, place: "baseline", y: per(425, 400, 850), x: LIST_X.facts }),
+  t({ id: "T16", chapter: "open-source", lines: ["No telemetry"], role: "headline", enter: "ink", in: 1869, out: 1998, dimAt: 1923, inkTogether: true, place: "centre", y: per(530, 505, 955), x: LIST_X.facts }),
+  t({ id: "T17", chapter: "open-source", lines: ["Your keys stay in your Keychain"], squareLines: ["Your keys stay", "in your Keychain"], role: "headline", enter: "ink", in: 1923, out: 1998, inkTogether: true, place: "centre", y: per(690, 690, 1140), x: LIST_X.facts }),
+  t({ id: "T18", chapter: "get", lines: ["A little help, right here."], role: "tagline", enter: "blur", in: 2088, out: END, place: "baseline", y: per(560, 520, 950), key: true }),
+  t({ id: "T19", chapter: "get", lines: ["Free for Macs with Apple silicon"], role: "cta", enter: "rise", in: 2160, out: END, place: "baseline", y: per(690, 630, 1060), key: true }),
+  t({ id: "T20", chapter: "get", lines: ["github.com/tohin003/Pebble"], role: "mono", enter: "rise", in: 2164, out: END, place: "baseline", y: per(770, 700, 1130), key: true }),
+  t({ id: "T21", chapter: "get", lines: ["Shown with sample data"], role: "small", enter: "fade", in: 2196, out: END, place: "baseline", y: per(852, 820, 1250) }),
+  t({ id: "T22", chapter: "get", lines: [bloubCredit], role: "small", enter: "fade", in: 2196, out: END, place: "baseline", y: per(892, 860, 1290) }),
 ];
 
 export const textById = (id: string): TextCue => {
@@ -441,27 +394,31 @@ export interface HopSpec {
   to: PerAspect<Point>;
 }
 /** G2a: H1 starts at y 1200, not §9.2's 1150: at 1150 the 210 px pebble's top (y 1041) showed at the frame's bottom
- *  edge through S3's first bar; at 1200 it is fully below the frame until it rises. */
+ *  edge through S3's first bar; at 1200 it is fully below the frame until it rises. The vertical's (§22) rise starts
+ *  under the frame (y 2050) and lands at y 1300, above the caption band; its lockup foot is (806, 832). */
 export const HOPS: readonly HopSpec[] = [
-  { id: "H1", at: 14.4, duration: 0.5, from: both({ x: 960, y: 1200 }, { x: 540, y: 1200 }), to: both({ x: 960, y: 880 }, { x: 540, y: 880 }) },
-  { id: "H2", at: time(490), duration: 0.467, from: both({ x: 960, y: 880 }, { x: 540, y: 880 }), to: both({ x: 1295, y: 422 }, { x: 806, y: 402 }) },
-  { id: "H3", at: time(634), duration: 0.6, from: both({ x: 1295, y: 422 }, { x: 806, y: 402 }), to: both({ x: 330, y: 900 }, { x: 940, y: 300 }) },
-  { id: "H4", at: time(2002), duration: 0.467, from: both({ x: 2050, y: 1180 }, { x: 1180, y: 1180 }), to: both({ x: 1295, y: 422 }, { x: 806, y: 402 }) },
+  { id: "H1", at: 14.4, duration: 0.5, from: per({ x: 960, y: 1200 }, { x: 540, y: 1200 }, { x: 540, y: 2050 }), to: per({ x: 960, y: 880 }, { x: 540, y: 880 }, { x: 540, y: 1300 }) },
+  { id: "H2", at: time(490), duration: 0.467, from: per({ x: 960, y: 880 }, { x: 540, y: 880 }, { x: 540, y: 1300 }), to: per({ x: 1295, y: 422 }, { x: 806, y: 402 }, { x: 806, y: 832 }) },
+  { id: "H3", at: time(634), duration: 0.6, from: per({ x: 1295, y: 422 }, { x: 806, y: 402 }, { x: 806, y: 832 }), to: per({ x: 330, y: 900 }, { x: 940, y: 300 }, { x: 940, y: 560 }) },
+  { id: "H4", at: time(2002), duration: 0.467, from: per({ x: 2050, y: 1180 }, { x: 1180, y: 1180 }, { x: 1180, y: 2010 }), to: per({ x: 1295, y: 422 }, { x: 806, y: 402 }, { x: 806, y: 832 }) },
 ];
 
 export const PEBBLE_INSTANCES = {
   /** inside the desktop world at the pet's place, scaled by the camera, light palette */
   desk: { from: 0, to: 144 },
   /** off-frame below, rises in (H1), leaps (H2), carries (H3); dark until the reveal flood (f504), then light */
-  main: { from: 432, to: 1666, start: both({ x: 960, y: 1200 }, { x: 540, y: 1200 }), hops: ["H1", "H2", "H3"], lightFrom: 504 },
+  main: { from: 432, to: 1666, start: per({ x: 960, y: 1200 }, { x: 540, y: 1200 }, { x: 540, y: 2050 }), hops: ["H1", "H2", "H3"], lightFrom: 504 },
   /** the end card's: off-frame lower right, H4; dark until f2016, then light */
-  end: { from: 1999, to: GRID.frames, start: both({ x: 2050, y: 1180 }, { x: 1180, y: 1180 }), hops: ["H4"], lightFrom: 2016 },
+  end: { from: 1999, to: GRID.frames, start: per({ x: 2050, y: 1180 }, { x: 1180, y: 1180 }, { x: 1180, y: 2010 }), hops: ["H4"], lightFrom: 2016 },
 } as const;
 
 /** §9.3, the static cues (the pointer-driven look cues of f8–30, 780–826, 960–1000, 1050–1090 and 1196–1555 are computed
- *  by the scenes from the cursor with gazeToward and merged in). Square variants differ only in four looks. */
+ *  by the scenes from the cursor with gazeToward and merged in). The square and the vertical differ only in looks,
+ *  each pointing where its own frame puts the target (quantised to 1/8). */
 const cue = (frame: number, c: Omit<PebbleCue, "at">): PebbleCue => ({ at: time(frame), ...c });
-function cuesFor(square: boolean): PebbleCue[] {
+type Look = { x: number; y: number };
+const look = (a: Aspect, wide: Look, square: Look, vertical: Look): Look => per(wide, square, vertical)[a];
+function cuesFor(a: Aspect): PebbleCue[] {
   return [
     cue(-15, { look: { x: -0.625, y: -0.375 }, note: "G1.5: before frame 0 the eyes turn to where the pointer will enter (upper left), so the thumbnail looks somewhere" }),
     cue(22, { pose: "hover", note: "the pointer enters the pet window" }),
@@ -470,13 +427,13 @@ function cuesFor(square: boolean): PebbleCue[] {
     cue(72, { pose: "thinking", note: "the run has started" }),
     cue(144, { pose: "idle" }),
     cue(440, { look: { x: 0, y: -0.75 }, note: "looks up at T4" }),
-    cue(481, { look: square ? { x: 0.5, y: -0.875 } : { x: 0.625, y: -0.75 }, note: "eyes lead the leap" }),
+    cue(481, { look: look(a, { x: 0.625, y: -0.75 }, { x: 0.5, y: -0.875 }, { x: 0.5, y: -0.875 }), note: "eyes lead the leap" }),
     cue(504, { pose: "tap", note: "lands: the reveal" }),
     cue(520, { look: null }),
     cue(540, { pose: "idle", note: "tap ends (1.2 s)" }),
-    cue(624, { look: square ? { x: 0.75, y: -0.625 } : { x: -0.875, y: 0.5 }, note: "eyes lead the carry" }),
+    cue(624, { look: look(a, { x: -0.875, y: 0.5 }, { x: 0.75, y: -0.625 }, { x: 0.5, y: -0.875 }), note: "eyes lead the carry" }),
     cue(652, { pose: "reading", note: "lands in the window world" }),
-    cue(660, { look: square ? { x: -0.875, y: 0.5 } : { x: 0.875, y: -0.375 }, note: "toward the status line" }),
+    cue(660, { look: look(a, { x: 0.875, y: -0.375 }, { x: -0.875, y: 0.5 }, { x: -0.625, y: 0.75 }), note: "toward the status line" }),
     cue(711, { pose: "editing", note: "inside the f708–714 blink" }),
     cue(756, { pose: "review", note: "the edit card waits (\"!\"); on f756, with \"Review,\", after the f720–753 camera move, so the morph plays on a still frame (REVIEW-G2 P1-4)" }),
     cue(864, { pose: "thinking" }),
@@ -486,8 +443,8 @@ function cuesFor(square: boolean): PebbleCue[] {
     cue(1161, { pose: "writing", note: "after Verified, Pebble writes its final reply" }),
     cue(1204, { pose: "happy", note: "the verified run completes (the one celebration)" }),
     cue(1339, { pose: "idle", note: "happy ends after 4.5 s, as in the app" }),
-    cue(1584, { look: square ? { x: -0.875, y: 0.5 } : { x: 0.875, y: -0.375 }, note: "the dashboard" }),
-    cue(1999, { look: square ? { x: -0.375, y: -0.875 } : { x: -0.75, y: -0.75 }, note: "P-end: eyes lead the landing" }),
+    cue(1584, { look: look(a, { x: 0.875, y: -0.375 }, { x: -0.875, y: 0.5 }, { x: -0.625, y: 0.75 }), note: "the dashboard" }),
+    cue(1999, { look: look(a, { x: -0.75, y: -0.75 }, { x: -0.375, y: -0.875 }, { x: -0.25, y: -0.875 }), note: "P-end: eyes lead the landing" }),
     cue(2016, { pose: "tap", note: "lands in the end-card lockup" }),
     cue(2030, { look: null }),
     cue(2052, { pose: "idle" }),
@@ -495,7 +452,7 @@ function cuesFor(square: boolean): PebbleCue[] {
     cue(2214, { look: { x: 0, y: 0 }, note: "looks at the viewer to the end" }),
   ];
 }
-export const FILM_PEBBLE_CUES: PerAspect<readonly PebbleCue[]> = both(cuesFor(false), cuesFor(true));
+export const FILM_PEBBLE_CUES: PerAspect<readonly PebbleCue[]> = per(cuesFor("wide"), cuesFor("square"), cuesFor("vertical"));
 
 /* ================================================================================================================
  * §10 Clicks, §11 sound effects, §12 seams
@@ -739,7 +696,7 @@ export function validateTimeline(): string[] {
     });
   }
   // the character
-  out.push(...checkCues(FILM_PEBBLE_CUES.wide, "FILM_PEBBLE_CUES.wide"), ...checkCues(FILM_PEBBLE_CUES.square, "FILM_PEBBLE_CUES.square"));
+  for (const a of ["wide", "square", "vertical"] as const) out.push(...checkCues(FILM_PEBBLE_CUES[a], `FILM_PEBBLE_CUES.${a}`));
   for (const h of HOPS) {
     const landing = sec(h.at + h.duration);
     if (h.id === "H2" && landing !== REVEAL_FRAME) out.push(`H2 lands on ${landing}, not the reveal ${REVEAL_FRAME}`);
