@@ -13,7 +13,8 @@
 //      and focus returns to the menu button.
 //   5. The three explainers by keyboard: the approval card (Apply edit → Done → Undo → Undone → Reset; Don't allow),
 //      the permission dial (arrow keys), the memory card (Forget → Forgotten, focus moves on, the live region speaks).
-//      Also the project story's tabs and AgentGuard's held/verified switch.
+//      Also the project story's tabs, and AgentGuard's evidence ledger (three ruled rows, each the app's words and a
+//      real capture, no JavaScript needed; its held/verified switch was retired by DESIGN-LEXINGTON §6).
 //   6. The film theatre, when the film exists: Enter on the play button opens the modal, focus is inside, Esc closes
 //      it, the video pauses and focus returns to the play button.
 //   7. The install pill: Copy by keyboard puts the exact command on the clipboard and says so in a polite live region;
@@ -421,7 +422,25 @@ async function session(base, width, theme, motion) {
     await shot("06-agentguard-switched");
     await page.keyboard.press("ArrowLeft");
     await sleep(200);
-  } else check("AgentGuard switch", false, "no radio");
+  } else {
+    // the evidence ledger: both states on the page at once, so there is nothing to switch; check its rows instead
+    const ledger = await page.evaluate(async () => {
+      const rows = [...document.querySelectorAll("#agentguard [data-ledger] > li")];
+      rows[0]?.scrollIntoView({ block: "center" });
+      await new Promise((r) => setTimeout(r, 600));
+      return rows.map((li) => ({
+        row: li.getAttribute("data-row"),
+        title: li.querySelector("h3 q")?.textContent?.trim().slice(0, 48) ?? "",
+        crop: !!li.querySelector("[data-frame]"),
+      }));
+    });
+    check(
+      "AgentGuard ledger: three rows, each titled with the app's words, each with a capture",
+      ledger.length === 3 && ledger.every((r) => r.title && r.crop),
+      JSON.stringify(ledger),
+    );
+    await shot("06-agentguard-ledger");
+  }
   // the permission dial
   const dial = await page.evaluate(() => {
     const r = document.querySelector('#permissions input[type="radio"]:checked');

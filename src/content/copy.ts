@@ -534,8 +534,8 @@ export const agentGuard = {
     challenge:
       "Pebble's Activity steps. The edit to invoice_kit/templates/statement.html is refused, and its details read “AgentGuard — evidence check” and “5 file(s) changed that the task does not reach”, name the request and the files outside it, and say “Either explain what connects these to the task, or split them into a separate change.”",
     held: "A reply in Pebble after two edits: “Not verified · 2 changed files, no tests run”, then “Blocked” and “Pebble's change isn't verified yet.”, with the buttons Run the tests, Ask Pebble to finish and Accept as unverified.",
-    verified:
-      "A reply in Pebble after the tests ran: “Verified · pytest 42 passed on current files”, then “Done, and verified:” with the two changed files and 42 tests passed in an isolated copy of the project.",
+    // the crop is the reply's head (lane v2-sections-a): the list under it is wider than the ledger can show legibly
+    verified: "The head of a reply in Pebble after the tests ran: “Verified · pytest 42 passed on current files”, then “Done, and verified:”.",
   },
 } as const;
 

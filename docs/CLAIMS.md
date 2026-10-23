@@ -735,6 +735,24 @@ AgentGuard's challenge) are unchanged, and so is every sample (S) row.
   for 1.0.4.
 - The copy lint's every/always rule: the new "In every mode, …" sentence starts with its own mode qualifier.
 
+## Sections 2–7 on the system (lane v2-sections-a, 2026-10-24)
+
+The film, AgentGuard, On your desktop, the project story, Models and You set the pace moved onto the Lexington system
+(DESIGN-LEXINGTON §6). Their words are the approved ones and only moved; one label and one alt text are new.
+
+| ID | Claim | Source | Kind / notes |
+|---|---|---|---|
+| C-SYS-16 | "The film / {length}, with sound." (the film's rail label; "1:16, with sound.") | The length: `chapters.ts` `FILM_DURATION_SECONDS` (76.8 s: 2,304 frames at 30 fps, `docs/FILM_SPEC.md` §1) through `formatTimecode` (whole seconds); "with sound": `film.playNote` (C-SYS-1), `film.lead` (C-FILM-1, "with music") | I. Label; the length is data. While the length is unknown the label is C-SYS-1's "Plays with sound." |
+| C-F2A-6 (alt) | `agentGuard.media.verified`: "The head of a reply in Pebble after the tests ran: “Verified · pytest 42 passed on current files”, then “Done, and verified:”." | `public/ui/v1/main-done-*` (Pebble 1.0.4), the ledger's crop (`AgentGuard.tsx` `VERIFIED`, `VERIFIED_PHONE`) | Alt text. Before, it also named the list under the head, which the new crop leaves out |
+
+Moved, not changed:
+- AgentGuard's evidence ledger titles its three rows with strings that already have rows: the engine's summary
+  `agentGuard.challenge.summary(5)` (OVERRIDES §9, with C-AG-10 beside it), C-AG-3 ("Pebble's change isn't verified
+  yet.", with `agentGuard.layer[2]`, C-AG-7..9) and C-AG-2 (with the second sentence of C-AG-1). The held/verified
+  switch is retired, so `agentGuard.toggle` is no longer shown.
+- Two-tone heads: AgentGuard (C-AG-5, then C-AG-6), You set the pace (C-PACE-1 cut after its first sentence).
+- The explainers' "Interactive example" mark is a stone: the accent keeps its three jobs.
+
 ## Lexington system (lane v2-system, 2026-10-23)
 
 The rail labels and the footer's column names of the Lexington system (DESIGN-LEXINGTON §3.1, §11), in

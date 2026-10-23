@@ -1,302 +1,147 @@
-/* Section 3, AgentGuard: a split (comp 2's graft, DESIGN §1). Text on the left, real captures on the right; one column
-   below 900 px. */
-.section {
-  position: relative;
-}
+/* Section 3, AgentGuard (DESIGN-LEXINGTON §6 AgentGuard, comp lex-A): the head (SectionHead), then the evidence ledger
+   and the reliability row in the main column, columns 4–12. Lines, not boxes: each row is a hairline and its contents;
+   the captures sit in plain crop frames (UiCrop: radius 12, a 1 px ring), never on a card. */
 
-.split {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: 64px;
-  align-items: start;
-  width: min(var(--w-content), 100%);
-  margin: 0 auto;
-}
-
-/* --- left: what AgentGuard is --- */
-.text {
-  position: sticky;
-  top: calc(var(--header-h) + 28px);
-  text-align: left;
-}
-
-.title {
-  max-width: 11em;
-}
-
-.lead {
-  margin-top: 22px;
-  color: var(--ink);
-}
-
-.para {
-  margin-top: 14px;
-  color: var(--ink-2);
-}
-
-/* The one comparative framing allowed, as intent (OVERRIDES §2): set as a line of its own, in the display face. */
-.intent {
-  margin-top: 30px;
-  font-family: var(--font-display);
-  font-weight: 350;
-  font-size: clamp(24px, 0.9vw + 17px, 30px);
-  line-height: 1.18;
-  letter-spacing: -0.012em;
-  color: var(--ink);
-  text-wrap: balance;
-}
-
-.reliability {
-  margin-top: 30px;
-  padding-top: 22px;
-  border-top: 1px solid var(--line);
+/* the scope paragraph under the lead (SectionHead's "more", columns 4–9) */
+.scope {
   font-size: 16px;
   line-height: 1.6;
   color: var(--ink-2);
 }
 
-.reliabilityTitle {
-  font-size: 17px;
-  line-height: 1.4;
-  color: var(--ink);
+/* --- the evidence ledger: three ruled rows, each a 3 | 6 split inside the 9-column main (1280 px and up). An ordered
+   list (the order a task meets them), with no visible numbers: the titles carry the order. --- */
+.ledger {
+  list-style: none;
 }
 
-.reliability p {
-  margin-top: 6px;
+.row {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  column-gap: var(--gap);
+  align-items: start;
+  padding-block: 32px;
+  border-top: 1px solid var(--line);
+}
+
+.words {
+  grid-column: 1 / span 3;
+}
+
+/* the title is the app's own words, quoted */
+.title q {
+  quotes: "\201C" "\201D";
+}
+
+/* "Verified" carries the state mark: the accent galet (one of the accent's three jobs) */
+.verified {
+  display: inline-block;
+  width: 11px;
+  height: 9.7px;
+  margin-right: 9px;
+  background: var(--accent);
+}
+
+.note {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.sample {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+/* columns 7–12: 624 px at 1440, where the app's 12 px text renders at 12–14 px */
+.figure {
+  grid-column: 4 / -1;
+  margin: 0;
+}
+
+/* --- "Reliability, not security.": the last ruled row. The title in columns 4–6; the body and its three points,
+   a hairline list of three columns, in 7–12. --- */
+.reliability {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  column-gap: var(--gap);
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+}
+
+.reliabilityTitle {
+  grid-column: 1 / span 3;
+}
+
+.reliabilityBody {
+  grid-column: 4 / -1;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-2);
 }
 
 .points {
   display: grid;
-  gap: 8px;
-  margin-top: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px var(--gap);
+  margin-top: 16px;
 }
 
 .points li {
-  position: relative;
-  padding-left: 22px;
-}
-
-/* a small galet as the list mark (critic M9) */
-.points li::before {
-  content: "";
-  position: absolute;
-  left: 2px;
-  top: 0.62em;
-  width: 10px;
-  height: 9px;
-  background: var(--stone);
-  -webkit-mask: var(--galet-mask) center / contain no-repeat;
-  mask: var(--galet-mask) center / contain no-repeat;
-}
-
-.chip {
-  margin-top: 22px;
-}
-
-/* --- right: the captures --- */
-.media {
-  display: grid;
-  gap: 48px;
-}
-
-.challenge {
-  max-width: 560px;
-  margin: 0;
-}
-
-.caption {
-  margin-top: 14px;
-  font-size: 14.5px;
-  line-height: 1.55;
-  color: var(--ink-2);
-  text-align: left;
-}
-
-.caption p + p,
-.caption p + ul {
-  margin-top: 6px;
-}
-
-.caption q {
-  color: var(--ink);
-}
-
-.sample {
-  font-size: 13.5px;
-}
-
-/* On phones the capture's own text is small: the engine's two key lines also as text. */
-.phoneQuote {
-  display: none;
-}
-
-.phoneQuote q {
-  display: block;
-}
-
-.phoneQuote q + q {
-  margin-top: 4px;
-}
-
-.choices {
-  justify-content: flex-start;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
   font-size: 14px;
+  line-height: 1.5;
 }
 
-/* the interactive example: a two-way switch over two stills that share one grid cell */
-.evidence {
-  margin: 0;
-}
-
-.toggle {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px 18px;
-  margin-bottom: 14px;
-}
-
-.toggleLabel {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 2px 10px;
-  font-size: 14px;
-  line-height: 1.4;
-  color: var(--ink-2);
-}
-
-.example {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-weight: 550;
-  color: var(--ink);
-}
-
-.example::before {
-  content: "";
-  width: 11px;
-  height: 9.7px;
-  background: var(--accent);
-  -webkit-mask: var(--galet-mask) center / contain no-repeat;
-  mask: var(--galet-mask) center / contain no-repeat;
-}
-
-.segments {
-  display: inline-flex;
-  padding: 3px;
-  border-radius: 12px;
-  background: var(--bg-2);
-  box-shadow: inset 0 0 0 1px var(--line);
-}
-
-.segment {
-  position: relative;
-  display: block;
-}
-
-.segmentInput {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.segmentText {
-  display: block;
-  padding: 8px 14px;
-  border-radius: 9px;
-  font-size: 14.5px;
-  font-weight: 550;
-  line-height: 1.3;
-  white-space: nowrap;
-  color: var(--ink-2);
-  transition:
-    background-color var(--dur-fast) ease,
-    color var(--dur-fast) ease,
-    box-shadow var(--dur-fast) ease;
-}
-
-.segmentInput:checked + .segmentText {
-  background: var(--panel);
-  color: var(--ink);
-  box-shadow: 0 0 0 1px var(--line), 0 1px 3px rgba(var(--shade), 0.12);
-}
-
-.segmentInput:focus-visible + .segmentText {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .segmentInput:not(:checked):hover + .segmentText {
-    color: var(--ink);
-  }
-}
-
-.stack {
-  display: grid;
-}
-
-.state {
-  grid-area: 1 / 1;
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity 240ms var(--ease-move),
-    visibility 0s linear 240ms;
-}
-
-.state[data-on] {
-  opacity: 1;
-  visibility: visible;
-  transition:
-    opacity 240ms var(--ease-move),
-    visibility 0s;
-}
-
-@media (max-width: 1023px) {
-  .split {
-    gap: 48px;
-  }
-}
-
-@media (max-width: 899px) {
-  .split {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 56px;
+/* Below 1280 px the six columns are too narrow for the captures' text: each row stacks, its words first, then the
+   capture at most 624 px wide (the app's scale or a little more). */
+@media (max-width: 1279px) {
+  .row {
+    display: block;
+    padding-block: 28px;
   }
 
-  .text {
-    position: static;
+  .words {
     max-width: 40em;
   }
 
-  .title {
-    max-width: none;
+  .figure {
+    max-width: 624px;
+    margin-top: 20px;
+  }
+
+  .reliability {
+    display: block;
+    padding-top: 28px;
+  }
+
+  .reliabilityBody {
+    max-width: 48em;
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .points {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .points li {
+    padding-block: 12px;
   }
 }
 
 @media (max-width: 560px) {
-  .phoneQuote {
-    display: block;
+  .row {
+    padding-block: 24px;
   }
 
-  .media {
-    gap: 40px;
-  }
-
-  .toggle {
-    justify-content: flex-start;
-  }
-
-  .segmentText {
-    padding: 8px 11px;
-    font-size: 14px;
+  .figure {
+    margin-top: 16px;
   }
 }
