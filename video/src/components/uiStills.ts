@@ -1,6 +1,7 @@
 // Every captured UI still in video/public/ui (lane D's capture/capture.mjs --naming=video): its size in CSS px (world
 // units) and the device-pixel ratios on disk. Generated from the files on 2026-10-23; regenerate when lane D re-shoots:
-// every @2x size / 2 equals the @3x size / 3. `alpha`: a transparent companion window.
+// every @2x size / 2 equals the @3x size / 3. `alpha`: a transparent companion window. Checked against the Pebble 1.0.4
+// retake (lane shots, 2026-10-23): only crop-models-ways-in changed (the model row is one line since 1.0.4).
 export const UI_STILLS = {
   "command-review": { w: 1440, h: 900, dprs: [2, 3], alpha: false },
   "crop-approval-card": { w: 495, h: 482, dprs: [2, 3], alpha: false },
@@ -12,7 +13,7 @@ export const UI_STILLS = {
   "crop-held": { w: 726, h: 256, dprs: [2, 3], alpha: false },
   "crop-memory-records-forgotten": { w: 504, h: 516, dprs: [2, 3], alpha: false },
   "crop-memory-records": { w: 504, h: 516, dprs: [2, 3], alpha: false },
-  "crop-models-ways-in": { w: 504, h: 243, dprs: [2, 3], alpha: false },
+  "crop-models-ways-in": { w: 504, h: 227, dprs: [2, 3], alpha: false },
   "crop-permissions-modes-auto": { w: 504, h: 443, dprs: [2, 3], alpha: false },
   "crop-permissions-modes": { w: 504, h: 443, dprs: [2, 3], alpha: false },
   "crop-tests-card": { w: 495, h: 344, dprs: [2, 3], alpha: false },
