@@ -7,8 +7,11 @@
 // (counted live in the browser by Footer.stamp.tsx; nothing shows until it has been counted), the bloub credit
 // (OVERRIDES §2), the licence line and the trademark notice.
 //
-// The giant wordmark is decoration (aria-hidden): the statement, the links and the fine print carry every word. The
-// sleeping pebble is a still (no JavaScript): at the end of the page nothing moves on its own.
+// The giant wordmark is decoration (aria-hidden): the statement, the links and the fine print carry every word. Its
+// letters are CSS generated content (data-word), not text in the page, so screen readers, find-in-page, translation
+// and the contrast check all skip it: it is a logotype set tone on tone on purpose (about 1.2:1), which WCAG 1.4.3
+// exempts, and axe's colour-contrast rule (tools/qa/a11y.mjs) only reads real text. The sleeping pebble is a still
+// (no JavaScript): at the end of the page nothing moves on its own.
 import Link from "next/link";
 import { footer } from "@/content/copy";
 import { bloubCredit } from "@/content/credits";
@@ -35,9 +38,7 @@ export function Footer() {
         <div className={styles.rest}>
           <div className={styles.giant} aria-hidden="true">
             <Horizon variant={4} className={styles.ground} />
-            <span className={styles.word} translate="no">
-              pebble
-            </span>
+            <span className={styles.word} data-word="pebble" />
             <span className={styles.stop}>
               <span className={styles.contact} />
               <Pebble pose="sleepy" live={false} className={styles.sleeper} />

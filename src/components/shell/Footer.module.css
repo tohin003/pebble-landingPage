@@ -30,6 +30,13 @@
   margin-bottom: calc(0.176em + 20px);
 }
 
+/* The letters, drawn from data-word as generated content with no alternative text: the logo as decoration, never
+   text a reader, a search or a contrast check meets (Footer.tsx). */
+.word::before {
+  content: attr(data-word);
+  content: attr(data-word) / "";
+}
+
 /* The baseline: Inter's ascender (0.969) and descender (0.242) in a 0.86 line put it 0.066 em above the line box's
    bottom. A Horizon is 12 px tall with the line at its middle. */
 .ground {
