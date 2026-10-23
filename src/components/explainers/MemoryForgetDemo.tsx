@@ -6,9 +6,11 @@
 // - Forget: the button gives way to "Forgotten". Focus moves on to the next Forget button, or to Done when none is
 //   left, and a polite live region says what was forgotten.
 // - Done: the card closes. "Reset the example" (shown once anything changed) brings it back.
-// - All memories in Settings: a link to the Settings › Memory picture beside the demo (`settingsHref`).
-// Keyboard operable, labelled "Interactive example". Its only motion answers a click (the "Forgotten" label fades in,
-// CSS only); under reduced or paused motion every change is instant (globals.css).
+// - All memories in Settings: a link to the Settings › Memory picture in the same section (`settingsHref`).
+// Keyboard operable, labelled "Interactive example" above the slice of conversation, as the other explainers are, with
+// the stone galet (a recreation is not a state, so not the accent). Its stage is the page's flat panel
+// (DESIGN-LEXINGTON §3.8); the card's insides keep the app's own look. Its only motion answers a click (the
+// "Forgotten" label fades in, CSS only); under reduced or paused motion every change is instant (globals.css).
 import { useEffect, useId, useRef, useState } from "react";
 import { explainers, memory } from "@/content/copy";
 import styles from "./MemoryForgetDemo.module.css";
@@ -69,6 +71,12 @@ export function MemoryForgetDemo({ settingsHref }: { settingsHref: string }) {
 
   return (
     <figure className={styles.demo}>
+      <figcaption className={styles.label}>
+        <span className={styles.example}>{explainers.label}</span>
+        <span>
+          {memory.demoWords} {explainers.sampleData}
+        </span>
+      </figcaption>
       <div className={styles.window}>
         <p className={styles.request}>{copy.request}</p>
         {open ? (
@@ -119,16 +127,14 @@ export function MemoryForgetDemo({ settingsHref }: { settingsHref: string }) {
           </section>
         ) : null}
       </div>
-      <figcaption className={styles.caption}>
-        <span>
-          {explainers.label}. {memory.demoWords} {explainers.sampleData}
-        </span>
+      {/* the row keeps its height, so the page doesn't move when the reset appears */}
+      <div className={styles.after}>
         {changed ? (
           <button type="button" className={styles.reset} ref={resetButton} onClick={reset}>
             {explainers.reset}
           </button>
         ) : null}
-      </figcaption>
+      </div>
       <p className="sr-only" aria-live="polite">
         {announcement}
       </p>

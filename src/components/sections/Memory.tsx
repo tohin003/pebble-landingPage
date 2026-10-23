@@ -1,18 +1,25 @@
-// Section 8, Memory you can see (DESIGN §5 row 8; OVERRIDES §7, §10).
+// Section 8, Memory you can read and forget (DESIGN-LEXINGTON §6 Memory; OVERRIDES §7, §10, §12).
 //
-// Two rows that mirror each other, so the page never sits in one centred column for long (DESIGN §1):
-// 1. the six layers, with the app's own name for each and the README's layer name (OVERRIDES §10), beside the real
-//    Settings › Memory sheet, cropped from lane D's still and set on the riverbed (DESIGN §6); when loop L7 is
-//    rendered, the loop takes the still's place;
-// 2. MemoryForgetDemo (the in-chat forget card, interactive) beside the recall rule and what you control.
-// The line passes beside the section (a "margin" anchor).
+// The head on the rail ("Memory / Six labelled layers", the film chip under it), then three rows from column 4, in the
+// order a careful reader asks: what is kept, where you see it, how you take it back.
+// 1. The six layers as a two-column ruled list (columns 4–7 and 8–11), each with the app's own name, the README's
+//    layer name and what it holds. Read row by row, it is the order of the Settings sheet's own two-column grid below.
+// 2. The real Settings › Memory on the riverbed in columns 4–9 (loop L7's 624 px slot; L7 plays there once rendered)
+//    beside the recall rule in 10–12: the sheet itself says that retrieved text never becomes permission.
+//    The still floats from the frame's top and runs off its bottom edge, because the sheet goes on. Phones keep the
+//    still, cut to the switch and the six layers so the app's text stays near its own size (L7 has no 4:5 cut).
+// 3. The forget card, an interactive recreation on the flat panel (columns 4–8), beside what you control in 9–12 and
+//    the limit in ink under a hairline, at the same size (PHILOSOPHY 3).
+// No tiles and no icons; the galet marks the list items.
 import type { CSSProperties } from "react";
 import { common, media, memory } from "@/content/copy";
+import { labels } from "@/content/labels";
 import { MemoryForgetDemo } from "@/components/explainers/MemoryForgetDemo";
-import { ChapterChip } from "@/components/media/ChapterChip";
 import { LoopVideo } from "@/components/media/LoopVideo";
-import { AppWindow, MediaFrame } from "@/components/media/MediaFrame";
-import { UiImage } from "@/components/media/UiImage";
+import { MediaFrame } from "@/components/media/MediaFrame";
+import { UiCrop } from "@/components/media/UiCrop";
+import { DataText } from "@/components/ui/Data";
+import { SectionHead } from "@/components/ui/SectionHead";
 import { inline } from "@/lib/inline";
 import { loopMedia } from "@/lib/media";
 import { SECTIONS } from "@/lib/sections";
@@ -22,98 +29,91 @@ import styles from "./Memory.module.css";
 const SETTINGS_ID = "memory-settings";
 
 /**
- * The Settings sheet inside the 2400 × 1500 still (light and dark share the layout): its left and top edges, width and
- * corner radius in pixels, measured from the capture. The crop runs from the sheet's top to below the third record;
- * the frame cuts it off, so the sheet seems to continue past the frame's bottom edge.
+ * settings-memory, in the still's 1200 × 750 units (both themes share the layout). SHEET: the Settings sheet from its
+ * top edge, taller than the frame shows, so its bottom corners fall outside the frame and the sheet runs on. Its
+ * width is 78 % of the frame (Memory.module.css .sheet), 487 px at 1440: the app's text at about 1.13 times its size.
+ * TILES (phones): "Remember useful context" and the six layers, 94 % of a phone's frame (about 0.84 times).
  */
-const SHEET = { x: 769, y: 79, width: 862, height: 1240, radius: 24, still: 2400 } as const;
-/** The sheet's share of the frame's width (Memory.module.css .sheet); the radius scales with it. */
-const SHEET_WIDTH = 0.78;
-const cropStyle = {
-  "--crop-aspect": `${SHEET.width} / ${SHEET.height}`,
-  "--crop-scale": `${((SHEET.still / SHEET.width) * 100).toFixed(4)}%`,
-  "--crop-x": `${((-SHEET.x / SHEET.width) * 100).toFixed(4)}%`,
-  "--crop-y": `${((-SHEET.y / SHEET.width) * 100).toFixed(4)}%`,
-  // cqi of the stage (the frame's width), so the corner matches the capture's at every size
-  "--crop-radius": `${((SHEET.radius / SHEET.width) * SHEET_WIDTH * 100).toFixed(3)}cqi`,
-  "--sheet-width": `${SHEET_WIDTH * 100}%`,
-} as CSSProperties;
+const SHEET = { x: 384.5, y: 39.5, w: 431, h: 340 } as const;
+const TILES = { x: 398, y: 170, w: 404, h: 146 } as const;
+/** The sheet's own corner radius in the still's units (24 px on the 2400 px files), so the crop's corner is the sheet's. */
+const stageStyle = { "--sheet-radius": 12, "--sheet-units": SHEET.w } as CSSProperties;
+/** The frame: columns 4–9 (624 px at 1440), the column below 1024 px. */
+const FRAME_SIZES = "(max-width: 560px) calc(100vw - 32px), (max-width: 1023px) calc(100vw - 48px), (max-width: 1279px) calc((100vw - 64px) * 0.49), 624px";
 
 export function Memory() {
-  const loop = loopMedia("memory");
+  const l7 = loopMedia("memory");
+  // L7 has no 4:5 cut, so phones keep the still (critic H2; HANDOFF-v2-loops)
+  const still = !l7.available || l7.phoneSources.length === 0;
   return (
-    <section id={SECTIONS.memory} className={`section ${styles.section}`} aria-labelledby="memory-title">
-      <div className="section-head">
-        <h2 id="memory-title">{memory.h2}</h2>
-        <p className="lead">{memory.lead}</p>
-        <div className={styles.chip}>
-          <ChapterChip chapterId={memory.chapterId} />
-        </div>
-      </div>
+    <section id={SECTIONS.memory} className="sec" aria-labelledby="memory-title">
+      <SectionHead id="memory-title" label={labels.memory} title={memory.h2} lead={memory.lead} chip={memory.chapterId} />
 
-      <div className={styles.layersRow}>
-        <dl className={styles.layers}>
-          {memory.layers.map((layer) => (
-            <div key={layer.layer} className={styles.layer}>
-              <dt>
-                <span className={styles.name}>{layer.name}</span>
-                <span className={styles.term}>{layer.layer}</span>
-              </dt>
-              <dd>{layer.holds}</dd>
-            </div>
-          ))}
-        </dl>
-
-        <figure id={SETTINGS_ID} className={styles.settings} tabIndex={-1}>
-          {loop.available ? (
-            <MediaFrame variant="riverbed" aspect="16 / 10" sizes="(max-width: 899px) calc(100vw - 48px), 620px">
-              <AppWindow className={styles.loopWindow}>
-                <LoopVideo
-                  loop={loop}
-                  label={media.loops.memory.label}
-                  name={media.loops.memory.name}
-                  sizes="(max-width: 899px) 86vw, 540px"
-                />
-              </AppWindow>
-            </MediaFrame>
-          ) : (
-            <MediaFrame
-              variant="riverbed"
-              aspect="5 / 6"
-              sizes="(max-width: 899px) calc(100vw - 48px), 560px"
-              className={styles.stage}
-            >
-              <div className={styles.sheetStage} style={cropStyle}>
-                <div className={styles.sheet}>
-                  <UiImage
-                    name="settings-memory"
-                    alt={media.stills.settingsMemory}
-                    className={styles.sheetImage}
-                    sizes="(max-width: 560px) 190vw, (max-width: 899px) 150vw, 1200px"
-                  />
-                </div>
+      <div className="wrap grid-12 sec-body">
+        <div className="main">
+          {/* 1. what is kept: the six layers */}
+          <dl className={styles.layers}>
+            {memory.layers.map((layer) => (
+              <div key={layer.layer} className={styles.layer}>
+                <dt>
+                  <span className={styles.name}>{layer.name}</span> <span className={styles.term}>{layer.layer}</span>
+                </dt>
+                <dd>
+                  <DataText text={layer.holds} />
+                </dd>
               </div>
-            </MediaFrame>
-          )}
-          <figcaption className={styles.caption}>
-            {memory.settingsCaption} {common.sampleData}
-          </figcaption>
-        </figure>
-      </div>
-
-      <div className={styles.controlRow}>
-        <div className={styles.demo}>
-          <MemoryForgetDemo settingsHref={`#${SETTINGS_ID}`} />
-        </div>
-        <div className={styles.rules}>
-          <p className={styles.recall}>{memory.recall}</p>
-          <ul className={styles.points}>
-            {memory.points.map((point) => (
-              <li key={point}>{inline(point)}</li>
             ))}
-            <li>{memory.relearn}</li>
-          </ul>
-          <p className={styles.limit}>{memory.limit}</p>
+          </dl>
+
+          {/* 2. where you see it: the real Settings sheet, beside the recall rule */}
+          <div className={styles.showcase}>
+            <figure id={SETTINGS_ID} className={styles.media} tabIndex={-1}>
+              <MediaFrame variant="riverbed" aspect="16 / 10" sizes={FRAME_SIZES}>
+                {l7.available ? (
+                  <LoopVideo
+                    loop={l7}
+                    label={media.loops.memory.label}
+                    name={media.loops.memory.name}
+                    sizes={FRAME_SIZES}
+                    className={`${styles.fill} ${still ? styles.wideOnly : ""}`}
+                  />
+                ) : null}
+                {still ? (
+                  <div className={`${styles.stage} ${l7.available ? styles.phoneOnly : ""}`} style={stageStyle}>
+                    <UiCrop
+                      name="settings-memory"
+                      alt={media.stills.settingsMemory}
+                      box={SHEET}
+                      phone={TILES}
+                      display={{ wide: 487, tablet: "calc((100vw - 48px) * 0.78)", phone: "calc((100vw - 32px) * 0.94)" }}
+                      className={styles.sheet}
+                    />
+                  </div>
+                ) : null}
+              </MediaFrame>
+              <figcaption className={styles.caption}>
+                {memory.settingsCaption} {common.sampleData}
+              </figcaption>
+            </figure>
+
+            <p className={styles.note}>{memory.recall}</p>
+          </div>
+
+          {/* 3. how you take it back: the forget card, beside what you control and the limit */}
+          <div className={styles.control}>
+            <div className={styles.demo}>
+              <MemoryForgetDemo settingsHref={`#${SETTINGS_ID}`} />
+            </div>
+            <div className={styles.rules}>
+              <ul className={styles.points}>
+                {memory.points.map((point) => (
+                  <li key={point}>{inline(point)}</li>
+                ))}
+                <li>{memory.relearn}</li>
+              </ul>
+              <p className={styles.limit}>{memory.limit}</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>

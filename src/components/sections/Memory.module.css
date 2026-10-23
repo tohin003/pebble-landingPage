@@ -1,172 +1,163 @@
-/* Memory (DESIGN §5 row 8): the six layers beside the real Settings sheet, then the forget card beside the rules.
-   The shared .section and .section-head helpers live in src/app/globals.css. */
-.section {
-  position: relative;
-}
+/* Memory (DESIGN-LEXINGTON §6 Memory): three rows from column 4. The six layers as a two-column ruled list; the real
+   Settings sheet on the riverbed (columns 4–9) beside the recall rule (10–12); the forget card on the flat panel
+   (4–8) beside what you control (9–12). Lines, not boxes. */
 
-/* the film chip: present only once the film exists (ChapterChip hides itself until then) */
-.chip {
-  display: flex;
-  justify-content: center;
-}
-
-:global(:root[data-film="ready"]) .chip {
-  margin-top: 16px;
-}
-
-/* --- row 1: the six layers and the Settings sheet --- */
-.layersRow {
+/* ---- 1. the six layers: two columns of the main's nine (4–7 and 8–11), each cell a hairline row ---- */
+.layers {
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-  align-items: center;
-  gap: 72px;
-  width: min(var(--w-content), 100%);
-  margin: 64px auto 0;
+  grid-template-columns: subgrid;
 }
 
 .layer {
-  display: grid;
-  gap: 5px;
-  padding: 16px 0 17px;
+  min-width: 0;
+  padding: 16px 0 18px;
   border-top: 1px solid var(--line);
 }
 
-.layer:last-child {
+.layer:nth-child(odd) {
+  grid-column: 1 / span 4;
+}
+
+.layer:nth-child(even) {
+  grid-column: 5 / span 4;
+}
+
+/* the last row closes both columns (the cells of a row share its height, so the two rules line up) */
+.layer:nth-last-child(-n + 2) {
   border-bottom: 1px solid var(--line);
 }
 
+/* the app's name for the layer, then the README's (Profile, Semantic …): a quiet name, never an all-caps eyebrow */
 .layer dt {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 16px;
+  column-gap: 12px;
 }
 
 .name {
-  font-size: 17.5px;
-  font-weight: 600;
-  line-height: 1.35;
-  letter-spacing: -0.01em;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
   color: var(--ink);
 }
 
-/* the layer's name in Pebble's README (Profile, Semantic …): a quiet label, never an all-caps eyebrow */
 .term {
-  flex: none;
-  font-size: 13.5px;
-  line-height: 1.35;
+  font-size: 13px;
+  line-height: 1.4;
   color: var(--ink-2);
 }
 
 .layer dd {
   max-width: 34em;
-  font-size: 15.5px;
-  line-height: 1.55;
+  margin-top: 4px;
+  font-size: 16px;
+  line-height: 1.6;
   color: var(--ink-2);
 }
 
-.settings {
+/* ---- 2. the picture (6 of the main's 9 columns) beside the recall rule (the last 3): the grammar of Models ---- */
+.showcase {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  column-gap: var(--gap);
+  align-items: start;
+  margin-top: 56px;
+}
+
+.media {
+  grid-column: 1 / span 6;
   margin: 0;
 }
 
 /* reached only through the forget card's in-page link; the link's own focus ring has done its job */
-.settings:focus {
+.media:focus {
   outline: none;
 }
 
-.stage {
-  max-width: 560px;
-  margin-inline: auto;
+.fill {
+  position: absolute;
+  inset: 0;
 }
 
-/* The cropped Settings sheet: it floats on the riverbed and runs off the frame's bottom edge. The stage is the query
-   container, so the sheet's corner radius (in cqi) follows the frame's width. */
-.sheetStage {
+/* The still: the Settings sheet floats from the frame's top at 78 % of its width and runs off its bottom edge (its
+   crop is taller than the frame). The stage is the query container, so the crop's corner follows the sheet's own
+   corner (12 of the still's 431 units across) at every size; it is a window inside a picture, with that shadow. */
+.stage {
   position: absolute;
   inset: 0;
   container-type: inline-size;
 }
 
-.sheet {
+.stage > .sheet[data-frame] {
   position: absolute;
   left: 50%;
   top: 9%;
-  width: var(--sheet-width);
-  aspect-ratio: var(--crop-aspect);
-  overflow: hidden;
+  width: 78%;
   transform: translateX(-50%);
-  border-radius: var(--crop-radius);
-  background: var(--panel);
+  border-radius: calc(var(--sheet-radius) / var(--sheet-units) * 78cqi);
   box-shadow: var(--shadow-window);
 }
 
-/* the whole still, scaled and shifted so that only the sheet shows */
-.sheetImage {
-  width: var(--crop-scale);
-  max-width: none;
-  margin-left: var(--crop-x);
-  margin-top: var(--crop-y);
-}
-
-.loopWindow {
-  position: absolute;
-  inset: 7% 7%;
-}
-
 .caption {
-  margin-top: 14px;
-  font-size: 13.5px;
-  line-height: 1.5;
-  text-align: center;
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.45;
   color: var(--ink-2);
 }
 
-/* --- row 2: the forget card and the rules --- */
-.controlRow {
+/* the recall rule: the section's one statement, in ink, beside the sheet that says the same in the app's words */
+.note {
+  grid-column: 7 / -1;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+/* ---- 3. the forget card (5 of the main's columns) beside what you control (the last 4) ---- */
+.control {
   display: grid;
-  grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  column-gap: var(--gap);
   align-items: start;
-  gap: 72px;
-  width: min(var(--w-content), 100%);
-  margin: 80px auto 0;
+  margin-top: 72px;
+}
+
+.demo {
+  grid-column: 1 / span 5;
+  min-width: 0;
 }
 
 .rules {
-  padding-top: 6px;
-}
-
-/* the recall rule: the section's one statement, set in the display face at a quiet size */
-.recall {
-  max-width: 24em;
-  font-family: var(--font-display);
-  font-weight: 350;
-  font-size: clamp(22px, 0.8vw + 15px, 26px);
-  line-height: 1.32;
-  letter-spacing: -0.012em;
-  color: var(--ink);
-  text-wrap: pretty;
+  grid-column: 6 / -1;
+  min-width: 0;
+  /* the card's stage starts under its one-line label: start the rules on the stage's top edge */
+  padding-top: 32px;
 }
 
 .points {
   display: grid;
   gap: 12px;
-  margin-top: 26px;
 }
 
 .points li {
   position: relative;
   padding-left: 22px;
-  font-size: 15.5px;
-  line-height: 1.55;
-  color: var(--ink-2);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
 }
 
-/* the galet as the list mark (DESIGN §1) */
+/* the galet as the list mark */
 .points li::before {
   content: "";
   position: absolute;
   left: 1px;
-  top: 0.62em;
+  top: 0.66em;
   width: 9px;
   height: 8px;
   background: var(--stone);
@@ -174,54 +165,89 @@
   mask: var(--galet-mask) center / contain no-repeat;
 }
 
-.points code {
-  color: var(--ink);
-}
-
+/* the limit, under a hairline, at the same size as the promises (PHILOSOPHY 3) */
 .limit {
-  margin-top: 22px;
+  margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid var(--line);
-  font-size: 15.5px;
-  line-height: 1.55;
-  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-2);
 }
 
+/* ---- tablets and phones: one column; the layers stay two columns down to 561 px ---- */
 @media (max-width: 1023px) {
-  .layersRow,
-  .controlRow {
-    gap: 44px;
-  }
-}
-
-@media (max-width: 899px) {
-  .layersRow,
-  .controlRow {
-    grid-template-columns: minmax(0, 1fr);
-    max-width: 620px;
+  .layers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--gap);
   }
 
-  .layersRow {
-    gap: 48px;
-    margin-top: 48px;
+  .layer:nth-child(odd),
+  .layer:nth-child(even) {
+    grid-column: auto;
   }
 
-  .controlRow {
-    gap: 40px;
-    margin-top: 64px;
+  .showcase,
+  .control {
+    display: block;
+  }
+
+  .showcase {
+    margin-top: 40px;
+  }
+
+  .note {
+    max-width: 36em;
+    margin-top: 28px;
+  }
+
+  .control {
+    margin-top: 56px;
+  }
+
+  .rules {
+    max-width: 40em;
+    margin-top: 28px;
+    padding-top: 0;
   }
 }
 
 @media (max-width: 560px) {
-  .layersRow {
-    margin-top: 40px;
+  .layers {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .name {
-    font-size: 16.5px;
+  /* one column: only the last cell closes the list */
+  .layer:nth-last-child(2) {
+    border-bottom: 0;
   }
 
-  .layer dd {
-    font-size: 15px;
+  .layer {
+    padding: 14px 0 16px;
+  }
+
+  /* phones: the switch and the six layers, centred, at 94 % of the frame (TILES in Memory.tsx) */
+  .stage > .sheet[data-frame] {
+    top: 50%;
+    width: 94%;
+    transform: translate(-50%, -50%);
+    border-radius: var(--r-window);
+  }
+
+  .note {
+    font-size: 17px;
+  }
+}
+
+/* loop L7 has no 4:5 cut: phones show the still instead of its 16:10 poster (critic H2) */
+@media (max-width: 560px) {
+  .wideOnly {
+    display: none;
+  }
+}
+
+@media (min-width: 561px) {
+  .phoneOnly {
+    display: none;
   }
 }
