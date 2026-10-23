@@ -50,7 +50,7 @@ export const FRAMINGS: PerAspect<Record<string, Framing>> = {
      */
     s5c: fr(2.03, 474.3, 558.5),
     /**
-     * S5c stage 2 (pushed in f954–977, held to the f1008 move): m 3.16, x 222–538.5, y 392–693.3. "Blocked", the
+     * S5c stage 2 (pushed in f954–977, held to the f1008 cut): m 3.16, x 222–538.5, y 392–693.3. "Blocked", the
      * sentence (ink 34.8 px ≥ 28; it bleeds off the frame's right edge as the UI does) and Run the tests, with Ask
      * Pebble to finish whole (its border 5.8 css px inside the edge) and Accept as unverified wholly outside (its first
      * letter 3.2 css px past the edge): the edge falls in the 9 px between them, so no choice is sliced. Top between
@@ -165,8 +165,8 @@ export function windowKeys(a: AspectId, s: number): CamKey[] {
   const F = FRAMINGS[a]!;
   const keys: CamKey[] = [
     key(648, F.s5a!, s),
-    // the two cross-panel moves take 33 and 32 frames (R5's cross-world camera, 1.1 s), not §6's 23: at 23 frames the
-    // UI travelled up to 250 px a frame; they still land before the lines they serve (T7 at f756, T9 at f1044)
+    // the cross-panel move takes 33 frames (R5's cross-world camera, 1.1 s), not §6's 23: at 23 frames the UI travelled
+    // up to 250 px a frame; it still lands before the line it serves (T7 at f756). (The second, f1008–1040, is a cut now.)
     key(753, F.s5bTop!, s, 33),
     key(797, F.s5bLow!, s, 23),
     // S5c in two stages (REVIEW-G2 P0-1): the hard cut lands on the whole held run (stage 1), which the app has scrolled
