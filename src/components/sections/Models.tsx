@@ -16,8 +16,11 @@ import styles from "./Models.module.css";
 
 /** settings-models: the dialog's "Your models" block, the model row, the buttons and Continue with ChatGPT (16:10) */
 const WAYS_IN = { x: 384, y: 160, w: 432, h: 270 } as const;
-/** phones: the ways in alone, Add a model file, Connect provider (and Rest model) and Continue with ChatGPT */
-const WAYS_IN_PHONE = { x: 397, y: 262, w: 330, h: 104 } as const;
+/**
+ * phones: the ways in alone, Add a model file, Connect provider (and Rest model) and Continue with ChatGPT. y 248.5
+ * since the 1.0.4 stills: the model row's meta fits on one line now, so the buttons sit 13.5 units higher (lane shots).
+ */
+const WAYS_IN_PHONE = { x: 397, y: 248.5, w: 330, h: 104 } as const;
 const FRAME_SIZES = "(max-width: 899px) calc(100vw - 48px), 616px";
 
 export function Models() {
