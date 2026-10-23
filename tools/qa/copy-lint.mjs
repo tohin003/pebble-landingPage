@@ -10,6 +10,9 @@
 //   - American spellings (licence, colour, recognise and the like);
 //   - "every" or "always" next to edit, command, Git or test without a mode qualifier (OVERRIDES §8 C2);
 //   - competitor and internal model names, and words that must not reach a visitor ("receipt", "fixture", "mock").
+//     The one exception (OVERRIDES §11, §16, §18): the Benchmarks section names the product Pebble was measured
+//     against, so "Claude Code" (and no other name) passes inside <section id="benchmarks">, in llms.txt's
+//     "## Benchmark" block and in src/content/benchmarks.ts. Every other rule still applies there.
 // Exact strings that are right as written (Pebble's own words, honest negatives, approved sentences) are allowed by
 // exact match only (ALLOW below; the reasons are in docs/CLAIMS.md "Allow-list for tools/qa/copy-lint.mjs").
 // Verbatim text is exempt from the wording rules (still checked for "!"): <code>, <pre>, <kbd>, <samp> and elements
@@ -223,7 +226,28 @@ function strip(text) {
   return t;
 }
 
-function lint({ text, verbatim, where }) {
+/** The one place a visitor may read the name of the product Pebble was measured against (see the header). */
+const NAMED = /\bClaude Code\b/g;
+
+/** [the Benchmarks section's HTML, the rest of the page] */
+function splitNamed(html) {
+  const start = html.search(/<section\b[^>]*\bid="benchmarks"/);
+  if (start < 0) return ["", html];
+  const tags = /<\/?section\b[^>]*>/gi;
+  tags.lastIndex = start;
+  let depth = 0;
+  let end = html.length;
+  for (let m = tags.exec(html); m; m = tags.exec(html)) {
+    depth += m[0][1] === "/" ? -1 : 1;
+    if (depth === 0) {
+      end = m.index + m[0].length;
+      break;
+    }
+  }
+  return [html.slice(start, end), html.slice(0, start) + html.slice(end)];
+}
+
+function lint({ text, verbatim, where, named = false }) {
   if (ALLOW.has(text.trim())) return;
   if (text.includes("!")) {
     // "!" in a verbatim command or a URL is not prose
@@ -235,7 +259,7 @@ function lint({ text, verbatim, where }) {
     if (ALLOW.has(s.trim())) continue;
     const t = strip(s);
     for (const [re, rule] of BANNED) {
-      const m = t.match(re);
+      const m = (named && rule === "competitor name" ? t.replace(NAMED, " ") : t).match(re);
       if (m) report(where, rule, s, m[0]);
     }
     for (const [re, rule] of AMERICAN) {
@@ -254,17 +278,29 @@ if (!pages.length) {
 let items = 0;
 for (const file of pages) {
   const page = file === "index.html" ? "/" : `/${file.replace(/\.html$/, "")}`;
-  for (const item of extract(readFileSync(path.join(APP, file), "utf8"), page)) {
+  const [named, rest] = splitNamed(readFileSync(path.join(APP, file), "utf8"));
+  for (const item of extract(rest, page)) {
     items++;
     lint(item);
+  }
+  for (const item of extract(named, page)) {
+    items++;
+    lint({ ...item, named: true });
   }
 }
 const llms = path.join(APP, "llms.txt.body");
 if (existsSync(llms)) {
+  let heading = "";
   for (const [i, l] of readFileSync(llms, "utf8").split("\n").entries()) {
     if (!l.trim()) continue;
+    if (l.startsWith("## ")) heading = l.trim();
     items++;
-    lint({ text: l.replace(/^[-#>*\s]+/, "").replace(/`[^`]*`/g, "CODE"), verbatim: false, where: `/llms.txt:${i + 1}` });
+    lint({
+      text: l.replace(/^[-#>*\s]+/, "").replace(/`[^`]*`/g, "CODE"),
+      verbatim: false,
+      where: `/llms.txt:${i + 1}`,
+      named: heading === "## Benchmark",
+    });
   }
 }
 if (args.includes("--src")) {
@@ -278,7 +314,7 @@ if (args.includes("--src")) {
         const s = (m[1] ?? m[2] ?? "").replace(/\\(["'`\\])/g, "$1");
         if (s.length < 3 || !/[a-z]{2}/i.test(s) || /^[\w./:#@-]+$/.test(s)) continue; // keys, paths, URLs
         items++;
-        lint({ text: s.replace(/`[^`]*`/g, "CODE"), verbatim: false, where: `src/content/${file}:${i + 1}` });
+        lint({ text: s.replace(/`[^`]*`/g, "CODE"), verbatim: false, where: `src/content/${file}:${i + 1}`, named: file === "benchmarks.ts" });
       }
     }
   }
