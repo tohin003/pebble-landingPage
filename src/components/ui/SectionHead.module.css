@@ -1,0 +1,58 @@
+/* SectionHead: the rail (label, then the chip) beside the main column (H2, lead, more, one link). The main column
+   spans both rows, so the chip sits right under the label however tall the head is. */
+.head {
+  grid-template-rows: auto 1fr;
+}
+
+.label {
+  grid-column: 1 / span 3;
+  grid-row: 1;
+}
+
+.main {
+  grid-row: 1 / span 2;
+}
+
+.chip {
+  grid-column: 1 / span 3;
+  grid-row: 2;
+  align-self: start;
+  margin-top: 14px;
+}
+
+.main > .title {
+  grid-column: 1 / span 8;
+}
+
+.main > .lead {
+  grid-column: 1 / span 5;
+  margin-top: 20px;
+}
+
+.main > .more {
+  grid-column: 1 / span 6;
+  margin-top: 18px;
+}
+
+.main > .action {
+  margin-top: 24px;
+}
+
+@media (max-width: 1023px) {
+  .label {
+    margin-bottom: 20px;
+  }
+
+  .main > .lead {
+    max-width: 36em;
+    margin-top: 16px;
+  }
+
+  .main > .more {
+    max-width: 40em;
+  }
+
+  .chip {
+    margin-top: 16px;
+  }
+}

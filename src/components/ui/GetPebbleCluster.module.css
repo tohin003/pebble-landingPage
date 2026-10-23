@@ -1,0 +1,70 @@
+/* The primary call to action as a unit (GetPebbleCluster.tsx), and the honest line (HonestLine.tsx). */
+.cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 28px;
+}
+
+.github {
+  font-size: 16px;
+}
+
+.notice {
+  margin-top: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* the honest line: the limit beside the promise, at the facts' size, never smaller */
+.honest {
+  max-width: 34em;
+  margin-top: 20px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.facts {
+  margin-top: 14px;
+}
+
+.install {
+  margin-top: 14px;
+  font-size: 15px;
+}
+
+@media (max-width: 560px) {
+  .cluster {
+    align-items: stretch;
+  }
+
+  .row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .primary {
+    width: 100%;
+  }
+
+  .github {
+    align-self: center;
+  }
+
+  .honest {
+    font-size: 13.5px;
+  }
+
+  .facts {
+    font-size: 13.5px;
+  }
+}

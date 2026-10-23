@@ -54,6 +54,16 @@ export function setTheme(theme: Theme): void {
   applyTheme(theme);
 }
 
+/** Forget the stored choice: the page follows the system again (the footer's "System"). */
+export function clearTheme(): void {
+  try {
+    window.localStorage.removeItem(THEME_KEY);
+  } catch {
+    // Blocked storage: nothing was stored.
+  }
+  applyTheme(systemTheme());
+}
+
 /** Follow the system theme while no choice is stored. Returns the unsubscribe function. */
 export function followSystemTheme(): () => void {
   const query = window.matchMedia(DARK_QUERY);

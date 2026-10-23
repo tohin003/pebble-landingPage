@@ -1,0 +1,94 @@
+/* "Before you open Pebble": a flat panel on --fill under the buttons (no shadow: it rests on the page). */
+.slot {
+  position: relative;
+}
+
+.notice {
+  position: relative;
+  max-width: 36em;
+  margin-top: 20px;
+  padding: 20px 24px 20px;
+  border-radius: var(--r-panel);
+  background: var(--fill);
+  text-align: left;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+:global(:root[data-motion="on"]) .notice {
+  animation: notice-in var(--dur-base) var(--ease-enter) both;
+}
+
+@keyframes notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.title {
+  padding-right: 44px;
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.4;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+}
+
+.notice p {
+  margin-top: 10px;
+}
+
+.notice a {
+  color: var(--ink);
+}
+
+/* on --fill, a cut is drawn in --bg (globals.css: the rule role) */
+.tip {
+  padding-top: 12px;
+  border-top: 1px solid var(--bg);
+}
+
+.close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
+  color: var(--ink-2);
+  transition:
+    background-color var(--dur-hover) var(--ease-out),
+    color var(--dur-hover) var(--ease-out);
+}
+
+.closeIcon {
+  width: 18px;
+  height: 18px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .close:hover {
+    background: var(--bg);
+    color: var(--ink);
+  }
+}
+
+@media (max-width: 560px) {
+  .notice {
+    padding: 16px 16px 18px 18px;
+    font-size: 14.5px;
+  }
+
+  .close {
+    top: 6px;
+    right: 6px;
+  }
+}

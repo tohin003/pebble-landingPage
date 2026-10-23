@@ -1,0 +1,27 @@
+/* The side label: two short lines in the rail; one running-head row below 1024 px. Type: globals.css .label. */
+.name,
+.fact {
+  display: block;
+}
+
+.name {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.fact {
+  color: var(--ink-2);
+}
+
+@media (max-width: 1023px) {
+  .label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+  }
+
+  .fact {
+    text-align: right;
+  }
+}

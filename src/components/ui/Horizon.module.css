@@ -1,0 +1,34 @@
+/* The ground (Horizon.tsx). The fade at both ends is a mask on the box, so no gradient ids are needed. */
+.line,
+.arch {
+  display: block;
+  pointer-events: none;
+}
+
+.line {
+  width: 100%;
+  height: 12px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+
+/* The arch fills the dial's arch box (2R × R) and grows 26 % on each side and 4 % at the top and bottom, which is
+   exactly its viewBox (groundPaths.ts ARCH_VIEWBOX), so the circle stays round and the knobs sit on it. */
+.arch {
+  position: absolute;
+  left: -26%;
+  top: -4%;
+  width: 152%;
+  height: 108%;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+}
+
+.stroke {
+  fill: none;
+  stroke: var(--trail);
+  stroke-width: 1.35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}

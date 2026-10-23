@@ -733,3 +733,28 @@ AgentGuard's challenge) are unchanged, and so is every sample (S) row.
 - C-LIM-15 and C-EXP-14 ("Pebble can't see or operate other apps yet"): STATUS 20:34 says the 14:58 corrections hold
   for 1.0.4.
 - The copy lint's every/always rule: the new "In every mode, …" sentence starts with its own mode qualifier.
+
+## Lexington system (lane v2-system, 2026-10-23)
+
+The rail labels and the footer's column names of the Lexington system (DESIGN-LEXINGTON §3.1, §11), in
+`src/content/labels.ts`. Each fact repeats a string that already has its own row; none adds a fact. The two-tone
+headings are pairs of approved strings, or one approved lead cut after its first sentence (`firstSentence()` in
+`src/components/ui/twoTone.ts`, checked by `ui.test.ts`); they need no rows of their own.
+
+| ID | Claim | Source | Kind / notes |
+|---|---|---|---|
+| C-SYS-1 | "The film / Plays with sound." | `film.playNote` | Q. Label |
+| C-SYS-2 | "AgentGuard / The evidence layer" | `agentGuard.layer[0]` ("an evidence layer"), C-AG-7 | Q. Label |
+| C-SYS-3 | "On your desktop / Joins every Space" | `desktop.lead`, C-DESK-1 | Q. Label |
+| C-SYS-4 | "In your project / How a coding task goes" | `project.rail.label` | Q. Label |
+| C-SYS-5 | "Models / Three ways in" | `models.cards` (three ways in), C-MOD-2..7 | Q. Label |
+| C-SYS-6 | "Permissions / Three modes" | `pace.lead`, C-PACE-1 | Q. Label |
+| C-SYS-7 | "Memory / Six labelled layers" | `memory.layers`, C-MEM-7 | Q. Label |
+| C-SYS-8 | "Views / Built from data" | `views.lead` ("from data"), C-VIEW-1 | Q. Label |
+| C-SYS-9 | "Engineering / Facts, not benchmarks" | `infrastructure.note`, C-INF-6 | Q. Label. If the note changes now that benchmarks are published, keep this fact true to it |
+| C-SYS-10 | "Privacy / No telemetry" | `privacy.stays`, C-PRIV-5 | Q. Label |
+| C-SYS-11 | "Install / Version {version}" | `release.version` from `src/lib/release.ts` (the GitHub API, known-good otherwise), C-REL-1 | I. Label; the version is data |
+| C-SYS-12 | "Limits / Stated plainly" | `honestLimits.lead` ("Pebble states its limits plainly.") | Q. Label |
+| C-SYS-13 | "Open source / Apache-2.0" | `openSource.repoCard.licence`, C-OSS-1 | Q. Label |
+| C-SYS-14 | "Get Pebble / {size}" | `release.sizeLabel` from `src/lib/release.ts`, C-REL-2 | I. Label; the size is data |
+| C-SYS-15 | Footer column names "Pebble", "This site", "Appearance" | interface labels (DESIGN-LEXINGTON §6 Footer) | Interface |

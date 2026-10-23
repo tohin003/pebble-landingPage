@@ -1,6 +1,7 @@
 /*
- * Pebble site: tokens, theme, base type, focus and motion (docs/DESIGN.md §3, §4, §6; MASTER_PLAN §7.1, §7.5).
- * Ported from design comp 3 (.work/design/comp-3/index.html).
+ * Pebble site: the system (docs/PHILOSOPHY.md "A precise world, and one soft stone"; docs/DESIGN-LEXINGTON.md §2–§5).
+ * One stylesheet for every page. The rules are written beside the tokens: a value without a written job does not go on
+ * the page.
  *
  * Theme:    html[data-theme="light" | "dark"], set before first paint by the inline <head> script
  *           (src/lib/bootstrap.ts) from the stored choice or the system. Without JavaScript, the system decides.
@@ -8,8 +9,9 @@
  *           motion or the system's reduced motion. Without JavaScript nothing animates.
  * Platform: html[data-platform="mac" | "other"] picks the call to action (.only-mac, .only-other).
  *
- * Components style themselves with CSS modules and these tokens. Tailwind utilities map to the same tokens
- * (bg-panel, text-ink-2, font-display, rounded-media …); Tailwind's default palette is removed on purpose.
+ * Components style themselves with CSS modules and these tokens; the primitives live in src/components/ui
+ * (SectionHead, Horizon, TextLink, GetPebbleCluster …). Tailwind utilities map to the same tokens (bg-fill, text-ink-2,
+ * font-display, rounded-media …); Tailwind's default palette is removed on purpose.
  * Keep --pebble and --pebble-eye: src/components/pebble/PebbleSvg.tsx reads them.
  */
 
@@ -35,188 +37,218 @@
 @theme {
   --color-*: initial;
   --font-*: initial;
-  --breakpoint-phone: 35.0625rem; /* 561px: above the phone layout (DESIGN §2: phones are <= 560 px) */
-  --breakpoint-tablet: 64rem; /* 1024px: the full header */
+  --breakpoint-phone: 35.0625rem; /* 561px: above the phone layout (phones are <= 560 px) */
+  --breakpoint-tablet: 64rem; /* 1024px: the 12-column grid and the full header */
   --breakpoint-wide: 80rem; /* 1280px */
 }
 
 @theme inline {
   --color-bg: var(--bg);
-  --color-bg-2: var(--bg-2);
-  --color-soft: var(--soft);
+  --color-fill: var(--fill);
   --color-panel: var(--panel);
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-line: var(--line);
-  --color-line-2: var(--line-2);
   --color-accent: var(--accent);
   --color-on-accent: var(--on-accent);
   --color-accent-press: var(--accent-press);
-  --color-accent-soft: var(--accent-soft);
   --color-pebble: var(--pebble);
   --color-pebble-eye: var(--pebble-eye);
   --color-trail: var(--trail);
   --color-stone: var(--stone);
   --color-transparent: transparent;
   --color-current: currentColor;
+  /* migration aliases (see :root) */
+  --color-bg-2: var(--bg-2);
+  --color-soft: var(--soft);
+  --color-line-2: var(--line-2);
+  --color-accent-soft: var(--accent-soft);
 
   --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
   --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --radius-control: 12px;
-  --radius-card: 20px;
-  --radius-media: 28px;
+  --radius-media: 16px;
+  --radius-panel: 12px;
+  --radius-card: 12px;
+  --radius-window: 10px;
+  --radius-control: 8px;
+  --radius-chip: 6px;
 
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
   --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-firm: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-move: cubic-bezier(0.45, 0, 0.55, 1);
   --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
 }
 
-/* ------------------------------------------------------------------ tokens: light (Pebble's src/tokens.css) */
+/* ===================================================================================================================
+   Tokens: light. Six colour roles, then the pebble's world, then depth, layout, radius and motion.
+   Swap test (DESIGN-LEXINGTON §12.10): change the six role values and the whole page follows, the pebble's line too.
+   =================================================================================================================== */
 :root {
-  --bg: #f8f9f6;
-  --bg-2: #f1f3ee;
-  --soft: #f0f5ed;
-  --panel: #ffffff;
-  --ink: #252c28;
-  --ink-2: #5d665e;
-  --line: #e5e9e1;
-  --line-2: #d5dcd1;
-  --accent: #506e54;
+  /* ---- The six roles. Each has one job. ---- */
+  --bg: #f8f9f6; /*        page: the one ground, top to bottom. No pools of light, no vignettes, no grain. */
+  --fill: #edf0eb; /*      panel: the one flat surface (explainers, the command block, segmented controls, code).
+                                   Muted ink on it 5.2:1. On --fill, draw cuts in --bg, not --line. */
+  --ink: #1d2520; /*       ink: text and headings, and the header's small Download. 14.9:1 on --bg; never black. */
+  --ink-2: #5d665e; /*     muted ink: a heading's second line, leads, captions, labels, fine print. 5.6:1 on --bg. */
+  --line: #dbe1d9; /*      rule: the one hairline, only where a line means something (a section's top edge, ledger
+                                   rows, the requirements strip, the FAQ, the chapter index). No boxes around text. */
+  --accent: #506e54; /*    action, three jobs and no others: (1) getting Pebble: the primary Download, Copy, the
+                                   download icon; (2) focus rings and the selection tint; (3) state marks: the Verified
+                                   galet, the selected mode, the installer's ticks. 5.4:1; --on-accent on it 5.7:1. */
   --on-accent: #ffffff;
-  --accent-press: #45604a;
-  --accent-soft: #b0c2ae; /* decorative only, never text */
-  --pebble: #536b54; /* Pebble's --avatar */
+  --accent-press: #45604a; /* the primary Download under the pointer */
+
+  /* ---- The pebble's world: decorative, never chrome. Colour and texture live in imagery only. ---- */
+  --pebble: #536b54; /*    the pebble's body (Pebble's --avatar). Always sage, never black: a dark blob with eyes is
+                                   another product's mark. */
   --pebble-eye: #ffffff;
-  --trail: #aabda7; /* the pebble's path (DESIGN §2): decorative only */
-  --stone: #bfcebc; /* rail stones, list marks */
-  --pool: #ffffff; /* the lamp's circle of light */
-  --room: #e7ece3; /* the wall around it */
-  --shade: 19, 37, 27; /* green-tinted shadows: rgba(var(--shade), a) */
-  --scrim: rgba(19, 37, 27, 0.56);
-  --code-bg: var(--bg-2);
-  --wallpaper-tint: #d3ddcd; /* the riverbed's ground, shown while its image loads */
-  color-scheme: light;
+  --trail: #aabda7; /*     the hand-drawn line the pebble stands on (src/components/ui/Horizon.tsx). */
+  --stone: #bfcebc; /*     rail stones, list marks, the chapter chip's galet, "Interactive example" marks. */
+  --word: #e2e8df; /*      the footer's giant wordmark, tone on tone (aria-hidden; about 1.2:1 on purpose). */
+  --wallpaper-tint: #d3ddcd; /* the riverbed's ground while its picture loads: inside media frames only. */
+  --panel: #ffffff; /*     white, for recreated app UI only (the explainers' cards). Never page chrome. */
 
-  /* layout */
-  --gutter: 24px;
-  --header-h: 76px;
-  --w-content: 1120px; /* exhibits and media (comp 3) */
-  --w-wide: 1200px;
-  --w-head: 780px; /* centred section heads */
-  --w-prose: 62ch;
-  --section-pad: clamp(104px, 6vw + 78px, 164px);
+  /* ---- Depth. No resting shadows on page chrome. Exactly four kinds of depth are allowed:
+          (1) the pebble's contact shadow: part of the character, a radial gradient under each pebble;
+          (2) --shadow-window: an app window inside a riverbed picture (part of the picture);
+          (3) --shadow-float: floating layers only (the sticky call to action, the menu sheet, the film dialog);
+          (4) 1 px rings: --ring over a media frame's picture (drawn by ::after), --shadow-frame around a crop.
+          Anything else is flat. ---- */
+  --shade: 19, 37, 27; /*  the green-tinted shadow colour of (1) to (3): rgba(var(--shade), a) */
+  --scrim: rgba(19, 37, 27, 0.56); /* behind modal dialogs */
+  --ring: inset 0 0 0 1px rgba(var(--shade), 0.07);
+  --shadow-frame: 0 0 0 1px var(--line);
+  --shadow-window:
+    0 1px 2px rgba(var(--shade), 0.08),
+    0 14px 36px -10px rgba(var(--shade), 0.22);
+  --shadow-float:
+    0 0 0 1px var(--line),
+    0 16px 40px -12px rgba(var(--shade), 0.24);
+  /* retired: page chrome casts no shadow. Kept as "none" so a module that still names one renders flat. */
+  --shadow-control: none;
+  --shadow-panel: none;
+  --shadow-media: none;
 
-  /* radii: controls, cards, media frames */
-  --r-control: 12px;
-  --r-card: 20px;
-  --r-media: 28px;
+  /* ---- Layout: one grid. Twelve columns; the label rail is columns 1–3; every heading, lead and exhibit starts on
+          column 4; media may span 1–12. Below 1024 px: one column, and the rail label becomes a running head. ---- */
+  --container: 1280px;
+  --pad: 32px; /* the page's side padding */
+  --gap: 32px; /* the column gap */
+  --header-h: 64px;
+  --section: 112px; /* the space above each section's hairline */
 
-  /* motion (src/lib/motion.ts) */
+  /* ---- Radius: one ladder. The galet is the only free-form shape on the page. ---- */
+  --r-media: 16px; /*  media frames (the riverbed scenes, the film poster) */
+  --r-panel: 12px; /*  panels on --fill, plain crop frames, the download notice, the sticky call to action */
+  --r-window: 10px; /* app windows inside pictures */
+  --r-control: 8px; /* buttons, the command block's Copy, icon buttons, segmented controls */
+  --r-chip: 6px; /*    chips, the segmented control's thumb */
+
+  /* ---- Motion: two speeds. The pebble drifts (30 fps, at most 0.5 Hz, settles after 8 s); the world snaps: a
+          100–200 ms colour or opacity change, presses to 0.98. Nothing moves on scroll. (src/lib/motion.ts) ---- */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1); /* hovers */
   --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-firm: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-move: cubic-bezier(0.45, 0, 0.55, 1);
   --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
-  --dur-press: 160ms;
+  --dur-hover: 200ms;
+  --dur-press: 120ms;
   --dur-fast: 180ms;
   --dur-base: 240ms;
   --dur-crossfade: 300ms;
   --dur-reveal: 480ms;
 
-  /* shadows */
-  --shadow-control: 0 1px 1px rgba(var(--shade), 0.1), 0 10px 24px -6px rgba(var(--shade), 0.3);
-  --shadow-panel: 0 0 0 1px var(--line), 0 12px 32px -10px rgba(var(--shade), 0.14);
-  --shadow-media: 0 0 0 1px rgba(var(--shade), 0.05), 0 2px 4px rgba(var(--shade), 0.05),
-    0 24px 48px -12px rgba(var(--shade), 0.16), 0 60px 120px -40px rgba(var(--shade), 0.22);
-  --shadow-window: 0 0 0 1px rgba(var(--shade), 0.1), 0 2px 4px rgba(var(--shade), 0.06),
-    0 14px 36px rgba(var(--shade), 0.14), 0 44px 96px rgba(var(--shade), 0.18);
-  --shadow-frame: 0 0 0 1px rgba(var(--shade), 0.07), 0 2px 4px rgba(var(--shade), 0.04),
-    0 18px 40px -8px rgba(var(--shade), 0.12), 0 56px 110px -40px rgba(var(--shade), 0.2);
-
-  /* the galet (src/lib/galet.ts) as a mask: media masks, chapter marks, stones */
+  /* the galet (src/lib/galet.ts) as a mask: the play button, list marks, stones, the wordmark's full stop */
   --galet-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 130 115'%3E%3Cpath d='M129.1 55.8C128.2 61.8 126.1 67.9 123.6 73.3C121.1 78.7 118.2 83.5 114.2 88.3C109.8 93.7 103.4 99.8 97.7 103.7C92.7 107.2 87.8 109.5 82.5 111.3C77.1 113 71.3 114 65.6 114.2C60 114.3 54.1 113.5 48.6 112C43 110.5 37.8 108.5 32.5 105.3C26.3 101.6 18.9 95.8 14 90.3C9.7 85.4 6.4 80.2 4 74.4C1.7 68.7 0.1 62 0 55.8C-0.1 49.5 1.2 42.7 3.6 37C6 31.3 9.7 26 14.4 21.5C19.6 16.5 27.9 11.9 34.3 8.9C39.7 6.4 44.7 5.4 49.9 4C55.1 2.7 60.3 1.7 65.6 1C71.1 0.3 76.8 -0.3 82.5 0.1C88.4 0.6 94.5 1.2 100.3 3.8C107.2 6.9 115.8 13.1 120.6 19C124.8 24.2 127.2 30.5 128.6 36.7C130 42.8 130 49.6 129.1 55.8Z'/%3E%3C/svg%3E");
-  /* very low-contrast grain for lit surfaces (comp 3) */
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .07  0 0 0 0 .14  0 0 0 0 .1  0 0 0 .055 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  --grain-blend: multiply;
-  --grain-opacity: 0.5;
+
+  /* ---- Migration aliases (DESIGN-LEXINGTON §5): the old names point at the new roles while the sections move to
+          the system. Delete each one once no module names it (grep "var(--bg-2)" and so on). ---- */
+  --bg-2: var(--fill);
+  --soft: var(--fill);
+  --code-bg: var(--fill);
+  --line-2: var(--line);
+  --accent-soft: var(--stone);
+  --gutter: var(--pad);
+  --w-content: var(--container);
+  --w-head: 780px; /* the old centred heads (.section-head) only */
+  --section-pad: var(--section);
+  --r-card: var(--r-panel);
+
+  color-scheme: light;
 }
 
-/* ------------------------------------------------------------------ tokens: dark (manual choice, then the system) */
+/* ------------------------------------------------------------------ tokens: dark (the same roles, values swapped) */
 :root[data-theme="dark"] {
   --bg: #191e1b;
-  --bg-2: #151a17;
-  --soft: #273425;
-  --panel: #212822;
-  --ink: #e0e7de;
-  --ink-2: #adb9ab;
-  --line: #2b342c;
-  --line-2: #3a463c;
-  --accent: #a6c795;
-  --on-accent: #1b281a;
+  --fill: #212822; /* muted ink on it 7.4:1 */
+  --ink: #e8eee6; /* 14.3:1 */
+  --ink-2: #adb9ab; /* 8.3:1 */
+  --line: #2b342c; /* 1.31:1 */
+  --accent: #a6c795; /* 9.0:1 */
+  --on-accent: #1b281a; /* 8.2:1 on the accent */
   --accent-press: #b7d5a7;
-  --accent-soft: #4d6148;
   --pebble: #b4cda6;
   --pebble-eye: #23351f;
   --trail: #4d6148;
   --stone: #42543f;
-  --pool: #303c2d;
-  --room: #101411;
+  --word: #252d27; /* 1.19:1 */
+  --wallpaper-tint: #1d2520;
+  --panel: #212822;
   --shade: 0, 0, 0;
   --scrim: rgba(6, 9, 7, 0.72);
-  --code-bg: #141815;
-  --wallpaper-tint: #1d2520;
-  --grain-blend: screen;
-  --grain-opacity: 0.35;
-  --shadow-frame: 0 0 0 1px #2e3830, 0 24px 60px -10px rgba(0, 0, 0, 0.6);
+  --ring: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   color-scheme: dark;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     --bg: #191e1b;
-    --bg-2: #151a17;
-    --soft: #273425;
-    --panel: #212822;
-    --ink: #e0e7de;
+    --fill: #212822;
+    --ink: #e8eee6;
     --ink-2: #adb9ab;
     --line: #2b342c;
-    --line-2: #3a463c;
     --accent: #a6c795;
     --on-accent: #1b281a;
     --accent-press: #b7d5a7;
-    --accent-soft: #4d6148;
     --pebble: #b4cda6;
     --pebble-eye: #23351f;
     --trail: #4d6148;
     --stone: #42543f;
-    --pool: #303c2d;
-    --room: #101411;
+    --word: #252d27;
+    --wallpaper-tint: #1d2520;
+    --panel: #212822;
     --shade: 0, 0, 0;
     --scrim: rgba(6, 9, 7, 0.72);
-    --code-bg: #141815;
-    --wallpaper-tint: #1d2520;
-    --grain-blend: screen;
-    --grain-opacity: 0.35;
-    --shadow-frame: 0 0 0 1px #2e3830, 0 24px 60px -10px rgba(0, 0, 0, 0.6);
+    --ring: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
     color-scheme: dark;
   }
 }
 
+/* the grid's three widths: >= 1024 px (12 columns), 561–1023 px and <= 560 px (one column) */
 @media (max-width: 1023px) {
   :root {
-    --header-h: 64px;
+    --pad: 24px;
+    --gap: 24px;
+    --section: 88px;
+    --header-h: 60px;
   }
 }
 
 @media (max-width: 560px) {
   :root {
-    --gutter: 16px;
+    --pad: 16px;
+    --gap: 16px;
+    --section: 72px;
+    --header-h: 56px;
+    --r-media: 12px;
+    --r-window: 7px;
   }
 }
 
-/* ------------------------------------------------------------------ base */
+/* ------------------------------------------------------------------ base: two faces with two weights, and a mono */
 @layer base {
   html {
     background: var(--bg);
@@ -227,12 +259,13 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* Inter 400 and 500 only, for everything that is not H1, H2 or a number (650 is the wordmark's, as in the app). */
   body {
     min-height: 100dvh;
     background: var(--bg);
     color: var(--ink);
     font-family: var(--font-sans);
-    font-size: 17px;
+    font-size: 16px;
     line-height: 1.6;
     font-weight: 400;
     font-optical-sizing: auto;
@@ -242,8 +275,9 @@
     font-kerning: normal;
   }
 
-  /* Display: Fraunces at 350, SOFT 100, WONK 0 (instanced in src/fonts), optical size from the font size. Never
-     italic, never an accent-coloured word (DESIGN §3). */
+  /* Display: Fraunces at 350 (SOFT 100, WONK 0, instanced in src/fonts), H1 and H2 only, plus the footer statement
+     (.display-3). Never bold, never italic, never an accent-coloured word. The H1 is never larger than the pebble
+     beside it (PHILOSOPHY principle 7). */
   h1,
   h2 {
     font-family: var(--font-display);
@@ -256,30 +290,63 @@
   }
 
   h1 {
-    font-size: clamp(43px, 4.6vw, 66px);
+    font-size: 56px;
     line-height: 1.04;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.022em;
   }
 
   h2 {
-    font-size: clamp(32px, 2vw + 20px, 52px);
-    line-height: 1.06;
-    letter-spacing: -0.017em;
+    font-size: 40px;
+    line-height: 1.1;
+    letter-spacing: -0.018em;
   }
 
+  /* Titles: Inter 500. Tight tracking never reaches small text. */
   h3 {
     font-family: var(--font-sans);
-    font-size: clamp(19px, 0.55vw + 15px, 24px);
-    line-height: 1.3;
-    font-weight: 600;
-    letter-spacing: -0.012em;
+    font-size: 17px;
+    line-height: 1.4;
+    font-weight: 500;
+    letter-spacing: -0.005em;
     text-wrap: balance;
   }
 
   h4 {
-    font-size: 17px;
+    font-size: 16px;
     line-height: 1.4;
-    font-weight: 600;
+    font-weight: 500;
+  }
+
+  @media (max-width: 1279px) {
+    h1 {
+      font-size: 48px;
+    }
+
+    h2 {
+      font-size: 36px;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    h1 {
+      font-size: 44px;
+    }
+
+    h2 {
+      font-size: 32px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    h1 {
+      font-size: 38px;
+      line-height: 1.06;
+    }
+
+    h2 {
+      font-size: 28px;
+      line-height: 1.14;
+    }
   }
 
   p,
@@ -295,7 +362,7 @@
     text-decoration-thickness: 1px;
     text-underline-offset: 4px;
     text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
-    transition: text-decoration-color var(--dur-fast) ease;
+    transition: text-decoration-color var(--dur-hover) var(--ease-out);
   }
 
   a:hover {
@@ -311,6 +378,7 @@
     cursor: default;
   }
 
+  /* Geist Mono: commands, paths and every number (see .data). */
   code,
   kbd,
   samp,
@@ -324,6 +392,7 @@
     tab-size: 2;
   }
 
+  /* Focus is one of the accent's three jobs. */
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
@@ -342,46 +411,265 @@
   }
 }
 
-/* ------------------------------------------------------------------ shared helpers */
+/* ------------------------------------------------------------------ the system's helpers */
 @layer components {
-  /* A section of the home page: its top padding and gutters. Sections add their own layout on top. */
-  .section {
-    position: relative;
-    padding-top: var(--section-pad);
-    padding-inline: var(--gutter);
+  /* ---- Type roles (DESIGN-LEXINGTON §3.2). Use the class when the element is not the role's own (a <p> set as the
+          footer statement, a <span> set as a title). Sizes: >= 1280 / 1024–1279 / 561–1023 / <= 560 px. ---- */
+  .display-1,
+  .display-2,
+  .display-3 {
+    font-family: var(--font-display);
+    font-weight: 350;
+    font-style: normal;
+    font-synthesis: none;
+    font-optical-sizing: auto;
+    text-wrap: balance;
+    color: var(--ink);
   }
 
-  /* A centred section head: H2 plus an optional lead. Text longer than three lines is left-aligned (DESIGN §1). */
-  .section-head {
-    max-width: var(--w-head);
-    margin-inline: auto;
-    text-align: center;
+  .display-1 {
+    font-size: 56px; /* H1: 56 / 48 / 44 / 38 */
+    line-height: 1.04;
+    letter-spacing: -0.022em;
   }
 
-  .section-head > p {
-    max-width: 36em;
-    margin: 20px auto 0;
+  .display-2 {
+    font-size: 40px; /* H2: 40 / 36 / 32 / 28 */
+    line-height: 1.1;
+    letter-spacing: -0.018em;
+  }
+
+  .display-3 {
+    font-size: 30px; /* the footer statement: 30 / 30 / 27 / 24 */
+    line-height: 1.15;
+    letter-spacing: -0.014em;
+  }
+
+  /* A heading's second line: an approved sentence of 60 characters or fewer, in muted ink, the same size and weight
+     (the checkable rule: src/components/ui/twoTone.ts). Never an accent colour, never italic, never a split sentence. */
+  .two-tone > span {
+    display: block;
+  }
+
+  .two-tone > span + span {
+    color: var(--ink-2);
   }
 
   .lead {
-    font-size: clamp(17.5px, 0.35vw + 14.5px, 19.5px);
+    font-size: 18px; /* 18, 17 on phones */
     line-height: 1.55;
     color: var(--ink-2);
+  }
+
+  .title {
+    font-size: 17px; /* stage titles 19 */
+    line-height: 1.4;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    color: var(--ink);
+  }
+
+  .body {
+    font-size: 16px;
+    line-height: 1.6;
   }
 
   .small {
-    font-size: 14.5px;
-    line-height: 1.55;
+    font-size: 14px;
+    line-height: 1.5;
     color: var(--ink-2);
   }
 
-  /* Facts are lists with hairline separators, never middle-dot strings (DESIGN §3). Two rows on phones. */
+  .caption {
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--ink-2);
+  }
+
+  /* labels and meta: Inter 400 or 500 (the element decides), 14 px, 13 below 1024 px */
+  .label {
+    font-size: 14px;
+    line-height: 1.45;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .fine {
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+
+  .command {
+    font-family: var(--font-mono);
+    font-size: 14.5px; /* 12.5 on phones */
+    line-height: 1.5;
+    font-weight: 400;
+    font-variant-ligatures: none;
+  }
+
+  /* Numbers are data: every version, size, count, rate and time in Geist Mono with tabular figures, so columns of
+     them line up and they read as measured, not written. Pair a rate with its count: "79.3 % (107 of 135)". */
+  .data {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+    font-variant-ligatures: none;
+    letter-spacing: 0;
+  }
+
+  @media (max-width: 1023px) {
+    .label {
+      font-size: 13px;
+    }
+  }
+
+  @media (max-width: 1279px) {
+    .display-1 {
+      font-size: 48px;
+    }
+
+    .display-2 {
+      font-size: 36px;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .display-1 {
+      font-size: 44px;
+    }
+
+    .display-2 {
+      font-size: 32px;
+    }
+
+    .display-3 {
+      font-size: 27px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .display-1 {
+      font-size: 38px;
+      line-height: 1.06;
+    }
+
+    .display-2 {
+      font-size: 28px;
+      line-height: 1.14;
+    }
+
+    .display-3 {
+      font-size: 24px;
+    }
+
+    .lead {
+      font-size: 17px;
+    }
+
+    .command {
+      font-size: 12.5px;
+    }
+  }
+
+  /* ---- The grid, stated in one sentence: twelve columns; the label rail is 1–3; everything starts on column 4.
+          .wrap is the container; .grid-12 the columns; .rail and .main the two parts of a row (.main is itself a
+          9-column grid, so an exhibit can split 3 | 6 or 4 | 5 inside it); .full spans 1–12. ---- */
+  .wrap {
+    width: min(var(--container), 100% - 2 * var(--pad));
+    margin-inline: auto;
+  }
+
+  .grid-12 {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gap);
+  }
+
+  .rail {
+    grid-column: 1 / span 3;
+  }
+
+  .main {
+    grid-column: 4 / -1;
+    display: grid;
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    column-gap: var(--gap);
+    align-content: start;
+  }
+
+  .main > * {
+    grid-column: 1 / -1;
+  }
+
+  .full {
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: 1023px) {
+    .grid-12,
+    .main {
+      display: block;
+    }
+  }
+
+  /* ---- Section anatomy, the same in every section after the hero (SectionHead): the space, a hairline, the label
+          in the rail, then H2, lead and one link, then the exhibit. ---- */
+  .sec {
+    position: relative;
+    padding-top: var(--section);
+  }
+
+  .sec-head {
+    border-top: 1px solid var(--line);
+    padding-top: 24px;
+  }
+
+  .sec-body {
+    margin-top: 56px;
+  }
+
+  @media (max-width: 1023px) {
+    .sec-body {
+      margin-top: 40px;
+    }
+  }
+
+  /* ---- A text link that does a button's job ("View on GitHub ›", "Read the limits ›"): ink, 500, a chevron that
+          moves 2 px under the pointer. The chevron is decoration: screen readers skip it. ---- */
+  .chev {
+    font-weight: 500;
+    color: var(--ink);
+    text-decoration-line: none;
+    white-space: nowrap;
+  }
+
+  .chev::after {
+    content: "›";
+    content: "›" / "";
+    display: inline-block;
+    margin-left: 0.4em;
+    transition: transform var(--dur-hover) var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .chev:hover {
+      text-decoration-line: underline;
+      text-underline-offset: 4px;
+    }
+
+    .chev:hover::after {
+      transform: translateX(2px);
+    }
+  }
+
+  /* ---- Facts are lists with hairline separators, never middle-dot strings. Left-aligned; two rows on phones. ---- */
   .facts {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: flex-start;
     row-gap: 4px;
-    font-size: 14.5px;
+    font-size: 14px;
+    line-height: 1.5;
     color: var(--ink-2);
     font-variant-numeric: tabular-nums;
   }
@@ -395,9 +683,9 @@
   .facts > li + li::before {
     content: "";
     width: 1px;
-    height: 13px;
-    margin: 0 13px;
-    background: var(--line-2);
+    height: 12px;
+    margin: 0 12px;
+    background: var(--line);
   }
 
   @media (max-width: 560px) {
@@ -426,10 +714,30 @@
     mask: var(--galet-mask) center / contain no-repeat;
   }
 
-  /* Hero text reveal (DESIGN §4): CSS only, opacity plus an 8 px rise, 480 ms, a 60 ms stagger via --i. */
+  /* Hero text reveal (the one orchestrated page-load moment): CSS only, opacity plus an 8 px rise, 480 ms, a 60 ms
+     stagger via --i. Never on scroll. */
   :root[data-motion="on"] .reveal {
     animation: pebble-rise var(--dur-reveal) var(--ease-enter) both;
     animation-delay: calc(var(--i, 0) * 60ms + 80ms);
+  }
+
+  /* ---- Migration only: the old section frame and centred head. Sections move to .sec + SectionHead; delete these
+          two when no section uses them. ---- */
+  .section {
+    position: relative;
+    padding-top: var(--section);
+    padding-inline: var(--pad);
+  }
+
+  .section-head {
+    max-width: var(--w-head);
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .section-head > p {
+    max-width: 36em;
+    margin: 20px auto 0;
   }
 }
 

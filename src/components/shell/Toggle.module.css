@@ -1,16 +1,19 @@
-/* Header icon buttons (40 px: comfortably over the 24 px target minimum) and footer pills (comp 3). */
+/* The shell's toggles (DESIGN-LEXINGTON §6): header icon buttons (36 px, over the 24 px target minimum), the footer's
+   pill buttons and the theme's segmented words. Flat, radius 8 (the thumb 6), --fill as the only surface; a hover is a
+   200 ms colour change, a press 0.97. Pressed states are --fill with an ink icon, never the accent. */
 .iconButton {
   display: inline-grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   border: 0;
   border-radius: var(--r-control);
   background: transparent;
   color: var(--ink-2);
   transition:
-    background-color var(--dur-fast) ease,
-    color var(--dur-fast) ease,
+    background-color var(--dur-hover) var(--ease-out),
+    color var(--dur-hover) var(--ease-out),
     transform var(--dur-press) var(--ease-firm);
 }
 
@@ -18,39 +21,35 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 40px;
-  padding: 0 14px 0 12px;
+  height: 36px;
+  padding: 0 12px;
   border: 0;
-  border-radius: 11px;
-  background: var(--bg-2);
+  border-radius: var(--r-control);
+  background: var(--fill);
   color: var(--ink);
-  font-size: 14px;
-  font-weight: 550;
+  font-size: 13px;
+  font-weight: 400;
   white-space: nowrap;
   transition:
-    background-color var(--dur-fast) ease,
+    background-color var(--dur-hover) var(--ease-out),
     transform var(--dur-press) var(--ease-firm);
 }
 
-:global(:root[data-theme="dark"]) .pill {
-  background: #222a24;
-}
-
 .icon {
-  width: 19px;
-  height: 19px;
+  width: 18px;
+  height: 18px;
   flex: none;
 }
 
 .pill .icon {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   color: var(--ink-2);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .iconButton:hover {
-    background: var(--bg-2);
+    background: var(--fill);
     color: var(--ink);
   }
 
@@ -66,12 +65,13 @@
 
 /* Pressed (motion paused): a quiet filled state, so the state reads without the label changing. */
 .motion[aria-pressed="true"] {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  background: var(--fill);
   color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 .motion[aria-pressed="true"] .icon {
-  color: var(--accent);
+  color: var(--ink);
 }
 
 .motion[aria-disabled="true"] {
@@ -80,4 +80,40 @@
 
 .motion[aria-disabled="true"]:active {
   transform: none;
+}
+
+/* The theme as words (ThemeSwitch.tsx): Light, Dark, System, the chosen one pressed. */
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--r-control);
+  background: var(--fill);
+}
+
+.option {
+  height: 30px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: var(--r-chip);
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 13px;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-hover) var(--ease-out),
+    color var(--dur-hover) var(--ease-out);
+}
+
+.option[aria-pressed="true"] {
+  background: var(--bg);
+  color: var(--ink);
+  font-weight: 500;
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .option[aria-pressed="false"]:hover {
+    color: var(--ink);
+  }
 }
