@@ -3,6 +3,7 @@
 // aria-pressed says whether motion is paused. It sets html[data-motion] (src/lib/motion.ts), which stops the CSS
 // animations, the line's draw-on, the loops and the pebbles. When the system asks for reduced motion the page is
 // already still and the site can't override that, so the button shows as pressed and unavailable.
+// data-control="motion" names it for the QA tools (tools/qa): the footer's theme words are aria-pressed buttons too.
 import { Icon } from "./icons";
 import { controls } from "@/content/copy";
 import { useMotionMode } from "@/lib/hooks";
@@ -23,6 +24,7 @@ export function MotionToggle({ variant = "icon", className }: { variant?: "icon"
       <button
         type="button"
         className={`${styles.pill} ${styles.motion} ${className ?? ""}`}
+        data-control="motion"
         aria-pressed={pressed}
         aria-disabled={locked || undefined}
         onClick={toggle}
@@ -36,6 +38,7 @@ export function MotionToggle({ variant = "icon", className }: { variant?: "icon"
     <button
       type="button"
       className={`${styles.iconButton} ${styles.motion} ${className ?? ""}`}
+      data-control="motion"
       aria-pressed={pressed}
       aria-disabled={locked || undefined}
       aria-label={controls.motion.pause}

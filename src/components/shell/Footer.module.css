@@ -147,10 +147,11 @@
   margin-bottom: 4px;
 }
 
+/* baseline, so "This page:" reads with the first row of counts when they wrap on phones */
 .stampLine {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: baseline;
   gap: 2px 12px;
   font-weight: 500;
   color: var(--ink);
