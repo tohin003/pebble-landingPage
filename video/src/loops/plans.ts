@@ -285,7 +285,7 @@ export const L3 = (() => {
     stage: { square: STORY.square.stage, tall: STORY.tall.stage },
     poses: P,
     waiting: 9.367,
-    applied: 11.067,
+    appliedAt: 11.067,
     cursor: [
       { at: 26, x: 1210, y: 790, travel: 1 }, // on the riverbed, off the card's lower right
       { at: 51, x: apply.x + 8, y: apply.y + 3, target: 30, seed: "l3-in" },
@@ -295,11 +295,12 @@ export const L3 = (() => {
     clickPoint: apply,
     cutAt: 61,
     /**
-     * The applied card's button row, "Undo this edit" (x 839–935, y 688–697): after the match cut it comes forward and
-     * the diff above recedes (the spotlight, in the window's own colour: what lane G2b's accent ring did), until the
-     * dissolve. `rect` is the row across the drawer's full width.
+     * The applied card (11.067 s: its borders x 817–1145, y 495–719; "invoice_kit/dates.py · Done" in its header at
+     * 512.7–525.7, "Undo this edit" x 838.7–934.7, y 688–697.3): after the match cut it comes forward and the steps
+     * above it recede (the spotlight, in the window's own colour: what lane G2b's accent ring did for the Undo row
+     * alone), so the frame reads "Done", then "Undo this edit", until the dissolve.
      */
-    undo: { rect: box(DRAWER.x0, DRAWER.x1, 668, 718), in: 76, out: 150, dur: 12 },
+    applied: { rect: box(816, 1146, 494, 720), radius: 12, in: 76, out: 150, dur: 12 },
   };
 })();
 

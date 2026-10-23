@@ -164,7 +164,7 @@ const within = (name: string, a: number, b: number, n: number) => {
   if (!(a > 0 && b < n)) fail(`${name}: [${a}, ${b}) must sit inside the loop (N=${n})`);
 };
 within("L2 spotlight", L2.spot.in, L2.spot.out + L2.spot.dur, L2.plan.n);
-within("L3 Undo row", L3.undo.in, L3.undo.out + L3.undo.dur, L3.plan.n);
+within("L3 applied card", L3.applied.in, L3.applied.out + L3.applied.dur, L3.plan.n);
 
 // L1: the pebble's cues are Pebble poses, sorted; no blink within 0.3 s of the seam; eyes open on frame 0
 const { cues, hoverAt, poses } = l1Cues(FPS);
