@@ -1,0 +1,20 @@
+{
+  "schema": "pebble-film-cut/1",
+  "name": "x30",
+  "about": "The 30 s cut of the launch film for X, reveal first (the lead's pick, 2026-10-24). ranges: LaunchFilm source frames [first, end), in playing order (30 fps, 18 frames a beat, 72 a bar). Every range starts on the same beat of the bar in the film and in the cut, so the film's clicks, cuts and lines stay on their beats and the score's own bars play under them (music.score_bars). Read by tools/captions/build.mjs --cut (captions), tools/encode/encode.sh --cut (picture), tools/audio/cut_cues.py (the cut's sound effects) and tools/audio/cut_soundtrack.sh (its music and mix).",
+  "fps": 30,
+  "ranges": [[0, 72], [360, 612], [900, 1224], [2088, 2304]],
+  "frames": 864,
+  "compositions": { "LaunchFilm30": [1920, 1080], "LaunchFilm30Square": [1080, 1080], "LaunchFilm30Vertical": [1080, 1920] },
+  "music": {
+    "form": "x30",
+    "score_bars": [1, 6, 7, 8, 9, 14, 15, 16, 17, 30, 31, 32],
+    "cadence": "7 A7sus4 -> 8 D (the reveal, cut frame 216); 30 Gmaj9 -> 31 D(add9) (plagal; the final chord at cut frame 720), ringing through 32"
+  },
+  "sfx": { "add": [], "replace": [], "drop": [] },
+  "exclude": [],
+  "add": [
+    { "id": "x09", "start": 324, "end": 360, "lines": ["[Music picks up]"],
+      "why": "c09's sound at the same beat of the same score bar (bar 9, beats 3-4), where the groove picks up" }
+  ]
+}
