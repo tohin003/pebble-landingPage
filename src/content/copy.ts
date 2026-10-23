@@ -474,7 +474,7 @@ export const agentGuard = {
   lead:
     "AgentGuard reads the evidence before Pebble calls a task finished. Its one-line result says which tests ran and whether they passed on the current files.", // [C-AG-1]
   /** The one comparative framing the release session allows, and only as intent (OVERRIDES §2). [C-AG-6] */
-  intent: "An agent shouldn't grade its own work.",
+  intent: "An agent shouldn’t grade its own work.", // a typographic apostrophe: it is set in the display serif
   /**
    * What the evidence layer does (OVERRIDES §7, the release session's brief), with the scope the 1.0.3 Corrections
    * give it: the invented-API check reads Python code only, and only changed code that tests cover is held.
@@ -1151,7 +1151,7 @@ export const media = {
 
 export const notFound = {
   title: "Page not found",
-  h1: "This page isn't here.",
+  h1: "This page isn’t here.", // a typographic apostrophe: the H1 is set in the display serif
   body: "The address may have a typo, or the page may have moved.",
   home: "Go to the home page",
 } as const;
