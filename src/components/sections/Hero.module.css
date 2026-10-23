@@ -74,13 +74,69 @@
   margin: 0 auto;
 }
 
-.pebble {
+/* The pebble is the "Say hi to Pebble" button (Hero.client.tsx). The button takes the pebble's box; the focus ring is
+   an ellipse around the body (body box: 20–79 % across, 25–77 % down), not the square box. */
+.hello {
   position: absolute;
   left: 50%;
   bottom: calc(var(--floor) - var(--size) * 0.2345);
   width: var(--size);
   height: var(--size);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
   transform: translateX(-50%);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hello:focus-visible {
+  outline: none;
+}
+
+.hello:focus-visible::after {
+  content: "";
+  position: absolute;
+  inset: 21% 18% 20% 17%;
+  border-radius: 50%;
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  pointer-events: none;
+}
+
+.pebble {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* "Hi, I'm Pebble.": a small speech bubble at the pebble's shoulder, its tail toward the pebble. Always in the DOM
+   (a polite live region), visible only after a hello. */
+.bubble {
+  position: absolute;
+  left: calc(50% + 98px);
+  top: 36px;
+  margin: 0;
+  padding: 10px 15px;
+  border-radius: 16px 16px 16px 5px;
+  background: var(--panel);
+  box-shadow: 0 0 0 1px var(--line), 0 10px 24px rgba(var(--shade), 0.1);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 200ms var(--ease-enter),
+    transform 300ms var(--ease-enter);
+}
+
+.bubble[data-on] {
+  opacity: 1;
+  transform: none;
 }
 
 .floor {
@@ -168,7 +224,93 @@
   color: var(--ink);
 }
 
+/* --- the download notice (after a click on Download): a quiet panel under the buttons, left-aligned prose --- */
+.dlSlot {
+  position: relative;
+}
+
+.dlNotice {
+  position: relative;
+  max-width: 35em;
+  margin: 26px auto 0;
+  padding: 22px 26px 22px;
+  border-radius: var(--r-card);
+  background: var(--panel);
+  box-shadow: var(--shadow-panel);
+  text-align: left;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+:global(:root[data-motion="on"]) .dlNotice {
+  animation: dlIn 260ms var(--ease-enter) both;
+}
+
+@keyframes dlIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.dlTitle {
+  padding-right: 44px;
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.dlNotice p {
+  margin-top: 10px;
+}
+
+.dlNotice a {
+  color: var(--ink);
+}
+
+.dlTip {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.dlClose {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
+  color: var(--ink-2);
+  transition: background-color var(--dur-fast) ease;
+}
+
+.dlCloseIcon {
+  width: 18px;
+  height: 18px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dlClose:hover {
+    background: var(--bg-2);
+    color: var(--ink);
+  }
+}
+
 @media (max-width: 899px) {
+  .bubble {
+    left: calc(50% + 78px);
+    top: 28px;
+  }
+
   .backdrop::before {
     top: 214px;
     width: 560px;
@@ -213,6 +355,24 @@
   .contact {
     height: 18px;
     bottom: calc(var(--floor) - 9px);
+  }
+
+  .bubble {
+    left: calc(50% + 22px);
+    top: -2px;
+    padding: 8px 13px;
+    font-size: 14px;
+  }
+
+  .dlNotice {
+    margin-top: 22px;
+    padding: 18px 18px 18px 20px;
+    font-size: 15px;
+  }
+
+  .dlClose {
+    top: 6px;
+    right: 6px;
   }
 
   .title {

@@ -1,4 +1,176 @@
-/* OnYourDesktop: stub styles (lane F1). The shared .section and .section-head helpers live in src/app/globals.css. */
+/* Section 4, On your desktop. The section must not create a stacking context (the pebble's path sweeps above it). */
 .section {
-  position: relative; /* TODO(F2): the section's layout */
+  position: relative;
+}
+
+/* The frame keeps the loop's 16:10 on wider screens, so nothing moves when loop L1 arrives; phones get a 4:5 corner
+   of the desktop, where the quick chat is large enough to read. MediaFrame reads --desk-aspect. */
+.vignette {
+  --desk-aspect: 16 / 10;
+  width: min(var(--w-content), 100%);
+  margin: 56px auto 0;
+}
+
+.loop {
+  position: absolute;
+  inset: 0;
+}
+
+/* --- the corner of the desktop: Pebble's quick chat with the live pebble under it --- */
+.corner {
+  position: absolute;
+  inset: 0;
+}
+
+/* The companion window as the app sizes it (384 × 456 pt, main.rs pet_expand), scaled with the frame's height. The
+   chat image fills its width from the top; the pebble's box sits where the app draws its pebble (the window's
+   lower-right corner: its body is 87 pt wide, 284–371 pt across and 361–437 pt down, so its 147 pt box starts at
+   254 pt and 324 pt; shared/pebble BODY gives the body's place in the box). */
+.companion {
+  position: absolute;
+  right: 4.5%;
+  bottom: 2%;
+  height: 74%;
+  aspect-ratio: 384 / 456;
+}
+
+.chat {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+}
+
+.chatImg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.pebble {
+  position: absolute;
+  z-index: 1; /* over its contact shadow (.companion::after) */
+  left: 66.2%;
+  top: 71.1%;
+  width: 38.3%;
+  height: auto; /* the static SVG's own height="100%" would otherwise stretch it */
+  aspect-ratio: 1;
+}
+
+/* a soft contact shadow under the pebble's body (centre 85.2 % across, body bottom 95.8 % down) */
+.companion::after {
+  content: "";
+  position: absolute;
+  left: 85.2%;
+  top: 95.8%;
+  width: 20%;
+  height: 3.2%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(var(--shade), 0.26), rgba(var(--shade), 0));
+  pointer-events: none;
+}
+
+:global(:root[data-theme="dark"]) .companion::after {
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
+}
+
+/* With loop L1 rendered, wider screens play it; phones keep the still corner unless L1 has a 4:5 phone cut. */
+@media (min-width: 561px) {
+  .vignette[data-loop] .corner {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .vignette[data-loop]:not([data-phone-loop]) .loop,
+  .vignette[data-phone-loop] .corner {
+    display: none;
+  }
+}
+
+.caption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px 22px;
+  margin-top: 16px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  text-align: center;
+}
+
+/* "Move your pointer, and its eyes follow.": only where that is true (a pointer, and motion on) */
+:global(:root:not([data-motion="on"])) .live {
+  display: none;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .live {
+    display: none;
+  }
+}
+
+/* three short facts, a quiet list with hairlines (no cards) */
+.points {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px 40px;
+  width: min(var(--w-content), 100%);
+  margin: 52px auto 0;
+}
+
+.points li {
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  text-align: left;
+}
+
+.limit {
+  width: min(var(--w-content), 100%);
+  margin: 22px auto 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  text-align: left;
+}
+
+@media (max-width: 899px) {
+  .companion {
+    height: 84%;
+    right: 5%;
+    bottom: 1.5%;
+  }
+
+  .points {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    margin-top: 40px;
+  }
+
+  .points li {
+    padding: 14px 0;
+  }
+
+  .limit {
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 560px) {
+  .vignette {
+    --desk-aspect: 4 / 5;
+    margin-top: 40px;
+  }
+
+  .companion {
+    height: 83%;
+    right: 6%;
+    bottom: 2%;
+  }
 }

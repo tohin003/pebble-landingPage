@@ -1,4 +1,77 @@
-/* Pace: stub styles (lane F1). The shared .section and .section-head helpers live in src/app/globals.css. */
+/* Section 7, You set the pace. The section must not create a stacking context: the pebble's path sweeps above it and
+   draws the dial's arch. */
 .section {
-  position: relative; /* TODO(F2): the section's layout */
+  position: relative;
+}
+
+.dial {
+  width: min(var(--w-content), 100%);
+  margin: 52px auto 0;
+}
+
+/* what holds in every mode: the quoted app sentence on the left, the fixed rules on the right (comp 3) */
+.every {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px 56px;
+  width: min(860px, 100%);
+  margin: 40px auto 0;
+  padding-top: 26px;
+  border-top: 1px solid var(--line);
+  text-align: left;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.quote {
+  margin: 0;
+}
+
+.attribution {
+  font-weight: 550;
+  color: var(--ink);
+}
+
+.everyMode {
+  margin: 6px 0 0;
+  quotes: "\201C" "\201D";
+}
+
+.everyMode p::before {
+  content: open-quote;
+}
+
+.everyMode p::after {
+  content: close-quote;
+}
+
+.note {
+  margin-top: 10px;
+  font-size: 14.5px;
+}
+
+.approvals {
+  font-weight: 550;
+  color: var(--ink);
+}
+
+.fixedLine {
+  margin-top: 6px;
+}
+
+.chip {
+  margin-top: 14px;
+}
+
+@media (max-width: 560px) {
+  .dial {
+    margin-top: 40px;
+  }
+
+  .every {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+    margin-top: 32px;
+  }
 }

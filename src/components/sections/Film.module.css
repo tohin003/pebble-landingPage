@@ -8,6 +8,19 @@
   margin: 0 auto;
 }
 
+/* --- the screen: the film's poster, or a real-UI still in a window on the riverbed until it exists --- */
+.poster,
+.posterImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.posterImg {
+  object-fit: cover;
+}
+
 .window {
   position: absolute;
   left: 50%;
@@ -28,6 +41,12 @@
   filter: drop-shadow(0 6px 6px rgba(var(--shade), 0.16));
 }
 
+/* T0 fills the screen; LoopVideo's own pause button sits in its corner */
+.teaser {
+  position: absolute;
+  inset: 0;
+}
+
 .play {
   position: absolute;
   left: 50%;
@@ -35,6 +54,7 @@
   transform: translate(-50%, -50%);
 }
 
+/* --- the label under the screen --- */
 .caption {
   margin-top: 44px;
   text-align: center;
@@ -53,16 +73,75 @@
   color: var(--ink-2);
 }
 
+/* The length, "Plays with sound." and the transcript, then the chapters: only once the film exists, and invisible
+   (space kept, so nothing moves) until the player is on the page. */
+.extras {
+  margin-top: 16px;
+}
+
+:global(:root:not([data-film="ready"])) .extras {
+  visibility: hidden;
+}
+
+.meta a {
+  color: var(--ink);
+}
+
 .chapters {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 4px 26px;
-  margin-top: 18px;
+  gap: 2px 24px;
+  max-width: 54em;
+  margin: 18px auto 0;
 }
 
-.chapters:not(:has(button)) {
-  display: none;
+.chapter {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 40px;
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.chapterMark {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 17.7px;
+  background: var(--stone);
+  color: var(--ink);
+  transition: background-color var(--dur-fast) ease;
+}
+
+.chapterIcon {
+  width: 8px;
+  height: 8px;
+  margin-left: 1px;
+}
+
+.chapterTime {
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .chapter:hover .chapterTitle {
+    text-decoration: underline;
+    text-decoration-color: var(--line-2);
+    text-underline-offset: 4px;
+  }
+
+  .chapter:hover .chapterMark {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
 }
 
 @media (max-width: 560px) {
@@ -82,5 +161,13 @@
 
   .caption {
     margin-top: 30px;
+  }
+
+  .chapters {
+    gap: 0 18px;
+  }
+
+  .chapter {
+    font-size: 14.5px;
   }
 }

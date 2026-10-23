@@ -1,0 +1,311 @@
+/* The approval card, drawn with Pebble's own card rules (the app's src/style.css .action-card, sizes scaled up a
+   step for a web page) and its colour tokens (src/tokens.css), light and dark. */
+.demo {
+  --card-line-strong: #dbe1d6;
+  --card-hover: #e9eee5;
+  --card-code: #f3f5f0;
+  --card-danger: #a45141;
+  --card-muted: #636b63;
+  --card-shadow: 0 1px 2px #13251b0a, 0 6px 20px #13251b0f, 0 24px 48px -16px rgba(var(--shade), 0.18);
+  text-align: left;
+}
+
+:global(:root[data-theme="dark"]) .demo {
+  --card-line-strong: #39443a;
+  --card-hover: #263026;
+  --card-code: #161d17;
+  --card-danger: #e3a38f;
+  --card-muted: #94a192;
+  --card-shadow: 0 1px 2px #0003, 0 6px 20px #0004, 0 24px 48px -16px rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .demo {
+    --card-line-strong: #39443a;
+    --card-hover: #263026;
+    --card-code: #161d17;
+    --card-danger: #e3a38f;
+    --card-muted: #94a192;
+    --card-shadow: 0 1px 2px #0003, 0 6px 20px #0004, 0 24px 48px -16px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* "Interactive example" and its one line of introduction */
+.label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.example {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 550;
+  color: var(--ink);
+}
+
+.example::before {
+  content: "";
+  width: 11px;
+  height: 9.7px;
+  background: var(--accent);
+  -webkit-mask: var(--galet-mask) center / contain no-repeat;
+  mask: var(--galet-mask) center / contain no-repeat;
+}
+
+/* --- the card (.action-card / .action-card.pending) --- */
+.card {
+  padding: 14px 16px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: var(--card-shadow);
+  color: var(--ink);
+  transition: border-color var(--dur-base) ease;
+}
+
+.card[data-status="pending"] {
+  border-color: var(--accent-soft);
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.kindIcon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+}
+
+.path {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.status {
+  flex: none;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: var(--card-hover);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status[data-status="pending"] {
+  background: var(--soft);
+  color: var(--accent);
+}
+
+/* the new status arrives with a quick settle (it answers the press; never on load) */
+:global(:root[data-motion="on"]) .card:not([data-status="pending"]) .status {
+  animation: settle 200ms var(--ease-firm);
+}
+
+@keyframes settle {
+  from {
+    opacity: 0.35;
+    transform: scale(0.96);
+  }
+}
+
+.lead {
+  margin: 10px 0 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+}
+
+.description {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.details summary {
+  margin: 10px 0 0;
+  padding: 2px 0;
+  width: max-content;
+  font-size: 13px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.details summary:focus-visible {
+  border-radius: 4px;
+}
+
+.diff {
+  max-height: 290px;
+  margin: 10px 0 0;
+  padding: 10px 0;
+  overflow: auto;
+  border-radius: 6px;
+  background: var(--card-code);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  white-space: pre;
+  scrollbar-width: thin;
+}
+
+.line {
+  display: block;
+  padding: 0 12px;
+}
+
+.line[data-kind="added"] {
+  color: var(--accent);
+}
+
+.line[data-kind="removed"] {
+  color: var(--card-danger);
+}
+
+.line[data-kind="hunk"] {
+  color: var(--card-muted);
+}
+
+/* --- the buttons (.action-buttons, .secondary-button, .primary-button, .undo-button) --- */
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.primary,
+.secondary,
+.undo,
+.reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.2;
+  touch-action: manipulation;
+  transition:
+    background-color var(--dur-fast) ease,
+    filter var(--dur-fast) ease,
+    transform var(--dur-press) var(--ease-firm);
+}
+
+.primary {
+  padding: 0 16px 0 14px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.secondary {
+  padding: 0 16px;
+  border: 1px solid var(--card-line-strong);
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.undo {
+  margin-top: 12px;
+  padding: 0 10px 0 6px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+}
+
+.primary:active,
+.secondary:active,
+.undo:active,
+.reset:active {
+  transform: scale(0.97);
+}
+
+.buttonIcon {
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .primary:hover {
+    filter: brightness(1.08);
+  }
+
+  .secondary:hover,
+  .undo:hover {
+    background: var(--card-hover);
+  }
+
+  .reset:hover {
+    background: var(--bg-2);
+  }
+}
+
+/* --- under the card --- */
+.after {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  min-height: 40px;
+  margin-top: 12px;
+}
+
+.reset {
+  padding: 0 14px;
+  border: 1px solid var(--line-2);
+  background: transparent;
+  color: var(--ink);
+}
+
+.sample {
+  margin-left: auto;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+@media (max-width: 560px) {
+  .card {
+    padding: 12px 12px 14px;
+  }
+
+  .heading {
+    flex-wrap: wrap;
+    row-gap: 6px;
+    font-size: 14.5px;
+  }
+
+  /* keep the path whole: on the narrowest screens the status goes to its own line instead */
+  .path {
+    flex: 1 1 auto;
+    white-space: nowrap;
+  }
+
+  .diff {
+    font-size: 11.5px;
+  }
+
+  .line {
+    padding: 0 10px;
+  }
+}

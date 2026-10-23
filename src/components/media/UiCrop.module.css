@@ -1,0 +1,61 @@
+/* A region of a real-UI still. The inline style sets the box (--x --y --w --h, and --px … for phones); the rules below
+   read it through --cx …, so a media query can swap the box (an inline custom property would win over a stylesheet). */
+.crop {
+  --cx: var(--x);
+  --cy: var(--y);
+  --cw: var(--w);
+  --ch: var(--h);
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: var(--cw) / var(--ch);
+  background: var(--panel);
+}
+
+@media (max-width: 560px) {
+  .crop[data-phone] {
+    --cx: var(--px);
+    --cy: var(--py);
+    --cw: var(--pw);
+    --ch: var(--ph);
+  }
+}
+
+/* The whole still, drawn 1200 / w times the crop's width and moved so the box shows. */
+.image {
+  position: absolute;
+  left: calc(var(--cx) / var(--cw) * -100%);
+  top: calc(var(--cy) / var(--ch) * -100%);
+  width: calc(1200 / var(--cw) * 100%);
+  max-width: none;
+}
+
+/* A window on the sage field: rounded, a window shadow and a hairline edge drawn inside (DESIGN §6). */
+.crop[data-frame="window"] {
+  border-radius: 14px;
+  box-shadow: var(--shadow-frame);
+}
+
+.crop[data-frame="window"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(var(--shade), 0.08);
+}
+
+:global(:root[data-theme="dark"]) .crop[data-frame="window"]::after {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .crop[data-frame="window"]::after {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  }
+}
+
+@media (max-width: 560px) {
+  .crop[data-frame="window"] {
+    border-radius: 10px;
+  }
+}

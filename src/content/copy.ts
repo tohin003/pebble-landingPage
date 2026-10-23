@@ -245,11 +245,12 @@ export const hero = {
   requirements: ["Free and open source", "Apache-2.0", "Macs with Apple silicon (M1 or later)", "macOS 12 or later"], // [C-HERO-3]
   requirementsLine: "Free and open source · Apache-2.0 · Macs with Apple silicon (M1 or later) · macOS 12 or later", // [C-HERO-3]
   /**
-   * The short honest line under the call to action (DESIGN §5 row 1): all four release limits, short, as OVERRIDES §2
-   * asks "near the download CTA". Moved here from stubs.ts by the claims review, which added the checksum limit. [C-F1-3]
+   * The short honest line under every Download button (DESIGN §5 row 1): the three trust limits. Lead decision
+   * (2026-10-23): the checksum limit sits next to the checksum instructions in Install (install.checksumNote) and in
+   * the full limits list, where it applies, instead of lengthening this line. [C-F1-3]
    */
   honestLine:
-    "Signed with its own identity, not an Apple Developer ID, and not notarized. The checksum shows the download is intact, not who made it. No independent security audit yet.",
+    "Signed with its own identity, not an Apple Developer ID, and not notarized. No independent security audit yet.",
   filmLink: "Watch the film",
   filmLinkAria: (duration: string) => `Watch the film, ${duration}, with sound`,
   pebble: {
@@ -314,6 +315,8 @@ export const film = {
   sampleData: common.sampleData,
   posterAlt: "The Pebble film. Pebble's window on a sage-green desktop, with an edit waiting for approval.", // FILM_SPEC §15, §18: the poster is T0's frame 0
   teaserLabel: "A silent preview of the film",
+  /** Lane F2a: the teaser's short name in its pause button ("Pause the film preview clip"). A label, not a claim. */
+  teaserName: "film preview",
 } as const;
 
 export const filmDialog = {
@@ -347,6 +350,9 @@ export const desktop = {
     "Close the main window and the pebble stays on screen. Quit Pebble stops it, and the model with it.", // [C-DESK-4]
   ],
   limit: "Reduce motion, in Pebble's Settings or in macOS, keeps it still.", // [C-DESK-5]
+  /** Lane F2a: the text alternative of the desktop vignette's quick chat (Pebble 1.0.1, sample data). [C-F2A-1] */
+  vignette:
+    "Pebble's quick chat open above the pebble, in the corner of a sage-green desktop. Asked “What does 'day is out of range for month' mean?”, Pebble answers: “Python is being asked for a date that doesn't exist, like 31 February. If it's from your invoice export, open invoice-kit and I'll look.”",
   chapterId: "desktop",
 } as const;
 
@@ -383,6 +389,9 @@ export const models = {
   caption: "With a local model, the conversation stays on your Mac.", // [C-MOD-8]
   switchNote:
     "A conversation you had with a local model is not sent to a cloud model unless you review and release it.", // [C-MOD-9]
+  /** Lane F2a: the text alternative of the Settings › Models crop (shown until loop L2 exists). [C-F2A-2] */
+  mediaAlt:
+    "Pebble's Settings, on the Models tab: a GGUF model file on this Mac, the buttons Add a model file and Connect provider, and Continue with ChatGPT.",
   chapterId: "model",
 } as const;
 
@@ -391,7 +400,7 @@ export const models = {
 // ---------------------------------------------------------------------------------------------------------------
 
 export const project = {
-  h2: "Works in your project. Asks first.",
+  h2: "Works in your project, under your review.", // lead decision: "Asks first" is true only in the default mode
   note: "In the default mode, every edit, test run, terminal command and Git change is a card you approve.", // [C-PROJ-1]
   connect:
     "Connect a project to give Pebble one folder. Paths outside it, links that leave it, `.git` internals and credential files are refused.", // [C-PROJ-2]
@@ -428,6 +437,26 @@ export const project = {
     },
   ],
   chapterIds: { steps01to03: "project", step04: "tested" },
+  /** Lane F2a: the rail's step names (comp 3), the tabs of the story. Labels, not claims. */
+  rail: {
+    label: "How a coding task goes",
+    steps: ["Edits", "Tests", "Commands and Git", "AgentGuard"],
+  },
+  /** Step 03's stage: the first sentence of a command card that can change files, word for word. [C-F2A-3] */
+  commandCard: {
+    intro: "A command card that can change files says first:",
+    text: "Runs this command in your project, where it can change files. Pebble can't undo a command.", // App.vue@v1.0.1:731
+  },
+  /** Step 04's stage: the one-line results (agentGuard.result and notVerifiedExamples), and a link to section 3. [C-F2A-4] */
+  verdict: {
+    intro: "When a task changed code, its reply carries a one-line result, such as:",
+    link: "How AgentGuard holds a task",
+  },
+  /** Text alternative of the real-UI crop in step 02 (shown until loop L4 exists). [C-F2A-5] */
+  media: {
+    steps:
+      "The steps of a finished task in Pebble's Activity tab, from the two approved edits through “Requesting isolated tests · 11 s” to “Verified · pytest 42 passed on current files · 2 s”.",
+  },
 } as const;
 
 /**
@@ -489,6 +518,14 @@ export const agentGuard = {
     verified: "Verified",
   },
   notSecurity: "AgentGuard checks evidence; it is not a security layer.", // [C-PROJ-10]
+  /** Lane F2a: text alternatives of the real-UI crops in section 3 (what each crop shows). [C-F2A-6] */
+  media: {
+    challenge:
+      "Pebble's Activity steps. The edit to invoice_kit/templates/statement.html is refused, and its details read “AgentGuard — evidence check” and “5 file(s) changed that the task does not reach”, name the request and the files outside it, and say “Either explain what connects these to the task, or split them into a separate change.”",
+    held: "A reply in Pebble after two edits: “Not verified · 2 changed files, no tests run”, then “Blocked” and “Pebble's change isn't verified yet.”, with the buttons Run the tests, Ask Pebble to finish and Accept as unverified.",
+    verified:
+      "A reply in Pebble after the tests ran: “Verified · pytest 42 passed on current files”, then “Done, and verified:” with the two changed files and 42 tests passed in an isolated copy of the project.",
+  },
 } as const;
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -573,6 +610,8 @@ export const explainers = {
     switchesNote: "Below the modes, in Settings › Permissions, a switch for each kind of tool turns it off entirely.", // [C-EXP-9]
     fullAccessNote:
       "Full access increases the impact of mistakes and prompt injection. AgentGuard is a reliability check; it cannot guarantee that every command or answer is safe.", // [C-EXP-10] AdvancedSettings.vue:1390-1392
+    /** Lane F2a: the line under the "Interactive example" label (like approvalCard.intro). [C-F2A-7] */
+    intro: "Choose a mode. The words are the ones Pebble shows.",
   },
 
   /** MemoryForgetDemo: the "forget …" card in a conversation (App.vue:2055-2084). [C-EXP-11..13] */
@@ -613,6 +652,8 @@ export const pace = {
     "A task keeps the permissions it started with: a running task can never gain access.", // [C-PACE-3]
     "The pebble, a generated view, a file, a web page, a memory or a skill can never approve anything or widen a permission.", // [C-PACE-4]
   ],
+  /** Lane F2a: introduces explainers.permissionDial.everyMode, quoted (DESIGN §5 row 7). [C-F2A-8] */
+  attribution: "In Pebble's Settings, under the three modes:",
   chapterId: "pace",
 } as const;
 

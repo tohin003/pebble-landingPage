@@ -1,0 +1,317 @@
+/* The permission dial (comp 3). The arch is the pebble's path itself: .arc only marks its box (2R wide, R tall).
+   The stops sit on it at fixed angles (cos and sin precomputed, so no CSS trigonometry is needed): Ask for approval
+   at 152°, Auto in project at 90°, Full access at 28° (155° and 25° on phones). */
+.dial {
+  text-align: center;
+}
+
+/* "Interactive example" and its line */
+.label {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 2px 10px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.example {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 550;
+  color: var(--ink);
+}
+
+.example::before {
+  content: "";
+  width: 11px;
+  height: 9.7px;
+  background: var(--accent);
+  -webkit-mask: var(--galet-mask) center / contain no-repeat;
+  mask: var(--galet-mask) center / contain no-repeat;
+}
+
+.arch {
+  --R: 232px;
+  --top: 72px;
+  --pb: 190px; /* the pebble's box (body 112 px wide, as comp 3's dial pebble) */
+  position: relative;
+  width: min(760px, 100%);
+  height: calc(var(--top) + var(--R) + 14px);
+  min-width: 0;
+  margin: 26px auto 0;
+  padding: 0;
+  border: 0;
+}
+
+.arc {
+  position: absolute;
+  left: calc(50% - var(--R));
+  top: var(--top);
+  width: calc(var(--R) * 2);
+  height: var(--R);
+  pointer-events: none;
+}
+
+/* a stop: a zero-size point on the arch; its knob, focus ring, hit area and name hang around it */
+.detent {
+  --cos: -0.8829;
+  --sin: 0.4695;
+  position: absolute;
+  left: calc(50% + var(--cos) * var(--R));
+  top: calc(var(--top) + var(--R) - var(--sin) * var(--R));
+  width: 0;
+  height: 0;
+  cursor: pointer;
+}
+
+.detent[data-mode="auto"] {
+  --cos: 0;
+  --sin: 1;
+}
+
+.detent[data-mode="full"] {
+  --cos: 0.8829;
+  --sin: 0.4695;
+}
+
+/* the hit area: 44 × 44 around the knob */
+.input {
+  position: absolute;
+  left: -22px;
+  top: -22px;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.knob {
+  position: absolute;
+  left: -15px;
+  top: -13.25px;
+  width: 30px;
+  height: 26.5px;
+  background: var(--stone);
+  pointer-events: none;
+  transition:
+    background-color 200ms ease,
+    transform 260ms var(--ease-firm);
+}
+
+.input:checked ~ .knob {
+  background: var(--accent);
+  transform: scale(1.14);
+}
+
+/* a mask clips an outline, so the focus ring is its own circle */
+.ring {
+  position: absolute;
+  left: -21px;
+  top: -21px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  pointer-events: none;
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+  opacity: 0;
+}
+
+.input:focus-visible ~ .ring {
+  opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .input:not(:checked):hover ~ .knob {
+    background: var(--accent-soft);
+  }
+
+  .input:not(:checked):hover ~ .name {
+    color: var(--ink);
+  }
+}
+
+.name {
+  position: absolute;
+  font-size: 16px;
+  font-weight: 550;
+  line-height: 1.3;
+  white-space: nowrap;
+  color: var(--ink-2);
+  pointer-events: none;
+  transition: color var(--dur-fast) ease;
+}
+
+.input:checked ~ .name {
+  color: var(--ink);
+}
+
+.tag {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 400;
+}
+
+.detent[data-mode="ask"] .name {
+  right: 28px;
+  bottom: 4px;
+  text-align: right;
+}
+
+.detent[data-mode="auto"] .name {
+  left: 0;
+  bottom: 26px;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.detent[data-mode="full"] .name {
+  left: 28px;
+  bottom: 4px;
+  text-align: left;
+}
+
+/* the pebble under the arch: its body rests on the arch's baseline (the box hangs 23.45 % below it) */
+.pebble {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--top) + var(--R) - var(--pb) * 0.7655);
+  width: var(--pb);
+  height: var(--pb);
+  transform: translateX(-50%);
+}
+
+.pebble > svg,
+.pebbleLive {
+  position: relative; /* paints over the contact shadow */
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.contact {
+  position: absolute;
+  left: 50%;
+  top: 76.55%;
+  width: 56%;
+  height: 12%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(var(--shade), 0.28), rgba(var(--shade), 0));
+}
+
+:global(:root[data-theme="dark"]) .contact {
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
+}
+
+/* --- the chosen mode's own words --- */
+.modes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px 56px;
+  width: min(860px, 100%);
+  margin: 46px auto 0;
+  text-align: left;
+}
+
+.columnTitle {
+  font-size: 15.5px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.modeText {
+  margin-top: 8px;
+  font-size: 17.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+/* the new words settle in when you change the mode (never on load) */
+:global(:root[data-motion="on"]) .modes[data-changed] .modeText {
+  animation: words 220ms var(--ease-firm);
+}
+
+@keyframes words {
+  from {
+    opacity: 0.4;
+  }
+}
+
+/* Full access: the warning Pebble's Settings show with it */
+.fullNote {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--bg-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+@media (max-width: 560px) {
+  .arch {
+    --R: 128px;
+    --top: 56px;
+    --pb: 116px;
+    height: calc(var(--top) + var(--R) + 74px);
+  }
+
+  .detent[data-mode="ask"] {
+    --cos: -0.9063;
+    --sin: 0.4226;
+  }
+
+  .detent[data-mode="full"] {
+    --cos: 0.9063;
+    --sin: 0.4226;
+  }
+
+  .name {
+    font-size: 14.5px;
+  }
+
+  .tag {
+    font-size: 12.5px;
+  }
+
+  /* the outer names go under the arch's feet, inside the screen */
+  .detent[data-mode="ask"] .name,
+  .detent[data-mode="full"] .name {
+    top: calc(var(--sin) * var(--R) + 18px);
+    bottom: auto;
+  }
+
+  .detent[data-mode="ask"] .name {
+    right: auto;
+    left: -16px;
+    text-align: left;
+  }
+
+  .detent[data-mode="full"] .name {
+    left: auto;
+    right: -16px;
+    text-align: right;
+  }
+
+  .detent[data-mode="auto"] .name {
+    bottom: 22px;
+  }
+
+  .modes {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+    margin-top: 36px;
+  }
+
+  .modeText {
+    font-size: 16.5px;
+  }
+}

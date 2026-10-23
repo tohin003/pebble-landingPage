@@ -1,4 +1,119 @@
-/* Models: stub styles (lane F1). The shared .section and .section-head helpers live in src/app/globals.css. */
+/* Section 6, Your model, your choice: the centred head, then the picture on the left and the three ways in on the
+   right; one column below 900 px. The section must not create a stacking context. */
 .section {
-  position: relative; /* TODO(F2): the section's layout */
+  position: relative;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  column-gap: 64px;
+  align-items: start;
+  width: min(var(--w-content), 100%);
+  margin: 56px auto 0;
+  text-align: left;
+}
+
+.media {
+  margin: 0;
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+}
+
+/* until loop L2 exists: the real Settings › Models, cropped, as a window on the riverbed */
+.window {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 72%;
+  transform: translate(-50%, -50%);
+}
+
+.caption {
+  margin-top: 12px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+/* the three ways in: hairlines between them, no cards */
+.ways {
+  border-bottom: 1px solid var(--line);
+}
+
+.ways li {
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+}
+
+.ways li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.wayTitle {
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+.wayBody {
+  margin-top: 6px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.wayLimit {
+  margin-top: 6px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.note {
+  margin-top: 18px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.chip {
+  margin-top: 14px;
+}
+
+@media (max-width: 1023px) {
+  .layout {
+    column-gap: 44px;
+  }
+}
+
+@media (max-width: 899px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 36px;
+    margin-top: 40px;
+  }
+
+  .list {
+    max-width: 40em;
+  }
+}
+
+@media (max-width: 560px) {
+  .window {
+    width: 90%;
+  }
+
+  /* loop L2 without a phone cut: phones show the legible still instead of its poster (critic H2) */
+  .wideOnly {
+    display: none;
+  }
+}
+
+@media (min-width: 561px) {
+  .phoneOnly {
+    display: none;
+  }
 }

@@ -1,18 +1,18 @@
 // Section 1, the hero (DESIGN §5 row 1, comp 3): the pebble on the line in a pool of light, the H1, the lead, the call
 // to action, the facts list and the short honest line. The line starts under the pebble (the "floor" anchor).
 //
-// STUB by lane F1 (site shell), with the shell's pieces wired in. TODO(F2):
-// - "Say hi to Pebble": a real button that calls tapPebble("hero") and shows "Hi, I'm Pebble." in an aria-live
-//   bubble; onPebbleTapped for clicks on the pebble itself (src/components/pebble/events.ts, lane B's handoff);
-// - the download notice after a click on Download (copy.ts `downloadNotice`, MASTER_PLAN §7.4);
-// - the film link with its computed length (chapters.ts `filmDurationLabel()`), once lane E sets it.
+// - The pebble is lane B's live engine over a static first frame; it settles after 8 s without pointer input
+//   (OVERRIDES §8 H4) and is itself the "Say hi to Pebble" button (HeroHello).
+// - The text reveal is CSS only (globals.css .reveal) and never waits for hydration (critic M6).
+// - A click on Download opens the short notice about the first run (HeroCta, MASTER_PLAN §7.4).
+// - No film link here: the film's poster peeks above the fold right below (DESIGN §5 rows 1 and 2).
 import type { CSSProperties } from "react";
 import { cta, hero, honestLimits, links } from "@/content/copy";
-import { heroStub } from "@/content/stubs";
 import { Pebble } from "@/components/pebble/Pebble";
 import { GetPebble } from "@/components/shell/GetPebble";
 import { getRelease, releaseFacts } from "@/lib/release";
 import { SECTIONS } from "@/lib/sections";
+import { HeroCta, HeroHello } from "./Hero.client";
 import styles from "./Hero.module.css";
 
 /** the reveal's stagger index (globals.css .reveal) */
@@ -21,13 +21,15 @@ const at = (i: number) => ({ "--i": i }) as CSSProperties;
 export async function Hero() {
   const release = await getRelease();
   return (
-    <section id={SECTIONS.hero} className={styles.hero} aria-labelledby="hero-title" data-todo="F2">
+    <section id={SECTIONS.hero} className={styles.hero} aria-labelledby="hero-title">
       <div className={styles.backdrop} aria-hidden="true">
         <div className={styles.grain} />
       </div>
 
       <div className={styles.stage}>
-        <Pebble name="hero" className={styles.pebble} />
+        <HeroHello>
+          <Pebble name="hero" className={styles.pebble} />
+        </HeroHello>
         <span className={styles.contact} aria-hidden="true" />
         {/* the line starts here, under the pebble (src/components/line/PebblePath.tsx) */}
         <span className={styles.floor} data-path-anchor="floor" aria-hidden="true" />
@@ -40,12 +42,12 @@ export async function Hero() {
         {hero.lead}
       </p>
 
-      <div className={`${styles.cta} reveal`} style={at(3)}>
+      <HeroCta className={`${styles.cta} reveal`} style={at(3)}>
         <GetPebble release={release} variant="primary" className={styles.primary} />
         <a className={styles.quiet} href={links.repo}>
           {cta.github}
         </a>
-      </div>
+      </HeroCta>
       <p className={`${styles.notice} only-other reveal`} style={at(4)}>
         {cta.nonMac.notice}
       </p>
@@ -58,7 +60,7 @@ export async function Hero() {
         </ul>
       ) : null}
       <p className={`${styles.honest} reveal`} style={at(5)}>
-        {heroStub.honestLine} <a href={`#${SECTIONS.limits}`}>{honestLimits.shortLink}</a>
+        {hero.honestLine} <a href={`#${SECTIONS.limits}`}>{honestLimits.shortLink}</a>
       </p>
     </section>
   );

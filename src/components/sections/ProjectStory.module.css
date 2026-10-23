@@ -1,4 +1,379 @@
-/* ProjectStory: stub styles (lane F1). The shared .section and .section-head helpers live in src/app/globals.css. */
+/* Section 5, the project story. The section must not create a stacking context: the pebble's path runs behind it and
+   through the rail's stones. */
 .section {
-  position: relative; /* TODO(F2): the section's layout */
+  position: relative;
+}
+
+.story {
+  width: min(var(--w-content), 100%);
+  margin: 0 auto;
+}
+
+/* --- the rail (comp 3): four stones on the line, the step names under them --- */
+.railWrap {
+  position: relative;
+  width: min(780px, 100%);
+  margin: 64px auto 0;
+}
+
+.rail {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  padding: 0 2px 6px;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stop {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 64px;
+}
+
+.stone {
+  width: 15px;
+  height: 13.3px;
+  background: var(--stone);
+  transition:
+    opacity var(--dur-fast) ease,
+    background-color var(--dur-fast) ease;
+}
+
+/* the guide pebble stands where the current stone is */
+.tab[aria-selected="true"] .stone {
+  opacity: 0;
+}
+
+.tabLabel {
+  margin-top: 8px;
+  font-size: 14.5px;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.tabLabel b {
+  margin-right: 6px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tab[aria-selected="true"] .tabLabel {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.tab[aria-selected="true"] .tabLabel b {
+  color: var(--accent);
+}
+
+.tab:focus-visible {
+  outline: none;
+}
+
+.tab:focus-visible .tabLabel {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tab:hover .tabLabel {
+    color: var(--ink);
+  }
+
+  .tab[aria-selected="false"]:hover .stone {
+    background: var(--accent-soft);
+  }
+}
+
+/* The guide walks along the line to the chosen stone (motion that answers the choice; instant when paused). Its
+   box hangs below the line by 23.45 % of its size, so the body rests on it (shared/pebble BODY). */
+.guide {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 25%;
+  height: 64px;
+  pointer-events: none;
+  transform: translateX(calc(var(--step, 0) * 100%));
+  transition: transform 560ms var(--ease-move);
+}
+
+.guideBox {
+  --g: 104px;
+  position: absolute;
+  left: 50%;
+  bottom: calc(50% - var(--g) * 0.2345);
+  width: var(--g);
+  height: var(--g);
+  transform: translateX(-50%);
+}
+
+.guidePebble {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* --- the stage: one step at a time, words on the left, its picture on the right --- */
+.panels {
+  margin-top: 60px;
+}
+
+.panel {
+  display: none;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 56px;
+  align-items: center;
+}
+
+.panel[data-active] {
+  display: grid;
+}
+
+.panel:focus-visible {
+  outline-offset: 10px;
+  border-radius: 14px;
+}
+
+/* a new step settles in when you choose it (never on load) */
+:global(:root[data-motion="on"]) .panels[data-touched] .panel[data-active] {
+  animation: settle 240ms var(--ease-enter);
+}
+
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.words {
+  text-align: left;
+}
+
+.stepTitle {
+  font-size: clamp(20px, 0.45vw + 16px, 24px);
+  line-height: 1.32;
+}
+
+.body {
+  margin-top: 12px;
+  color: var(--ink-2);
+}
+
+.limit {
+  margin-top: 10px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.more {
+  margin-top: 14px;
+  font-weight: 550;
+}
+
+.more a {
+  color: var(--ink);
+}
+
+.chip {
+  margin-top: 16px;
+}
+
+.thumb {
+  margin: 26px 0 0;
+}
+
+.caption {
+  margin-top: 10px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  text-align: left;
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+}
+
+/* the plain sage stage for the explainer and the quotes (real captures get the riverbed or a window instead) */
+.sage {
+  margin: 0;
+  padding: 40px clamp(18px, 3.4vw, 48px);
+  border-radius: var(--r-media);
+  background: var(--soft);
+}
+
+.demo {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.shot {
+  margin: 0;
+}
+
+/* until loop L4 exists: the real steps as a window on the riverbed */
+.window {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 72%;
+  transform: translate(-50%, -50%);
+}
+
+.quote,
+.verdicts {
+  text-align: left;
+}
+
+.quoteIntro {
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.quoteText {
+  margin: 14px 0 0;
+  quotes: "\201C" "\201D";
+  font-family: var(--font-display);
+  font-weight: 350;
+  font-size: clamp(24px, 0.9vw + 16px, 31px);
+  line-height: 1.24;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.quoteText p::before {
+  content: open-quote;
+}
+
+.quoteText p::after {
+  content: close-quote;
+}
+
+.verdictList {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.verdictList li {
+  position: relative;
+  padding-left: 24px;
+}
+
+.verdictList li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.45em;
+  width: 11px;
+  height: 9.7px;
+  background: var(--stone);
+  -webkit-mask: var(--galet-mask) center / contain no-repeat;
+  mask: var(--galet-mask) center / contain no-repeat;
+}
+
+.verdictList li[data-verified] {
+  color: var(--ink);
+  font-weight: 550;
+}
+
+.verdictList li[data-verified]::before {
+  background: var(--accent);
+}
+
+.sample {
+  margin-top: 18px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+@media (max-width: 899px) {
+  .panel {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+
+  .words {
+    max-width: 40em;
+  }
+}
+
+@media (max-width: 560px) {
+  .railWrap {
+    margin-top: 48px;
+  }
+
+  .tab {
+    padding-bottom: 4px;
+  }
+
+  .tabLabel {
+    max-width: 100%;
+    font-size: 13px;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .tabLabel b {
+    display: block;
+    margin: 0 0 2px;
+  }
+
+  .guideBox {
+    --g: 84px;
+  }
+
+  .panels {
+    margin-top: 40px;
+  }
+
+  .sage {
+    padding: 26px 14px;
+    border-radius: 20px;
+  }
+
+  .window {
+    width: 92%;
+  }
+}
+
+/* loops without a phone cut: phones show the legible still instead of the poster (critic H2) */
+@media (max-width: 560px) {
+  .wideOnly {
+    display: none;
+  }
+}
+
+@media (min-width: 561px) {
+  .phoneOnly {
+    display: none;
+  }
+}
+
+/* 320–370 px: four names side by side need the smaller size ("AgentGuard" is one word) */
+@media (max-width: 370px) {
+  .tabLabel {
+    font-size: 12px;
+  }
 }
