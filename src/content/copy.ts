@@ -1007,7 +1007,7 @@ export const install = {
 export const openSource = {
   h2: "Free and open source.",
   lead:
-    "Pebble's code is on GitHub under the Apache License 2.0. Read it, build it yourself from a clean clone, or help improve it.", // [C-OSS-1]
+    "Pebble’s code is on GitHub under the Apache License 2.0. Read it, build it yourself from a clean clone, or help improve it.", // [C-OSS-1] (a typographic apostrophe: its first sentence is the H2's second line, in Fraunces)
   tested: `Before release, Pebble ${releaseFacts.version} passed ${formatCount(releaseFacts.tests)} automated tests and ${formatCount(releaseFacts.serviceChecks)} service checks. The tests never call a model or the network.`, // [C-OSS-2]
   maintainer: "Pebble is maintained by one person. Please allow time for a reply.", // [C-OSS-3]
   repoCard: {
