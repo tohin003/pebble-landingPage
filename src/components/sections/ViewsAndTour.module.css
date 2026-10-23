@@ -1,4 +1,254 @@
-/* ViewsAndTour: stub styles (lane F1). The shared .section and .section-head helpers live in src/app/globals.css. */
+/* Views, and what else is inside (DESIGN §5 row 9): a split, then two quiet typographic columns (no tiles, no icons,
+   no hover lifts: DESIGN §3, §4). The shared .section helper lives in src/app/globals.css. */
 .section {
-  position: relative; /* TODO(F2): the section's layout */
+  position: relative;
+}
+
+/* --- the views split --- */
+.viewsRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 64px;
+  width: min(var(--w-content), 100%);
+  margin: 0 auto;
+}
+
+.lead {
+  max-width: 30em;
+  margin-top: 20px;
+}
+
+.points {
+  display: grid;
+  gap: 11px;
+  margin-top: 22px;
+}
+
+.points li {
+  position: relative;
+  padding-left: 22px;
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+/* the galet as the list mark (DESIGN §1) */
+.points li::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: 0.62em;
+  width: 9px;
+  height: 8px;
+  background: var(--stone);
+  -webkit-mask: var(--galet-mask) center / contain no-repeat;
+  mask: var(--galet-mask) center / contain no-repeat;
+}
+
+.points code {
+  color: var(--ink);
+}
+
+.limit {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.chip {
+  display: flex;
+}
+
+:global(:root[data-film="ready"]) .chip {
+  margin-top: 18px;
+}
+
+.media {
+  margin: 0;
+}
+
+.window {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 84%;
+  transform: translate(-50%, -50%);
+}
+
+/* The view's panel, cut from the still (ViewsAndTour.tsx CROP): a box of the crop's own proportions, centred on the
+   riverbed, and the whole still drawn 1200 / w times its width and moved so that only the panel shows. */
+.crop {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--share) * 100%);
+  aspect-ratio: var(--w) / var(--h);
+  overflow: hidden;
+  transform: translate(-50%, -50%);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: var(--shadow-window);
+}
+
+.crop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(var(--shade), 0.08);
+}
+
+:global(:root[data-theme="dark"]) .crop::after {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+
+.cropImage {
+  position: absolute;
+  left: calc(var(--x) / var(--w) * -100%);
+  top: calc(var(--y) / var(--h) * -100%);
+  width: calc(1200 / var(--w) * 100%);
+  max-width: none;
+}
+
+.caption {
+  margin-top: 14px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--ink-2);
+}
+
+/* --- bigger tasks (a split), then the rest of the tour (a two-column list) --- */
+.more {
+  width: min(var(--w-content), 100%);
+  margin: 104px auto 0;
+}
+
+.orchestration {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+  gap: 18px 64px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+
+.orchestration .points {
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.blockTitle {
+  max-width: 14em;
+}
+
+.tourBlock {
+  margin-top: 72px;
+}
+
+.tour {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 64px;
+  margin-top: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tourItem {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  padding: 15px 0 16px;
+  border-top: 1px solid var(--line);
+}
+
+.tourItem dt {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.tourItem dd {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.tourItem code {
+  color: var(--ink);
+}
+
+@media (max-width: 1023px) {
+  .viewsRow {
+    gap: 44px;
+  }
+
+  .orchestration,
+  .tour {
+    column-gap: 44px;
+  }
+}
+
+@media (max-width: 899px) {
+  .viewsRow,
+  .orchestration {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .viewsRow,
+  .more {
+    max-width: 640px;
+  }
+
+  .viewsRow {
+    gap: 40px;
+  }
+
+  .more {
+    margin-top: 80px;
+  }
+
+  .blockTitle {
+    max-width: none;
+  }
+
+  .tourBlock {
+    margin-top: 56px;
+  }
+}
+
+@media (max-width: 720px) {
+  .tour {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .window {
+    width: 88%;
+  }
+
+  /* a little larger on phones, where every pixel of the panel counts (ViewsAndTour.tsx CROP_SIZES says 0.9 here) */
+  .crop {
+    width: 90%;
+    border-radius: 10px;
+  }
+
+  .more {
+    margin-top: 64px;
+  }
+}
+
+/* 900–1279 px: the pebble's path runs in the page's gutter (src/components/line/geometry.ts, margins()), so the rows
+   keep 48 px further in on each side, clear of its sway. */
+@media (min-width: 900px) and (max-width: 1279px) {
+  .viewsRow,
+  .more {
+    width: min(var(--w-content), calc(100% - 96px));
+  }
 }

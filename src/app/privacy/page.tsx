@@ -1,9 +1,12 @@
-// /privacy: three short paragraphs about this site (MASTER_PLAN §7.2 "Routes"). STUB by lane F1. TODO(F2): layout.
+// /privacy: about this site, in three short paragraphs (MASTER_PLAN §7.2 "Routes"): no cookies, no analytics, the
+// hosting logs Vercel keeps, and the app's own privacy on the home page. The footer's honesty stamp, counted live on
+// every page, shows the first paragraph rather than only stating it.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { privacyPage } from "@/content/copy";
 import { seo } from "@/content/seo";
-import { Article, articleStyles as styles } from "@/components/shell/Article";
+import { Article, articleStyles } from "@/components/shell/Article";
+import styles from "./privacy.module.css";
 
 export const metadata: Metadata = {
   title: seo.pages.privacy.title,
@@ -18,27 +21,25 @@ export default function PrivacyPage() {
         {privacyPage.paragraphs.map((paragraph) => (
           <p key={paragraph}>{paragraph}</p>
         ))}
-        <ul className={styles.list}>
-          {privacyPage.links.map((link) =>
-            "external" in link && link.external ? (
-              <li key={link.href}>
-                <a href={link.href}>{link.label}</a>
-              </li>
-            ) : (
-              <li key={link.href}>
-                <Link href={link.href} prefetch={false}>
-                  {link.label}
-                </Link>
-              </li>
-            ),
-          )}
-        </ul>
-        <p className={styles.back}>
-          <Link href="/" prefetch={false}>
-            {privacyPage.backHome}
-          </Link>
-        </p>
       </div>
+      <ul className={styles.links}>
+        {privacyPage.links.map((link) => (
+          <li key={link.href}>
+            {"external" in link && link.external ? (
+              <a href={link.href}>{link.label}</a>
+            ) : (
+              <Link href={link.href} prefetch={false}>
+                {link.label}
+              </Link>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p className={articleStyles.back}>
+        <Link href="/" prefetch={false}>
+          {privacyPage.backHome}
+        </Link>
+      </p>
     </Article>
   );
 }

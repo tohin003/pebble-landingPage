@@ -54,6 +54,7 @@ Download, checksum, release and script URLs: STATUS §Release facts; all returne
 | C-LIM-11 | Scheduled tasks run only while Pebble is open. | `README.md@v1.0.1:156`; `docs/USER_GUIDE.md@v1.0.1:182` | Q |
 | C-LIM-12 | Web search uses Bing's RSS feed, which may change or stop without notice. The free Open-Meteo weather service is for non-commercial use. | `README.md@v1.0.1:153-154`; `NOTICE.md@v1.0.1:59-61` | Q |
 | C-LIM-13 | Pebble honours Reduce Motion, and VoiceOver hears the state of every switch, tab and permission mode, but an accessibility audit is still to come. | `docs/USER_GUIDE.md@v1.0.1:28`; `CHANGELOG.md@v1.0.1:76-77`; `docs/ARCHITECTURE.md@v1.0.1:51` ("an accessibility audit … remain necessary") | Q |
+| C-LIM-14 | Other software on your Mac: Pebble doesn't defend against other software running as your own macOS user. Such software can read Pebble's data folder and change its settings, and it could make Pebble's backend use a saved key or sign-in without a prompt. | `SECURITY.md@v1.0.1:57` ("Pebble does not defend against other software running as your own macOS user. Such software can read Pebble's data folder and change its settings, and it can start Pebble's own backend so that the backend reads your saved API key or ChatGPT sign-in without a prompt …"); DESIGN §9 (lead decision: the limits add it) | Q. Shortened; "could" because it describes what such software is able to do |
 
 ## 1. Hero, calls to action and the download notice
 
@@ -173,7 +174,7 @@ fixture numbers (S). The withdrawn test counter and "network off" (critic C3) ar
 
 | ID | Claim | Source | Kind / notes |
 |---|---|---|---|
-| C-MEM-1 | Six kinds of memory, each with its own switch: Your preferences, Facts & knowledge, Procedures, Past experiences, Time-sensitive information and Working context. | `docs/USER_GUIDE.md@v1.0.1:139-148`; `docs/DATA_FOLDERS.md@v1.0.1:21` | Q |
+| C-MEM-1 | Six kinds of memory, each with its own switch: Your preferences, Facts & knowledge, Procedures, Past experiences, Time-sensitive information and Working context. (F2b: the section's lead now reads "Pebble keeps six kinds of memory on your Mac, each with its own switch in Settings › Memory, where you can see, search and forget every one."; the six names follow it as a list, C-MEM-7) | `docs/USER_GUIDE.md@v1.0.1:139-148`, `:152-153`; `docs/DATA_FOLDERS.md@v1.0.1:21`; `README.md@207ec74:181` ("Six layers, on your Mac"); C-PRIV-1, C-MEM-2 | Q |
 | C-MEM-2 | See and search every memory in Settings › Memory, with where it came from. Forget one, or all of them. | `docs/USER_GUIDE.md@v1.0.1:152-153`; `AdvancedSettings.vue@v1.0.1:1484`, `:1549` | Q |
 | C-MEM-3 | Start a message with "Remember that …" to save a preference. Pebble still answers the rest. | `docs/USER_GUIDE.md@v1.0.1:150-151` | Q |
 | C-MEM-4 | Ask Pebble to forget something and it shows the memories that match. Nothing is forgotten until you confirm it in the main window. | `docs/USER_GUIDE.md@v1.0.1:155-156`; `CHANGELOG.md@v1.0.1:34` | Q |
@@ -485,7 +486,7 @@ New copy for the sections that OVERRIDES §7, §9 and §10 added after Lane A's 
 | C-INF-1 | Pebble is a Tauri 2 shell in Rust, a Vue 3 interface and a frozen Python service, which talk over a private stdio channel. | OVERRIDES §7; `README.md@207ec74:150-155` | Q |
 | C-INF-2 | 8,421 automated tests at v1.0.1, none skipped. They never call a model or the network. | `README.md@207ec74:323`; STATUS 22:50 | Q |
 | C-INF-3 | 1,772 service checks across 40 validator suites, each run against the source and the frozen, signed app. | `README.md@207ec74:324`; OVERRIDES §7 | Q |
-| C-INF-4 | A reproducible backend build: the shipped backend is byte-identical to the tested one, apart from its signature. | `README.md@207ec74:325` | Q |
+| C-INF-4 | Reproducible build: the shipped backend is byte-identical to the tested one, apart from its signature. | `README.md@207ec74:325` | Q. (F2b) The page sets the four facts as a ledger under the README's own row names (Tests, Service checks, Reproducible build, Release gates) |
 | C-INF-5 | Release gates: a secret scan, a licence inventory, a scan for personal paths, and every published test run in a fresh clone. | `README.md@207ec74:326`; OVERRIDES §7 | Q |
 | C-INF-6 | These are facts about how Pebble is built and tested, not benchmarks. No benchmark results have been published yet. | OVERRIDES §2, §7; STATUS §Release facts, 01:17 | Q |
 
@@ -512,3 +513,20 @@ engine's own (V): "Blocked" and "Pebble's change isn't verified yet." with the t
 | The brief's "documents and images, metadata stripped" | "Images are cleaned of metadata before they reach a model." | Only images are documented |
 | The README's "Safety comes from Pebble's host" and "more reliable" | "Protection comes from Pebble itself"; no "more reliable" | A banned word, and a phrase that reads as a comparison |
 | The hero's honest line without the checksum limit | All four release limits, short | OVERRIDES §2 |
+
+## Sections 8–15 and the other pages (lane F2b, 2026-10-23)
+
+New strings that lane F2b added while building sections 8–15, the footer and /film, /credits, /privacy. Everything else
+these parts show is in the rows above.
+
+| ID | Claim | Source | Kind / notes |
+|---|---|---|---|
+| C-F2B-1 | "Settings › Memory in Pebble 1.0.1." (the caption under the cropped Settings › Memory still) | Lane D's capture of the 1.0.1 UI, `public/ui/v1/settings-memory-{light,dark}-*.{avif,webp}` (HANDOFF-D-capture); the crop shows the sheet from its title to the third record, untouched | I. Followed by "Shown with sample data." |
+| C-F2B-2 | "The card's words are the ones Pebble shows." (under MemoryForgetDemo, after "Interactive example.") | `src/App.vue@v1.0.1:2055-2084` (C-EXP-11, C-EXP-12): heading, note, Forget, Forgotten, All memories in Settings, Done, the "Forget: …" label | I. The demo's three memories and the request are sample data (C-EXP-13). As in the app, Forget gives way to "Forgotten" and Done closes the card |
+| C-F2B-3 | The honesty stamp "This page: N cookies, N trackers, N third-party requests" (a list, never a middle-dot string) and its note "A tracker is any request to a known analytics or advertising service, including Vercel's own analytics, and any beacon." | Counted live in the browser (`src/components/shell/Footer.stamp.tsx`): Resource Timing entries plus a PerformanceObserver, `document.cookie`; trackers = a fixed list of analytics and advertising hosts, Vercel's `/_vercel/insights` and `/_vercel/speed-insights`, and `beacon`/`ping` requests | I. Nothing is shown until it has been counted (no JavaScript, no stamp). Lane F2b's QA (`.work/qa/f2b/check.mjs`) read "0 cookies / 0 trackers / 0 third-party requests" on `next start` at 320–1440 px |
+| C-F2B-4 | "bloub's code runs in this site's JavaScript, to draw the live pebble, so its MIT licence is reproduced here in full." (/credits) | `src/components/pebble/PebbleLive.tsx` imports the engine from `shared/pebble` (lane B: bloub from Pebble v1.0.1 `src/vendor/bloub/`); critic M10 | I. The text below it is `licences.ts`, checked byte for byte against `shared/pebble/bloub/LICENSE` |
+| — | Install's four requirement cells: "Mac: Apple silicon, M1 or later"; "macOS: macOS 12 or later, Built and tested on macOS 27"; "Download: 72 MB, Version 1.0.1"; "Price: Free, A cloud model's costs depend on your provider." | C-INST-2 (with OVERRIDES §8 H14's "tested on macOS 27", always on the Install section), C-REL-1, C-REL-2 (size and version from `release.ts`), C-INST-3 | Q. Same facts as before, split into value and note |
+| — | /film: "What you see" (chapters.ts `description`), "On screen" (`onScreen`) and "Sound" (the bracketed cues of `docs/film-captions.json`, mirrored in `src/content/filmCaptions.ts`) | FILM_SPEC §13, §18 (lane E); the claims review's chapters.ts | V/Q. `filmCaptions.test.ts` fails if the mirror drifts from the JSON, or if chapters.ts misses an on-screen line the captions carry |
+| — | Install, made as short as design comp 2: "In Terminal, on your Mac:"; "Read the installer first" (links to `install.sh` on GitHub); "Add `-s -- --dry-run` after `bash` to see what it would do. Nothing changes."; "Add `-s -- --uninstall` after `bash` to uninstall it later. The app is moved aside, and your data stays." | C-INST-9 (`README.md@v1.0.1:40-49`: "Options, added after `bash -s --`", "show what it would do; nothing changes"); C-INST-13 | Q. The full commands stay in the README, and the full uninstall command is in the FAQ (C-INST-13). `--version 1.0.1` is no longer on the page |
+| — | Install, "Or download it and check it": "Download both into one folder. In Terminal, in that folder, run `shasum -a 256 -c SHA256SUMS`. It should print `Pebble-macos-arm64.zip: OK`.", with "The checksum shows the download arrived intact. It does not prove who made it." right under it; then the drag to Applications, and the first-run steps as one step | C-INST-11, C-LIM-3 (DESIGN §9: the checksum limit next to the shasum step), C-DL-1, C-DL-2, C-DL-3 | Q. The README's five steps, in three |
+| — | "Also inside" no longer repeats "Views and exports": the views paragraph right above it says the same (C-VIEW-1, C-VIEW-3) | OVERRIDES §10 | Layout, not a claim |

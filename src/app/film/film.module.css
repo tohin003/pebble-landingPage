@@ -1,0 +1,133 @@
+/* /film: the transcript, chapter by chapter, in the plain-page column (src/components/shell/Article). */
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 22px;
+}
+
+/* FilmTrigger's own box is the large galet over a poster; here it is a plain text button (hidden until the film
+   exists, by FilmTrigger's own rule). Two classes, so these rules win over the component's. */
+.top .play {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: auto;
+  height: 46px;
+  padding: 0 18px 0 14px;
+  border-radius: 13px;
+  background: var(--accent);
+  color: var(--on-accent);
+  filter: none;
+  font-size: 15.5px;
+  font-weight: 600;
+  transition: transform var(--dur-press) var(--ease-firm);
+}
+
+.top .play:active {
+  transform: scale(0.97);
+}
+
+.playMark {
+  flex: none;
+  width: 18px;
+  height: 16px;
+  background: var(--on-accent);
+}
+
+.length {
+  font-size: 15px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.transcriptTitle {
+  margin-top: 44px;
+  font-size: clamp(26px, 1vw + 20px, 32px);
+}
+
+.chapters {
+  margin-top: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.chapter {
+  padding: 26px 0 28px;
+  border-top: 1px solid var(--line);
+}
+
+.chapterTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 20px;
+}
+
+.chapterMark {
+  flex: none;
+  align-self: center;
+  width: 12px;
+  height: 10.6px;
+  background: var(--stone);
+}
+
+.time {
+  margin-left: auto;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.parts {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.parts dt {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.parts dd {
+  margin-top: 4px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.lines,
+.sounds {
+  display: grid;
+  gap: 4px;
+}
+
+.lines li,
+.sounds li {
+  position: relative;
+  padding-left: 18px;
+}
+
+.lines li::before,
+.sounds li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.72em;
+  width: 7px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: var(--line-2);
+}
+
+.sounds li {
+  color: var(--ink-2);
+}
+
+.sample {
+  margin-top: 24px;
+  font-size: 14.5px;
+  color: var(--ink-2);
+}

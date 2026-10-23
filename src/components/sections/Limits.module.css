@@ -1,24 +1,100 @@
-/* Limits: stub styles (lane F1). The shared .section and .section-head helpers live in src/app/globals.css. */
+/* What Pebble isn't (yet) (DESIGN §5 row 13, design comp 2): the head on the left, the limits in two columns on the
+   right, marked with the galet. The shared .section helper lives in src/app/globals.css. */
 .section {
-  position: relative; /* TODO(F2): the section's layout */
+  position: relative;
+}
+
+.inner {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+  gap: 32px 64px;
+  width: min(var(--w-content), 100%);
+  margin: 0 auto;
+}
+
+.lead {
+  max-width: 22em;
+  margin-top: 18px;
 }
 
 .list {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px 56px;
-  width: min(940px, 100%);
-  margin: 40px auto 0;
-  padding-top: 24px;
-  border-top: 1px solid var(--line);
+  columns: 2;
+  column-gap: 48px;
+  padding-top: 8px;
+}
+
+.list li {
+  position: relative;
+  padding: 0 0 16px 22px;
+  break-inside: avoid;
   font-size: 15.5px;
   line-height: 1.55;
   color: var(--ink-2);
 }
 
-@media (max-width: 860px) {
+.list li::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: 0.62em;
+  width: 9px;
+  height: 8px;
+  background: var(--stone);
+  -webkit-mask: var(--galet-mask) center / contain no-repeat;
+  mask: var(--galet-mask) center / contain no-repeat;
+}
+
+.list strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.list code {
+  color: var(--ink);
+}
+
+/* the four release limits: the ones to know before installing, in the darker ink */
+.list .release {
+  color: var(--ink);
+}
+
+.list .release::before {
+  background: var(--accent-soft);
+}
+
+/* Below 1100 px the head goes above the list, so the two columns of limits keep a readable width. */
+@media (max-width: 1100px) {
+  .inner {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 28px;
+  }
+
+  .lead {
+    max-width: 34em;
+  }
+
   .list {
-    grid-template-columns: 1fr;
-    gap: 14px;
+    column-gap: 40px;
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 899px) {
+  .inner {
+    max-width: 680px;
+  }
+}
+
+@media (max-width: 600px) {
+  .list {
+    columns: 1;
+  }
+}
+
+/* 900–1279 px: the pebble's path runs in the page's gutter (src/components/line/geometry.ts, margins()), so the
+   section keeps 48 px further in on each side, clear of its sway. */
+@media (min-width: 900px) and (max-width: 1279px) {
+  .inner {
+    width: min(var(--w-content), calc(100% - 96px));
   }
 }

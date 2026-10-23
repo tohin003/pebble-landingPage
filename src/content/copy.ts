@@ -151,7 +151,7 @@ export const honestLimits = {
     "no independent security audit yet",
   ],
   shortLink: "Read the limits",
-  heading: "What Pebble isn't (yet)",
+  heading: "What Pebble isn’t (yet)", // a typographic apostrophe: the H2 is set large, in Fraunces (comps 2 and 3)
   lead: "Pebble states its limits plainly. These are the ones to know before you install it.",
   /** The plan's other limits (MASTER_PLAN §7.2 row 9, OVERRIDES §2). */
   product: [
@@ -186,6 +186,10 @@ export const honestLimits = {
     {
       title: "Web search depends on Bing",
       body: "Web search uses Bing's RSS feed, which may change or stop without notice. The free Open-Meteo weather service is for non-commercial use.", // [C-LIM-12]
+    },
+    {
+      title: "Other software on your Mac",
+      body: "Pebble doesn't defend against other software running as your own macOS user. Such software can read Pebble's data folder and change its settings, and it could make Pebble's backend use a saved key or sign-in without a prompt.", // [C-LIM-14] SECURITY.md@v1.0.1:57
     },
     {
       title: "Accessibility audit still to come",
@@ -618,8 +622,13 @@ export const pace = {
 
 export const memory = {
   h2: "Memory you can read and forget.",
+  // The section lists the six layers by name right below, so the lead doesn't repeat them (lane F2b).
   lead:
-    "Pebble keeps six kinds of memory, each with its own switch: Your preferences, Facts & knowledge, Procedures, Past experiences, Time-sensitive information and Working context.", // [C-MEM-1]
+    "Pebble keeps six kinds of memory on your Mac, each with its own switch in Settings › Memory, where you can see, search and forget every one.", // [C-MEM-1] [C-MEM-2] [C-PRIV-1]
+  /** The caption under the cropped Settings › Memory still (lane D's 1.0.1 capture). [C-F2B-1] */
+  settingsCaption: "Settings › Memory in Pebble 1.0.1.",
+  /** Under MemoryForgetDemo, after "Interactive example." (checked word for word against App.vue:2055-2084). [C-F2B-2] */
+  demoWords: "The card's words are the ones Pebble shows.",
   kinds: [
     "Your preferences",
     "Facts & knowledge",
@@ -628,14 +637,17 @@ export const memory = {
     "Time-sensitive information",
     "Working context",
   ],
-  /** The six layers with the README's labels (OVERRIDES §10); `name` is the app's own name for each. [C-MEM-7] */
+  /**
+   * The six layers with the README's labels (OVERRIDES §10); `name` is the app's own name for each. In the order of
+   * the Settings › Memory sheet shown beside the list (its grid, read row by row), so the two can be matched. [C-MEM-7]
+   */
   layers: [
-    { layer: "Profile", name: "Your preferences", holds: "How you like to work, and what you asked Pebble to remember about you." },
+    { layer: "Working", name: "Working context", holds: "Where the current conversation's task stands." },
+    { layer: "Episodic", name: "Past experiences", holds: "What earlier tasks asked for and how they went, up to 1,500 kept automatically." },
     { layer: "Semantic", name: "Facts & knowledge", holds: "Facts about your projects and the world." },
     { layer: "Procedural", name: "Procedures", holds: "How things are done here, such as how a project's tests run." },
-    { layer: "Episodic", name: "Past experiences", holds: "What earlier tasks asked for and how they went, up to 1,500 kept automatically." },
     { layer: "Temporal", name: "Time-sensitive information", holds: "Dates and temporary arrangements, each with an expiry." },
-    { layer: "Working", name: "Working context", holds: "Where the current conversation's task stands." },
+    { layer: "Profile", name: "Your preferences", holds: "How you like to work, and what you asked Pebble to remember about you." },
   ],
   /** How recalled memory reaches the model (OVERRIDES §10). [C-MEM-8] */
   recall:
@@ -732,11 +744,9 @@ export const orchestration = {
 
 export const tour = {
   title: "Also inside",
+  // OVERRIDES §10's tour opens with "views and exports"; on the page the views paragraph right above says it, so the
+  // list starts with research (lane F2b).
   items: [
-    {
-      title: "Views and exports",
-      body: "Dashboards, charts, plans, diagrams, quizzes and app demos, exported as PDF, Word, Excel, CSV or HTML.", // [C-VIEW-1] [C-VIEW-3]
-    },
     {
       title: "Research with sources",
       body: "Pebble searches the web and reads the pages behind an answer. Sources open in your browser, and everything read online is untrusted data.", // [C-TOUR-1]
@@ -776,11 +786,21 @@ export const infrastructure = {
   h2: "Built like infrastructure.", // [C-F1-1] (moved from stubs.ts)
   stack:
     "Pebble is a Tauri 2 shell in Rust, a Vue 3 interface and a frozen Python service, which talk over a private stdio channel.", // [C-INF-1]
+  /** A two-column ledger on the page, with the README's own row names as the terms (README.md@207ec74:321-326). */
   facts: [
-    "8,421 automated tests at v1.0.1, none skipped. They never call a model or the network.", // [C-INF-2]
-    "1,772 service checks across 40 validator suites, each run against the source and the frozen, signed app.", // [C-INF-3]
-    "A reproducible backend build: the shipped backend is byte-identical to the tested one, apart from its signature.", // [C-INF-4]
-    "Release gates: a secret scan, a licence inventory, a scan for personal paths, and every published test run in a fresh clone.", // [C-INF-5]
+    { term: "Tests", text: "8,421 automated tests at v1.0.1, none skipped. They never call a model or the network." }, // [C-INF-2]
+    {
+      term: "Service checks",
+      text: "1,772 service checks across 40 validator suites, each run against the source and the frozen, signed app.",
+    }, // [C-INF-3]
+    {
+      term: "Reproducible build",
+      text: "The shipped backend is byte-identical to the tested one, apart from its signature.",
+    }, // [C-INF-4]
+    {
+      term: "Release gates",
+      text: "A secret scan, a licence inventory, a scan for personal paths, and every published test run in a fresh clone.",
+    }, // [C-INF-5]
   ],
   note: "These are facts about how Pebble is built and tested, not benchmarks. No benchmark results have been published yet.", // [C-INF-6]
 } as const;
@@ -847,25 +867,26 @@ export const privacy = {
 export const install = {
   h2: "Install Pebble.",
   lead: "One line in Terminal, or the zip by hand. Both install the same app from the GitHub release.", // [C-INST-1]
+  /** Four cells, each a value and a note under it (design comp 2). The download cell's value is the release's size. */
   requirements: {
     title: "What you need",
-    rows: [
-      { label: "Mac", value: "Apple silicon (M1 or later)" }, // [C-INST-2]
-      { label: "macOS", value: "macOS 12 or later. Pebble 1.0 was built and tested on macOS 27." }, // [C-INST-2]
-      { label: "Download", value: "Pebble-macos-arm64.zip, 72 MB" }, // [C-REL-2]
-      { label: "Price", value: "Free. A cloud model's costs depend on your provider." }, // [C-INST-3]
-    ],
+    mac: { label: "Mac", value: "Apple silicon", note: "M1 or later" }, // [C-INST-2]
+    system: { label: "macOS", value: "macOS 12 or later", note: "Built and tested on macOS 27" }, // [C-INST-2] (OVERRIDES §8 H14)
+    download: { label: "Download", note: (version: string) => `Version ${version}` }, // [C-REL-1] [C-REL-2]
+    price: { label: "Price", value: "Free", note: "A cloud model's costs depend on your provider." }, // [C-INST-3]
   },
-  downloadRow: (sizeLabel: string) => `Pebble-macos-arm64.zip, ${sizeLabel}`,
   oneLine: {
     title: "Install in one line",
-    lead: "In Terminal:",
+    lead: "In Terminal, on your Mac:",
     command: release.installCommand, // [C-REL-4]
     copy: common.copy,
     copyAria: "Copy the install command",
     copied: "Copied, paste it in Terminal",
-    copyFailed: "Couldn't copy. Select the command and copy it yourself.",
-    phoneNote: "Run this on your Mac.",
+    copyFailed: "Couldn't copy automatically. The command is selected: copy it with ⌘C.", // the pill selects it (Install.pill.tsx)
+    /** The line under the pill (design comps 2 and 3): the installer's source, then two of its options, short. */
+    readFirst: { label: "Read the installer first", href: links.installScriptSource }, // [C-INST-9]
+    preview: "Add `-s -- --dry-run` after `bash` to see what it would do. Nothing changes.", // [C-INST-9] README.md@v1.0.1:40-43
+    uninstall: "Add `-s -- --uninstall` after `bash` to uninstall it later. The app is moved aside, and your data stays.", // [C-INST-13]
     whatItDoesTitle: "What the installer does",
     whatItDoes: [
       "Runs only on macOS on Apple silicon, not under Rosetta.", // [C-INST-4]
@@ -875,35 +896,19 @@ export const install = {
       "Never uses `sudo`, never changes Gatekeeper and never removes quarantine flags.", // [C-INST-8]
       "Never touches your data in `~/.pebble` or `~/Documents/Pebble`.", // [C-INST-8]
     ],
-    readFirst: {
-      label: "Read the installer first",
-      href: links.installScriptSource,
-      steps: [
-        "Download it: `curl -fsSL -o install.sh https://raw.githubusercontent.com/tohin003/Pebble/main/install.sh`",
-        "Read it.",
-        "Run it: `bash install.sh`",
-      ],
-    }, // [C-INST-9]
-    optionsTitle: "Options",
-    options: [
-      { flag: "--dry-run", command: installCommands.dryRun, description: "Shows what it would do. Nothing changes." }, // [C-INST-9]
-      { flag: "--uninstall", command: installCommands.uninstall, description: "Moves the app aside. Your data stays." }, // [C-INST-13]
-      { flag: "--version 1.0.1", command: installCommands.version, description: "Installs a specific release." }, // [C-INST-9]
-    ],
     quarantineNote:
       "The installer downloads with curl, which doesn't quarantine files, so macOS opens Pebble without the first-run warning.", // [C-INST-10]
   },
   byHand: {
-    title: "Or install by hand",
+    title: "Or download it and check it",
     downloadZip: "Download the zip",
-    downloadChecksums: "Download SHA256SUMS",
+    downloadChecksums: "SHA256SUMS",
+    /** Three steps; the checksum note sits under the first, where it applies (DESIGN §9). [C-INST-11] [C-DL-1] [C-DL-2] */
     steps: [
-      "From the latest release, download `Pebble-macos-arm64.zip` and `SHA256SUMS` into the same folder.",
-      "In Terminal, in that folder, run `shasum -a 256 -c SHA256SUMS`. It should print `Pebble-macos-arm64.zip: OK`.",
+      "Download both into one folder. In Terminal, in that folder, run `shasum -a 256 -c SHA256SUMS`. It should print `Pebble-macos-arm64.zip: OK`.",
       "Double-click the zip and drag `Pebble.app` to Applications.",
-      "The first time you open it, macOS may say it cannot verify the app, because Pebble is not notarized.",
-      "Allow Pebble alone: Control-click `Pebble.app`, choose Open, then Open again. On recent macOS versions, open System Settings › Privacy & Security and click Open Anyway next to the message about Pebble.",
-    ], // [C-INST-11]
+      "The first time you open it, macOS may say it cannot verify the app, because Pebble is not notarized. Allow Pebble alone: Control-click `Pebble.app`, choose Open, then Open again. On recent macOS versions, open System Settings › Privacy & Security and click Open Anyway next to the message about Pebble.",
+    ],
     checksumNote: "The checksum shows the download arrived intact. It does not prove who made it.", // [C-LIM-3]
     gatekeeper: "Never turn Gatekeeper off.", // [C-DL-3]
   },
@@ -918,21 +923,8 @@ export const install = {
       "Quit Pebble and run the installer again. It keeps the previous app in `~/PebbleBackups` and leaves your data where it is. Pebble 1.0 doesn't check for updates by itself, so watch the releases on GitHub.", // [C-INST-14]
     link: { label: "Releases on GitHub", href: links.releases, external: true } satisfies Link,
   },
-  uninstall: {
-    title: "Uninstall",
-    command: installCommands.uninstall,
-    body: "This moves `Pebble.app` to `~/PebbleBackups` and lists what Pebble keeps on your Mac. Your data is never touched.", // [C-INST-13]
-    removeAll: {
-      label: "How to remove everything, including Keychain items",
-      href: links.removeCompletely,
-      external: true,
-    } satisfies Link,
-  },
-  limits: {
-    title: "Before you install",
-    items: honestLimits.release,
-    link: "All of Pebble's limits",
-  },
+  /** After the short honest line next to the downloads: a link to the full list, the next section. */
+  limitsLink: "All of Pebble's limits",
 } as const;
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -991,16 +983,23 @@ export const footer = {
   /** Word for word from OVERRIDES §2. Show wherever the pebble appears. */
   credit: "Pebble's character engine: bloub by Jérémy Perret (MIT)",
   resting: "Pebble is resting. No telemetry.", // [C-FOOT-1] ("It never phones home" dropped: OVERRIDES §8 H14)
-  honestyStamp: (cookies: number, trackers: number, thirdPartyRequests: number) =>
-    `This page: ${plural(cookies, "cookie", "cookies")} · ${plural(trackers, "tracker", "trackers")} · ${plural(
-      thirdPartyRequests,
-      "third-party request",
-      "third-party requests",
-    )}`,
+  /**
+   * The honesty stamp, counted live in the browser (src/components/shell/Footer.stamp.tsx) and shown as a list, never
+   * as a middle-dot string (DESIGN §3). Nothing is shown until it has been counted. [I: C-F2B-3]
+   */
+  honestyStamp: {
+    lead: "This page:",
+    cookies: (n: number) => plural(n, "cookie", "cookies"),
+    trackers: (n: number) => plural(n, "tracker", "trackers"),
+    thirdParty: (n: number) => plural(n, "third-party request", "third-party requests"),
+  },
   honestyDetails: {
     summary: "How this is counted",
     body: "Your browser counts these live, from the list of files this page loaded and from `document.cookie`. Nothing is sent anywhere.",
+    trackers:
+      "A tracker is any request to a known analytics or advertising service, including Vercel's own analytics, and any beacon.",
     listHeading: "Files this page loaded",
+    otherSites: "Files from other sites",
     allSameOrigin: "Every file came from this site.",
   },
   trademarks: [
@@ -1119,6 +1118,9 @@ export const creditsPage = {
   lead: "Pebble and this site are built on other people's work. Thank you.",
   licenceNote:
     "This site's code is licensed under the Apache License 2.0. That licence doesn't cover the work below: each piece keeps its own licence.",
+  /** Above bloub's MIT notice, in full (critic M10). [C-F2B-4] */
+  bloubLicenceTitle: "bloub's licence",
+  bloubLicenceIntro: "bloub's code runs in this site's JavaScript, to draw the live pebble, so its MIT licence is reproduced here in full.",
   backHome: "Back to the home page",
 } as const;
 

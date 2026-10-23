@@ -1,0 +1,42 @@
+/* /privacy, in the plain-page column (src/components/shell/Article). */
+.body {
+  display: grid;
+  gap: 18px;
+  font-size: 17.5px;
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+.body p + p {
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.links {
+  display: grid;
+  gap: 6px;
+  margin-top: 30px;
+  font-size: 16px;
+  font-weight: 550;
+}
+
+.links li {
+  position: relative;
+  padding-left: 22px;
+}
+
+.links li::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: 0.6em;
+  width: 9px;
+  height: 8px;
+  background: var(--stone);
+  -webkit-mask: var(--galet-mask) center / contain no-repeat;
+  mask: var(--galet-mask) center / contain no-repeat;
+}
+
+.links a {
+  color: var(--ink);
+}

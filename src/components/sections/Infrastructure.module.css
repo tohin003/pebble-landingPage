@@ -1,4 +1,53 @@
-/* Infrastructure: stub styles (lane F1). The shared .section and .section-head helpers live in src/app/globals.css. */
+/* Built like infrastructure (DESIGN §5 row 10): a quiet ledger, hairlines and tabular figures, no tiles.
+   The shared .section and .section-head helpers live in src/app/globals.css. */
 .section {
-  position: relative; /* TODO(F2): the section's layout */
+  position: relative;
+}
+
+.ledger {
+  width: min(880px, 100%);
+  margin: 56px auto 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+  gap: 8px 32px;
+  padding: 19px 0 20px;
+  border-top: 1px solid var(--line);
+}
+
+.row dt {
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+/* no tabular figures here: Inter's would also widen the hyphen in "byte-identical" */
+.row dd {
+  font-size: 16.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.note {
+  width: min(880px, 100%);
+  margin: 20px auto 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+@media (max-width: 720px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    padding: 16px 0 17px;
+  }
+
+  .row dd {
+    font-size: 16px;
+  }
 }

@@ -1,10 +1,9 @@
-// Section 10, Built like infrastructure (DESIGN §5 row 10).
+// Section 10, Built like infrastructure (DESIGN §5 row 10; OVERRIDES §7).
 //
-// STUB by lane F1 (site shell): its id, its H2 from the copy, a path anchor and nothing else. TODO(F2): quiet and
-// typographic: the stack sentence, then 8,421 automated tests, 1,772 service checks and 40 validator suites in source
-// and frozen modes, and the release gates (OVERRIDES §7). No stat tiles. The H2 comes from src/content/stubs.ts until
-// the claims pass moves it into copy.ts.
-import { sectionStubs } from "@/content/stubs";
+// Quiet and typographic, no stat tiles: the stack sentence as the lead, then a two-column ledger with the README's own
+// row names (Tests, Service checks, Reproducible build, Release gates), then the note that these are engineering facts,
+// not benchmarks (OVERRIDES §2). The line passes beside the section (a "margin" anchor).
+import { infrastructure } from "@/content/copy";
 import { SECTIONS } from "@/lib/sections";
 import styles from "./Infrastructure.module.css";
 
@@ -15,11 +14,20 @@ export function Infrastructure() {
       className={`section ${styles.section}`}
       aria-labelledby="infrastructure-title"
       data-path-anchor="margin"
-      data-todo="F2"
     >
       <div className="section-head">
-        <h2 id="infrastructure-title">{sectionStubs.infrastructure.h2}</h2>
+        <h2 id="infrastructure-title">{infrastructure.h2}</h2>
+        <p className="lead">{infrastructure.stack}</p>
       </div>
+      <dl className={styles.ledger}>
+        {infrastructure.facts.map((fact) => (
+          <div key={fact.term} className={styles.row}>
+            <dt>{fact.term}</dt>
+            <dd>{fact.text}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className={styles.note}>{infrastructure.note}</p>
     </section>
   );
 }

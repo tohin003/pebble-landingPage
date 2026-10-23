@@ -1,21 +1,16 @@
 // The footer (DESIGN §5 row 15, comp 3): the line ends here and the pebble sleeps on it, in a dimmer pool of light;
-// then the colophon: wordmark, links, the theme and Pause motion toggles, the credits and the trademark notice.
-//
-// STRUCTURE ONLY: lane F2b fills it. TODO(F2b):
-// - the honesty stamp, counted live from PerformanceObserver and document.cookie (MASTER_PLAN §7.2 row 12), in the
-//   slot marked below; no static claim until it is computed;
-// - the resting note: copy.ts `footer.resting` still carries "It never phones home", which OVERRIDES §8 H14 drops.
-//   Only its first sentence is shown here until the claims pass fixes the copy.
+// then the colophon: wordmark, links, the theme and Pause motion toggles, and the fine print: the honesty stamp
+// (counted live in the browser by Footer.stamp.tsx; nothing shows until it has been counted), the bloub credit
+// (OVERRIDES §2), the licence line and the trademark notice. Structure by lane F1, content by lane F2b.
 import Link from "next/link";
 import { footer } from "@/content/copy";
 import { bloubCredit } from "@/content/credits";
 import { Pebble } from "@/components/pebble/Pebble";
+import { HonestyStamp } from "./Footer.stamp";
 import { MotionToggle } from "./MotionToggle";
 import { ThemeToggle } from "./ThemeToggle";
 import { Wordmark } from "./Wordmark";
 import styles from "./Footer.module.css";
-
-const restingNote = `${footer.resting.split(". ")[0]!.replace(/\.$/, "")}.`;
 
 export function Footer() {
   return (
@@ -28,7 +23,7 @@ export function Footer() {
           {/* the line ends here (src/components/line/PebblePath.tsx) */}
           <span className={styles.floor} data-path-anchor="floor" />
         </div>
-        <p className={styles.restNote}>{restingNote}</p>
+        <p className={styles.restNote}>{footer.resting}</p>
       </div>
 
       <div className={styles.colophon}>
@@ -53,7 +48,7 @@ export function Footer() {
           <MotionToggle variant="pill" />
         </div>
         <div className={styles.fine}>
-          {/* TODO(F2b): <HonestyStamp /> here, computed live. */}
+          <HonestyStamp />
           <p>{bloubCredit}</p>
           <p>{footer.licence}</p>
           {footer.trademarks.map((line) => (

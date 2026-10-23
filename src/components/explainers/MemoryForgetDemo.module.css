@@ -1,0 +1,228 @@
+/* MemoryForgetDemo: Pebble's forget card (src/style.css .forget-card at v1.0.1), at web scale, in the site's tokens. */
+.demo {
+  margin: 0;
+}
+
+/* A slice of the conversation: the request, then the card under it */
+.window {
+  display: grid;
+  gap: 18px;
+  padding: 26px 24px 24px;
+  border-radius: var(--r-card);
+  background: var(--bg-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.request {
+  justify-self: end;
+  max-width: 85%;
+  padding: 11px 16px;
+  border-radius: 14px;
+  background: var(--soft);
+  font-size: 15.5px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.card {
+  padding: 18px 20px 12px;
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow:
+    0 0 0 1px var(--line-2),
+    0 10px 28px -16px rgba(var(--shade), 0.22);
+}
+
+.heading {
+  font-family: var(--font-sans);
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
+}
+
+.note {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.list {
+  margin-top: 12px;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.memory {
+  flex: 1;
+  min-width: 0;
+  padding-top: 1px;
+}
+
+.memory p {
+  font-size: 15px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.memory small {
+  display: block;
+  margin-top: 3px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+/* the app's .secondary-button */
+.forget {
+  flex: none;
+  min-width: 76px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--panel);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  transition:
+    background-color var(--dur-fast) ease,
+    transform var(--dur-press) var(--ease-firm);
+}
+
+.forget:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .forget:hover {
+    background: var(--bg-2);
+  }
+}
+
+/* the app's .forget-done: the same box height as the button it replaces, so the row doesn't move */
+.forgotten {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 76px;
+  min-height: 36px;
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* the only motion: the label arrives in answer to the click (DESIGN §4) */
+:global(:root[data-motion="on"]) .forgotten {
+  transition:
+    opacity 240ms var(--ease-enter),
+    filter 240ms var(--ease-enter);
+}
+
+@starting-style {
+  :global(:root[data-motion="on"]) .forgotten {
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+
+/* the app's .forget-actions with its accent text buttons */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 20px;
+  padding-top: 2px;
+}
+
+.textButton {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 550;
+  text-decoration: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .textButton:hover {
+    text-decoration: underline;
+    text-decoration-color: currentColor;
+    text-underline-offset: 4px;
+  }
+}
+
+.caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 18px;
+  min-height: 36px;
+  margin-top: 14px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.caption > span {
+  flex: 1 1 18em;
+  text-wrap: pretty;
+}
+
+.reset {
+  flex: none;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--bg-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 550;
+  transition: transform var(--dur-press) var(--ease-firm);
+}
+
+.reset:active {
+  transform: scale(0.97);
+}
+
+:global(:root[data-motion="on"]) .reset {
+  transition:
+    opacity var(--dur-base) var(--ease-enter),
+    transform var(--dur-press) var(--ease-firm);
+}
+
+@starting-style {
+  :global(:root[data-motion="on"]) .reset {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .window {
+    padding: 18px 14px 14px;
+  }
+
+  .card {
+    padding: 14px 14px 8px;
+  }
+
+  .item {
+    gap: 10px;
+  }
+}

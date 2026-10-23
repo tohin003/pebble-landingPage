@@ -1,4 +1,282 @@
-/* Privacy: stub styles (lane F1). The shared .section and .section-head helpers live in src/app/globals.css. */
+/* Private by default (DESIGN §5 row 11): "Stored on your Mac" as an enclosure, "What leaves your Mac" outside it, and
+   the page's line passing through the small "Your Mac" pebble and branching to the five destinations.
+   The shared .section and .section-head helpers live in src/app/globals.css. */
 .section {
-  position: relative; /* TODO(F2): the section's layout */
+  position: relative;
+}
+
+/* The line's sweep above the section, for narrow screens only: a zero-height box at the section's top whose padding
+   copies the section's, so PebblePath centres the sweep exactly as it would on the section itself. */
+.crossAnchor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 0;
+  padding-top: var(--section-pad);
+  pointer-events: none;
+}
+
+.chip {
+  display: flex;
+  justify-content: center;
+}
+
+:global(:root[data-film="ready"]) .chip {
+  margin-top: 16px;
+}
+
+/* --- the diagram --- */
+.diagram {
+  position: relative;
+  width: min(1060px, 100%);
+  margin: 60px auto 0;
+}
+
+.nodeRow {
+  position: relative;
+  height: 64px;
+}
+
+.nodeLabel {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.3;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+/* the small pebble the line runs through */
+.node {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  z-index: 1;
+  width: 24px;
+  height: 21.2px;
+  transform: translateX(-50%);
+  background: var(--pebble);
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 136px;
+  margin-top: 30px;
+}
+
+.columnTitle {
+  position: relative;
+  font-size: clamp(19px, 0.4vw + 15px, 21px);
+}
+
+/* "Stored on your Mac": a quiet enclosure, the things that stay inside, as tall as its own contents */
+.stored {
+  align-self: start;
+  padding: 28px 30px 30px;
+  border-radius: var(--r-card);
+  background: var(--bg-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.storedList {
+  display: grid;
+  gap: 13px;
+  margin-top: 18px;
+}
+
+.storedList li {
+  position: relative;
+  padding-left: 22px;
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.storedList li::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: 0.62em;
+  width: 9px;
+  height: 8px;
+  background: var(--stone);
+  -webkit-mask: var(--galet-mask) center / contain no-repeat;
+  mask: var(--galet-mask) center / contain no-repeat;
+}
+
+.storedList code {
+  color: var(--ink);
+}
+
+/* "What leaves your Mac": outside, each destination at the end of a strand */
+.leaves {
+  padding-top: 28px;
+}
+
+.originMark {
+  display: none;
+}
+
+.leavesList {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.leavesList li {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  padding-left: 26px;
+}
+
+.mark {
+  position: absolute;
+  left: 0;
+  top: 0.42em;
+  width: 11px;
+  height: 9.7px;
+  background: var(--trail);
+}
+
+.destination {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.detail {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.strands {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.strand {
+  fill: none;
+  stroke: var(--trail);
+  stroke-width: 1.35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition-property: stroke-dashoffset;
+  transition-timing-function: cubic-bezier(0.33, 1, 0.68, 1); /* easeOutCubic: Privacy.strands.tsx times the strands to it */
+}
+
+/* --- each column's own notes, under a hairline --- */
+.columnNotes {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.stored .columnNotes {
+  border-top-color: var(--line-2);
+}
+
+.columnNotes .local {
+  color: var(--ink);
+}
+
+.columnNotes code {
+  color: var(--ink);
+}
+
+.columnNotes a {
+  color: var(--ink);
+}
+
+/* Wide screens: the line's stop is the node; no sweep above the section. */
+@media (min-width: 900px) {
+  .crossAnchor {
+    display: none;
+  }
+}
+
+@media (max-width: 1100px) and (min-width: 900px) {
+  .columns {
+    column-gap: 104px;
+  }
+}
+
+/* Narrow screens: no node (and so no stop); the strands become a comb down the destinations' left edge, from the
+   small mark beside the column title. */
+@media (max-width: 899px) {
+  .nodeRow {
+    display: none;
+  }
+
+  .diagram {
+    max-width: 620px;
+    margin-top: 44px;
+  }
+
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 40px;
+    margin-top: 0;
+  }
+
+  .leaves {
+    padding-top: 0;
+  }
+
+  .leaves .columnTitle {
+    padding-left: 44px;
+  }
+
+  .originMark {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 11px;
+    height: 9.7px;
+    transform: translateY(-50%);
+    background: var(--pebble);
+  }
+
+  .leavesList li {
+    padding-left: 44px;
+  }
+
+  .mark {
+    left: 24px;
+  }
+
+  .leaves .columnNotes {
+    margin-left: 44px;
+  }
+}
+
+@media (max-width: 560px) {
+  .stored {
+    padding: 22px 18px 24px;
+  }
+}
+
+/* 900–1279 px: the pebble's path runs in the page's gutter (src/components/line/geometry.ts, margins()), so the
+   diagram keeps 48 px further in on each side, clear of its sway. */
+@media (min-width: 900px) and (max-width: 1279px) {
+  .diagram {
+    width: min(1060px, calc(100% - 96px));
+  }
 }
