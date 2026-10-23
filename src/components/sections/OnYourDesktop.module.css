@@ -1,14 +1,11 @@
-/* Section 4, On your desktop. */
-.section {
-  position: relative;
-}
+/* Section 4, On your desktop (DESIGN-LEXINGTON §6 On your desktop): the scene across columns 1–12, then its caption,
+   the three facts and the limit from column 4. */
 
 /* The frame keeps the loop's 16:10 on wider screens, so nothing moves when loop L1 arrives; phones get a 4:5 corner
    of the desktop, where the quick chat is large enough to read. MediaFrame reads --desk-aspect. */
 .vignette {
   --desk-aspect: 16 / 10;
-  width: min(var(--w-content), 100%);
-  margin: 56px auto 0;
+  margin: 0;
 }
 
 .loop {
@@ -57,7 +54,7 @@
   aspect-ratio: 1;
 }
 
-/* a soft contact shadow under the pebble's body (centre 85.2 % across, body bottom 95.8 % down) */
+/* the pebble's contact shadow under its body (centre 85.2 % across, body bottom 95.8 % down): part of the character */
 .companion::after {
   content: "";
   position: absolute;
@@ -75,6 +72,12 @@
   background: radial-gradient(closest-side, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
 }
 
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .companion::after {
+    background: radial-gradient(closest-side, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
+  }
+}
+
 /* With loop L1 rendered, wider screens play it; phones keep the still corner unless L1 has a 4:5 phone cut. */
 @media (min-width: 561px) {
   .vignette[data-loop] .corner {
@@ -89,17 +92,15 @@
   }
 }
 
+/* --- under the scene, from column 4 --- */
+.captionRow {
+  margin-top: 14px;
+}
+
 .caption {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 6px 22px;
-  margin-top: 16px;
-  font-size: 14.5px;
+  font-size: 13px;
   line-height: 1.5;
   color: var(--ink-2);
-  text-align: center;
 }
 
 /* "Move your pointer, and its eyes follow.": only where that is true (a pointer, and motion on) */
@@ -113,59 +114,61 @@
   }
 }
 
-/* three short facts, a quiet list with hairlines (no cards) */
+.facts {
+  margin-top: 40px;
+}
+
+/* the three facts: a hairline list of three columns, no cards; each column is three of the main column's nine */
 .points {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px 40px;
-  width: min(var(--w-content), 100%);
-  margin: 52px auto 0;
+  column-gap: var(--gap);
 }
 
 .points li {
-  padding-top: 18px;
+  padding-top: 16px;
   border-top: 1px solid var(--line);
   font-size: 16px;
   line-height: 1.6;
-  color: var(--ink-2);
-  text-align: left;
 }
 
+/* the limit, beside the promise and at the same size (PHILOSOPHY 3) */
 .limit {
-  width: min(var(--w-content), 100%);
-  margin: 22px auto 0;
-  font-size: 14.5px;
-  line-height: 1.55;
+  margin-top: 20px;
+  font-size: 16px;
+  line-height: 1.6;
   color: var(--ink-2);
-  text-align: left;
 }
 
-@media (max-width: 899px) {
+@media (max-width: 1023px) {
   .companion {
     height: 84%;
     right: 5%;
     bottom: 1.5%;
   }
 
+  .facts {
+    margin-top: 32px;
+  }
+
   .points {
     grid-template-columns: minmax(0, 1fr);
-    gap: 0;
-    margin-top: 40px;
   }
 
   .points li {
-    padding: 14px 0;
+    padding-block: 14px;
   }
 
   .limit {
-    margin-top: 10px;
+    margin-top: 6px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
   }
 }
 
 @media (max-width: 560px) {
   .vignette {
     --desk-aspect: 4 / 5;
-    margin-top: 40px;
   }
 
   .companion {
