@@ -82,6 +82,9 @@ ap.add_argument("--opening", choices=["warm", "mallet"], default="warm",
                 help="'warm' (the default since lane M2: bar 1 re-voiced, see above) or 'mallet' (the score's hook on "
                      "the marimba as written: lane C2's bed)")
 ap.add_argument("--opening-spec", default="{}", help="JSON overrides of OPENING_SPEC, for experiments")
+ap.add_argument("--levels-from", help="a bed's .score.json: play every bus, the master stage and the bed's normalisation "
+                                      "at that bed's measured levels instead of this render's (a short compose_score.py "
+                                      "--form then sounds exactly like the film's bars)")
 a = ap.parse_args()
 
 SR = 48000
@@ -234,13 +237,13 @@ def peak_freq(mag, freqs, fc, cents):
 
 def need_s(part):
     """The longest stretch of any sample this part plays (s, at the written pitch)."""
-    evs = [e for e in EVENTS if e["bus"] == part]
+    evs = [e for e in EVENTS if e["bus"] == part]                  # (a short --form may not play every part)
     if part == "vibes":
-        return max(e["hold"] for e in evs) + 0.3
+        return max((e["hold"] for e in evs), default=0.0) + 0.3
     if part == "pad":
-        return max(e["dur"] + e["rel"] for e in evs) + 0.1
+        return max((e["dur"] + e["rel"] for e in evs), default=0.0) + 0.1
     if part == "bass":
-        return max(e["dur"] for e in evs) + 0.2
+        return max((e["dur"] for e in evs), default=0.0) + 0.2
     if PARTS[part].get("ring"):
         return PARTS[part]["ring"] + 0.3
     return PARTS[part]["cap"] + 0.05
@@ -611,13 +614,17 @@ bus_report = {}
 dry = np.zeros((2, N))
 send = np.zeros((2, N))
 stems = {}
+# --levels-from: a short --form of the cue takes the film bed's measured levels (exact floats from its .score.json)
+# instead of measuring its own, so every bar it shares with the film is played at the film's gains
+LEVELS = json.load(open(a.levels_from))["levels"] if a.levels_from else None
+levels = {"bus": {}}
 for b in BUSES:
     # a bus whose opening was re-voiced is calibrated on its copy of the score as written, so the re-voicing moves
     # nothing outside bars 1-2: the same two gains then apply to what is heard
     x = bus.pop(b).astype(np.float64)
     ref = cal.pop(b).astype(np.float64) if b in cal else None
     target = ORIGINAL_STEM_LUFS[b] + OFFSET_DB[b]
-    l0 = lufs(x if ref is None else ref)
+    l0 = LEVELS["bus"][b][0] if LEVELS else lufs(x if ref is None else ref)
     for k, z in enumerate([x] if ref is None else [x, ref]):
         z = z * 10 ** ((target - l0) / 20)                         # pre-gain to the target, then the chain ...
         if b in PRE_LOWPASS:
@@ -627,7 +634,8 @@ for b in BUSES:
             ref = z
         else:
             x = z
-    l1 = lufs(x if ref is None else ref)
+    l1 = LEVELS["bus"][b][1] if LEVELS else lufs(x if ref is None else ref)
+    levels["bus"][b] = [l0, l1]
     x = x * 10 ** ((target - l1) / 20)                             # ... and trimmed back to it after the chain
     if a.stems:
         stems[b] = x.astype(np.float32)
@@ -654,7 +662,8 @@ lead = k + int(0.01 * SR)
 ride = np.concatenate([ride[lead:], np.full(lead, ride[-1])])
 mix *= ride
 # master: working level -20 LUFS, gentle EQ, light glue compression, a brick-wall limiter 13 dB above the loudness
-work = 10 ** ((-20.0 - lufs(mix)) / 20)
+levels["mix"] = LEVELS["mix"] if LEVELS else lufs(mix)
+work = 10 ** ((-20.0 - levels["mix"]) / 20)
 mix *= work
 mix = P_(mix, [HighpassFilter(30), LowShelfFilter(110, -0.5), HighShelfFilter(9000, 0.5),
                Compressor(threshold_db=-27, ratio=1.6, attack_ms=30, release_ms=300)])
@@ -666,7 +675,7 @@ mix = P_(mix, [BrickwallLimiter(ceiling_db=CEIL, release_ms=80, lookahead_ms=5, 
 f = int(0.6 * SR)                                                  # the ringing chord lands in silence on the last frame
 mix[:, -f:] *= np.linspace(1, 0, f) ** 2
 mix[:, : int(0.002 * SR)] *= np.linspace(0, 1, int(0.002 * SR))
-lufs0 = lufs(mix)
+lufs0 = levels["out"] = LEVELS["out"] if LEVELS else lufs(mix)
 TARGET = -18.0
 mix *= 10 ** ((TARGET - lufs0) / 20)
 pk = float(np.abs(mix).max())
@@ -701,7 +710,12 @@ info = {"title": "Pebble launch cue (sampled instruments)", "bpm": BPM, "meter":
                     "notes_played_instead": sum(1 for e in EVENTS if e.get("added"))},
         "bus_levels": bus_report, "offset_db": OFFSET_DB, "limiter": limiter,
         "sections": score["sections"], "chords": score["chords"],
-        "bar_rms_db": bar_rms}
+        "bar_rms_db": bar_rms,
+        "levels": {**levels, "from": a.levels_from or "measured on this render",
+                   "about": "integrated LUFS, exact: per bus [before the chain, after it], the mix before the master, the "
+                            "bed before its -18 LUFS normalisation (what --levels-from reuses)"}}
+if "form" in score:
+    info["form"] = score["form"]
 json.dump(info, open(a.out.rsplit(".", 1)[0] + ".score.json", "w"), indent=1)
 if a.report:
     os.makedirs(a.report, exist_ok=True)

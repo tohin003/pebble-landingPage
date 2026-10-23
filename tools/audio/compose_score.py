@@ -14,11 +14,18 @@ Form (100 BPM, 4/4, D major, 32 bars = 76.8 s = 2,304 frames at 30 fps; a beat i
   bars 31-32  final chord D(add9) on the bar-31 downbeat, left to ring for 4.8 s (back-timed end)
 Timing is exact (no rubato); notes get +-3 ms of humanisation, downbeats +-1 ms, so the beat grid is frame-accurate.
 
-Usage: python -I compose_score.py OUT.wav [--seed 7] [--stems DIR] [--events EVENTS.json]
+Arrangements (--form): the bars above, in the order a cut plays them. "film" is the 32-bar cue. A short form plays
+whole bars of this same score on a new grid of bars: each bar keeps its own chord, section, energy and fader ride, and
+the joints fall on bar lines, so a cut of the film that keeps the film's bar phase stays on the beat. See FORMS.
+
+Usage: python -I compose_score.py OUT.wav [--seed 7] [--form film|x30|x30-product|<bar,bar,...>] [--stems DIR]
+       [--events EVENTS.json]
 Writes OUT.wav (48 kHz, 24-bit, un-mastered bed at about -18 LUFS) and OUT.score.json (form, cue times, levels).
 --events also writes every note event (bus, instrument, pitch, nominal and humanised velocity and time, durations, pan)
 plus the fader ride, for tools/audio/render_sampled.py. Recording the events only reads values the score already
-computes: it draws nothing from the random generator, so OUT.wav stays bit-identical with or without it.
+computes: it draws nothing from the random generator, so OUT.wav stays bit-identical with or without it. In a short
+form an event's `bar` is the score's bar it comes from (so the sampler's per-bar touches still find bars 1, 2 and 31),
+`out_bar` the arrangement's bar it plays in, and `t_grid` / `t` are times on the arrangement's own timeline.
 """
 import argparse
 import json
@@ -35,14 +42,33 @@ ap.add_argument("out")
 ap.add_argument("--seed", type=int, default=7)
 ap.add_argument("--stems")
 ap.add_argument("--events")
+ap.add_argument("--form", default="film", help="a name from FORMS, or the score's bars in playing order, e.g. 1,6,7,8")
 a = ap.parse_args()
 
 SR = 48000
 BPM = 100.0
 BEAT = 60.0 / BPM          # 0.6 s
 BAR = 4 * BEAT             # 2.4 s
-N_BARS = 32
-LEN_S = N_BARS * BAR       # 76.8 s
+N_BARS = 32                # the score's bars (PROG, ENERGY, RIDE and the sections are keyed by them)
+# Arrangements: the score's bars in the order they play (.work/film/x30/PLAN.md for the two 30 s cuts for X)
+FORMS = {
+    "film": list(range(1, N_BARS + 1)),
+    # the 30 s cut, reveal first (recommended): the hook (1), the build into the reveal (6-7, the breath, the riser's
+    # bars), the reveal (8), the groove under the held lockup (9), the AgentGuard proof as in the film (14-17), then the
+    # end card's own plagal cadence (30 Gmaj9 -> 31 D(add9)) and its ring (32). Joints: I -> IV, I -> V6, ii7 -> IV.
+    "x30": [1, 6, 7, 8, 9, 14, 15, 16, 17, 30, 31, 32],
+    # the fallback cut, product first: the hook (1), the groove (13) and the proof (14-17), the build (6-7), and the
+    # end card from its landing (29-32). Joints: I -> I, ii7 -> IV, V -> I.
+    "x30-product": [1, 13, 14, 15, 16, 17, 6, 7, 29, 30, 31, 32],
+}
+try:
+    FORM = FORMS[a.form] if a.form in FORMS else [int(b) for b in a.form.split(",")]
+except ValueError:
+    ap.error(f"--form {a.form!r}: a name ({', '.join(FORMS)}) or a comma list of bars")
+if not FORM or any(not 1 <= b <= N_BARS for b in FORM):
+    ap.error(f"--form {a.form!r}: every bar must be 1-{N_BARS}")
+OUT_BARS = len(FORM)       # 32 for the film
+LEN_S = OUT_BARS * BAR     # 76.8 s for the film
 N = int(round(LEN_S * SR))
 rng = np.random.default_rng(a.seed)
 
@@ -266,6 +292,12 @@ B_LINE = {17: [(1.0, "B4", .5), (1.5, "E5", .5), (2.0, "D5", .25), (2.25, "E5", 
 
 notes = []    # (bus, start_s, signal, pan, kind)
 events = []   # one dict per note, in the same order (written by --events)
+cur = {"out": 1}   # the arrangement's bar being written (in the film form it is the score's bar itself)
+
+
+def at(beat):
+    """Seconds at a beat of the arrangement's bar being written."""
+    return t_of(cur["out"], beat)
 
 
 def jitter(beat):
@@ -274,9 +306,10 @@ def jitter(beat):
 
 
 def put(bus, bar, beat, sig, pan=0.0, exact=False):
-    t = t_of(bar, beat) + (0.0 if exact else jitter(beat))
+    t = at(beat) + (0.0 if exact else jitter(beat))
     notes.append((bus, max(0.0, t), sig, pan))
-    events.append(dict(_inst_last, bus=bus, bar=bar, beat=beat, t_grid=t_of(bar, beat), t=max(0.0, t), pan=pan, exact=exact))
+    events.append(dict(_inst_last, bus=bus, bar=bar, out_bar=cur["out"], beat=beat, t_grid=at(beat), t=max(0.0, t), pan=pan,
+                       exact=exact))
 
 
 def hv(v, spread=0.05):
@@ -303,7 +336,8 @@ OSTINATO = [0, 2, 4, 2, 1, 3, 4, 3]              # eighth-note pattern over the 
 OST_ACC = [1.0, .72, .86, .7, .94, .72, .84, .74]
 KAL_332 = [1.0, 2.5, 4.0]                        # 3+3+2 kalimba accents (in beats)
 
-for bar in range(1, N_BARS + 1):
+for out_bar, bar in enumerate(FORM, 1):     # `bar` is the score's bar: its material; `out_bar` places it
+    cur["out"] = out_bar
     key = PROG[bar]
     _, bass_m, voicing, arp = CH[key]
     e = ENERGY[bar]
@@ -424,9 +458,10 @@ for bar in range(1, N_BARS + 1):
         r_t, k = 0.0, 0
         while r_t < 2.2:                                                    # a roll on D4/A4 dying away
             v = 0.34 * (1 - r_t / 2.4) ** 1.5
-            notes.append(("mallet", t_of(31) + r_t + 0.06, marimba(mtof(nm("D4" if k % 2 else "A4")), hv(max(v, 0.05), 0.08)), -0.1 + 0.2 * (k % 2)))
-            events.append(dict(_inst_last, bus="mallet", bar=31, beat=1.0 + (r_t + 0.06) / BEAT, t_grid=t_of(31) + r_t + 0.06,
-                               t=t_of(31) + r_t + 0.06, pan=-0.1 + 0.2 * (k % 2), exact=True, roll=True))
+            notes.append(("mallet", at(1.0) + r_t + 0.06, marimba(mtof(nm("D4" if k % 2 else "A4")), hv(max(v, 0.05), 0.08)), -0.1 + 0.2 * (k % 2)))
+            events.append(dict(_inst_last, bus="mallet", bar=31, out_bar=cur["out"], beat=1.0 + (r_t + 0.06) / BEAT,
+                               t_grid=at(1.0) + r_t + 0.06, t=at(1.0) + r_t + 0.06, pan=-0.1 + 0.2 * (k % 2), exact=True,
+                               roll=True))
             r_t += 0.085 + 0.01 * rng.random()
             k += 1
 
@@ -493,8 +528,8 @@ mix = dry + 0.55 * wet
 RIDE = {7: -1.0, 8: 3.0, 22: 1.5, 23: 3.0, 24: 3.0, 25: 3.0, 26: 1.5, 27: 1.5, 28: 1.5, 29: 0.5, 30: 0.5, 31: 1.0, 32: 1.0}
 RIDE.update({b: 0.5 + 0.1 * (b - 9) for b in range(9, 22)})
 ride_db = np.zeros(N)
-for bar in range(1, N_BARS + 1):
-    s = int(round(t_of(bar) * SR))
+for out_bar, bar in enumerate(FORM, 1):                                       # each bar keeps its own ride
+    s = int(round(t_of(out_bar) * SR))
     ride_db[s:] = RIDE.get(bar, 0.0)
 k = int(0.06 * SR)
 ride = 10 ** (np.convolve(np.pad(ride_db, (k, 0), mode="edge"), np.ones(k) / k, "valid")[: N] / 20)
@@ -522,27 +557,39 @@ if a.stems:
         sf.write(f"{a.stems}/{b}.wav", (x * 10 ** ((target - lufs0) / 20)).T, SR, subtype="PCM_24")
 
 bar_rms = []
-for bar in range(1, N_BARS + 1):
+for bar in range(1, OUT_BARS + 1):
     s, z = int(t_of(bar) * SR), int(t_of(bar + 1) * SR)
     bar_rms.append(round(float(10 * np.log10(np.mean(mix[:, s:z] ** 2) + 1e-12)), 1))
-info = {"title": "Pebble launch cue", "bpm": BPM, "meter": "4/4", "key": "D major", "bars": N_BARS,
+# the sections as they fall on the arrangement's bars (runs of one section; the film form gives SECTION itself)
+runs = []
+for out_bar, bar in enumerate(FORM, 1):
+    name = next(s for s, a0, a1 in SECTION if a0 <= bar <= a1)
+    if runs and runs[-1]["name"] == name and runs[-1]["last_bar"] == out_bar - 1:
+        runs[-1]["last_bar"] = out_bar
+    else:
+        runs.append({"name": name, "first_bar": out_bar, "last_bar": out_bar, "start_s": round(t_of(out_bar), 3)})
+info = {"title": "Pebble launch cue", "bpm": BPM, "meter": "4/4", "key": "D major", "bars": OUT_BARS,
         "duration_s": LEN_S, "seed": a.seed, "integrated_lufs": round(float(meter.integrated_loudness(mix.T)), 2),
         "sample_peak_dbfs": round(20 * np.log10(np.abs(mix).max()), 2), "notes": len(notes),
-        "sections": [{"name": s, "first_bar": a0, "last_bar": a1, "start_s": round(t_of(a0), 3)} for s, a0, a1 in SECTION],
-        "chords": {str(b): CH[PROG[b]][0] for b in range(1, N_BARS + 1)},
+        "sections": runs,
+        "chords": {str(i): CH[PROG[b]][0] for i, b in enumerate(FORM, 1)},
         "motif": "D5 A5 G#5 A5 (eighth, eighth, sixteenth, dotted eighth tied)",
         "bar_rms_db": bar_rms}
+if a.form != "film":
+    info["form"] = {"name": a.form, "score_bars": FORM}
 json.dump(info, open(a.out.rsplit(".", 1)[0] + ".score.json", "w"), indent=1)
 if a.events:
     for ev in events:
         ev["midi"] = None if ev["f"] is None else round(69 + 12 * float(np.log2(ev["f"] / 440.0)), 4)
     json.dump({"title": "Pebble launch cue: note events", "seed": a.seed, "bpm": BPM, "beat_s": BEAT, "bar_s": BAR,
-               "bars": N_BARS, "duration_s": LEN_S, "sample_rate": SR,
+               "bars": OUT_BARS, "duration_s": LEN_S, "sample_rate": SR, "form": {"name": a.form, "score_bars": FORM},
                "about": ("Every note of compose_score.py in render order. t_grid = the written time (bar, beat), t = the "
                          "time the synthesised score plays it (with its humanisation); vel_nominal = the written velocity, "
                          "vel = the humanised one; f in Hz (None for unpitched kick and shaker); exact = placed on the grid "
-                         "without timing jitter; roll = the final marimba roll, timed off the grid on purpose."),
-               "ride_db_by_bar": {str(b): RIDE.get(b, 0.0) for b in range(1, N_BARS + 1)},
+                         "without timing jitter; roll = the final marimba roll, timed off the grid on purpose. bar = the "
+                         "score's bar the note comes from; out_bar = the bar of this arrangement it plays in (form); "
+                         "t_grid and t are on the arrangement's timeline; ride_db_by_bar is keyed by out_bar."),
+               "ride_db_by_bar": {str(i): RIDE.get(b, 0.0) for i, b in enumerate(FORM, 1)},
                "bus_chain": {b: {"gain_db": g, "reverb_send": s} for b, (_, g, s) in CHAIN.items()},
                "sections": info["sections"], "chords": info["chords"], "events": events},
               open(a.events, "w"), indent=0)
