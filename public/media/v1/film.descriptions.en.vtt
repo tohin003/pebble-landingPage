@@ -1,0 +1,41 @@
+WEBVTT
+
+NOTE
+Pebble launch film: text descriptions of what the film shows, read aloud by the audio-description toggle.
+Generated from chapters.ts chapter descriptions (one cue a chapter, FILM_SPEC §18) by tools/captions/build.mjs.
+
+d-desktop
+00:00:00.000 --> 00:00:21.600
+A calm sage-green desktop with the pebble in its lower-right corner. The pointer moves in and the pebble's eyes follow it. A click opens the quick chat, the question “What does ‘day is out of range for month’ mean?” is sent, and the pebble starts thinking. The camera moves into the pebble. Three questions appear one at a time on a sage background, then the line “An agent shouldn't grade its own work”. The pebble hops in, leaps and lands as the full stop of the word “pebble.”, and the screen turns light.
+
+d-project
+00:00:21.600 --> 00:00:28.800
+The pebble hops into Pebble's window on the invoice-kit project; the status line reads “Reading invoice_kit/dates.py”. An approval card for invoice_kit/dates.py shows the change. The pointer clicks Apply edit, and the card shows Done, with Undo this edit.
+
+d-tested
+00:00:28.800 --> 00:00:40.800
+Pebble's reply says both edits are in, but the task is held: “Blocked” and “Pebble's change isn't verified yet.”, with Run the tests, Ask Pebble to finish and Accept as unverified. The pointer clicks Run the tests. A “Run isolated tests” card reads “Runs the project's tests in a temporary copy. Your project files don't change.” The pointer clicks Run tests; the steps show “Requesting isolated tests · 11 s”, then “Verified · pytest 42 passed on current files”. Pebble's final reply says the tests ran in an isolated copy and both edits are verified, and the pebble celebrates.
+
+d-model
+00:00:40.800 --> 00:00:44.400
+Settings › Models: the model on this Mac, and the ways to add one: Add a model file, Connect provider and Continue with ChatGPT.
+
+d-pace
+00:00:44.400 --> 00:00:48.000
+Settings › Permissions. The pointer chooses Auto in project instead of Ask for approval, with each mode's own words on screen.
+
+d-memory
+00:00:48.000 --> 00:00:52.800
+Settings › Memory shows the six kinds of memory and the saved records. The pointer clicks the bin next to “Uses metric units and 24-hour times.”, and the record disappears.
+
+d-views
+00:00:52.800 --> 00:01:00.000
+A “Lisbon trip budget” dashboard. Its spending chart grows until it fills the screen. Then a quiz asks “What does date(2026, 1, 31) + timedelta(days=1) return?”
+
+d-open-source
+00:01:00.000 --> 00:01:07.200
+Lines appear one at a time on a sage background.
+
+d-get
+00:01:07.200 --> 00:01:16.800
+The pebble hops in and becomes the full stop of the “pebble.” wordmark. The film ends on the project's GitHub address.

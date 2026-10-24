@@ -1,0 +1,113 @@
+WEBVTT
+
+NOTE
+Pebble launch film: captions (sound descriptions and the on-screen lines).
+Generated from docs/film-captions.json by tools/captions/build.mjs; edit the JSON, not this file.
+
+c01
+00:00:00.000 --> 00:00:01.200
+[Gentle music begins]
+
+c02
+00:00:01.200 --> 00:00:02.400
+[Click]
+
+c03
+00:00:04.800 --> 00:00:07.200
+What did it change?
+
+c04
+00:00:07.200 --> 00:00:09.600
+Can I undo it?
+
+c05
+00:00:09.600 --> 00:00:12.000
+Did it run the tests?
+
+c06
+00:00:12.000 --> 00:00:15.600
+[Music builds]
+An agent shouldn't grade its own work
+
+c07
+00:00:15.600 --> 00:00:16.800
+[Rising swell]
+
+c08
+00:00:16.800 --> 00:00:20.400
+[Soft thud]
+A small companion for your Mac
+
+c09
+00:00:20.400 --> 00:00:21.600
+[Music picks up]
+
+c10
+00:00:22.200 --> 00:00:24.133
+It reads your project
+
+c11
+00:00:25.200 --> 00:00:28.800
+Review, apply, undo
+
+c12
+00:00:31.200 --> 00:00:34.800
+AgentGuard checks the evidence
+
+c13
+00:00:34.800 --> 00:00:38.200
+Tests run in an isolated copy
+
+c14
+00:00:38.400 --> 00:00:40.600
+[Soft shimmer]
+Evidence before done
+
+c15
+00:00:41.000 --> 00:00:44.400
+Your model, your choice
+Even one on your Mac
+
+c16
+00:00:45.000 --> 00:00:47.800
+You set what it may do
+
+c17
+00:00:48.600 --> 00:00:52.800
+Memory you can read and forget
+
+c18
+00:00:52.800 --> 00:00:55.400
+[Music swells]
+Views, not just text
+
+c19
+00:01:00.000 --> 00:01:02.400
+Free and open source
+Apache-2.0
+
+c20
+00:01:02.400 --> 00:01:04.200
+No telemetry
+
+c21
+00:01:04.200 --> 00:01:07.200
+Your keys stay in your Keychain
+
+c22
+00:01:07.200 --> 00:01:09.600
+[Soft thud]
+
+c23
+00:01:09.600 --> 00:01:12.000
+A little help, right here.
+
+c24
+00:01:12.000 --> 00:01:15.000
+[Final chord]
+Free for Macs with Apple silicon
+
+c25
+00:01:15.000 --> 00:01:16.800
+github.com/tohin003/Pebble
+Shown with sample data
