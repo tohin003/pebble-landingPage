@@ -168,14 +168,17 @@ async function indicatorDiff(page, info) {
     return list;
   });
   await sleep(160);
-  const focused = await page.screenshot({ clip });
+  // captureBeyondViewport: false. puppeteer 25's clip screenshot otherwise resizes the viewport to 1 × 1 px for a
+  // moment: every (max-width: 560px) query turns true and back, so a loop without a phone cut unmounts its video and
+  // its pause button and mounts new ones. The focused button was gone, focus() on it did nothing, and the walk went
+  // from <body> back to the new button on every Tab, 500 times (the film teaser's and the models clip's at 1440 px).
+  // The stop is on screen, so the shot needs nothing beyond the viewport.
+  const focused = await page.screenshot({ clip, captureBeyondViewport: false });
   const handle = await page.evaluateHandle(() => document.activeElement);
   await page.evaluate((el) => el.blur(), handle);
   await sleep(260);
-  const blurred = await page.screenshot({ clip });
-  // Focus the stop again, so the next Tab continues from it. A focus() right after a screenshot sometimes didn't take
-  // over a loop that had just started (1440 px, the film teaser's button): the walk then went from <body> back to the
-  // same stop on every Tab, 500 times. Check, and try again.
+  const blurred = await page.screenshot({ clip, captureBeyondViewport: false });
+  // Focus the stop again, so the next Tab continues from it; check, and try again.
   for (let attempt = 0; attempt < 4; attempt++) {
     const back = await page.evaluate((el) => {
       el.focus({ preventScroll: true });
