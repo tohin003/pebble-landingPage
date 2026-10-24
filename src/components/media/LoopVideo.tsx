@@ -6,8 +6,10 @@
 // - Sources are attached only when the loop comes within 200 px of the viewport (preload="none" until then), or, with
 //   `defer="interaction"`, not before the visitor's first scroll, tap or key press, or a few idle seconds after load
 //   (critic H7, for the film teaser).
-// - It plays when at least 35 % of it is visible, pauses off-screen and while the tab is hidden, and at most two loops
-//   play at once (the two most visible).
+// - It plays on its own when at least 35 % of it is visible and no live pebble is on screen (the pebble is the one
+//   thing that moves unasked: PHILOSOPHY principle 1, critic C08; html[data-live-pebble], set by the pebble conductor).
+//   It pauses off-screen and while the tab is hidden, and one loop plays at a time (the most visible, or the one the
+//   visitor started).
 // - A visible pause and play button (WCAG 2.2.2). Reduced motion or Pause motion: no autoplay; the poster stays with a
 //   play button, and the visitor can still start it.
 // - Phones (<= 560 px): the 4:5 punch-in when one exists, in its own shape and with its own poster; otherwise the
@@ -16,6 +18,7 @@
 // - Nothing rendered yet: the poster alone, or `fallback` (for example a real-UI still). Never a broken player.
 // - The pause and play galet floats on the picture with a 1 px ring, no shadow (DESIGN-LEXINGTON §3.5).
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { LIVE_PEBBLE, PEBBLE_LIVE } from "@/components/pebble/events";
 import { Icon } from "@/components/shell/icons";
 import { media as mediaCopy } from "@/content/copy";
 import { useMotionMode } from "@/lib/hooks";
@@ -24,19 +27,21 @@ import { Picture } from "./Picture";
 import styles from "./LoopVideo.module.css";
 
 const PLAY_RATIO = 0.35;
-const MAX_PLAYING = 2;
+const MAX_PLAYING = 1;
 const PHONE_QUERY = "(max-width: 560px)";
 
-// ---- one conductor for every loop on the page: the two most visible eligible loops play -----------------------
+// ---- one conductor for every loop on the page: the most visible eligible loop plays -------------------------------
 // A loop the visitor started with its button plays while any of it is on screen and goes first: a press must never
-// be undone by the visibility rule (pressing Play on a frame 30 % in view used to pause it again at once).
+// be undone by the visibility rule (pressing Play on a frame 30 % in view used to pause it again at once), nor by a
+// live pebble on screen. Unasked, a loop plays only while no live pebble is on screen.
 type Entry = { ratio: number; order: number; eligible: () => boolean; chosen: () => boolean; play: () => void; pause: () => void };
 const entries = new Map<string, Entry>();
 let order = 0;
 
 function arbitrate() {
+  const calm = !document.documentElement.hasAttribute(LIVE_PEBBLE);
   const ranked = [...entries.values()]
-    .filter((e) => e.eligible() && (e.ratio >= PLAY_RATIO || (e.chosen() && e.ratio > 0)))
+    .filter((e) => e.eligible() && (e.chosen() ? e.ratio > 0 : calm && e.ratio >= PLAY_RATIO))
     .sort((a, b) => Number(b.chosen()) - Number(a.chosen()) || b.ratio - a.ratio || a.order - b.order)
     .slice(0, MAX_PLAYING);
   for (const entry of entries.values()) {
@@ -50,6 +55,7 @@ function hookVisibility() {
   if (visibilityHooked || typeof document === "undefined") return;
   visibilityHooked = true;
   document.addEventListener("visibilitychange", arbitrate);
+  document.addEventListener(PEBBLE_LIVE, arbitrate);
 }
 
 // ---- first interaction, for deferred loops ------------------------------------------------------------------------

@@ -7,6 +7,15 @@ export const PEBBLE_TAP = "pebble:tap";
 /** A person tapped or clicked a pebble itself. */
 export const PEBBLE_TAPPED = "pebble:tapped";
 
+/**
+ * Whether a live pebble is on screen: the pebble conductor (usePebbleConductor.ts, in the engine's lazy chunk) keeps
+ * this attribute on <html> while it has elected a pebble to animate, and fires PEBBLE_LIVE on <document> when that
+ * changes. The loops (LoopVideo.tsx, in the main bundle) read it without importing the engine: nothing else plays on its
+ * own beside a living pebble (PHILOSOPHY principle 1, critic C08).
+ */
+export const LIVE_PEBBLE = "data-live-pebble";
+export const PEBBLE_LIVE = "pebble:live";
+
 export interface PebbleEventDetail {
   /** the `name` prop of the pebble; empty for "whichever pebble is animating" */
   name?: string;

@@ -5,7 +5,11 @@
 //
 // Also here: useMotionAllowed(), false under prefers-reduced-motion or the site's "Pause motion" toggle
 // (html[data-motion="paused"]).
+//
+// While a pebble is elected, html[data-live-pebble] is set (events.ts LIVE_PEBBLE), and every change fires PEBBLE_LIVE:
+// the loops read it, so no loop starts on its own beside a living pebble (PHILOSOPHY principle 1, critic C08).
 import { useEffect, useId, useSyncExternalStore, type RefObject } from "react";
+import { LIVE_PEBBLE, PEBBLE_LIVE } from "./events";
 
 interface Entry {
   el: Element;
@@ -34,6 +38,11 @@ function elect() {
     if (!best || e.area > best[1].area + 1 || (Math.abs(e.area - best[1].area) <= 1 && e.order < best[1].order)) best = item;
   }
   elected = best ? best[0] : null;
+  const root = document.documentElement;
+  if (root.hasAttribute(LIVE_PEBBLE) !== (elected !== null)) {
+    root.toggleAttribute(LIVE_PEBBLE, elected !== null);
+    document.dispatchEvent(new Event(PEBBLE_LIVE));
+  }
 }
 
 function onIntersect(records: IntersectionObserverEntry[]) {

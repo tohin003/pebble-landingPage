@@ -106,6 +106,16 @@
   height: 15px;
 }
 
+/* Focus: the page's accent ring sat on the picture around the transparent 44 px button, where on a light frame in the
+   dark theme it all but vanished (1.02:1, QA F-A11Y-1). The galet's own ink with a halo in the galet's ground holds on
+   any frame, in both themes: on a light picture the halo or the ring stands out, on a dark one the other does. The
+   target stays 44 px; no other control's ring changes. */
+.control:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px var(--bg);
+}
+
 /* A phone cut whose subject sits in its bottom-right corner (L1's pebble) keeps the button in the other corner, so the
    button never covers the one living thing (LoopVideo phoneControl="start") */
 @media (max-width: 560px) {
