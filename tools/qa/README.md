@@ -35,8 +35,8 @@ Output: `.work/qa/screens/<run>/` (gitignored). Logs: `.work/qa/logs/`.
 | `--lenient` | | exit 0 even when a shot reports problems |
 | `--interactions` | | also check the shell per width and theme, with a viewport shot of each state: the skip link is the first Tab stop, the sticky call to action appears after the hero, the phone menu opens and Esc closes it with focus back on its button, the theme toggle flips and stores the theme, Pause motion sets `data-motion="paused"` and `aria-pressed` |
 
-Each shot scrolls through the page once before the capture, so lazy images load and the pebble's path is drawn (it
-draws on with scrolling and never retracts), then returns to the top.
+Each shot scrolls through the page once before the capture, so lazy images load and the reveals finish, then returns
+to the top. (The pebble's ground is static now: local `Horizon` lines, not a page-wide path that draws on.)
 
 ## The other gates (MASTER_PLAN §9.1–§9.3)
 
@@ -50,7 +50,7 @@ job; the copy lint and the sheets only read files. Each file's header lists its 
 | `interact.mjs` | the keyboard walk (every Tab stop shown, on screen, not under the sticky header or call to action, with a visible focus change), the skip link, header toggles, the phone menu, the three explainers, the story tabs and AgentGuard's switch, the film dialog with focus return, the install Copy button and its live region, the loop pause buttons | `.work/qa/screens/<run>/report-interact.json` |
 | `requests.mjs` | every request same-origin, no cookies (document, browser jar, Set-Cookie), zero console errors and failed requests, first-load JS and transfer budgets, a link crawl | `.work/qa/requests/<run>.json` |
 | `lighthouse.sh` | Lighthouse 13.5.0, mobile and desktop, N runs each, medians against MASTER_PLAN §7.7; `H2=1` puts `h2proxy.mjs` (HTTP/2, TLS, Brotli, as Vercel serves the site) in front of `next start` | `.work/qa/lighthouse/<run>/` |
-| `line-check.mjs` | the pebble's path never runs through text (and, as a softer check, product media) | `.work/qa/screens/<run>/` |
+| `line-check.mjs` | the pebble's local ground never runs through text (and, as a softer check, product media). It checks every `Horizon` the page draws, such as the hero's ground, the project story's rail, the permission dial's arch and the footer's ground. A page with no horizon on screen, or a horizon with no drawn point, fails instead of passing | `.work/qa/screens/<run>/` |
 | `copy-lint.mjs` | the voice and claim rules on the built HTML and `llms.txt` (`--src` adds `src/content`); light work | stdout |
 | `sheets.mjs` | review sheets from a shot.mjs run; light work | `.work/qa/screens/<run>/sheets/` |
 
