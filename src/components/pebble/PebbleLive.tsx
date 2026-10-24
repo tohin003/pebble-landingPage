@@ -12,8 +12,8 @@
 // - At rest the eyes look straight ahead (rest.ts, DESIGN §9): from the first frame, when the pointer leaves, and when
 //   the pebble settles (it turns back to centre, then holds).
 // - `stealth` (Pebble 1.1.0's Veil, shared/pebble/veil.ts): flipping it plays the cast (1.25 s) or the release (0.65 s)
-//   from wherever the Veil is, so a reversal mid-transition never jumps; while on, the animated pebble shimmers once
-//   every 6 s, and it never settles mid-cast or mid-shimmer. Reduced motion or Pause motion: a 0.3 s cross-fade and no
+//   as the app does, with the colour coming or going at once; while on, the animated pebble shimmers once every 6 s,
+//   and it never settles mid-cast or mid-shimmer. Reduced motion or Pause motion: a 0.3 s cross-fade and no
 //   shimmer. A pebble that isn't the animated one shows the settled look at once, as in the app.
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import {
@@ -106,7 +106,7 @@ export function PebbleLive({
   // motion, and shows its settled look on a pebble that another one outshines.
   const veilMotion: VeilMotion = !motionAllowed ? "reduced" : mode === "still" ? "still" : "animate";
 
-  // The switch: start from wherever the Veil is now. A held pebble animates again until the cast or release is over.
+  // The switch: start the cast or the release (LiveVeil.set). A held pebble animates again until it is over.
   useEffect(() => {
     if (stealth === undefined || !veil.set(stealth, veilMotion)) return;
     setVeilView(veil.frame(veilMotion));

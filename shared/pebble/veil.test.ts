@@ -181,14 +181,10 @@ describe("veilAt: timelines of switches, replayed for every frame", () => {
     }
   });
 
-  test("a reversal starts from wherever the Veil had got to: cloak, rim and glass never jump", () => {
-    let prev: VeilFrame | null = null;
-    for (let ms = 900; ms <= 6000; ms += 5) {
-      const now = veilAt(timeline, ms / 1000);
-      if (prev) {
-        for (const k of ["cloak", "rim", "glass"] as const) expect(Math.abs(now.veil[k] - prev.veil[k])).toBeLessThan(0.08);
-      }
-      prev = now;
+  test("every switch, reversals included, starts from its own end state, as Pebble 1.1.0 does", () => {
+    for (const s of timeline.slice(0, 4)) {
+      const v = veilAt(timeline, s.at + 0.005).veil;
+      expect([v.cloak, v.rim, v.glass]).toEqual(s.on ? [1, 1, 1] : [0, 0, 0]);
     }
   });
 
@@ -237,14 +233,14 @@ describe("LiveVeil: the live switch and clock", () => {
     expect(run(v, 0.4).at(-1)!.veil.ping).toBeGreaterThan(0); // the ring is on its way at 0.4 s
   });
 
-  test("a reversal mid-cast continues from the frame on screen", () => {
+  test("a switch starts from its own end state, as Pebble 1.1.0's avatar does: the colour goes at once", () => {
     const v = new LiveVeil(false);
     v.set(true, "animate");
+    expect(v.frame("animate").veil.cloak).toBe(1); // the cast: covered from its first frame
     run(v, 0.4);
-    const shown = v.frame("animate").veil;
-    v.set(false, "animate");
+    v.set(false, "animate"); // reversed mid-cast
     const after = v.frame("animate").veil;
-    expect([after.cloak, after.rim, after.glass, after.eye]).toEqual([shown.cloak, shown.rim, shown.glass, shown.eye]);
+    expect([after.cloak, after.rim, after.glass]).toEqual([0, 0, 0]);
   });
 
   test("a pebble that isn't the animated one shows the end state at once (Avatar.vue)", () => {

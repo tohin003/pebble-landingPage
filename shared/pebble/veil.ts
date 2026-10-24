@@ -9,11 +9,11 @@
 // - veilDraw(frame, size): every attribute of the Veil's layers, so every renderer draws the same numbers.
 // - VEIL_LIGHT, VEIL_DARK: the dusk family.
 //
-// Reversal: a switch starts from the Veil as it is drawn at that moment, so turning it back mid-cast never jumps
-// (stealthVeil.ts: "A change mid-transition starts from where the last one had got to"). Note: Pebble 1.1.0's
-// Avatar.vue reads that state after the prop has already flipped, so in the app (and in the README's
-// 07-stealth-veil*.gif) a cast from a plain pebble starts from ON and a release from OFF: the colour changes at once
-// and only the squash, blink and ping play. `veilFrame(on, since, on ? ON : OFF)` reproduces that exactly.
+// Every switch starts from its own end state, as the app does. stealthVeil.ts designs a change mid-transition to
+// start "from where the last one had got to", but Pebble 1.1.0's Avatar.vue reads that state after the prop has
+// already flipped. So in the app, and in the README's 07-stealth-veil*.gif, a cast starts from ON and a release from
+// OFF: the colour changes at once, and only the squash, the blink and the ping play. The site shows what the app
+// shows. Once Pebble plays the designed wipe, LiveVeil.set and veilAt start from the Veil as drawn instead.
 //
 // Plain TypeScript with one import (the copied function), so a renderer can use it without pulling in the engine.
 import { ACTIVATE, FADE, GLASS_OPACITY, OFF, ON, RELEASE, SHIMMER, SHIMMER_EVERY, moving, shimmer, veil, type Veil } from "./stealthVeil";
@@ -71,9 +71,9 @@ export interface VeilSwitch {
 }
 
 /**
- * The Veil at time `t` of a timeline of switches sorted by `at`. Each switch starts from the Veil as drawn at that
- * moment. `initial` is the position before the first switch; while it is on and nothing has switched yet, the shimmer
- * counts from t = 0 (Avatar.vue: from mount).
+ * The Veil at time `t` of a timeline of switches sorted by `at`. Each switch starts from its own end state, as Pebble
+ * 1.1.0's avatar does (LiveVeil.set). `initial` is the position before the first switch; while it is on and nothing
+ * has switched yet, the shimmer counts from t = 0 (Avatar.vue: from mount).
  */
 export function veilAt(
   switches: readonly VeilSwitch[],
@@ -86,7 +86,7 @@ export function veilAt(
   for (const s of switches) {
     if (s.at > t) break;
     if (s.on === on) continue;
-    from = at === -Infinity ? end(on) : veilFrame(on, s.at - at, from, reduced).veil;
+    from = end(s.on);
     on = s.on;
     at = s.at;
   }
@@ -125,14 +125,17 @@ export class LiveVeil {
     this.from = end(on);
   }
 
-  /** Flip the switch now, starting from the Veil as drawn now. Returns false if it was already in that position. */
+  /** Flip the switch now, as Pebble 1.1.0's avatar does (below). Returns false if it was already in that position. */
   set(on: boolean, motion: VeilMotion): boolean {
     if (on === this.on) return false;
-    const drawn = this.frame(motion).veil;
     this.on = on;
     if (motion === "still") this.settle();
     else {
-      this.from = drawn;
+      // As Pebble 1.1.0 ships it: Avatar.vue's watcher reads the Veil after the switch has flipped, so a cast starts
+      // from ON and a release from OFF. The colour comes and goes at once; the squash, the blink and the ring still
+      // play, as in the README's renders. Once Pebble plays the designed wipe, start from the Veil as drawn before the
+      // flip instead (`this.frame(motion).veil`, read before `this.on` changes).
+      this.from = end(on);
       this.at = this.time;
       this.kind = motion;
     }
