@@ -23,6 +23,9 @@ export const labels = {
   infrastructure: { name: "Engineering", fact: "Facts, not benchmarks" }, // infrastructure.note [C-SYS-9] (C-INF-6)
   benchmarks: { name: "Benchmarks", fact: "Measured, not claimed" }, // README.md@26d7b19:366; the lead's name [C-SYS-17]
   privacy: { name: "Privacy", fact: "No telemetry" }, // privacy.stays [C-SYS-10] (C-PRIV-5)
+  /** "Privacy and focus / New in 1.1.0": the Settings section that holds Stealth Lockdown (App.vue@v1.1.0:1413, :2798)
+   *  and the release whose "What's new" brought it (App.vue@v1.1.0:1409-1410). [C-SYS-18] */
+  stealth: { name: "Privacy and focus", fact: "New in 1.1.0" },
   limits: { name: "Limits", fact: "Stated plainly" }, // honestLimits.lead [C-SYS-12]
   openSource: { name: "Open source", fact: "Apache-2.0" }, // openSource.repoCard.licence [C-SYS-13] (C-OSS-1)
   /** "Install / Version 1.0.1", from the release the page offers (src/lib/release.ts). [C-SYS-11] (C-REL-1) */

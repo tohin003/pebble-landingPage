@@ -1,0 +1,427 @@
+/* Stealth Lockdown (Pebble 1.1.0; OVERRIDES §21), section 11b. The head is SectionHead's; then, from column 4, the two
+   halves as a ruled ledger, the picture (the real capture beside the page's live pebble) and the "Interactive
+   example" switch with the honest line under it. Phones read them in that order too: the words, the picture, the
+   switch. */
+
+/* The Veil's dusk family (Pebble 1.1.0's src/tokens.css, the same values as the pebble's own defaults in
+   PebbleVeil.module.css), scoped to this section on purpose: the dusk blue is Stealth Lockdown's own accent, the one
+   exception PHILOSOPHY allows, and only inside its own section. --stealth is the switch's track when on (the app's
+   --avatar-stealth: 6.5:1 and 7.0:1 against --fill, light and dark); --stealth-ink the "On." state line (the app's
+   --stealth-ink: 7.5:1 and 8.7:1 on --fill). Nothing else in the section is dusk: the text keeps the page's ink, focus
+   keeps the page's accent. */
+.stealth {
+  --pebble-veil: #44528c;
+  --pebble-veil-hi: #7684c6;
+  --pebble-veil-eye: #fff;
+  --pebble-veil-rim: #d6ddff;
+  --pebble-veil-glow: #7d8df2;
+  --stealth: #44528c;
+  --stealth-ink: #3b4785;
+}
+
+:global(:root[data-theme="dark"]) .stealth {
+  --pebble-veil: #a3aeea;
+  --pebble-veil-hi: #ccd4fb;
+  --pebble-veil-eye: #1c2246;
+  --pebble-veil-rim: #fff;
+  --pebble-veil-glow: #8494f7;
+  --stealth: #a3aeea;
+  --stealth-ink: #b8c2f6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .stealth {
+    --pebble-veil: #a3aeea;
+    --pebble-veil-hi: #ccd4fb;
+    --pebble-veil-eye: #1c2246;
+    --pebble-veil-rim: #fff;
+    --pebble-veil-glow: #8494f7;
+    --stealth: #a3aeea;
+    --stealth-ink: #b8c2f6;
+  }
+}
+
+/* --- 1. The two halves: a ruled ledger, as Built like infrastructure's (terms on 4–6, the text on 7–12) --- */
+.halves {
+  display: grid;
+  grid-template-columns: subgrid;
+  border-bottom: 1px solid var(--line);
+}
+
+.half {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: baseline;
+  padding: 19px 0 20px;
+  border-top: 1px solid var(--line);
+}
+
+.half dt {
+  grid-column: 1 / span 3;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.half dd {
+  grid-column: 4 / -1;
+  max-width: 36em;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+/* --- 2 and 3. The exhibit: from 1280 px the capture on 4–9 with the pebble beside it on 10–12, standing level with
+   the capture's foot; the switch and the honest line under the capture. Below 1280 px the capture takes the column
+   (at most 640 px, where the app's 11 px text reads at 13.6 px), then the pebble and the switch side by side. --- */
+.exhibit {
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: end;
+  margin-top: 56px;
+}
+
+.capture {
+  grid-column: 1 / span 6;
+  grid-row: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+/* A moment of the real UI in a plain frame (DESIGN-LEXINGTON §3.8): radius 12, a 1 px --line ring, on the page ground.
+   The off and on stills share one frame; the on still fades over the off one. */
+.frame {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  aspect-ratio: 2400 / 1730;
+  border-radius: var(--r-panel);
+  background: var(--panel);
+}
+
+.frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--line);
+  pointer-events: none;
+}
+
+.layer {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.onLayer {
+  opacity: 0;
+  transition: opacity var(--dur-crossfade) var(--ease-out);
+}
+
+.exhibit[data-stealth="on"] .onLayer {
+  opacity: 1;
+}
+
+/* The swap stays a 0.3 s cross-fade under Pause motion and reduced motion too (it moves nothing; Pebble's own switch
+   cross-fades for 0.3 s under Reduce Motion): stronger than the page's kill switch, for this one opacity only. */
+:global(:root[data-motion="paused"]) .exhibit .onLayer {
+  transition-duration: var(--dur-crossfade) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exhibit .onLayer {
+    transition-duration: var(--dur-crossfade) !important;
+  }
+}
+
+.picture,
+.img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.caption {
+  position: relative;
+  margin-top: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* --- The page's pebble, on its own ground (a local Horizon), with its contact shadow --- */
+.render {
+  grid-column: 7 / -1;
+  grid-row: 1;
+  min-width: 0;
+  margin: 0;
+  container-type: inline-size;
+}
+
+/* The pebble's box is square and its body ends at 76.55 % of it (shared/pebble BODY), so the box hangs below the
+   ground by 23.45 % of its size and rises 44 % of its size over the stage: the margin keeps that inside the figure. */
+.stage {
+  --size: min(240px, 100cqi);
+  --floor: 10px; /* the ground's height above the stage's bottom edge */
+  position: relative;
+  height: calc(var(--size) * 0.62);
+  margin-top: calc(var(--size) * 0.2);
+}
+
+.ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--floor) - 6px);
+}
+
+.contact {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--floor) - 12px);
+  width: calc(var(--size) * 0.55);
+  height: 24px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgba(var(--shade), 0.26), rgba(var(--shade), 0));
+}
+
+:global(:root[data-theme="dark"]) .contact {
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .contact {
+    background: radial-gradient(closest-side, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
+  }
+}
+
+/* not a control here: the switch is the only thing to press, and the box's empty corners never cover the captions */
+.pebbleBox {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--floor) - var(--size) * 0.2345);
+  width: var(--size);
+  height: var(--size);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.pebble {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* --- The interactive example: the switch on the flat panel, as the page's other explainers sit (DESIGN-LEXINGTON
+   §3.8), with the app's own look inside (a round track and knob, the dusk blue when on) --- */
+.control {
+  grid-column: 1 / span 6;
+  grid-row: 2;
+  min-width: 0;
+  margin-top: 32px;
+}
+
+.example {
+  padding: 16px 20px 18px;
+  border-radius: var(--r-panel);
+  background: var(--fill);
+}
+
+/* "Interactive example" and its one line, as in the other explainers */
+.exampleLabel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.exampleMark {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* the "Interactive example" mark: a stone, not the accent (a recreation is not a state) */
+.exampleMark::before {
+  content: "";
+  width: 11px;
+  height: 9.7px;
+  background: var(--stone);
+  -webkit-mask: var(--galet-mask) center / contain no-repeat;
+  mask: var(--galet-mask) center / contain no-repeat;
+}
+
+/* The switch's row is the button, as in Pebble's Settings: the name at the left, the track at the right, 44 px tall */
+.switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.switch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.switchName {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* off: an outline in muted ink with a muted knob (5.2:1 and 7.4:1 on --fill); on: the dusk track with the knob in --bg
+   (7.0:1 and 7.9:1 on the track) */
+.track {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  box-shadow: inset 0 0 0 1.5px var(--ink-2);
+  transition:
+    background-color var(--dur-hover) var(--ease-out),
+    box-shadow var(--dur-hover) var(--ease-out);
+}
+
+.knob {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ink-2);
+  transition:
+    transform var(--dur-base) var(--ease-firm),
+    background-color var(--dur-hover) var(--ease-out);
+}
+
+.exhibit[data-stealth="on"] .track {
+  background: var(--stealth);
+  box-shadow: inset 0 0 0 1.5px var(--stealth);
+}
+
+.exhibit[data-stealth="on"] .knob {
+  transform: translateX(18px);
+  background: var(--bg);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .exhibit[data-stealth="off"] .switch:hover .track {
+    box-shadow: inset 0 0 0 1.5px var(--ink);
+  }
+}
+
+/* the app's state line, word for word: muted when off, the dusk ink when on (as in Pebble) */
+.state {
+  margin-top: 8px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  transition: color var(--dur-hover) var(--ease-out);
+}
+
+.exhibit[data-stealth="on"] .state {
+  color: var(--stealth-ink);
+}
+
+/* The honest line, right under the switch: real text, never collapsed, at the halves' size and in ink */
+.honest {
+  max-width: 40em;
+  margin-top: 16px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+/* 1024–1279 px: the capture across the column; the pebble and the switch side by side under it */
+@media (max-width: 1279px) {
+  .exhibit {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    column-gap: var(--gap);
+    row-gap: 40px;
+    align-items: start;
+  }
+
+  .capture {
+    grid-column: 1 / -1;
+    max-width: 640px;
+  }
+
+  .render {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .control {
+    grid-column: 2;
+    grid-row: 2;
+    margin-top: 0;
+  }
+}
+
+/* One column: the ledger's rows stack; the exhibit keeps its two columns under the capture */
+@media (max-width: 1023px) {
+  .halves,
+  .half {
+    display: block;
+  }
+
+  .half {
+    padding: 16px 0 17px;
+  }
+
+  .half dd {
+    margin-top: 3px;
+  }
+
+  .exhibit {
+    margin-top: 40px;
+  }
+}
+
+/* Phones: the capture, then the pebble, then the switch and the honest line */
+@media (max-width: 560px) {
+  .exhibit {
+    display: block;
+  }
+
+  .render {
+    margin-top: 28px;
+  }
+
+  .stage {
+    --size: min(220px, 100cqi);
+  }
+
+  .control {
+    margin-top: 28px;
+  }
+
+  .example {
+    padding: 14px 16px 16px;
+  }
+}

@@ -360,6 +360,11 @@ All checked automatically against the v1.0.1 tag copies (see "Checks run"). Any 
 | Continue with ChatGPT · Connect provider · Add a model file | `src/components/AdvancedSettings.vue:1171`, `:1156`, `:1150` |
 | HOW PEBBLE ACTS (as "How Pebble acts") · Runs without asking · Always asks | `src/components/AdvancedSettings.vue:1365`, `:1383-1384` |
 | Ask for approval · Auto in project · Full access, with their texts, and EVERY_MODE | `src/permissionModes.ts:20-42` |
+| (1.2.0) Auto in project's "Always asks", with its new first clause "Changes to test files your request didn't ask for, …" | `src/permissionModes.ts@v1.2.0:31` (the rest of the file's copy unchanged, `:20-43`) |
+| PRIVACY AND FOCUS (as "Privacy and focus") · Stealth Lockdown · Keeps Pebble out of screen shares and recordings, and never takes focus from the app you're in. | `src/App.vue@v1.1.0:2798`, `:2809`, `:2810` (byte-identical card at `@v1.2.0:2816-2840`) |
+| On. Pebble is hidden from screen capture and won't take focus. Find it in the menu bar. · Off. Pebble shows in screen shares, the Dock and ⌘Tab as usual. · Hidden from screen capture and screen sharing, not from a camera, a capture card or a process list. Exams and interviews that forbid assistants still forbid it. | `src/stealthVeil.ts@v1.1.0:13-16` (`STEALTH_HONEST`, `STEALTH_ON_TEXT`, `STEALTH_OFF_TEXT`; the file is identical at v1.2.0), shown by `src/App.vue@v1.1.0:2814-2818` |
+| Stealth · Hidden from screen capture … brings it back. · Lockdown · Pebble never takes keyboard focus … keep it. | `src/App.vue@v1.1.0:2820-2821` |
+| Stealth Lockdown keeps Pebble out of screen shares … · While it's on, the pebble wears the Veil … · ⌃⌥⌘H hides every Pebble window at once … · Turn it on in Settings → Privacy and focus … ⌃⌥⌘S. | 1.1.0's "What's new", `src/App.vue@v1.1.0:1410-1413` (also `CHANGELOG.md@v1.1.0:19-22`); 1.2.0's "What's new" lists 1.2.0's changes instead |
 | Full access increases the impact of mistakes and prompt injection. AgentGuard is a reliability check; it cannot guarantee that every command or answer is safe. | `src/components/AdvancedSettings.vue:1389-1393` |
 | Remember useful context · Forget this memory · Forget all memories | `src/components/AdvancedSettings.vue:1434`, `:1484`, `:1549` |
 | Pebble's change isn't verified yet. · Run the tests · Ask Pebble to finish · Accept as unverified · Keep this change without verification? Pebble records that you decided. | `src/components/RunPanel.vue:57`, `:121-127` |
@@ -837,3 +842,61 @@ still apply there.
 | `copy.ts` `infrastructure.note` | "… No benchmark results have been published yet." | the first sentence only | C-INF-6 |
 | `copy.ts` `memory.settingsCaption` | "… in Pebble 1.0.1." | "… in Pebble 1.0.4." | C-F2B-1 |
 | `seo.ts` `llmsTxt` | "Version 1.0.1, the first public release, came out on 22 October 2026."; "No benchmark results have been published …" | "Pebble 1.0.4 came out on 23 October 2026."; the "## Benchmark" block while the gate is open | `llms.txt` row |
+
+## Pebble 1.1.0 and 1.2.0 on the page (lane ship A, 2026-10-24)
+
+The release session published Pebble 1.1.0, with Stealth Lockdown, at 04:16 (STATUS 04:16; OVERRIDES §21) and 1.2.0
+at 07:09 (STATUS 07:09; OVERRIDES §23). The page's release facts are 1.2.0's (C-REL-1..6, C-INF-2, C-INF-3, C-OSS-2,
+changed in place and marked "(ship A)"), and Stealth Lockdown has its own section after Private by default
+(`src/components/sections/StealthLockdown.tsx`), a FAQ answer (C-FAQ-22) and one `llms.txt` line.
+
+**Sources for this part.** `App.vue@v1.1.0:n` and `stealthVeil.ts@v1.1.0:n` are lines of `src/App.vue` and
+`src/stealthVeil.ts` at tag `v1.1.0` (commit `07886c7`), read from GitHub (`https://raw.githubusercontent.com/tohin003/
+Pebble/v1.1.0/src/App.vue`) on 2026-10-24 at 09:04 IST, never from the checkout, whose working tree held the next
+version's work. At tag `v1.2.0` (commit `a4af2e5`) `stealthVeil.ts` is byte-identical (sha256 `61188f77…f964`, the
+vendored file's pin) and so is the Privacy and focus card (`App.vue@v1.2.0:2814-2840`); only the "What's new" list
+changed, to 1.2.0's own notes. `app.py@v1.1.0:n` is `backend/pebble/app.py` at the same tag. The section's words come
+only from these lines and the release session's 04:16 post (OVERRIDES §21); nothing on the page says "undetectable" or
+"invisible" or speaks of exams, interviews, proctoring, monitoring, cheating, bypassing or evading outside the honest
+line (`src/content/neverWords.ts`; the copy lint's BANNED list).
+
+| ID | Claim | Source | Kind / notes |
+|---|---|---|---|
+| C-STL-1 | "Stealth Lockdown", the setting's name: the H2 "Stealth Lockdown.", the example switch's visible label, Privacy's link "Stealth Lockdown ›" and the FAQ's link | `App.vue@v1.1.0:2809`; STATUS 04:16; OVERRIDES §21 | V |
+| C-STL-2 | "Off by default." (the H2's muted second line; `llms.txt`) | STATUS 04:16 ("Off by default."); OVERRIDES §21; `app.py@v1.1.0:770` (`("stealth", False)`, the setting's default) | Q, V |
+| C-STL-3 | The lead, the setting's own description: "Keeps Pebble out of screen shares and recordings, and never takes focus from the app you're in."; its "What's new" form in the FAQ and `llms.txt`: "Stealth Lockdown keeps Pebble out of screen shares and recordings and never takes focus from the app you're in." | `App.vue@v1.1.0:2810`; `:1410` (`CHANGELOG.md@v1.1.0:19`) | V |
+| C-STL-4 | In the head, the FAQ and (the first) `llms.txt`: "Turn it on in Settings → Privacy and focus, from the menu-bar icon, or with ⌃⌥⌘S." "⌃⌥⌘H hides every Pebble window at once; the menu-bar icon brings Pebble back." | `App.vue@v1.1.0:1413`, `:1412` (`CHANGELOG.md@v1.1.0:21-22`); STATUS 04:16 | V |
+| C-STL-5 | The two halves as a definition list: "Stealth": "Hidden from screen capture and screen sharing. No window shadow. Leaves the Dock, ⌘Tab and Mission Control. ⌃⌥⌘H hides Pebble at once; the menu-bar icon brings it back."; "Lockdown": "Pebble never takes keyboard focus from the app in front, so your slides, call or full-screen app keep it." | `App.vue@v1.1.0:2820`, `:2821` (the card's own `<dl>`); OVERRIDES §21 | V |
+| C-STL-6 | Under the page's pebble: "While it's on, the pebble wears the Veil: a dusk-blue glass with a light rim, so you can always tell." | `App.vue@v1.1.0:1411` (`CHANGELOG.md@v1.1.0:20`); OVERRIDES §21 | V |
+| C-STL-7 | The honest line, word for word, right under the example's switch (its description, never collapsed), in the FAQ answer and in `llms.txt`: "Hidden from screen capture and screen sharing, not from a camera, a capture card or a process list. Exams and interviews that forbid assistants still forbid it." | `stealthVeil.ts@v1.1.0:13-14` (`STEALTH_HONEST`; `:12`: "shown under the switch, in the README, the User Guide and the CHANGELOG, word for word"); `App.vue@v1.1.0:2818`; STATUS 04:16 ("goes wherever it is shown, word for word"); OVERRIDES §21 | V. `src/content/stealth.test.ts` pins it to the vendored file and fails if a place that names Stealth Lockdown lacks it |
+| C-STL-8 | The example's state line, in a polite live region: "Off. Pebble shows in screen shares, the Dock and ⌘Tab as usual." / "On. Pebble is hidden from screen capture and won't take focus. Find it in the menu bar." | `stealthVeil.ts@v1.1.0:15-16` (`STEALTH_OFF_TEXT`, `STEALTH_ON_TEXT`); `App.vue@v1.1.0:2814-2816` (the card's `role="status"` line) | V |
+| C-STL-9 | "Interactive example" and "Flip the switch. Its words are the ones Pebble shows." | the switch's label is C-STL-1, its state lines C-STL-8, the honest line under it C-STL-7; the switch flips the page's pebble and swaps the real captures (C-STL-11), it changes nothing on a Mac | I. Like C-F2A-7 |
+| C-STL-10 | Under the page's pebble, after C-STL-6: "This pebble uses Pebble's own Veil code: a render, not a screen recording." | `shared/pebble/stealthVeil.ts` is Pebble's `src/stealthVeil.ts` at v1.1.0 byte for byte below a two-line header (`provenance.test.ts`: sha256 `61188f77…f964`, identical at v1.2.0), drawn by the site's `PebbleVeil.tsx`, a port of `Avatar.vue`'s Veil layers (HANDOFF-1.1-veil-engine); since 1.2.0 the app plays the designed sweep, as the site does (OVERRIDES §23, `3e1146f`); OVERRIDES §21 ("The Veil may be shown as a render of the pebble, never called a screen recording") | I, D. Nothing on the page shows or claims a "share view" |
+| C-STL-11 | The capture's caption: "Settings › Privacy and focus in Pebble 1.1.0." | `public/ui/v1/settings-privacy-card-{off,on}-*`, captured from a copy of tag `v1.1.0` checked file by file (`capture/freeze-release.py`; HANDOFF-1.1-captures); the card is byte-identical at v1.2.0, so the captures stay valid (OVERRIDES §23) | I |
+| C-STL-12 (alt) | `stealth.media.off`: "Pebble's Settings, Privacy and focus: the Stealth Lockdown switch off, with its description, the state line, the note on what it doesn't hide, and the Stealth and Lockdown halves."; `stealth.media.on`: "Pebble's Settings, Privacy and focus: the Stealth Lockdown switch on, in dusk blue, with the state line for on, the note on what it doesn't hide, and the Stealth and Lockdown halves." | the stills (HANDOFF-1.1-captures, "Alt text suggestions", the short form: the section's own text quotes every line the picture shows, so a screen reader doesn't hear them twice) | Alt text. Only the shown state's picture is exposed (the other is `aria-hidden`) |
+| C-SYS-18 | Rail label "Privacy and focus / New in 1.1.0" | `App.vue@v1.1.0:2798` (the Settings section's label, "PRIVACY AND FOCUS", in sentence case like C-EXP-4..7's legend), `:1413`; 1.1.0's "What's new" (`App.vue@v1.1.0:1409-1413`, `CHANGELOG.md@v1.1.0:7-22`) and STATUS 04:16 ("1.1.0 published: Stealth Lockdown is public now") | Q. Label |
+| — | Privacy's one link, "Stealth Lockdown ›", to `#stealth` | C-STL-1 | I. The only other place that names the setting; its honest line sits right under the switch it leads to |
+
+### The section's picture and colour
+
+- **Real captures only.** The picture is the real 1.1.0 Settings › Privacy and focus section (C-STL-11), its light or
+  dark still following the page's theme, the off and on stills sharing one frame. Beside it, the page's own live
+  pebble wears the Veil when the example is on (C-STL-10). A protected window can't be screen-recorded, so nothing on
+  the page shows or claims what a screen share looks like (OVERRIDES §21).
+- **The dusk blue** (Pebble 1.1.0's `src/tokens.css`: `--avatar-stealth` #44528c / #a3aeea, `--stealth-ink` #3b4785 /
+  #b8c2f6) is the section's own accent, scoped to the section's root: the Veil's custom properties, the switch's track
+  when on and the "On." state line. It is PHILOSOPHY's one exception and appears nowhere else (OVERRIDES §21).
+
+### Changed elsewhere (ship A)
+
+| Where | Before | After | Rows |
+|---|---|---|---|
+| `releaseFacts.ts`, so `copy.ts` `release`, `infrastructure`, `openSource.tested`, `installCommands.version`, `seo.ts` (JSON-LD defaults, `llms.txt`) | 1.0.4: 71,808,389 bytes, 23 October 2026, `630af5c1…470d`, 8,653 tests, 1,840 checks across 45 suites | 1.2.0: 71,833,771 bytes, 24 October 2026, `699c8ec1…9dbd`, 8,905 tests, 1,890 checks across 48 suites | C-REL-1..6, C-INF-2, C-INF-3, C-OSS-2 |
+| `copy.ts` `releaseMeta()` | "v1.0.4 · 72 MB · Apple silicon · macOS 12 or later", split again by the page | the four facts as a list (`readonly string[]`) | C-REL-5 |
+| `copy.ts` `hero.requirementsLine`, `releasePill()` | two middle-dot strings ("… · Apache-2.0 · …", "New · Pebble 1.0.4") | removed (neither was rendered any more; `hero.requirements` stays a list) | C-HERO-3 |
+| `copy.ts` `stickyCta` | `meta()`: "v1.0.4 · 72 MB" (split by the page, two facts) | `facts()`: "v1.2.0", "72 MB", "Not notarized" (OVERRIDES §20) | C-REL-1, C-REL-2, C-F1-3 |
+| `copy.ts` `explainers.permissionDial.modes[1].alwaysAsks` (Auto in project) | "Other terminal commands (including grep and builds), app launches, …" | "Changes to test files your request didn't ask for, other terminal commands (including grep and builds), app launches, …" | C-EXP-4..7 |
+| `copy.ts` `footer.benchmarksLink` (new) | | "Benchmarks", `/#benchmarks`, in the footer's "Pebble" column while the section is shown | C-SYS-17 |
+| `faq.ts` | | "Can people see Pebble when I share my screen?" | C-FAQ-22 |
+| `seo.ts` `llmsTxt` | "Pebble 1.0.4 came out on 23 October 2026." | "Pebble 1.2.0 came out on 24 October 2026."; the Stealth Lockdown line | `llms.txt` row |
+| `tools/qa/copy-lint.mjs` | | BANNED: undetectable, invisible, exams, interviews, proctoring, monitoring, cheating, bypassing, evading; the honest line allowed by exact match (`ALLOW`, `ALLOW_PASSAGES`) | Allow-list |

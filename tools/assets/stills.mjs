@@ -3,7 +3,8 @@
 // Usage (from the repo root, after `source scripts/env.sh`):
 //   node tools/assets/stills.mjs [--src=capture/shots/page] [--out=public/ui/v1] [--widths=2400,1200] [name ...]
 //
-// Sources are <src>/<scene>-<theme>@3x.png (capture.mjs at --scale=3), downscaled with Lanczos so text stays crisp.
+// Sources are <src>/<scene>-<theme>@3x.png (capture.mjs at --scale=3; a still's own `scale` where it says so),
+// downscaled with Lanczos so text stays crisp.
 // Outputs are <out>/<name>-<theme>-<width>.avif|webp (AVIF quality 50 effort 6, WebP quality 76; sharp writes no
 // metadata). The widths follow critic H3 (twice the largest CSS slot) and the themes H5 (switch by [data-theme]);
 // /ui/v1/ is versioned because /ui/* is served immutable (M2). The Pebble 1.0.4 retake replaced v1 in place (the lead's
@@ -38,6 +39,13 @@ export const STILLS = {
   "settings-memory": { scene: "settings-memory-wide", shows: "Settings › Memory: the six layers with counts and the \"Your preferences\" records, each with Forget" },
   "main-quiz": { scene: "main-quiz-wide", shows: "A quiz view in the canvas: \"Python datetime check-in\", question 1 of 5" },
   "main-dashboard": { scene: "main-dashboard", shows: "A dashboard view in the widened canvas: \"Lisbon trip budget\" with metrics and a planned-vs-spent chart" },
+  // Pebble 1.1.0 (captured from a verified copy of the v1.1.0 tag: capture/freeze-release.py; HANDOFF-1.1-captures).
+  // The windows are 16:10 at 3x like the rest; the two crops of the section alone are 516 × 372 pt at 5x (`scale`), so
+  // their files are 2400 × 1730 and 1200 × 865. capture/page-stills.mjs encodes the same four names the same way.
+  "settings-privacy-off": { scene: "settings-privacy-wide", shows: "Settings › Privacy and focus, Stealth Lockdown off: the switch, its description, \"Off. Pebble shows in screen shares, the Dock and ⌘Tab as usual.\", the honest line and the Stealth and Lockdown halves" },
+  "settings-privacy-on": { scene: "settings-privacy-on-wide", shows: "The same with Stealth Lockdown on: \"On. Pebble is hidden from screen capture and won't take focus. Find it in the menu bar.\"; the app's pebbles behind the dialog wear the Veil" },
+  "settings-privacy-card-off": { scene: "crop-privacy-card", scale: 5, shows: "The Privacy and focus section alone, Stealth Lockdown off" },
+  "settings-privacy-card-on": { scene: "crop-privacy-card-on", scale: 5, shows: "The Privacy and focus section alone, Stealth Lockdown on, in the same frame" },
 };
 
 const wanted = args.filter((a) => !a.startsWith("--"));
@@ -49,7 +57,7 @@ for (const name of names) {
   const still = STILLS[name];
   if (!still) throw new Error(`unknown still ${name}; known: ${Object.keys(STILLS).join(", ")}`);
   for (const theme of THEMES) {
-    const source = path.join(SRC, `${still.scene}-${theme}@3x.png`);
+    const source = path.join(SRC, `${still.scene}-${theme}@${still.scale ?? 3}x.png`);
     if (!fs.existsSync(source)) {
       console.error(`missing source ${path.relative(REPO, source)}`);
       missing++;

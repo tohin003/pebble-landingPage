@@ -117,7 +117,9 @@ export const sectionIds = {
   memory: "memory",
   views: "views",
   more: "more",
+  benchmarks: "benchmarks", // Benchmarks (OVERRIDES §16), after Built like infrastructure; the footer links to it
   privacy: "privacy",
+  stealth: "stealth", // Stealth Lockdown, right after Private by default (Pebble 1.1.0; OVERRIDES §21)
   limits: "limits",
   install: "install",
   openSource: "open-source",
@@ -908,6 +910,8 @@ export const privacy = {
   toolsNote:
     "Pebble's own tools can never read or change `~/.pebble` or `~/Documents/Pebble`, even when your project contains them.", // [C-PRIV-11]
   dataFoldersLink: { label: "Where Pebble keeps your things", href: links.dataFolders, external: true } satisfies Link,
+  /** The head's one link: the next section, Stealth Lockdown (the setting's name; its honest line is there). [C-STL-1] */
+  stealthLink: { label: "Stealth Lockdown", href: `/#${sectionIds.stealth}` } satisfies Link,
   diagram: {
     title: "Where Pebble's requests go",
     mac: "Your Mac",
@@ -924,6 +928,79 @@ export const privacy = {
       { id: "connectors", label: "Your connectors", detail: "calls to connectors you add" }, // [C-PRIV-9]
     ],
     localNote: "With a local model, the conversation stays on your Mac.", // [C-MOD-8]
+  },
+} as const;
+
+// ---------------------------------------------------------------------------------------------------------------
+// 9b. Stealth Lockdown (Pebble 1.1.0; OVERRIDES §21)
+//
+// Words only from Pebble 1.1.0's own source, word for word: `src/App.vue@v1.1.0` (the Privacy and focus card,
+// :2798-2821, and the release's "What's new", :1409-1416) and `src/stealthVeil.ts@v1.1.0` (the state lines and the
+// honest line), or from the release session's 04:16 post ("Off by default."). Read from a copy of the tag checked file
+// by file (capture/freeze-release.py --verify: 144 files, 0 differ), never from the checkout, which holds the next
+// version's work. The state lines and the honest line are also the constants of the vendored
+// shared/pebble/stealthVeil.ts; src/content/stealth.test.ts keeps them equal.
+// Never "undetectable" or "invisible", and nothing about exams, interviews, proctoring, monitoring, cheating, bypassing
+// or evading beyond the honest line (the copy lint bans those words and allows that line by exact match). The honest
+// line goes wherever Stealth Lockdown is shown, word for word. A protected window can't be screen-recorded: nothing here
+// claims or shows a "share view", and the page's pebble is called a render, never a recording.
+// ---------------------------------------------------------------------------------------------------------------
+
+export const stealth = {
+  /** The setting's name as Settings shows it (App.vue@v1.1.0:2809): the switch's label in the example. [C-STL-1] */
+  name: "Stealth Lockdown",
+  /** The H2: the setting's name. Its muted second line is `offByDefault` (two-tone, twoTone.ts). [C-STL-1] */
+  h2: "Stealth Lockdown.",
+  offByDefault: "Off by default.", // [C-STL-2] STATUS 04:16; OVERRIDES §21
+  /** The setting's own description, under its name in Settings (App.vue@v1.1.0:2810). [C-STL-3] */
+  description: "Keeps Pebble out of screen shares and recordings, and never takes focus from the app you're in.",
+  /** The same, as the release's "What's new" names it (App.vue@v1.1.0:1410): the FAQ's and llms.txt's line. [C-STL-3] */
+  summary: "Stealth Lockdown keeps Pebble out of screen shares and recordings and never takes focus from the app you're in.",
+  /** Where to turn it on and the two shortcuts, from the release's "What's new" (App.vue@v1.1.0:1413, :1412). [C-STL-4] */
+  turnOn: "Turn it on in Settings → Privacy and focus, from the menu-bar icon, or with ⌃⌥⌘S.",
+  hideAll: "⌃⌥⌘H hides every Pebble window at once; the menu-bar icon brings Pebble back.",
+  /** The two halves, word for word from the card's list under the switch (App.vue@v1.1.0:2820-2821). [C-STL-5] */
+  halves: [
+    {
+      term: "Stealth",
+      text: "Hidden from screen capture and screen sharing. No window shadow. Leaves the Dock, ⌘Tab and Mission Control. ⌃⌥⌘H hides Pebble at once; the menu-bar icon brings it back.",
+    },
+    {
+      term: "Lockdown",
+      text: "Pebble never takes keyboard focus from the app in front, so your slides, call or full-screen app keep it.",
+    },
+  ] satisfies readonly Readonly<{ term: string; text: string }>[],
+  /** The Veil, from the release's "What's new" (App.vue@v1.1.0:1411). [C-STL-6] */
+  veil: "While it's on, the pebble wears the Veil: a dusk-blue glass with a light rim, so you can always tell.",
+  /**
+   * The honest line (stealthVeil.ts@v1.1.0:13-14, STEALTH_HONEST; App.vue@v1.1.0:2818 shows it under the switch). Word
+   * for word wherever Stealth Lockdown is shown: the section (right under the switch, never collapsed), the FAQ and
+   * llms.txt (OVERRIDES §21). [C-STL-7]
+   */
+  honest:
+    "Hidden from screen capture and screen sharing, not from a camera, a capture card or a process list. Exams and interviews that forbid assistants still forbid it.",
+  /** The switch's state line, word for word (stealthVeil.ts@v1.1.0:15-16; App.vue@v1.1.0:2814-2816). [C-STL-8] */
+  stateOn: "On. Pebble is hidden from screen capture and won't take focus. Find it in the menu bar.",
+  stateOff: "Off. Pebble shows in screen shares, the Dock and ⌘Tab as usual.",
+  /** The interactive example: a switch that flips the page's pebble and the picture (an explainer, on --fill). */
+  example: {
+    label: common.interactiveExample,
+    intro: "Flip the switch. Its words are the ones Pebble shows.", // [C-STL-9]
+  },
+  /**
+   * Under the page's pebble, after `veil`: its Veil is Pebble's own (shared/pebble/stealthVeil.ts, vendored from
+   * v1.1.0 byte for byte), drawn by the site, so it is a render and never called a recording (OVERRIDES §21). [C-STL-10]
+   */
+  renderNote: "This pebble uses Pebble's own Veil code: a render, not a screen recording.",
+  /** The capture's caption: the release it was captured from (a copy of the v1.1.0 tag, HANDOFF-1.1-captures). [C-STL-11] */
+  captureCaption: "Settings › Privacy and focus in Pebble 1.1.0.",
+  /**
+   * Text alternatives of the captures (public/ui/v1/settings-privacy-card-{off,on}-*). Short on purpose: the section's
+   * own text quotes every line the picture shows, so a screen reader doesn't hear them twice. [C-STL-12]
+   */
+  media: {
+    off: "Pebble's Settings, Privacy and focus: the Stealth Lockdown switch off, with its description, the state line, the note on what it doesn't hide, and the Stealth and Lockdown halves.",
+    on: "Pebble's Settings, Privacy and focus: the Stealth Lockdown switch on, in dusk blue, with the state line for on, the note on what it doesn't hide, and the Stealth and Lockdown halves.",
   },
 } as const;
 

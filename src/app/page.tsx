@@ -1,6 +1,8 @@
-// The home page: the sections of docs/DESIGN.md §5, in order. Each section lives in src/components/sections and
-// fetches what it needs itself, so lanes F2a and F2b fill the sections without editing this file. Page-level overlays
-// (the sticky call to action and the film theatre) are mounted here once.
+// The home page: the sections of docs/DESIGN.md §5, in order, with Stealth Lockdown (Pebble 1.1.0, OVERRIDES §21)
+// right after Private by default. Each section lives in src/components/sections and fetches what it needs itself, so
+// the section lanes fill the sections without editing this file. Page-level overlays (the sticky call to action and
+// the film theatre) are mounted here once. The sticky pill's facts are the version, the size and "Not notarized"
+// (OVERRIDES §20), each its own item.
 import { formatTimecode, timedChapters } from "@/content/chapters";
 import { FilmPlayer, type TimedChapter } from "@/components/media/FilmPlayer";
 import { AgentGuard } from "@/components/sections/AgentGuard";
@@ -18,12 +20,13 @@ import { OpenSourceFaq } from "@/components/sections/OpenSourceFaq";
 import { Pace } from "@/components/sections/Pace";
 import { Privacy } from "@/components/sections/Privacy";
 import { ProjectStory } from "@/components/sections/ProjectStory";
+import { StealthLockdown } from "@/components/sections/StealthLockdown";
 import { ViewsAndTour } from "@/components/sections/ViewsAndTour";
 import { StickyCta } from "@/components/shell/StickyCta";
+import { stickyCta } from "@/content/copy";
 import { filmMedia } from "@/lib/media";
 import { getRelease } from "@/lib/release";
 
-import { stickyCta } from "@/content/copy";
 // ISR: the release facts (src/lib/release.ts) refresh at most once an hour (OVERRIDES §1, critic C7).
 export const revalidate = 3600;
 
@@ -44,6 +47,7 @@ export default async function Home() {
       <Infrastructure />
       <Benchmarks />
       <Privacy />
+      <StealthLockdown />
       <Install />
       <Limits />
       <OpenSourceFaq />

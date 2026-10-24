@@ -179,13 +179,16 @@ export type UiStillName =
   | "settings-models"
   | "settings-memory"
   | "main-quiz"
-  | "main-dashboard";
+  | "main-dashboard"
+  // Pebble 1.1.0, Settings › Privacy and focus, Stealth Lockdown off and on (the 1440 × 900 window; HANDOFF-1.1-captures)
+  | "settings-privacy-off"
+  | "settings-privacy-on";
 
 export const UI_STILL_WIDTHS = [1200, 2400] as const;
 
 export type UiStill = Readonly<{
   name: string;
-  /** 16:10, from the 1440 × 900 capture window */
+  /** at 2400 px wide: 16:10 for the 1440 × 900 capture window (uiStill), a crop's own aspect otherwise (uiCropStill) */
   width: number;
   height: number;
   files: Readonly<Record<Theme, Readonly<Record<(typeof UI_STILL_WIDTHS)[number], ImageSet>>>>;
@@ -193,9 +196,38 @@ export type UiStill = Readonly<{
 }>;
 
 export function uiStill(name: UiStillName | (string & {})): UiStill {
+  return stillFiles(name, 2400, 1500);
+}
+
+/**
+ * Real-UI stills that are a crop with their own aspect, not the 16:10 window: Pebble 1.1.0's Settings › Privacy and
+ * focus section alone, Stealth Lockdown off and on, one frame for both (516 × 372 pt at 5x; HANDOFF-1.1-captures).
+ * Their size at 2400 px wide; the 1200 px files are half of it.
+ */
+const UI_CROP_STILLS = {
+  "settings-privacy-card-off": { width: 2400, height: 1730 },
+  "settings-privacy-card-on": { width: 2400, height: 1730 },
+} as const;
+
+export type UiCropStillName = keyof typeof UI_CROP_STILLS;
+
+/** A crop still's ImageSets at 2400 × 1730 and 1200 × 865, in both themes (the same files and names as uiStill). */
+export function uiCropStill(name: UiCropStillName): UiStill {
+  const { width, height } = UI_CROP_STILLS[name];
+  return stillFiles(name, width, height);
+}
+
+function stillFiles(name: string, width: number, height: number): UiStill {
+  const half = { width: width / 2, height: Math.round(height / 2) };
   const files = {
-    light: { 1200: imageSet(`${UI}/${name}-light-1200`, 1200, 750), 2400: imageSet(`${UI}/${name}-light-2400`, 2400, 1500) },
-    dark: { 1200: imageSet(`${UI}/${name}-dark-1200`, 1200, 750), 2400: imageSet(`${UI}/${name}-dark-2400`, 2400, 1500) },
+    light: {
+      1200: imageSet(`${UI}/${name}-light-1200`, half.width, half.height),
+      2400: imageSet(`${UI}/${name}-light-2400`, width, height),
+    },
+    dark: {
+      1200: imageSet(`${UI}/${name}-dark-1200`, half.width, half.height),
+      2400: imageSet(`${UI}/${name}-dark-2400`, width, height),
+    },
   };
-  return { name, width: 2400, height: 1500, files, available: files.light[2400].available || files.light[1200].available };
+  return { name, width, height, files, available: files.light[2400].available || files.light[1200].available };
 }

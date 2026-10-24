@@ -2,9 +2,10 @@
 //
 // The head through SectionHead: "Privacy / No telemetry" in the rail; "Private by default." with the lead's first
 // sentence ("Your conversations and memories are stored on your Mac.") as its muted second line; the rest of the lead;
-// the film chip (the film's "Open source" chapter covers privacy too). Both columns sit right under it, so "Private by
-// default" is never read as "nothing leaves": "Stored on your Mac" and "What leaves your Mac", with all five
-// destinations.
+// one link, "Stealth Lockdown ›", to the next section (Pebble 1.1.0, what others see on your screen; its honest line
+// is there); the film chip (the film's "Open source" chapter covers privacy too). Both columns sit right under it, so
+// "Private by default" is never read as "nothing leaves": "Stored on your Mac" and "What leaves your Mac", with all
+// five destinations.
 //
 // The strands are a diagram of their own (DESIGN-LEXINGTON §3.9): on wide screens five strands, drawn in the line's
 // hand (Privacy.strands.tsx), branch from the small "Your Mac" pebble above the columns to the five destinations;
@@ -37,6 +38,7 @@ export function Privacy() {
         title={privacy.h2}
         then={THEN}
         lead={LEAD}
+        action={<TextLink href={privacy.stealthLink.href}>{privacy.stealthLink.label}</TextLink>}
         chip="open-source"
       />
 
