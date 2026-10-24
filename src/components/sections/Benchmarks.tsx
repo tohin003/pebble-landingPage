@@ -28,6 +28,8 @@ import styles from "./Benchmarks.module.css";
 
 /** Words in which bare numbers are counts (rendered as data): "45 tasks", "135 runs" … */
 const COUNTS = ["tasks", "runs", "false completions"];
+/** the ids of the table's headers start with this */
+const TABLE = "benchmarks-sides-table";
 
 export type BenchmarksProps = Readonly<{
   /** the gate (default: releaseFacts.benchmarksPublic); the tests pass false to check that nothing renders */
@@ -141,47 +143,56 @@ export async function Benchmarks({ open = releaseFacts.benchmarksPublic, offered
 
           {/* 3. ahead and behind, at the same weight */}
           <Row id="benchmarks-sides" title={b.sides.title}>
+            {/* Every cell names its headers (headers and id): the group ("Behind"), the measure and the product. Not all
+                screen readers apply scope="rowgroup", and axe can't resolve it (QA F-AXE-1); explicit headers can't be
+                misread. */}
             <table className={styles.table} aria-labelledby="benchmarks-sides">
               <thead>
                 <tr>
-                  <th scope="col" className={styles.measureHead}>
+                  <th scope="col" id={`${TABLE}-measure`} className={styles.measureHead}>
                     {b.sides.columns.measure}
                   </th>
-                  <th scope="col" className={styles.valueHead} data-tone="pebble">
+                  <th scope="col" id={`${TABLE}-pebble`} className={styles.valueHead} data-tone="pebble">
                     <span className={styles.key} aria-hidden="true" />
                     {b.sides.columns.pebble}
                   </th>
-                  <th scope="col" className={styles.valueHead} data-tone="other">
+                  <th scope="col" id={`${TABLE}-other`} className={styles.valueHead} data-tone="other">
                     <span className={styles.key} aria-hidden="true" />
                     {b.sides.columns.other}
                   </th>
                 </tr>
               </thead>
-              {b.sides.groups.map((group) => (
-                <tbody key={group.id} className={styles.group}>
-                  <tr>
-                    <th scope="rowgroup" colSpan={3} className={styles.groupTitle}>
-                      {group.title}
-                    </th>
-                  </tr>
-                  {group.rows.map((row) => (
-                    <tr key={row.measure}>
-                      <th scope="row" className={styles.measure}>
-                        <span className={styles.measureName}>{row.measure}</span>
-                        <span className={styles.measureNote}>
-                          <Figures text={row.note} counts={COUNTS} />
-                        </span>
+              {b.sides.groups.map((group) => {
+                const groupId = `${TABLE}-${group.id}`;
+                return (
+                  <tbody key={group.id} className={styles.group}>
+                    <tr>
+                      <th scope="rowgroup" colSpan={3} id={groupId} className={styles.groupTitle}>
+                        {group.title}
                       </th>
-                      <td className={styles.value}>
-                        <Value text={row.pebble} />
-                      </td>
-                      <td className={styles.value}>
-                        <Value text={row.other} />
-                      </td>
                     </tr>
-                  ))}
-                </tbody>
-              ))}
+                    {group.rows.map((row, i) => {
+                      const rowId = `${groupId}-${i + 1}`;
+                      return (
+                        <tr key={row.measure}>
+                          <th scope="row" id={rowId} headers={`${groupId} ${TABLE}-measure`} className={styles.measure}>
+                            <span className={styles.measureName}>{row.measure}</span>
+                            <span className={styles.measureNote}>
+                              <Figures text={row.note} counts={COUNTS} />
+                            </span>
+                          </th>
+                          <td headers={`${groupId} ${rowId} ${TABLE}-pebble`} className={styles.value}>
+                            <Value text={row.pebble} />
+                          </td>
+                          <td headers={`${groupId} ${rowId} ${TABLE}-other`} className={styles.value}>
+                            <Value text={row.other} />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                );
+              })}
             </table>
             <ul className={styles.notes}>
               {b.sides.notes.map((note) => (

@@ -7,7 +7,7 @@ import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { benchmarkLinks, benchmarkLlmsLines, benchmarks, money, pct, run, signed } from "./benchmarks";
+import { benchmarkLinks, benchmarkLlmsLinesFor, benchmarks, money, pct, run, signed } from "./benchmarks";
 import { releaseFacts } from "./releaseFacts";
 
 const FILE = path.join(import.meta.dir, "..", "..", "docs", "benchmarks", "claude-opus-5-5.analysis.json");
@@ -76,11 +76,20 @@ describe("every number in `run` comes from the analysis", () => {
     expect(a.families.multi_turn.products.claude_code.success).toBe(1);
   });
 
-  test("coding fixes and research, with counts and paired intervals", () => {
-    for (const [key, page, diff] of [
+  test("every family where Pebble trailed, with counts and paired intervals (OVERRIDES §28 CL-11)", () => {
+    const behind = [
       ["coding_fix", "codingFix", run.codingFixDifference],
+      ["coding_build_review", "codingBuild", run.codingBuildDifference],
       ["research", "research", run.researchDifference],
-    ] as const) {
+      ["companion", "companion", run.companionDifference],
+    ] as const;
+    // these four are every compared family where Pebble's rate was lower: none is left out of "Behind"
+    const trailing = Object.entries(a.families as Record<string, { products: Record<string, { success: number }> }>)
+      .filter(([key, f]) => !a.claims.descriptive.includes(key) && f.products.pebble!.success < f.products.claude_code!.success)
+      .map(([key]) => key)
+      .sort();
+    expect(trailing).toEqual(behind.map(([key]) => key).sort());
+    for (const [key, page, diff] of behind) {
       const f = a.families[key];
       expect(f.products.pebble.cells).toBe(run.familyRuns);
       expect(asRate(f.products.pebble.success)).toBe(run.pebble[page].rate);
@@ -138,7 +147,7 @@ describe("every number in `run` comes from the analysis", () => {
 });
 
 describe("the words follow the rules", () => {
-  const all = JSON.stringify(benchmarks) + benchmarkLlmsLines.join("\n");
+  const all = JSON.stringify(benchmarks) + benchmarkLlmsLinesFor(releaseFacts.version).join("\n");
 
   test("the headline is the one allowed, word for word", () => {
     expect(benchmarks.h2).toBe("Pebble matches Claude Code on the same model, within the margin.");
@@ -163,15 +172,50 @@ describe("the words follow the rules", () => {
     expect(benchmarks.lead).toContain("from −9.2 to +2.5");
   });
 
+  test("Behind lists every family where Pebble trailed, at equal weight, then the false completions", () => {
+    const behind = benchmarks.sides.groups.find((g) => g.id === "behind")!;
+    expect(behind.rows.map((r) => r.measure)).toEqual([
+      "Coding fixes",
+      "Coding build and review",
+      "Research",
+      "Everyday companion",
+      "False completions",
+    ]);
+    for (const row of behind.rows.slice(0, 4)) expect(row.note.startsWith("Paired difference ")).toBe(true);
+    const build = behind.rows[1]!;
+    expect([build.pebble, build.other, build.note]).toEqual([
+      "93.3 % (14 of 15)",
+      "100.0 % (15 of 15)",
+      "Paired difference −6.7 points (−20.0 to 0.0).",
+    ]);
+    expect(behind.rows[3]!.note).toBe(build.note);
+    expect(behind.rows[4]!.note).toContain("a substantive check failed");
+  });
+
+  test("the cost line carries its two limits at its own size; nothing promises a next change", () => {
+    expect(benchmarks.cost.line).toContain("Pebble's figure is an upper bound.");
+    expect(benchmarks.cost.line).toContain("Claude Code ran on a subscription");
+    expect(benchmarks.cost.line).toContain("$11.74");
+    expect(JSON.stringify(benchmarks)).not.toMatch(/next change/i);
+  });
+
+  test("llms.txt's lines carry the intervals, every trailing family, and the release on offer as unmeasured", () => {
+    const lines = benchmarkLlmsLinesFor("1.5.0").join("\n");
+    expect(lines).toContain("Pebble 1.5.0, the latest release, hasn't been measured yet.");
+    expect(lines).toContain("79.3 %, 95 % interval 68.1 to 88.9");
+    expect(lines).toContain("82.2 %, 95 % interval 71.9 to 91.9");
+    for (const family of ["coding fixes", "coding build and review", "research", "everyday companion"]) expect(lines).toContain(family);
+    expect(benchmarkLlmsLinesFor("1.0.4").join("\n")).not.toContain("hasn't been measured");
+  });
+
   test("the links point at Pebble's main, which carries the correction", () => {
     for (const href of Object.values(benchmarkLinks)) expect(href.startsWith("https://github.com/tohin003/Pebble/")).toBe(true);
     expect(benchmarkLinks.correction).toContain("#corrections-after-publication");
   });
 
   test("the result speaks for 1.0.2 to 1.0.4, not for the release the page states, and the section says so", () => {
-    // measured on 1.0.2; 1.0.3 and 1.0.4 don't change how a task runs (STATUS 20:34). 1.1.0, 1.2.0 and 1.3.0 weren't
-    // measured (OVERRIDES §21, §23, §25), so the method block adds benchmarks.method's notMeasured line for the release on
-    // offer.
+    // measured on 1.0.2; 1.0.3 and 1.0.4 don't change how a task runs (STATUS 20:34). Later releases weren't measured
+    // (OVERRIDES §21 to §32), so the method block adds benchmarks.method's notMeasured line for the release on offer.
     expect([...run.coveredVersions]).toEqual(["1.0.2", "1.0.3", "1.0.4"]);
     expect(run.coveredVersions).toContain(run.pebble.build);
     expect(run.coveredVersions).not.toContain(releaseFacts.version);

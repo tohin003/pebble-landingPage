@@ -28,8 +28,11 @@ export type ProductRun = Readonly<{
   falseCompletions: number;
   /** "Multi-turn success": the runs with follow-up turns (not the "Multi-turn" family) */
   multiTurn: Readonly<{ passed: number; rate: number }>;
+  /** the four compared families where Pebble trailed (§5b's family table; OVERRIDES §28 CL-11), 15 runs each */
   codingFix: Readonly<{ passed: number; rate: number }>;
+  codingBuild: Readonly<{ passed: number; rate: number }>;
   research: Readonly<{ passed: number; rate: number }>;
+  companion: Readonly<{ passed: number; rate: number }>;
   /** phrasing: the canonical wording and the weakest of the three */
   canonical: number;
   worstPhrasing: number;
@@ -72,7 +75,9 @@ export const run = {
     falseCompletions: 21,
     multiTurn: { passed: 32, rate: 88.9 },
     codingFix: { passed: 12, rate: 80.0 },
+    codingBuild: { passed: 14, rate: 93.3 },
     research: { passed: 0, rate: 0.0 },
+    companion: { passed: 14, rate: 93.3 },
     canonical: 82.2,
     worstPhrasing: 75.6,
     timeMedian: 10.9,
@@ -89,7 +94,9 @@ export const run = {
     falseCompletions: 17,
     multiTurn: { passed: 29, rate: 80.6 },
     codingFix: { passed: 14, rate: 93.3 },
+    codingBuild: { passed: 15, rate: 100.0 },
     research: { passed: 3, rate: 20.0 },
+    companion: { passed: 15, rate: 100.0 },
     canonical: 80.0,
     worstPhrasing: 80.0,
     timeMedian: 9.7,
@@ -100,7 +107,9 @@ export const run = {
   /** Pebble minus Claude Code, paired run by run, in points, with its 95 % interval */
   difference: { points: -3.3, interval: [-9.2, 2.5] },
   codingFixDifference: { points: -13.3, interval: [-26.7, 0.0] },
+  codingBuildDifference: { points: -6.7, interval: [-20.0, 0.0] },
   researchDifference: { points: -20.0, interval: [-46.7, 0.0] },
+  companionDifference: { points: -6.7, interval: [-20.0, 0.0] },
   /** Claude Code's own meter, the API-equivalent cost of its whole run (it ran on a subscription) */
   claudeCodeReportedCost: 11.74,
   /** the correction of 23 October (Pebble commit 26d7b19): Claude Code's overall result with the two runs counted */
@@ -140,6 +149,16 @@ export function seconds(n: number): string {
 const P = run.pebble;
 const C = run.claudeCode;
 const D = run.difference;
+
+/** "Paired difference −6.7 points (−20.0 to 0.0)" */
+function paired(d: Readonly<{ points: number; interval: readonly [number, number] }>): string {
+  return `Paired difference ${signed(d.points)} points (${signed(d.interval[0])} to ${signed(d.interval[1])})`;
+}
+
+/** "79.3 % (95 % interval 68.1 to 88.9)": a rate with its interval, as llms.txt carries it (PHILOSOPHY principle 6) */
+function rateWithInterval(p: ProductRun): string {
+  return `${pct(p.rate)}, 95 % interval ${p.interval[0].toFixed(1)} to ${p.interval[1].toFixed(1)}`;
+}
 
 // ---- links: on Pebble's `main`, which carries the correction (OVERRIDES §18). Checked HTTP 200 on 2026-10-24 ------
 
@@ -230,7 +249,11 @@ export const benchmarks = {
     link: "Read the correction",
   },
 
-  /** 3. Where Pebble led and where it trailed, at equal weight. [C-BENCH-7..13] */
+  /**
+   * 3. Where Pebble led and where it trailed, at equal weight. "Behind" lists every compared family where Pebble
+   * trailed (OVERRIDES §28 CL-11; critic C01), each with its rates and counts and its paired difference, then the false
+   * completions. [C-BENCH-7..13] [C-BENCH-19] [C-BENCH-20]
+   */
   sides: {
     title: "Where Pebble was ahead, and where it was behind",
     columns: { measure: "Measure", pebble: P.name, other: C.name },
@@ -253,19 +276,31 @@ export const benchmarks = {
         rows: [
           {
             measure: "Coding fixes",
-            note: `Paired difference ${signed(run.codingFixDifference.points)} points (${signed(run.codingFixDifference.interval[0])} to ${signed(run.codingFixDifference.interval[1])}).`,
+            note: `${paired(run.codingFixDifference)}.`,
             pebble: `${pct(P.codingFix.rate)} (${of(P.codingFix.passed, run.familyRuns)})`,
             other: `${pct(C.codingFix.rate)} (${of(C.codingFix.passed, run.familyRuns)})`,
           },
           {
+            measure: "Coding build and review",
+            note: `${paired(run.codingBuildDifference)}.`,
+            pebble: `${pct(P.codingBuild.rate)} (${of(P.codingBuild.passed, run.familyRuns)})`,
+            other: `${pct(C.codingBuild.rate)} (${of(C.codingBuild.passed, run.familyRuns)})`,
+          },
+          {
             measure: "Research",
-            note: `Paired difference ${signed(run.researchDifference.points)} points (${signed(run.researchDifference.interval[0])} to ${signed(run.researchDifference.interval[1])}), with a strict citation grader.`,
+            note: `${paired(run.researchDifference)}, with a strict citation grader.`,
             pebble: `${pct(P.research.rate)} (${of(P.research.passed, run.familyRuns)})`,
             other: `${pct(C.research.rate)} (${of(C.research.passed, run.familyRuns)})`,
           },
           {
+            measure: "Everyday companion",
+            note: `${paired(run.companionDifference)}.`,
+            pebble: `${pct(P.companion.rate)} (${of(P.companion.passed, run.familyRuns)})`,
+            other: `${pct(C.companion.rate)} (${of(C.companion.passed, run.familyRuns)})`,
+          },
+          {
             measure: "False completions",
-            note: "Runs that presented a finished result while a check failed.",
+            note: "Runs that presented a finished result while a substantive check failed.", // CL-10: BENCH:54-56
             pebble: of(P.falseCompletions, run.runsPerProduct),
             other: of(C.falseCompletions, run.runsPerProduct),
           },
@@ -298,14 +333,17 @@ export const benchmarks = {
     ],
   },
 
-  /** 4. The cost, printed plainly with its caveats. [C-BENCH-14] [C-BENCH-15] */
+  /**
+   * 4. The cost, printed plainly, its two limits in the same sentence run and at the same size (PHILOSOPHY principle 3;
+   * critic C12); the method notes under it stay small. The cache sentence is what was measured on 1.0.2, in the past
+   * tense; nothing about later releases' caching (OVERRIDES §25, §28 CL-2). [C-BENCH-14] [C-BENCH-15]
+   */
   cost: {
     title: "What it cost",
-    line: `Per task, at list prices: Pebble ${money(P.costPerTask)}, Claude Code ${money(C.costPerTask)}.`,
+    line: `Per task, at list prices: Pebble ${money(P.costPerTask)}, Claude Code ${money(C.costPerTask)}. Pebble's figure is an upper bound. Claude Code ran on a subscription; its own API-equivalent figure for the whole run is ${money(run.claudeCodeReportedCost, 2)}.`,
     caveats: [
-      `One formula prices both products' tokens at Anthropic's list prices for ${run.model}, read on ${run.date}. Pebble's figure is an upper bound.`,
-      `Claude Code ran on a subscription; its own API-equivalent figure for the whole run is ${money(run.claudeCodeReportedCost, 2)}.`,
-      `Pebble sends fewer tokens per task, but only ${pct(P.cacheShare)} of its input came from the prompt cache, against ${pct(C.cacheShare)} for Claude Code: it rebuilds its task notes at the start of the conversation on each step. Moving them to the end is its next change.`,
+      `One formula prices both products' tokens at Anthropic's list prices for ${run.model}, read on ${run.date}.`,
+      `Pebble sent fewer tokens per task, but only ${pct(P.cacheShare)} of its input came from the prompt cache, against ${pct(C.cacheShare)} for Claude Code: the measured build rebuilt its task notes at the start of the conversation on each step.`,
     ],
     reported: "Cost is reported here, not claimed.",
   },
@@ -337,13 +375,19 @@ export const benchmarks = {
 
 /**
  * llms.txt's benchmark lines (seo.ts), from the same sentences and numbers as the section, so search engines and
- * assistants quote what the page says (S2 §6.6). Only while releaseFacts.benchmarksPublic is true. [C-BENCH-*]
+ * assistants quote what the page says (S2 §6.6): every rate with its count and its interval, every family where Pebble
+ * trailed, and the "hasn't been measured yet" line for the release on offer. Only while releaseFacts.benchmarksPublic is
+ * true. [C-BENCH-*]
  */
-export const benchmarkLlmsLines: readonly string[] = [
-  benchmarks.h2,
-  benchmarks.lead,
-  `Pebble passed ${of(P.passed, run.runsPerProduct)} runs (${pct(P.rate)}) and Claude Code ${of(C.passed, run.runsPerProduct)} (${pct(C.rate)}).`,
-  `Pebble was ahead on multi-turn success (${of(P.multiTurn.passed, run.multiTurnRuns)} runs with follow-up turns, against ${of(C.multiTurn.passed, run.multiTurnRuns)}) and behind on coding fixes (${of(P.codingFix.passed, run.familyRuns)}, against ${of(C.codingFix.passed, run.familyRuns)}) and research (${of(P.research.passed, run.familyRuns)}, against ${of(C.research.passed, run.familyRuns)}, with a strict citation grader). False completions: ${P.falseCompletions} for Pebble and ${C.falseCompletions} for Claude Code, of ${run.runsPerProduct} runs each.`,
-  `Cost per task at list prices: ${money(P.costPerTask)} for Pebble, an upper bound, and ${money(C.costPerTask)} for Claude Code, which ran on a subscription. Cost and time are reported, not claimed.`,
-  `${benchmarks.correction.title} ${benchmarks.correction.body}`,
-];
+export function benchmarkLlmsLinesFor(offered: string): readonly string[] {
+  return [
+    benchmarks.h2,
+    benchmarks.lead,
+    // the release the page offers, unless the result covers it (claims audit CL-9: never tie the headline to it)
+    ...(run.coveredVersions.some((v) => v === offered) ? [] : [benchmarks.method.notMeasured(offered)]),
+    `Pebble passed ${of(P.passed, run.runsPerProduct)} runs (${rateWithInterval(P)}) and Claude Code ${of(C.passed, run.runsPerProduct)} (${rateWithInterval(C)}).`,
+    `Pebble was ahead on multi-turn success (${of(P.multiTurn.passed, run.multiTurnRuns)} runs with follow-up turns, against ${of(C.multiTurn.passed, run.multiTurnRuns)}; no interval is published for this measure). It was behind on coding fixes (${of(P.codingFix.passed, run.familyRuns)}, against ${of(C.codingFix.passed, run.familyRuns)}; ${paired(run.codingFixDifference).toLowerCase()}), coding build and review (${of(P.codingBuild.passed, run.familyRuns)}, against ${of(C.codingBuild.passed, run.familyRuns)}; ${paired(run.codingBuildDifference).toLowerCase()}), research (${of(P.research.passed, run.familyRuns)}, against ${of(C.research.passed, run.familyRuns)}, with a strict citation grader; ${paired(run.researchDifference).toLowerCase()}) and everyday companion (${of(P.companion.passed, run.familyRuns)}, against ${of(C.companion.passed, run.familyRuns)}; ${paired(run.companionDifference).toLowerCase()}). Every family's interval reaches zero. False completions: ${P.falseCompletions} for Pebble and ${C.falseCompletions} for Claude Code, of ${run.runsPerProduct} runs each.`,
+    `Cost per task at list prices: ${money(P.costPerTask)} for Pebble, an upper bound, and ${money(C.costPerTask)} for Claude Code, which ran on a subscription. Cost and time are reported, not claimed.`,
+    `${benchmarks.correction.title} ${benchmarks.correction.body}`,
+  ];
+}

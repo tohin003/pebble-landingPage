@@ -4,7 +4,7 @@
 // (MASTER_PLAN §7.8). Same voice and claim rules as copy.ts; sources in docs/CLAIMS.md under "SEO" ([C-SEO-…]).
 // metadataBase comes from VERCEL_PROJECT_PRODUCTION_URL in layout.tsx (§2.2); nothing here hard-codes a domain.
 
-import { benchmarkLinks, benchmarkLlmsLines } from "./benchmarks";
+import { benchmarkLinks, benchmarkLlmsLinesFor } from "./benchmarks";
 import { formatMegabytes, links, release, stealth } from "./copy";
 import { formatLongDate, releaseFacts } from "./releaseFacts";
 
@@ -138,7 +138,7 @@ ${
     ? `
 ## Benchmark
 
-${benchmarkLlmsLines.map((line) => `- ${line}`).join("\n")}
+${benchmarkLlmsLinesFor(releaseFacts.version).map((line) => `- ${line}`).join("\n")}
 - [The full results](${benchmarkLinks.results})
 `
     : `- This site makes no speed or quality comparison with other tools.
