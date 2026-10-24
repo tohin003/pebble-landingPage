@@ -160,14 +160,36 @@ async function indicatorDiff(page, info) {
   // puppeteer's clip is in document coordinates
   const sx = await page.evaluate(() => ({ x: scrollX, y: scrollY }));
   const clip = { x: x + sx.x, y: y + sx.y, width: w, height: h };
+  // A loop playing under the stop (a loop's own pause button sits on its video) changes pixels between the two shots
+  // by itself: pause the videos that play, compare still frames, and let them play again afterwards.
+  const pausedVideos = await page.evaluateHandle(() => {
+    const list = [...document.querySelectorAll("video")].filter((v) => !v.paused);
+    for (const v of list) v.pause();
+    return list;
+  });
+  await sleep(160);
   const focused = await page.screenshot({ clip });
   const handle = await page.evaluateHandle(() => document.activeElement);
   await page.evaluate((el) => el.blur(), handle);
   await sleep(260);
   const blurred = await page.screenshot({ clip });
-  await page.evaluate((el) => el.focus({ preventScroll: true }), handle);
+  // Focus the stop again, so the next Tab continues from it. A focus() right after a screenshot sometimes didn't take
+  // over a loop that had just started (1440 px, the film teaser's button): the walk then went from <body> back to the
+  // same stop on every Tab, 500 times. Check, and try again.
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const back = await page.evaluate((el) => {
+      el.focus({ preventScroll: true });
+      return document.activeElement === el;
+    }, handle);
+    if (back) break;
+    await sleep(120);
+  }
   await sleep(260);
   await handle.dispose();
+  await page.evaluate((list) => {
+    for (const v of list) void v.play().catch(() => {});
+  }, pausedVideos);
+  await pausedVideos.dispose();
   const a = await sharp(focused).raw().toBuffer({ resolveWithObject: true });
   const b = await sharp(blurred).raw().toBuffer({ resolveWithObject: true });
   let changed = 0;
@@ -574,6 +596,17 @@ async function session(base, width, theme, motion) {
         return b.getAttribute("aria-label");
       }, i);
       await sleep(1500);
+      // After the earlier steps, the phone page sometimes jumped 800-950 px back up a few ms after the instant scroll
+      // (no script call; html has scroll-behavior: smooth), leaving the loop off screen, where it rightly doesn't play.
+      // Bring the button back to the middle if it left the screen, and give the loop time to start.
+      const moved = await page.evaluate(() => {
+        const b = document.activeElement;
+        const r = b.getBoundingClientRect();
+        if (r.top >= 0 && r.bottom <= innerHeight) return false;
+        b.scrollIntoView({ block: "center", behavior: "instant" });
+        return true;
+      });
+      if (moved) await sleep(1200);
       const before = await page.evaluate(() => ({ label: document.activeElement.getAttribute("aria-label"), paused: document.activeElement.closest("figure").querySelector("video")?.paused }));
       await page.keyboard.press("Enter");
       await sleep(600);
