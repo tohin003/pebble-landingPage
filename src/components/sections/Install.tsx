@@ -1,12 +1,14 @@
 // Section 12, Install (DESIGN-LEXINGTON §6 row 12; comp A; OVERRIDES §1, §2, §8 H14, §16).
 //
-// The head through SectionHead: "Install / Version 1.0.4" in the rail (the version the page offers, as data), the H2
+// The head through SectionHead: "Install / Version x.y.z" in the rail (the version the page offers, as data), the H2
 // "Install Pebble." with the lead's first sentence as its muted second line, the rest of the lead, the film chip.
 // The exhibit, from column 4:
-// - the requirements strip: four cells between hairlines (macOS always with "Built and tested on macOS 27"), the size
-//   and the version as data;
+// - the requirements strip: four cells between hairlines, each a value and a note under it (macOS has none since
+//   OVERRIDES §28 took "Built and tested on macOS 27" off), the size and the version as data;
 // - the one-line command on a flat --fill block with Copy (Install.pill.tsx); the small live pebble perches on its top
-//   edge and taps when the command is copied. Under it, "Read the installer first ›" and two of its options;
+//   edge and taps when the command is copied. Below 900 px the command wraps inside the block, so all of it, the pipe
+//   into bash included, is in view (critic C10). Under it, "Read the installer first ›" on its own line, then two of
+//   the installer's options;
 // - two ways side by side (a 4 | 5 split): what the installer does, with the installer's ticks (a state mark, one of the
 //   accent's three jobs), and "Or download it and check it": the zip and SHA256SUMS, the short honest line next to
 //   those downloads (OVERRIDES §2), the steps as plain numerals, the checksum's own limit under its step (DESIGN §9)
@@ -65,7 +67,7 @@ export async function Install() {
                 <dt>{cell.label}</dt>
                 <dd>
                   <DataText text={cell.value} className={styles.value} />
-                  <DataText text={cell.note} className={styles.note} />
+                  {cell.note ? <DataText text={cell.note} className={styles.note} /> : null}
                 </dd>
               </div>
             ))}

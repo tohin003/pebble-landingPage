@@ -125,7 +125,9 @@
 }
 
 /* The whole line at 14.5 px where it fits; narrower, the type shrinks with the block (85 characters of Geist Mono are
-   51 em wide; the Copy button and the gap take 118 px) down to 12.5 px. Below that it scrolls (Install.pill.tsx). */
+   51 em wide; the Copy button and the gap take 118 px) down to 12.5 px. Below 900 px it wraps inside the block (see
+   the end of this file), so the part a careful person checks, the pipe into bash, is never out of view (critic C10).
+   From 900 px up the whole line fits; if a font ever made it longer, it scrolls (Install.pill.tsx). */
 .pill .command {
   flex: 1;
   min-width: 0;
@@ -248,16 +250,21 @@
   color: var(--ink);
 }
 
-/* one line under the block: the installer's source, then two of its options */
+/* under the block: the installer's source on its own line, as the block's action, then two of its options, one to a
+   line (critic C24: in one wrapping row the link and the tips read as one jumbled paragraph) */
 .cmdMore {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px 28px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
   margin-top: 4px;
   font-size: 14px;
   line-height: 1.55;
   color: var(--ink-2);
+}
+
+.cmdMore > li:first-child {
+  margin-bottom: 4px;
 }
 
 /* ---- the two ways: a 4 | 5 split of the main column ---- */
@@ -490,17 +497,33 @@
     margin-top: 36px;
   }
 
-  .cmdMore {
-    flex-direction: column;
-    gap: 6px;
-  }
-
   /* one column: the words keep a 40 em measure; the hairlines keep the column's width */
   .ticks li,
   .steps li,
   .way > .small,
   .after p {
     padding-right: max(0px, calc(100% - 40em));
+  }
+}
+
+/* Below 900 px the command no longer fits on one line at 12.5 px: it wraps inside the block, breaking at its spaces and,
+   in the long URL, wherever it must. Copy stays level with the first line. The words are the command as it is (the
+   wrap only changes where lines break, never the text that Copy puts on the clipboard). */
+@media (max-width: 899px) {
+  .pill {
+    align-items: flex-start;
+  }
+
+  .pill .command {
+    overflow-x: visible;
+    padding: 12px 0 10px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .pill[data-more] .command {
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 }
 
