@@ -19,8 +19,16 @@
   color: var(--ink);
 }
 
-:global(:root:not([data-film="ready"])) .trigger {
+/* Until the film player is ready the trigger can't open the film, so it doesn't show. Without JavaScript it never will,
+   so it takes no space. With JavaScript (the head's bootstrap has set data-platform before the first paint) it keeps
+   its place meanwhile, so nothing moves when it appears: shown only at hydration, the film page's play button moved
+   the transcript 20 px on a slow phone, a 0.107 layout shift (final QA pass). */
+:global(:root:not([data-platform]):not([data-film="ready"])) .trigger {
   display: none;
+}
+
+:global(:root[data-platform]:not([data-film="ready"])) .trigger {
+  visibility: hidden;
 }
 
 /* the focus ring follows the stone's oval, not the button's box */

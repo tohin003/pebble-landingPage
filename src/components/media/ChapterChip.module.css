@@ -12,8 +12,14 @@
   white-space: nowrap;
 }
 
-:global(:root:not([data-film="ready"])) .chip {
+/* Hidden until the film player is ready; with JavaScript it keeps its place meanwhile, so nothing moves when it
+   appears (as FilmTrigger.module.css). */
+:global(:root:not([data-platform]):not([data-film="ready"])) .chip {
   display: none;
+}
+
+:global(:root[data-platform]:not([data-film="ready"])) .chip {
+  visibility: hidden;
 }
 
 .mark {
