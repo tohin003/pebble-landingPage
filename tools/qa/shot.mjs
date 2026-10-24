@@ -169,8 +169,8 @@ async function shoot(base, pagePath, width, theme, motion) {
   );
   await page.goto(`${base}${pagePath}`, { waitUntil: "networkidle0", timeout: 90000 });
   await page.evaluate(() => document.fonts.ready);
-  await sleep(1200); // the hero reveal (≈ 0.9 s) and the path's first build
-  // scroll through once: lazy images load and the line draws on (it never retracts), then back to the top
+  await sleep(1200); // the hero reveal (≈ 0.9 s)
+  // scroll through once so lazy images load, then back to the top
   // (behavior "instant": the page scrolls smoothly when motion is on, and a capture mid-scroll would be wrong)
   await page.evaluate(async () => {
     const to = (top) => window.scrollTo({ top, left: 0, behavior: "instant" });

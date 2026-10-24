@@ -170,7 +170,7 @@ export async function openPage(base, pagePath, { width, theme, motion = "on", he
   return { page, problems };
 }
 
-/** Scroll through the whole page once (lazy media loads, the line draws on), then back to the top. */
+/** Scroll through the whole page once (lazy media loads), then back to the top. */
 export async function scrollThrough(page, { pause = 140 } = {}) {
   await page.evaluate(async (wait) => {
     const to = (top) => window.scrollTo({ top, left: 0, behavior: "instant" });

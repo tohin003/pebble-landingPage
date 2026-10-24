@@ -40,10 +40,11 @@ async function axe(page) {
 }
 
 /**
- * Text contrast with the decorative layers set aside. The pebble's path is one SVG behind the whole page, and the hero
- * has a grain and glow backdrop: axe sees "an image node" behind every text and leaves contrast undecided
- * ("incomplete"). Both are aria-hidden decoration (a 1.35 px line, a 0.5-opacity grain), so this pass hides them, runs
- * only the color-contrast rule, and puts them back.
+ * Text contrast with the decorative layers set aside. Absolutely placed, aria-hidden decoration with no text (such as
+ * the pebble's ground lines, a 1.35 px stroke) can sit behind text: axe then sees "an image node" there and leaves
+ * contrast undecided ("incomplete"). This pass hides that decoration (never a pebble or a picture), runs only the
+ * color-contrast rule, and puts it back. (The page-wide path and the hero's grain it once hid were retired in the v2
+ * system.)
  */
 async function contrast(page) {
   await page.evaluate(() => {
@@ -52,8 +53,6 @@ async function contrast(page) {
       window.__hidden.push([el, el.style.visibility]);
       el.style.visibility = "hidden";
     };
-    const path = document.querySelector("svg[data-pebble-path]");
-    if (path) hide(path);
     for (const el of document.querySelectorAll('[aria-hidden="true"]')) {
       const cs = getComputedStyle(el);
       if ((cs.position === "absolute" || cs.position === "fixed") && !el.textContent.trim() && !el.querySelector("svg[data-pose], img")) hide(el);

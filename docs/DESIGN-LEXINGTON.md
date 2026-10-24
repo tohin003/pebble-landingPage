@@ -3,9 +3,9 @@
 Proposal from the direction lane, 2026-10-23. It applies the Lexington Themes philosophy (lexingtonthemes.com, by
 Michael Andreuzza) to Pebble's landing page, in Pebble's own tokens and words.
 
-- **Status.** A proposal. `docs/DESIGN.md` stays binding until the lead approves this. On approval, DESIGN.md gets a
-  §10 that points here, and the rules this replaces (§10 below) are marked as superseded. OVERRIDES and CLAIMS still
-  sit above both.
+- **Status.** Adopted by the lead and binding for the site. It supersedes `docs/DESIGN.md` wherever the two differ:
+  DESIGN.md's §10 points here and names the rules this replaces (§10 below). `docs/PHILOSOPHY.md` sets the intent above
+  both, and OVERRIDES and CLAIMS still sit above all three.
 - **Inputs.** The distilled system: `LEXINGTON.md`. The four research lanes: `L1-philosophy.md` to
   `L4-signature.md`, in the session scratchpad (`…/scratchpad/lexington/`). Pebble's current build: `src/app/globals.css`,
   `src/components/sections/*`, comps 2 and 3, and the real stills in `public/ui/v1/`.

@@ -208,7 +208,7 @@ async function session(base, width, theme, motion) {
   const tag = `${width}-${theme}-${motion}`;
   const { page, problems } = await openPage(base, "/", { width, theme, motion });
   await page.bringToFront();
-  await sleep(2200); // the reveal, the path, and the idle-time swap to the live pebbles
+  await sleep(2200); // the reveal and the idle-time swap to the live pebbles
   const shot = (step) => page.screenshot({ path: path.join(OUT, `${tag}-${step}.png`) });
   const check = (step, ok, detail = "") => {
     results.push({ tag, step, ok: !!ok, detail });
