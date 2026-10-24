@@ -59,7 +59,7 @@ export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: read
     const track = [...v.textTracks].find((t) => t.kind === "descriptions");
     if (!track) return;
     track.mode = "hidden";
-    const running = describeFilm({ video: videoOf(v), track: trackOf(track), voice: browserVoice("en-GB"), clock: browserClock });
+    const running = describeFilm({ video: videoOf(v), track: trackOf(track, v), voice: browserVoice("en-GB"), clock: browserClock });
     describer.current = running;
     return () => {
       describer.current = null;

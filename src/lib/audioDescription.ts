@@ -304,10 +304,31 @@ export function videoOf(element: HTMLVideoElement): DescribedVideo {
   };
 }
 
-export function trackOf(textTrack: TextTrack): DescriptionTrack {
+/** A time this close before a cue's start counts as in it (a seek to a chapter's start can land a hair short). */
+const CUE_EPSILON = 0.001;
+
+/**
+ * The cue the film is in at `time`: the latest one that has started and not yet ended (start <= time < end), with
+ * words in it. Chosen by time, not from the track's activeCues: Chrome counts a cue as active at its own end time
+ * too and updates activeCues a moment after a seek, so on a chapter button's seek activeCues[0] was the chapter just
+ * left, and its whole description was read again before the chapter the viewer chose.
+ */
+export function cueAt<T extends DescriptionCue>(cues: ArrayLike<T>, time: number): T | null {
+  const t = time + CUE_EPSILON;
+  let found: T | null = null;
+  for (let i = 0; i < cues.length; i++) {
+    const c = cues[i]!;
+    if (c.startTime <= t && t < c.endTime && c.text) found = c; // cues come in start order: the last match is latest
+  }
+  return found;
+}
+
+export function trackOf(textTrack: TextTrack, video: HTMLVideoElement): DescriptionTrack {
   return {
     activeCue: () => {
-      const active = textTrack.activeCues?.[0] as VTTCue | undefined;
+      const cues = textTrack.cues;
+      if (cues) return cueAt(cues as unknown as ArrayLike<VTTCue>, video.currentTime);
+      const active = textTrack.activeCues?.[0] as VTTCue | undefined; // no cue list (never while the track is hidden)
       return active && active.text ? active : null;
     },
     onCueChange: (listener) => {

@@ -7,8 +7,10 @@ import { chapters, FILM_DURATION_SECONDS } from "@/content/chapters";
 import {
   HOLD_LEAD,
   SEEK_SETTLE_MS,
+  cueAt,
   describeFilm,
   sentencesOf,
+  trackOf,
   type Clock,
   type DescribedVideo,
   type DescriptionCue,
@@ -249,6 +251,43 @@ describe("sentencesOf", () => {
       expect(lines.join(" ")).toBe(chapter.description.replace(/\s+/g, " ").trim());
       for (const line of lines) expect(words(line)).toBeLessThanOrEqual(32); // under about 13 s at 2.5 words/s
     }
+  });
+});
+
+describe("cueAt", () => {
+  // Chrome counts a cue as active at its own end time too, and updates activeCues a moment after a seek: on a chapter
+  // button's seek to 21.6 s, activeCues[0] was the chapter just left. The cue is chosen by the film's time instead.
+  const desktop = cue(0, 21.6, "Desktop.");
+  const project = cue(21.6, 28.8, "Project.");
+  const cues = [desktop, project];
+
+  test("a chapter's first frame belongs to that chapter, never to the one that ends there", () => {
+    expect(cueAt(cues, 21.6)).toBe(project);
+    expect(cueAt(cues, 21.5995)).toBe(project); // within a millisecond of the cut: the time's float noise
+  });
+
+  test("the hold on a chapter's last frame is still that chapter", () => {
+    expect(cueAt(cues, 21.6 - HOLD_LEAD)).toBe(desktop);
+    expect(cueAt(cues, 0)).toBe(desktop);
+  });
+
+  test("no cue past the last one, and a cue without words is no description", () => {
+    expect(cueAt(cues, 28.8)).toBe(null);
+    expect(cueAt([cue(0, 5, "")], 1)).toBe(null);
+    expect(cueAt([], 1)).toBe(null);
+  });
+
+  test("the DOM adapter reads the film's time, not activeCues[0], as Chrome reports them after a chapter's seek", () => {
+    const video = { currentTime: 21.6 };
+    // at the seek's target both cues are active (Chrome's closed intervals), the one that ends there first
+    const textTrack = { cues, activeCues: [desktop, project], addEventListener() {}, removeEventListener() {} };
+    const track = trackOf(textTrack as unknown as TextTrack, video as unknown as HTMLVideoElement);
+    expect(track.activeCue()).toBe(project);
+    video.currentTime = 21.769; // playing on, before Chrome has updated activeCues
+    expect(track.activeCue()).toBe(project);
+    video.currentTime = 21.55; // the hold on the desktop chapter's last frame
+    textTrack.activeCues = [desktop];
+    expect(track.activeCue()).toBe(desktop);
   });
 });
 
