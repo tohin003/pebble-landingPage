@@ -31,7 +31,9 @@
   }
 }
 
-@media (max-width: 360px) {
+/* UiCrop narrow: up to 361 px, where a 300-unit phone box in a 16 px-padded column is under 330 px wide (its 12 px
+   text under 11 px); keep in step with NARROW_MAX in UiCrop.tsx */
+@media (max-width: 361px) {
   .crop[data-narrow] {
     --cx: var(--nx);
     --cy: var(--ny);

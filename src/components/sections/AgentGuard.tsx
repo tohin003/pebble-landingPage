@@ -14,7 +14,7 @@
 // Each crop is sized so the app's own text renders at about 12 px, never under the 11 px floor: 624 px wide at 1440
 // (the loops' ledger slot), at most 624 px when the rows stack below 1280 px; tighter phone crops from 639 px down
 // (UiCrop `phone`, `phoneUpTo`: at 561–639 px a 524-unit hold put the text at 9.8–11 px), at most 400 px wide there;
-// and tighter ones still at 360 px and below (UiCrop `narrow`: the 300-unit phone crops were 9.6 px at 320). Every box
+// and tighter ones still at 361 px and below (UiCrop `narrow`: the 300-unit phone crops were 9.6 px at 320). Every box
 // keeps its lines whole. The crops wait until they are near the screen (UiCrop `defer`, QA lane F3).
 import { agentGuard, common } from "@/content/copy";
 import { labels } from "@/content/labels";
