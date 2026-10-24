@@ -2,7 +2,8 @@
 
 Decided by the lead on 2026-10-23 after judging three static comps (`.work/design/comp-{1,2,3}/`, screenshots in each
 folder). This file is binding for the site build. It sits under `.work/research/OVERRIDES.md` (product facts, claims and
-copy rules) and above MASTER_PLAN §7 where they differ.
+copy rules) and above MASTER_PLAN §7 where they differ. Since the v2 system, `docs/PHILOSOPHY.md` and
+`docs/DESIGN-LEXINGTON.md` supersede it wherever they differ (§10).
 
 ## 1. The decision
 
@@ -150,5 +151,6 @@ Since the v2 system, two later documents supersede this file wherever they diffe
 
 Between those two, PHILOSOPHY sets the intent. DESIGN-LEXINGTON §10 lists the rules here that it replaces: the centred
 comp-3 hero and heads (§1), the page-wide path (§2), the type scale and Fraunces beyond H1 and H2 (§3), the line that
-draws itself on (§4), the centred wordmark and the pools of light (§5), and the media frames' radius and shadow (§6).
+draws itself on (§4), the centred wordmark, the pools of light and AgentGuard's split with its Interactive-example
+toggle, now a static evidence ledger (§5), and the media frames' radius and shadow (§6).
 Anything those two documents leave open still follows this file. OVERRIDES and `docs/CLAIMS.md` sit above all three.
