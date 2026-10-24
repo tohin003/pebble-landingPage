@@ -819,6 +819,12 @@ export const tour = {
       body: "Edit cards with Undo, tests in an isolated copy, and Git changes prepared as a plan. A Git change that deletes or publishes work always asks.", // [C-TOUR-2]
     },
     {
+      // Pebble 1.5.0, "Pebble's Workshop, part 1" (OVERRIDES §32: one short passage, in Pebble's own words, no numbers):
+      // the About "What's new" lines (App.vue@v1.5.0:1419-1420), then the sandbox's limit (CHANGELOG.md@v1.5.0:27-29).
+      title: "Code Mode",
+      body: "Pebble can run a short script that calls its tools; only what it prints comes back. Every call a script makes is checked, approved and recorded exactly like a direct call. The script has no network and writes only to its own folder.", // [C-TOUR-6]
+    },
+    {
       title: "Skills, hooks and connectors",
       body: "Reusable skills in Markdown, hooks that can narrow but never widen what a task does, and MCP connectors. Each starts off until you review it.", // [C-TOUR-3]
     },
