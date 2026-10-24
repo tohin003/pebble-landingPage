@@ -1272,6 +1272,17 @@ export const notFound = {
   home: "Go to the home page",
 } as const;
 
+/**
+ * Next's last-resort page (src/app/global-error.tsx), shown only when a page fails on the server and the root layout
+ * can't render. Its words say what happened and offer the two ways on. [C-PAGE-4]
+ */
+export const globalError = {
+  title: "This page couldn’t load",
+  body: "Something went wrong on the server. Try again, or go to the home page.",
+  retry: "Try again",
+  home: "Go to the home page",
+} as const;
+
 export const filmPage = {
   title: "Film transcript",
   h1: "The Pebble film",
