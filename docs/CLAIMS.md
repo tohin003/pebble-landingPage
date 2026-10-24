@@ -336,7 +336,7 @@ beside it: "Stored on your Mac" (never "Stays on your Mac") and "What leaves you
 | AgentGuard, Apache-2.0, Pebble's reliability engine | `NOTICE.md@v1.0.1:18-21`; in-app credit `src/App.vue@v1.0.1:2900-2901` ("Reliability: AgentGuard (Apache 2.0).") |
 | Fraunces, Inter, Geist Mono notices | Line 1 of `src/fonts/OFL-Fraunces.txt`, `OFL-Inter.txt`, `OFL-GeistMono.txt` in this repo (copied from the npm packages, see `src/fonts/README.md`) |
 | Next.js, React, Motion, Tailwind CSS, Phosphor Icons notices | Each package's licence file in `node_modules` (next 16.4.2, react 19.3.1, motion 14.6.0 with framer-motion 14.6.0, tailwindcss 4.3.3, @phosphor-icons/react 2.1.10) |
-| Tools (Remotion, FFmpeg, librosa, pedalboard, pyloudnorm, sharp, Playwright) | PLAN §6.5; licence pages checked (HTTP 200) |
+| Tools (Remotion, FFmpeg, librosa, pedalboard, pyloudnorm, sharp, puppeteer-core) | PLAN §6.5; licence pages checked (HTTP 200); puppeteer-core 25.13.0 (Apache-2.0, Google) drives Chrome for the captures and the QA checks, as `CREDITS.md` and `src/content/credits.ts` say (`d1aaf11`; OVERRIDES §24). It was Playwright in the plan |
 | Music | TODO(Lane C): title, artist, Mixkit page, licence `https://mixkit.co/license/#musicFree`, download date, SHA-256 |
 
 ---
