@@ -75,6 +75,14 @@
   inset: 0;
 }
 
+/* L7's recorded pointer comes to rest at the bottom right, under where the pause galet floats, so it read as the
+   visitor's own cursor on the control (critic C18): this loop's galet sits bottom left, on the riverbed. (The only
+   button in a loop is its pause and play galet, LoopVideo.tsx.) */
+.fill button {
+  right: auto;
+  left: 10px;
+}
+
 /* the frame keeps the loop's 16:10, so nothing moves when L7 arrives; phones get 4:5 for the sheet (MediaFrame reads
    --memory-aspect) */
 .frame {
@@ -238,18 +246,12 @@
     padding: 14px 0 16px;
   }
 
-  /* phones: a 4:5 frame, and the sheet at the app's own size from the frame's top left, running off its right and
-     bottom edges, so the left column of layers reads at 11 px and the right one shows its names */
+  /* phones: a 4:5 frame, and the whole sheet across 94 % of it, from its top, running off its bottom edge only, as on
+     wider screens. At the app's own size it also ran off the right edge, cutting the second column and a sentence
+     mid-word, which read as a cropping mistake (critic C20). It is a picture here, as the Privacy and focus capture is
+     (OVERRIDES §27): the list above names all six kinds in full. */
   .frame {
     --memory-aspect: 4 / 5;
-  }
-
-  .stage > .sheet[data-frame] {
-    left: 6%;
-    top: 7%;
-    width: 431px;
-    transform: none;
-    border-radius: 12px;
   }
 
   .note {

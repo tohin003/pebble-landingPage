@@ -8,8 +8,8 @@
 //    beside the recall rule in 10–12: the sheet itself says that retrieved text never becomes permission. Below
 //    1280 px six columns are too narrow for L7, so the picture takes the main column and the rule goes under it.
 //    The still floats from the frame's top and runs off its bottom edge, because the sheet goes on. Phones keep the
-//    still (L7 has no 4:5 cut) at the app's own size in a 4:5 frame: the sheet runs off the right edge too, so its
-//    11 px text stays at 11 px instead of shrinking the whole sheet to fit.
+//    still (L7 has no 4:5 cut) in a 4:5 frame, the whole sheet across it as on wider screens: a picture of the real
+//    setting there, whose six kinds the list above names in full (critic C20; OVERRIDES §27's Privacy precedent).
 // 3. The forget card, an interactive recreation on the flat panel (columns 4–8), beside what you control in 9–12 and
 //    the limit in ink under a hairline, at the same size (PHILOSOPHY 3).
 // No tiles and no icons; the galet marks the list items.
@@ -82,7 +82,7 @@ export function Memory() {
                       name="settings-memory"
                       alt={media.stills.settingsMemory}
                       box={SHEET}
-                      display={{ wide: 487, tablet: "487px", phone: "431px" }}
+                      display={{ wide: 487, tablet: "487px", phone: "calc((100vw - 32px) * 0.94)" }}
                       className={styles.sheet}
                     />
                   </div>
