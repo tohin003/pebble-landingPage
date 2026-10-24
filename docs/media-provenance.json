@@ -1,6 +1,6 @@
 {
  "schema": "pebble-media-provenance/1",
- "updated": "2026-10-23",
+ "updated": "2026-10-24",
  "notice": "The films, loops and images are (c) 2026 Tohin Majumder and are not covered by the code licence (Apache-2.0). Audio is distributed only inside the rendered films, never as standalone files: no audio file is committed (.gitignore lists *.wav *.mp3 *.flac *.aiff *.m4a *.mov).",
  "music": {
   "selected": "original-sampled",
@@ -998,7 +998,9 @@
    "bed": {
     "path": ".work/audio/render/music_bed.wav (not committed)",
     "sha256": "74f88e243c4aed4298d06f189ff884769d5451eb5158848159ec9d5f64d06e5e",
-    "format": "48 kHz, 24-bit, 76.8 s, -18 LUFS (un-mastered bed)"
+    "format": "48 kHz, 24-bit, 76.8 s, -18 LUFS (un-mastered bed)",
+    "score_json": ".work/audio/render/music_bed.score.json (not committed). Since commit e680907 it records the levels the render measured (per bus, the mix, the bed before its -18 LUFS normalisation); render_sampled.py --levels-from replays them",
+    "verified": "2026-10-24, lane fin-audio (HANDOFF-fin-audio): tools/audio/use_music.sh original-sampled rebuilt it bit for bit after commit e680907 (compose_score.py --form, render_sampled.py --levels-from), and --levels-from fed its own .score.json rebuilt it bit for bit again; validate_bed 32/32 downbeats, median 3.42 ms, max 30.67 ms, the reveal +3.79 ms on frame 504, 76.8 s"
    },
    "events_from": "compose_score.py --events (a recording-only refactor: the synthesised bed re-renders bit-identically, SHA-256 287466a9583a4d0d432d736983d316612d2a26ab59f02b50d98e245b5e44789a before and after)",
    "opening": {
@@ -1113,40 +1115,181 @@
      }
     },
     "final_masters": {
-     "mix": "tools/audio/final_mix.sh (lane M1's mix) with the click role +3 dB and the pop role -3 dB (tools/audio/sfx_kit.json); gates tools/audio/mix_checks.sh",
+     "made": "2026-10-24, lane fin-audio (HANDOFF-fin-audio; OVERRIDES §22); every gate passes, 0 fails and 0 warnings",
+     "supersedes": "lane M2's masters (web 0dd11212f879664d37f9d7226b1e3845ad7e798c1f084f49ff7cacf602a0b715, social e4d4f4b7e9355244d02b5fff2f3123a4e4d49f329bfb8d940e74628dc0de2f9d), which carried the pop at f2016; no encode was muxed with them",
+     "mix": "tools/audio/final_mix.sh (lane M1's mix) with the click role at -9 dB (lane M2's +3 dB) and the pop role back at -13 dB: the end-card landing (f2016) has no pop, only thud_b and its 1.5 dB duck (commit 9535d46, OVERRIDES §19); cue list tools/audio/cues.json (21 cues); gates tools/audio/mix_checks.sh. The 30 s cut's master: see cut_x30",
+     "format": "PCM 24-bit, 48 kHz, stereo, in .work/audio/render/ (not committed)",
+     "measured": "tools/audio/mix_checks.py (JSON in .work/audio/analysis/m1/ and x30/, not committed): FFmpeg ebur128 on the WAV and on an AAC 192 kb/s encode; Apple SoundAnalysis maxima over 3 s windows, on the main grid and on the 1.5 s-shifted grid (phone_max: telephone and ringtone; opening: the first 0.75 s and 1.5 s after silence; end_card: every window that overlaps the end card, where 0.0 means below 0.1)",
      "soundtrack_web.wav": {
-      "sha256": "0dd11212f879664d37f9d7226b1e3845ad7e798c1f084f49ff7cacf602a0b715",
+      "sha256": "c81de73012c62a306e05a1c6cfd8b1fb26d2c266fa95cc7699dd5690936fc8e4",
+      "for": "the website film (public/media/v1/film-*.mp4)",
+      "length": "76.800 s, 3,686,400 samples (2,304 frames at 30 fps)",
+      "bytes": 22118444,
       "integrated_lufs": -16.0,
       "true_peak_dbtp": -1.7,
       "lra_lu": 6.9,
       "aac_192k_true_peak_dbtp": -1.7,
       "mono_loss_db": 1.18,
+      "power_share_above_150hz": 0.71,
       "phone_max": {
-       "main": 0.219,
+       "main": 0.139,
        "shift": 0.143,
-       "opening": 0.041
+       "opening": 0.041,
+       "end_card": 0.143
       },
+      "end_card_66_69s_main": "below 0.1 (lane M2's master: 0.219); bed alone 0.105",
       "voice_max": 0.141,
       "alarm_max": 0.026,
+      "note": "bell 0.409 on the final chord's ring (73.5-76.5 s, shifted grid; bed alone 0.402); not a gated label",
       "pass": true
      },
      "soundtrack_social.wav": {
-      "sha256": "e4d4f4b7e9355244d02b5fff2f3123a4e4d49f329bfb8d940e74628dc0de2f9d",
+      "sha256": "3f4c7cb831c84224214331371f25cae89e9fc166dc8207a8c940d9d44e5ab1a0",
+      "for": "the full-length social films (Pebble-launch-film-1920x1080, -1080x1080 and -1080x1920)",
+      "length": "76.800 s, 3,686,400 samples (2,304 frames at 30 fps)",
+      "bytes": 22118444,
       "integrated_lufs": -14.1,
       "true_peak_dbtp": -1.5,
       "lra_lu": 6.7,
       "aac_192k_true_peak_dbtp": -1.4,
       "mono_loss_db": 1.18,
+      "power_share_above_150hz": 0.715,
       "phone_max": {
-       "main": 0.24,
+       "main": 0.146,
        "shift": 0.134,
-       "opening": 0.044
+       "opening": 0.044,
+       "end_card": 0.134
       },
+      "end_card_66_69s_main": "below 0.1 (lane M2's master: 0.240); bed alone 0.119",
       "voice_max": 0.145,
-      "alarm_max": 0.026,
+      "alarm_max": 0.024,
+      "note": "bell 0.417 on the final chord's ring (73.5-76.5 s, shifted grid; bed alone 0.409); not a gated label",
+      "pass": true
+     },
+     "soundtrack_x30_social.wav": {
+      "sha256": "b8e34c328b8f7c42e62717c5ba261ada724024e31ca04af9f53b3ff45216a657",
+      "for": "the 30 s cut x30 (Pebble-launch-film-30s-1920x1080, -1080x1080 and -1080x1920); see cut_x30",
+      "length": "28.800 s, 1,382,400 samples (864 frames at 30 fps, exactly)",
+      "bytes": 8294444,
+      "integrated_lufs": -14.1,
+      "true_peak_dbtp": -1.5,
+      "lra_lu": 4.5,
+      "aac_192k_true_peak_dbtp": -1.5,
+      "mono_loss_db": 0.99,
+      "power_share_above_150hz": 0.647,
+      "phone_max": {
+       "main": 0.044,
+       "shift": 0.088,
+       "opening": 0.044,
+       "end_card": 0.0
+      },
+      "voice_max": 0.072,
+      "alarm_max": 0.016,
+      "note": "bell 0.615 on the final ring (25.5-28.5 s, shifted grid; bed alone 0.619, so the music, not the effects), with bell in that window's top 3; the film's same window reads 0.409. Not a gated label; it waits for the human listen (HANDOFF-fin-audio issue 2)",
       "pass": true
      }
     }
+   },
+   "cut_x30": {
+    "cut_file": "docs/film-cuts/x30.json (schema pebble-film-cut/1, commit 5651902; the plan: lane prep-x30)",
+    "what": "the 30 s cut of the launch film for X: 12 bars, 864 frames, 28.8 s. Four ranges of LaunchFilm's own frames, in the film's order, each starting on the same beat of the bar in the film and in the cut (source frame = cut frame, mod 72)",
+    "ranges": [
+     [
+      0,
+      72
+     ],
+     [
+      360,
+      612
+     ],
+     [
+      900,
+      1224
+     ],
+     [
+      2088,
+      2304
+     ]
+    ],
+    "frames": 864,
+    "arrangement": {
+     "form": "x30",
+     "score_bars": [
+      1,
+      6,
+      7,
+      8,
+      9,
+      14,
+      15,
+      16,
+      17,
+      30,
+      31,
+      32
+     ],
+     "generator": "tools/audio/compose_score.py --seed 7 --form x30 --events (commit e680907): whole bars of the same score in the cut's order, each with its own chord, section, energy and fader ride; the tails ring across the joints. --form film still renders the committed score (287466a9583a...5e44789a)",
+     "render": "tools/audio/render_sampled.py --seed 7 --events .work/audio/render/x30.events.json --levels-from .work/audio/render/music_bed.score.json: every bar the cut shares with the film plays at the film's measured bus gains",
+     "cadence": "7 A7sus4 -> 8 D: the reveal, on cut frame 216; 30 Gmaj9 -> 31 D(add9): the final chord, on cut frame 720, ringing through bar 32 to the 0.6 s fade",
+     "rebuild": "scripts/heavy.sh cut-x30 tools/audio/cut_soundtrack.sh docs/film-cuts/x30.json (bed, mix and checks; the bed step needs the sample kit on disk and the film bed's .score.json)"
+    },
+    "bed": {
+     "path": ".work/audio/render/music_bed_x30.wav (not committed)",
+     "sha256": "8961b417c4a05dac321c0b18f45cdd2955302f8386a7c0593049d82283f0e388",
+     "format": "48 kHz, 24-bit, 28.8 s, -18.32 LUFS (at the film's levels, so not re-normalised)",
+     "notes": 339,
+     "validation": {
+      "downbeats_measured": 12,
+      "downbeats_total": 12,
+      "median_abs_offset_ms": 3.82,
+      "max_abs_offset_ms": 25.69,
+      "within_1_frame_pct": 100,
+      "duration_s": 28.8,
+      "reveal": {
+       "film_frame": 504,
+       "cut_frame": 216,
+       "cut_bar": 4,
+       "score_bar": 8,
+       "attack_frame": 216,
+       "offset_ms": 3.85
+      },
+      "final_chord": {
+       "film_frame": 2160,
+       "cut_frame": 720,
+       "cut_bar": 11,
+       "score_bar": 31,
+       "attack_frame": 720,
+       "offset_ms": 1.23
+      },
+      "pass": true
+     },
+     "bar_rms_vs_film_db": {
+      "about": "each cut bar's RMS minus the same score bar's in the film bed, both at the film's levels (a report, not a gate); keys are cut bar=score bar",
+      "1=1": 0.0,
+      "2=6": 0.4,
+      "3=7": -0.4,
+      "4=8": 0.0,
+      "5=9": 0.1,
+      "6=14": 0.0,
+      "7=15": -0.2,
+      "8=16": 0.3,
+      "9=17": 0.2,
+      "10=30": 0.2,
+      "11=31": 0.7,
+      "12=32": -0.1
+     },
+     "bar_11_note": "+0.7 dB, outside the plan's +-0.5 dB check. The levels replay exactly (the film bed rebuilds bit for bit through --levels-from); a short form draws the sampler's humanisation in a different order, so each note plays a different take (velocity, round robins, detune, the vibes' motor phase). The bar's single pizzicato D is +1.1 dB and carries 56 % of its energy"
+    },
+    "sfx": {
+     "cues": "tools/audio/cues.x30.json: 8 cues, no edits (tools/audio/cut_cues.py from tools/audio/cues.json, commit 5651902)",
+     "list": "cut frames: click_a 36; the riser ending on 216, with soft_hit_b and thud_a at 216 (duck 2.5 dB); click_c 414; click_a 504; tick_a 518; shimmer_a 576",
+     "rule": "a cue plays when its picture frame is inside a range, at the range's cut frame plus its offset into the range; takes, gains, pans and ducks stay the film's. No whoosh (the three joints are hard cuts) and nothing in the end card: the film's last cue, f2016, falls before the range that starts at f2088"
+    },
+    "mix": "tools/audio/cut_soundtrack.sh docs/film-cuts/x30.json mix: mix_master.py at -14 LUFS with a -1.5 dBTP ceiling, exactly 864 frames (commit 9d3c54b); checks: mix_checks.py --target social --cut (commit e94d95b)",
+    "master": "soundtrack_x30_social.wav, under opening.final_masters",
+    "captions": "tools/captions/build.mjs --cut docs/film-cuts/x30.json: 12 cues, c01, c02, c06, c07, c08, c12, c13, c14, c23, c24 and c25 from docs/film-captions.json, and the cut's own x09 '[Music picks up]'",
+    "picture": "tools/encode/encode.sh social --cut docs/film-cuts/x30.json cuts the full film's social masters (the plan's path A). There is no separate Remotion composition: the LaunchFilm30* ids in the cut file's compositions are not registered in video/src/Root.tsx",
+    "needs": "one human listen of soundtrack_x30_social.wav: its ending reads more bell-like than the film's (HANDOFF-fin-audio issues 2 and 7)"
    },
    "instruments": {
     "mallet": {
@@ -2750,16 +2893,16 @@
  "assets": [
   {
    "file": "public/media/v1/film-1080.hevc.mp4, film-1080.h264.mp4, film-720.hevc.mp4, film-720.h264.mp4",
-   "status": "not rendered yet (Phase 3)",
-   "music": "original-sampled (tools/audio/beatmap.json)",
-   "sfx": "from tools/audio/cues.json once the film timeline exports it",
-   "loudness": "to be measured on the final AAC: -16 +-0.5 LUFS, <= -1.5 dBTP"
+   "status": "encoded 2026-10-24 by tools/encode/encode.sh film (lane fin-deliver, HANDOFF-fin-deliver): 2,304 frames at 30 fps each; 23.15 MB for the set (C6 allows 45 MB)",
+   "music": "original-sampled (tools/audio/beatmap.json): soundtrack_web.wav (c81de730...), see music.sampled_score.opening.final_masters",
+   "sfx": "tools/audio/cues.json (21 cues), mixed into the soundtrack",
+   "loudness": "measured on the final AAC: -16.0 LUFS, -1.7 dBTP in all four files"
   },
   {
-   "file": "Desktop deliverables: Pebble-launch-film-1920x1080.mp4, Pebble-launch-film-1080x1080.mp4 (LinkedIn)",
-   "status": "not rendered yet",
-   "music": "original-sampled",
-   "loudness": "-14 LUFS, <= -1.0 dBTP after encoding (OVERRIDES 4)"
+   "file": "Desktop deliverables (not committed, OVERRIDES 4): the full film as Pebble-launch-film-1920x1080.mp4, Pebble-launch-film-1080x1080.mp4 and Pebble-launch-film-1080x1920.mp4 (LinkedIn); the 30 s cut x30 as Pebble-launch-film-30s-1920x1080.mp4, -30s-1080x1080.mp4 and -30s-1080x1920.mp4 (X)",
+   "status": "encoded 2026-10-24 by tools/encode/encode.sh social (lane fin-deliver); the 30 s files with --cut docs/film-cuts/x30.json, from the full film's masters",
+   "music": "original-sampled: soundtrack_social.wav (3f4c7cb8...) for the full film, soundtrack_x30_social.wav (b8e34c32...) for the cut",
+   "loudness": "-14 LUFS, <= -1.0 dBTP after encoding (OVERRIDES 4); measured -14.1 LUFS, -1.4 dBTP (full film) and -14.1 LUFS, -1.5 dBTP (30 s cut)"
   },
   {
    "file": "public/media/v1/teaser-*.mp4, loop-*.mp4",
