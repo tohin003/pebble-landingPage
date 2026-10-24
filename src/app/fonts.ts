@@ -1,6 +1,8 @@
 // Self-hosted fonts (src/fonts, SIL OFL 1.1), loaded with next/font/local: no request leaves the site (DESIGN §8).
 // Budget (MASTER_PLAN §7.7, critic M4): at most 160 KB preloaded. Fraunces Display (an instance, 32.9 KB) plus Inter
-// (the wght-only file, 48.3 KB) is 81.2 KB; Geist Mono (two static weights, about 10 KB each) loads on demand.
+// (the wght-only file, 48.3 KB) plus Geist Mono (two static weights, about 10 KB each) is about 101 KB. Geist Mono is
+// preloaded since the final QA pass: the first screen uses it (the release facts), so every load fetched it anyway, but
+// only once the stylesheet had named it, which put HTML → CSS → font on mobile LCP's critical path (2.56 s, over 2.5 s).
 // Inter's optical-size file (72.9 KB) was dropped by QA lane F3: on the site Inter is never larger than 25 px (the
 // headings are Fraunces; the wordmark is 25 px), so its display cut barely shows, and the 24.6 KB it adds to the first
 // screen kept Lighthouse's mobile LCP over the 2.5 s limit (2.63 s → 2.48 s over HTTP/2). The film keeps the opsz file.
@@ -35,7 +37,7 @@ export const geistMono = localFont({
   ],
   variable: "--font-geist-mono",
   display: "swap",
-  preload: false,
+  preload: true,
   fallback: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
   adjustFontFallback: false,
 });
