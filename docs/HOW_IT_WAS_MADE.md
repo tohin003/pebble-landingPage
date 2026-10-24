@@ -263,64 +263,89 @@ tiles while scrolling, the way a visitor sees the page, and reviewed side by sid
 
 ### Final QA results
 
-<!-- final-qa-pass: the lead fills this -->
+The final pass ran on 24 October 2026 from 22:32 to 23:25 (run `final-2`), on the final source and media, one heavy job
+at a time (`tools/qa/all.sh` and the extra browser checks).
 
-What was measured before the final pass, on 24 October 2026. The heavy gates (the screenshot matrix, axe, the keyboard
-walk, requests, Lighthouse, the line check, and the media check's loudness and seam passes) run once more in that pass.
+**The page**
 
-On the final source:
+- Screens: 24 views (320, 390, 768, 1024, 1440 and 1920 px; light and dark; motion on and reduced), plus 6 with Pause
+  motion. None had a problem, a horizontal scroll, a console error or a failed request. The page is 25,678 px tall at
+  1440 px.
+- axe-core: 112 scans of five pages (`/`, `/film`, `/credits`, `/privacy` and a 404) at 320, 390, 1024 and 1440 px in
+  both themes, with the phone menu, an FAQ answer, the film theatre and the download notice open: 0 violations. The
+  items axe leaves undecided are text over decoration, where it can't sample the background.
+- Keyboard and controls: 226 checks at 390 and 1440 px in both themes, motion on and reduced, 0 failed. They cover
+  every Tab stop (visible, on screen, never under the sticky header), the skip link, the menu, the three explainers,
+  the story tabs, AgentGuard's ledger, the film dialog and its focus return, Copy and its live region, and the loops'
+  pause buttons.
+- Requests:
+  - No request to another site, no cookies, no console errors.
+  - Before interaction: 193.0 KB of JavaScript (limit 200 KB) and 573 KB in all (limit 600 KB).
+  - A full scroll loads 1.19 MB at 1440 px and 1.41 MB at 390 px.
+  - Links: 115 internal, 65 fragments and 54 external, all answering.
+- The ground line: 0 text collisions and 0 media crossings at any width.
+- Copy lint: 1,900 text items, 0 findings.
+- The built text:
+  - Pebble 1.5.0 throughout, with its SHA-256 line in Install.
+  - Stealth Lockdown's honest line word for word in its section, the FAQ and `llms.txt`.
+  - None of the never-words.
+- Stealth Lockdown's switch in Chrome:
+  - Tab reaches it; its role is switch, with the honest line as its description.
+  - Space turns it on and off, and the polite live region reads the app's own state lines.
+  - Focus stays on the switch, and the section keeps its height when it flips.
+- Without HEVC (Chrome with its HEVC decoder off), every video plays its H.264 file, and the film theatre plays
+  `film-720.h264.mp4` with sound.
+- Lighthouse 13.5 over HTTP/2 with Brotli, as Vercel serves the site: three runs each, medians.
+  - `/film`: mobile performance 100, largest contentful paint 1.89 s, layout shift 0. Desktop 100 in all four
+    categories, LCP 0.47 s, layout shift 0.
+  - `/`, desktop: 100 in all four categories, LCP 0.63 s, layout shift 0.
+  - `/`, mobile: accessibility, best practices and SEO 100, layout shift 0. Performance 91 and LCP 2.97 s were
+    measured while another job compiled Rust on the same 8 GB Mac (load average 11), which inflates Lighthouse's
+    simulated phone. A quiet-machine run replaces these numbers. <!-- final-qa-lcp -->
+  - Plain `next start` speaks HTTP/1.1, and Lighthouse models each of its parallel requests as a new cold connection.
+    That gives a higher mobile LCP (3.62 s on `/`, 3.02 s on `/film`), but it isn't how the site is served.
 
-- The type check passes. The Bun suites pass: 103 site tests, 82 engine tests and 38 content tests, none failing.
+**What the final pass changed**
+
+- The film page's play button keeps its place until the player is ready. It used to appear only at hydration and move
+  the transcript 20 px: a 0.107 layout shift on Lighthouse's phone, now 0.
+- Geist Mono is preloaded. The first screen uses it, and finding it only through the stylesheet put HTML, then CSS,
+  then the font on mobile LCP's path (`/film`: 2.51 s, then 1.89 s).
+- AgentGuard's held-run crop takes in its avatar, so its words aren't flush with the frame.
+- The desktop loop (L1) opens on the quick chat's reply. Its poster, and the only picture under reduced motion and
+  Pause motion, now shows the promise "Click it for a quick chat" rather than an empty desktop. Its resting shot is
+  closer (×3.0), and it is encoded at CRF 22 (HEVC, 677 KB) and 19 (H.264, 1.14 MB), within the same budgets: the old
+  encode showed blocks in its smooth gradient. Its seam scores 51.5 dB, above the loop's median frame-to-frame 48.4 dB.
+
+**The source**
+
+- The type checks pass for the site and the films, and so do the loops' checks (seams, frames, reading floor).
+- The Bun suites pass: 103 site tests, 82 engine tests and 38 content tests.
 - Tailwind's own compile of the stylesheet scans no test file and emits no `.bg-ink` rule. Before that fix, a class
   name in a test file put an unused ink-fill utility into the CSS.
+- gitleaks finds no secret in any of the 207 commits.
+- No committed file holds a local path, raw audio or a file over 45 MB.
 - The lockfile carries the Linux x64 builds of Next's compiler, Lightning CSS and Tailwind's engine, which Vercel's
-  builders need. No committed file holds a local path.
+  builders need.
 
-On the last build before the final fixes (14:07):
+**The media**
 
-- Copy lint: 1,874 text items from five pages and `src/content`, 0 findings. Run again with today's `src/content`:
-  1,888 items and one finding, an older FAQ sentence in that build which the source no longer has.
-- Links: 56 external URLs in the pages, the JSON-LD, `llms.txt`, the sitemap and `robots.txt`, each asked once, at
-  most one a second. 55 answer 2xx, some after a redirect; the 56th is the local build's own canonical address,
-  `http://localhost:3000`.
-- Built text: none of the never-words in visitor text. "Security" appears only in negations and names ("not a
-  security layer", "No independent security audit"), and "exams" and "interviews" only inside Stealth Lockdown's
-  honest line, which stands word for word under the switch, as the switch's description, in the FAQ and in
-  `llms.txt`. The only middle dots are Pebble's own UI lines, quoted verbatim, and the inner pages' titles, which now
-  use an en dash. No ink-filled button in the markup or in any CSS module.
-- First-load JavaScript, from the scripts each page's HTML loads: on `/`, 11 module scripts, 535.2 KB raw, 163.9 KB
-  with gzip and 141.0 KB with Brotli, plus a 38.6 KB (gzip) polyfill that modern browsers skip; on `/film`, 153.4 KB
-  with gzip and 131.6 KB with Brotli. HTML: 76.2 KB with gzip for `/`, 14.6 KB for `/film`. CSS on `/`: three files,
-  22.7 KB with gzip. Two preloaded fonts, 79.2 KB.
-
-The media, unchanged since they were encoded:
-
-- `node tools/encode/verify.mjs --no-analysis`: 49 files, all pass, with one warning: 7 of the film's 9 audio
-  descriptions need more speech than their chapter lasts, so the player holds the film until each is read. The film
-  set is 23.15 MB of its 45 MB budget, `public/` 36.49 MB of 90 MB. The 1080p film and the loops are HEVC
-  `hvc1.1.6.L120.90`, the 720p film and the teaser `hvc1.1.6.L93.90`, and every H.264 file `avc1.640028`; everything
-  runs at 30 fps; the film is 2,304 frames (76.8 s); the posters are at most 53.3 KB (AVIF) and 75.7 KB (WebP).
-- Loudness on the encoded AAC, measured when the films were made: the website film at −16.0 LUFS and −1.7 dBTP in all
-  four files; the social films at −14.1 LUFS, with −1.4 dBTP at full length and −1.5 dBTP for the 30 s cut. Picture
-  and sound are in sync within 2 ms at the reveal, and every sampled frame of the 30 s cut matches its frame in the
-  film's master.
-- The mix checks on the soundtracks: web −16.0 LUFS and −1.7 dBTP, social −14.1 LUFS and −1.5 dBTP, the 30 s cut
-  −14.1 LUFS and −1.5 dBTP; at most 1.18 dB lost in mono; at least 65 % of the energy above 150 Hz; nothing the
-  classifier hears as a voice, an alarm, a siren or a ringtone. The opening, heard straight after silence, reads 0.04
-  as a telephone (0.65 before it was re-voiced).
-
-Pre-fix, last known (12:08 to 13:03, on the build before the reviewers' fixes; the final pass replaces these):
-
-- Screens at 390, 768 and 1440 px, light and dark, motion on and reduced: 12, none with a problem or a horizontal
-  scroll.
-- axe-core: 112 scans of five pages at four widths in both themes, open states included: 0 violations.
-- The keyboard walk and every control: 226 checks, 3 failed, all of them the loops' focus ring in the dark theme
-  (fixed since).
-- Requests: none to another site, no cookies, no console errors. Script before interaction 193.1 KB (target 150 KB,
-  limit 200 KB); everything before interaction 571.7 KB light and 565.1 KB dark (target 400 KB, limit 600 KB).
-- Lighthouse on `/` over HTTP/2, three runs: mobile performance 97, 95 and 95; accessibility, best practices and SEO
-  100; largest contentful paint 2.63, 2.93 and 2.93 s, which fails the 2.5 s limit (the header's wordmark is the
-  element); layout shift 0.000. Desktop: 100 in all four; largest contentful paint 0.63 s; layout shift 0.000.
+- `node tools/encode/verify.mjs`: 49 files, all pass, with one warning. 7 of the film's 9 audio descriptions need more
+  speech than their chapter lasts, so the player holds the film until each is read.
+- The film set is 23.15 MB of its 45 MB budget, and `public/` is 37.61 MB of 90 MB.
+- Codecs: the 1080p film and the loops are HEVC `hvc1.1.6.L120.90`, the 720p film and the teaser `hvc1.1.6.L93.90`,
+  and every H.264 file is `avc1.640028`.
+- Everything runs at 30 fps, and the film is 2,304 frames (76.8 s).
+- Loudness on the encoded AAC, measured when the films were made:
+  - the website film: −16.0 LUFS and −1.7 dBTP in all four files;
+  - the social films: −14.1 LUFS, with −1.4 dBTP at full length and −1.5 dBTP for the 30 s cut.
+- Picture and sound are in sync within 2 ms at the reveal, and every sampled frame of the 30 s cut matches its frame in
+  the film's master.
+- The mix checks on the soundtracks:
+  - web −16.0 LUFS and −1.7 dBTP, social −14.1 LUFS and −1.5 dBTP, the 30 s cut −14.1 LUFS and −1.5 dBTP;
+  - at most 1.18 dB lost in mono, and at least 65 % of the energy above 150 Hz;
+  - nothing the classifier hears as a voice, an alarm, a siren or a ringtone. The opening, heard straight after
+    silence, reads 0.04 as a telephone (0.65 before it was re-voiced).
 
 ## Skills and tools
 
