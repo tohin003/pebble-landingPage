@@ -130,12 +130,10 @@ export const getRelease = cache(async (): Promise<ReleaseInfo> => {
 });
 
 /**
- * The facts under a download button as separate items, from copy.ts `releaseMeta()` ("v1.0.1 · 72 MB · Apple silicon ·
- * macOS 12 or later"). DESIGN §3: render them as a list with hairline separators, never as a middle-dot string.
+ * The facts under a download button as separate items, from copy.ts `releaseMeta()` (["v1.2.0", "72 MB", "Apple
+ * silicon", "macOS 12 or later"]). DESIGN §3: render them as a list with hairline separators, never as a middle-dot
+ * string.
  */
 export function releaseFacts(info: Pick<ReleaseInfo, "version" | "sizeLabel">): string[] {
-  return releaseMeta(info.version, info.sizeLabel)
-    .split(" · ")
-    .map((fact) => fact.trim())
-    .filter(Boolean);
+  return [...releaseMeta(info.version, info.sizeLabel)];
 }

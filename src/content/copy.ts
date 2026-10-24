@@ -49,12 +49,16 @@ export function formatMegabytes(bytes: number): string {
   return `${Math.round(bytes / 1_000_000)} MB`;
 }
 
-/** The line under the download button: "v1.0.4 · 72 MB · Apple silicon · macOS 12 or later". [C-REL-5] */
-export function releaseMeta(version: string = release.version, sizeLabel: string = release.sizeLabel): string {
-  return `v${version} · ${sizeLabel} · Apple silicon · macOS 12 or later`;
+/**
+ * The facts under a download button, each its own item: ["v1.2.0", "72 MB", "Apple silicon", "macOS 12 or later"].
+ * Render them as a list with hairline separators (ReleaseFacts), never joined into a middle-dot string (OVERRIDES §16,
+ * §21; PHILOSOPHY "What we never do"). [C-REL-5]
+ */
+export function releaseMeta(version: string = release.version, sizeLabel: string = release.sizeLabel): readonly string[] {
+  return [`v${version}`, sizeLabel, "Apple silicon", "macOS 12 or later"];
 }
 
-/** The release notes page for a tag such as "v1.0.4". */
+/** The release notes page for a tag such as "v1.2.0". */
 export function releaseNotesUrl(tag: string = release.tag): string {
   return `https://github.com/tohin003/Pebble/releases/tag/${tag}`;
 }
@@ -248,8 +252,8 @@ export const hero = {
   h1: "A little help, right here.", // [C-HERO-1] Pet.vue:692
   lead:
     "Pebble is a small, free, open-source AI companion that lives on your Mac's screen. Click it to chat, or open the full window to work in a project under your review, read the web, keep memory you control and build small interactive views.", // [C-HERO-2] (aligned with the showcase brief, OVERRIDES §7)
-  requirements: ["Free and open source", "Apache-2.0", "Macs with Apple silicon (M1 or later)", "macOS 12 or later"], // [C-HERO-3]
-  requirementsLine: "Free and open source · Apache-2.0 · Macs with Apple silicon (M1 or later) · macOS 12 or later", // [C-HERO-3]
+  /** Separate items, never joined into a middle-dot string (PHILOSOPHY "What we never do"). [C-HERO-3] */
+  requirements: ["Free and open source", "Apache-2.0", "Macs with Apple silicon (M1 or later)", "macOS 12 or later"],
   /**
    * The short honest line under every Download button (DESIGN §5 row 1): the three trust limits. Lead decision
    * (2026-10-23): the checksum limit sits next to the checksum instructions in Install (install.checksumNote) and in
@@ -266,14 +270,6 @@ export const hero = {
     noteLive: "Move your pointer, and its eyes follow.",
   },
 } as const;
-
-/** The small pill above the H1 that links to the release notes. */
-export function releasePill(version: string = release.version) {
-  return {
-    label: `New · Pebble ${version}`,
-    ariaLabel: `New: Pebble ${version}. Read the release notes on GitHub.`,
-  } as const;
-}
 
 export const cta = {
   download: "Download for Mac",
@@ -1085,7 +1081,16 @@ export const footer = {
 export const stickyCta = {
   label: "Get Pebble",
   download: "Download for Mac",
-  meta: (version: string = release.version, sizeLabel: string = release.sizeLabel) => `v${version} · ${sizeLabel}`,
+  /**
+   * The facts beside its Download, each its own item: the version, the size and "Not notarized" (the lead's decision,
+   * OVERRIDES §20; the full honest line stays under the hero's, the menu sheet's and the final Downloads). Never a
+   * middle-dot string. [C-REL-1] [C-REL-2] [C-F1-3] (C-LIM-2)
+   */
+  facts: (version: string = release.version, sizeLabel: string = release.sizeLabel): readonly string[] => [
+    `v${version}`,
+    sizeLabel,
+    "Not notarized",
+  ],
   github: "GitHub",
 } as const;
 

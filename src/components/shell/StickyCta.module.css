@@ -35,6 +35,21 @@
   flex-wrap: nowrap;
 }
 
+/* Phones: the version and the size, then "Not notarized" under them (globals.css .facts breaks after two items), so the
+   pill stays one button tall */
+@media (max-width: 560px) {
+  .sticky {
+    gap: 12px;
+    padding-right: 14px;
+  }
+
+  .facts {
+    flex-wrap: wrap;
+    row-gap: 0;
+    line-height: 1.4;
+  }
+}
+
 /* only-mac hides the facts elsewhere; then the pill is just the button */
 :global(:root[data-platform="other"]) .sticky {
   padding: 6px;

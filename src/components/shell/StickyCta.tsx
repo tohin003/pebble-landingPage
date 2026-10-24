@@ -2,6 +2,8 @@
 // The compact call to action that follows the reader (MASTER_PLAN §7.4): it appears once the hero has left the
 // screen and steps aside while the Install section, the final call to action or the footer is in view (at the very
 // end of the page nothing can scroll out from under it, so over the footer it would hide the fine print for good).
+// Beside its Download: the version, the size and "Not notarized" (OVERRIDES §20), as separate items, never a
+// middle-dot string; on phones "Not notarized" takes the second line (globals.css .facts).
 // Hidden, it is invisible to everyone (visibility: hidden), so it never takes focus; html's scroll-padding-bottom keeps
 // it off focused elements.
 import { useEffect, useState } from "react";
@@ -17,7 +19,7 @@ export function StickyCta({
   facts,
 }: {
   release: Pick<ReleaseInfo, "state" | "downloadUrl">;
-  /** shown next to the button on a Mac, for example ["v1.0.1", "72 MB"] */
+  /** shown next to the button on a Mac, each its own item: copy.ts stickyCta.facts(), ["v1.2.0", "72 MB", "Not notarized"] */
   facts: readonly string[];
 }) {
   const [visible, setVisible] = useState(false);

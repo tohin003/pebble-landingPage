@@ -21,8 +21,9 @@ import { ProjectStory } from "@/components/sections/ProjectStory";
 import { ViewsAndTour } from "@/components/sections/ViewsAndTour";
 import { StickyCta } from "@/components/shell/StickyCta";
 import { filmMedia } from "@/lib/media";
-import { getRelease, releaseFacts } from "@/lib/release";
+import { getRelease } from "@/lib/release";
 
+import { stickyCta } from "@/content/copy";
 // ISR: the release facts (src/lib/release.ts) refresh at most once an hour (OVERRIDES §1, critic C7).
 export const revalidate = 3600;
 
@@ -47,7 +48,7 @@ export default async function Home() {
       <Limits />
       <OpenSourceFaq />
       <FinalCta />
-      <StickyCta release={release} facts={releaseFacts(release).slice(0, 2)} />
+      <StickyCta release={release} facts={stickyCta.facts(release.version, release.sizeLabel)} />
       <FilmPlayer film={filmMedia()} chapters={chapters} />
     </>
   );
