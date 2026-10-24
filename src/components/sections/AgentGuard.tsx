@@ -38,9 +38,10 @@ const CHALLENGE_PHONE: CropBox = { x: 788, y: 219, w: 300, h: 82.5 };
 // The narrowest phones: "Details", the engine's header and its summary line. The refused step's line (269 units) can't
 // be shown whole at 11 px in a 288 px column, so it stays out (13.5 px at 320).
 const CHALLENGE_NARROW: CropBox = { x: 803, y: 239, w: 213, h: 62.5 };
-// The hold: "Blocked", "Pebble's change isn't verified yet. · …" (two whole lines) and Run the tests, Ask Pebble to
-// finish, Accept as unverified. The avatar at its left and "Details" at its right stay out. 652 px at the one scale.
-const HELD: CropBox = { x: 428, y: 474, w: 494, h: 110 };
+// The hold: the run's avatar, "Blocked", "Pebble's change isn't verified yet. · …" (two whole lines) and Run the tests,
+// Ask Pebble to finish, Accept as unverified. The avatar (x 407–425) comes in, as in VERIFIED, so "Blocked" (from 431)
+// and the sentence's end (919) aren't flush with the frame; "Details" (from 948) stays out. 705 px at the one scale.
+const HELD: CropBox = { x: 398, y: 474, w: 534, h: 110 };
 // Phones, 362–639 px: the hold's three choices, whole (the row's title quotes its sentence, which can't be shown whole
 // at a legible size in a phone's column; critic C07). 297 units: the app's 12 px text at 11.6 px at 375, 12 px at 390.
 const HELD_PHONE: CropBox = { x: 436, y: 543, w: 297, h: 38 };
