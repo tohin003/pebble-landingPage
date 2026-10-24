@@ -1,7 +1,8 @@
 // Section 6, Your model, your choice (DESIGN-LEXINGTON §6 Your model): the head on the rail ("Models / Three ways
 // in"), then, from column 4, the three ways in as bare columns under hairlines (no cards, no icons): each its button's
 // own name, what it does, and its limit at the same size. Under them the picture in columns 4–9, Settings › Models on
-// the riverbed, beside the note on local models in 10–12.
+// the riverbed, beside the note on local models in 10–12; below 1280 px the picture takes the main column and the note
+// goes under it (six columns there are too narrow for L2, drawn for 624 px).
 //
 // Loop L2 plays in the frame once it is rendered; until then the real Settings › Models still, cropped to the ways in,
 // sits as a window on the riverbed at about the app's own scale. Phones keep the still (cropped tighter, to the
@@ -25,8 +26,8 @@ const WAYS_IN = { x: 384, y: 160, w: 432, h: 270 } as const;
  * y 248.5 since the 1.0.4 stills: the model row's meta fits on one line now, so the buttons sit 13.5 units higher.
  */
 const WAYS_IN_PHONE = { x: 400, y: 248.5, w: 242, h: 104 } as const;
-/** The picture: columns 4–9 (624 px at 1440, loop L2's slot), half the container at 1024–1279, the column below. */
-const FRAME_SIZES = "(max-width: 560px) calc(100vw - 32px), (max-width: 1023px) calc(100vw - 48px), (max-width: 1279px) calc((100vw - 64px) * 0.49), 624px";
+/** The picture: columns 4–9 (624 px at 1440, loop L2's slot), the main column at 1024–1279, the column below. */
+const FRAME_SIZES = "(max-width: 560px) calc(100vw - 32px), (max-width: 1023px) calc(100vw - 48px), (max-width: 1279px) calc((100vw - 64px) * 0.75), 624px";
 
 export function Models() {
   const l2 = loopMedia("models");

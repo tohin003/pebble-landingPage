@@ -77,6 +77,21 @@
   color: var(--ink-2);
 }
 
+/* Below 1280 px the picture takes the main column and the note goes under it, as in Memory: in six columns of a
+   1024–1279 px page loop L2 (drawn for 624 px, its smallest text 12.2 px there) was 464–594 px wide, that text 9.1 px
+   at 1024. In the main column it is 712–903 px wide. The hairline runs the column's full width, as every rule does;
+   the words keep a 40 em measure. */
+@media (max-width: 1279px) {
+  .showcase {
+    display: block;
+  }
+
+  .note {
+    margin-top: 28px;
+    padding-right: max(0px, calc(100% - 40em));
+  }
+}
+
 @media (max-width: 1023px) {
   .ways {
     grid-template-columns: minmax(0, 1fr);
@@ -91,20 +106,15 @@
   }
 
   .showcase {
-    display: block;
     margin-top: 28px;
-  }
-
-  /* the hairline runs the column's full width, as every rule does; the words keep a 40 em measure */
-  .note {
-    margin-top: 28px;
-    padding-right: max(0px, calc(100% - 40em));
   }
 }
 
+/* Phones: the still, at 90 % of the frame, and never under 268 px: the crop is 242 units wide, so the app's 12 px text
+   stays at 11 px or more on a 320 px phone (at 90 % it was 10.7 px there; 13.3 px at 390). */
 @media (max-width: 560px) {
   .window {
-    width: 90%;
+    width: max(90%, 268px);
   }
 
   /* loop L2 without a phone cut: phones show the legible still instead of its poster (critic H2) */
