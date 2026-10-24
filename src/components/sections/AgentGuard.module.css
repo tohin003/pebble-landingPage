@@ -56,10 +56,31 @@
   color: var(--ink-2);
 }
 
-/* columns 7–12: 624 px at 1440, where the app's 12 px text renders at 12–14 px */
+/* columns 7–12: 624 px at 1440 */
 .figure {
   grid-column: 4 / -1;
   margin: 0;
+}
+
+/* One scale for every crop (critic C06): at most 1.32 px per still unit, so the app's 12 px text renders at 13.2 px
+   and its 11 px text at 12.1 px, the same zoom in all three rows. --cw is the box UiCrop shows at this width (wide,
+   phone or narrow), so the rule follows it; a narrower column shrinks the crop. */
+.crop {
+  max-width: calc(var(--cw) * 1.32px);
+}
+
+/* The held run, the section's key moment, is the widest crop (652 px at that scale): its crop sits under its words at
+   every width, starting on column 4, instead of beside them (critic C06). */
+.row[data-row="held"] {
+  display: block;
+}
+
+.row[data-row="held"] .words {
+  max-width: 34em;
+}
+
+.row[data-row="held"] .figure {
+  margin-top: 20px;
 }
 
 /* --- "Reliability, not security.": the last ruled row. The title in columns 4–6; the body and its three points,
@@ -98,7 +119,7 @@
 }
 
 /* Below 1280 px the six columns are too narrow for the captures' text: each row stacks, its words first, then the
-   capture at most 624 px wide (the app's scale or a little more). */
+   capture at the one scale (.crop above), or the column's width where that is narrower. */
 @media (max-width: 1279px) {
   .row {
     display: block;
@@ -110,7 +131,6 @@
   }
 
   .figure {
-    max-width: 624px;
     margin-top: 20px;
   }
 
@@ -138,14 +158,6 @@
   .points li {
     padding-block: 12px;
     padding-right: max(0px, calc(100% - 40em));
-  }
-}
-
-/* 561–639 px: the phone crops (300 units, UiCrop phoneUpTo) at most 400 px wide, the app's text at about 13 px
-   instead of 17–20 px across the column */
-@media (min-width: 561px) and (max-width: 639px) {
-  .figure {
-    max-width: 400px;
   }
 }
 
