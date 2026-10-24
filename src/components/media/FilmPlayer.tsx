@@ -5,7 +5,9 @@
 //   film-events.ts (FilmTrigger, ChapterChip): the click's handler dispatches the event, and this component sets the
 //   source, opens the dialog and calls video.play() synchronously, inside the same user activation (M5).
 // - The source is chosen at click time: 1080p when screen.width × devicePixelRatio ≥ 1700, otherwise 720p (C6, C9);
-//   HEVC first when the browser can play it, then H.264.
+//   HEVC first when the browser can play it, then H.264. A browser can say it plays HEVC and then fail to decode the
+//   file: when the chosen source errors, the next one it can play (the H.264 file first) takes over, from where the
+//   film was, and only when none is left does the theatre show its note (QA F-FILM-1).
 // - Captions (not on by default), chapters and text descriptions are <track>s. A chapter seeks after loadedmetadata.
 // - Audio description (critic H4a): when film.descriptions.en.vtt exists and the browser can speak, a toggle reads
 //   each description cue aloud with speechSynthesis as the film reaches it. It is extended description: when the
@@ -27,15 +29,11 @@ export type TimedChapter = Readonly<{ id: string; title: string; startSeconds: n
 
 const HD_PIXELS = 1700;
 
-function pickSource(film: FilmMedia, video: HTMLVideoElement): VideoSource | null {
+/** Every source this browser says it can play, best first: the wanted quality's HEVC, then its H.264, then the other's. */
+function playableSources(film: FilmMedia, video: HTMLVideoElement): VideoSource[] {
   const wantHd = window.screen.width * (window.devicePixelRatio || 1) >= HD_PIXELS;
   const order: FilmQuality[] = wantHd ? ["1080", "720"] : ["720", "1080"];
-  for (const quality of order) {
-    for (const source of film.sources[quality]) {
-      if (video.canPlayType(source.type) !== "") return source;
-    }
-  }
-  return null;
+  return order.flatMap((quality) => film.sources[quality].filter((source) => video.canPlayType(source.type) !== ""));
 }
 
 export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: readonly TimedChapter[] }) {
@@ -43,6 +41,8 @@ export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: read
   const video = useRef<HTMLVideoElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   const pendingSeek = useRef<number | null>(null);
+  /** the sources still to try if the current one errors */
+  const fallbacks = useRef<VideoSource[]>([]);
   const describer = useRef<Describer | null>(null);
   const [failed, setFailed] = useState(false);
   const [canSpeak, setCanSpeak] = useState(false);
@@ -82,7 +82,8 @@ export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: read
       const d = dialog.current;
       if (!v || !d) return;
       opener.current = detail.trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
-      const source = pickSource(film, v);
+      const [source = null, ...rest] = playableSources(film, v);
+      fallbacks.current = rest;
       setFailed(!source);
       if (source && v.getAttribute("src") !== source.src) v.src = source.src;
       if (!d.open) d.showModal();
@@ -146,7 +147,14 @@ export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: read
                 pendingSeek.current = null;
               }
             }}
-            onError={() => setFailed(true)}
+            onError={() => {
+              const v = video.current;
+              const next = fallbacks.current.shift();
+              if (!v || !next) return setFailed(true);
+              if (v.currentTime > 0) pendingSeek.current = v.currentTime;
+              v.src = next.src;
+              void v.play().catch(() => {});
+            }}
           >
             {film.captions.available ? <track kind="captions" srcLang="en" label="English" src={film.captions.src} /> : null}
             {film.chapters.available ? <track kind="chapters" srcLang="en" label={filmDialog.chaptersHeading} src={film.chapters.src} /> : null}
