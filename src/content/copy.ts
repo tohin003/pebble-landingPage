@@ -44,7 +44,7 @@ export const release = {
   installCommand: "curl -fsSL https://raw.githubusercontent.com/tohin003/Pebble/main/install.sh | bash",
 } as const;
 
-/** "72 MB" from a byte count, in decimal megabytes as the release session asked for (71,808,389 bytes → "72 MB"). */
+/** "72 MB" from a byte count, in decimal megabytes as the release session asked for (71,833,771 bytes → "72 MB"). */
 export function formatMegabytes(bytes: number): string {
   return `${Math.round(bytes / 1_000_000)} MB`;
 }

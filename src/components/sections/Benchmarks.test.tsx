@@ -74,7 +74,12 @@ describe("the Benchmarks section", () => {
   });
 
   test("a later release that this result doesn't cover says so", async () => {
-    expect(text(await render({ open: true, offered: releaseFacts.version }))).not.toContain("hasn't been measured");
+    // a release the result covers (1.0.2 to 1.0.4) gets no line
+    expect(text(await render({ open: true, offered: "1.0.4" }))).not.toContain("hasn't been measured");
+    // the release the page states (1.2.0; neither it nor 1.1.0 was measured, OVERRIDES §21, §23) gets it
+    expect(text(await render({ open: true, offered: releaseFacts.version }))).toContain(
+      `Pebble ${releaseFacts.version}, the latest release, hasn't been measured yet.`,
+    );
     const later = text(await render({ open: true, offered: "1.0.9" }));
     expect(later).toContain("Pebble 1.0.9, the latest release, hasn't been measured yet.");
     expect(run.coveredVersions).not.toContain("1.0.9");
