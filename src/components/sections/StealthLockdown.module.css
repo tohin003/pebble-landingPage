@@ -73,21 +73,43 @@
   color: var(--ink-2);
 }
 
-/* --- 2 and 3. The exhibit: from 1280 px the capture on 4–9 with the pebble beside it on 10–12, standing level with
-   the capture's foot; the switch and the honest line under the capture. Below 1280 px the capture takes the column
-   (at most 640 px, where the app's 11 px text reads at 13.6 px), then the pebble and the switch side by side. --- */
+/* --- 2 and 3. The exhibit: from 1280 px the capture on 4–9 with the pebble beside it on 10–12, then the switch and the
+   honest line under the capture. Below 1280 px the capture takes the column (at most 640 px, where the app's 11 px text
+   reads at 13.6 px), then the switch and the pebble side by side.
+   Each figure, and the switch with its honest line, is two rows of the exhibit's grid (subgrid rows): the picture or
+   the panel, then the caption or the honest line. Sharing the rows lines up what sits side by side: the bottom edges
+   (where the pebble's ground runs, level with the capture's foot or the panel's) and the first lines under them. --- */
 .exhibit {
   display: grid;
   grid-template-columns: subgrid;
-  align-items: end;
+  grid-template-rows: repeat(4, auto);
+  row-gap: 0;
   margin-top: 56px;
+}
+
+.capture,
+.render,
+.control {
+  display: grid;
+  grid-template-rows: subgrid;
+  min-width: 0;
+  margin: 0;
 }
 
 .capture {
   grid-column: 1 / span 6;
-  grid-row: 1;
-  min-width: 0;
-  margin: 0;
+  grid-row: 1 / span 2;
+}
+
+.frame,
+.stageBox,
+.example {
+  align-self: end;
+}
+
+.caption,
+.honest {
+  align-self: start;
 }
 
 /* A moment of the real UI in a plain frame (DESIGN-LEXINGTON §3.8): radius 12, a 1 px --line ring, on the page ground.
@@ -155,17 +177,22 @@
 /* --- The page's pebble, on its own ground (a local Horizon), with its contact shadow --- */
 .render {
   grid-column: 7 / -1;
-  grid-row: 1;
+  grid-row: 1 / span 2;
+}
+
+/* The pebble's size follows its column (container units). The container is this box, not the figure: a container has
+   layout containment, and a grid with layout containment can't be a subgrid, so the rows would stop lining up. */
+.stageBox {
   min-width: 0;
-  margin: 0;
   container-type: inline-size;
 }
 
 /* The pebble's box is square and its body ends at 76.55 % of it (shared/pebble BODY), so the box hangs below the
-   ground by 23.45 % of its size and rises 44 % of its size over the stage: the margin keeps that inside the figure. */
+   ground by 23.45 % of its size and rises 44 % of its size over the stage: the margin keeps that inside the figure.
+   The ground runs along the stage's bottom edge, which the grid sets level with the capture's foot (or the panel's). */
 .stage {
   --size: min(240px, 100cqi);
-  --floor: 10px; /* the ground's height above the stage's bottom edge */
+  --floor: 0px; /* the ground's height above the stage's bottom edge */
   position: relative;
   height: calc(var(--size) * 0.62);
   margin-top: calc(var(--size) * 0.2);
@@ -220,12 +247,11 @@
    §3.8), with the app's own look inside (a round track and knob, the dusk blue when on) --- */
 .control {
   grid-column: 1 / span 6;
-  grid-row: 2;
-  min-width: 0;
-  margin-top: 32px;
+  grid-row: 3 / span 2;
 }
 
 .example {
+  margin-top: 32px;
   padding: 16px 20px 18px;
   border-radius: var(--r-panel);
   background: var(--fill);
@@ -335,35 +361,48 @@
   }
 }
 
-/* the app's state line, word for word: muted when off, the dusk ink when on (as in Pebble) */
+/* the app's state line, word for word: muted when off, the dusk ink when on (as in Pebble). The other state's line
+   sits invisibly in the same grid cell (generated content from data-other, hidden from assistive technology), so the
+   panel keeps the taller line's height and nothing under it moves when the switch flips. */
 .state {
+  display: grid;
   margin-top: 8px;
-  font-size: 15px;
+  font-size: 14px; /* the system's small role: the "On." line fits one line in the 624 px panel */
   line-height: 1.5;
   color: var(--ink-2);
   transition: color var(--dur-hover) var(--ease-out);
+}
+
+.state > span,
+.state::after {
+  grid-area: 1 / 1;
+}
+
+.state::after {
+  content: attr(data-other);
+  visibility: hidden;
 }
 
 .exhibit[data-stealth="on"] .state {
   color: var(--stealth-ink);
 }
 
-/* The honest line, right under the switch: real text, never collapsed, at the halves' size and in ink */
+/* The honest line, right under the switch: real text, never collapsed, at the halves' size and in ink. Its top lines up
+   with the pebble's caption beside it (the same 14 px under the shared row). */
 .honest {
   max-width: 40em;
-  margin-top: 16px;
+  margin-top: 14px;
   font-size: 16px;
   line-height: 1.6;
   color: var(--ink);
 }
 
-/* 1024–1279 px: the capture across the column; the pebble and the switch side by side under it */
+/* Below 1280 px: the capture across the column; under it the switch and, at its right, the pebble standing level with
+   the panel's foot */
 @media (max-width: 1279px) {
   .exhibit {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
     column-gap: var(--gap);
-    row-gap: 40px;
-    align-items: start;
   }
 
   .capture {
@@ -371,15 +410,14 @@
     max-width: 640px;
   }
 
-  .render {
+  .control {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 3 / span 2;
   }
 
-  .control {
+  .render {
     grid-column: 2;
-    grid-row: 2;
-    margin-top: 0;
+    grid-row: 3 / span 2;
   }
 }
 
@@ -403,25 +441,27 @@
   }
 }
 
-/* Phones: the capture, then the pebble, then the switch and the honest line */
+/* Phones: one column in reading order: the capture, then the pebble, then the switch and the honest line */
 @media (max-width: 560px) {
-  .exhibit {
+  .exhibit,
+  .capture,
+  .render,
+  .control {
     display: block;
   }
 
+  /* the pebble's square box may rise into the gap over the stage: its top part is empty */
   .render {
-    margin-top: 28px;
+    margin-top: 16px;
   }
 
   .stage {
     --size: min(220px, 100cqi);
-  }
-
-  .control {
-    margin-top: 28px;
+    margin-top: calc(var(--size) * 0.1);
   }
 
   .example {
+    margin-top: 28px;
     padding: 14px 16px 16px;
   }
 }

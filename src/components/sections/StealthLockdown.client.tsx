@@ -53,13 +53,15 @@ export function StealthExample({ off, on: onCapture, ground, still, stillOn }: S
       </figure>
 
       <figure className={styles.render}>
-        <div className={styles.stage}>
-          {ground}
-          <span className={styles.contact} aria-hidden="true" />
-          <div className={styles.pebbleBox}>
-            <PebbleLiveSlot name="stealth" stealth={on} interactive={false} className={styles.pebble}>
-              {on ? stillOn : still}
-            </PebbleLiveSlot>
+        <div className={styles.stageBox}>
+          <div className={styles.stage}>
+            {ground}
+            <span className={styles.contact} aria-hidden="true" />
+            <div className={styles.pebbleBox}>
+              <PebbleLiveSlot name="stealth" stealth={on} interactive={false} className={styles.pebble}>
+                {on ? stillOn : still}
+              </PebbleLiveSlot>
+            </div>
           </div>
         </div>
         <figcaption className={styles.caption}>
@@ -91,8 +93,8 @@ export function StealthExample({ off, on: onCapture, ground, still, stillOn }: S
               <span className={styles.knob} />
             </span>
           </button>
-          <p className={styles.state} aria-live="polite">
-            {on ? stealth.stateOn : stealth.stateOff}
+          <p className={styles.state} aria-live="polite" data-other={on ? stealth.stateOff : stealth.stateOn}>
+            <span>{on ? stealth.stateOn : stealth.stateOff}</span>
           </p>
         </div>
         <p id={honestId} className={styles.honest}>

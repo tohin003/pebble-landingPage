@@ -80,8 +80,11 @@ describe("the Stealth Lockdown section", () => {
     expect(paragraph).toContain(`id="${describedBy}"`);
   });
 
-  test("a polite live region holds the app's own state line (off at first)", () => {
-    expect(html).toMatch(new RegExp(`aria-live="polite">${stealth.stateOff.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}<`));
+  test("a polite live region holds the app's own state line (off at first); the other line only reserves its height", () => {
+    const live = /<p [^>]*aria-live="polite"[^>]*>([\s\S]*?)<\/p>/.exec(html);
+    expect(live?.[1]).toBe(`<span>${stealth.stateOff}</span>`);
+    // the on line is never text in the page: it is the hidden generated content that keeps the height (data-other)
+    expect(live?.[0]).toContain(`data-other="${stealth.stateOn.replace(/'/g, "&#x27;")}"`);
     expect(page).not.toContain(stealth.stateOn);
   });
 
