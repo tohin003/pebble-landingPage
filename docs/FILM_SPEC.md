@@ -12,7 +12,7 @@ Contents: 1 Grid · 2 Compositions and safe areas · 3 Type · 4 Worlds and layo
 7 Source-time maps · 8 On-screen text · 9 The pebble · 10 Cursor and clicks · 11 Sound effects · 12 Transitions ·
 13 Captions and chapters · 14 Review frames · 15 Teaser T0 · 16 Loops · 17 Capture requests · 18 Copy deltas for
 chapters.ts · 19 Departures from MASTER_PLAN · 20 Self-review (R5 §13.6) · 21 Alternate (scope challenge) and open
-issues · 22 The vertical (9:16).
+issues · 22 The vertical (9:16) · 23 The 30 s cut `x30`.
 
 ---
 
@@ -473,7 +473,8 @@ Each tab change is a **match cut on the click**: the frame holds still and the c
 
 - **The pebble carries in:** a second pebble instance starts off-frame lower right, (2050, 1180) / (1180, 1180), dark
   palette; eyes lead at f1999; take-off f2002 (H4); **lands f2016 (bar 29, motif)** as the full stop at (1295, 422) /
-  (806, 402): squash, `jelly`, pose `tap`. Pop and thud peak f2017; the bed ducks 1.5 dB.
+  (806, 402): squash, `jelly`, pose `tap`. The thud peaks f2017 and the bed ducks 1.5 dB. No pop: the one layered on
+  the thud here left the mix in 9535d46 (§11).
 - **Colour flood** sage → paper from the landing point (same as the reveal, deliberately: the visual motif repeats
   with the musical motif), f2016–2029; the palette changes with the light.
 - **(W)** `pebble` unrolls out of the pebble f2018–2032 (no tracking settle this time).
@@ -740,8 +741,11 @@ at once; hits 3–6 dB over the bed; rotate takes. Pan = 0.4 × (x − W/2)/(W/2
 | 1542 | 1543 | pop, pop_c | the record dissolves | |
 | 1665 | 1666 | whoosh, whoosh_c | the chart becomes the world (its fastest frame) | |
 | 1799 | 1800 | whoosh, whoosh_a | into the sage field (zoom through the badge) | the dive fills the frame on f1799 (lane G-fix) |
-| 2016 | 2017 | pop, pop_b | the end-card landing | |
-| 2016 | 2017 | thud, thud_b | landing texture | duck 1.5 dB |
+| 2016 | 2017 | thud, thud_b | the end-card landing | duck 1.5 dB |
+
+21 cues. The end-card landing has the thud alone. Its pitched pop (pop_b) was removed in 9535d46 (OVERRIDES §19):
+the F#5 plip over the motif's D5 read as "telephone" 0.240 in the social master's 66–69 s window. With it gone, the pop
+role is back at −13 dB for pop_a and pop_c.
 
 No chimes, dings or meme sounds. No downlifter (optional in the kit; off). The final chord is music, not an effect.
 
@@ -786,7 +790,8 @@ at most two lines, each shown ≥ 1.2 s at ≤ 3 words per second). One track se
 9:16 share the timeline). Convert to `public/media/v1/film.en.vtt` and `Pebble-launch-film.srt` with seconds = frame /
 30 (the file states the format). No caption covers a kinetic line: all kinetic type sits above y 918 (16:9, 1:1) and
 above y 1450 in 9:16 (§2). Whooshes and most clicks are not described; the music's changes, the reveal's thud, the
-Verified shimmer, the end-card pop and the final chord are.
+Verified shimmer, the end-card landing's thud and the final chord are. The landing's cue, c22, reads "[Soft thud]" (as
+c08 does at the reveal) since 581f210; it described the pop that left the mix in 9535d46.
 
 **Chapters** (`src/content/chapters.ts`, `startSeconds`; `film.chapters.vtt` and the chips come from there):
 
@@ -1034,3 +1039,43 @@ the chart's white), and nothing outside the band asks to be read.
 
 **Review.** `FilmFramesVertical` samples any list of frames (as `FilmFrames` and `FilmFramesSquare` do); the
 half-scale animatic is `.work/film/animatic-9x16.mp4`. Judge every bar frame at 360 px wide with the band marked.
+
+## 23. The 30 s cut `x30`, for X
+
+`docs/film-cuts/x30.json` (schema `pebble-film-cut/1`; lane prep-x30's plan, `.work/film/x30/PLAN.md`, not committed):
+**12 bars, 864 frames, 28.8 s**, made only of LaunchFilm's own frames. It plays four source ranges, end exclusive, in
+the film's order. Each starts on the same beat of the bar in the film and in the cut (source frame ≡ cut frame, mod
+72), so every click, line and seam keeps its beat, and the score's own bars play under the picture they were written
+for.
+
+| Source frames | Cut frames | Film bars | What it keeps |
+|---|---|---|---|
+| f0–71 | 0–71 | 1 | the hook: frame 0 (the thumbnail), the click at f36, the quick chat |
+| f360–611 | 72–323 | 6–9 (to beat 2) | T4, the pebble's rise and leap, **the reveal** (f504 → cut 216), T5 |
+| f900–1223 | 324–647 | 13 (beat 3)–17 | the AgentGuard proof: the hold, Run the tests, the isolated copy, **Verified** |
+| f2088–2303 | 648–863 | 30–32 | the end card: T18, **the final chord** with T19 and T20 (f2160 → cut 720), T21 and T22 |
+
+- **Joints:** three hard cuts, at cut 72 (bar 2), 324 (bar 5, beat 3) and 648 (bar 10). The film's own cut at f1008
+  stays inside its range. Every line the cut shows enters inside its range and keeps its film hold. No new copy.
+- **Music:** a 12-bar arrangement of the same score, not a splice of the bed. `tools/audio/compose_score.py --form x30`
+  plays score bars **1, 6, 7, 8, 9, 14, 15, 16, 17, 30, 31, 32**, and `render_sampled.py --levels-from` the film bed's
+  `.score.json` plays them at the film's gains. The reveal (score bar 7 → 8) lands on cut 216 and the final chord
+  (30 → 31) on cut 720, ringing through bar 32. The effects are the film's, mapped by `tools/audio/cut_cues.py` into
+  `tools/audio/cues.x30.json`: 8 cues, no whoosh, nothing in the end card. One command builds the bed, the mix and the
+  gates: `scripts/heavy.sh cut-x30 tools/audio/cut_soundtrack.sh docs/film-cuts/x30.json`, which writes
+  `.work/audio/render/soundtrack_x30_social.wav` (`b8e34c32…`, −14.1 LUFS, −1.5 dBTP, exactly 864 frames). Hashes and
+  gates: `docs/media-provenance.json`, `music.sampled_score.cut_x30`.
+- **Captions:** `node tools/captions/build.mjs --cut docs/film-cuts/x30.json --srt <file>` (`--check` validates only)
+  maps the film's cues onto the cut. That gives 12 cues: c01, c02, c06–c08, c12–c14 and c23–c25 whole, plus the cut's
+  own x09 "[Music picks up]" (cut 324–360, c09's sound at the same beat of the same score bar). c22 falls outside the
+  ranges.
+- **Picture and delivery:** there is **no separate Remotion composition**. The cut is the film's own frames, so the
+  film's fixes reach it with the next encode. The `LaunchFilm30*` ids in the cut file's `compositions` are not
+  registered in `video/src/Root.tsx`. Each aspect's 76.8 s master is cut and muxed in one step:
+  `tools/encode/encode.sh social <LaunchFilm master> .work/audio/render/soundtrack_x30_social.wav
+  Pebble-launch-film-30s-<W>x<H>.mp4 --cut docs/film-cuts/x30.json`. It seeks frame-exactly (the seeks come from
+  `tools/captions/cues.mjs cut-inputs`) and concatenates. Lane fin-deliver made the 1920×1080, 1080×1080 and 1080×1920
+  files this way: 864 frames each, and every sampled cut frame matches its master frame.
+- **If the film's timing changes**, re-pick the ranges by the same rules, then re-run the caption check,
+  `tools/audio/cut_cues.py docs/film-cuts/x30.json --check` and `cut_soundtrack.sh`. The plan's `cuts.ts` and
+  `validateCut()` were not built.
