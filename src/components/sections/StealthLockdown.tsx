@@ -2,8 +2,10 @@
 // does my data go?", this section "what do other people see on my screen?".
 //
 // The head through SectionHead: "Privacy and focus / New in 1.1.0" in the rail; the H2 is the setting's name with
-// "Off by default." as its muted second line (two-tone, twoTone.ts); the lead is the setting's own description; then
-// where to turn it on and the two shortcuts. Every word is Pebble 1.1.0's own (copy.ts `stealth`, with file and line).
+// "Off by default." as its muted second line (two-tone, twoTone.ts); the lead is the setting's own description followed
+// at once by the honest line, in the same paragraph and at the same size (PHILOSOPHY principle 3: the limit sits beside
+// the promise; critic C11); then where to turn it on and the two shortcuts. Every word is Pebble 1.1.0's own (copy.ts
+// `stealth`, with file and line). The honest line stays under the switch as well, as the app shows it.
 // Then, in the order a phone reads it (the words, then the picture, then the switch):
 // 1. the two halves, word for word, as a ruled definition list (terms on columns 4–6, the text on 7–12);
 // 2. the picture: the real 1.1.0 capture of Settings › Privacy and focus (the section alone, its light or dark still
@@ -68,7 +70,11 @@ export function StealthLockdown() {
         label={labels.stealth}
         title={stealth.h2}
         then={stealth.offByDefault}
-        lead={stealth.description}
+        lead={
+          <>
+            {stealth.description} {stealth.honest}
+          </>
+        }
       >
         <p>
           {stealth.turnOn} {stealth.hideAll}

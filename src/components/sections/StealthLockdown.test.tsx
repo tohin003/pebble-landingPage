@@ -68,10 +68,17 @@ describe("the Stealth Lockdown section", () => {
     expect((html.match(/role="switch"/g) ?? []).length).toBe(1);
   });
 
+  test("the honest line follows the promise in the head's lead, at its size (critic C11)", () => {
+    const lead = /<p class="[^"]*\blead\b[^"]*">([\s\S]*?)<\/p>/.exec(html)?.[1] ?? "";
+    expect(text(lead).trim()).toBe(`${stealth.description} ${stealth.honest}`.replace(/'/g, "'"));
+    expect(html.indexOf(stealth.honest)).toBeLessThan(html.indexOf("<dl"));
+  });
+
   test("the honest line is real text right under the switch: after it, never collapsed or hidden", () => {
-    const at = html.indexOf(stealth.honest);
+    const at = html.indexOf(stealth.honest, html.indexOf('role="switch"'));
     expect(at).toBeGreaterThan(html.indexOf('role="switch"'));
-    expect((html.match(new RegExp(stealth.honest.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) ?? []).length).toBe(1);
+    // twice in the section: after the promise in the head, and under the switch, as in the app
+    expect((html.match(new RegExp(stealth.honest.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) ?? []).length).toBe(2);
     const paragraph = html.slice(html.lastIndexOf("<p", at), at);
     expect(paragraph).not.toMatch(/hidden|aria-hidden|sr-only/);
     expect(html).not.toContain("<details");
