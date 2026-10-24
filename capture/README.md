@@ -18,7 +18,8 @@ the release and serve the frozen copy: `/usr/bin/python3 -I -B capture/freeze-re
 against the tag's git tree, and links `node_modules` only if the checkout's dependencies match the tag's; then
 `export PEBBLE_REPO=<new-dir>` before `source scripts/env.sh`, and `freeze-release.py --verify <new-dir>` around the
 batch. The 1.1.0 captures (24 Oct) were made this way: the checkout took the next version's work in progress within
-an hour of 1.1.0's publication.
+an hour of 1.1.0's publication. So was the 1.2.0 retake (24 Oct, `v1.2.0` at `a4af2e5`): the fixtures say 1.2.0, and
+the `tests/test_dates.py` edit carries the host's 1.2.0 reason for a test change the request didn't ask for.
 
 | Task | Command |
 |---|---|
@@ -44,7 +45,7 @@ image: some failures show only as text on screen (for example "Notification sett
 | Scene | Shows |
 |---|---|
 | `main-welcome` | The Companion home: "Good to see you.", the four starters |
-| `main-approval`, `main-approval-wide` | Two edit cards waiting in Details › Activity (Ask for approval) |
+| `main-approval`, `main-approval-wide` | Two edit cards waiting in Details › Activity (Ask for approval); from 1.2.0 the test file's card leads with "Pebble wants to change a test file, and your request didn't ask for test changes. …" |
 | `main-done` (+ `-timeline`), `main-done-wide` | The finished task: "Verified · pytest 42 passed on current files", Undo this edit |
 | `main-live` (`-01-empty` … `-04-waiting-approval`) | A run played from the backend's events; `-02-reading` is the Reading-state still |
 | `held-unverified`, `held-unverified-wide` | AgentGuard's hold: "Pebble's change isn't verified yet." with Run the tests / Ask Pebble to finish / Accept as unverified |

@@ -348,9 +348,10 @@ const SCENES = [
       await add(row(192, 12.6, "tool", "Preparing an edit to invoice_kit/dates.py", "done", "editing", 0.3, "Staged for your approval."));
       await add(row(256, 19.9, "tool", "Preparing an edit to tests/test_dates.py", "done", "editing", 0.3, "Staged for your approval."));
       const diffs = await fixture(page, "diffs");
+      const testScope = await fixture(page, "testScope"); // 1.2.0: the host's reason on a test-file edit (fixtures.js)
       const actions = [
         { id: "act-live-dates", chat_id: chat, kind: "edit", status: "pending", payload: { path: "invoice_kit/dates.py", baseline: "9f2c41d07ab3", diff: diffs.dates } },
-        { id: "act-live-tests", chat_id: chat, kind: "edit", status: "pending", payload: { path: "tests/test_dates.py", baseline: "51ab9e2c3d70", diff: diffs.tests } },
+        { id: "act-live-tests", chat_id: chat, kind: "edit", status: "pending", payload: { path: "tests/test_dates.py", baseline: "51ab9e2c3d70", diff: diffs.tests, ...testScope } },
       ];
       await live(page, "actions", chat, actions);
       await emit(page, "actions", { chat_id: chat, actions });

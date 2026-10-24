@@ -153,8 +153,12 @@ const TIMELINES = {
       // heldGap: the fixture dates the "You asked Pebble to run the tests" note 2 s after the hold (the 16.0 s click).
       const record = (state) => live("activity", run, { state, started: null, elapsed: null, items: dedupe(items), heldGap: 2 });
       const dedupe = (list) => [...new Map(list.map((i) => [i.seq, i])).values()].sort((a, b) => a.seq - b.seq);
-      const edit = (id, file, baseline, diff, status) => ({ id, chat_id: chat, kind: "edit", status, payload: { path: file, baseline, diff } });
-      const pending = [edit("act-film-dates", "invoice_kit/dates.py", "9f2c41d07ab3", diffs.dates, "pending"), edit("act-film-tests", "tests/test_dates.py", "51ab9e2c3d70", diffs.tests, "pending")];
+      // 1.2.0: the test-file edit carries the host's reason (fixtures.js TEST_SCOPE), which 1.2.0's card shows before its
+      // lead; earlier releases ignore it. The film's frames on disk are 1.0.4's: a re-record from 1.2.0 makes that card
+      // taller, so video/src/film/ui.ts's LIVE_FILM boxes would need measuring again.
+      const testScope = await fixture(page, "testScope");
+      const edit = (id, file, baseline, diff, status, extra = {}) => ({ id, chat_id: chat, kind: "edit", status, payload: { path: file, baseline, diff, ...extra } });
+      const pending = [edit("act-film-dates", "invoice_kit/dates.py", "9f2c41d07ab3", diffs.dates, "pending"), edit("act-film-tests", "tests/test_dates.py", "51ab9e2c3d70", diffs.tests, "pending", testScope)];
       const applied = pending.map((a) => ({ ...a, status: "applied" }));
       const tests = (status, result) => ({ id: "act-tests-1", chat_id: chat, kind: "tests", status,
         payload: { recipe: "pytest", plan: { recipe: "pytest", kind: "python", cwd: "snapshot", timeout: 120, output_limit: 1048576, network: false, argv: ["python", "-m", "pytest", "-q"],

@@ -1,5 +1,7 @@
-// Demo fixtures for Pebble 1.1.0's real UI (re-checked against the published source, tag v1.1.0 at commit 07886c7, on
-// 2026-10-24). 1.1.0 adds one setting and one shell command to the captured surfaces: Stealth Lockdown, kept by the
+// Demo fixtures for Pebble 1.2.0's real UI (re-checked against the published source, tag v1.2.0 at commit a4af2e5, on
+// 2026-10-24). 1.2.0 changes one payload on the captured surfaces: an edit to a test file that the request didn't ask
+// to change carries the host's reason (TEST_SCOPE_REVIEW below), and the edit card shows it before its lead. It adds
+// no RPC, no state() field and no event. 1.1.0 added one setting and one shell command: Stealth Lockdown, kept by the
 // host as settings.stealth (app.py state() default False; setting() accepts the boolean and emits "settings", after
 // which every window re-reads state()), and the shell's `stealth_set` (entry.js). The host templates cited below are
 // unchanged since 1.0.1, and the window's own strings, such as the Privacy and focus card, come from the components.
@@ -59,6 +61,13 @@ const DIFF_TESTS = `@@ -21,3 +21,10 @@ def test_add_months_keeps_day():
  def test_due_date_default_terms():`;
 
 const REQUEST = "The CSV export crashes for invoices issued on the 31st: ValueError: day is out of range for month. Can you find the bug and fix it?";
+// 1.2.0 (Phase 34 W1): backend/pebble/edit_scope.py REASON, verbatim. app.py _execute() adds it to an edit of a test
+// file when the current request doesn't ask for test changes (review_reason(); its intent test is narrow, and "find
+// the bug and fix it" isn't intent), in every mode but Full access, and sets requires_review. App.vue actionLead() puts
+// it before the card's lead, and runtime.py commit_action() keeps the payload once the edit is applied. REQUEST asks
+// for a fix, so tests/test_dates.py carries it in every scene of this conversation (checked with review_reason itself).
+const TEST_SCOPE_REVIEW = "Pebble wants to change a test file, and your request didn't ask for test changes. Tests are your evidence that the code works, so this change waits for you.";
+const TEST_SCOPE = { requires_review: true, scope_review: TEST_SCOPE_REVIEW };
 // store.py message(): a new conversation is titled with the first 54 characters of its first message.
 const autoTitle = (text) => text.slice(0, 54).replace(/\n/g, " ");
 
@@ -232,7 +241,7 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null, 
     ],
     actions: [
       { id: "act-edit-dates", chat_id: ID.coding, kind: "edit", status: "pending", payload: { path: "invoice_kit/dates.py", baseline: "9f2c41d07ab3", diff: DIFF_DATES } },
-      { id: "act-edit-tests", chat_id: ID.coding, kind: "edit", status: "pending", payload: { path: "tests/test_dates.py", baseline: "51ab9e2c3d70", diff: DIFF_TESTS } },
+      { id: "act-edit-tests", chat_id: ID.coding, kind: "edit", status: "pending", payload: { path: "tests/test_dates.py", baseline: "51ab9e2c3d70", diff: DIFF_TESTS, ...TEST_SCOPE } },
     ],
     runs: [{ id: "run-fix-1", state: "waiting_approval", steps: 6, elapsed: 46, error: null, created: ago(418), updated: ago(372), counts: { steps: 6, retries: 0, waited: 0 } }],
     questions: [], plan: null, artifacts: [],
@@ -477,7 +486,7 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null, 
     settings,
     data_dir: "/Users/maya/.pebble",
     platform: "darwin",
-    version: "1.1.0", // backend/pebble/__init__.py VERSION (Settings' About block shows "Pebble 1.1.0")
+    version: "1.2.0", // backend/pebble/__init__.py VERSION (Settings' About block shows "Pebble 1.2.0")
     memory: {
       enabled: settings.memory_enabled,
       strategy: "SQLite FTS5 · hybrid lexical/trigram/metadata ranking · bounded retrieval · no extra model", // memory.py
@@ -642,6 +651,7 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null, 
       continueHeld: CONTINUE_HELD, heldNotice: "\n\n> Verification remains incomplete: " + HELD_NOTICE, continueVerified: CONTINUE_VERIFIED },
     text: { request: REQUEST, petQuestion: PET_QUESTION, challengeRequest: CHALLENGE_REQUEST, challenge: CHALLENGE, heldIssue: HELD_ISSUE },
     diffs: { dates: DIFF_DATES, tests: DIFF_TESTS },
+    testScope: TEST_SCOPE, // 1.2.0: what the host adds to the tests/test_dates.py edit's payload (above)
     forget: { subject: FORGET_SUBJECT, ids: ["mem-pref-5", "mem-temp-1"] },
     challenge: { outside: CHALLENGE_OUTSIDE },
   };
