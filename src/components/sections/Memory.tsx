@@ -2,7 +2,7 @@
 //
 // The head on the rail ("Memory / Six labelled layers", the film chip under it), then three rows from column 4, in the
 // order a careful reader asks: what is kept, where you see it, how you take it back.
-// 1. The six layers as a two-column ruled list (columns 4–7 and 8–11), each with the app's own name, the README's
+// 1. The six layers as a two-column ruled list across columns 4–12, each with the app's own name, the README's
 //    layer name and what it holds. Read row by row, it is the order of the Settings sheet's own two-column grid below.
 // 2. The real Settings › Memory on the riverbed in columns 4–9 (loop L7's 624 px slot; L7 plays there once rendered)
 //    beside the recall rule in 10–12: the sheet itself says that retrieved text never becomes permission. Below

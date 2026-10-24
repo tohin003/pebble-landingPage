@@ -172,10 +172,11 @@
   margin-top: 72px;
 }
 
-/* the tour: a two-column ruled list on the page's columns (4–7 and 8–11), the same grammar as the limits */
+/* the tour: a two-column ruled list across the main (4–12), two equal halves, the same grammar as the limits (critic
+   C16: it ended on column 11) */
 .tour {
   display: grid;
-  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: var(--gap);
   margin-top: 16px;
 }
@@ -184,14 +185,6 @@
   min-width: 0;
   padding: 16px 0 18px;
   border-top: 1px solid var(--line);
-}
-
-.tourItem:nth-child(odd) {
-  grid-column: 1 / span 4;
-}
-
-.tourItem:nth-child(even) {
-  grid-column: 5 / span 4;
 }
 
 /* each column ends on its own rule */

@@ -2,24 +2,18 @@
    Settings sheet on the riverbed (columns 4–9) beside the recall rule (10–12); the forget card on the flat panel
    (4–8) beside what you control (9–12). Lines, not boxes. */
 
-/* ---- 1. the six layers: two columns of the main's nine (4–7 and 8–11), each cell a hairline row ---- */
+/* ---- 1. the six layers: two equal columns across the main (4–12), each cell a hairline row; it ended on column 11,
+   short of every other exhibit's edge (critic C16) ---- */
 .layers {
   display: grid;
-  grid-template-columns: subgrid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--gap);
 }
 
 .layer {
   min-width: 0;
   padding: 16px 0 18px;
   border-top: 1px solid var(--line);
-}
-
-.layer:nth-child(odd) {
-  grid-column: 1 / span 4;
-}
-
-.layer:nth-child(even) {
-  grid-column: 5 / span 4;
 }
 
 /* the last row closes both columns (the cells of a row share its height, so the two rules line up) */

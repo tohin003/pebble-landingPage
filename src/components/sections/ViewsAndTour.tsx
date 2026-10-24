@@ -9,7 +9,7 @@
 // 2. What a view keeps and how it leaves the app, and its limit, as one ruled row of three columns at the same size
 //    (PHILOSOPHY 3: the limit beside the promise).
 // 3. #more: bigger tasks (the title on columns 4–6, the points on 7–12, the schedules' limit under them), then the rest
-//    of the tour as a two-column ruled list (columns 4–7 and 8–11). Text only: no tiles, no icons.
+//    of the tour as a two-column ruled list across columns 4–12. Text only: no tiles, no icons.
 import { common, media, orchestration, sectionIds, tour, views } from "@/content/copy";
 import { labels } from "@/content/labels";
 import { LoopVideo } from "@/components/media/LoopVideo";

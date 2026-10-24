@@ -1,8 +1,10 @@
-/* What Pebble isn't (yet) (DESIGN-LEXINGTON §6 row 13): a two-column ruled list on the page's columns, each column four
-   columns wide (4–7 and 8–11), each item a hairline row, no marks. One column below 1024 px. */
+/* What Pebble isn't (yet) (DESIGN-LEXINGTON §6 row 13): a two-column ruled list across columns 4–12, two equal halves
+   with the page's gap, so it ends on column 12 like every other exhibit (critic C16: it stopped at column 11), each
+   item a hairline row, no marks. One column below 1024 px. */
 .list {
   display: grid;
-  grid-template-columns: subgrid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--gap);
   align-items: start;
 }
 
@@ -13,14 +15,6 @@
   font-size: 15px;
   line-height: 1.55;
   color: var(--ink-2);
-}
-
-.list li:nth-child(odd) {
-  grid-column: 1 / span 4;
-}
-
-.list li:nth-child(even) {
-  grid-column: 5 / span 4;
 }
 
 /* each column ends on its own rule */
