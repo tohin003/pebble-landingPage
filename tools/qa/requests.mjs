@@ -123,6 +123,11 @@ async function measure(base, width, theme) {
   await page.close();
 }
 
+// The site's own origins, as src/lib/site.ts siteOrigin() builds them (the local fallback, and the production domain
+// when VERCEL_PROJECT_PRODUCTION_URL is set): links to them are this site's pages, checked on the server under test.
+const PRODUCTION_HOST = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+const SITE_ORIGINS = new Set(["http://localhost:3000", ...(PRODUCTION_HOST ? [`https://${PRODUCTION_HOST}`] : [])]);
+
 async function crawl(base) {
   const pages = ["/", "/film", "/credits", "/privacy", "/no-such-page"];
   const origin = new URL(base).origin;
@@ -144,7 +149,10 @@ async function crawl(base) {
     ids.set(p, new Set(found.ids));
     for (const { u, attr, tag } of found.links) {
       if (u.startsWith("data:") || u.startsWith("blob:") || u.startsWith("mailto:")) continue;
-      const abs = new URL(u, `${base}${p}`);
+      let abs = new URL(u, `${base}${p}`);
+      // The canonical link and other absolute links to the build's own site URL (http://localhost:3000 in a local
+      // build) are this site's pages, not another site: check them on the server under test.
+      if (SITE_ORIGINS.has(abs.origin)) abs = new URL(`${abs.pathname}${abs.search}${abs.hash}`, origin);
       if (abs.hash && abs.origin === origin) fragments.push({ page: abs.pathname, id: decodeURIComponent(abs.hash.slice(1)), from: p, raw: u });
       abs.hash = "";
       const key = abs.href;
