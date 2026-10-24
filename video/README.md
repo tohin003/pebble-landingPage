@@ -11,8 +11,14 @@ Always start from the repo root, after `source scripts/env.sh`.
 | Install (fresh clone) | `cd video && npm ci && npx remotion browser ensure` (headless shell 157, about 570 MB, in `node_modules/.remotion/`) |
 | Studio | `cd video && ../scripts/heavy.sh studio npx remotion studio` (opens in your browser; stop it with Ctrl-C) |
 | One still | `cd video && ../scripts/heavy.sh still npx remotion still src/index.ts Placeholder out/placeholder.png --frame=45` |
-| QA frames | `cd video && ../scripts/heavy.sh qa-frames npx remotion render src/index.ts <Id> out/qa --frames=0,30,60 --image-format=png` |
+| QA frames | `cd video && ../scripts/heavy.sh qa-frames npx remotion render src/index.ts <Id> out/qa/<Id> --sequence --frames=0,30,60 --image-format=png` |
 | Type-check | `cd video && npx tsc` |
+
+- QA frames come from the composition itself, never from the `FilmFrames` sampler, whose frame 0 is sometimes flat
+  (OVERRIDES §20). `--sequence` writes one PNG per frame into the folder. In Remotion 4.0.538, `--frames` takes a list
+  (`0,30,60` renders only those frames), a range (`0-60` renders every frame in it) or one frame. The CLI's help text
+  names only the range and the single frame. If Remotion ever moves off 4.0.538, use a range until the list is checked.
+  For one frame, use `remotion still … --frame=504` (`docs/BUILDING.md` §4).
 
 - `remotion.config.ts` (CLI and Studio only): Rspack, ANGLE OpenGL, bt709, concurrency 2, overwrite on.
 - `src/motion/spec.ts`: the motion spec (timing, easing, springs, camera, cursor, type, colours) from research report R5,

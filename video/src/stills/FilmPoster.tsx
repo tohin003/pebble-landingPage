@@ -5,7 +5,7 @@
 // label in HTML. (Lane G1's first poster, built from a still with a pebble beside the window, is replaced: lane G2b.)
 //
 // Registered as a one-frame composition at 30 fps (a <Still> runs at 1 fps, which would put the teaser's timing off).
-// Render at --scale=2 for the page's retina slot (critic H3); tools/assets/posters.mjs then encodes AVIF/WebP.
+// Render at --scale=2 for the page's retina slot (critic H3); `tools/encode/encode.sh poster` then encodes AVIF/WebP.
 import { FilmTeaser } from "../teaser/FilmTeaser";
 
 export const FilmPoster: React.FC = () => <FilmTeaser />;
