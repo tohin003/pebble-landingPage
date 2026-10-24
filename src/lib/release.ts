@@ -130,7 +130,7 @@ export const getRelease = cache(async (): Promise<ReleaseInfo> => {
 });
 
 /**
- * The facts under a download button as separate items, from copy.ts `releaseMeta()` (["v1.3.0", "72 MB", "Apple
+ * The facts under a download button as separate items, from copy.ts `releaseMeta()` (["v1.5.0", "72 MB", "Apple
  * silicon", "macOS 12 or later"]). DESIGN §3: render them as a list with hairline separators, never as a middle-dot
  * string.
  */

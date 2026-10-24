@@ -50,7 +50,7 @@ export function formatMegabytes(bytes: number): string {
 }
 
 /**
- * The facts under a download button, each its own item: ["v1.3.0", "72 MB", "Apple silicon", "macOS 12 or later"].
+ * The facts under a download button, each its own item: ["v1.5.0", "72 MB", "Apple silicon", "macOS 12 or later"].
  * Render them as a list with hairline separators (ReleaseFacts), never joined into a middle-dot string (OVERRIDES §16,
  * §21; PHILOSOPHY "What we never do"). [C-REL-5]
  */
@@ -58,7 +58,7 @@ export function releaseMeta(version: string = release.version, sizeLabel: string
   return [`v${version}`, sizeLabel, "Apple silicon", "macOS 12 or later"];
 }
 
-/** The release notes page for a tag such as "v1.3.0". */
+/** The release notes page for a tag such as "v1.5.0". */
 export function releaseNotesUrl(tag: string = release.tag): string {
   return `https://github.com/tohin003/Pebble/releases/tag/${tag}`;
 }
