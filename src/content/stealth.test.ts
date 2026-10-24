@@ -51,10 +51,24 @@ function literals(): Found[] {
 const neverHits = (items: Found[]) => items.filter(({ text }) => usesNeverWord(text, [stealth.honest])).map(({ at, text }) => `${at}: “${text}”`);
 
 describe("Stealth Lockdown's words are Pebble 1.1.0's own", () => {
-  test("the honest line and the state lines equal the vendored stealthVeil.ts", () => {
+  test("the honest line and the state lines equal the vendored stealthVeil.ts, less the withdrawn focus clause", () => {
     expect(stealth.honest).toBe(STEALTH_HONEST);
-    expect(stealth.stateOn).toBe(STEALTH_ON_TEXT);
     expect(stealth.stateOff).toBe(STEALTH_OFF_TEXT);
+    // 1.1.0's on line promises focus, which Stealth Lockdown hasn't kept (the 25 October correction in copy.ts)
+    expect(STEALTH_ON_TEXT).toContain(" and won't take focus");
+    expect(stealth.stateOn).toBe(STEALTH_ON_TEXT.replace(" and won't take focus", ""));
+  });
+
+  test("nothing promises keyboard focus: the correction of 25 October", () => {
+    const promise = /\b(take|takes|taking|keep|keeps|steal|steals)\b[^.]{0,40}\bfocus\b|\bfocus\b[^.]{0,20}\b(off|away)\b/i;
+    const strings: string[] = [];
+    const walk = (v: unknown) => {
+      if (typeof v === "string") strings.push(v);
+      else if (Array.isArray(v)) v.forEach(walk);
+      else if (v && typeof v === "object") Object.values(v).forEach(walk);
+    };
+    walk(stealth);
+    expect(strings.filter((text) => promise.test(text))).toEqual([]);
   });
 
   test("the vendored file is the v1.1.0 one", () => {
@@ -67,7 +81,7 @@ describe("Stealth Lockdown's words are Pebble 1.1.0's own", () => {
     expect(stealth.h2).toBe(`${stealth.name}.`);
     expect(stealth.offByDefault).toBe("Off by default.");
     expect(stealth.summary.startsWith(`${stealth.name} keeps Pebble out of screen shares`)).toBe(true);
-    expect(stealth.halves.map((half) => half.term)).toEqual(["Stealth", "Lockdown"]);
+    expect(stealth.halves.map((half) => half.term)).toEqual(["Stealth"]);
   });
 });
 

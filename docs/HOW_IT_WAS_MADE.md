@@ -107,24 +107,29 @@ shapes in use; `SOURCES.json` records every file's hash and a test checks them. 
 
 ## Stealth Lockdown and the Veil
 
-Pebble 1.1.0 added Stealth Lockdown: one switch that keeps Pebble out of screen capture and screen sharing, and stops it
-taking focus from the app in front. It reached the page only once 1.1.0 was published, as its own section after
-"Private by default", in Pebble's own words: the setting's description, its two halves, its state lines and, wherever
-Stealth is shown, the honest line word for word: "Hidden from screen capture and screen sharing, not from a camera, a
+Pebble 1.1.0 added Stealth Lockdown: one switch that keeps Pebble out of screen capture and screen sharing. It reached
+the page only once 1.1.0 was published, as its own section after "Private by default", in Pebble's own words: the
+setting's description, its Stealth half, its state lines and, wherever Stealth is shown, the honest line word for word: "Hidden from screen capture and screen sharing, not from a camera, a
 capture card or a process list. Exams and interviews that forbid assistants still forbid it." The copy lint keeps the
 words the release session ruled out, such as "undetectable" and "invisible", off the site, and allows that one line by
 exact match.
 
 A window that Stealth protects can't be screen-recorded, so the page never shows, or stages, a screen share with
-Pebble missing. It shows two true things instead: a capture of the setting itself, Settings › Privacy and focus, off
-and on, taken from 1.1.0's frontend; and the page's own live pebble wearing the Veil, the dusk-blue glass with a light
-rim that Pebble puts on while Stealth Lockdown is on, captioned as a render, not a screen recording.
+Pebble missing. It shows the page's own live pebble wearing the Veil instead, the dusk-blue glass with a light rim that
+Pebble puts on while Stealth Lockdown is on, captioned as a render, not a screen recording.
+
+1.1.0 also promised that Stealth Lockdown never takes keyboard focus from the app in front. On 24 October the release
+session found that it hadn't kept that promise since 1.1.0: macOS observes Pebble's windows from launch, so the change
+never applied, and 1.5.2 stops promising it. The page dropped the promise the same night. The description keeps its
+first clause, the Lockdown half and the on line's focus clause are gone, and so is the capture of the Settings card,
+which showed those lines, until a later release's card can be captured from its published tag. A test fails if
+anything in the section promises focus again.
 
 The Veil is Pebble's code. `stealthVeil.ts`, a pure function of the seconds since the switch changed, was copied from
 the v1.1.0 tag into `shared/pebble/`, unchanged below a two-line provenance header, with its source and SHA-256 in
 `SOURCES.json` and a test that checks them, as for the engine. The site draws its layers with the formulas of Pebble's
 avatar component and the colours of Pebble's design tokens. An interactive example, on flat fill and labelled as one,
-flips the pebble and the capture, and a polite live region announces the app's own state line; under reduced motion or
+flips the pebble, and a polite live region announces the app's state line; under reduced motion or
 Pause motion the Veil is a 0.3 s cross-fade. The dusk blue is the feature's own accent and appears only inside its
 section: the one exception the philosophy allows.
 

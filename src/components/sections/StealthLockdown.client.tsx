@@ -1,17 +1,14 @@
 "use client";
 // The Stealth Lockdown section's exhibit and its "Interactive example" (StealthLockdown.tsx has the whole layout).
 //
-// One switch, two effects, as Pebble's own switch has:
-// - the page's live pebble gets `stealth`: on, it wears the Veil (Pebble 1.1.0's stealthVeil.ts through the site's
-//   engine: the cast, the 1.1 s shimmer every 6 s; under reduced motion or Pause motion a 0.3 s cross-fade and no
-//   shimmer); off, the release;
-// - the capture swaps between the off and on stills of the real Settings section, a 0.3 s cross-fade in every motion
-//   setting (the on still fades over the off one, so nothing between them shows). The still that isn't shown is
-//   aria-hidden, so a screen reader reads the picture that is on screen.
+// One switch: the page's live pebble gets `stealth`. On, it wears the Veil (Pebble 1.1.0's stealthVeil.ts through the
+// site's engine: the cast, the 1.1 s shimmer every 6 s; under reduced motion or Pause motion a 0.3 s cross-fade and no
+// shimmer); off, the release. (The 1.1.0 captures of the Settings card that it also swapped are off the page: they show
+// the withdrawn focus lines, the 25 October correction in copy.ts `stealth`.)
 // The switch is a real <button role="switch" aria-checked> (Space and Enter work, 44 px tall, focus ring in the
 // page's accent). Its visible label is the app's "Stealth Lockdown", and its name adds "Interactive example"; the
 // honest line under it is its description, as in the app (aria-describedby). The state line is a polite live region
-// with the app's own words (STEALTH_ON_TEXT, STEALTH_OFF_TEXT), so flipping it is announced the way Pebble words it.
+// with the app's state lines (STEALTH_OFF_TEXT; STEALTH_ON_TEXT without its withdrawn focus clause).
 // The pebble isn't a control here (interactive={false}): the switch is the only thing to press.
 import { useId, useState, type ReactNode } from "react";
 import { PebbleLiveSlot } from "@/components/pebble/PebbleLiveSlot";
@@ -19,10 +16,6 @@ import { stealth } from "@/content/copy";
 import styles from "./StealthLockdown.module.css";
 
 export type StealthExampleProps = Readonly<{
-  /** the capture with Stealth Lockdown off, both themes (server-rendered pictures) */
-  off: ReactNode;
-  /** the same capture with it on */
-  on: ReactNode;
   /** the pebble's ground line (a Horizon) */
   ground: ReactNode;
   /** the pebble's first frame, plain (PebbleStatic with stealth={false}), shown until the live pebble loads */
@@ -31,7 +24,7 @@ export type StealthExampleProps = Readonly<{
   stillOn: ReactNode;
 }>;
 
-export function StealthExample({ off, on: onCapture, ground, still, stillOn }: StealthExampleProps) {
+export function StealthExample({ ground, still, stillOn }: StealthExampleProps) {
   const [on, setOn] = useState(false);
   const id = useId();
   const nameId = `${id}-name`;
@@ -40,18 +33,6 @@ export function StealthExample({ off, on: onCapture, ground, still, stillOn }: S
 
   return (
     <div className={styles.exhibit} data-stealth={on ? "on" : "off"}>
-      <figure className={styles.capture}>
-        <div className={styles.frame}>
-          <div className={styles.layer} data-layer="off" aria-hidden={on ? true : undefined}>
-            {off}
-          </div>
-          <div className={`${styles.layer} ${styles.onLayer}`} data-layer="on" aria-hidden={on ? undefined : true}>
-            {onCapture}
-          </div>
-        </div>
-        <figcaption className={styles.caption}>{stealth.captureCaption}</figcaption>
-      </figure>
-
       <figure className={styles.render}>
         <div className={styles.stageBox}>
           <div className={styles.stage}>

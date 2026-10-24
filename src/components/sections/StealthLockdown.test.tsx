@@ -12,7 +12,6 @@ import { privacy, sectionIds, stealth } from "@/content/copy";
 import { labels } from "@/content/labels";
 import { usesNeverWord } from "@/content/neverWords";
 import { checkTwoTone } from "@/components/ui/twoTone";
-import { uiCropStill, uiStill } from "@/lib/media";
 import { SECTIONS } from "@/lib/sections";
 import { Privacy } from "./Privacy";
 import { StealthLockdown } from "./StealthLockdown";
@@ -41,13 +40,13 @@ describe("the Stealth Lockdown section", () => {
   });
 
   test("states the setting's description, where to turn it on, both shortcuts and the Veil, in Pebble's words", () => {
-    for (const line of [stealth.description, stealth.turnOn, stealth.hideAll, stealth.veil, stealth.renderNote, stealth.captureCaption])
+    for (const line of [stealth.description, stealth.turnOn, stealth.hideAll, stealth.veil, stealth.renderNote])
       expect(page).toContain(line);
     expect(page).toContain("⌃⌥⌘S");
     expect(page).toContain("⌃⌥⌘H");
   });
 
-  test("lists the two halves word for word as a definition list", () => {
+  test("lists the Stealth half word for word as a definition list", () => {
     for (const half of stealth.halves) {
       expect(html).toContain(`<dt>${half.term}</dt><dd>${half.text.replace(/'/g, "&#x27;")}</dd>`);
     }
@@ -95,19 +94,14 @@ describe("the Stealth Lockdown section", () => {
     expect(page).not.toContain(stealth.stateOn);
   });
 
-  test("the capture's off and on stills share one frame; the on one starts hidden from assistive technology", () => {
+  test("shows no capture of the Settings card, whose 1.1.0 lines promise focus (the 25 October correction)", () => {
     expect(html).toContain('data-stealth="off"');
-    const layers = html.match(/<div [^>]*data-layer="(off|on)"[^>]*>/g) ?? [];
-    expect(layers.length).toBe(2);
-    expect(layers[0]).toContain('data-layer="off"');
-    expect(layers[0]).not.toContain("aria-hidden");
-    expect(layers[1]).toContain('data-layer="on"');
-    expect(layers[1]).toContain('aria-hidden="true"');
-    // both share one frame: the on layer is the off layer's next sibling
-    expect(html).toMatch(/data-layer="off"[^>]*>[\s\S]*?<\/div><div [^>]*data-layer="on"/);
+    expect(html).not.toContain("data-layer=");
+    expect(html).not.toContain("settings-privacy-card");
+    expect(page).not.toMatch(/\b(takes?|keeps?)\b[^.]{0,40}\bfocus\b/i);
   });
 
-  test("the pebble starts plain, as a render beside the capture (never a recording, never a share view)", () => {
+  test("the pebble starts plain, as a render beside the switch (never a recording, never a share view)", () => {
     expect(html).toMatch(/<svg[^>]*data-stealth="off"/);
     expect(html).not.toContain('data-veil="glass"');
     expect(page).toContain("a render, not a screen recording");
@@ -117,37 +111,9 @@ describe("the Stealth Lockdown section", () => {
 
   test("uses no never-word outside the honest line", () => {
     expect(usesNeverWord(page, [stealth.honest])).toBe(false);
-    for (const alt of Object.values(stealth.media)) expect(usesNeverWord(alt, [stealth.honest])).toBe(false);
   });
 });
 
-describe("its stills", () => {
-  test("the section alone, off and on, at 2400 × 1730 and 1200 × 865, in both themes", () => {
-    for (const name of ["settings-privacy-card-off", "settings-privacy-card-on"] as const) {
-      const still = uiCropStill(name);
-      expect([still.width, still.height]).toEqual([2400, 1730]);
-      for (const theme of ["light", "dark"] as const) {
-        expect([still.files[theme][1200].width, still.files[theme][1200].height]).toEqual([1200, 865]);
-        expect(still.files[theme][2400].avif.src).toBe(`/ui/v1/${name}-${theme}-2400.avif`);
-        expect(still.files[theme][1200].webp.src).toBe(`/ui/v1/${name}-${theme}-1200.webp`);
-      }
-    }
-    expect([uiStill("settings-privacy-on").width, uiStill("settings-privacy-on").height]).toEqual([2400, 1500]);
-  });
-
-  test("every file the section asks for is in public/ui/v1", () => {
-    const repo = path.resolve(import.meta.dir, "../../..");
-    for (const name of ["settings-privacy-card-off", "settings-privacy-card-on"] as const) {
-      const still = uiCropStill(name);
-      for (const theme of ["light", "dark"] as const)
-        for (const width of [1200, 2400] as const)
-          for (const format of ["avif", "webp"] as const) {
-            const src = still.files[theme][width][format].src;
-            expect(readFileSync(path.join(repo, "public", src)).length).toBeGreaterThan(10_000);
-          }
-    }
-  });
-});
 
 describe("Privacy and the page around it", () => {
   test("Private by default links to the section, by the setting's name", () => {

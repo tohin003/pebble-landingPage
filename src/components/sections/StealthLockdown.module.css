@@ -1,7 +1,6 @@
-/* Stealth Lockdown (Pebble 1.1.0; OVERRIDES §21), section 11b. The head is SectionHead's; then, from column 4, the two
-   halves as a ruled ledger, the picture (the real capture beside the page's live pebble) and the "Interactive
-   example" switch with the honest line under it. Phones read them in that order too: the words, the picture, the
-   switch. */
+/* Stealth Lockdown (Pebble 1.1.0; OVERRIDES §21), section 11b. The head is SectionHead's; then, from column 4, the
+   Stealth half as a ruled ledger, and the "Interactive example" switch with the honest line under it beside the page's
+   live pebble. Phones read them in that order too: the words, the pebble, the switch. */
 
 /* The Veil's dusk family (Pebble 1.1.0's src/tokens.css, the same values as the pebble's own defaults in
    PebbleVeil.module.css), scoped to this section on purpose: the dusk blue is Stealth Lockdown's own accent, the one
@@ -73,21 +72,20 @@
   color: var(--ink-2);
 }
 
-/* --- 2 and 3. The exhibit: from 1280 px the capture on 4–9 with the pebble beside it on 10–12, then the switch and the
-   honest line under the capture. Below 1280 px the capture takes the column (at most 640 px, where the app's 11 px text
-   reads at 13.6 px), then the switch and the pebble side by side.
-   Each figure, and the switch with its honest line, is two rows of the exhibit's grid (subgrid rows): the picture or
-   the panel, then the caption or the honest line. Sharing the rows lines up what sits side by side: the bottom edges
-   (where the pebble's ground runs, level with the capture's foot or the panel's) and the first lines under them. --- */
+/* --- 2. The exhibit: the switch with its honest line on 4–9 and the page's pebble beside it on 10–12; below 1280 px
+   the same two side by side in 7 : 5. (The 1.1.0 capture of the Settings card that sat above them is off the page:
+   it shows the withdrawn focus lines, the 25 October correction in copy.ts `stealth`.)
+   The pebble's figure and the switch with its honest line are each two rows of the exhibit's grid (subgrid rows): the
+   stage or the panel, then the caption or the honest line. Sharing the rows lines up what sits side by side: the
+   bottom edges (the pebble's ground runs level with the panel's foot) and the first lines under them. --- */
 .exhibit {
   display: grid;
   grid-template-columns: subgrid;
-  grid-template-rows: repeat(4, auto);
+  grid-template-rows: repeat(2, auto);
   row-gap: 0;
   margin-top: 56px;
 }
 
-.capture,
 .render,
 .control {
   display: grid;
@@ -96,12 +94,6 @@
   margin: 0;
 }
 
-.capture {
-  grid-column: 1 / span 6;
-  grid-row: 1 / span 2;
-}
-
-.frame,
 .stageBox,
 .example {
   align-self: end;
@@ -110,60 +102,6 @@
 .caption,
 .honest {
   align-self: start;
-}
-
-/* A moment of the real UI in a plain frame (DESIGN-LEXINGTON §3.8): radius 12, a 1 px --line ring, on the page ground.
-   The off and on stills share one frame; the on still fades over the off one. */
-.frame {
-  position: relative;
-  display: grid;
-  overflow: hidden;
-  aspect-ratio: 2400 / 1730;
-  border-radius: var(--r-panel);
-  background: var(--panel);
-}
-
-.frame::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  border-radius: inherit;
-  box-shadow: inset 0 0 0 1px var(--line);
-  pointer-events: none;
-}
-
-.layer {
-  grid-area: 1 / 1;
-  min-width: 0;
-}
-
-.onLayer {
-  opacity: 0;
-  transition: opacity var(--dur-crossfade) var(--ease-out);
-}
-
-.exhibit[data-stealth="on"] .onLayer {
-  opacity: 1;
-}
-
-/* The swap stays a 0.3 s cross-fade under Pause motion and reduced motion too (it moves nothing; Pebble's own switch
-   cross-fades for 0.3 s under Reduce Motion): stronger than the page's kill switch, for this one opacity only. */
-:global(:root[data-motion="paused"]) .exhibit .onLayer {
-  transition-duration: var(--dur-crossfade) !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .exhibit .onLayer {
-    transition-duration: var(--dur-crossfade) !important;
-  }
-}
-
-.picture,
-.img {
-  display: block;
-  width: 100%;
-  height: auto;
 }
 
 .caption {
@@ -189,7 +127,7 @@
 
 /* The pebble's box is square and its body ends at 76.55 % of it (shared/pebble BODY), so the box hangs below the
    ground by 23.45 % of its size and rises 44 % of its size over the stage: the margin keeps that inside the figure.
-   The ground runs along the stage's bottom edge, which the grid sets level with the capture's foot (or the panel's). */
+   The ground runs along the stage's bottom edge, which the grid sets level with the panel's foot. */
 .stage {
   --size: min(240px, 100cqi);
   --floor: 0px; /* the ground's height above the stage's bottom edge */
@@ -247,7 +185,7 @@
    §3.8), with the app's own look inside (a round track and knob, the dusk blue when on) --- */
 .control {
   grid-column: 1 / span 6;
-  grid-row: 3 / span 2;
+  grid-row: 1 / span 2;
 }
 
 .example {
@@ -397,31 +335,25 @@
   color: var(--ink);
 }
 
-/* Below 1280 px: the capture across the column; under it the switch and, at its right, the pebble standing level with
-   the panel's foot */
+/* Below 1280 px: the switch and, at its right, the pebble standing level with the panel's foot */
 @media (max-width: 1279px) {
   .exhibit {
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
     column-gap: var(--gap);
   }
 
-  .capture {
-    grid-column: 1 / -1;
-    max-width: 640px;
-  }
-
   .control {
     grid-column: 1;
-    grid-row: 3 / span 2;
+    grid-row: 1 / span 2;
   }
 
   .render {
     grid-column: 2;
-    grid-row: 3 / span 2;
+    grid-row: 1 / span 2;
   }
 }
 
-/* One column: the ledger's rows stack; the exhibit keeps its two columns under the capture */
+/* One column: the ledger's rows stack; the exhibit keeps its two columns */
 @media (max-width: 1023px) {
   .halves,
   .half {
@@ -441,10 +373,9 @@
   }
 }
 
-/* Phones: one column in reading order: the capture, then the pebble, then the switch and the honest line */
+/* Phones: one column in reading order: the pebble, then the switch and the honest line */
 @media (max-width: 560px) {
   .exhibit,
-  .capture,
   .render,
   .control {
     display: block;
