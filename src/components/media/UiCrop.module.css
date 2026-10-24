@@ -1,5 +1,6 @@
-/* A region of a real-UI still. The inline style sets the box (--x --y --w --h, and --px … for phones); the rules below
-   read it through --cx …, so a media query can swap the box (an inline custom property would win over a stylesheet). */
+/* A region of a real-UI still. The inline style sets the box (--x --y --w --h, --px … for phones, --nx … for the
+   narrowest phones); the rules below read it through --cx …, so a media query can swap the box (an inline custom
+   property would win over a stylesheet). Later rules win: the narrow box over the phone box. */
 .crop {
   --cx: var(--x);
   --cy: var(--y);
@@ -17,6 +18,25 @@
     --cy: var(--py);
     --cw: var(--pw);
     --ch: var(--ph);
+  }
+}
+
+/* UiCrop phoneUpTo={639}: a small tablet's column is too narrow for the wide box's text too */
+@media (max-width: 639px) {
+  .crop[data-phone="639"] {
+    --cx: var(--px);
+    --cy: var(--py);
+    --cw: var(--pw);
+    --ch: var(--ph);
+  }
+}
+
+@media (max-width: 360px) {
+  .crop[data-narrow] {
+    --cx: var(--nx);
+    --cy: var(--ny);
+    --cw: var(--nw);
+    --ch: var(--nh);
   }
 }
 

@@ -141,6 +141,14 @@
   }
 }
 
+/* 561–639 px: the phone crops (300 units, UiCrop phoneUpTo) at most 400 px wide, the app's text at about 13 px
+   instead of 17–20 px across the column */
+@media (min-width: 561px) and (max-width: 639px) {
+  .figure {
+    max-width: 400px;
+  }
+}
+
 @media (max-width: 560px) {
   .row {
     padding-block: 24px;

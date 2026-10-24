@@ -11,9 +11,11 @@
 //   3. the same fix verified: the reply's one-line result, with the accent galet (a state mark, one of its three jobs).
 // Last, "Reliability, not security." as a ruled row of its own: the limit sits beside the promise (PHILOSOPHY 3).
 //
-// Each crop is sized so the app's own text renders at about 12 px or more: 624 px wide at 1440 (the loops' ledger
-// slot), at most 624 px when the rows stack below 1280 px, and tighter phone crops at 560 px and below, which keep the
-// same lines whole (UiCrop `phone`). The crops wait until they are near the screen (UiCrop `defer`, QA lane F3).
+// Each crop is sized so the app's own text renders at about 12 px, never under the 11 px floor: 624 px wide at 1440
+// (the loops' ledger slot), at most 624 px when the rows stack below 1280 px; tighter phone crops from 639 px down
+// (UiCrop `phone`, `phoneUpTo`: at 561–639 px a 524-unit hold put the text at 9.8–11 px), at most 400 px wide there;
+// and tighter ones still at 360 px and below (UiCrop `narrow`: the 300-unit phone crops were 9.6 px at 320). Every box
+// keeps its lines whole. The crops wait until they are near the screen (UiCrop `defer`, QA lane F3).
 import { agentGuard, common } from "@/content/copy";
 import { labels } from "@/content/labels";
 import { UiCrop, type CropBox, type UiCropProps } from "@/components/media/UiCrop";
@@ -27,16 +29,23 @@ import styles from "./AgentGuard.module.css";
 const CHALLENGE: CropBox = { x: 776, y: 196, w: 420, h: 312 };
 // Phones: the refused step (in the app's red), "Details", the engine's header and its summary line, whole.
 const CHALLENGE_PHONE: CropBox = { x: 788, y: 219, w: 300, h: 82.5 };
+// The narrowest phones: "Details", the engine's header and its summary line. The refused step's line (269 units) can't
+// be shown whole at 11 px in a 288 px column, so it stays out (13.5 px at 320).
+const CHALLENGE_NARROW: CropBox = { x: 803, y: 239, w: 213, h: 62.5 };
 // The hold: "Blocked", "Pebble's change isn't verified yet. · …" and Run the tests, Ask Pebble to finish, Accept as
 // unverified ("Details", at the far right of the reply, stays out so the app's 12 px text renders at 12 px).
 const HELD: CropBox = { x: 403, y: 472, w: 524, h: 114 };
 // Phones: the reply's first three lines, whole and legible, its one-line result second ("Not verified · 2 changed files,
 // no tests run"); the hold's sentence is the row's title. A tighter crop of the hold would cut its sentence mid-line.
 const HELD_PHONE: CropBox = { x: 398, y: 194, w: 300, h: 72 };
+// The narrowest phones: the same three lines without the pebble's avatar at their left (12.3 px at 320).
+const HELD_NARROW: CropBox = { x: 432, y: 194, w: 234, h: 72 };
 // The verified reply's head: "Worked for 1 min 12 s · 5 steps …", "Verified · pytest 42 passed on current files" and
 // "Done, and verified:" (the list under it runs wider than a 624 px crop can show at the app's scale).
 const VERIFIED: CropBox = { x: 234, y: 289, w: 476, h: 71 };
 const VERIFIED_PHONE: CropBox = { x: 231, y: 287, w: 300, h: 72 };
+// The narrowest phones: the same lines without the avatar (11.1 px at 320).
+const VERIFIED_NARROW: CropBox = { x: 266, y: 287, w: 260, h: 72 };
 
 /** The ledger's figure: columns 7–12 at 1440 (624 px), at most 624 px when the rows stack, the phone's width below. */
 const FIGURE: UiCropProps["display"] = { wide: 624, tablet: "calc(100vw - 48px)", phone: "calc(100vw - 32px)" };
@@ -51,20 +60,47 @@ export function AgentGuard() {
       key: "challenge",
       title: agentGuard.challenge.summary(5),
       notes: [agentGuard.challenge.caption, common.sampleData],
-      crop: { name: "main-challenge", alt: agentGuard.media.challenge, box: CHALLENGE, phone: CHALLENGE_PHONE, display: FIGURE, defer: true },
+      crop: {
+        name: "main-challenge",
+        alt: agentGuard.media.challenge,
+        box: CHALLENGE,
+        phone: CHALLENGE_PHONE,
+        phoneUpTo: 639,
+        narrow: CHALLENGE_NARROW,
+        display: FIGURE,
+        defer: true,
+      },
     },
     {
       key: "held",
       title: held.message,
       notes: [agentGuard.layer[2], common.sampleData],
-      crop: { name: "held-unverified", alt: agentGuard.media.held, box: HELD, phone: HELD_PHONE, display: FIGURE, defer: true },
+      crop: {
+        name: "held-unverified",
+        alt: agentGuard.media.held,
+        box: HELD,
+        phone: HELD_PHONE,
+        phoneUpTo: 639,
+        narrow: HELD_NARROW,
+        display: FIGURE,
+        defer: true,
+      },
     },
     {
       key: "verified",
       title: agentGuard.result,
       verified: true,
       notes: [resultSentence, agentGuard.resultCaption],
-      crop: { name: "main-done", alt: agentGuard.media.verified, box: VERIFIED, phone: VERIFIED_PHONE, display: FIGURE, defer: true },
+      crop: {
+        name: "main-done",
+        alt: agentGuard.media.verified,
+        box: VERIFIED,
+        phone: VERIFIED_PHONE,
+        phoneUpTo: 639,
+        narrow: VERIFIED_NARROW,
+        display: FIGURE,
+        defer: true,
+      },
     },
   ];
 
