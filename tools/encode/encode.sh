@@ -28,6 +28,8 @@
 #                                                                          by OVERRIDES §8: the film set <= ~45 MB);
 #                                                                          hard limit = §5.5's 20 / 30 / 12 / 18 MB
 #     loop HEVC CRF 27 <= 0.9 MB; loop H.264 CRF 23 <= 1.2 MB (hard 1.5)   (and the -phone 4:5 cuts the same)
+#       A loop may start lower with LOOP_HEVC_CRF and LOOP_H264_CRF; its budgets stay. L1 (loop companion) uses 22 / 19:
+#       its desktop is one smooth gradient, which blocked at 27 / 23 (critic C09), and it was far under budget.
 #     teaser-720 HEVC CRF 26, H.264 CRF 21 (the film-720 settings) <= 1.5 MB each
 #     posters: AVIF q50 effort 6 <= 60 KB, WebP q76 <= 90 KB, quality lowered stepwise to fit (tools/encode/poster.mjs);
 #              a simple picture (under 1/4 of its budget at q50 / q76) gets more quality, up to q80 / q90, within 1/4
@@ -58,6 +60,9 @@ STATS=-nostats
 [ -t 2 ] && STATS=-stats
 # Tests only: multiplies every budget, so tiny synthetic inputs exercise the CRF steps (verify.mjs keeps the real ones).
 BUDGET_SCALE="${ENCODE_BUDGET_SCALE:-1}"
+# The loops' starting CRFs (see the header): lower for a loop whose picture needs it, within the same budgets.
+LOOP_HEVC_CRF="${LOOP_HEVC_CRF:-27}"
+LOOP_H264_CRF="${LOOP_H264_CRF:-23}"
 
 die() { printf 'encode.sh: %s\n' "$*" >&2; exit 1; }
 usage_die() { printf 'encode.sh: %s\n' "$*" >&2; printf 'run "tools/encode/encode.sh --help" for usage\n' >&2; exit 64; }
@@ -412,6 +417,8 @@ cmd_loop() {
   local id master phone failed=0 name src codec frames
   id="$(pos 1)" master="$(pos 2)" phone="$(pos 3)"
   case "$id" in '' | *[!a-z0-9-]*) usage_die "a loop id is lower-case letters, digits and hyphens" ;; esac
+  case "$LOOP_HEVC_CRF" in '' | *[!0-9]*) usage_die "LOOP_HEVC_CRF takes a whole number" ;; esac
+  case "$LOOP_H264_CRF" in '' | *[!0-9]*) usage_die "LOOP_H264_CRF takes a whole number" ;; esac
   known_loop "$id" || note "warning: '$id' is not a LoopId in src/lib/media.ts, so the page won't show it"
   master "$master" "the loop master"
   [ -z "$phone" ] || master "$phone" "the phone master"
@@ -425,9 +432,9 @@ cmd_loop() {
     [ "$name" = "loop-$id-phone" ] && [ "${V_W}x${V_H}" != 1080x1350 ] && note "note: the phone cut is ${V_W}x${V_H}; the 4:5 cuts render at 1080x1350"
     for codec in hevc h264; do
       if [ "$codec" = hevc ]; then
-        fit "$name.hevc" hevc 27 900000 900000 "$MAX_RAISE" 0 "$OUT/$name.hevc.mp4" "$src" "" "" "$frames" && st=ok || st=FAIL
+        fit "$name.hevc" hevc "$LOOP_HEVC_CRF" 900000 900000 "$MAX_RAISE" 0 "$OUT/$name.hevc.mp4" "$src" "" "" "$frames" && st=ok || st=FAIL
       else
-        fit "$name.h264" h264 23 1200000 1500000 "$MAX_RAISE" 0 "$OUT/$name.h264.mp4" "$src" "" "" "$frames" && st=ok || st=FAIL
+        fit "$name.h264" h264 "$LOOP_H264_CRF" 1200000 1500000 "$MAX_RAISE" 0 "$OUT/$name.h264.mp4" "$src" "" "" "$frames" && st=ok || st=FAIL
       fi
       if [ "$st" = ok ]; then
         report "$OUT/$name.$codec.mp4" ok

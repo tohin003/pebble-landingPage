@@ -3,8 +3,10 @@
 // pebble carries the loop, FILM_SPEC R1); the question is sent, Pebble thinks and writes, the reply completes and the
 // pebble celebrates; the pointer minimizes the chat (Pet.vue "Minimize to pebble": the panel goes at once, R4) while
 // the pebble keeps celebrating, as the app does for 4.5 s, then it settles to idle on its desktop: frame 0 again.
+// The composition opens on L1.start, the reply complete (critic C09): it plays the timeline's frames start…n−1, then
+// 0…start−1, so its frame 0 (the poster) shows the quick chat and the seam stays where the timeline has it.
 // Timeline: plans.ts L1; pointer and cues: companion.ts.
-import { useCurrentFrame, useVideoConfig } from "remotion";
+import { Sequence, useCurrentFrame, useVideoConfig } from "remotion";
 import { Camera, Cursor, Desktop, World } from "../components";
 import { PET, PET_PANEL } from "../film/timeline";
 import { cameraAt } from "../motion/camera";
@@ -15,7 +17,8 @@ import { L1 } from "./plans";
 
 const CUES = l1Cues().cues;
 
-export const LoopCompanion: React.FC = () => {
+/** One frame of the timeline (plans.ts L1), at the frame its Sequence gives it. */
+const Scene: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps, width } = useVideoConfig();
   const aspect = useLoopAspect() === "tall" ? "tall" : "wide";
@@ -38,3 +41,16 @@ export const LoopCompanion: React.FC = () => {
     </Camera>
   );
 };
+
+export const LoopCompanion: React.FC = () => (
+  <>
+    {/* frames 0…n−start−1 play the timeline's start…n−1 */}
+    <Sequence from={-L1.start} durationInFrames={L1.plan.n} layout="none">
+      <Scene />
+    </Sequence>
+    {/* then the timeline's 0…start−1 */}
+    <Sequence from={L1.plan.n - L1.start} durationInFrames={L1.start} layout="none">
+      <Scene />
+    </Sequence>
+  </>
+);

@@ -544,8 +544,14 @@ export const L1 = (() => {
   const completed = click + 142; // 6.60 s
   const happyEnds = completed + 135; // + 4.5 s (COMPLETED_MS)
   const k = { wide: kOf(SLOT.companion, FRAME.wide.w), tall: kOf(SLOT.phone, FRAME.tall.w) };
-  /** the resting framing: the pebble (1080, 750) at frame (1067, 667) at m 2.4 (see camera) */
-  const W: CamPose = { x: 1080 - (1067 - 800) / 2.4, y: 750 - (667 - 500) / 2.4, zoom: 2.4 };
+  /** the resting framing: the pebble (1080, 750) at frame (1067, 667) at m 3.0 (see camera) */
+  const W: CamPose = { x: 1080 - (1067 - 800) / 3.0, y: 750 - (667 - 500) / 3.0, zoom: 3.0 };
+  /**
+   * The frame the encoded loop opens on (LoopCompanion plays start…n−1, then 0…start−1; the loop is cyclic, so the
+   * seam doesn't move): the reply complete, the pebble happy, no pointer. It is the poster and the only picture under
+   * reduced motion and Pause motion, so the section's promise, "Click it for a quick chat", shows in a still (critic C09).
+   */
+  const start = 206;
   /** the open chat */
   const P: CamPose = { x: 945.3, y: 576.7, zoom: 2.1 };
   const plan = {
@@ -553,9 +559,10 @@ export const L1 = (() => {
     n,
     aspects: ["wide", "tall"],
     camera: {
-      // W: the pebble on its desktop, m 2.4, standing on the frame's lower-right thirds (1067, 667) with the riverbed's
-      // stones along the bottom: frame 0 is the section's poster and its only picture under Pause motion, and at m 1.8
-      // (FILM_SPEC) it was a 125 px pebble in a pale, empty 1280 × 800 field (REVIEW-G2 P2-20). P: the open chat, m 2.1.
+      // W: the pebble on its desktop, m 3.0, standing on the frame's lower-right thirds (1067, 667) with the riverbed's
+      // stones along the bottom. At m 1.8 (FILM_SPEC) it was a 125 px pebble in a pale, empty 1280 × 800 field
+      // (REVIEW-G2 P2-20), and at m 2.4 still mostly empty riverbed (critic C09). P: the open chat, m 2.1, which the
+      // encoded loop opens on (`start`).
       // The click opens the chat and the camera pulls back to it (f46–76, the click is the cause); it holds P through
       // the minimize click (its button is above W's frame) and pushes back in while the pebble celebrates (f258–288).
       // Tall: one framing, m 2.79, the whole panel and the pebble, the panel's card centred in the frame's height
@@ -583,6 +590,7 @@ export const L1 = (() => {
     close,
     completed,
     happyEnds,
+    start,
     /** the hidden avatar's centre in the panel (FILM_SPEC §7.1, film/timeline.ts PET.inPanel) */
     avatarInPanel: { x: 326.7, y: 397.3 },
     /** "Minimize to pebble" in the panel */

@@ -400,7 +400,9 @@ tools/encode/encode.sh poster <png> <out-base> <width> <height>
   long as the picture, to the frame.
 - HEVC (`hvc1`) first, then H.264, each in `yuv420p` with BT.709 tags and `+faststart`. The film's audio is AAC at
   48 kHz from the web soundtrack, encoded once; the loops and the teaser are silent. Each file starts at its planned
-  quality and steps down only as far as its size budget needs; the resolution never drops.
+  quality and steps down only as far as its size budget needs; the resolution never drops. A loop can start at a
+  higher quality with `LOOP_HEVC_CRF` and `LOOP_H264_CRF`, within the same budgets. The desktop loop (companion) uses
+  22 and 19: its desktop is one smooth gradient, which showed blocks at the defaults, 27 and 23.
 - At the end a verify pass checks the new files. `node tools/encode/mp4.mjs codecs <file>` prints a file's codecs
   string, which must fit the one the page declares in `src/lib/media.ts` (`hvc1.1.6.L120.90` for HEVC, `avc1.640028`
   for H.264).
@@ -411,7 +413,8 @@ tools/encode/encode.sh poster <png> <out-base> <width> <height>
 tools/encode/encode.sh film video/out/masters/film.mp4 .work/audio/render/soundtrack_web.wav     # film-1080, film-720
 tools/encode/encode.sh teaser video/out/masters/teaser.mp4                                        # teaser-720
 tools/encode/encode.sh loop isolated-tests video/out/masters/loop-isolated-tests.mp4 video/out/masters/loop-isolated-tests-phone.mp4
-tools/encode/encode.sh loop memory video/out/masters/loop-memory.mp4      # and companion (with its phone cut), models, views
+tools/encode/encode.sh loop memory video/out/masters/loop-memory.mp4      # and models, views
+LOOP_HEVC_CRF=22 LOOP_H264_CRF=19 tools/encode/encode.sh loop companion video/out/masters/loop-companion.mp4 video/out/masters/loop-companion-phone.mp4
 tools/encode/encode.sh poster video/out/stills/film.poster.png public/media/v1/film.poster 1920 1080
 tools/encode/encode.sh poster video/out/stills/film.poster.png public/media/v1/teaser.poster 1280 720
 tools/encode/encode.sh poster video/out/stills/loop-memory.poster.png public/media/v1/loop-memory.poster 1600 1000
