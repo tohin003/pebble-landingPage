@@ -3,8 +3,8 @@
 // modes as three stops on an arch, labelled "Interactive example". The arch is the pebble's ground in the line's own
 // hand (a local Horizon, shape "arch", on phones too); the three knobs are galets on it (the chosen one in the accent,
 // a state mark), and the pebble under the arch looks at the chosen mode.
-// Under the dial, the mode's own two texts, word for word from Pebble 1.0.4's src/permissionModes.ts, and, for Full
-// access, the warning Pebble's Settings show with it.
+// Under the dial, the mode's own two texts, word for word from Pebble's src/permissionModes.ts (tag v1.2.0, the same
+// through v1.5.0; copy.ts), and, for Full access, the warning Pebble's Settings show with it.
 //
 // The knobs are native radio buttons (arrow keys move between them); the texts are a polite live region. The knob's
 // change answers the press; the pebble's eyes turn with the engine's own short morph, instantly when motion is paused.

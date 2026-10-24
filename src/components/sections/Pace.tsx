@@ -5,7 +5,8 @@
 // it, and the pebble under it looks at the chosen one. Under one hairline, what holds in every mode: the app's own
 // sentence quoted in columns 4–8, the fixed rules in 9–12.
 //
-// - The three modes' words are Pebble 1.0.4's own (src/permissionModes.ts), shown by the dial.
+// - The three modes' words are Pebble's own (src/permissionModes.ts at tag v1.2.0, byte-identical through v1.5.0;
+//   copy.ts `explainers.permissionDial`, OVERRIDES §23, §25, §32), shown by the dial.
 // - The "In every mode, …" sentence is quoted and attributed ("In Pebble's Settings, under the three modes:"): it says
 //   "their switches below", which only makes sense in the app, so the next line explains where those switches are.
 //   The line after it says Pebble can't see or operate other apps yet (OVERRIDES §12), so an "app launch" never reads
