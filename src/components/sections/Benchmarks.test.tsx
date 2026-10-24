@@ -5,12 +5,13 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { benchmarks, run } from "@/content/benchmarks";
-import { infrastructure } from "@/content/copy";
+import { footer, infrastructure } from "@/content/copy";
 import { releaseFacts } from "@/content/releaseFacts";
 import { llmsTxt, llmsTxtFor } from "@/content/seo";
 import { benchSegments } from "./Benchmarks.figures";
 import { Benchmarks } from "./Benchmarks";
 import { Infrastructure } from "./Infrastructure";
+import { Footer } from "@/components/shell/Footer";
 
 const render = async (props: Parameters<typeof Benchmarks>[0]) => {
   const element = await Benchmarks(props);
@@ -105,6 +106,18 @@ describe("with the gate closed, nothing else on the site mentions the benchmark"
     // the engineering facts say what they are either way
     expect(closed).toContain(infrastructure.note);
     expect(open).toContain(infrastructure.note);
+  });
+
+  test("the footer's Benchmarks link, in the Pebble column, shows only while the section is shown", () => {
+    const closed = renderToStaticMarkup(<Footer benchmarkShown={false} />);
+    expect(closed).not.toContain('href="/#benchmarks"');
+    const open = renderToStaticMarkup(<Footer benchmarkShown />);
+    expect(open).toContain(`<a href="/#benchmarks">${footer.benchmarksLink.label}</a>`);
+    // after GitHub and Releases, in the column named "Pebble"
+    const pebbleColumn = open.slice(open.indexOf('aria-labelledby="footer-pebble"'), open.indexOf('id="footer-site"'));
+    expect(pebbleColumn).toContain('href="/#benchmarks"');
+    expect(pebbleColumn.indexOf("Releases")).toBeLessThan(pebbleColumn.indexOf('href="/#benchmarks"'));
+    expect(renderToStaticMarkup(<Footer />).includes('href="/#benchmarks"')).toBe(releaseFacts.benchmarksPublic);
   });
 
   test("llms.txt carries the benchmark block only while it is public", () => {

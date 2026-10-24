@@ -1128,6 +1128,11 @@ export const footer = {
     { label: "Credits", href: "/credits" },
     { label: "Privacy", href: "/privacy" },
   ] satisfies readonly Link[],
+  /**
+   * In the "Pebble" column after GitHub and Releases, only while the Benchmarks section is shown (the same gate,
+   * releaseFacts.benchmarksPublic): the section's own name (its rail label, C-SYS-17). [C-SYS-17]
+   */
+  benchmarksLink: { label: "Benchmarks", href: `/#${sectionIds.benchmarks}` } satisfies Link,
   /** Word for word from OVERRIDES §2. Show wherever the pebble appears. */
   credit: "Pebble's character engine: bloub by Jérémy Perret (MIT)",
   resting: "Pebble is resting. No telemetry.", // [C-FOOT-1] ("It never phones home" dropped: OVERRIDES §8 H14)

@@ -2,8 +2,9 @@
 // top of the page; at the bottom it sleeps. The wordmark "pebble" is set huge and tone on tone (--word), and the
 // sleeping pebble is its full stop, standing on a local ground line along the baseline. Under it, the statement
 // "Pebble is resting." / "No telemetry." (copy.ts footer.resting, split at its full stop) in two tones.
-// Then the colophon on the page's grid: the links ("Pebble": GitHub, Releases; "This site": Film transcript, Credits,
-// Privacy) and "Appearance" (the theme as words, and Pause motion); and the fine print from column 4: the honesty stamp
+// Then the colophon on the page's grid: the links ("Pebble": GitHub, Releases and, while the benchmark is shown, the
+// home page's Benchmarks section; "This site": Film transcript, Credits, Privacy) and "Appearance" (the theme as words,
+// and Pause motion); and the fine print from column 4: the honesty stamp
 // (counted live in the browser by Footer.stamp.tsx; nothing shows until it has been counted), the bloub credit
 // (OVERRIDES §2), the licence line and the trademark notice.
 //
@@ -13,9 +14,10 @@
 // exempts, and axe's colour-contrast rule (tools/qa/a11y.mjs) only reads real text. The sleeping pebble is a still
 // (no JavaScript): at the end of the page nothing moves on its own.
 import Link from "next/link";
-import { footer } from "@/content/copy";
+import { footer, type Link as LinkCopy } from "@/content/copy";
 import { bloubCredit } from "@/content/credits";
 import { footerColumns } from "@/content/labels";
+import { releaseFacts } from "@/content/releaseFacts";
 import { Pebble } from "@/components/pebble/Pebble";
 import { Horizon } from "@/components/ui/Horizon";
 import { firstSentence } from "@/components/ui/twoTone";
@@ -24,12 +26,20 @@ import { MotionToggle } from "./MotionToggle";
 import { ThemeSwitch } from "./ThemeSwitch";
 import styles from "./Footer.module.css";
 
-const isExternal = (link: (typeof footer.links)[number]) => "external" in link && link.external === true;
+const isExternal = (link: LinkCopy) => "external" in link && link.external === true;
 
-export function Footer() {
+/**
+ * `benchmarkShown`: the Benchmarks section's gate (releaseFacts.benchmarksPublic, as the section and Infrastructure's
+ * link read it), a prop so the tests can render the closed site.
+ */
+export function Footer({ benchmarkShown = releaseFacts.benchmarksPublic }: { benchmarkShown?: boolean } = {}) {
   const [resting, then] = firstSentence(footer.resting);
-  const columns = [
-    { key: "pebble", title: footerColumns.pebble, links: footer.links.filter(isExternal) },
+  const columns: { key: string; title: string; links: readonly LinkCopy[] }[] = [
+    {
+      key: "pebble",
+      title: footerColumns.pebble,
+      links: [...footer.links.filter(isExternal), ...(benchmarkShown ? [footer.benchmarksLink] : [])],
+    },
     { key: "site", title: footerColumns.site, links: footer.links.filter((link) => !isExternal(link)) },
   ];
   return (
@@ -59,7 +69,8 @@ export function Footer() {
                 <ul aria-labelledby={`footer-${column.key}`}>
                   {column.links.map((link) => (
                     <li key={link.href}>
-                      {isExternal(link) ? (
+                      {/* a page's own section ("/#benchmarks") is a plain link, as TextLink makes them */}
+                      {isExternal(link) || link.href.startsWith("/#") ? (
                         <a href={link.href}>{link.label}</a>
                       ) : (
                         <Link href={link.href} prefetch={false}>
