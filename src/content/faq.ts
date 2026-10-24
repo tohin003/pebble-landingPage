@@ -5,7 +5,7 @@
 // Same voice rules as copy.ts: plain words, British spelling, no exclamation marks.
 
 import type { Link } from "./copy";
-import { installCommands, links } from "./copy";
+import { installCommands, links, sectionIds, stealth } from "./copy";
 
 export type FaqItem = Readonly<{
   /** Anchor id, e.g. "faq-notarized". Stable: other copy links to some of these. */
@@ -64,6 +64,18 @@ export const faq: readonly FaqItem[] = [
       "With a local model, the conversation stays on your Mac.", // [C-MOD-8]
     ],
     links: [{ label: "Where Pebble keeps your things", href: links.dataFolders, external: true }],
+  },
+  {
+    // Pebble 1.1.0 (OVERRIDES §21): the facts in Pebble's own words (copy.ts `stealth`), and the honest line word for
+    // word, as everywhere Stealth Lockdown is named (src/content/stealth.test.ts checks it).
+    id: "faq-screen-share",
+    question: "Can people see Pebble when I share my screen?",
+    answer: [
+      "By default, yes: Stealth Lockdown is off, and Pebble shows in screen shares, the Dock and ⌘Tab as usual.", // [C-FAQ-22] (C-STL-2, C-STL-8)
+      `${stealth.summary} ${stealth.turnOn} ${stealth.hideAll}`, // [C-STL-3] [C-STL-4]
+      stealth.honest, // [C-STL-7]
+    ],
+    links: [{ label: stealth.name, href: `/#${sectionIds.stealth}` }],
   },
   {
     id: "faq-offline",

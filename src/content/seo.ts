@@ -5,7 +5,7 @@
 // metadataBase comes from VERCEL_PROJECT_PRODUCTION_URL in layout.tsx (§2.2); nothing here hard-codes a domain.
 
 import { benchmarkLinks, benchmarkLlmsLines } from "./benchmarks";
-import { formatMegabytes, links, release } from "./copy";
+import { formatMegabytes, links, release, stealth } from "./copy";
 import { formatLongDate, releaseFacts } from "./releaseFacts";
 
 export const seo = {
@@ -100,7 +100,8 @@ export function jsonLdString(data: Record<string, unknown>): string {
  * public/llms.txt: a short, factual summary so AI assistants describe Pebble accurately (llmstxt.org format).
  * Every line is sourced in docs/CLAIMS.md under "SEO" and "Honest limits". The "## Benchmark" block is there only while
  * the benchmark is public (releaseFacts.benchmarksPublic, the same gate as the page's section); the tests build the
- * closed version with llmsTxtFor(false).
+ * closed version with llmsTxtFor(false). Stealth Lockdown (Pebble 1.1.0) is one line, in Pebble's own words, and it
+ * carries the honest line word for word (OVERRIDES §21; src/content/stealth.test.ts).
  */
 export function llmsTxtFor(benchmarksPublic: boolean): string {
   return `# Pebble
@@ -118,6 +119,7 @@ Pebble ${releaseFacts.version} came out on ${formatLongDate(releaseFacts.publish
 - Memory: six kinds of memory. You can see, search, add and forget memories, but not edit them; the only thing you edit is ~/.pebble/PEBBLE.md. One switch turns memory off.
 - Views: dashboards, tables, charts, plans, diagrams, quizzes and app demos, built from data. A view can never approve, run or change anything.
 - Privacy: no telemetry. Conversations and memories are stored on the Mac, and keys stay in the macOS Keychain. With a local model, the conversation stays on the Mac.
+- ${stealth.summary} ${stealth.offByDefault} ${stealth.turnOn} ${stealth.honest}
 - What leaves the Mac: with a cloud model, your message and the context sent with it (such as the recent conversation and recalled memories) go to the provider you chose; search words go to Microsoft Bing's RSS feed; web pages Pebble reads are fetched from their own sites; weather lookups go to Open-Meteo; calls go to the connectors you add.
 
 ## Limits

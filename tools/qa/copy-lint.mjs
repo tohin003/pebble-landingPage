@@ -13,8 +13,11 @@
 //     The one exception (OVERRIDES §11, §16, §18): the Benchmarks section names the product Pebble was measured
 //     against, so "Claude Code" (and no other name) passes inside <section id="benchmarks">, in llms.txt's
 //     "## Benchmark" block and in src/content/benchmarks.ts. Every other rule still applies there.
+//   - Stealth Lockdown's never-words (OVERRIDES §21): "undetectable", "invisible", and exams, interviews, proctoring,
+//     monitoring, cheating, bypassing or evading, except inside the honest line itself.
 // Exact strings that are right as written (Pebble's own words, honest negatives, approved sentences) are allowed by
-// exact match only (ALLOW below; the reasons are in docs/CLAIMS.md "Allow-list for tools/qa/copy-lint.mjs").
+// exact match only (ALLOW below; the reasons are in docs/CLAIMS.md "Allow-list for tools/qa/copy-lint.mjs"). The one
+// exact passage allowed inside a longer text is Stealth Lockdown's honest line (ALLOW_PASSAGES).
 // Verbatim text is exempt from the wording rules (still checked for "!"): <code>, <pre>, <kbd>, <samp> and elements
 // marked translate="no" (commands, file names, third-party licence notices).
 // With --src, also scans the string literals in src/content/*.ts (text that only appears after an interaction).
@@ -61,6 +64,27 @@ const BANNED = [
   [/\bFrogNano\b.{0,40}\brecommended\b|\brecommended\b.{0,40}\bFrogNano\b/i, "FrogNano is a provisional default, never recommended"],
   [/\breceipts?\b/i, "jargon: receipt (use check or result)"],
   [/\b(fixture|mock(ed)?|synthetic)\b/i, "internal word on a visitor surface"],
+  // Stealth Lockdown (OVERRIDES §21): never "undetectable" or "invisible", and nothing about exams, interviews,
+  // proctoring, monitoring, cheating, bypassing or evading beyond the honest line, which ALLOW_PASSAGES lets through by
+  // exact match. These hold everywhere, the honest line's own section included.
+  [/\bundetectabl/i, "Stealth: never undetectable"],
+  [/\binvisib/i, "Stealth: never invisible"],
+  [/\bexam(s|inations?)?\b/i, "Stealth: exams (only in the honest line)"],
+  [/\binterview/i, "Stealth: interviews (only in the honest line)"],
+  [/\bproctor/i, "Stealth: proctoring"],
+  [/\bmonitor(ing|ed|s)?\b/i, "Stealth: monitoring"],
+  [/\bcheat/i, "Stealth: cheating"],
+  [/\bbypass/i, "Stealth: bypassing"],
+  [/\b(evad(e|es|ed|ing)|evasion)\b/i, "Stealth: evading"],
+];
+
+/**
+ * Exact passages that may stand inside a longer text, where the sentence-by-sentence ALLOW below can't reach them: each
+ * is cut out of the text before the rules run, and everything around it is still checked. Only Stealth Lockdown's
+ * honest line (Pebble 1.1.0, src/stealthVeil.ts STEALTH_HONEST; copy.ts stealth.honest; OVERRIDES §21), word for word.
+ */
+const ALLOW_PASSAGES = [
+  "Hidden from screen capture and screen sharing, not from a camera, a capture card or a process list. Exams and interviews that forbid assistants still forbid it.",
 ];
 
 // American spelling → British (MASTER_PLAN §7.2: British spelling; §9.3: licence, colour, recognise …)
@@ -131,6 +155,8 @@ const ALLOW = new Set([
   // the sandbox caveat (OVERRIDES §8 H14); "every" belongs to "attack"
   "Protection comes from elsewhere: the permission mode you pick, approvals that happen only in Pebble's main window, and macOS's sandbox, which limits commands and tests but is not a promise against every attack.",
   "Protection comes from elsewhere: the permission mode you pick, approvals that happen only in Pebble’s main window, and macOS’s sandbox, which limits commands and tests but is not a promise against every attack.",
+  // Stealth Lockdown's honest line (OVERRIDES §21; also an ALLOW_PASSAGES entry, for when it sits inside a longer text)
+  ...ALLOW_PASSAGES,
 ]);
 // Proper names and fixed terms that contain a flagged word
 const ALLOW_PATTERNS = [
@@ -247,8 +273,9 @@ function splitNamed(html) {
   return [html.slice(start, end), html.slice(0, start) + html.slice(end)];
 }
 
-function lint({ text, verbatim, where, named = false }) {
-  if (ALLOW.has(text.trim())) return;
+function lint({ text: whole, verbatim, where, named = false }) {
+  if (ALLOW.has(whole.trim())) return;
+  const text = ALLOW_PASSAGES.reduce((t, passage) => t.split(passage).join(" "), whole);
   if (text.includes("!")) {
     // "!" in a verbatim command or a URL is not prose
     const prose = verbatim ? "" : text.replace(/https?:\/\/\S+/g, "");
