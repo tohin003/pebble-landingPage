@@ -106,15 +106,16 @@
   height: 15px;
 }
 
+/* a press, as every control on the page: to 0.98 (DESIGN-LEXINGTON §3.10) */
 .control:active::before,
 .control:active .controlShape {
-  transform: scale(0.94);
+  transform: scale(0.98);
 }
 
+/* the caption under the frame, as the sections' own captions: 13 px, muted, on the grid's left edge */
 .caption {
-  margin-top: 14px;
-  font-size: 14.5px;
-  line-height: 1.5;
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.45;
   color: var(--ink-2);
-  text-align: center;
 }
