@@ -8,14 +8,16 @@ Everything here was built with Claude Code, by teams of agents working in parall
 ## The pipeline
 
 ```
-Pebble's source (a read-only checkout)
+Pebble's source at a published release (its tag, frozen from GitHub, or a read-only checkout at that release)
  |
  |-- capture/   Pebble's own Vite frontend in Chrome, Tauri's IPC mocks, a fictional sample world
- |      |-- stills (PNG at 2x and 3x) --> tools/assets (sharp) --> public/ui/v1 (AVIF, WebP)
+ |      |-- stills (PNG at 2x to 5x) --> tools/assets (sharp) --> public/ui/v1 (AVIF, WebP)
  |      `-- recordings on a virtual clock (one PNG per frame) --> video/public/ui-frames
  |
- `-- the pebble's engine (bloub, MIT) --> shared/pebble --+--> the site's live pebble
-                                                          `--> the films, replayed frame by frame
+ |-- the pebble's engine (bloub, MIT) --> shared/pebble --+--> the site's live pebble
+ |                                                        `--> the films, replayed frame by frame
+ |
+ `-- the Veil (stealthVeil.ts) --> shared/pebble --> the site's pebble in the Stealth Lockdown section
 
 tools/audio   compose_score.py --> render_sampled.py (CC0 samples) --> the music bed and its beat map
                                                                               |
@@ -24,6 +26,7 @@ video/        the film's timeline, snapped to the beat map --> 16:9, 1:1 and 9:1
                      `--> export-cues.ts --> cues.json --> mix_master.py --> web and social soundtracks
 
 tools/encode  masters + soundtrack --> HEVC and H.264 --> public/media/v1 --> the Next.js site --> Vercel
+                                   `--> the social films and the 30 s cut (kept outside the repository)
 ```
 
 ## A philosophy before a page
@@ -60,13 +63,14 @@ darker comp.
 
 ## The real interface, never a redrawing
 
-Every picture of Pebble on the site and in the films is Pebble. `capture/` runs the app's own frontend, read from a
-read-only checkout of its source, in Chrome. Tauri's official IPC mocks answer the calls the frontend makes to the
-app's backend, with a fictional world as the data: Maya, a Python project called `invoice-kit`, a Lisbon trip budget
-and a datetime quiz. The harness never writes into the checkout (Vite runs without the project's config, with its
-cache in `capture/`), and a run fails on any call the mocks don't answer, any error banner and any console error.
+Every picture of Pebble on the site and in the films is Pebble. `capture/` runs the app's own frontend, read from its
+source at a published release, in Chrome. Tauri's official IPC mocks answer the calls the frontend makes to the app's
+backend, with a fictional world as the data: Maya, a Python project called `invoice-kit`, a Lisbon trip budget and a
+datetime quiz. The harness never writes into Pebble's source (Vite runs without the project's config, with its cache in
+`capture/`), and a run fails on any call the mocks don't answer, any error banner and any console error.
 
-- **Stills** are taken at 2x and 3x, in both themes, and encoded to AVIF and WebP for the page.
+- **Stills** are taken at 2x and 3x (5x for the smallest crops), in both themes, and encoded to AVIF and WebP for the
+  page.
 - **Recordings** play a timeline of backend events against a virtual clock and save one PNG per frame, so a
   recording is the same every time it is made. The film's main sequence (a request, reading, two edit cards,
   AgentGuard holding the task, Run the tests, Verified) is one such recording.
@@ -74,8 +78,14 @@ cache in `capture/`), and a run fails on any call the mocks don't answer, any er
   Accept as unverified; "Requesting isolated tests · 11 s"; "Verified · pytest 42 passed on current files". Where the
   real app had a quirk, the captures show it. Nothing on screen is labelled as a mock or a fixture, and the page marks
   the sample world "Shown with sample data."
-- **When a new release changed the window's words**, everything was captured again from it. The fixtures name the
-  version they were checked against.
+- **Always from a published release.** Within an hour of 1.1.0's publication, Pebble's own checkout already held the
+  next version's work in progress. So the captures come from the release's tag: `capture/freeze-release.py` writes the
+  tag's frontend from GitHub, checks every file against the tag's git tree, and the harness serves that frozen copy.
+  Every quote on the page is checked at a tag too, never in a checkout.
+- **When a release changed words the page shows**, the stills that show them were captured again from that release:
+  all of them for 1.0.4, the new Privacy and focus setting for 1.1.0, and the three that 1.2.0 changed (Settings ›
+  Permissions, the edit cards and the finished task). The film and the loops keep their earlier captures; they show
+  sample data and no version. The fixtures name the version they were checked against.
 
 The same harness made the stills and the gaze animation for Pebble's own README, for the release session to review.
 
@@ -90,9 +100,42 @@ shapes in use; `SOURCES.json` records every file's hash and a test checks them. 
   cue list in the repository.
 - **On the site**, the server sends a still SVG of the pebble, and the live engine arrives in a small lazy chunk. Its
   eyes follow the pointer, it runs at most at 30 fps, it settles to a still after 8 seconds without input, and only
-  the most visible pebble on the page animates. Pause motion and reduced motion leave a still.
+  the most visible pebble on the page animates. Pause motion and reduced motion leave a still. The feature loops play
+  one at a time, and none starts on its own while a live pebble is on screen.
 - **In the films**, a fresh engine is replayed up to every frame from a list of cues, so a frame is the same in any
   render and in any order. A test checks that replaying matches live playback frame for frame.
+
+## Stealth Lockdown and the Veil
+
+Pebble 1.1.0 added Stealth Lockdown: one switch that keeps Pebble out of screen capture and screen sharing, and stops it
+taking focus from the app in front. It reached the page only once 1.1.0 was published, as its own section after
+"Private by default", in Pebble's own words: the setting's description, its two halves, its state lines and, wherever
+Stealth is shown, the honest line word for word: "Hidden from screen capture and screen sharing, not from a camera, a
+capture card or a process list. Exams and interviews that forbid assistants still forbid it." The copy lint keeps the
+words the release session ruled out, such as "undetectable" and "invisible", off the site, and allows that one line by
+exact match.
+
+A window that Stealth protects can't be screen-recorded, so the page never shows, or stages, a screen share with
+Pebble missing. It shows two true things instead: a capture of the setting itself, Settings › Privacy and focus, off
+and on, taken from 1.1.0's frontend; and the page's own live pebble wearing the Veil, the dusk-blue glass with a light
+rim that Pebble puts on while Stealth Lockdown is on, captioned as a render, not a screen recording.
+
+The Veil is Pebble's code. `stealthVeil.ts`, a pure function of the seconds since the switch changed, was copied from
+the v1.1.0 tag into `shared/pebble/`, unchanged below a two-line provenance header, with its source and SHA-256 in
+`SOURCES.json` and a test that checks them, as for the engine. The site draws its layers with the formulas of Pebble's
+avatar component and the colours of Pebble's design tokens. An interactive example, on flat fill and labelled as one,
+flips the pebble and the capture, and a polite live region announces the app's own state line; under reduced motion or
+Pause motion the Veil is a 0.3 s cross-fade. The dusk blue is the feature's own accent and appears only inside its
+section: the one exception the philosophy allows.
+
+Building it turned up a bug. Pebble 1.1.0's avatar read the Veil's state after the switch had already flipped, so in
+the app the dusk colour, the rim and the glass arrived, and left, in a single frame, and only the squash, the blink and
+the ring played; Pebble's own README renders showed the same. For a few hours the site matched the app. The release
+session fixed it in 1.2.0, whose notes end the fix with "Found while building Pebble's landing page.", and the site went
+back to the designed sweep, which is what the app plays from 1.2.0 on: the pebble gathers, the dusk colour sweeps down
+over it and it opens calmer eyes (1.25 s); turning it off lifts the colour and the pebble hops back (0.65 s).
+
+The film kept its single story: it has no Stealth beat.
 
 ## The film, cut to the music
 
@@ -110,6 +153,18 @@ the claims; full-resolution style frames for each aspect, reviewed before anythi
 a contact sheet of every bar, strips around every cut and a motion audit; and an adversarial review with frame numbers
 and acceptance checks. That review found two blocking problems (the climax was still and readable for one second, and
 in the square cut one click seemed to apply two edits), and both were fixed before any master was rendered.
+
+The masters are the compositions themselves, rendered in one browser tab: with two or three tabs under memory
+pressure, Chrome made blank and tiled frames. Each master was scanned for blank and half-painted frames before it was
+encoded, and looked at on a contact sheet.
+
+For X there is also a 30-second cut (28.8 s, 12 bars), made only of the film's own frames: the hook, the reveal, the
+AgentGuard proof and the end card, four ranges that each start on the same beat of the bar in the film and in the
+cut, so every click and line keeps its beat. Its music is not a splice of the film's bed but a 12-bar arrangement of
+the same score, played at the film's levels, with the reveal and the final chord under the same frames as in the film.
+There is no separate composition: one encode command seeks each range to its exact frame in the film's masters and
+joins them, so a fix to the film reaches the cut with its next encode. The six social files (16:9, 1:1 and 9:16, each
+at full length and as the cut) come with caption files and live outside this repository.
 
 The feature loops follow the same rules. They are silent, and they must loop without a visible seam: the step from the
 last frame back to the first has to look like an ordinary step of the loop (its PSNR within 3 dB of the median step).
@@ -133,16 +188,21 @@ The owner then asked for a more professional sound, so the same score, note for 
 instruments by our own sampler (`tools/audio/render_sampled.py`): marimba, vibraphone, glockenspiel, upright piano,
 bass drum and shaker from the Versilian Community Sample Library, and viola and violin sections and double bass
 pizzicato from VS Chamber Orchestra Community Edition, all CC0, each file pinned to a commit and a SHA-256. It scored
-93, with the same beat grid, so no picture changed. The classifier earned its place: it heard a recorded kalimba as a
-cowbell and a ringtone, so that part moved to the piano, and it heard violins on the pad's upper voices as a
-telephone, so violas play them. It later flagged the film's first second, heard after silence, the same way; the fix
-re-voices the opening bar.
+93, with the same beat grid, so no picture changed.
+
+The classifier earned its place. It heard a recorded kalimba as a cowbell and a ringtone, so that part moved to the
+piano, and it heard violins on the pad's upper voices as a telephone, so violas play them. It also heard the film's
+first notes, played straight after silence as a feed plays them, as a telephone (0.65): the opening bar was re-voiced,
+the motif an octave lower on the upright piano with the strings' chord entering under it, and the reading fell to
+0.04. And a pitched pop on the end card's landing (frame 2016) pushed the social master's end-card window to 0.24,
+against a limit of 0.25: the pop was removed, the thud under it stayed, and the window now reads below 0.1.
 
 The sound effects are ours (whooshes, a riser, a soft hit, a shimmer, synthesised in code and released CC0) plus
 recorded CC0 foley from Kenney's Impact and Interface packs for the clicks, pops, ticks and thuds. The cue list is
 exported from the film's timeline, so every effect peaks one frame after its picture event, and the riser ends on the
-reveal. Taste is the one thing an agent can't measure, so the candidate beds were left as a short audition set for a
-human listen. The scores, the licence checks and every source are in `docs/media-provenance.json`.
+reveal. The final masters measure −16.0 LUFS and −1.7 dBTP for the web and −14.1 LUFS and −1.5 dBTP for social. Taste
+is the one thing an agent can't measure, so the candidate beds were left as a short audition set for a human listen.
+The scores, the licence checks and every source are in `docs/media-provenance.json`.
 
 ## Every sentence has a source
 
@@ -167,13 +227,20 @@ traced is rewritten or removed. The rules that follow from it:
   held: PDF export, which Pebble doesn't have; "Done means tested" (changed code that no test covers is not held); and
   "flags invented or broken dependencies" (the check that exists challenges invented APIs, in Python code only). The
   register logs each withdrawn claim and why.
+- **Releases flow in too.** Pebble went from 1.0.1 to 1.5.0 while the site was built. For each published release one
+  file took the new facts, `src/content/releaseFacts.ts` (the version, the zip's size and SHA-256, the test counts),
+  checked against the GitHub API and the release's own `SHA256SUMS`, and the register's rows followed. A feature
+  reached the page only once the release that ships it was out: Stealth Lockdown with 1.1.0, the permission dial's new
+  words with 1.2.0, and Code Mode with 1.5.0, as one short item in the app's own words, with no numbers.
 - **The benchmark section shows the work.** It follows the order the philosophy sets: the method first, then the
   overall result with its interval under the one allowed headline ("Pebble matches Claude Code on the same model,
-  within the margin."), then where Pebble led and where it trailed at equal weight, losses included, then the cost,
-  then what the result does not prove, then the raw data. When the release session found that its harness had missed
-  two of the other agent's clarifying questions and scored them as failures, that comparison was withdrawn, and the
-  section must carry the correction beside the results. Every number on it must match the published benchmark
-  document exactly.
+  within the margin."), then where Pebble led and every family where it trailed, at equal weight, false completions
+  included, then the cost with its caveats, then what the result does not prove, then the raw data. When the release
+  session found that its harness had missed two of the other agent's clarifying questions and scored them as failures,
+  that comparison was withdrawn, and the section carries the correction beside the results. Every number on it matches
+  the published benchmark document; a test derives each one from the published analysis, kept in this repository byte
+  for byte. The benchmark measured Pebble 1.0.2, and the method block says plainly that the latest release hasn't been
+  measured yet.
 
 ## The gates
 
@@ -182,21 +249,78 @@ Nothing was "done" until it passed its gate. The gates, in the order the work me
 | Stage | Gate |
 |---|---|
 | Bootstrap | The site builds; Remotion renders a still; FFmpeg is the arm64 build with x264 and x265; the capture harness runs a scene with no unhandled call; enough disk is free |
-| Captures | No unhandled IPC call, error banner or console error in any run; every recording checked for frames that failed to paint (`capture/check_frames.py`); every image looked at |
-| Pebble engine | Replay equals live playback; the reference frame matches; only Pebble's poses in any cue list; the vendored files match their recorded hashes |
+| Captures | Captured from a published release; no unhandled IPC call, error banner or console error in any run; every recording checked for frames that failed to paint (`capture/check_frames.py`); every image looked at |
+| Pebble engine | Replay equals live playback; the reference frame matches; only Pebble's poses in any cue list; the vendored files, the Veil's included, match their recorded hashes |
 | Film | The spec review; the style frames; the animatic with bar sheets, cut strips and a motion audit; the adversarial review; the timeline's own validation and the cue list's freshness check |
 | Loops | Seam steps no larger than the loop's ordinary steps (PSNR); no cursor at the ends; key text at 12 px or more at its slot |
-| Music and mix | The downbeats within 5 ms of the grid (median), the reveal within one frame, the exact length; −16 LUFS (web) and −14 LUFS (social) within 0.5 LU, true peak at most −1.5 and −1.0 dBTP; at most 3 dB lost in mono; at least 30 % of the energy above 150 Hz; nothing the classifier hears as a voice, an alarm, a siren or a ringtone |
+| Music and mix | The downbeats within 5 ms of the grid (median), the reveal within one frame, the exact length; −16 LUFS (web) and −14 LUFS (social) within 0.5 LU, true peak at most −1.5 and −1.0 dBTP; at most 3 dB lost in mono; at least 30 % of the energy above 150 Hz; nothing the classifier hears as a voice, an alarm, a siren or a ringtone, including the opening heard after silence and the end card |
 | Site | Typecheck and the Bun test suites; viewport tiles from 320 to 1920 px in both themes, with motion on and reduced, every one looked at; axe-core with no violations; a keyboard walk over every control; every request same-origin, no cookies, no console errors; first-load script and transfer budgets; Lighthouse on mobile and desktop (performance at least 90, largest contentful paint at most 2.5 s, layout shift at most 0.1, accessibility, best practices and SEO at 100); the copy lint |
-| Media | Each encode's format, size budget and loudness (after the media phase) |
-| Push | No raw audio tracked, no file over 45 MB, no local paths in committed files |
+| Media | Every master scanned for blank and half-painted frames before encoding; each encode's codecs and level, colour tags, faststart, frame count, size budget and loudness, and the loops' seams on the encodes (`tools/encode/verify.mjs`); the text tracks equal what their sources make |
+| Push | No raw audio tracked, no file over 45 MB, `public/` at most 90 MB, no local paths in committed files |
 
 Agents can't judge a 12,000-pixel page shrunk to fit a screen, so the site's screenshots are taken as viewport-sized
 tiles while scrolling, the way a visitor sees the page, and reviewed side by side in both themes.
 
 ### Final QA results
 
-To be filled after the final QA run.
+<!-- final-qa-pass: the lead fills this -->
+
+What was measured before the final pass, on 24 October 2026. The heavy gates (the screenshot matrix, axe, the keyboard
+walk, requests, Lighthouse, the line check, and the media check's loudness and seam passes) run once more in that pass.
+
+On the final source:
+
+- The type check passes. The Bun suites pass: 103 site tests, 82 engine tests and 38 content tests, none failing.
+- Tailwind's own compile of the stylesheet scans no test file and emits no `.bg-ink` rule. Before that fix, a class
+  name in a test file put an unused ink-fill utility into the CSS.
+- The lockfile carries the Linux x64 builds of Next's compiler, Lightning CSS and Tailwind's engine, which Vercel's
+  builders need. No committed file holds a local path.
+
+On the last build before the final fixes (14:07):
+
+- Copy lint: 1,874 text items from five pages and `src/content`, 0 findings. Run again with today's `src/content`:
+  1,888 items and one finding, an older FAQ sentence in that build which the source no longer has.
+- Links: 56 external URLs in the pages, the JSON-LD, `llms.txt`, the sitemap and `robots.txt`, each asked once, at
+  most one a second. 55 answer 2xx, some after a redirect; the 56th is the local build's own canonical address,
+  `http://localhost:3000`.
+- Built text: none of the never-words in visitor text. "Security" appears only in negations and names ("not a
+  security layer", "No independent security audit"), and "exams" and "interviews" only inside Stealth Lockdown's
+  honest line, which stands word for word under the switch, as the switch's description, in the FAQ and in
+  `llms.txt`. The only middle dots are Pebble's own UI lines, quoted verbatim, and the inner pages' titles, which now
+  use an en dash. No ink-filled button in the markup or in any CSS module.
+- First-load JavaScript, from the scripts each page's HTML loads: on `/`, 11 module scripts, 535.2 KB raw, 163.9 KB
+  with gzip and 141.0 KB with Brotli, plus a 38.6 KB (gzip) polyfill that modern browsers skip; on `/film`, 153.4 KB
+  with gzip and 131.6 KB with Brotli. HTML: 76.2 KB with gzip for `/`, 14.6 KB for `/film`. CSS on `/`: three files,
+  22.7 KB with gzip. Two preloaded fonts, 79.2 KB.
+
+The media, unchanged since they were encoded:
+
+- `node tools/encode/verify.mjs --no-analysis`: 49 files, all pass, with one warning: 7 of the film's 9 audio
+  descriptions need more speech than their chapter lasts, so the player holds the film until each is read. The film
+  set is 23.15 MB of its 45 MB budget, `public/` 36.49 MB of 90 MB. The 1080p film and the loops are HEVC
+  `hvc1.1.6.L120.90`, the 720p film and the teaser `hvc1.1.6.L93.90`, and every H.264 file `avc1.640028`; everything
+  runs at 30 fps; the film is 2,304 frames (76.8 s); the posters are at most 53.3 KB (AVIF) and 75.7 KB (WebP).
+- Loudness on the encoded AAC, measured when the films were made: the website film at −16.0 LUFS and −1.7 dBTP in all
+  four files; the social films at −14.1 LUFS, with −1.4 dBTP at full length and −1.5 dBTP for the 30 s cut. Picture
+  and sound are in sync within 2 ms at the reveal, and every sampled frame of the 30 s cut matches its frame in the
+  film's master.
+- The mix checks on the soundtracks: web −16.0 LUFS and −1.7 dBTP, social −14.1 LUFS and −1.5 dBTP, the 30 s cut
+  −14.1 LUFS and −1.5 dBTP; at most 1.18 dB lost in mono; at least 65 % of the energy above 150 Hz; nothing the
+  classifier hears as a voice, an alarm, a siren or a ringtone. The opening, heard straight after silence, reads 0.04
+  as a telephone (0.65 before it was re-voiced).
+
+Pre-fix, last known (12:08 to 13:03, on the build before the reviewers' fixes; the final pass replaces these):
+
+- Screens at 390, 768 and 1440 px, light and dark, motion on and reduced: 12, none with a problem or a horizontal
+  scroll.
+- axe-core: 112 scans of five pages at four widths in both themes, open states included: 0 violations.
+- The keyboard walk and every control: 226 checks, 3 failed, all of them the loops' focus ring in the dark theme
+  (fixed since).
+- Requests: none to another site, no cookies, no console errors. Script before interaction 193.1 KB (target 150 KB,
+  limit 200 KB); everything before interaction 571.7 KB light and 565.1 KB dark (target 400 KB, limit 600 KB).
+- Lighthouse on `/` over HTTP/2, three runs: mobile performance 97, 95 and 95; accessibility, best practices and SEO
+  100; largest contentful paint 2.63, 2.93 and 2.93 s, which fails the 2.5 s limit (the header's wordmark is the
+  element); layout shift 0.000. Desktop: 100 in all four; largest contentful paint 0.63 s; layout shift 0.000.
 
 ## Skills and tools
 
@@ -222,7 +346,7 @@ That is eighteen skills: `frontend-design`; the twelve Remotion skills (`remotio
 |---|---|
 | The agent | Claude Code with Claude Opus 5.5 |
 | Site | Next.js 16.4.2, React 19.3.1, Motion 14.6.0, Tailwind CSS 4.3.3, Phosphor Icons 2.1.10, TypeScript 5.9.3 |
-| Films | Remotion 4.0.538 (every `@remotion/*` package pinned to it, with Remotion's headless browser), Mediabunny 1.62.0, Zod 4.5.4 |
+| Films | Remotion 4.0.538 (every `@remotion/*` package pinned to it), Mediabunny 1.62.0, Zod 4.5.4; the masters rendered in the installed Google Chrome |
 | Capture | puppeteer-core 25.13.0, driving the installed Google Chrome |
 | Images | sharp 0.35.5; fontTools 4.67.0 to instance the display face |
 | Fonts | Fraunces, Inter and Geist Mono, from the Fontsource 5.3.0 packages (SIL Open Font License 1.1) |
@@ -237,9 +361,12 @@ That is eighteen skills: `frontend-design`; the twelve Remotion skills (`remotio
 |---|---|
 | A second video engine (HyperFrames, the other popular route) | One engine, in the same language as the site; Remotion was proven on this Mac first |
 | Redrawing the app's screens in React | It drifts from the real app; the captures are the app |
+| Capturing from Pebble's working checkout | It can hold the next version's unpublished work; the captures come from a published tag |
+| A screen share with Pebble missing, to show Stealth Lockdown | A protected window can't be screen-recorded, so such a picture would be staged; the page shows the real setting and a render of the pebble instead |
 | GSAP, Lenis, scroll-jacking and scroll reveals | The page never takes control of the scroll; Motion and CSS were enough |
 | 60 fps films | Calm motion doesn't need it, and 30 fps halves render time and disk |
 | −14 LUFS for the web film | A film played on click gets no platform normalisation; −16 LUFS for the web, −14 only for social |
+| A separate composition for the 30 s cut | The cut is the film's own frames, so one encode command cuts it from the film's masters, and the film's fixes reach it |
 | The five auditioned stock tracks | None reached the pass mark; two failed the small-speaker check |
 | AI music generators and paid voice or music services | Non-commercial licences, paid keys, or more memory and disk than an 8 GB Mac has |
 | Running a downloaded composing tool | The permission system blocked running downloaded code; our own renderer replaced it |
@@ -257,20 +384,21 @@ That is eighteen skills: `frontend-design`; the twelve Remotion skills (`remotio
 A lead agent wrote the plan from seven research reports, had it attacked by a completeness critic, and kept one
 overrides file that won over everything else. Each piece of work then ran as a lane: an agent with one job, a list of
 the files it owned, and a handoff to write at the end (what was done, the files, how to run it, the open issues, the
-disk used). More than twenty lanes ran this way, many in parallel in the same checkout: copy and claims, the pebble,
-the music, the captures, the film spec, the site's shell and sections, the motion, the mix, QA, and reviewers whose
-only job was to find what was wrong. Every commit carries a Claude Opus 5.5 co-author line.
+disk used). More than forty lanes ran this way, many in parallel in the same checkout: copy and claims, the pebble,
+the music, the captures, the film spec, the site's shell and sections, the motion, the mix, the masters and the
+encodes, QA, and reviewers whose only job was to find what was wrong (a design critic, a claims audit and QA),
+followed by a lane that fixed what they found. Every commit carries a Claude Opus 5.5 co-author line.
 
 The Mac had 8 GB of memory and a few GB of free disk, so every heavy job went through `scripts/heavy.sh`: one at a
 time, refused when disk or memory ran short, and stopped if free disk fell to the floor. Frame sequences were recorded
 just in time and deleted after use.
 
-Pebble's release was prepared at the same time by another Claude session, in Pebble's own repository. The two worked
-through a shared status file outside both repositories. The release side posted the release facts (version, size,
-links, test counts), corrections to claims, and when results could be published; the landing side read it before
-relying on any fact, and only its lead wrote back. When the release side needed the machine for load-sensitive work,
-it could ask for a hold on heavy jobs here, or for disk to be kept free, and `heavy.sh` honoured both. Pebble's
-source was only ever read.
+Pebble's releases were made at the same time by another Claude session, in Pebble's own repository: from 1.0.1 to
+1.5.0 between 22 and 24 October. The two worked through a shared status file outside both repositories. The release
+side posted the release facts (version, size, links, test counts), corrections to claims, and when results could be
+published; the landing side read it before relying on any fact, and only its lead wrote back. When the release side
+needed the machine for load-sensitive work, it could ask for a hold on heavy jobs here, or for disk to be kept free,
+and `heavy.sh` honoured both. Pebble's source was only ever read.
 
 ## Cost
 
