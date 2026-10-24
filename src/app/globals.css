@@ -17,6 +17,11 @@
 
 @import "tailwindcss" source("..");
 
+/* Tests are not the site: a pattern in a test (the ink-fill guard in ui.test.ts names Tailwind's ink background class,
+   for one) must never become a rule in the built CSS (QA F-CSS-1). The paths are relative to this file: "../" is src/. */
+@source not "../**/*.test.ts";
+@source not "../**/*.test.tsx";
+
 /* dark: follows html[data-theme]; without JavaScript, the system setting */
 @custom-variant dark {
   &:where([data-theme="dark"], [data-theme="dark"] *) {
