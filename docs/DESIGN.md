@@ -141,3 +141,14 @@ the hero, rail and footer anchors.
   live pebble's resting gaze **look straight ahead at the visitor** (centred eyes, like the app icon), using the
   engine's own setLook with a centred target. Once the pointer moves, the live pebble follows it, and it returns to
   centre when it settles. The footer's sleeping pebble keeps its own pose.
+
+## 10. Superseded where they differ
+
+Since the v2 system, two later documents supersede this file wherever they differ:
+- `docs/PHILOSOPHY.md`, the design philosophy, binding for the page, the film, every social cut and every still;
+- `docs/DESIGN-LEXINGTON.md`, the system that implements it: tokens, grid and sections.
+
+Between those two, PHILOSOPHY sets the intent. DESIGN-LEXINGTON §10 lists the rules here that it replaces: the centred
+comp-3 hero and heads (§1), the page-wide path (§2), the type scale and Fraunces beyond H1 and H2 (§3), the line that
+draws itself on (§4), the centred wordmark and the pools of light (§5), and the media frames' radius and shadow (§6).
+Anything those two documents leave open still follows this file. OVERRIDES and `docs/CLAIMS.md` sit above all three.
