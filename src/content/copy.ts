@@ -44,13 +44,13 @@ export const release = {
   installCommand: "curl -fsSL https://raw.githubusercontent.com/tohin003/Pebble/main/install.sh | bash",
 } as const;
 
-/** "72 MB" from a byte count, in decimal megabytes as the release session asked for (71,833,771 bytes → "72 MB"). */
+/** "72 MB" from a byte count, in decimal megabytes as the release session asked for (71,836,062 bytes → "72 MB"). */
 export function formatMegabytes(bytes: number): string {
   return `${Math.round(bytes / 1_000_000)} MB`;
 }
 
 /**
- * The facts under a download button, each its own item: ["v1.2.0", "72 MB", "Apple silicon", "macOS 12 or later"].
+ * The facts under a download button, each its own item: ["v1.3.0", "72 MB", "Apple silicon", "macOS 12 or later"].
  * Render them as a list with hairline separators (ReleaseFacts), never joined into a middle-dot string (OVERRIDES §16,
  * §21; PHILOSOPHY "What we never do"). [C-REL-5]
  */
@@ -58,7 +58,7 @@ export function releaseMeta(version: string = release.version, sizeLabel: string
   return [`v${version}`, sizeLabel, "Apple silicon", "macOS 12 or later"];
 }
 
-/** The release notes page for a tag such as "v1.2.0". */
+/** The release notes page for a tag such as "v1.3.0". */
 export function releaseNotesUrl(tag: string = release.tag): string {
   return `https://github.com/tohin003/Pebble/releases/tag/${tag}`;
 }
@@ -586,8 +586,9 @@ export const explainers = {
   },
 
   /**
-   * PermissionDial: the three modes, word for word from Pebble 1.2.0's src/permissionModes.ts (read at the tag v1.2.0;
-   * 1.2.0 added Auto's first clause, OVERRIDES §23; the other texts are unchanged since 1.0.4). [C-EXP-4..7]
+   * PermissionDial: the three modes, word for word from Pebble's src/permissionModes.ts at the tag v1.3.0 (the file is
+   * byte-identical to v1.2.0's, which added Auto's first clause, OVERRIDES §23, §25; the other texts are unchanged since
+   * 1.0.4). [C-EXP-4..7]
    */
   permissionDial: {
     legend: "How Pebble acts", // AdvancedSettings.vue:1365 ("HOW PEBBLE ACTS"), in sentence case
@@ -607,18 +608,18 @@ export const explainers = {
         runsWithoutAsking:
           "Edits to project files, test runs, and a short list of read-only commands (ls, cat, rg, head, tail, wc and a few more) in this project.",
         alwaysAsks:
-          "Changes to test files your request didn't ask for, other terminal commands (including grep and builds), app launches, Git changes, connector calls, installs, and network or dangerous commands.", // permissionModes.ts@v1.2.0:31
+          "Changes to test files your request didn't ask for, other terminal commands (including grep and builds), app launches, Git changes, connector calls, installs, and network or dangerous commands.", // permissionModes.ts@v1.3.0:31
       },
       {
         id: "full",
         name: "Full access",
         runsWithoutAsking: "Everything Auto runs, plus app launches and Git changes that neither delete work nor publish it.",
         alwaysAsks:
-          "Other terminal commands (including grep and builds), connector calls, installs, presses in a Chrome tab, network or dangerous commands, and Git changes that delete work or publish it.", // permissionModes.ts@v1.2.0:37
+          "Other terminal commands (including grep and builds), connector calls, installs, presses in a Chrome tab, network or dangerous commands, and Git changes that delete work or publish it.", // permissionModes.ts@v1.3.0:37
       },
     ],
     everyMode:
-      "In every mode, reading project files, searching and reading the web, and creating views run without asking while their switches below are on. Connector calls, installs and every press in a Chrome tab you granted always ask; looking, typing and choosing in that tab run under your grant. Protected credentials stay blocked.", // permissionModes.ts@v1.2.0:43
+      "In every mode, reading project files, searching and reading the web, and creating views run without asking while their switches below are on. Connector calls, installs and every press in a Chrome tab you granted always ask; looking, typing and choosing in that tab run under your grant. Protected credentials stay blocked.", // permissionModes.ts@v1.3.0:43
     switchesNote: "Below the modes, in Settings › Permissions, a switch for each kind of tool turns it off entirely.", // [C-EXP-9]
     /**
      * Under the quoted sentence (Pace.tsx). The words above (1.0.4 on) no longer name app windows, but each mode still lists

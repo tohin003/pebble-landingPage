@@ -14,7 +14,8 @@
 //     against, so "Claude Code" (and no other name) passes inside <section id="benchmarks">, in llms.txt's
 //     "## Benchmark" block and in src/content/benchmarks.ts. Every other rule still applies there.
 //   - Stealth Lockdown's never-words (OVERRIDES §21): "undetectable", "invisible", and exams, interviews, proctoring,
-//     monitoring, cheating, bypassing or evading, except inside the honest line itself.
+//     monitoring, cheating, bypassing or evading, except inside the honest line itself; and "Context Warping", the name
+//     of 1.3.0's prompt-caching change, which waits for its benchmark (OVERRIDES §25).
 // Exact strings that are right as written (Pebble's own words, honest negatives, approved sentences) are allowed by
 // exact match only (ALLOW below; the reasons are in docs/CLAIMS.md "Allow-list for tools/qa/copy-lint.mjs"). The one
 // exact passage allowed inside a longer text is Stealth Lockdown's honest line (ALLOW_PASSAGES).
@@ -76,6 +77,8 @@ const BANNED = [
   [/\bcheat/i, "Stealth: cheating"],
   [/\bbypass/i, "Stealth: bypassing"],
   [/\b(evad(e|es|ed|ing)|evasion)\b/i, "Stealth: evading"],
+  // Pebble 1.3.0's prompt-caching change keeps its name off the site until a benchmark measures it (OVERRIDES §25)
+  [/\bcontext[\s-]*warp/i, "unannounced: Context Warping (waits for its benchmark)"],
 ];
 
 /**

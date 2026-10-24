@@ -169,8 +169,9 @@ describe("the words follow the rules", () => {
   });
 
   test("the result speaks for 1.0.2 to 1.0.4, not for the release the page states, and the section says so", () => {
-    // measured on 1.0.2; 1.0.3 and 1.0.4 don't change how a task runs (STATUS 20:34). 1.1.0 and 1.2.0 weren't measured
-    // (OVERRIDES §21, §23), so the method block adds benchmarks.method's notMeasured line for the release on offer.
+    // measured on 1.0.2; 1.0.3 and 1.0.4 don't change how a task runs (STATUS 20:34). 1.1.0, 1.2.0 and 1.3.0 weren't
+    // measured (OVERRIDES §21, §23, §25), so the method block adds benchmarks.method's notMeasured line for the release on
+    // offer.
     expect([...run.coveredVersions]).toEqual(["1.0.2", "1.0.3", "1.0.4"]);
     expect(run.coveredVersions).toContain(run.pebble.build);
     expect(run.coveredVersions).not.toContain(releaseFacts.version);

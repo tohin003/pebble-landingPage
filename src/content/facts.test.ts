@@ -3,6 +3,8 @@
 // checked against their sources in docs/CLAIMS.md (C-REL-1..6).
 // Run: bun test ./src/content
 import { describe, expect, test } from "bun:test";
+import { readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
 import { releaseFacts as listFacts } from "@/lib/release";
 import * as copy from "./copy";
 import { formatMegabytes, hero, releaseMeta, stickyCta } from "./copy";
@@ -26,5 +28,16 @@ describe("the facts under a Download", () => {
     expect("requirementsLine" in hero).toBe(false);
     expect("releasePill" in copy).toBe(false);
     for (const item of hero.requirements) expect(item).not.toContain("·");
+  });
+});
+
+describe("1.3.0's unannounced name", () => {
+  // "Context Warping" (1.3.0's prompt caching) stays off the site until a benchmark measures it (OVERRIDES §25).
+  test("no string in src/content uses it, and the copy lint bans it", () => {
+    const here = import.meta.dir;
+    for (const file of readdirSync(here).filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts")))
+      expect(readFileSync(path.join(here, file), "utf8")).not.toMatch(/context[\s-]*warp/i);
+    const lint = readFileSync(path.join(here, "../../tools/qa/copy-lint.mjs"), "utf8");
+    expect(lint).toContain("[/\\bcontext[\\s-]*warp/i,");
   });
 });

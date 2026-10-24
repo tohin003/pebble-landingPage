@@ -19,7 +19,7 @@ export function StickyCta({
   facts,
 }: {
   release: Pick<ReleaseInfo, "state" | "downloadUrl">;
-  /** shown next to the button on a Mac, each its own item: copy.ts stickyCta.facts(), ["v1.2.0", "72 MB", "Not notarized"] */
+  /** shown next to the button on a Mac, each its own item: copy.ts stickyCta.facts(), ["v1.3.0", "72 MB", "Not notarized"] */
   facts: readonly string[];
 }) {
   const [visible, setVisible] = useState(false);
