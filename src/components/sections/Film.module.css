@@ -68,9 +68,20 @@
   transform: translate(-50%, -50%);
 }
 
-/* --- the caption, on the grid: the label in the rail, the H2, the lead, the transcript, the chapters --- */
+/* --- the caption, on the grid: "Shown with sample data." under the frame at column 4 (the caption style of the
+   desktop and Models pictures), then the label in the rail, the H2, the lead, the transcript, the chapters --- */
 .caption {
-  margin-top: 32px;
+  margin-top: 14px;
+}
+
+.sample {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.head {
+  margin-top: 24px;
 }
 
 .title {
@@ -143,8 +154,8 @@
 }
 
 @media (max-width: 1023px) {
-  .caption {
-    margin-top: 24px;
+  .head {
+    margin-top: 20px;
   }
 
   .label {
@@ -172,7 +183,11 @@
   }
 
   .caption {
-    margin-top: 20px;
+    margin-top: 12px;
+  }
+
+  .head {
+    margin-top: 16px;
   }
 
   .chapters {

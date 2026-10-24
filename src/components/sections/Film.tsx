@@ -1,8 +1,10 @@
 // Section 2, the film (DESIGN-LEXINGTON §6 Film, comp lex-A): a figure first, so the poster peeks above the fold at
 // 1440 × 900 (critic H7), then its caption on the grid. The frame spans the container (columns 1–12, 16 : 9); under it
-// the rail holds the label ("The film / 1:16, with sound.", the length as data) and the main column holds the H2 (one
-// tone), the lead, "Read the transcript ›" and the chapters as a ruled index of three columns (two on tablets, one on
-// phones): a stone, the start time as data, the title.
+// the caption: first "Shown with sample data." at column 4, in the caption style the desktop and Models pictures use
+// (the poster and the teaser show the fictional invoice-kit world; claims audit CL-1, critic C03); then the rail holds
+// the label ("The film / 1:16, with sound.", the length as data) and the main column holds the H2 (one tone), the lead,
+// "Read the transcript ›" and the chapters as a ruled index of three columns (two on tablets, one on phones): a stone,
+// the start time as data, the title.
 //
 // - Poster: the film's own poster (T0's frame 0, FILM_SPEC §15) when rendered; until then a real-UI still in a window
 //   on the riverbed, with the static pebble on the desktop.
@@ -89,21 +91,28 @@ export function Film() {
             <FilmTrigger label={film.play} className={styles.play} />
           </MediaFrame>
 
-          <figcaption className={`grid-12 ${styles.caption}`}>
-            <RailLabel name={label.name} fact={label.fact} className={`rail ${styles.label}`} />
-            <div className="main">
-              <h2 id="film-title" className={styles.title}>
-                {film.h2}
-              </h2>
-              <p className={`lead ${styles.lead}`}>{film.lead}</p>
-              {files.available ? (
-                <>
-                  <p className={styles.actions}>
-                    <TextLink href="/film">{film.transcriptLink}</TextLink>
-                  </p>
-                  <ChapterList chapters={chapters} label={film.chaptersHeading} />
-                </>
-              ) : null}
+          <figcaption className={styles.caption}>
+            <div className="grid-12">
+              <div className="main">
+                <p className={styles.sample}>{film.sampleData}</p>
+              </div>
+            </div>
+            <div className={`grid-12 ${styles.head}`}>
+              <RailLabel name={label.name} fact={label.fact} className={`rail ${styles.label}`} />
+              <div className="main">
+                <h2 id="film-title" className={styles.title}>
+                  {film.h2}
+                </h2>
+                <p className={`lead ${styles.lead}`}>{film.lead}</p>
+                {files.available ? (
+                  <>
+                    <p className={styles.actions}>
+                      <TextLink href="/film">{film.transcriptLink}</TextLink>
+                    </p>
+                    <ChapterList chapters={chapters} label={film.chaptersHeading} />
+                  </>
+                ) : null}
+              </div>
             </div>
           </figcaption>
         </figure>
