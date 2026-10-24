@@ -65,9 +65,10 @@ own pure function of the seconds since the switch changed; `veil.ts` drives it a
 ```
 
 - `PebbleLive`, `PebbleLiveSlot` and `Pebble` take `stealth` (absent: no Veil, and the markup is exactly as before).
-  Flipping it plays the cast (1.25 s: gather, the dusk colour wipes down behind a bright hem with one ring, the eyes
-  reopen to a calm 80 %, the glass arrives) or the release (0.65 s: fold, lift, hop), from wherever the Veil is, so a
-  reversal mid-transition never jumps. While on, the animated pebble shimmers (1.1 s every 6 s) and never settles
+  Flipping it plays the cast (1.25 s: gather, one ring, the eyes reopen to a calm 80 %) or the release (0.65 s: fold,
+  hop) as Pebble 1.1.0's app does: the dusk colour, the rim and the glass come and go at once, because Avatar.vue
+  starts every switch from its end state (veil.ts explains this, and how to bring back the designed wipe). While on, the
+  animated pebble shimmers (1.1 s every 6 s) and never settles
   mid-cast or mid-shimmer. Reduced motion or Pause motion: one 0.3 s cross-fade, no shimmer. A pebble that isn't the
   animated one (the conductor's rule) shows the settled look at once. Under 64 px: no glass, highlight, shimmer or ring,
   and a rim about 1.3 px wide. The SVG carries `data-stealth="on" | "off"`.
