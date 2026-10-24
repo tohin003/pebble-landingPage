@@ -82,5 +82,5 @@ All three are under the SIL Open Font License 1.1. The same files are used by th
 - **Remotion**: the `video/` project depends on Remotion, which is under the Remotion License
   (https://www.remotion.dev/docs/license), used here under its Free License.
 - **FFmpeg** (LGPL 2.1 or later, with GPL parts in the Homebrew build), **librosa** (ISC), **Spotify pedalboard**
-  (GPL-3.0), **pyloudnorm** (MIT), **sharp** (Apache-2.0), **Playwright** (Apache-2.0) and Apple's SoundAnalysis
-  framework.
+  (GPL-3.0), **pyloudnorm** (MIT), **sharp** (Apache-2.0), **puppeteer-core** 25.13.0 (Apache-2.0, Google), which
+  drives Chrome for the interface captures and the QA checks, and Apple's SoundAnalysis framework.

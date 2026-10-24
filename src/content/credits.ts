@@ -189,7 +189,7 @@ export const creditSections: readonly CreditSection[] = [
       { name: "pedalboard", by: "Spotify", licence: "GPL-3.0", url: "https://github.com/spotify/pedalboard" },
       { name: "pyloudnorm", licence: "MIT", url: "https://github.com/csteinmetz1/pyloudnorm" },
       { name: "sharp", licence: "Apache-2.0", url: "https://sharp.pixelplumbing.com" },
-      { name: "Playwright", by: "Microsoft", licence: "Apache-2.0", url: "https://playwright.dev" },
+      { name: "puppeteer-core", by: "Google", licence: "Apache-2.0", url: "https://github.com/puppeteer/puppeteer" },
     ],
   },
   {
