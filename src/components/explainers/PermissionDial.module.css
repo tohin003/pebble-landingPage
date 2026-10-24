@@ -301,16 +301,23 @@
     bottom: auto;
   }
 
-  .detent[data-mode="ask"] .name {
-    right: auto;
-    left: -16px;
-    text-align: left;
-  }
-
+  /* each name centred under its own stone, so it reads as that stop's, not the pebble's (critic C26: hung inward from
+     the stones, "Ask for approval" sat under the pebble). At 320 px the widest, "Ask for approval", still clears the
+     column's edge. */
+  .detent[data-mode="ask"] .name,
   .detent[data-mode="full"] .name {
-    left: auto;
-    right: -16px;
-    text-align: right;
+    left: 0;
+    right: auto;
+    transform: translateX(-50%);
+    text-align: center;
+  }
+}
+
+/* the narrowest phones: one step smaller, so "Ask for approval", centred under its stone, stays inside the column */
+@media (max-width: 359px) {
+  .detent[data-mode="ask"] .name,
+  .detent[data-mode="full"] .name {
+    font-size: 13px;
   }
 }
 
