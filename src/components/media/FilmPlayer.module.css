@@ -1,4 +1,9 @@
+/* The theatre is dark in both themes, and the dialog paints its own ground: with only a translucent ::backdrop, the
+   page's light ground showed through under the chapter list, and its light text (#e8eee6) was measured against
+   #f8f9f6 (axe at 390 px, light: 1.1:1). On this ground the text is 15.9:1, the chapter times 8.1:1, the note 9.9:1,
+   the focus ring 10:1. */
 .theatre {
+  --theatre-ground: #0f1310;
   width: 100%;
   max-width: none;
   height: 100%;
@@ -6,13 +11,13 @@
   margin: 0;
   padding: 0;
   border: 0;
-  background: transparent;
+  background: var(--theatre-ground);
   color: #e8eee6;
   overscroll-behavior: contain;
 }
 
 .theatre::backdrop {
-  background: rgba(8, 11, 9, 0.9);
+  background: #0f1310;
 }
 
 :global(:root[data-motion="on"]) .theatre[open] .inner {
