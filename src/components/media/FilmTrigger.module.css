@@ -1,6 +1,8 @@
 /* The film's play button over the poster: the galet on the page's ground with an ink play mark (DESIGN-LEXINGTON §6
-   Film). Playing the film is not one of the accent's three jobs, and no control casts a shadow (§3.5): the riverbed
-   behind it is the contrast. The world snaps: a 3 % swell under the pointer, a press to 0.98. */
+   Film). Playing the film is not one of the accent's three jobs, and no control casts a shadow (§3.5). The poster puts
+   the stone over Pebble's light window, where a --bg galet alone had no edge (it read as a blank patch erasing the
+   window's text), so a galet 1 px larger in --line behind it is its ring, as on the loops' pause and play buttons.
+   The world snaps: a 3 % swell under the pointer, a press to 0.98. */
 .trigger {
   position: relative;
   display: grid;
@@ -30,6 +32,17 @@
   transition: transform var(--dur-hover) var(--ease-out);
 }
 
+/* the ring: the same stone, 1 px larger on every side, in the hairline's colour, under the galet */
+.trigger[data-shape="galet"]::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: var(--line);
+  -webkit-mask: var(--galet-mask) center / contain no-repeat;
+  mask: var(--galet-mask) center / contain no-repeat;
+  transition: transform var(--dur-hover) var(--ease-out);
+}
+
 .icon {
   position: relative;
   width: 30px;
@@ -38,12 +51,14 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .trigger:hover .galet {
+  .trigger:hover .galet,
+  .trigger[data-shape="galet"]:hover::before {
     transform: scale(1.03);
   }
 }
 
-.trigger:active .galet {
+.trigger:active .galet,
+.trigger[data-shape="galet"]:active::before {
   transform: scale(0.98);
   transition-duration: var(--dur-press);
 }
