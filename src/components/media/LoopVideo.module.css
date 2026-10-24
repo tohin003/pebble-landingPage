@@ -106,6 +106,15 @@
   height: 15px;
 }
 
+/* A phone cut whose subject sits in its bottom-right corner (L1's pebble) keeps the button in the other corner, so the
+   button never covers the one living thing (LoopVideo phoneControl="start") */
+@media (max-width: 560px) {
+  .control[data-phone-start] {
+    right: auto;
+    left: 10px;
+  }
+}
+
 /* a press, as every control on the page: to 0.98 (DESIGN-LEXINGTON §3.10) */
 .control:active::before,
 .control:active .controlShape {

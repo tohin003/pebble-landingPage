@@ -92,10 +92,25 @@ export type LoopVideoProps = Readonly<{
   defer?: "interaction";
   /** shown when neither the loop nor its poster exists yet */
   fallback?: ReactNode;
+  /**
+   * "start": on phones the pause and play button sits in the bottom-left corner, for a phone cut whose subject sits in
+   * the bottom-right one, where the button would cover it (L1's pebble)
+   */
+  phoneControl?: "start";
   className?: string;
 }>;
 
-export function LoopVideo({ loop, label, name, caption, sizes = "(max-width: 900px) 100vw, 800px", defer, fallback, className }: LoopVideoProps) {
+export function LoopVideo({
+  loop,
+  label,
+  name,
+  caption,
+  sizes = "(max-width: 900px) 100vw, 800px",
+  defer,
+  fallback,
+  phoneControl,
+  className,
+}: LoopVideoProps) {
   const id = useId();
   const figure = useRef<HTMLElement>(null);
   const video = useRef<HTMLVideoElement>(null);
@@ -270,6 +285,7 @@ export function LoopVideo({ loop, label, name, caption, sizes = "(max-width: 900
           <button
             type="button"
             className={styles.control}
+            data-phone-start={phoneControl === "start" ? "" : undefined}
             onClick={toggle}
             aria-label={playing ? mediaCopy.loopControls.pause(name) : mediaCopy.loopControls.play(name)}
           >

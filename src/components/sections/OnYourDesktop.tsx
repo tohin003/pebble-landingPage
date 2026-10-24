@@ -62,6 +62,7 @@ export function OnYourDesktop() {
                 label={media.loops.companion.label}
                 name={media.loops.companion.name}
                 sizes={FRAME_SIZES}
+                phoneControl="start"
                 className={styles.loop}
               />
             ) : null}
