@@ -7,7 +7,9 @@ widths × themes × motion settings with the installed Chrome (puppeteer-core fr
 download). Each shot is a series of viewport screenshots taken while scrolling down (critic H10: an agent can't judge a
 1440 × 12,000 px image shrunk to fit; it can read the tiles, and they show the sticky header and call to action where a
 visitor sees them), and `report.json` records the page height, horizontal overflow, the pebble path's state, console
-errors, failed requests, CSP violations and each tile's scroll position. The server and Chrome always stop at the end.
+errors, failed requests, CSP violations and each tile's scroll position. Video requests Chrome cancels itself
+(`net::ERR_ABORTED` on an `.mp4`: a `<source>` it won't play, or a preload it has enough of) are expected media
+behaviour, not problems: they are listed apart, as `mediaAborted`. The server and Chrome always stop at the end.
 `node tools/qa/sheets.mjs <run>` packs the light and dark tiles side by side into review sheets at full resolution.
 
 Run it through the heavy-job runner (the build, the server and Chrome are one heavy job):
@@ -48,8 +50,8 @@ job; the copy lint and the sheets only read files. Each file's header lists its 
 |---|---|---|
 | `a11y.mjs` | axe-core 4.14 (pinned here: run `npm ci` in this folder), WCAG 2.0–2.2 A and AA plus best practices, light and dark, at the top, mid-page and after a full scroll, plus the open states (menu sheet, download notice, FAQ answer, honesty stamp, film theatre); a contrast pass with the decorative line and grain set aside | `.work/qa/a11y/<run>.json` |
 | `interact.mjs` | the keyboard walk (every Tab stop shown, on screen, not under the sticky header or call to action, with a visible focus change), the skip link, header toggles, the phone menu, the three explainers, the story tabs and AgentGuard's switch, the film dialog with focus return, the install Copy button and its live region, the loop pause buttons | `.work/qa/screens/<run>/report-interact.json` |
-| `requests.mjs` | every request same-origin, no cookies (document, browser jar, Set-Cookie), zero console errors and failed requests, first-load JS and transfer budgets, a link crawl | `.work/qa/requests/<run>.json` |
-| `lighthouse.sh` | Lighthouse 13.5.0, mobile and desktop, N runs each, medians against MASTER_PLAN §7.7; `H2=1` puts `h2proxy.mjs` (HTTP/2, TLS, Brotli, as Vercel serves the site) in front of `next start` | `.work/qa/lighthouse/<run>/` |
+| `requests.mjs` | every request same-origin, no cookies (document, browser jar, Set-Cookie), zero console errors and failed requests, first-load JS and transfer budgets, a link crawl (other sites asked at most once a second) | `.work/qa/requests/<run>.json` |
+| `lighthouse.sh` | Lighthouse 13.5.0, mobile and desktop, N runs each, medians against MASTER_PLAN §7.7, on one page (the third argument, default `/`); `H2=1` puts `h2proxy.mjs` (HTTP/2, TLS, Brotli, as Vercel serves the site) in front of `next start` | `.work/qa/lighthouse/<run>/` |
 | `line-check.mjs` | the pebble's local ground never runs through text (and, as a softer check, product media). It checks every `Horizon` the page draws, such as the hero's ground, the project story's rail, the permission dial's arch and the footer's ground. A page with no horizon on screen, or a horizon with no drawn point, fails instead of passing | `.work/qa/screens/<run>/` |
 | `copy-lint.mjs` | the voice and claim rules on the built HTML and `llms.txt` (`--src` adds `src/content`); light work | stdout |
 | `sheets.mjs` | review sheets from a shot.mjs run; light work | `.work/qa/screens/<run>/sheets/` |
@@ -62,5 +64,6 @@ cd /path/to/pebble-landingPage && source scripts/env.sh && bash tools/qa/all.sh 
 cd /path/to/pebble-landingPage && source scripts/env.sh && bash tools/qa/all.sh qa-r2 a11y lh-h2  # some steps, last build
 ```
 
-Steps: `shot` (builds first), `sheets`, `a11y`, `interact`, `requests`, `lh-h2`, `lh`, `line`, `lint`. One line per
+Steps: `shot` (builds first), `sheets`, `a11y`, `interact`, `requests`, `lh-h2`, `lh-h2-film`, `lh`, `lh-film` (the
+two Lighthouse steps again on `/film`), `line`, `lint`. One line per
 step goes to `.work/qa/logs/<run>-all.out`, the full output to `.work/qa/logs/<run>-<step>.out`.

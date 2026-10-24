@@ -11,7 +11,8 @@
 //     ≤ 400 KB target / 600 KB limit;
 //   - after a slow full scroll (lazy images, posters and loops): everything ≤ 8 MB target / 12 MB limit.
 // Then a link crawl over /, /film, /credits, /privacy and the 404 page: every same-origin href/src/srcset answers
-// 200, every #fragment exists on its page, and (unless --no-external) every external link answers 2xx/3xx.
+// 200, every #fragment exists on its page, and (unless --no-external) every external link answers 2xx/3xx, asked at
+// most once a second.
 // Report: .work/qa/requests/<run>.json. Exit 1 when a hard limit or a privacy rule fails.
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -168,10 +169,16 @@ async function crawl(base) {
   for (const [url, meta] of seen) {
     const internal = url.startsWith(origin);
     if (!internal && flag("no-external")) continue;
+    // other people's servers get at most one request a second (a burst of HEADs can earn a 429, a false broken link)
+    const polite = () => (internal ? Promise.resolve() : sleep(1000));
     let status = 0;
     try {
+      await polite();
       let res = await fetch(url, { method: "HEAD", redirect: "follow", signal: AbortSignal.timeout(15000) });
-      if (res.status === 405 || res.status === 403) res = await fetch(url, { method: "GET", redirect: "follow", signal: AbortSignal.timeout(20000) });
+      if (res.status === 405 || res.status === 403) {
+        await polite();
+        res = await fetch(url, { method: "GET", redirect: "follow", signal: AbortSignal.timeout(20000) });
+      }
       status = res.status;
     } catch (e) {
       status = -1;

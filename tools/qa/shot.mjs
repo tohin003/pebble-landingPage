@@ -133,11 +133,19 @@ async function shoot(base, pagePath, width, theme, motion) {
   const phone = width < 500;
   const height = viewportHeight(width);
   const problems = { console: [], pageErrors: [], failed: [], csp: [] };
+  // Video requests Chrome cancels itself (net::ERR_ABORTED): a <source> it won't play, before it moves on to the next
+  // one, or a preload it has enough of. Expected media behaviour, not a failure (lib.mjs skips them too); they're kept
+  // in the report, apart from the problems, so a run can still check which source each video ended up playing.
+  const mediaAborted = [];
   page.on("console", (msg) => {
     if (msg.type() === "error" || msg.type() === "warning") problems.console.push(`${msg.type()}: ${msg.text()}`);
   });
   page.on("pageerror", (err) => problems.pageErrors.push(String(err)));
-  page.on("requestfailed", (req) => problems.failed.push(`${req.url()} ${req.failure()?.errorText ?? ""}`));
+  page.on("requestfailed", (req) => {
+    const why = req.failure()?.errorText ?? "";
+    if (why === "net::ERR_ABORTED" && /\.(mp4|webm)(\?|$)/.test(req.url())) return void mediaAborted.push(req.url());
+    problems.failed.push(`${req.url()} ${why}`);
+  });
   page.on("response", (res) => {
     if (res.status() >= 400) problems.failed.push(`${res.status()} ${res.url()}`);
   });
@@ -226,7 +234,8 @@ async function shoot(base, pagePath, width, theme, motion) {
       `${tiles.length} tiles, ${bad ? `${bad} problem(s)` : "no problems"}`,
   );
   for (const [kind, items] of Object.entries(problems)) for (const item of items) console.log(`  ${kind}: ${item}`);
-  return { name, width, theme, motion, path: pagePath, probe, problems, overflow, tiles, ok: bad === 0 };
+  if (mediaAborted.length) console.log(`  (not a problem) video requests Chrome cancelled: ${mediaAborted.map((u) => u.split("/").pop()).join(", ")}`);
+  return { name, width, theme, motion, path: pagePath, probe, problems, mediaAborted, overflow, tiles, ok: bad === 0 };
 }
 
 async function interact(base, width, theme) {

@@ -5,7 +5,8 @@
 #   cd <repo> && source scripts/env.sh && bash tools/qa/all.sh qa-r2 a11y interact     # only these (on the last build)
 #
 # Steps: shot (next build, then 320–1920 px × light/dark × motion on/reduced, viewport tiles), sheets, a11y, interact,
-# requests, lh-h2 (Lighthouse through h2proxy.mjs, as Vercel serves), lh (plain next start), line, lint (copy lint).
+# requests, lh-h2 (Lighthouse on / through h2proxy.mjs, as Vercel serves), lh-h2-film (the same on /film), lh (plain
+# next start), lh-film, line, lint (copy lint).
 # Each heavy step is its own scripts/heavy.sh job, so another session's job can take the lock in between. The chain
 # stops when a CPU hold (.work/HOLD) appears and never bypasses it: rerun it later with the steps that are left.
 # Logs: .work/qa/logs/<run>-<step>.out; a one-line result per step goes to .work/qa/logs/<run>-all.out.
@@ -16,7 +17,7 @@ source "$HERE/../../scripts/env.sh"
 cd "$REPO" || exit 1
 RUN="${1:-qa-$(date +%m%d-%H%M)}"
 shift || true
-STEPS="${*:-shot sheets a11y interact requests lh-h2 lh line lint}"
+STEPS="${*:-shot sheets a11y interact requests lh-h2 lh-h2-film lh lh-film line lint}"
 LOGS="$REPO/.work/qa/logs"
 mkdir -p "$LOGS"
 SUMMARY="$LOGS/$RUN-all.out"
@@ -53,7 +54,9 @@ for step in $STEPS; do
   interact) heavy interact node tools/qa/interact.mjs --run="$RUN-interact" --widths=390,1440 --themes=light,dark --motion=on,reduced ;;
   requests) heavy requests node tools/qa/requests.mjs --run="$RUN-requests" --widths=390,1440 --themes=light,dark ;;
   lh-h2) heavy lh-h2 env H2=1 bash tools/qa/lighthouse.sh "$RUN-lh-h2" 3 ;;
+  lh-h2-film) heavy lh-h2-film env H2=1 bash tools/qa/lighthouse.sh "$RUN-lh-h2-film" 3 /film ;;
   lh) heavy lh bash tools/qa/lighthouse.sh "$RUN-lh" 3 ;;
+  lh-film) heavy lh-film bash tools/qa/lighthouse.sh "$RUN-lh-film" 3 /film ;;
   line) heavy line node tools/qa/line-check.mjs --run="$RUN-line" ;;
   lint)
     node tools/qa/copy-lint.mjs --src >"$LOGS/$RUN-lint.out" 2>&1
