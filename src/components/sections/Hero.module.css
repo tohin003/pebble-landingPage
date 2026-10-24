@@ -171,6 +171,26 @@
   .stage {
     --size: 300px;
   }
+
+  /* Here the field sits right under the sticky header, and the square box's empty top (the space above the pebble's
+     body) would reach under the header at the top of the page. So the button covers only the box's lower 80 % (the
+     body runs 25–77 % down it) and the pebble keeps its square box, overflowing the button's top: nothing moves, and
+     the button and its focus ring stay clear of the header. */
+  .hello {
+    height: calc(var(--size) * 0.8);
+    overflow: visible;
+  }
+
+  .hello .pebble {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: var(--size);
+  }
+
+  .hello:focus-visible::after {
+    inset: 2.5% 18% 26.25% 17%;
+  }
 }
 
 @media (max-width: 560px) {
