@@ -1,8 +1,9 @@
 # Building everything
 
 How to rebuild the site's media from nothing: the captures of Pebble's real interface, the stills, the recordings, the
-score and the mix, the films in three aspects, the loops, the posters, the encodes and the checks. The site itself
-needs none of this to build (see `README.md`); this is for when the product, the story or the music changes.
+score and the mix, the films in three aspects and the 30 s cut, the loops, the posters, the encodes and the checks.
+The site itself needs none of this to build (see `README.md`); this is for when the product, the story or the music
+changes.
 
 The commands come from the scripts' own headers and the folders' READMEs. When a script and this page disagree, the
 script is right, and this page should be corrected.
@@ -21,9 +22,11 @@ script is right, and this page should be corrected.
   for the frame checks: `$PYQA`, which defaults to the python.org framework build of Python 3.14.
 - **Xcode's command line tools**, for `xcrun swiftc` (the SoundAnalysis helper is compiled from
   `tools/audio/sound_tags.swift`).
-- **A checkout of Pebble** (https://github.com/tohin003/Pebble) at the release the captures should show, with its
-  frontend dependencies installed in it. The capture harness only reads it: it never writes there, caches included.
-  The fixtures in `capture/mock/fixtures.js` name the version they were checked against (1.0.4 today).
+- **Pebble's frontend at a published release** (https://github.com/tohin003/Pebble): a checkout at that release, read
+  only, with its frontend dependencies installed, or the release's tag frozen from GitHub by
+  `capture/freeze-release.py`, which borrows the checkout's `node_modules` when its dependencies match the tag's
+  (section 1). The capture harness only reads it: it never writes there, caches included. The fixtures in
+  `capture/mock/fixtures.js` name the version they were checked against (1.2.0 today).
 
 ## Before every command
 
@@ -37,7 +40,9 @@ cd <repo> && source scripts/env.sh && …
 `.work/local.env`. It puts `/opt/homebrew/bin` first on `PATH` and links `.work/bin/git` to `/usr/bin/git` (on the Mac
 this was built on, the Intel builds in `/usr/local/bin` do not run). It exports `$FF`, `$FP`, `$PYQA` and
 `CHROME_PATH`, turns telemetry off (`DO_NOT_TRACK`, `NEXT_TELEMETRY_DISABLED`), and keeps the npm, uv and Playwright
-caches inside `.work/`. Shell state does not carry over between separate shells, so source it every time.
+caches inside `.work/`. It also routes `npm run typecheck` through `scripts/serial.sh`, one type check at a time
+(two side by side push an 8 GB Mac into swap), and while `.work/HOLD` exists it runs every other `npm run` script at
+background priority. Shell state does not carry over between separate shells, so source it every time.
 
 ## Heavy jobs on a small Mac
 
@@ -69,8 +74,8 @@ Habits that keep a small Mac working:
 - Record UI frame sequences just in time and delete them once every master that reads them has rendered (the
   main-window recording is about 360 MB).
 - Delete masters once their encodes have passed their checks.
-- Render from `video/`, so Remotion uses the headless browser in `video/node_modules/.remotion/` instead of
-  downloading a second copy.
+- Render from `video/`, so Remotion reads `video/remotion.config.ts` and uses the headless browser in
+  `video/node_modules/.remotion/` instead of downloading a second copy.
 - Delete the caches in `.work/` after each install step, and check `df -h /System/Volumes/Data` after every install,
   capture batch, render and encode.
 
@@ -78,7 +83,7 @@ Habits that keep a small Mac working:
 
 ```bash
 cd <repo>
-mkdir -p .work && echo 'PEBBLE_REPO=/path/to/Pebble' > .work/local.env   # the read-only Pebble checkout
+mkdir -p .work && echo 'PEBBLE_REPO=/path/to/Pebble' > .work/local.env   # Pebble at a published release, read only
 source scripts/env.sh
 npm ci                                                   # the site
 (cd video && npm ci && npx remotion browser ensure)      # the films; Remotion's headless browser is about 570 MB
@@ -87,6 +92,9 @@ npm ci                                                   # the site
 (cd tools/qa && npm ci)                                  # axe-core
 rm -rf "$npm_config_cache"                               # the npm cache lives in .work/
 ```
+
+This release's masters were rendered with the installed Chrome instead of Remotion's headless browser
+(`--browser-executable="$CHROME_PATH" --chrome-mode=chrome-for-testing`, section 4), which downloads nothing.
 
 The audio tools use their own virtual environment, which is never installed globally:
 
@@ -106,10 +114,33 @@ cd video && ../scripts/heavy.sh riverbed npx remotion still src/index.ts Riverbe
 
 ## 1. Capture Pebble's real interface
 
-`capture/` runs Pebble's own frontend (its Vite app, read from the checkout) in Chrome, with Tauri's official IPC
+`capture/` runs Pebble's own frontend (its Vite app, read from `PEBBLE_REPO`) in Chrome, with Tauri's official IPC
 mocks standing in for the app's backend and a fictional world as the data: Maya, a Python project called
 `invoice-kit`, a Lisbon trip budget and a datetime quiz. Nothing is redrawn: every picture of the app is the app.
 `capture/README.md` lists every scene and timeline; these are the commands the site and the films use.
+
+**Capture a published release, never a moving checkout.** Pebble's checkout may already hold the next version's
+unpublished work: within an hour of 1.1.0's publication, it did. Before a batch, check that nothing in the checkout's
+frontend is newer than the release (this must print nothing, before the batch and after it):
+
+```bash
+find "$PEBBLE_REPO/src" "$PEBBLE_REPO/index.html" -newermt "<the publication time, e.g. 2026-10-24 18:54>"
+```
+
+When the checkout has moved on, freeze the release and capture from the frozen copy:
+
+```bash
+/usr/bin/python3 -I -B capture/freeze-release.py v1.5.0 <new-dir> --node-modules="$PEBBLE_REPO/node_modules"
+export PEBBLE_REPO=<new-dir> && source scripts/env.sh
+/usr/bin/python3 -I -B capture/freeze-release.py --verify <new-dir>    # before the batch and after it
+```
+
+`freeze-release.py` writes the tag's `index.html` and `src/` from GitHub, checks every file against the tag's git tree
+(its blob SHA-1), keeps the tree listing for `--verify`, and links `node_modules` only when the checkout's
+`package-lock.json` equals the tag's apart from the version fields. `<new-dir>` must not exist yet. It uses the
+standard library only; the network calls are the GitHub API (one tag, one commit, one tree) and one raw file request
+per file. The 1.1.0 and 1.2.0 captures were made this way. Quote the app's words from the same tag too (GitHub's raw
+files at the tag), never from a checkout.
 
 Every capture is a heavy job, and goes through `capture/with-server.sh`, which starts the harness's server, runs the
 command and always stops the server. Pass `--locale=en-GB --tz=Europe/London` to `capture.mjs` (`record.mjs` sets
@@ -124,14 +155,20 @@ scripts/heavy.sh capture capture/with-server.sh node capture/capture.mjs --theme
   --naming=video --out=video/public/ui --locale=en-GB --tz=Europe/London
 ```
 
-**Sources for the page stills** (the scenes `tools/assets/stills.mjs` maps to page stills, both themes, at 3x):
+**Sources for the page stills** (the scenes `tools/assets/stills.mjs` maps to page stills, both themes). The windows
+are captured at 3x; the two crops of Settings › Privacy and focus at 5x:
 
 ```bash
 scripts/heavy.sh capture capture/with-server.sh node capture/capture.mjs main-done-wide main-approval-wide \
   held-unverified-wide main-challenge-wide settings-permissions-wide settings-models-wide settings-memory-wide \
-  main-quiz-wide main-dashboard pet-chat --exact --scale=3 --themes=light,dark --out=capture/shots/page \
-  --locale=en-GB --tz=Europe/London
+  main-quiz-wide main-dashboard pet-chat settings-privacy-wide settings-privacy-on-wide --exact --scale=3 \
+  --themes=light,dark --out=capture/shots/page --locale=en-GB --tz=Europe/London
+scripts/heavy.sh capture capture/with-server.sh node capture/capture.mjs crop-privacy-card crop-privacy-card-on \
+  --exact --scale=5 --themes=light,dark --out=capture/shots/page --locale=en-GB --tz=Europe/London
 ```
+
+To see what a retake changed, `"$PYQA" -I capture/diff.py capture/shots/page <new-dir> --out=<dir>` compares each
+pair and saves the differing regions side by side.
 
 **Recordings** for the film, the loops and the teaser. `record.mjs` plays a timeline of backend events against a
 virtual clock and saves one PNG per frame at 30 fps, so a recording is the same every time:
@@ -169,7 +206,7 @@ with fontTools.
 
 | What | Command | Output |
 |---|---|---|
-| Page stills | `scripts/heavy.sh stills node tools/assets/stills.mjs` | `public/ui/v1/<name>-<theme>-<2400\|1200>.<avif\|webp>` from `capture/shots/page/` |
+| Page stills | `scripts/heavy.sh stills node tools/assets/stills.mjs` | `public/ui/v1/<name>-<theme>-<2400\|1200>.<avif\|webp>` from `capture/shots/page/`, the Privacy and focus stills included |
 | The quick chat for "On your desktop" | `node tools/assets/quick-chat.mjs` | `public/ui/v1/quick-chat-<theme>-<1152\|768>.<avif\|webp>`, the app's own pebble mirrored out |
 | The riverbed wallpaper | `scripts/heavy.sh wallpaper node tools/assets/wallpaper.mjs` | `public/media/v1/wallpaper-<theme>-<1600\|3200>.<avif\|webp>` |
 | Icons | `node tools/assets/icons.mjs` | `src/app/icon.svg`, `apple-icon.png` and `favicon.ico`, from Pebble's own artwork |
@@ -190,16 +227,19 @@ git: `.gitignore` lists `*.wav`, `*.mp3`, `*.flac`, `*.aiff`, `*.m4a` and `*.mov
 `.work/audio/`.
 
 **The music bed.** One command fetches and verifies the sample kit (`tools/audio/sample_kit.py` checks every file
-against its pinned commit and its SHA-256), renders the bed, validates it against the beat map and copies the beat map
-into place:
+against its pinned commit and its SHA-256; about 113 MB), renders the bed, validates it against the beat map and copies
+the beat map into place:
 
 ```bash
-tools/audio/use_music.sh original-sampled      # the default: the score on recorded CC0 instruments
-tools/audio/use_music.sh original              # the same score, synthesised in code
+scripts/heavy.sh bed tools/audio/use_music.sh original-sampled   # the default: the score on recorded CC0 instruments
+scripts/heavy.sh bed tools/audio/use_music.sh original           # the same score, synthesised in code
 ```
 
-`tools/audio/music_options.json` lists every option, including the stock tracks that were auditioned and not used.
-After any switch, the film must re-snap to the new beat map and the cue list must be exported again.
+The bed's first bar is voiced on the upright piano, an octave lower than the score's marimba, with the strings' chord
+under it (`render_sampled.py --opening warm`, the default): heard straight after silence, the marimba's first notes
+read as a telephone or a ringtone to Apple's sound classifier. `tools/audio/music_options.json` lists every option,
+including the stock tracks that were auditioned and not used. After any switch, the film must re-snap to the new beat
+map and the cue list must be exported again.
 
 **The sound effects** (`.work/audio/sfx/`). The whooshes, the riser, the soft hits, the shimmer and the downlifter are
 synthesised:
@@ -217,7 +257,8 @@ Download the two zips from the URLs in the header of `tools/audio/sfx_foley.py`,
 .work/audio/.venv/bin/python -I tools/audio/sfx_foley.py .work/audio/kenney .work/audio/sfx .work/audio/sfx/foley-manifest.json
 ```
 
-**The cue list.** The film's timeline places every effect; the exporter turns it into `tools/audio/cues.json`:
+**The cue list.** The film's timeline places every effect; the exporter turns it into `tools/audio/cues.json`
+(21 cues):
 
 ```bash
 bun video/scripts/export-cues.ts           # write tools/audio/cues.json from video/src/film/timeline.ts
@@ -235,41 +276,56 @@ scripts/heavy.sh mix-checks tools/audio/mix_checks.sh     # exit 1 when a gate f
 
 The checks measure loudness, true peak and loudness range with FFmpeg, the mono fold-down and the share of energy a
 small speaker can play, and run Apple's SoundAnalysis over the mix to catch anything that reads as a voice, an alarm,
-a siren or a ringtone. Results go to `.work/audio/analysis/m1/`; look at the spectrogram PNGs, then delete them.
+a siren or a ringtone, including the opening heard straight after silence and the end card. Results go to
+`.work/audio/analysis/m1/`; look at the spectrogram PNGs, then delete them. This release's masters measure −16.0 LUFS
+and −1.7 dBTP (web) and −14.1 LUFS and −1.5 dBTP (social); their hashes are in `docs/media-provenance.json`.
+
+**The 30 s cut's soundtrack.** The cut for X (`docs/film-cuts/x30.json`, section 5) has its own music: a 12-bar
+arrangement of the same score, not a splice of the bed, with the film's effects mapped onto the cut. One command
+builds the bed, the mix and the checks (the film's bed must be current, and the sample kit on disk for the bed step):
+
+```bash
+scripts/heavy.sh cut-x30 tools/audio/cut_soundtrack.sh docs/film-cuts/x30.json   # soundtrack_x30_social.wav, -14 LUFS
+.work/audio/.venv/bin/python -I tools/audio/cut_cues.py docs/film-cuts/x30.json --check   # the cut's cue list is current
+```
 
 ## 4. The films, the loops and the stills in Remotion
 
 `video/` is its own npm project, pinned to Remotion 4.0.538 (every `remotion` and `@remotion/*` package exactly; never
-run `npx remotion upgrade` mid-project). `video/src/Root.tsx` registers the compositions; at the time of writing:
+run `npx remotion upgrade` mid-project). `video/src/Root.tsx` registers the compositions:
 
 | Composition | Size | What |
 |---|---|---|
-| `LaunchFilm` | 1920 × 1080 | The launch film: the web and 16:9 social posts |
+| `LaunchFilm` | 1920 × 1080 | The launch film: the website's film and the 16:9 social posts |
 | `LaunchFilmSquare` | 1080 × 1080 | The square cut for social feeds |
 | `LaunchFilmVertical` | 1080 × 1920 | The vertical cut for phones |
 | `FilmTeaser` | 1280 × 720 | The silent teaser beside the film's poster |
-| `LoopCompanion`, `LoopModels`, `LoopAgentGuard`, `LoopMemory`, `LoopViews` | 1600 × 1000 | Silent feature loops |
-| `LoopApproveUndo`, `LoopIsolatedTests` | 1080 × 1080 | The project story's two loops |
-| `LoopCompanionPhone`, `LoopApproveUndoPhone`, `LoopIsolatedTestsPhone`, `LoopAgentGuardPhone` | 1080 × 1350 | 4:5 cuts for phones |
+| `LoopCompanion`, `LoopModels`, `LoopMemory`, `LoopViews` | 1600 × 1000 | Silent feature loops on the page |
+| `LoopIsolatedTests` | 1080 × 1080 | The project story's loop |
+| `LoopCompanionPhone`, `LoopIsolatedTestsPhone` | 1080 × 1350 | 4:5 cuts for phones |
+| `LoopApproveUndo`, `LoopAgentGuard` (each also `…Phone`), `LoopReviewCommands` | | Registered, not on the page: the project story shows the approval card as an explainer, AgentGuard's section shows real captures, and `LoopReviewCommands` is a stub slate |
 | `FilmPoster` | 1280 × 720 | The film's poster, which is the teaser's first frame; render it at `--scale=2` |
 | `OgImage` | 1200 × 630 | The social card |
-| `StyleFrames`, `FilmFrames` (each also `…Square` and `…Vertical`) | as the film | Review samplers |
+| `StyleFrames`, `FilmFrames` (each also `…Square` and `…Vertical`) | as the film | Review samplers for style frames. Never for masters or review frames: `FilmFrames`' frame 0 is sometimes flat |
 | `RiverbedPlate`, `ComponentCheck`, `FontMetrics`, `Placeholder`, `PebbleDemo` | | Tools and reference sheets |
 
 The three film compositions render one timeline (`video/src/film/timeline.ts`, 2,304 frames at 30 fps, taken from the
 beat map), one music bed and one caption track. Each aspect has its own framing, never a crop of another, and
 everything sits inside its safe area.
 
-Commands, from `video/`, each a heavy job:
+Commands, from `video/`, each a heavy job. Review frames come from the composition itself:
 
 ```bash
 cd video
 ../scripts/heavy.sh studio npx remotion studio                                   # stop it with Ctrl-C
 ../scripts/heavy.sh still npx remotion still src/index.ts LaunchFilm out/qa/f504.png --frame=504
-../scripts/heavy.sh frames npx remotion render src/index.ts FilmFrames out/qa/frames --sequence \
-  --image-format=png --props='{"frames":[0,504,1152,2160]}'                      # any film frames, for review
+../scripts/heavy.sh qa-frames npx remotion render src/index.ts LaunchFilm out/qa/LaunchFilm --sequence \
+  --frames=0,504,1152,2160 --image-format=png                                    # a few frames, one PNG each
 ../scripts/heavy.sh animatic npx remotion render src/index.ts LaunchFilm out/animatic-16x9.mp4 --scale=0.5 --crf=28 --muted
 ```
+
+In Remotion 4.0.538, `--frames` takes a list (`0,504,1152`), a range (`0-60`) or one frame; if Remotion ever moves off
+that version, use a range until the list is checked.
 
 Light checks, run before any render:
 
@@ -280,45 +336,62 @@ bun video/scripts/export-cues.ts --check     # the cue list still matches the ti
 npm run test:engine                          # the pebble's engine, including every cue list in the repo
 ```
 
-**Masters** (after the media phase). Each composition renders to a silent H.264 master at CRF 12 in BT.709; the
-soundtrack is added at the encode step, and `tools/encode/README.md` names the files that step expects:
+**Masters.** Each composition renders to a silent H.264 master at CRF 12 in BT.709; the soundtrack is added at the
+encode step. The rules, each learned the hard way:
+
+- **Render the compositions themselves**, never the `FilmFrames` sampler.
+- **One browser tab:** `--concurrency=1`. With two or three tabs under memory pressure, Chrome made blank and tiled
+  frames. (`remotion.config.ts` defaults to 2, for Studio and quick renders.)
+- **PNG frames into the encoder:** `--image-format=png` (the config's default is JPEG).
+- **Scan every master before encoding** (below).
 
 ```bash
 cd video && ../scripts/heavy.sh master-film npx remotion render src/index.ts LaunchFilm out/masters/film.mp4 \
-  --codec=h264 --crf=12 --x264-preset=medium --pixel-format=yuv420p --color-space=bt709 --muted --concurrency=2
+  --codec=h264 --crf=12 --x264-preset=medium --pixel-format=yuv420p --color-space=bt709 --muted \
+  --concurrency=1 --image-format=png --browser-executable="$CHROME_PATH" --chrome-mode=chrome-for-testing
 ```
 
-Do the same for `LaunchFilmSquare`, `LaunchFilmVertical`, `FilmTeaser` and each loop (the loops are light enough for
-`--concurrency=3`). If a render is slow, crashes or is stopped, retry with `--concurrency=1`, then with
-`--media-cache-size-in-bytes=1073741824`, then in chunks with `--frames=0-899` and so on, joined afterwards with
+Render the others the same way, one heavy job each, under the names section 5 uses: `LaunchFilmSquare` to
+`out/masters/film-square.mp4`, `LaunchFilmVertical` to `film-vertical.mp4`, `FilmTeaser` to `teaser.mp4`, and each
+loop on the page to `loop-<id>.mp4` (its 4:5 cut to `loop-<id>-phone.mp4`). If a render crashes or is stopped, retry
+with `--media-cache-size-in-bytes=1073741824`, then in chunks with `--frames=0-899` and so on, joined afterwards with
 `"$FF" -f concat -safe 0 -i list.txt -c copy`.
 
-**Posters and the social card** (after the media phase). Every poster is its loop's first frame, rendered from the
-loop itself, so the poster and the video's first frame are the same picture. `LOOP_POSTERS` in
-`video/src/stills/LoopPosters.tsx` lists each composition, file name and size:
+**The scan.** Two render glitches pass every other check: a blank frame (one flat colour: a frame that lost its
+layers) and an isolated outlier (a frame far from both neighbours while they are close to each other: a capture that
+came back half-painted). Decode each master small, test every frame for both, and look at a contact sheet: the
+downbeats of the film's 32 bars, and each loop's frames and its seam (the last frames beside the first). The film is
+flat by design only at its two dives (f143 and f1799) and one empty beat (f354–360). The scripts that scanned this
+release's masters stayed in the build's gitignored `.work/` folder; any scanner that makes these two tests and the
+sheets will do. Delete each master once its encodes have passed `verify.mjs`.
+
+**Posters and the social card.** Every poster is its video's first frame, rendered from the composition itself, so the
+poster and the video's first picture are the same. `LOOP_POSTERS` in `video/src/stills/LoopPosters.tsx` lists each
+composition, file name and size; the film's poster and the teaser's are both `FilmPoster`, rendered at 2x:
 
 ```bash
-cd video && ../scripts/heavy.sh poster npx remotion still src/index.ts LoopMemory out/posters/loop-memory.poster.png --frame=0
-cd video && ../scripts/heavy.sh poster npx remotion still src/index.ts FilmPoster out/posters/film.poster.png --scale=2
-cd video && ../scripts/heavy.sh og npx remotion still src/index.ts OgImage ../src/app/opengraph-image.png
+cd video && ../scripts/heavy.sh poster npx remotion still src/index.ts LoopMemory out/stills/loop-memory.poster.png --frame=0
+cd video && ../scripts/heavy.sh poster npx remotion still src/index.ts FilmPoster out/stills/film.poster.png --frame=0 --scale=2
+cd video && ../scripts/heavy.sh og npx remotion still src/index.ts OgImage ../src/app/opengraph-image.png --frame=0
 ```
 
-`tools/encode/encode.sh poster` then encodes each poster to AVIF and WebP within its budget, into `public/media/v1/`
-under the names `src/lib/media.ts` reads. The social card goes to `src/app/opengraph-image.png`, with its alt text
-(`seo.openGraph.imageAlt` in `src/content/seo.ts`) in `src/app/opengraph-image.alt.txt`.
+`tools/encode/encode.sh poster` then encodes each poster (section 5). The social card goes to
+`src/app/opengraph-image.png`, with its alt text (`seo.openGraph.imageAlt` in `src/content/seo.ts`, byte for byte, with
+no trailing newline) in `src/app/opengraph-image.alt.txt`. Render it again whenever the hero's H1 or that alt text
+changes.
 
 ## 5. Encode and verify
 
-`tools/encode/` makes the web and social encodes from the masters and checks them (after the media phase; the tools
-were being finished as this page was written). The interface, from `tools/encode/README.md` and the header of
-`tools/encode/encode.sh`:
+`tools/encode/encode.sh` makes the web and social encodes from the masters, and `tools/encode/verify.mjs` checks them.
+`tools/encode/README.md` has the exact options, file names and budgets; `tools/encode/encode.sh --help` prints the
+usage.
 
 ```bash
-tools/encode/encode.sh film   <master.mp4> .work/audio/render/soundtrack_web.wav
+tools/encode/encode.sh film   <master.mp4> <soundtrack_web.wav> [--only 1080.hevc,1080.h264,720.hevc,720.h264]
+tools/encode/encode.sh social <master.mp4> <soundtrack_social.wav> <out.mp4> [--cut <cut.json>] [--crf <n>]
 tools/encode/encode.sh loop   <id> <master.mp4> [<phone_master.mp4>]
 tools/encode/encode.sh teaser <master.mp4>
 tools/encode/encode.sh poster <png> <out-base> <width> <height>
-tools/encode/encode.sh social <master.mp4> .work/audio/render/soundtrack_social.wav <out.mp4> [--cut <cut.json>]
 ```
 
 - Homebrew FFmpeg through `$FF` and `$FP`. Each command is one `scripts/heavy.sh` job: run directly, the script runs
@@ -328,17 +401,58 @@ tools/encode/encode.sh social <master.mp4> .work/audio/render/soundtrack_social.
 - HEVC (`hvc1`) first, then H.264, each in `yuv420p` with BT.709 tags and `+faststart`. The film's audio is AAC at
   48 kHz from the web soundtrack, encoded once; the loops and the teaser are silent. Each file starts at its planned
   quality and steps down only as far as its size budget needs; the resolution never drops.
-- The files land in `public/media/v1/` under the names `src/lib/media.ts` expects: `film-1080` and `film-720`,
-  `teaser-720` and `loop-<id>` (plus `loop-<id>-phone`), each as `.hevc.mp4` and `.h264.mp4`, and the posters as
-  AVIF and WebP.
-- At the end a verify pass checks the new files: codecs, colour tags, `+faststart`, sizes, loudness and the loops'
-  seams. `node tools/encode/mp4.mjs codecs <file>` prints a file's codecs string, which must fit the one the page
-  declares in `src/lib/media.ts` (`hvc1.1.6.L120.90` for HEVC, `avc1.640028` for H.264).
+- At the end a verify pass checks the new files. `node tools/encode/mp4.mjs codecs <file>` prints a file's codecs
+  string, which must fit the one the page declares in `src/lib/media.ts` (`hvc1.1.6.L120.90` for HEVC, `avc1.640028`
+  for H.264).
 
-See `tools/encode/README.md` for the exact options, file names and budgets.
+**The website's media**, into `public/media/v1/` under the names `src/lib/media.ts` reads:
 
-The social masters for X and LinkedIn (16:9, 1:1 and 9:16 at −14 LUFS, with an `.srt` of the captions) come from the
-`social` command and the social soundtrack. They are delivered outside the repository and never committed.
+```bash
+tools/encode/encode.sh film video/out/masters/film.mp4 .work/audio/render/soundtrack_web.wav     # film-1080, film-720
+tools/encode/encode.sh teaser video/out/masters/teaser.mp4                                        # teaser-720
+tools/encode/encode.sh loop isolated-tests video/out/masters/loop-isolated-tests.mp4 video/out/masters/loop-isolated-tests-phone.mp4
+tools/encode/encode.sh loop memory video/out/masters/loop-memory.mp4      # and companion (with its phone cut), models, views
+tools/encode/encode.sh poster video/out/stills/film.poster.png public/media/v1/film.poster 1920 1080
+tools/encode/encode.sh poster video/out/stills/film.poster.png public/media/v1/teaser.poster 1280 720
+tools/encode/encode.sh poster video/out/stills/loop-memory.poster.png public/media/v1/loop-memory.poster 1600 1000
+node tools/encode/verify.mjs                  # everything in public/media/v1, and public/'s totals
+node tools/encode/verify.mjs --no-analysis    # the same without the loudness and seam passes: light, no heavy job
+```
+
+`verify.mjs` checks codecs and profile against the page's `<source type>`, the peak bitrate against the declared level,
+the colour tags, `+faststart`, the frame count (the film's against `docs/film-captions.json`), sizes and budgets
+(every file at most 45 MB, `public/` at most 90 MB, the film set at most 45 MB), the film's loudness on the encoded
+AAC (−16 LUFS ±1, at most −1.5 dBTP), the loops' and the teaser's seams on the encodes, the text tracks against what
+`tools/captions/build.mjs` makes now, and the posters against their videos. Its loudness and seam passes decode every
+file, so they run as one heavy job of their own.
+
+**The social films** for X and LinkedIn: 16:9, 1:1 and 9:16, each from its own master, with the social soundtrack
+(−14 LUFS). They are delivered outside the repository and never committed:
+
+```bash
+D="<a folder outside the repository>"
+tools/encode/encode.sh social video/out/masters/film.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1920x1080.mp4"
+tools/encode/encode.sh social video/out/masters/film-square.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1080x1080.mp4"
+tools/encode/encode.sh social video/out/masters/film-vertical.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1080x1920.mp4"
+node tools/captions/build.mjs --srt "$D/Pebble-launch-film.srt"
+```
+
+**The 30 s cut for X** (`docs/film-cuts/x30.json`; `docs/FILM_SPEC.md` §23). It is made only of the film's own frames:
+four source ranges, each starting on the same beat of the bar in the film and in the cut, 864 frames (28.8 s). There is
+no separate composition: `encode.sh social --cut` seeks each range frame-exactly in a film master and joins them, with
+the cut's own soundtrack (section 3):
+
+```bash
+tools/encode/encode.sh social video/out/masters/film.mp4 .work/audio/render/soundtrack_x30_social.wav \
+  "$D/Pebble-launch-film-30s-1920x1080.mp4" --cut docs/film-cuts/x30.json
+# the same with film-square.mp4 (-1080x1080) and film-vertical.mp4 (-1080x1920)
+node tools/captions/build.mjs --cut docs/film-cuts/x30.json --srt "$D/Pebble-launch-film-30s.srt"
+node tools/encode/verify.mjs "$D"             # public/media/v1 and the social folder together
+```
+
+`node tools/captions/cues.mjs cut-inputs docs/film-cuts/x30.json 2304 30` prints the seeks the cut uses. If the
+film's timing changes, pick the ranges again by the same rule, then re-run the caption check, `cut_cues.py --check`
+and `cut_soundtrack.sh`.
 
 ## 6. Captions and chapters
 
@@ -350,12 +464,15 @@ order, no overlaps, one or two lines of at most 42 characters, at least 1.2 s on
 no exclamation mark) and writes nothing if one fails:
 
 ```bash
-node tools/captions/build.mjs --check                      # validate only
-node tools/captions/build.mjs --srt <file.srt>             # the three VTTs in public/media/v1/, and the SRT
+node tools/captions/build.mjs --check                                   # validate only
+node tools/captions/build.mjs --srt <file.srt>                          # the three VTTs in public/media/v1/, and the SRT
+node tools/captions/build.mjs --check --cut docs/film-cuts/x30.json     # a cut's captions, on the cut's timeline
 ```
 
-The files land in `public/media/v1/` (after the media phase). `src/content/filmCaptions.ts` mirrors the JSON for the
-`/film` transcript; `npm run test:site` fails if the two drift apart.
+The three VTTs land in `public/media/v1/`. A warning says when a description needs more speech than its chapter lasts
+(7 of 9 do): the film player then holds the film on the chapter's last frame until the voice is done. Run it again
+whenever the JSON or `chapters.ts` changes: `verify.mjs` fails a stale track. `src/content/filmCaptions.ts` mirrors the
+JSON for the `/film` transcript; `npm run test:site` fails if the two drift apart.
 
 ## 7. Quality gates
 
@@ -369,22 +486,26 @@ bash tools/qa/all.sh qa-final a11y lh-h2      # only these steps, on the last bu
 
 The steps: `shot` (builds, then viewport tiles at 320 to 1920 px in both themes, with motion on and reduced),
 `sheets`, `a11y` (axe-core), `interact` (the keyboard walk and every control), `requests` (same-origin only, no
-cookies, no console errors, script and transfer budgets, a link crawl), `lh-h2` and `lh` (Lighthouse, through an
-HTTP/2 proxy and plain), `line` and `lint` (the copy lint). The chain stops at a hold and prints the command for the
-steps left. Look at every tile yourself: the tools find what can be measured, not what looks wrong.
+cookies, no console errors, script and transfer budgets, a link crawl), `lh-h2` and `lh` (Lighthouse on `/`, through
+an HTTP/2 proxy and plain), `lh-h2-film` and `lh-film` (the same on `/film`), `line` (the pebble's ground lines never
+cross text) and `lint` (the copy lint). The chain stops at a hold and prints the command for the steps left. Look at
+every tile yourself: the tools find what can be measured, not what looks wrong.
 
 The copy lint alone is light: after a `next build`, `node tools/qa/copy-lint.mjs --src`.
 
 ## 8. Before a push
 
-- `git ls-files | grep -Ei '\.(wav|mp3|flac|aiff|m4a|mov)$'` prints nothing: no raw audio is tracked.
-- `git ls-files -z | xargs -0 du -m | awk '$1 > 45'` prints nothing: no tracked file is over 45 MB.
-- `du -sh public` stays under 90 MB.
-- `git grep -n -F "$HOME"` prints nothing: no local paths in committed files.
+The two guards; both must print nothing, and `public/` stays at or under 90 MB:
+
+- `git ls-files | grep -Ei '\.(wav|mp3|flac|aiff|m4a|mov)$'`: no raw audio is tracked.
+- `git ls-files -z | xargs -0 du -m | awk '$1 > 45'`: no tracked file is over 45 MB. Then `du -sh public`.
+
+As in every commit, no local paths (`git grep -n -F "$HOME"` prints nothing) and no secrets.
 
 ## 9. Clean up
 
 When the media are encoded and checked, delete what can be made again: the recordings in `video/public/ui-frames/`,
-`video/out/`, `video/public/ui/`, `capture/shots/`, `capture/vite-cache/`, `capture/chrome-profile/`, the audio
-environment and renders in `.work/audio/`, and the `node_modules` folders of `video/`, `capture/` and `tools/*`. Keep
-the root `node_modules`, so `npm run dev` still works.
+`video/out/` (masters and stills), `video/public/ui/`, `capture/shots/`, `capture/vite-cache/`,
+`capture/chrome-profile/`, frozen release copies, the audio environment and renders in `.work/audio/`, and the
+`node_modules` folders of `video/`, `capture/` and `tools/*`. Keep the root `node_modules`, so `npm run dev` still
+works.
