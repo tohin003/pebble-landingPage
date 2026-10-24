@@ -149,7 +149,7 @@ export function validateCues(cues, { kind = "captions", durationMs = null, rules
     if (kind === "descriptions") {
       const seconds = (cue.endMs - cue.startMs) / 1000;
       const needs = countWords(text) / rules.speechWordsPerSecond;
-      if (needs > seconds) warnings.push(`${name}: about ${needs.toFixed(0)} s of speech at ${rules.speechWordsPerSecond} words/s in a ${seconds.toFixed(1)} s cue; the player starts the next description at the next cue`);
+      if (needs > seconds) warnings.push(`${name}: about ${needs.toFixed(0)} s of speech at ${rules.speechWordsPerSecond} words/s in a ${seconds.toFixed(1)} s cue; the film player holds the film on the cue's last frame until the voice is done (extended description)`);
       if (/[<&>]/.test(text)) warnings.push(`${name}: "<", ">" or "&" is escaped in the file, and VTTCue.text returns it escaped`);
     }
     if (kind === "chapters" && cue.lines.length !== 1) errors.push(`${name}: a chapter title is one line`);

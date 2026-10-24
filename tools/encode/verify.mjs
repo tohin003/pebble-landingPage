@@ -474,7 +474,7 @@ function checkTrack(rec, cls, ctx) {
   const result = validateCues(parsed.cues, { kind: cls.track, durationMs });
   for (const e of result.errors) rec.fail(e);
   if (cls.track === "descriptions" && result.warnings.length) {
-    rec.warn(`${result.warnings.length} of ${parsed.cues.length} descriptions need more speech time than their cue lasts; the player moves on at the next cue`);
+    rec.warn(`${result.warnings.length} of ${parsed.cues.length} descriptions need more speech time than their cue lasts; the film player holds the film until each is read (extended description)`);
   } else for (const w of result.warnings) rec.warn(w);
   rec.cells.video = `${cls.kind} ${parsed.cues.length} ${cls.track === "chapters" ? "chapters" : "cues"}`;
   const last = parsed.cues.at(-1);
