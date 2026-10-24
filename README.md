@@ -10,21 +10,56 @@ read the web, keep memory you control and build small interactive views.
 - The film, the loops, the posters and the social card are made with Remotion in `video/`, from Pebble's real
   interface (captured in `capture/`) and the pebble's own animation engine.
 - The claims register, `docs/CLAIMS.md`, maps every factual sentence on the site and in the film to its source.
+- The page states the facts of Pebble 1.5.0: version, size, SHA-256 and test counts, from
+  `src/content/releaseFacts.ts`. At build time, and then hourly, it reads the latest release's version and size from
+  GitHub.
 
 Live site: the address is added here after the first deployment.
+
+## What the site shows
+
+The home page, top to bottom. The anchors are public links (the header, the footer and the FAQ use them), so they stay
+stable.
+
+| Section | What it shows | Anchor |
+|---|---|---|
+| A little help, right here. | The live pebble, Download with its honest line, the release facts | `#top` |
+| Watch Pebble at work. | The film's poster and a silent teaser; the film plays with sound, captions, chapters and audio description | `#film` |
+| Evidence before "done". | AgentGuard, the evidence layer, as a ledger of real captures | `#agentguard` |
+| On your screen, out of your way. | The companion on your desktop, with a feature loop | `#desktop` |
+| Works in your project, under your review. | A coding task, step by step | `#project` |
+| Your model, your choice. | The three ways to bring a model | `#models` |
+| You set the pace. | The three permission modes, as an interactive dial | `#permissions` |
+| Memory you can read and forget. | The six labelled layers, and forgetting one memory | `#memory` |
+| Views, not just text. | Views built from data, bigger tasks kept in bounds, and what else is inside | `#views`, `#more` |
+| Built like infrastructure. | The engineering facts, with the release's test counts | `#infrastructure` |
+| Pebble matches Claude Code on the same model, within the margin. | The benchmark: the method, the overall result with its interval, the correction, where Pebble was ahead and where it was behind, the cost, what it doesn't prove and the data. It renders only while `benchmarksPublic` in `releaseFacts.ts` is true | `#benchmarks` |
+| Private by default. | What is stored on your Mac, and what leaves it | `#privacy` |
+| Stealth Lockdown. | New in Pebble 1.1.0, in Pebble's own words and with its honest line: a real capture of the setting, an interactive example, and the page's pebble wearing the Veil, drawn by Pebble's own code | `#stealth` |
+| Install Pebble. | The one-line install, the zip and its checksum, first run and updates | `#install` |
+| What Pebble isn't (yet) | The limits, stated plainly | `#limits` |
+| Free and open source. | The repository and the licence, then the questions | `#open-source`, `#faq` |
+| Say hi to Pebble. | The last call to action | `#get-pebble` |
+
+Wherever the site shows Stealth Lockdown (the section, the FAQ and `llms.txt`), Pebble's honest line goes with it, word
+for word: "Hidden from screen capture and screen sharing, not from a camera, a capture card or a process list. Exams
+and interviews that forbid assistants still forbid it."
+
+The other pages: `/film` (the film with its transcript), `/credits`, `/privacy`, and `/llms.txt`, `/sitemap.xml`,
+`/robots.txt` and the social card.
 
 ## What is in here
 
 | Path | What it holds |
 |---|---|
 | `src/` | The site, a Next.js App Router app: routes in `app/`, components, every visible string in `content/`, helpers in `lib/`, self-hosted fonts in `fonts/` |
-| `shared/pebble/` | The pebble's animation engine (bloub, MIT) and Pebble's own poses, shared by the site and the films |
-| `public/` | Stills of Pebble's real interface (`ui/v1/`); the riverbed wallpaper and, after the media phase, the films, loops, posters and captions (`media/v1/`); the media licence (`media/README.md`) |
+| `shared/pebble/` | The pebble's animation engine (bloub, MIT) and Pebble's own poses, shared by the site and the films; and the Veil, Stealth Lockdown's look, from Pebble's own code |
+| `public/` | Stills of Pebble's real interface (`ui/v1/`); the riverbed wallpaper, the film, the teaser, the feature loops, their posters and the film's text tracks (`media/v1/`); the media licence (`media/README.md`) |
 | `video/` | The Remotion project: the launch film in 16:9, 1:1 and 9:16, the teaser, the loops, the posters and the social card. A separate npm project, not part of the site's build |
 | `capture/` | The capture harness: Pebble's real interface running in Chrome, with the app's calls mocked and fictional sample data |
 | `tools/` | `audio/` (the score, the sampler, the sound effects and the mix), `assets/` (stills, wallpaper, icons, fonts), `captions/` (the film's caption and chapter files), `encode/` (the web and social encodes, the posters and their checks), `qa/` (the quality gates) |
-| `docs/` | The design philosophy and system, the claims register, the film spec and captions, the media provenance, how to build everything and how it was made |
-| `scripts/` | `env.sh`, sourced before every command, and `heavy.sh`, which runs one heavy job at a time |
+| `docs/` | The design philosophy and system, the claims register, the film spec, captions and cuts, the media provenance, how to build everything and how it was made |
+| `scripts/` | `env.sh`, sourced before every command; `heavy.sh`, which runs one heavy job at a time; `serial.sh`, which runs one type check at a time |
 
 ## Deploy on Vercel
 
@@ -40,7 +75,7 @@ What the site reads from the environment:
 |---|---|---|
 | `VERCEL_PROJECT_PRODUCTION_URL` | Vercel (a system variable) | The production domain. It becomes the canonical address in the page metadata, `sitemap.xml` and `robots.txt` (`src/lib/site.ts`). Without it they point at `http://localhost:3000`, so on another host set it to your domain |
 | `VERCEL` | Vercel | Adds `upgrade-insecure-requests` to the Content Security Policy (`next.config.ts`) |
-| `GITHUB_TOKEN` | you, optional | A fine-grained, read-only GitHub token. The server reads the latest Pebble release (tag, date, download size) from the GitHub API at build time and at most once an hour. Shared build machines can reach GitHub's limit of 60 unauthenticated requests an hour; the token lifts it. Without the token, or on any error, rate limit or timeout (6 s), the page uses the known-good release facts in `src/content/copy.ts` and still offers the download (`src/lib/release.ts`) |
+| `GITHUB_TOKEN` | you, optional | A fine-grained, read-only GitHub token. The server reads the latest Pebble release (tag, date, download size) from the GitHub API at build time and at most once an hour. Shared build machines can reach GitHub's limit of 60 unauthenticated requests an hour; the token lifts it. Without the token, or on any error, rate limit or timeout (6 s), the page uses the known-good release facts in `src/content/releaseFacts.ts` and still offers the download (`src/lib/release.ts`) |
 | `PEBBLE_RELEASE_STATE` | you, optional | `soon` hides the Download button and the install command at build time and keeps "View on GitHub". Any other value, or none, means live. You should not need it |
 
 Good to know:
@@ -48,7 +83,7 @@ Good to know:
 - The home page and `/film` regenerate at most once an hour, so a new Pebble release reaches the page within about an
   hour without a redeploy.
 - Films and loops appear on the page only if their files are in `public/media/v1/` when the build starts
-  (`next.config.ts` lists them). Until then the page shows a poster or a still in their place.
+  (`next.config.ts` lists them). Without them the page shows a poster or a still in their place.
 - `.vercelignore` leaves `video/`, `capture/`, `tools/`, `docs/` and `scripts/` out of the deployment: the site
   needs none of them to build.
 - After you add a custom domain, redeploy once so every page carries the new canonical address.
@@ -70,11 +105,11 @@ npm run dev          # http://localhost:3000
 | `npm run dev` | The development server. The Content Security Policy and the year-long media caching apply only to production builds |
 | `npm run build`, then `npm start` | A production build, served on port 3000 |
 | `npm run typecheck` | `next typegen`, then `tsc --noEmit` |
-| `npm run test:site` | Bun tests for `src/lib`, `src/components/ui` and `src/content` |
+| `npm run test:site` | Bun tests for `src/lib`, `src/components/ui`, `src/components/sections` and `src/content` |
 | `npm run test:engine` | Bun tests for the pebble's engine (`shared/pebble`) and its site components |
 
-Rebuilding the media (captures, the score, the films, the encodes) needs a Mac with Apple silicon, a read-only
-checkout of Pebble and a few more tools. `docs/BUILDING.md` lists them, with every command. On that Mac, start every
+Rebuilding the media (captures, the score, the films, the encodes) needs a Mac with Apple silicon, Pebble's source at
+a published release and a few more tools. `docs/BUILDING.md` lists them, with every command. On that Mac, start every
 command with `source scripts/env.sh`, and run heavy jobs (builds, renders, captures, encodes) through
 `scripts/heavy.sh`.
 
