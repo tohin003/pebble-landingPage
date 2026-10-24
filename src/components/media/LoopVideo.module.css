@@ -67,8 +67,16 @@
 }
 
 /* Pause and play: a 44 px target, drawn as a small galet (critic M9) on the picture. No shadow (DESIGN-LEXINGTON
-   §3.5): a galet 1 px larger in --line behind it is its ring, so it holds its edge on any frame of the loop. */
+   §3.5): a galet 1 px larger in the hairline's colour behind it is its ring, so it holds its edge on any frame.
+   The loops are light pictures in both themes (there are no dark versions), so the galet keeps the light theme's
+   ground, hairline and ink in both: in the night ground's colours it was a dark blob with a mark on a light picture,
+   the look PHILOSOPHY rules out, as on the film's play galet (critic C25). The values are globals.css's light --bg,
+   --line, --ink and --accent. */
 .control {
+  --on-picture-ground: #f8f9f6;
+  --on-picture-line: #dbe1d9;
+  --on-picture-ink: #1d2520;
+  --on-picture-accent: #506e54;
   position: absolute;
   right: 10px;
   bottom: 10px;
@@ -80,14 +88,14 @@
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: var(--ink);
+  color: var(--on-picture-ink);
 }
 
 .control::before {
   content: "";
   position: absolute;
   inset: 5px 3px;
-  background: var(--line);
+  background: var(--on-picture-line);
   -webkit-mask: var(--galet-mask) center / contain no-repeat;
   mask: var(--galet-mask) center / contain no-repeat;
   transition: transform var(--dur-press) var(--ease-firm);
@@ -96,7 +104,7 @@
 .controlShape {
   position: absolute;
   inset: 6px 4px;
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  background: color-mix(in srgb, var(--on-picture-ground) 92%, transparent);
   transition: transform var(--dur-press) var(--ease-firm);
 }
 
@@ -107,13 +115,13 @@
 }
 
 /* Focus: the page's accent ring sat on the picture around the transparent 44 px button, where on a light frame in the
-   dark theme it all but vanished (1.02:1, QA F-A11Y-1). The galet's own ink with a halo in the galet's ground holds on
-   any frame, in both themes: on a light picture the halo or the ring stands out, on a dark one the other does. The
-   target stays 44 px; no other control's ring changes. */
+   dark theme it all but vanished (1.02:1, QA F-A11Y-1). Now the ring is the light theme's accent with a halo in the
+   light ground on both sides of it, in both themes: the ring stands 5.4:1 against its halo, and the halo carries it over
+   a darker frame. The target stays 44 px; no other control's ring changes. */
 .control:focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--on-picture-accent);
   outline-offset: 2px;
-  box-shadow: 0 0 0 6px var(--bg);
+  box-shadow: 0 0 0 6px var(--on-picture-ground);
 }
 
 /* A phone cut whose subject sits in its bottom-right corner (L1's pebble) keeps the button in the other corner, so the
