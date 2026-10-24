@@ -89,6 +89,9 @@ describe("LivePebble", () => {
     }
   });
 
+  // Its own timeout: it plays two restarts for each of two gazes, about 800 s of engine time each at 30 fps (about
+  // 100,000 frames in all). That takes about 3.5 s on a quiet machine and about 7 s while a render shares the CPU,
+  // past bun's 5 s default. 30 s still stops a real hang.
   test("a restart moves the pebble by about a pixel at most", () => {
     for (const gaze of [null, { x: 0.5, y: -0.25 }]) {
       const p = new LivePebble("idle");
@@ -111,5 +114,5 @@ describe("LivePebble", () => {
       expect(worst.body).toBeLessThan(1);
       expect(worst.eye).toBeLessThan(1.5);
     }
-  });
+  }, 30_000);
 });
