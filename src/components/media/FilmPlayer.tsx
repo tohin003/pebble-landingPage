@@ -8,13 +8,16 @@
 //   HEVC first when the browser can play it, then H.264.
 // - Captions (not on by default), chapters and text descriptions are <track>s. A chapter seeks after loadedmetadata.
 // - Audio description (critic H4a): when film.descriptions.en.vtt exists and the browser can speak, a toggle reads
-//   each description cue aloud with speechSynthesis as the film reaches it.
+//   each description cue aloud with speechSynthesis as the film reaches it. It is extended description: when the
+//   voice is still reading as a chapter ends, the film waits on the chapter's last frame and plays on when the voice is
+//   done, unless the viewer has played, paused or sought meanwhile (src/lib/audioDescription.ts has the rules).
 // - Esc, the close button and a click on the backdrop close it; the film pauses and focus returns to what opened it.
 // - With no film rendered yet, nothing listens: html[data-film] stays unset, so chips and triggers stay hidden.
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/shell/icons";
 import { filmDialog } from "@/content/copy";
+import { browserClock, browserVoice, describeFilm, trackOf, videoOf, type Describer } from "@/lib/audioDescription";
 import type { FilmMedia, FilmQuality, VideoSource } from "@/lib/media";
 import { FILM_OPEN, type FilmOpenDetail } from "./film-events";
 import styles from "./FilmPlayer.module.css";
@@ -40,6 +43,7 @@ export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: read
   const video = useRef<HTMLVideoElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   const pendingSeek = useRef<number | null>(null);
+  const describer = useRef<Describer | null>(null);
   const [failed, setFailed] = useState(false);
   const [canSpeak, setCanSpeak] = useState(false);
   const [describe, setDescribe] = useState(false);
@@ -48,26 +52,20 @@ export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: read
     setCanSpeak(film.descriptions.available && typeof window !== "undefined" && "speechSynthesis" in window);
   }, [film.descriptions.available]);
 
-  // Read the description cues aloud while the toggle is on.
+  // Read the description cues aloud while the toggle is on, waiting for the voice at each chapter's end.
   useEffect(() => {
     const v = video.current;
     if (!v || !describe) return;
     const track = [...v.textTracks].find((t) => t.kind === "descriptions");
     if (!track) return;
     track.mode = "hidden";
-    const onCue = () => {
-      const cue = track.activeCues?.[0] as VTTCue | undefined;
-      if (!cue?.text) return;
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(cue.text);
-      utterance.lang = "en-GB";
-      window.speechSynthesis.speak(utterance);
-    };
-    track.addEventListener("cuechange", onCue);
+    const running = describeFilm({ video: videoOf(v), track: trackOf(track), voice: browserVoice("en-GB"), clock: browserClock });
+    describer.current = running;
     return () => {
-      track.removeEventListener("cuechange", onCue);
+      describer.current = null;
+      // turned off in the open theatre: a film waiting for the voice plays on (never a detached or closed one)
+      running.stop({ resume: v.isConnected && dialog.current?.open === true });
       track.mode = "disabled";
-      window.speechSynthesis.cancel();
     };
   }, [describe]);
 
@@ -120,8 +118,8 @@ export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: read
       className={styles.theatre}
       aria-label={filmDialog.label}
       onClose={() => {
+        describer.current?.halt(); // the voice stops, and the film never plays on by itself after a close
         video.current?.pause();
-        if (canSpeak) window.speechSynthesis.cancel();
         opener.current?.focus({ preventScroll: true });
       }}
       onClick={(event) => {
