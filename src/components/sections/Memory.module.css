@@ -136,8 +136,8 @@
 .rules {
   grid-column: 6 / -1;
   min-width: 0;
-  /* the card's stage starts under its one-line label: start the rules on the stage's top edge */
-  padding-top: 32px;
+  /* the card's flat panel holds its label now (critic C15): the rules' first line sits level with the label's */
+  padding-top: 20px;
 }
 
 .points {
