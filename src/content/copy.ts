@@ -583,7 +583,10 @@ export const explainers = {
     ],
   },
 
-  /** PermissionDial: the three modes, word for word from Pebble 1.0.4's src/permissionModes.ts. [C-EXP-4..7] */
+  /**
+   * PermissionDial: the three modes, word for word from Pebble 1.2.0's src/permissionModes.ts (read at the tag v1.2.0;
+   * 1.2.0 added Auto's first clause, OVERRIDES §23; the other texts are unchanged since 1.0.4). [C-EXP-4..7]
+   */
   permissionDial: {
     legend: "How Pebble acts", // AdvancedSettings.vue:1365 ("HOW PEBBLE ACTS"), in sentence case
     defaultTag: "The default", // [C-EXP-8]
@@ -602,21 +605,21 @@ export const explainers = {
         runsWithoutAsking:
           "Edits to project files, test runs, and a short list of read-only commands (ls, cat, rg, head, tail, wc and a few more) in this project.",
         alwaysAsks:
-          "Other terminal commands (including grep and builds), app launches, Git changes, connector calls, installs, and network or dangerous commands.",
+          "Changes to test files your request didn't ask for, other terminal commands (including grep and builds), app launches, Git changes, connector calls, installs, and network or dangerous commands.", // permissionModes.ts@v1.2.0:31
       },
       {
         id: "full",
         name: "Full access",
         runsWithoutAsking: "Everything Auto runs, plus app launches and Git changes that neither delete work nor publish it.",
         alwaysAsks:
-          "Other terminal commands (including grep and builds), connector calls, installs, presses in a Chrome tab, network or dangerous commands, and Git changes that delete work or publish it.", // permissionModes.ts@v1.0.4:36
+          "Other terminal commands (including grep and builds), connector calls, installs, presses in a Chrome tab, network or dangerous commands, and Git changes that delete work or publish it.", // permissionModes.ts@v1.2.0:37
       },
     ],
     everyMode:
-      "In every mode, reading project files, searching and reading the web, and creating views run without asking while their switches below are on. Connector calls, installs and every press in a Chrome tab you granted always ask; looking, typing and choosing in that tab run under your grant. Protected credentials stay blocked.", // permissionModes.ts@v1.0.4:42
+      "In every mode, reading project files, searching and reading the web, and creating views run without asking while their switches below are on. Connector calls, installs and every press in a Chrome tab you granted always ask; looking, typing and choosing in that tab run under your grant. Protected credentials stay blocked.", // permissionModes.ts@v1.2.0:43
     switchesNote: "Below the modes, in Settings › Permissions, a switch for each kind of tool turns it off entirely.", // [C-EXP-9]
     /**
-     * Under the quoted sentence (Pace.tsx). 1.0.4's words above no longer name app windows, but each mode still lists
+     * Under the quoted sentence (Pace.tsx). The words above (1.0.4 on) no longer name app windows, but each mode still lists
      * app launches; this says what a launch is, so it never reads as app control (OVERRIDES §12). [C-EXP-14]
      */
     appsNote: "Pebble can't see or operate other apps yet: an app launch only opens one.",
