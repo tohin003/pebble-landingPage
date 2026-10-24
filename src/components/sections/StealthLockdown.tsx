@@ -76,7 +76,7 @@ export function StealthLockdown() {
       </SectionHead>
 
       <div className="wrap grid-12 sec-body">
-        <div className={`main ${styles.body}`}>
+        <div className="main">
           <dl className={styles.halves}>
             {stealth.halves.map((half) => (
               <div key={half.term} className={styles.half}>
