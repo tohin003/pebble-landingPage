@@ -60,10 +60,13 @@ export CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome
 export HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_ANALYTICS=1 HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
 
 # Type checks one at a time (scripts/serial.sh): two `tsc` runs side by side push this 8 GB Mac into swap, and each new
-# swap file takes 1 GiB of the shared disk. Every other npm command passes straight through.
+# swap file takes 1 GiB of the shared disk. While .work/HOLD exists, every other `npm run` script runs at background
+# priority (taskpolicy -b), so tests can't disturb the release session's timing-sensitive proof. The rest passes through.
 npm() {
   if [ "${1:-}" = "run" ] && [ "${2:-}" = "typecheck" ] && [ -z "${PEBBLE_SERIAL_HELD:-}" ]; then
     "$REPO/scripts/serial.sh" typecheck npm "$@"
+  elif [ "${1:-}" = "run" ] && [ -f "$REPO/.work/HOLD" ] && [ -x /usr/sbin/taskpolicy ]; then
+    /usr/sbin/taskpolicy -b npm "$@"
   else
     command npm "$@"
   fi

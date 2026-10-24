@@ -4,7 +4,8 @@
 # On this 8 GB Mac, two `tsc` runs side by side push memory into swap, and each new 1 GiB swap file takes 1 GiB of the
 # shared disk. This lock ($REPO/.work/serial.lock) is separate from heavy.sh's, so a type check can still run beside a
 # render. scripts/env.sh routes `npm run typecheck` through it. After SERIAL_WAIT_SECS (default 900 s) of waiting, the
-# command runs anyway, without the lock. Exit status: the command's own.
+# command runs anyway, without the lock. While .work/HOLD exists (another session's load-sensitive tests), the command
+# runs at background priority (taskpolicy -b: efficiency cores, throttled disk). Exit status: the command's own.
 set -u
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
@@ -49,4 +50,8 @@ release() { [ "$held" = 1 ] && [ "$(cat "$LOCK/pid" 2>/dev/null)" = "$$" ] && rm
 trap release EXIT
 trap 'exit 130' INT TERM
 
-PEBBLE_SERIAL_HELD=1 "$@"
+if [ -f "$REPO/.work/HOLD" ] && [ -x /usr/sbin/taskpolicy ]; then
+  PEBBLE_SERIAL_HELD=1 /usr/sbin/taskpolicy -b "$@"
+else
+  PEBBLE_SERIAL_HELD=1 "$@"
+fi
