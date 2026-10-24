@@ -30,7 +30,7 @@ export const faq: readonly FaqItem[] = [
     id: "faq-macs",
     question: "Which Macs does it run on?",
     answer: [
-      "A Mac with Apple silicon (M1 or later), on macOS 12 or later. Pebble 1.0 was built and tested on macOS 27.", // [C-FAQ-3]
+      "A Mac with Apple silicon (M1 or later), on macOS 12 or later.", // [C-FAQ-3] (OVERRIDES §28: no published README since v1.0.1 says "macOS 27")
       "There is no version for Intel Macs, Windows or Linux, and the installer won't run under Rosetta.", // [C-FAQ-4]
     ],
   },
@@ -38,7 +38,7 @@ export const faq: readonly FaqItem[] = [
     id: "faq-notarized",
     question: "Why isn't it notarized?",
     answer: [
-      "Pebble 1.0 is signed with the project's own stable identity, not an Apple Developer ID, and it is not notarized by Apple. Signed, notarized installers are on the list of work still to do.", // [C-FAQ-5]
+      "Pebble is signed with the project's own stable identity, not an Apple Developer ID, and it is not notarized by Apple. Signed, notarized installers are on the list of work still to do.", // [C-FAQ-5]
       "So the first time you open a copy downloaded in a browser, macOS may say it cannot verify the app. Allow Pebble alone: Control-click `Pebble.app`, choose Open, then Open again, or click Open Anyway in System Settings › Privacy & Security. Never turn Gatekeeper off.", // [C-FAQ-6]
       "The one-line installer downloads with curl, which doesn't quarantine files, so macOS opens Pebble without that warning. Before it installs anything, it checks the download's SHA-256 and the app's signature.", // [C-FAQ-7]
     ],
@@ -99,7 +99,7 @@ export const faq: readonly FaqItem[] = [
     question: "How do I update Pebble?",
     answer: [
       "Quit Pebble and run the installer again. It keeps the previous app in `~/PebbleBackups` and leaves your data where it is. When an update changes how Pebble stores its data, Pebble backs up its database first.", // [C-FAQ-17]
-      "Pebble 1.0 doesn't check for updates by itself. To hear about new releases, watch the repository on GitHub: Watch › Custom › Releases.", // [C-FAQ-18]
+      "Pebble doesn't check for updates by itself. To hear about new releases, watch the repository on GitHub: Watch › Custom › Releases.", // [C-FAQ-18]
     ],
     links: [{ label: "Releases on GitHub", href: links.releases, external: true }],
   },

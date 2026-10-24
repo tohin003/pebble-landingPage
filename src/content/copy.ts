@@ -169,7 +169,7 @@ export const honestLimits = {
     },
     {
       title: "No automatic updates",
-      body: "Pebble 1.0 doesn't check for updates by itself. To update, run the installer again.", // [C-LIM-6]
+      body: "Pebble doesn't check for updates by itself. To update, run the installer again.", // [C-LIM-6] (README.md@v1.5.0:503, :548)
     },
     {
       title: "Models make mistakes",
@@ -185,7 +185,7 @@ export const honestLimits = {
     },
     {
       title: "Pebble for Chrome needs Developer mode",
-      body: "For 1.0, Pebble for Chrome isn't in the Chrome Web Store: you load it in Chrome's Developer mode. It has been tested against a simulated Chrome, not yet in a real one. Pebble's own built-in browser is not available yet.", // [C-LIM-10] (OVERRIDES §12)
+      body: "Pebble for Chrome isn't in the Chrome Web Store: you load it in Chrome's Developer mode. It has been tested against a simulated Chrome, not yet end to end in a real one. Pebble's own built-in browser is not available yet.", // [C-LIM-10] (OVERRIDES §12, §28)
     },
     {
       title: "Other apps",
@@ -685,7 +685,7 @@ export const memory = {
   lead:
     "Pebble keeps six kinds of memory on your Mac, each with its own switch in Settings › Memory, where you can see, search and forget every one.", // [C-MEM-1] [C-MEM-2] [C-PRIV-1]
   /** The caption under the cropped Settings › Memory still (the lane shots' Pebble 1.0.4 retake of public/ui/v1). [C-F2B-1] */
-  settingsCaption: "Settings › Memory in Pebble 1.0.4.",
+  settingsCaption: "Settings › Memory, captured from Pebble 1.0.4.",
   /** Under MemoryForgetDemo, after "Interactive example." (checked word for word against App.vue:2055-2084). [C-F2B-2] */
   demoWords: "The card's words are the ones Pebble shows.",
   kinds: [
@@ -776,7 +776,7 @@ export const more = {
       body:
         "Pebble can look at and act in one Chrome tab you share and then grant, on that tab's site, for up to 30 minutes. It can't open, close, list or switch tabs, or leave the site. Every press asks first, and pages that look like sign-in, password or payment pages are handed back to you unread.", // [C-MORE-6] (OVERRIDES §12)
       limit:
-        "For 1.0 you load it in Chrome's Developer mode; it isn't in the Chrome Web Store. It has been tested against a simulated Chrome, not yet in a real one.", // [C-LIM-10] (OVERRIDES §12)
+        "You load it in Chrome's Developer mode; it isn't in the Chrome Web Store. It has been tested against a simulated Chrome, not yet end to end in a real one.", // [C-LIM-10] (OVERRIDES §12, §28)
     },
     {
       id: "stop",
@@ -824,7 +824,7 @@ export const tour = {
     },
     {
       title: "Pebble for Chrome",
-      body: "Share a Chrome tab and Pebble can look at it and act in it, one site at a time, with your grant. For 1.0 it loads in Chrome's Developer mode.", // [C-MORE-6] [C-LIM-10]
+      body: "Share a Chrome tab and Pebble can look at it and act in it, one site at a time, with your grant. It loads in Chrome's Developer mode.", // [C-MORE-6] [C-LIM-10]
     },
     {
       title: "Local and cloud, with a handoff",
@@ -994,7 +994,7 @@ export const stealth = {
    */
   renderNote: "This pebble uses Pebble's own Veil code: a render, not a screen recording.",
   /** The capture's caption: the release it was captured from (a copy of the v1.1.0 tag, HANDOFF-1.1-captures). [C-STL-11] */
-  captureCaption: "Settings › Privacy and focus in Pebble 1.1.0.",
+  captureCaption: "Settings › Privacy and focus, captured from Pebble 1.1.0.",
   /**
    * Text alternatives of the captures (public/ui/v1/settings-privacy-card-{off,on}-*). Short on purpose: the section's
    * own text quotes every line the picture shows, so a screen reader doesn't hear them twice. [C-STL-12]
@@ -1016,7 +1016,7 @@ export const install = {
   requirements: {
     title: "What you need",
     mac: { label: "Mac", value: "Apple silicon", note: "M1 or later" }, // [C-INST-2]
-    system: { label: "macOS", value: "macOS 12 or later", note: "Built and tested on macOS 27" }, // [C-INST-2] (OVERRIDES §8 H14)
+    system: { label: "macOS", value: "macOS 12 or later", note: "" }, // [C-INST-2] (OVERRIDES §28: "macOS 27" is in no published README since v1.0.1)
     download: { label: "Download", note: (version: string) => `Version ${version}` }, // [C-REL-1] [C-REL-2]
     price: { label: "Price", value: "Free", note: "A cloud model's costs depend on your provider." }, // [C-INST-3]
   },
@@ -1070,7 +1070,7 @@ export const install = {
   update: {
     title: "Update",
     body:
-      "Quit Pebble and run the installer again. It keeps the previous app in `~/PebbleBackups` and leaves your data where it is. Pebble 1.0 doesn't check for updates by itself, so watch the releases on GitHub.", // [C-INST-14]
+      "Quit Pebble and run the installer again. It keeps the previous app in `~/PebbleBackups` and leaves your data where it is. Pebble doesn't check for updates by itself, so watch the releases on GitHub.", // [C-INST-14]
     link: { label: "Releases on GitHub", href: links.releases, external: true } satisfies Link,
   },
   /** After the short honest line next to the downloads: a link to the full list, the next section. */
@@ -1157,7 +1157,7 @@ export const footer = {
     allSameOrigin: "Every file came from this site.",
   },
   trademarks: [
-    "ChatGPT and OpenAI are trademarks of OpenAI. Claude and Anthropic are trademarks of Anthropic. Mac, macOS and Apple silicon are trademarks of Apple Inc. Chrome is a trademark of Google LLC. Bing is a trademark of Microsoft.",
+    "ChatGPT and OpenAI are trademarks of OpenAI. Claude and Anthropic are trademarks of Anthropic. Mac and macOS are trademarks of Apple Inc. Chrome is a trademark of Google LLC. Bing is a trademark of Microsoft.",
     "Pebble is an independent open-source project, not affiliated with any of them, or with Pebble smartwatches. Other names are trademarks of their owners.",
   ],
   licence: "Site code: Apache-2.0. Films and images © 2026 Tohin Majumder.",
@@ -1197,7 +1197,7 @@ export const media = {
       "A “Lisbon trip budget” dashboard built by Pebble: money spent and left, bookings confirmed, spending by category and what is still to book.",
     // Alt texts for the other stills in public/ui/v1 (lane D), written from the captures themselves.
     mainApproval:
-      "Pebble's main window on the invoice-kit project, with two edit cards waiting for approval, each with its diff.",
+      "Pebble's main window on the invoice-kit project, with two edit cards waiting for approval. The card for invoice_kit/dates.py shows its diff. The card for tests/test_dates.py says: “Pebble wants to change a test file, and your request didn't ask for test changes. Tests are your evidence that the code works, so this change waits for you.”",
     heldUnverified:
       "A reply in Pebble held by AgentGuard: “Blocked” and “Pebble's change isn't verified yet.”, because two files changed and the tests that cover them weren't run, with the buttons Run the tests, Ask Pebble to finish and Accept as unverified.",
     mainChallenge:

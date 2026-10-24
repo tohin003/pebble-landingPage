@@ -12,7 +12,7 @@ export const seo = {
   siteName: "Pebble",
   /** The home page's <title>. The descriptor keeps it apart from the smartwatch brand (U1 §1.5). */
   title: "Pebble — a small AI companion for your Mac",
-  titleTemplate: "%s · Pebble",
+  titleTemplate: "%s – Pebble", // an en dash, never a middle-dot meta string (PHILOSOPHY; OVERRIDES §28 CL-13)
   description:
     "Pebble is a free, open-source AI companion for Macs with Apple silicon. Chat with the model you choose; you decide what it may change.", // [C-SEO-1]
   openGraph: {
@@ -75,7 +75,7 @@ export function softwareApplicationJsonLd(input: JsonLdInput = defaultJsonLdInpu
     description:
       "A free, open-source AI companion for Macs with Apple silicon. Chat with the model you choose; you decide what it may change.", // [C-SEO-1]
     applicationCategory: "UtilitiesApplication",
-    operatingSystem: "macOS 12 or later on Apple silicon (built and tested on macOS 27)", // [C-SEO-2] (OVERRIDES §8 H14)
+    operatingSystem: "macOS 12 or later on Apple silicon", // [C-SEO-2] (OVERRIDES §28)
     processorRequirements: "Apple silicon (M1 or later)", // [C-SEO-2]
     softwareVersion: input.version, // [C-REL-1]
     datePublished: input.datePublished, // [C-REL-3]
@@ -106,7 +106,7 @@ export function jsonLdString(data: Record<string, unknown>): string {
 export function llmsTxtFor(benchmarksPublic: boolean): string {
   return `# Pebble
 
-> Pebble is a free, open-source (Apache-2.0) AI companion for Macs with Apple silicon (M1 or later), on macOS 12 or later (built and tested on macOS 27). A small animated pebble stays on your screen; click it to chat, or open the full window to work on a project with the model you choose, under your review.
+> Pebble is a free, open-source (Apache-2.0) AI companion for Macs with Apple silicon (M1 or later), on macOS 12 or later. A small animated pebble stays on your screen; click it to chat, or open the full window to work on a project with the model you choose, under your review.
 
 Pebble ${releaseFacts.version} came out on ${formatLongDate(releaseFacts.publishedOn)}. Pebble is made by Tohin Majumder and maintained by one person.
 
@@ -129,7 +129,7 @@ Pebble ${releaseFacts.version} came out on ${formatLongDate(releaseFacts.publish
 - No independent security audit has been done yet.
 - Apple silicon only: there is no Intel, Windows or Linux version. No automatic updates.
 - Models make mistakes.
-- Pebble for Chrome needs Chrome's Developer mode. It works in one Chrome tab you share and then grant, on that tab's site, for up to 30 minutes; it can't open, close, list or switch tabs, or leave the site, and every press asks first. It has been tested against a simulated Chrome, not yet in a real one.
+- Pebble for Chrome needs Chrome's Developer mode. It works in one Chrome tab you share and then grant, on that tab's site, for up to 30 minutes; it can't open, close, list or switch tabs, or leave the site, and every press asks first. It has been tested against a simulated Chrome, not yet end to end in a real one.
 - Pebble can't see or operate other apps yet. It can only open one, which in the default mode waits for your approval.
 - Scheduled tasks run only while Pebble is open. Their results show in Pebble; macOS notifications are off until you turn them on.
 - Commands run in macOS's sandbox, which limits them but is not a promise against every attack. Prompt injection from web pages or files is limited, not impossible.
