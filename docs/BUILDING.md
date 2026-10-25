@@ -452,8 +452,15 @@ D="<a folder outside the repository>"
 tools/encode/encode.sh social video/out/masters/film.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1920x1080.mp4"
 tools/encode/encode.sh social video/out/masters/film-square.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1080x1080.mp4"
 tools/encode/encode.sh social video/out/masters/film-vertical.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1080x1920.mp4"
-node tools/captions/build.mjs --out-dir public/media/v2 --srt "$D/Pebble-launch-film.srt"
+tools/encode/encode.sh social video/out/masters/film.mp4 .work/audio/render/soundtrack_social_narrated.wav "$D/Pebble-launch-film-narrated-1920x1080.mp4"
+node tools/captions/build.mjs --out-dir public/media/v2 --srt "$D/Pebble-launch-film.srt" --narrated-srt "$D/Pebble-launch-film-narrated.srt"
 ```
+
+**The narrated twin** (OVERRIDES §38) is the 16:9 film's picture with the narrated social soundtrack (section 3): one
+synthetic narrator speaks four lines over the question cards and the "Free and open source" card. The master stays
+wordless. Its SRT is the film's captions with each spoken line marked "Narrator: …" (section 6). Its voice is disclosed
+in its description, word for word: "Narration: an AI voice by Sarvam AI, Bulbul." (`docs/film-narration.json`
+`disclosure`), never beside a line that says the film has no voiceover, and the voice is never shared as audio alone.
 
 **The 30 s cut for X** (`docs/film-cuts/x30.json`; `docs/FILM_SPEC.md` §23). It is made only of the film's own frames:
 four source ranges, each starting on the same beat of the bar in the film and in the cut, 864 frames (28.8 s). There is
@@ -476,23 +483,26 @@ film's timing changes, pick the ranges again by the same rule, then re-run the c
 
 `docs/film-captions.json` is the single source of the film's captions: sound descriptions and the on-screen lines,
 word for word, with frame numbers. `tools/captions/build.mjs` turns it into `film.en.vtt` for the site and, with
-`--srt`, the `.srt` for social posts; it turns `src/content/chapters.ts` into `film.chapters.vtt` and
-`film.descriptions.en.vtt`, the text the film player's audio-description toggle reads. It checks every cue first (time
-order, no overlaps, one or two lines of at most 42 characters, at least 1.2 s on screen, at most 3.5 words a second,
-no exclamation mark) and writes nothing if one fails:
+`--srt`, the `.srt` for social posts; it turns `src/content/chapters.ts` into `film.chapters.vtt`, and the JSON's
+time-coded descriptions into `film.descriptions.en.vtt`, the text the film player's audio-description toggle reads.
+With `--narrated-srt`, it also writes the narrated twin's SRT from `docs/film-narration.json` (the voice lane's cues):
+the caption on screen when each line starts carries it as "Narrator: <the spoken text>", in place of the on-screen line
+with the same words. It checks every cue first (time order, no overlaps, one or two lines of at most 42 characters, at
+least 1.2 s on screen, at most 3.5 words a second, no exclamation mark) and writes nothing if one fails:
 
 ```bash
-node tools/captions/build.mjs --check                                   # validate only
+node tools/captions/build.mjs --check                                   # validate only (the narrated twin's too)
 node tools/captions/build.mjs --out-dir public/media/v2 --srt <file.srt> # the three VTTs in public/media/v2/, and the SRT
+node tools/captions/build.mjs --out-dir public/media/v2 --srt <file.srt> --narrated-srt <narrated.srt>   # ... and the twin's
 node tools/captions/build.mjs --check --cut docs/film-cuts/x30.json     # a cut's captions, on the cut's timeline
 ```
 
 The three VTTs land in `public/media/v2/`, beside the film. Without `--out-dir` they go to `public/media/v1/`, where the
 page no longer reads them, and `verify.mjs` reports them as strays and the v2 tracks as stale. A warning says when a
-description needs more speech than its chapter lasts
-(7 of 9 do): the film player then holds the film on the chapter's last frame until the voice is done. Run it again
-whenever the JSON or `chapters.ts` changes: `verify.mjs` fails a stale track. `src/content/filmCaptions.ts` mirrors the
-JSON for the `/film` transcript; `npm run test:site` fails if the two drift apart.
+description needs more speech than its cue lasts (16 of the trailer's 21 do): the film player then holds the film on
+the cue's last frame until the voice is done. Run it again whenever the JSON or `chapters.ts` changes: `verify.mjs`
+fails a stale track. `src/content/filmCaptions.ts` mirrors the JSON for the `/film` transcript; `npm run test:site`
+fails if the two drift apart.
 
 ## 7. Quality gates
 

@@ -1436,7 +1436,9 @@ holds and the tail. `bun video/scripts/export-cues.ts` writes `tools/audio/cues.
 and at most 3 words a second (the fastest 3.00), the sounds in square brackets; 21 time-coded descriptions, d01–d21.
 The chapters (`src/content/chapters.ts`, the same nine ids) start at 0 (desktop), 33.6 (views), 36 (model), 38.4
 (memory), 40.8 (pace), 43.2 (project), 48 (tested), 60 (open-source) and 67.2 s (get). CLAIMS adds C-CH-18 ("Your
-tests stay yours") and C-CH-19 ("Not notarized"); the trailer no longer shows C-CH-3, C-CH-4 or C-CH-8.
+tests stay yours") and C-CH-19 ("Not notarized"); the trailer no longer shows C-CH-3, C-CH-4 or C-CH-8. The narrated
+twin's SRT (`build.mjs --narrated-srt`, OVERRIDES §38) is these 25 cues with the four spoken lines of
+`docs/film-narration.json` marked "Narrator: …" in c02, c04, c05 and c19 (the fastest still 3.00 words a second).
 
 ### 24.10 The 30 s cut
 
