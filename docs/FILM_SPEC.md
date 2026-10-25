@@ -8,6 +8,13 @@ Precedence: `OVERRIDES.md` > this file > `MASTER_PLAN.md` §5 > the research rep
 MASTER_PLAN §5.1, §19 below says why. The look is `docs/PHILOSOPHY.md`'s (lane v2-film, 2026-10-23): the film uses
 the page's identity, so any frame of it could sit on the page without restyling (§4 says how).
 
+**The energetic recut (25 Oct 2026; the design is the director's ENERGY_SPEC, with the lead's decisions in OVERRIDES
+§35).** The film keeps its story, its words, its grid, its chapters and its pinned UI events; it changes how it moves
+and sounds: a real click on f18 opens the quick chat and the question types itself (§6 S1, §7.1), ten lines slam onto
+their beats (§3), the pebble hangs mid-leap into the drop (§9.2), Verified is pointed with the app's own focus (§6
+S5e), and a drum-and-sub drive with UI sounds and mix automation sits under the kept bed (§11). The sections below
+record it where it lives.
+
 Contents: 1 Grid · 2 Compositions and safe areas · 3 Type · 4 Worlds and layouts · 5 Bar map · 6 Shot list ·
 7 Source-time maps · 8 On-screen text · 9 The pebble · 10 Cursor and clicks · 11 Sound effects · 12 Transitions ·
 13 Captions and chapters · 14 Review frames · 15 Teaser T0 · 16 Loops · 17 Capture requests · 18 Copy deltas for
@@ -27,6 +34,7 @@ issues · 22 The vertical (9:16) · 23 The 30 s cut `x30`.
 | Bar n (1-based) downbeat | frame `72·(n−1)` |
 | Reveal | bar 8, **frame 504** (16.8 s, 21.9 % in) |
 | Riser | bars 6–7; its end sits on frame 504. The breath (an empty beat) is frames 486–503 |
+| Breaths and the hold (the energetic recut) | four 9-frame gaps that end the frame before a bar line, f135, 1143, 1575 and 2151, each opening onto a hit (f144, 1152, 1584, 2160), plus the composed breath f486–503 before the drop; the hits after them are ≥ 4 bars apart. The hold f891–989 (the drive muted, the bed behind a low-pass) is released by the f990 click to the f1008 bar line. The tail fades f2214–2249; f2250–2303 is digital silence (§11) |
 | Final chord | D(add9) at **frame 2160** (bar 31), rings 144 frames to the end |
 | Motif statements | bars 1, 8, 23, 29 (frames 0, 504, 1584, 2016) |
 | Sections | hook 1–2, tension 3–5, build 6–7, reveal 8, proof 9–22, payoff 23–25, breakdown 26–28, end card 29–30, final 31–32 |
@@ -109,6 +117,16 @@ above 440).
 - **(C) mask line-rise:** each line rises `translateY(105%) → 0` inside its own clip box over 15 frames, `EASE.enter`,
   lines 4 frames apart.
 - **(W) wordmark unroll:** a clip that opens from the pebble outward (right to left), 15 frames, `EASE.enter`.
+- **(S) slam** (the energetic recut, `motion/spec.ts` slamIn): the line LANDS on its `in` frame, a beat or an eighth.
+  Over the 3 frames before it, p = ramp(frame, in − 3, 3, `EASE.exit`): scale 1 + (k − 1)(1 − p), blur 6(1 − p) px,
+  opacity min(1, 3p), so it is invisible on in − 3, faint and blurred on in − 2 (opacity 0.19, k 1.10 → 1.094), nearly
+  whole on in − 1 (0.90, 1.070) and at rest (no transform, no filter) from `in`. It scales about the line's left middle
+  (left-aligned) or its centre (centred); T7 slams word by word, each word about its own left middle. k (the
+  overscale): 1.10 in 16:9; 1.06 on the narrow aspects' lists and the centred end-card line; 1.04 on their band lines.
+  A line that lands on a cut appears already landed: its pre-roll falls in the previous shot, which never draws it
+  (T1 f144, T14 f1584, T15 f1800). At most ten lines slam (validateTimeline): T1, T2, T3, T7, T10, T14, T15, T16, T17
+  and T19. The worst case, T17 in 16:9, grows from x 310 to 1737 on its first visible frame, inside the safe area's
+  1824. Every other line keeps its calm entrance.
 - **Exit:** blur 0 → 8 px plus opacity → 0 over 6 frames (`T2.lineOut` 0.2 s), unless a shot's move takes the line.
 
 ## 4. Worlds, layouts and finish
@@ -154,29 +172,29 @@ m 3.4, 503 px); type worlds and the window world 210 (16:9) / 170 (square and ve
 
 | Bar | Frames | Music | Shot | What happens | Chapter |
 |---|---|---|---|---|---|
-| 1 | 0–71 | hook, motif | S1a | the pebble on its desktop; the pointer arrives; click (f36); the quick chat opens | desktop |
-| 2 | 72–143 | hook | S1b | the question is sent; Pebble thinks; the camera passes into the pebble (f126–143) | desktop |
-| 3 | 144–215 | tension | S2 | "What did it change?" | desktop |
-| 4 | 216–287 | tension | S2 | "Can I undo it?" | desktop |
-| 5 | 288–359 | tension | S2 | "Did it run the tests?" | desktop |
+| 1 | 0–71 | hook, motif | S1a | the pebble on its desktop; the pointer drops in; click (f18): the quick chat opens; the camera makes room (f19–30); the question types itself; Enter (f54) | desktop |
+| 2 | 72–143 | hook | S1b | punch-in cut (f72); Pebble thinks, then its answer streams (f102); the breath and the dive into the pebble (f135–143) | desktop |
+| 3 | 144–215 | tension | S2 | "What did it change?" (slam, landed on the seam) | desktop |
+| 4 | 216–287 | tension | S2 | "Can I undo it?" (slam) | desktop |
+| 5 | 288–359 | tension | S2 | "Did it run the tests?" (slam) | desktop |
 | 6 | 360–431 | build, riser | S3 | "An agent shouldn't / grade its own work" | desktop |
-| 7 | 432–503 | build, riser, breath 486–503 | S3 | the pebble rises into the sage field, looks up, anticipates, leaps | desktop |
+| 7 | 432–503 | build, riser, breath 486–503 | S3 | the pebble rises into the sage field, looks up, anticipates, leaps (f486) and hangs at the apex | desktop |
 | 8 | 504–575 | **reveal**, motif | S4 | lands as the full stop of `pebble`; paper floods out; "A small companion for your Mac" | desktop |
 | 9 | 576–647 | proof | S4 | the lockup holds; the wordmark rolls back into the pebble; it leaps (f634) | desktop |
 | 10 | 648–719 | proof | S5a | mid-leap cut into the window world; "Reading invoice_kit/dates.py"; "It reads your project" | project |
 | 11 | 720–791 | proof | S5b | the approval card arrives; "Review," | project |
 | 12 | 792–863 | proof | S5b | Apply edit (f810) → Done, Undo this edit; "apply," "undo" | project |
-| 13 | 864–935 | proof | S5c | both edits in; AgentGuard holds the task (f931) | tested |
+| 13 | 864–935 | proof | S5c | both edits in; AgentGuard holds the task (f890): the music muffles (the hold, f891) | tested |
 | 14 | 936–1007 | proof | S5c | "AgentGuard checks the evidence"; Run the tests (f990) | tested |
 | 15 | 1008–1079 | proof | S5d | the "Run isolated tests" card; "Tests run in an isolated copy" | tested |
-| 16 | 1080–1151 | proof | S5d | Run tests (f1080); the tests run | tested |
-| 17 | 1152–1223 | proof | S5e | **"Verified · pytest 42 passed on current files"** (f1152); happy; "Evidence before done" | tested |
+| 16 | 1080–1151 | proof | S5d | Run tests (f1080); the tests run; the breath (f1143–1151): the focus on "Requesting isolated tests", "· 11 s" (f1146) | tested |
+| 17 | 1152–1223 | proof | S5e | **"Verified · pytest 42 passed on current files"** (f1152): the focus jumps to it, held to f1187; "Evidence before done" (slam); happy (f1204) | tested |
 | 18 | 1224–1295 | proof | S6a | Settings (f1224) › Models; "Your model, your choice" / "Even one on your Mac" | model |
 | 19 | 1296–1367 | proof | S6a/S6b | Permissions tab (f1332) | model → pace |
 | 20 | 1368–1439 | proof | S6b | Auto in project (f1404); "You set what it may do" | pace |
 | 21 | 1440–1511 | proof | S6c | Memory tab (f1440): the six layers; "Memory you can read and forget" | memory |
 | 22 | 1512–1583 | proof | S6c | forget a record (f1530) | memory |
-| 23 | 1584–1655 | **payoff**, motif | S7a | the Lisbon trip budget dashboard; "Views, not just text" | views |
+| 23 | 1584–1655 | **payoff**, motif, the second lift | S7a | the Lisbon trip budget dashboard; "Views, not just text" (slam, landed on the cut) | views |
 | 24 | 1656–1727 | payoff | S7b | the chart becomes the world | views |
 | 25 | 1728–1799 | payoff | S7c | the datetime quiz; the camera passes into its chosen answer | views |
 | 26 | 1800–1871 | breakdown | S8 | "Free and open source" / "Apache-2.0" | open-source |
@@ -184,8 +202,8 @@ m 3.4, 503 px); type worlds and the window world 210 (16:9) / 170 (square and ve
 | 28 | 1944–2015 | breakdown | S8 | "Your keys stay in your Keychain" (from f1941) | open-source |
 | 29 | 2016–2087 | end card, motif | S9 | the pebble lands; `pebble` lockup on paper | get |
 | 30 | 2088–2159 | end card | S9 | "A little help, right here." | get |
-| 31 | 2160–2231 | **final chord** | S9 | "Free for Macs with Apple silicon" + `github.com/tohin003/Pebble` | get |
-| 32 | 2232–2303 | final chord rings | S9 | hold; small print | get |
+| 31 | 2160–2231 | **final chord**, the final hit | S9 | "Free for Macs with Apple silicon" (slam) + `github.com/tohin003/Pebble` | get |
+| 32 | 2232–2303 | final chord rings; digital silence from f2250 | S9 | hold; small print | get |
 
 Beat shares: hook 6.3 %, tension 9.4 %, build + reveal 12.5 %, proof 40.6 % (AgentGuard climax at 50 %), payoff 9.4 %
 (starts at 68.8 %), claims 9.4 %, end card 12.5 %.
@@ -199,45 +217,72 @@ px (16:9 / square).
 
 ### S1 Hook (0–143) — desktop world, chapter `desktop`
 
-**S1a, the pebble on its desktop (0–71).**
-- **Frame 0 is the thumbnail:** the riverbed desktop, close; the pebble large (m 2.6, size 385), idle, eyes open
-  (first blink at f42). No cursor yet, no text.
-- **Camera C0 (f0–39):** m 2.6. Pebble centre at (1300, 640) / (640, 620).
-- **Cursor:** starts off-frame upper left, (−70, 210) / (−70, 160), at f2; minimum-jerk arc to the pebble, arriving
-  at f28; dwell f28–35; **click-down f36** (beat 2). The eyes follow the pointer (computed look cues, §9). Pose
-  `hover` when the pointer enters the pet window (≈ f22; keep it ≥ 14 frames before the tap, the engine's 0.45 s
-  expression morph), `tap` at f36.
-- **f36:** the real quick chat (`pet-live-error`, avatar hidden, §7.1) appears on the click frame, as the app opens it
-  (no expand animation exists). Source 0.60 s.
-- **Camera C0 → C1 (f40–63):** log-space zoom m 2.6 → 1.5, `EASE.camera`, starting 0.13 s after the click (secondary
-  move). C1: the 384×456 chat panel at x 940–1516, y 150–834 / x 252–828, y 150–834; pebble centre (1430, 746) /
-  (742, 746).
-- **Cursor** fades out f44–48 (it stops acting).
-- **f64–71:** hold on the open chat: "Small companion. / Room for big ideas." (the app's own greeting, 28.5 px).
-- Focal: f0–35 the pebble (1300, 640) / (640, 620); f36–71 the greeting (1100, 370) / (400, 370).
+The energetic recut (ENERGY_SPEC §5; OVERRIDES §35 decisions 1 and 2): proof first, legible muted by 2 s, and none of
+Pebble's own time cut. Measured on `pet-live-error-light-hidden` (§7.1): the panel opens at 0.60 s; the question types
+itself 1.30–2.93 s; Enter at 3.00 s shows "Sending" and "Task: queued"; "Thinking" from 3.30 s; the answer's first
+word, "Python", at 4.60 s; at 5.43 s the feed scrolls up 17 CSS px as the answer takes its second line; "Task:
+completed" at 6.60 s, after the dive, so it never shows. Panel rows (CSS px): the header 25–61, the greeting 126–204,
+the composer 263–317, the toolbar 328–351, the card's bottom 361; the pebble's centre 397.3, its foot 435.5; the
+question's text 113–143 at 3.00 s, 97–127 from 3.30 s, 80–110 from 5.43 s (its box from CSS y 71); the answer from
+y 162 (x 26–350.3).
 
-**S1b, the question is sent (72–143).**
-- **f72 (bar 2): hard cut, punch-in** to C2: m 2.2; the panel at x 660–1505 / 118–963, its CSS y 36 at frame y 72;
-  pebble centre (1379, 866) / (837, 866). The ellipsis skips the typing: the question is already sent. Source 3.35 s →
-  4.50 s (0.53×): the bubble "What does 'day is out of range for month' mean?", header "● Thinking", "Task: running".
-  Pose `thinking` (thought dots) at f72.
-- **f131–143: zoom through the pebble** (lane G-fix, REVIEW-G2 P1-2: was f126–138 plus five solid frames, which landed
-  the dive 5 frames before the bar and the whoosh 7 frames late). Aim at a body point clear of the eyes (G2a: (−36, −10)
-  viewBox units from the body's centre). Log-scale zoom ×1 → ×30, `EASE.exit` (accelerating), the aim point drifting to
-  the frame centre on `EASE.camera`. The body's `#536B54` fills the frame **on f143**; the world changes on f144 with
-  the whoosh's peak. Zoom blur only on f141–143 (≤ 20 px). C2's pebble sits at y 921 (both aspects; P1-8), so the chat's
-  top edge is 65 px under the frame's top.
-- Focal: f72–125 the bubble (1100, 230) / (560, 230); f126–143 the aim point → frame centre.
+**S1a, the click and the question (0–71).**
+- **Frame 0 is the thumbnail, unchanged** in every aspect: the riverbed desktop, the pebble large (m 2.6 at (1300, 640)
+  / (640, 620); 9:16 m 3.4 at (540, 1080)), idle, eyes open and already turned toward where the pointer will enter
+  (the f−15 look, gazeToward from the entry point: 16:9 and 1:1 {−0.25, −1}, 9:16 {−0.875, −0.5}).
+- **f1–13: the pointer drops in** on a minimum-jerk arc (12 frames) from (1150, −60) / (500, −60) / (−70, 700) frame
+  px at C0 (above the frame and a little left of the pebble; from the left inside the 9:16 band) and lands on the
+  pebble; it dwells 5 frames while the eyes follow it.
+- **f18 (beat 2): the click** (pose `tap`). The real quick chat opens on this frame at source 0.60 s, as the app opens
+  it (no expand animation exists), seen at C0, its upper part above the frame.
+- **f19–30: the camera makes room** for the panel: a 12-frame move on `EASE.ramp` (focus and log-zoom on one eased
+  progress) with motion blur (FrameBlur = min(8, the pebble's frame travel since the last frame / 16) px: 6.0 / 6.7 /
+  8 px on its fastest frames, f24–25). It replaces the 24-frame pull-back to m 1.5, which shrank the chat to 19 px.
+  The pointer fades f24–28; `look: null` on f30.
+- **C1 (f30, held to f71): the whole panel.** 16:9 m 2.35, pebble (1300, 938): header to toolbar ("pebble." at
+  y 64), UI text 30.6 px. Square m 2.62 at (900, 846): the text centred, the header above the frame, 34.1 px (the
+  narrow floor; the spec's m 2.6 read 33.8), the posted question's first line 60 px under the top from 3.30 s.
+  Vertical m 2.62 at (900, 1400): the whole panel inside the band, its header at y 425. The 16:9 and 9:16 framings
+  show the app's own tagline "A little help, right here.", which T18 rhymes with at the end.
+- **f29–53: the question types itself** in the real composer with the app's own caret: "What does 'day is out of range
+  for month' mean?", complete on f53. No typing ticks.
+- **f54 (beat 4): Enter.** The bubble posts at the top of the feed; the header reads "Sending" and the feed "Task:
+  queued"; pose `sending`. From here the recording plays at 1× to the dive. Muted check: on f60 (2.0 s) the posted
+  question is on screen and legible (SF0b). The header grows a line for f54–58 ("pebble." / "Sending" / "A little
+  help, right here.") before "Thinking" replaces it; in the square that line sits at the frame's top edge, the one
+  allowed slice (the app's own movement).
+
+**S1b, Pebble's answer and the dive (72–143).**
+- **f72 (bar 2): a punch-in cut** to C2, the conversation from the bubble to the pebble; pose `thinking` (queued at
+  3.15 s, "Thinking" in the header since 3.30 s). C2 is reframed from ENERGY_SPEC's numbers on a measurement: at 5.43 s
+  (f127) the feed scrolls up 17 CSS px, and the spec's 16:9 m 2.9 at y 935 and square m 2.95 at (949, 951) then put the
+  question's first line 16 px under the frame's top for f127–134, its box sliced. Here: 16:9 m 2.8 at (1300, 950)
+  (+19 %, 36.4 px; the line 110 px under the top at f72, 62 px from f127; the foot 23 px above the bottom); square
+  m 2.8 at (928, 950) (+7 %: the most the bubble-to-pebble height allows at 1,080 px; the answer's lines 83 px inside
+  both sides); vertical m 2.95 at (949, 1216) as specified (the band starts at y 250 and the line sits at 281; the
+  answer's lines 62 px inside both sides; the header in the phone UI's top zone).
+- **f102 (source 4.60 s): the answer starts** under the question ("Python…"); pose `writing`. By f135 the frame reads
+  "Python is being asked for a date that doesn't exist, like 31 February. If it's" under the question: what the person
+  asked and what Pebble answered, in one frame. (For f126–127 the app's stream shows "like **31" before its Markdown
+  renders: real UI.)
+- **f135–143: the breath and the dive** into the pebble (ZOOM_THROUGH from f135, ×1 → ×30 in log space on `EASE.exit`,
+  aimed at the body point (−36, −10) viewBox units, the aim drifting to the frame's centre on `EASE.camera`; zoom blur
+  f141–143). The body's `#536B54` fills the frame on f143; the world changes on f144 with the whoosh's peak. It is one
+  light-to-dark change (≥ 3 frames from 20 % to 80 % of its swing, analyze.py) with no reversal until f504.
+- "Task: completed" (6.60 s) is never shown, and the hook has no happy pose (the one celebration is f1204).
 
 ### S2 Questions (144–359) — sage field, chapter `desktop`
 
 - **f144: seam by zoom-through** (the pebble's own sage becomes the world). Whoosh peaks f144 (picture f143 + 1).
 - Three neutral questions a careful person asks of any AI helper (OVERRIDES §2), one per bar. **They build a list**
   (REVIEW-G2 P1-6, lane G-fix): left-aligned, the block centred on its widest line, line centres y 350 / 470 / 590
-  (16:9) and 360 / 470 / 580 (square). Each inks in whole ((B), all words together), starting 3 frames before its
-  downbeat (§1), so it reads at full contrast on the beat: **T1** "What did it change?" (f144, the seam), **T2** "Can I
-  undo it?" (f213 → f216), **T3** "Did it run the tests?" (f285 → f288). As a question arrives, the one before dims to
-  45 % and stays; the current one is white at ≥ 7:1 (the lead's addendum). All three blur out together f348–354.
+  (16:9) and 360 / 470 / 580 (square). The energetic recut: each **slams** onto its downbeat ((S), §3: k 1.10 in 16:9,
+  1.06 narrow, anchored on the list's left edge), its pre-roll the 3 frames before: **T1** "What did it change?" lands
+  on the seam frame f144 already at rest (its pre-roll falls in the hook), **T2** "Can I undo it?" lands f216 (pre-roll
+  f213–215), **T3** "Did it run the tests?" lands f288 (f285–287) and holds exactly its 2.0 s. As a question arrives,
+  the one before dims to 45 % from f213 / f285 and stays; the current one is white at ≥ 7:1 (the lead's addendum). All
+  three blur out together f348–354; the field is empty f354–359 (flat frames by design). No camera moves and no
+  presses: they would move landed type.
 - They are ordered as the film answers them: the approval card answers T1 and T2 (S5b); AgentGuard answers T3
   (S5c–S5e), and T3 sets up the intent line.
 - Focal: (960, 470) / (540, 470).
@@ -248,7 +293,10 @@ px (16:9 / square).
   entrance (C), block centred, centre y 420. Exit f462–467. The riser runs under bars 6–7.
 - **f432: the pebble rises in** (hop H1 from off-frame below to foot (960, 880) / (540, 880), lands f447), dark palette
   (`#B4CDA6` body, `#23351F` eyes) because the ground is sage. f440 it looks up at the line.
-- **f481:** eyes lead toward the lockup spot; **anticipation f486–490**, take-off f490 (H2), flight 0.467 s.
+- **f477:** eyes lead toward the lockup spot; **anticipation f481.5–486**, take-off f486 (H2), flight 0.6 s. The
+  energetic recut: **H2 hangs** (§9.2's HANG): 45 % of its path by f494 (`EASE.enter`), the apex f494–500 covering only
+  10 %, then a dart through the last 45 % in f500–504 on t², landing on the drop. f486–503 is the composed breath: the
+  bed and the drive are silent by their own notes and the riser plays alone to its loudest last sample on f504.
 - Focal: f360–431 the line (960, 420) / (540, 420); f432–503 the pebble.
 
 ### S4 Reveal (504–647) — paper world, chapter `desktop`
@@ -291,8 +339,9 @@ share the framings of §6.1, measured on the 1.0.4 frames.
   x 810–1150, y 205–602; square m 2.65, ROI x 817–1143, y 205–486. Pose `review` ("!") at **f756** (with "Review,"),
   after the camera move, so the morph plays on a still frame (REVIEW-G2 P1-4, lane G-fix): the app shows it while an
   edit waits.
-- **T7** builds word by word with the verbs: "Review," at f756; "apply," at f811; "undo" at f830 (line 1
-  "Review, apply,", line 2 "undo").
+- **T7** slams word by word with its verbs (§3 (S), k 1.10 / 1.04): "Review," lands f756 (with the review pose, on
+  the still frame after the camera move), "apply," on the Apply edit click f810, "undo" on the beat f828 (was f830);
+  line 1 "Review, apply,", line 2 "undo". Each word's pre-roll is its 3 frames before.
 - **f774–797:** the camera tilts down to the card's lower part as the pointer enters (16:9 ROI y 404–800; square
   ROI y 519–800), so **Apply edit** sits at y ≈ 755 / 794, above the caption band. Apply edit becomes active at f786
   (source 8.13), as in the app.
@@ -356,6 +405,10 @@ share the framings of §6.1, measured on the 1.0.4 frames.
 - **16:9, f1116–1139:** once R2's scroll has settled, the camera tilts down to y 324–655.7 (m 2.87), so "Not verified · 2
   changed files, no tests run" and "Verification remains incomplete" have left the top before Verified lands (REVIEW-G2
   P1-5, lane G-fix). The square's framing already leaves them out.
+- **f1143–1151, the breath** (the energetic recut): the picture holds while the focus comes onto the still-running
+  "Requesting isolated tests" row over f1143–1148 (`EASE.enter`; rect CSS x 826–1147, y 377–404; the rest of the
+  drawer recedes under the window's own veil, 45 %, 2.5 px): the camera points at the step still running, and on f1146
+  the app's own "· 11 s" lands on it, the only sound in the gap.
 - Focal: the card's lead (1400, 225) / (540, 450); Run tests (1677, 880) / (900, 895); then the newest row.
 
 **S5e Verified, the climax (1152–1223).**
@@ -363,14 +416,22 @@ share the framings of §6.1, measured on the 1.0.4 frames.
   f1153. The run is not finished yet: Pebble writes its final reply (pose `writing` at f1161, source 20.90), and the
   run completes at f1204 (source 22.33), when the app's pebble turns **`happy`**: the film's one celebration, held
   4.5 s as in the app (to f1339). The celebration lands as the pull-back reveals the finished reply.
+- **The pointing** (the energetic recut; OVERRIDES §35 decision 4): no magnification (the measured row with its bullet
+  and its "+30.0 s" spans CSS x 834–1139.3, so no tighter framing keeps it whole 60 px inside the frame: s5dVerified
+  stays in every aspect). On f1152 the focus JUMPS from "Requesting isolated tests" to "Verified · pytest 42 passed on
+  current files · 2 s" (rect CSS x 826–1147, y 401–445) at full amount, with no ramp; every other row, and "Waiting for
+  the model" when it arrives at 20.70 s, stays receded. Held to f1187 with no cut and no camera move (validateTimeline);
+  released f1182–1187 (`EASE.exit`) with the check.
 - **T10** "Evidence" / "before done" (16:9: two lines, as the column's other statements; one line in the narrow
-  aspects), entrance (B) ink, in f1152, out f1212. On one line its "done" ended 6 px from the check, which then read as
-  "done✓" (lane v2-film).
+  aspects), the energetic recut's slam (§3), landing f1152 (pre-roll f1149–1151, the breath's last three frames), out
+  f1212, holding exactly 2.0 s. On one line its "done" ended 6 px from the check, which then read as "done✓" (lane
+  v2-film).
 - **Check mark** (16:9 only, the accent's state-mark job): a stroked check, **72 px, 8 px** `#506E54`, round caps,
   centred at (**860**, y of the Verified row), outside the UI with 24 px clear of the stage (C3; REVIEW-G2 P1-5, lane
   G-fix); drawn on f1152–1162, `EASE.enter`.
-- **Exit move f1188–1211:** the camera pulls back to m 1.3 (16:9 ROI x 340–1110, y 0–732; square ROI x 366–1160,
-  y 0–572). The final reply streams: "The tests ran in an isolated copy of your project: 42 passed. Both edits are
+- **Exit move f1188–1211:** the camera pulls back to the whole window (framing.ts s5eOut), the energetic recut's
+  speed-ramped move (`EASE.ramp`, with the stage's motion blur), landing on the finished reply as the pebble turns happy
+  at f1204. The final reply streams: "The tests ran in an isolated copy of your project: 42 passed. Both edits are
   verified, and the CSV export works again for invoices issued on the 29th, 30th and 31st."
 - **Cursor** enters f1196 from the right, arrives by f1219 on the window's Settings button (the gear, CSS (1036, 32);
   frame (1758, 102) / (895, 378)), **click-down f1224**.
@@ -429,7 +490,8 @@ Each tab change is a **match cut on the click**: the frame holds still and the c
   x 284–637.4, y 76 → bottom, the request bubble in focus and the rest under a veil). **f1602–1625:** the camera moves on
   van Wijk's path to the canvas **"Lisbon trip budget"** with its tiles and the "Spending by category" chart (16:9
   m 1.255, x 643.2–1440; square m 1.295), and holds to f1655: the ask, then the view, then the chart becomes the world.
-- **T14** "Views," / "not just text", in f1584 (with the cut, on the motif); the world move takes it at f1656.
+- **T14** "Views," / "not just text", the energetic recut's slam landing on the cut (f1584, the second lift: it
+  appears already landed); the world move takes it at f1656.
 - The pebble (idle) looks at the view.
 - Focal: the canvas title and tiles (1450, 300) / (540, 520).
 
@@ -462,9 +524,11 @@ Each tab change is a **match cut on the click**: the frame holds still and the c
 - **f1800: seam by zoom-through.** The ground starts at the badge's `#506E54` and eases to the type ground `#425643`
   by f1812 (§4). Whoosh peaks f1800 (picture f1799 + 1).
 - **The facts build a list** as the questions do (REVIEW-G2 P1-6, lane G-fix; left-aligned, the block centred on its
-  widest line; each inks in whole; earlier items dim to 45 %): **T15** "Free and open source" (f1800) with **T15s**
-  "Apache-2.0" (data: Geist Mono, f1806); **T16** "No telemetry" (f1869 → f1872, bar 27); **T17** "Your keys stay in
-  your Keychain" (f1923 → f1926, beat 107; one line in 16:9, two in the narrow aspects). Centres y 290 / baseline 425 /
+  widest line; earlier items dim to 45 %). The energetic recut: the facts slam ((S), §3): **T15** "Free and open
+  source" lands on the seam f1800 already at rest, with **T15s** "Apache-2.0" (data: Geist Mono) inking in calmly at
+  f1806; **T16** "No telemetry" lands f1872 (bar 27; pre-roll f1869–1871, as T15 and T15s dim); **T17** "Your keys stay
+  in your Keychain" lands f1926 (beat 107; pre-roll f1923–1925, as T16 dims; one line in 16:9, two in the narrow
+  aspects) and holds 2.4 s. Centres y 290 / baseline 425 /
   530 / 690 (16:9), 285 / 400 / 505 / 690 (square) and 735 / 850 / 955 / 1140 (vertical). The list leaves together
   f1998–2004, before the end card's pebble enters the frame (≈ f2005), so it never crosses a line (P1-3).
 - Focal: (960, 450) / (540, 450).
@@ -480,9 +544,10 @@ Each tab change is a **match cut on the click**: the frame holds still and the c
 - **(W)** `pebble` unrolls out of the pebble f2018–2032 (no tracking settle this time).
 - The flat paper of the page; the lockup stands on the pebble's line (§4), the page footer's picture.
 - **T18** "A little help, right here." (side-line size, (A)), in f2088, holds to the end. Baseline y 560 / 520 / 950.
-- **f2160 (bar 31, the final chord): T19** "Free for Macs with Apple silicon" (CTA words, (C)) baseline y 690 / 630 /
-  1060 and **T20** `github.com/tohin003/Pebble` (URL, Geist Mono, (C), f2164) baseline y 770 / 700 / 1130. 26
-  characters, held 4.8 s.
+- **f2160 (bar 31, the final chord and the final hit): T19** "Free for Macs with Apple silicon" (CTA words; the
+  energetic recut's slam, centred: k 1.10 / 1.06, its pre-roll f2157–2159 in the last breath's last three frames)
+  baseline y 690 / 630 / 1060 and **T20** `github.com/tohin003/Pebble` (URL, Geist Mono, (C), rising from f2164)
+  baseline y 770 / 700 / 1130. 26 characters, held 4.8 s. The master fades f2214–2249; digital silence from f2250.
 - **f2196: T21** "Shown with sample data" and **T22** "Pebble's character engine: bloub by Jérémy Perret (MIT)" (small
   print, fade 9 frames), baselines y 852 / 892 (16:9), 820 / 860 (square) and 1250 / 1290 (vertical).
 - The pebble: `idle` at f2052; glances at the URL at f2166; looks at the viewer at f2214 to the end. **Last frame
@@ -530,11 +595,20 @@ and nudges the keys (± 3 frames) if an event lands elsewhere; the click frames 
 
 ### 7.1 `pet-live-error` (S1), recorded at 3× with the avatar hidden (R1)
 
+The energetic recut plays `ui-frames/pet-live-error-light-hidden` (light theme, 270 frames, 0–8.97 s; the older
+140-frame `pet-live-error` stays on disk) on a map with **no jump and no skip of Pebble's time** (OVERRIDES §35
+decision 2). The person's part, from the click to Enter, plays at 2× so the question is sent by 1.8 s; from Enter on,
+Pebble's part plays at exactly 1× (1/30 s a frame, validateTimeline), so everything Pebble does keeps its real
+timing: "Sending", "Thinking", the first word at 4.60 s. Why 2× and not a cut: the typing is the person's own act,
+shown whole and legible, and compressing it changes nothing Pebble did; the drop plan's 3.58 → 5.00 s skip was
+rejected because it would have shortened Pebble's own time (the Gemini demo's faked latency, ENERGY_SPEC §2). The
+answer is still streaming when the dive begins, so "Task: completed" (6.60 s) never shows.
+
 | Film frames | Source s | Speed | What is on screen |
 |---|---|---|---|
-| 0–35 | — | — | the collapsed pebble is `PebbleOnFilm` on the desktop; the capture is empty |
-| 36–71 | 0.60 → 1.28 | ≈0.63× | the chat open on the click frame; the greeting (typing starts at 1.30 s and is never shown) |
-| 72–143 | 3.35 → 4.50 | ≈0.53× | (cut) the sent question, "Thinking", "Task: running" |
+| 0–17 | — | — | the capture is empty; the collapsed pebble is `PebbleOnFilm` on the desktop |
+| 18 → 54 | 0.60 → 3.00 | 2× (the person's part) | the chat opens on the click frame; the greeting; the question types itself 1.30–2.93 s (f29–53) |
+| 54 → 143 | 3.00 → 5.9667 | 1× (Pebble's part) | Enter: "Sending", "Task: queued"; "Thinking" from 3.30 s (f63); the answer from 4.60 s (f102); the feed scrolls at 5.43 s (f127) |
 
 `PebbleOnFilm` is composited at the hidden avatar's box (measure it on the frames: in the 384×456 panel the pebble's
 centre is about (327, 401) CSS px), so one engine-drawn pebble carries the whole film and the zoom-through stays vector-
@@ -574,29 +648,29 @@ lines readable twice: ≥ 2 s and 0.6 s per word). Positions are given for 16:9 
 
 | Id | Text (line breaks shown with /) | Shot | Role, entrance | in | out | Hold (s) / needed | Position |
 |---|---|---|---|---|---|---|---|
-| T1 | What did it change? | S2 | headline, (B) whole, list item | 144 | 348 (dims from 213) | 6.80 / 1.70 | list, centre y 350 / 360 |
-| T2 | Can I undo it? | S2 | headline, (B) whole, list item | 213 | 348 (dims from 285) | 4.50 / 1.70 | list, centre y 470 |
-| T3 | Did it run the tests? | S2 | headline, (B) whole, list item | 285 | 348 | 2.10 / 2.00 | list, centre y 590 / 580 |
+| T1 | What did it change? | S2 | headline, (S) slam, list item | 144 (landed on the seam) | 348 (dims from 213) | 6.80 / 1.70 | list, centre y 325 / 350 / 840 |
+| T2 | Can I undo it? | S2 | headline, (S) slam, list item | 216 | 348 (dims from 285) | 4.40 / 1.70 | list, centre y 470 / 470 / 960 |
+| T3 | Did it run the tests? | S2 | headline, (S) slam, list item | 288 | 348 | 2.00 / 2.00 | list, centre y 615 / 590 / 1080 |
 | T4 | An agent shouldn't / grade its own work | S3 | headline, (C) | 360 | 462 | 3.40 / 2.60 | centred block, centre y 420 |
 | W1 | `pebble` (wordmark, the pebble as its full stop) | S4 | wordmark, (W) | 506 | 614 (rolls back) | — | baseline y 420 / 400 |
 | T5 | A small companion for your Mac | S4 | support, (A) | 522 | 612 | 3.00 / 2.30 | centred, baseline y 560 / 530 |
 | T6 | It reads / your project | S5a | side line, (A) | 666 | 718 | 1.73 / 1.70 | column / band top-left |
-| T7 | Review, apply, / undo | S5b | side line, word by word with the verbs: 756, 811, 830 | 756 | 858 | 3.40 / 1.40 | column / band |
+| T7 | Review, apply, / undo | S5b | side line, (S) slam word by word with the verbs: 756, 810, 828 | 756 | 858 | 3.40 / 1.40 | column / band |
 | T8 | AgentGuard checks / the evidence | S5c | side line, (A) | 936 | 1038 | 3.40 / 1.70 | column / band |
 | T9 | Tests run in / an isolated copy | S5d | side line, (A) | 1044 | 1140 | 3.20 / 2.30 | column / band |
-| T10 | Evidence / before done (narrow: Evidence before done) | S5e | side line, (B) | 1152 | 1212 | 2.00 / 2.00 (last of S5) | column / band |
+| T10 | Evidence / before done (narrow: Evidence before done) | S5e | side line, (S) slam | 1152 | 1212 | 2.00 / 2.00 (last of S5) | column / band |
 | T11 | Your model, / your choice | S6a | side line, (A) | 1242 | 1320 | 2.60 / 1.70 | column / band |
 | T11s | Even one on your Mac | S6a | support, (A) | 1260 | 1320 | 2.00 / 2.00 | under T11 |
 | T12 | You set what / it may do | S6b | side line, (C) | 1350 | 1428 | 2.60 / 2.00 | column / band |
 | T13 | Memory you can / read and forget | S6c | side line, (A) | 1458 | 1578 | 4.00 / 2.30 (last of S6) | column / band |
-| T14 | Views, / not just text | S7a | side line, (A) | 1584 | 1656 (taken by the world move) | 2.40 / 2.00 (last of S7) | column / band |
-| T15 | Free and open source | S8 | headline, (B) whole, list item | 1800 | 1998 (dims from 1869) | 6.60 / 1.70 | list, centre y 300 / 280 |
+| T14 | Views, / not just text | S7a | side line, (S) slam (landed on the cut) | 1584 | 1656 (taken by the world move) | 2.40 / 2.00 (last of S7) | column / band |
+| T15 | Free and open source | S8 | headline, (S) slam, list item (landed on the seam) | 1800 | 1998 (dims from 1869) | 6.60 / 1.70 | list, centre y 290 / 285 / 735 |
 | T15s | Apache-2.0 | S8 | data (Geist Mono), (B) whole, list item | 1806 | 1998 (dims from 1869) | 6.40 / 1.20 | under T15, baseline y 425 / 400 / 850 |
-| T16 | No telemetry | S8 | headline, (B) whole, list item | 1869 | 1998 (dims from 1923) | 4.30 / 1.20 | list, centre y 545 / 500 |
-| T17 | Your keys stay in your Keychain (square and vertical: Your keys stay / in your Keychain) | S8 | headline, (B) whole, list item | 1923 | 1998 | 2.50 / 2.30 (last of S8) | list, centre y 690 / 690 / 1140 |
+| T16 | No telemetry | S8 | headline, (S) slam, list item | 1872 | 1998 (dims from 1923) | 4.20 / 1.20 | list, centre y 530 / 505 / 955 |
+| T17 | Your keys stay in your Keychain (square and vertical: Your keys stay / in your Keychain) | S8 | headline, (S) slam, list item | 1926 | 1998 | 2.40 / 2.30 (last of S8) | list, centre y 690 / 690 / 1140 |
 | W2 | `pebble` | S9 | wordmark, (W) | 2018 | end | — | baseline y 420 / 400 |
 | T18 | A little help, right here. | S9 | side line (16:9 92 px, square 72 px), (A) | 2088 | end | 7.17 / 3.00 (key) | centred, baseline y 560 / 520 |
-| T19 | Free for Macs with Apple silicon | S9 | CTA words, (C) | 2160 | end | 4.80 / 3.60 (key) | centred, baseline y 690 / 630 |
+| T19 | Free for Macs with Apple silicon | S9 | CTA words, (S) slam, centred | 2160 | end | 4.80 / 3.60 (key) | centred, baseline y 690 / 630 |
 | T20 | github.com/tohin003/Pebble | S9 | URL (Geist Mono), (C) | 2164 | end | 4.67 / 2.00 (key) | centred, baseline y 770 / 700 / 1130 |
 | T21 | Shown with sample data | S9 | small, fade | 2196 | end | — | centred, baseline y 852 / 820 |
 | T22 | Pebble's character engine: bloub by Jérémy Perret (MIT) | S9 | small, fade | 2196 | end | — | centred, baseline y 892 / 860 |
@@ -613,8 +687,9 @@ Notes.
 
 ## 9. The pebble
 
-Only Pebble's own poses (D6): `idle`, `hover`, `tap`, `thinking`, `reading`, `editing`, `review`, `blocked`, `testing`,
-`writing`, `happy`. Never an engine catalogue state. Each pose follows a real event exactly as the app's reducer would (U1 §3.6);
+Only Pebble's own poses (D6): `idle`, `hover`, `tap`, `sending`, `thinking`, `reading`, `editing`, `review`, `blocked`,
+`testing`, `writing`, `happy` (`sending` is companionState's row 7.5, the app's pose on Enter, used by the recut's
+hook; `hover` is no longer cued: §9.3). Never an engine catalogue state. Each pose follows a real event exactly as the app's reducer would (U1 §3.6);
 the "!" (`review`) appears only while an approval waits (twice: the edit card and the tests card).
 
 ### 9.1 Instances
@@ -633,26 +708,35 @@ after f1665. Contact shadow on (R5 §5.9).
 | Hop | Take-off (s / frame) | Duration | From → to (16:9) | From → to (square) | From → to (vertical, §22) | Lands |
 |---|---|---|---|---|---|
 | H1 rise in | 14.400 / f432 | 0.500 | (960, 1200) → (960, 880) | (540, 1200) → (540, 880) | (540, 2050) → (540, 1300) | f447 |
-| H2 the leap | 16.333 / f490 | 0.467 | (960, 880) → (1295, 422) | (540, 880) → (806, 402) | (540, 1300) → (806, 832) | **f504** |
+| H2 the leap (hangs) | 16.200 / f486 | 0.600, timing HANG | (960, 880) → (1295, 422) | (540, 880) → (806, 402) | (540, 1300) → (806, 832) | **f504** |
 | H3 the carry | 21.133 / f634 | 0.600 | (1295, 422) → (330, 900) | (806, 402) → (940, 300) | (806, 832) → (930, 660) | f652 (cut at f648) |
 | H4 into the end card | 66.733 / f2002 | 0.467 | (2050, 1180) → (1295, 422) | (1180, 1180) → (806, 402) | (1180, 2010) → (806, 832) | **f2016** |
 
 Anticipation 0.15 s (sy 0.89) before each take-off; stretch sy 1.11 / sx 0.90; landing squash sy 0.87 / sx 1.15 for
 2 frames, then `jelly`. Eyes lead each hop by 0.1 s (look cues below).
 
+**H2's timing (the energetic recut, `Hop.timing` in `video/src/pebble/acting.ts`):** a hop's timing maps the flight's
+linear progress u to the progress the ground, the lift and the stretch use (identity by default; 0 → 0 and 1 → 1, so
+the take-off and the landing keep their frames). H2's HANG (timeline.ts) runs 0 → 0.45 by 8/18 of the flight on
+`EASE.enter` (the take-off's burst: f486–494), linear 0.45 → 0.55 to 14/18 (the hang at the apex, f494–500), then
+0.55 → 1 on t² (the dart, f500–504), landing on the drop at full speed. Its anticipation runs f481.5–486, inside bar 7
+before the composed breath; validateTimeline's "H2 lands on the reveal" holds (16.2 + 0.6 s = f504).
+
 ### 9.3 Cue list (absolute seconds = frame / 30)
 
 | Frame | s | Cue | Event |
 |---|---|---|---|
+| −15 | −0.500 | `look` toward the pointer's entry point (gazeToward from the pebble's box at C0: 16:9 and square `{−0.25, −1}`, vertical `{−0.875, −0.5}`) | frame 0 already looks where the pointer comes from |
 | 0 | 0.000 | pose `idle` (initial) | frame 0: eyes open |
-| 2–28 | 0.067–0.933 | `look` from the pointer, every quantised change | `gazeToward(pointer, pet box, reach = 200 desktop pt)`; the app's eyes follow the pointer |
-| 22 | 0.733 | pose `hover` | the pointer enters the pet window (measure; ≥ 14 frames before the tap) |
-| 36 | 1.200 | pose `tap` | click |
-| 48 | 1.600 | `look: null` | the pointer has faded |
-| 72 | 2.400 | pose `thinking` | the run has started |
+| 1–27 | 0.033–0.900 | `look` from the pointer, every quantised change | `gazeToward(pointer, pet box, reach = 200 desktop pt)`; the app's eyes follow the pointer |
+| 18 | 0.600 | pose `tap` | the click opens the quick chat (tap lasts 1.2 s, to f54). No `hover`: the pointer is in the pet window under 14 frames before the tap (the engine's 0.45 s morph), so the app's tap supersedes it |
+| 30 | 1.000 | `look: null` | the pointer has faded |
+| 54 | 1.800 | pose `sending` | Enter: the message is sent (3.00 s) |
+| 72 | 2.400 | pose `thinking` | queued at 3.15 s, "Thinking" from 3.30 s; on the cut |
+| 102 | 3.400 | pose `writing` | the answer's first word (4.60 s) |
 | 144 | 4.800 | pose `idle` | (not drawn until f432) |
 | 440 | 14.667 | `look {x: 0, y: −0.75}` | looks up at T4 |
-| 481 | 16.033 | `look {x: 0.625, y: −0.75}` (square and vertical `{0.5, −0.875}`) | eyes lead the leap |
+| 477 | 15.900 | `look {x: 0.625, y: −0.75}` (square and vertical `{0.5, −0.875}`) | eyes lead the leap (H2 takes off on f486) |
 | 504 | 16.800 | pose `tap` | lands: the reveal |
 | 520 | 17.333 | `look: null` | |
 | 540 | 18.000 | pose `idle` | tap ends (1.2 s, TAP_MS) |
@@ -681,7 +765,7 @@ Anticipation 0.15 s (sy 0.89) before each take-off; stretch sy 1.11 / sx 0.90; l
 | 2214 | 73.800 | `look {x: 0, y: 0}` | looks at the viewer to the end |
 
 Spacing: the engine keeps one slot of history and morphs a face in 0.45 s, so two pose changes are never closer than
-14 frames (the tightest: hover → tap, f22 → 36); every change into or out of `review` (the "!") is ≥ 18 frames
+14 frames (the tightest: sending → thinking, f54 → 72, 18 frames; validateTimeline checks it); every change into or out of `review` (the "!") is ≥ 18 frames
 (0.6 s, MIN_BLOCK) from its neighbours. Directional look cues are computed from the final positions (§9.2, §6) and
 quantised to 1/8; Lane G recomputes them if a position moves. Pointer look cues: `gazeToward` from the film cursor in
 the pebble's own frame space (reach 200 pt × the pebble's scale), a cue only when the quantised gaze changes; the
@@ -691,7 +775,7 @@ engine's 0.24 s catch-up does the rest.
 
 Blinks cover frames 42–48, 156–162, 290–304 (double), 385–391, 467–474, 570–576, 708–714, 819–825, 901–908,
 1026–1032, 1098–1105, 1183–1190, 1244–1251, 1306–1312, 1405–1412, 1538–1552 (double), 1661–1675 (double), 1784–1790,
-1898–1905, 1972–1979, 2095–2109 (double), 2167–2173, 2271–2278. Every key frame has open eyes: 0, 36, 504, 540, 652,
+1898–1905, 1972–1979, 2095–2109 (double), 2167–2173, 2271–2278. Every key frame has open eyes: 0, 18, 504, 540, 652,
 1152, 1204, 2016, 2052, 2160, 2303 (checked). No state change forces a blink (no `blinkIn` pose is used).
 
 ## 10. Cursor and clicks
@@ -703,7 +787,7 @@ Hidden (0.15 s fade) whenever it is not acting.
 
 | Click-down | Beat | Target | Shot |
 |---|---|---|---|
-| f36 | 2 | the pebble | S1a |
+| f18 | 1 (the hook's click moves from f36 by design; the recording's 0.60 s is still drawn on it) | the pebble | S1a |
 | f810 | 45 | Apply edit | S5b |
 | f990 | 55 | Run the tests | S5c |
 | f1080 | 60 (bar 16) | Run tests | S5d |
@@ -719,35 +803,65 @@ The exporter (`video/scripts/export-cues.ts`, run with bun) writes `tools/audio/
 picture frame + 1**, except the riser, whose END sits on f504. Kit and gains: `tools/audio/sfx_kit.json`. At most three
 at once; hits 3–6 dB over the bed; rotate takes. Pan = 0.4 × (x − W/2)/(W/2) of the event in the 16:9 frame.
 
+The energetic recut (ENERGY_SPEC §8.4): designed UI sounds on real events, impacts on the hits, all unpitched. The
+kept bed (compose_score.py --seed 7, rendered by render_sampled.py, bit for bit) now has a drum-and-sub stem under it
+(`tools/audio/drive.py`, the score lane's), and the mix applies the timeline's automation (below).
+
 | Picture frame | Peak | Role, take | Event | Notes |
 |---|---|---|---|---|
-| 36 | 37 | click, click_a | the pebble is clicked | pan +0.14 |
-| 143 | 144 | whoosh, whoosh_b | into the sage field (zoom through the pebble) | the dive fills the frame on f143 (lane G-fix) |
+| 18 | 19 | click, click_a | the pebble is clicked | pan +0.13 |
+| 54 | 55 | key, tick_c | the message is sent (Enter) | −15 dB |
+| 143 | 144 | whoosh, whoosh_b | into the sage field (the dive) | it rises through the gap |
 | 360–504 | end 504 | riser | bars 6–7 | the only riser |
-| 504 | 505 | hit, soft_hit_b | the reveal landing | duck the bed 2.5 dB for 0.6 s |
-| 504 | 505 | thud, thud_a | texture under the hit | |
+| 504 | 505 | impact, impact_a | the drop: the pebble lands as the full stop | duck the bed 2.5 dB; replaces soft_hit_b |
+| 504 | 505 | thud, thud_a | texture under the drop | three at once with the riser's end, the limit |
 | 648 | 649 | whoosh, whoosh_a | the carry into the window world | |
+| 722 | 723 | ui, ui_card | the drawer opens with the edit card | |
 | 810 | 811 | click, click_b | Apply edit | pan +0.3 |
-| 814 | 815 | pop, pop_a | Done | |
-| 990 | 991 | click, click_c | Run the tests | pan +0.1 |
-| 1080 | 1081 | click, click_a | Run tests | pan +0.32 |
-| 1094 | 1095 | tick, tick_a | "Requesting isolated tests" row | very low (−24 dB) |
-| 1152 | 1153 | shimmer, shimmer_a | **Verified** | |
-| 1224 | 1225 | click, click_b | Settings | pan +0.33 |
-| 1332 | 1333 | click, click_c | Permissions tab | |
-| 1404 | 1405 | click, click_a | Auto in project | |
-| 1440 | 1441 | click, click_b | Memory tab | |
-| 1530 | 1531 | click, click_c | the bin | |
-| 1542 | 1543 | pop, pop_c | the record dissolves | |
+| 814 | 815 | ui, ui_done | Done | replaces the tuned pop_a |
+| 890 | 891 | ui, ui_lock | AgentGuard holds the task | |
+| 900, 936, 972 | +1 | rim, rim_a / rim_b / rim_a | the hold's clock on beats 1 and 3 | −15 dB; OVERRIDES §35 decision 3: beats 1 and 3 to begin with (every beat, adding f918 and f954, only if the classifier stays clean; none if 1 and 3 trip it) |
+| 936 | 937 | thump, soft_hit_a | T8 lands in the hold | −12 dB |
+| 990 | 991 | click, click_c | Run the tests | pan +0.09; it releases the hold |
+| 1080 | 1081 | click, click_a | Run tests | pan +0.3 |
+| 1094 | 1095 | tick, tick_a | "Requesting isolated tests" | −18 dB |
+| 1146 | 1147 | tick, tick_b | the app's own "· 11 s" | −18 dB, alone in the gap |
+| 1152 | 1153 | impact, impact_b | **Verified** | duck 1.5 dB |
+| 1152 | 1153 | ui, ui_verified | **Verified** | replaces shimmer_a |
+| 1224 / 1332 / 1404 / 1440 | +1 | click, b / c / a / b | Settings, Permissions, Auto in project, Memory | pans +0.37 / +0.12 / +0.06 / +0.21 |
+| 1530 | 1531 | click, click_c | the bin | pan +0.37 |
+| 1530 | 1531 | ui, ui_forget | the record dissolves | runs under the dissolve; pop_c at f1542 is removed |
+| 1584 | 1585 | impact, impact_a | the second lift | duck 1.5 dB |
 | 1665 | 1666 | whoosh, whoosh_c | the chart becomes the world (its fastest frame) | |
-| 1799 | 1800 | whoosh, whoosh_a | into the sage field (zoom through the badge) | the dive fills the frame on f1799 (lane G-fix) |
+| 1799 | 1800 | whoosh, whoosh_a | into the sage field (the badge dive) | |
+| 1800 | 1801 | impact, impact_b | the breakdown's one hit | |
 | 2016 | 2017 | thud, thud_b | the end-card landing | duck 1.5 dB |
+| 2016 | 2017 | impact, impact_b | the end-card landing | |
+| 2160 | 2161 | impact, impact_a | the final hit | duck 2 dB |
 
-21 cues. The end-card landing has the thud alone. Its pitched pop (pop_b) was removed in 9535d46 (OVERRIDES §19):
-the F#5 plip over the motif's D5 read as "telephone" 0.240 in the social master's 66–69 s window. With it gone, the pop
-role is back at −13 dB for pop_a and pop_c.
+34 effects (ENERGY_SPEC §8.4's 36 less the two off-beat rim ticks, §35.3). No chimes, dings, pitched pops or anything
+voice-like: the pitched pop_a and pop_c, the reveal's soft_hit_b and the shimmer left the film (they stay in the kit,
+unused). No downlifter. The final chord is music, not an effect.
 
-No chimes, dings or meme sounds. No downlifter (optional in the kit; off). The final chord is music, not an effect.
+**Mix automation** (timeline.ts AUTOMATION; exported after the effects as entries with no file, in the kit's
+"automation" format: role, frame, to_frame, release_frame, t, t_end, the role's params; mix_master.py applies them,
+cut_cues.py clips them to a cut's ranges, and they never count toward the three-at-once limit; effects are never
+gapped):
+
+| Role | Frames | What |
+|---|---|---|
+| gap | f135–143, the hit on f144 | bed and drive −24 dB (10 ms down, 4 ms back on the hit frame); the whoosh rises through it |
+| hold | f891–989, release f990–1007 | the drive muted; the bed −6 dB behind a 1.2 kHz low-pass (a 30 ms crossfade to a filtered copy); from the click the filter opens and the gain returns into the f1008 downbeat. Caption c11b "[Music muffles]" |
+| gap | f1143–1151, then f1152 | as above; tick_b sounds inside |
+| gap | f1575–1583, then f1584 | as above |
+| gap | f2151–2159, then f2160 | as above |
+| tail | fade f2214–2249; zeros f2250–2303 | the whole master, after the limiter |
+| (breath) | f486–503 | composed, with no automation: the bed and the drive are silent by their own notes; the riser alone |
+
+Each gap swallows the bed's own pickup on the "and" of 4: that is the breath. validateTimeline checks the gaps (9
+frames, ending the frame before a bar line, their hits ≥ 4 bars apart with the f504 breath), the hold (from an eighth
+to the Run the tests click, released to a bar line) and that nothing cuts, moves, changes pose or lands inside a
+breath (but the hook's dive, H2's take-off and slam pre-rolls in a gap's last three frames).
 
 ## 12. Transitions and seams
 
@@ -763,7 +877,7 @@ cross-fade between worlds. One light leak at most (off by default).
 | 4 | 720 | reads → asks | camera move | the drawer opens; the camera follows "Preparing an edit" |
 | 5 | 864 | asks → held | **hard cut** | chapter change on the bar |
 | 6 | 1008 | held → tests | **hard cut** (lane G-fix, P2-1) | the Run the tests click puts the tests card in the drawer; cut to it on the bar |
-| 7 | 1152 | tests → Verified | continuous (R2) / punch-in cut (fallback) | the Verified row appears |
+| 7 | 1152 | tests → Verified | continuous (R2): a camera seam with no cut and no settle (the energetic recut points with the focus, which jumps to the row; nothing moves f1152–1187) | the Verified row appears |
 | 8 | 1224 | Verified → Settings | match cut on a click | the Settings button |
 | 9 | 1332 | Models → Permissions | match cut on a click | the tab |
 | 10 | 1440 | Permissions → Memory | match cut on a click | the tab |
@@ -773,7 +887,10 @@ cross-fade between worlds. One light leak at most (off by default).
 | 14 | 1800 | quiz → claims | zoom through | the camera passes into the chosen answer's badge |
 | 15 | 2016 | claims → end card | colour flood + carry in | the pebble lands; paper spreads from it |
 
-Inside shots: f72 punch-in (hook), f814 match cut on the click, f1404 match cut on the click, f1542 state swap.
+Inside shots: f72 punch-in (hook), f814 match cut on the click, f1404 match cut on the click, f1542 state swap. The
+energetic recut adds no seam: its camera vocabulary is the f72 punch-in cut, two speed-ramped moves on `EASE.ramp` (the
+hook's f19–30 and the f1188–1211 pull-back) and no whips (OVERRIDES §35 decision 7). Settles stay only on f814 and
+f1224; there is none at f1152 or f1584 (they would slice text for their first frames).
 **Hard cuts between beats: 3 of 15 seams (20 %; lane G-fix made f1008 a cut), 4 counting the payoff's internal cut
 (27 %), all under R5's one-third.** Five kinds, within R5's 3–5.
 
@@ -782,7 +899,7 @@ Cut strips (R5 §13.6): render frames −6, −3, 0, +3, +6 around frames 72, 14
 
 ## 13. Captions and chapters
 
-**Captions:** `docs/film-captions.json` — 25 non-overlapping cues (lane G-fix: c12 from f936, c20 f1872–1926, c21
+**Captions:** `docs/film-captions.json` — 27 non-overlapping cues since the energetic recut (below; lane G-fix: c12 from f936, c20 f1872–1926, c21
 f1926–2016, and c24 split so c25 carries the URL and "Shown with sample data"; lane v2-film: c24 reads "[Final chord]" /
 "Free for Macs with Apple silicon" over f2160–2250, 8 words in 3.0 s, and c25 f2250–2304, 5 words in 1.8 s, so every cue
 reads at ≤ 3 words per second; c24 was 10 words in 2.4 s) (sound descriptions in brackets, kinetic lines word for word,
@@ -792,6 +909,15 @@ at most two lines, each shown ≥ 1.2 s at ≤ 3 words per second). One track se
 above y 1450 in 9:16 (§2). Whooshes and most clicks are not described; the music's changes, the reveal's thud, the
 Verified shimmer, the end-card landing's thud and the final chord are. The landing's cue, c22, reads "[Soft thud]" (as
 c08 does at the reveal) since 581f210; it described the pop that left the mix in 9535d46.
+
+**The energetic recut's captions** (ENERGY_SPEC §12; the others unchanged): c01 f0–72 "[Soft piano, a click, then a
+beat]" (the spec's "[Soft piano, then a click and a beat]" read 8 words in 2.4 s, 3.33 a second, over the file's own
+3; one word less reads 2.92), c02 f72–144 "[A pulse builds]", c03 "[Drums hit]" / "What did it change?", c08 "[The beat
+drops]" / "A small companion for your Mac", c09 "[Drum fill]", new c11b f890–936 "[Music muffles]", c12 now f936–1008,
+new c12b f1008–1044 "[Music returns]", c14 "[Hit and shimmer]" / "Evidence before done", c18 "[The beat lifts]" /
+"Views, not just text", c22 "[The beat returns]", c24 "[Final hit]" / "Free for Macs with Apple silicon". c07 "[Rising
+swell]" stays true (the riser still runs to f504), and the last cue keeps "Shown with sample data". The fastest cue
+reads 2.92 words a second. `src/content/filmCaptions.ts` mirrors the JSON (its test checks it).
 
 **Chapters** (`src/content/chapters.ts`, `startSeconds`; `film.chapters.vtt` and the chips come from there):
 
@@ -807,7 +933,9 @@ c08 does at the reveal) since 581f210; it described the pop that left the mix in
 | Open source | 60.0 s | 1800 | 1:00 |
 | Get Pebble | 67.2 s | 2016 | 1:07 |
 
-`FILM_DURATION_SECONDS = 76.8` ("1:16").
+`FILM_DURATION_SECONDS = 76.8` ("1:16"). The start frames are unchanged by the energetic recut; the desktop
+description now names the typed question, Pebble's answer starting and the hang, and the tested one says that Verified
+comes forward as the other steps fade back.
 
 ## 14. Review frames
 
@@ -816,9 +944,10 @@ c08 does at the reveal) since 581f210; it described the pop that left the mix in
 | Id | Frame | What it proves |
 |---|---|---|
 | SF1 | 0 | the thumbnail: the pebble on its desktop, eyes open |
+| SF0b | 60 | the energetic recut's 2 s muted check: the posted question legible in the open quick chat |
 | SF2 | 540 | the reveal lockup with T5 (paper, pool of light, the period pebble) |
 | SF3 | 985 | a punch-in: the held run, the pointer on Run the tests, T8 in the column |
-| SF4 | 1175 | the climax: the Verified row, the check mark, T10, the pebble writing |
+| SF4 | 1170 | the climax: the focus on the Verified row (the rest receded), the check mark, T10, the pebble writing |
 | SF4b | 1216 | the finished reply after the pull-back, the pebble happy, the pointer near Settings |
 | SF5 | 2280 | the end card, everything landed |
 | SF6 (extra) | 1700 | the chart as the world |
@@ -827,16 +956,15 @@ c08 does at the reveal) since 581f210; it described the pop that left the mix in
 
 | Shot | Frames |
 |---|---|
-| S1a | 0, 12, 22, 28, 36, 52 (mid pull-back), 64, 71 |
-| S1b | 72, 100, 126, 135 (mid zoom), 143 |
-| S2 | 146, 160, 180, 216, 250, 288, 330 |
-| S3 | 362, 380, 420, 440 (pebble landed), 470, 488 (anticipation), 497 (mid-leap) |
+| S1 (the recut's hook) | 0, 13 (the pointer lands), 18 (the click: the chat open), 24 (mid-move), 30 (C1), 53 (typed), 54 (Enter), 60 (muted check), 71, 72 (punch-in), 102 (the first word), 135 (the breath), 139 (mid-dive), 143 (the fill) |
+| S2 | 146, 160, 180, 216, 250, 288, 330 (and each slam's pre-roll frames, at 360 px wide) |
+| S3 | 362, 380, 420, 440 (pebble landed), 470, 477 (eyes lead), 486 (take-off), 490, 494 (the hang begins), 497, 500 (the dart begins), 502, 504 (the drop) |
 | S4 | 504, 506 (squash), 512 (flood mid), 525, 540, 600, 620, 640 |
 | S5a | 648, 652, 672, 690, 718 |
 | S5b | 722, 732 (mid move), 746, 760, 786, 800, 810, 814, 833, 840, 860 |
 | S5c | 864, 900, 924, 931, 954, 975, 990, 996 |
 | S5d | 1008, 1020, 1032, 1050, 1075, 1080, 1094, 1120, 1146 |
-| S5e | 1152, 1158, 1175, 1188, 1200 (mid pull-back), 1204 (happy), 1216 |
+| S5e (with the breath) | 1143 (the breath), 1146 ("· 11 s" on the focused row), 1151 (T10's pre-roll), 1152 (Verified: the focus jumps), 1170, 1187 (the release), 1200 (mid pull-back), 1204 (happy), 1216 |
 | S6 | 1224, 1233, 1260, 1300, 1332, 1350, 1380, 1404, 1420, 1440, 1458, 1488, 1520, 1530, 1536, 1542, 1560 |
 | S7 | 1584, 1600, 1640, 1656, 1665 (mid growth), 1676, 1700, 1728, 1760, 1782, 1790 |
 | S8 | 1800, 1812, 1840, 1872, 1900, 1941, 1980, 2005 |
@@ -963,7 +1091,7 @@ No reviewer may change these back.**
 
 | Item | Result |
 |---|---|
-| Frame 0 meaningful; a product moment by ~3 s; first line not "Introducing"/"Meet" | ✓ the pebble on its desktop at f0; the real chat at f36 (1.2 s); first line "What did it change?" at 4.8 s |
+| Frame 0 meaningful; a product moment by ~3 s; first line not "Introducing"/"Meet" | ✓ the pebble on its desktop at f0; the real chat at f18 (0.6 s), the question sent at 1.8 s and legible by 2 s, the first cut at 2.4 s, Pebble's answer from 3.4 s (the energetic recut); first line "What did it change?" at 4.8 s |
 | One spine; reveal at 20–30 %; payoff once at 60–80 %; end card performed | ✓ the 31st-of-the-month bug; reveal 21.9 %; payoff 68.8 % (the AgentGuard climax at 50 % is the proof's peak); the pebble lands and the word unrolls |
 | CTA ≤ 32 characters, held ≥ 3.5 s | ✓ 26 characters, 4.8 s under the final chord |
 | Claims trace to README/CLAIMS; no invented UI; illustrative numbers labelled | ✓ §8 sources; only real UI; the ring and check are drawn-on annotations, the check outside the UI; "Shown with sample data" on the end card |
@@ -1028,7 +1156,7 @@ the chart's white), and nothing outside the band asks to be read.
 
 | Shot | The vertical's framing |
 |---|---|
-| S1 desktop | the wallpaper is 1,000 desktop points tall and the frame 1,920 px, so no view zooms out below m 1.92. C0 (frame 0, the thumbnail) m 3.4 with the pebble's centre at (540, 1080); C1 m 2.2 on the open chat (its greeting at 29 px), the pebble at (836, 1370); C2 m 2.6 on the sent question, the panel's top 117 px inside the band, the pebble at (890, 1400). The pointer enters from (−70, 700) |
+| S1 desktop | the wallpaper is 1,000 desktop points tall and the frame 1,920 px, so no view zooms out below m 1.92. C0 (frame 0, the thumbnail) m 3.4 with the pebble's centre at (540, 1080); the energetic recut's C1 m 2.62 on the whole panel inside the band (its header at y 425), the pebble at (900, 1400); C2 m 2.95 on the conversation, the question's first line at y 331 (281 after the feed's scroll), the answer's lines 62 px inside both sides, the pebble at (949, 1216). The pointer enters from (−70, 700) |
 | S2 questions | the list's centres at y 840 / 960 / 1080, its left edge at x 202 (the square's) |
 | S3 build | T4 centred on y 820; H1 rises from (540, 2050) to (540, 1300), above the caption band; H2 to the lockup |
 | S4 reveal, S9 end card | the lockup's foot (806, 832), its baseline y 830; T5 baseline 960; T18 950, T19 1060, T20 1130, T21 1250, T22 1290; H4 from (1180, 2010) |
@@ -1050,7 +1178,7 @@ for.
 
 | Source frames | Cut frames | Film bars | What it keeps |
 |---|---|---|---|
-| f0–71 | 0–71 | 1 | the hook: frame 0 (the thumbnail), the click at f36, the quick chat |
+| f0–71 | 0–71 | 1 | the hook: frame 0 (the thumbnail), the click at f18, the question typed and sent by f54 |
 | f360–611 | 72–323 | 6–9 (to beat 2) | T4, the pebble's rise and leap, **the reveal** (f504 → cut 216), T5 |
 | f900–1223 | 324–647 | 13 (beat 3)–17 | the AgentGuard proof: the hold, Run the tests, the isolated copy, **Verified** |
 | f2088–2303 | 648–863 | 30–32 | the end card: T18, **the final chord** with T19 and T20 (f2160 → cut 720), T21 and T22 |
@@ -1061,14 +1189,25 @@ for.
   plays score bars **1, 6, 7, 8, 9, 14, 15, 16, 17, 30, 31, 32**, and `render_sampled.py --levels-from` the film bed's
   `.score.json` plays them at the film's gains. The reveal (score bar 7 → 8) lands on cut 216 and the final chord
   (30 → 31) on cut 720, ringing through bar 32. The effects are the film's, mapped by `tools/audio/cut_cues.py` into
-  `tools/audio/cues.x30.json`: 8 cues, no whoosh, nothing in the end card. One command builds the bed, the mix and the
-  gates: `scripts/heavy.sh cut-x30 tools/audio/cut_soundtrack.sh docs/film-cuts/x30.json`, which writes
-  `.work/audio/render/soundtrack_x30_social.wav` (`b8e34c32…`, −14.1 LUFS, −1.5 dBTP, exactly 864 frames). Hashes and
+  `tools/audio/cues.x30.json` (before the energetic recut: 8 cues, no whoosh, nothing in the end card; with the
+  recut's effects: 17, the ui_lock add included, the final hit in the end card). One command builds the bed, the mix
+  and the gates: `scripts/heavy.sh cut-x30 tools/audio/cut_soundtrack.sh docs/film-cuts/x30.json`, which writes
+  `.work/audio/render/soundtrack_x30_social.wav` (before the recut `b8e34c32…`, −14.1 LUFS, −1.5 dBTP, exactly 864
+  frames; the recut keeps the x30 bed as rendered and re-mixes it with the cut's drive, its step only). Hashes and
   gates: `docs/media-provenance.json`, `music.sampled_score.cut_x30`.
 - **Captions:** `node tools/captions/build.mjs --cut docs/film-cuts/x30.json --srt <file>` (`--check` validates only)
-  maps the film's cues onto the cut. That gives 12 cues: c01, c02, c06–c08, c12–c14 and c23–c25 whole, plus the cut's
-  own x09 "[Music picks up]" (cut 324–360, c09's sound at the same beat of the same score bar). c22 falls outside the
-  ranges.
+  maps the film's cues onto the cut. Since the energetic recut that gives 12 cues: c01, c06–c08, c12, c12b, c13, c14
+  and c23–c25 whole, plus c11b "[Music muffles]" clipped to cut 324–360 (1.2 s of its 1.53 s; a note, not an error):
+  the joint onto the held run is where the music muffles. The cut's own x09 "[Music picks up]" is gone. c02 and c22
+  fall outside the ranges.
+- **The energetic recut** (ENERGY_SPEC §10; OVERRIDES §35 decision 5): the ranges and score bars stay. The cut's
+  `sfx.add` puts ui_lock on cut frame 324 (the film's sits on f890, before the range [900, 1224)), so the joint gets
+  the lock; `tools/audio/cut_cues.py` maps the effects and the automation (the hold from cut 324 to the click at 414,
+  released to 432; gaps at 567 and 711; the tail at 774), and `drive.py --cut` renders the cut's drum-and-sub stem
+  from the same bar table (the score lane's tools). The cut's shape: the muted hook (the click at 0.6 s, the question
+  sent at 1.8 s), T4 on a hit at cut 72, the drop at 216 (7.2 s), the muffled joint at 324, T8 on the thump at 360,
+  the release at 414, the groove back at 432, the gap at 567, Verified at 576, T18 at 648, the gap at 711, the final
+  hit at 720 (24.0 s), the fade from 774 and 1.8 s of silence from 810.
 - **Picture and delivery:** there is **no separate Remotion composition**. The cut is the film's own frames, so the
   film's fixes reach it with the next encode. The `LaunchFilm30*` ids in the cut file's `compositions` are not
   registered in `video/src/Root.tsx`. Each aspect's 76.8 s master is cut and muxed in one step:
