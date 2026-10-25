@@ -1,16 +1,29 @@
 [
  {
   "file": "../../.work/audio/sfx/click_a.wav",
-  "t": 1.2333,
+  "t": 0.6333,
   "align": "peak",
   "gain_db": -9,
   "pan": 0.13,
   "duck_db": 0,
   "event": "the pebble is clicked",
-  "frame": 36,
-  "peak_frame": 37,
+  "frame": 18,
+  "peak_frame": 19,
   "role": "click",
   "take": "click_a"
+ },
+ {
+  "file": "../../.work/audio/sfx/tick_c.wav",
+  "t": 1.8333,
+  "align": "peak",
+  "gain_db": -15,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "the message is sent (Enter)",
+  "frame": 54,
+  "peak_frame": 55,
+  "role": "key",
+  "take": "tick_c"
  },
  {
   "file": "../../.work/audio/sfx/whoosh_b.wav",
@@ -39,17 +52,17 @@
   "take": "riser"
  },
  {
-  "file": "../../.work/audio/sfx/soft_hit_b.wav",
+  "file": "../../.work/audio/sfx/impact_a.wav",
   "t": 16.8333,
   "align": "peak",
   "gain_db": -6,
   "pan": 0,
   "duck_db": 2.5,
-  "event": "the reveal landing",
+  "event": "the drop: the pebble lands as the full stop",
   "frame": 504,
   "peak_frame": 505,
-  "role": "hit",
-  "take": "soft_hit_b"
+  "role": "impact",
+  "take": "impact_a"
  },
  {
   "file": "../../.work/audio/sfx/thud_a.wav",
@@ -58,7 +71,7 @@
   "gain_db": -13,
   "pan": 0,
   "duck_db": 0,
-  "event": "texture under the hit",
+  "event": "texture under the drop",
   "frame": 504,
   "peak_frame": 505,
   "role": "thud",
@@ -78,6 +91,19 @@
   "take": "whoosh_a"
  },
  {
+  "file": "../../.work/audio/sfx/ui_card.wav",
+  "t": 24.1,
+  "align": "peak",
+  "gain_db": -12,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "the Details drawer opens with the edit card",
+  "frame": 722,
+  "peak_frame": 723,
+  "role": "ui",
+  "take": "ui_card"
+ },
+ {
   "file": "../../.work/audio/sfx/click_b.wav",
   "t": 27.0333,
   "align": "peak",
@@ -91,17 +117,82 @@
   "take": "click_b"
  },
  {
-  "file": "../../.work/audio/sfx/pop_a.wav",
+  "file": "../../.work/audio/sfx/ui_done.wav",
   "t": 27.1667,
   "align": "peak",
-  "gain_db": -13,
+  "gain_db": -12,
   "pan": 0,
   "duck_db": 0,
   "event": "Done",
   "frame": 814,
   "peak_frame": 815,
-  "role": "pop",
-  "take": "pop_a"
+  "role": "ui",
+  "take": "ui_done"
+ },
+ {
+  "file": "../../.work/audio/sfx/ui_lock.wav",
+  "t": 29.7,
+  "align": "peak",
+  "gain_db": -12,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "AgentGuard holds the task",
+  "frame": 890,
+  "peak_frame": 891,
+  "role": "ui",
+  "take": "ui_lock"
+ },
+ {
+  "file": "../../.work/audio/sfx/rim_a.wav",
+  "t": 30.0333,
+  "align": "peak",
+  "gain_db": -15,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "the hold's clock (bar 13, beat 3)",
+  "frame": 900,
+  "peak_frame": 901,
+  "role": "rim",
+  "take": "rim_a"
+ },
+ {
+  "file": "../../.work/audio/sfx/rim_b.wav",
+  "t": 31.2333,
+  "align": "peak",
+  "gain_db": -15,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "the hold's clock (bar 14, beat 1)",
+  "frame": 936,
+  "peak_frame": 937,
+  "role": "rim",
+  "take": "rim_b"
+ },
+ {
+  "file": "../../.work/audio/sfx/soft_hit_a.wav",
+  "t": 31.2333,
+  "align": "peak",
+  "gain_db": -12,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "T8 lands in the hold",
+  "frame": 936,
+  "peak_frame": 937,
+  "role": "thump",
+  "take": "soft_hit_a"
+ },
+ {
+  "file": "../../.work/audio/sfx/rim_a.wav",
+  "t": 32.4333,
+  "align": "peak",
+  "gain_db": -15,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "the hold's clock (bar 14, beat 3)",
+  "frame": 972,
+  "peak_frame": 973,
+  "role": "rim",
+  "take": "rim_a"
  },
  {
   "file": "../../.work/audio/sfx/click_c.wav",
@@ -133,7 +224,7 @@
   "file": "../../.work/audio/sfx/tick_a.wav",
   "t": 36.5,
   "align": "peak",
-  "gain_db": -24,
+  "gain_db": -18,
   "pan": 0.1,
   "duck_db": 0,
   "event": "\"Requesting isolated tests\" row",
@@ -143,7 +234,33 @@
   "take": "tick_a"
  },
  {
-  "file": "../../.work/audio/sfx/shimmer_a.wav",
+  "file": "../../.work/audio/sfx/tick_b.wav",
+  "t": 38.2333,
+  "align": "peak",
+  "gain_db": -18,
+  "pan": 0.1,
+  "duck_db": 0,
+  "event": "the app's own \"· 11 s\", alone in the breath",
+  "frame": 1146,
+  "peak_frame": 1147,
+  "role": "tick",
+  "take": "tick_b"
+ },
+ {
+  "file": "../../.work/audio/sfx/impact_b.wav",
+  "t": 38.4333,
+  "align": "peak",
+  "gain_db": -6,
+  "pan": 0,
+  "duck_db": 1.5,
+  "event": "Verified",
+  "frame": 1152,
+  "peak_frame": 1153,
+  "role": "impact",
+  "take": "impact_b"
+ },
+ {
+  "file": "../../.work/audio/sfx/ui_verified.wav",
   "t": 38.4333,
   "align": "peak",
   "gain_db": -12,
@@ -152,8 +269,8 @@
   "event": "Verified",
   "frame": 1152,
   "peak_frame": 1153,
-  "role": "shimmer",
-  "take": "shimmer_a"
+  "role": "ui",
+  "take": "ui_verified"
  },
  {
   "file": "../../.work/audio/sfx/click_b.wav",
@@ -221,17 +338,30 @@
   "take": "click_c"
  },
  {
-  "file": "../../.work/audio/sfx/pop_c.wav",
-  "t": 51.4333,
+  "file": "../../.work/audio/sfx/ui_forget.wav",
+  "t": 51.0333,
   "align": "peak",
-  "gain_db": -13,
+  "gain_db": -12,
   "pan": 0,
   "duck_db": 0,
   "event": "the record dissolves",
-  "frame": 1542,
-  "peak_frame": 1543,
-  "role": "pop",
-  "take": "pop_c"
+  "frame": 1530,
+  "peak_frame": 1531,
+  "role": "ui",
+  "take": "ui_forget"
+ },
+ {
+  "file": "../../.work/audio/sfx/impact_a.wav",
+  "t": 52.8333,
+  "align": "peak",
+  "gain_db": -6,
+  "pan": 0,
+  "duck_db": 1.5,
+  "event": "the second lift",
+  "frame": 1584,
+  "peak_frame": 1585,
+  "role": "impact",
+  "take": "impact_a"
  },
  {
   "file": "../../.work/audio/sfx/whoosh_c.wav",
@@ -260,16 +390,148 @@
   "take": "whoosh_a"
  },
  {
+  "file": "../../.work/audio/sfx/impact_b.wav",
+  "t": 60.0333,
+  "align": "peak",
+  "gain_db": -6,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "the breakdown's one hit",
+  "frame": 1800,
+  "peak_frame": 1801,
+  "role": "impact",
+  "take": "impact_b"
+ },
+ {
   "file": "../../.work/audio/sfx/thud_b.wav",
   "t": 67.2333,
   "align": "peak",
   "gain_db": -13,
   "pan": 0,
   "duck_db": 1.5,
-  "event": "landing texture",
+  "event": "the end-card landing",
   "frame": 2016,
   "peak_frame": 2017,
   "role": "thud",
   "take": "thud_b"
+ },
+ {
+  "file": "../../.work/audio/sfx/impact_b.wav",
+  "t": 67.2333,
+  "align": "peak",
+  "gain_db": -6,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "the end-card landing",
+  "frame": 2016,
+  "peak_frame": 2017,
+  "role": "impact",
+  "take": "impact_b"
+ },
+ {
+  "file": "../../.work/audio/sfx/impact_a.wav",
+  "t": 72.0333,
+  "align": "peak",
+  "gain_db": -6,
+  "pan": 0,
+  "duck_db": 2,
+  "event": "the final hit",
+  "frame": 2160,
+  "peak_frame": 2161,
+  "role": "impact",
+  "take": "impact_a"
+ },
+ {
+  "role": "gap",
+  "frame": 135,
+  "to_frame": 144,
+  "t": 4.5,
+  "t_end": 4.8,
+  "event": "the breath before the first slam; the dive into the pebble",
+  "db": -24,
+  "attack_ms": 10,
+  "release_ms": 4,
+  "applies_to": [
+   "bed",
+   "drive"
+  ]
+ },
+ {
+  "role": "hold",
+  "frame": 891,
+  "to_frame": 990,
+  "release_frame": 1008,
+  "t": 29.7,
+  "t_end": 33,
+  "event": "AgentGuard holds the task; Run the tests releases it",
+  "bed_db": -6,
+  "bed_lowpass_hz": 1200,
+  "crossfade_ms": 30,
+  "drive": "mute",
+  "drive_ms": 10,
+  "release_curve": "ease-in",
+  "applies_to": [
+   "bed",
+   "drive"
+  ]
+ },
+ {
+  "role": "gap",
+  "frame": 1143,
+  "to_frame": 1152,
+  "t": 38.1,
+  "t_end": 38.4,
+  "event": "the breath before Verified; the app's own \"· 11 s\" lands in it",
+  "db": -24,
+  "attack_ms": 10,
+  "release_ms": 4,
+  "applies_to": [
+   "bed",
+   "drive"
+  ]
+ },
+ {
+  "role": "gap",
+  "frame": 1575,
+  "to_frame": 1584,
+  "t": 52.5,
+  "t_end": 52.8,
+  "event": "the breath before the second lift",
+  "db": -24,
+  "attack_ms": 10,
+  "release_ms": 4,
+  "applies_to": [
+   "bed",
+   "drive"
+  ]
+ },
+ {
+  "role": "gap",
+  "frame": 2151,
+  "to_frame": 2160,
+  "t": 71.7,
+  "t_end": 72,
+  "event": "the last breath before the final hit",
+  "db": -24,
+  "attack_ms": 10,
+  "release_ms": 4,
+  "applies_to": [
+   "bed",
+   "drive"
+  ]
+ },
+ {
+  "role": "tail",
+  "frame": 2214,
+  "to_frame": 2250,
+  "t": 73.8,
+  "t_end": 75,
+  "event": "the master fades, then digital silence to the end",
+  "fade_to_db": -60,
+  "then": "zeros",
+  "after_limiter": true,
+  "applies_to": [
+   "master"
+  ]
  }
 ]

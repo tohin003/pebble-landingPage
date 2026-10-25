@@ -467,8 +467,10 @@ export interface Click {
   target: string;
   shot: string;
 }
+/** The energetic recut (ENERGY_SPEC §3, §5): the hook's click moves from f36 to f18 (beat 2) by design, and the
+ *  recording's click time (0.60 s) is still drawn on the click frame; every other click frame stays. */
 export const CLICKS: readonly Click[] = [
-  { frame: 36, target: "the pebble", shot: "S1a" },
+  { frame: 18, target: "the pebble", shot: "S1a" },
   { frame: 810, target: "Apply edit", shot: "S5b" },
   { frame: 990, target: "Run the tests", shot: "S5c" },
   { frame: 1080, target: "Run tests", shot: "S5d" },
@@ -479,7 +481,9 @@ export const CLICKS: readonly Click[] = [
   { frame: 1530, target: "the bin (Forget this memory)", shot: "S6c" },
 ];
 
-export type SfxRole = "click" | "pop" | "tick" | "thud" | "whoosh" | "riser" | "hit" | "shimmer";
+/** Roles of tools/audio/sfx_kit.json. The energetic recut adds impact, ui, rim, key and thump; pop, hit and shimmer
+ *  stay in the kit, unused (the pitched pops, the reveal's soft hit and the shimmer left the film). */
+export type SfxRole = "click" | "pop" | "tick" | "thud" | "whoosh" | "riser" | "hit" | "shimmer" | "impact" | "ui" | "rim" | "key" | "thump";
 export interface SfxCue {
   /** the PICTURE frame; the exporter puts the peak one frame later (the riser's END on the reveal, sfx_kit.json) */
   frame: number;
@@ -489,34 +493,88 @@ export interface SfxCue {
   pan?: number;
   duckDb?: number;
 }
-/** G2a: every click's pan is §11's 0.4 × (x − W/2)/(W/2) at the pointer's 16:9 frame x on its click-down frame, as the
- *  animated film places it (film/framing.ts pointerSpans, film/hook.ts); §11 had estimates for five of the nine. */
+/**
+ * The energetic recut's effects (ENERGY_SPEC §8.4): designed UI sounds on real events, impacts on the hits, the one
+ * riser. G2a: every click's pan is §11's 0.4 × (x − W/2)/(W/2) at the pointer's 16:9 frame x on its click-down frame,
+ * as the animated film places it (film/framing.ts pointerSpans, film/hook.ts). Each effect peaks at picture + 1 (the
+ * exporter's job), except the riser, whose end sits on the reveal. At most three sound at once (export-cues.ts).
+ * - Unpitched only: ui_done replaces the tuned pop_a (f814), ui_forget the pop_c plip (it sat on f1542, it now runs
+ *   under the dissolve from the click), impact_a the reveal's soft_hit_b, ui_verified the shimmer.
+ * - The hold's clock (OVERRIDES §35, decision 3): rim ticks on beats 1 and 3 only to begin with (f900, f936, f972),
+ *   not §8.4's every beat; every beat (add f918 and f954) only if the classifier stays clean, none if 1 and 3 trip it.
+ *   So the list holds 34 effects, not §8.4's 36.
+ * - Lane fin-audio (OVERRIDES §19): no pop on the end-card landing; its thud keeps the weight, now with impact_b.
+ */
 export const SFX: readonly SfxCue[] = [
-  { frame: 36, role: "click", take: "click_a", event: "the pebble is clicked", pan: 0.13 },
-  // lane G-fix (REVIEW-G2 P1-2): the dives now fill the frame on f143 / f1799, so each whoosh peaks on the world change
+  { frame: 18, role: "click", take: "click_a", event: "the pebble is clicked", pan: 0.13 },
+  { frame: 54, role: "key", take: "tick_c", event: "the message is sent (Enter)" },
+  // lane G-fix (REVIEW-G2 P1-2): the dives fill the frame on f143 / f1799, so each whoosh peaks on the world change
   { frame: 143, role: "whoosh", take: "whoosh_b", event: "into the sage field (zoom through the pebble)" },
   { frame: 504, role: "riser", take: "riser", event: "bars 6–7, its end on the reveal" },
-  { frame: 504, role: "hit", take: "soft_hit_b", event: "the reveal landing", duckDb: 2.5 },
-  { frame: 504, role: "thud", take: "thud_a", event: "texture under the hit" },
+  { frame: 504, role: "impact", take: "impact_a", event: "the drop: the pebble lands as the full stop", duckDb: 2.5 },
+  { frame: 504, role: "thud", take: "thud_a", event: "texture under the drop" },
   { frame: 648, role: "whoosh", take: "whoosh_a", event: "the carry into the window world" },
+  { frame: 722, role: "ui", take: "ui_card", event: "the Details drawer opens with the edit card" },
   { frame: 810, role: "click", take: "click_b", event: "Apply edit", pan: 0.3 },
-  { frame: 814, role: "pop", take: "pop_a", event: "Done" },
+  { frame: 814, role: "ui", take: "ui_done", event: "Done" },
+  { frame: 890, role: "ui", take: "ui_lock", event: "AgentGuard holds the task" },
+  { frame: 900, role: "rim", take: "rim_a", event: "the hold's clock (bar 13, beat 3)" },
+  { frame: 936, role: "rim", take: "rim_b", event: "the hold's clock (bar 14, beat 1)" },
+  { frame: 936, role: "thump", take: "soft_hit_a", event: "T8 lands in the hold" },
+  { frame: 972, role: "rim", take: "rim_a", event: "the hold's clock (bar 14, beat 3)" },
   { frame: 990, role: "click", take: "click_c", event: "Run the tests", pan: 0.09 },
   { frame: 1080, role: "click", take: "click_a", event: "Run tests", pan: 0.3 },
   { frame: 1094, role: "tick", take: "tick_a", event: "\"Requesting isolated tests\" row" },
-  { frame: 1152, role: "shimmer", take: "shimmer_a", event: "Verified" },
+  { frame: 1146, role: "tick", take: "tick_b", event: "the app's own \"· 11 s\", alone in the breath" },
+  { frame: 1152, role: "impact", take: "impact_b", event: "Verified", duckDb: 1.5 },
+  { frame: 1152, role: "ui", take: "ui_verified", event: "Verified" },
   { frame: 1224, role: "click", take: "click_b", event: "Settings", pan: 0.37 },
   { frame: 1332, role: "click", take: "click_c", event: "Permissions tab", pan: 0.12 },
   { frame: 1404, role: "click", take: "click_a", event: "Auto in project", pan: 0.06 },
   { frame: 1440, role: "click", take: "click_b", event: "Memory tab", pan: 0.21 },
   { frame: 1530, role: "click", take: "click_c", event: "the bin", pan: 0.37 },
-  { frame: 1542, role: "pop", take: "pop_c", event: "the record dissolves" },
+  { frame: 1530, role: "ui", take: "ui_forget", event: "the record dissolves" },
+  { frame: 1584, role: "impact", take: "impact_a", event: "the second lift", duckDb: 1.5 },
   { frame: 1665, role: "whoosh", take: "whoosh_c", event: "the chart becomes the world (its fastest frame)" },
   { frame: 1799, role: "whoosh", take: "whoosh_a", event: "into the sage field (zoom through the badge)" },
-  // lane fin-audio (OVERRIDES §19): no pop on the end-card landing. pop_b's F♯5 plip over the motif's D5 downbeat read
-  // as 'telephone' in the social master's 66–69 s window; the thud and its duck alone keep the landing's weight.
-  { frame: 2016, role: "thud", take: "thud_b", event: "landing texture", duckDb: 1.5 },
+  { frame: 1800, role: "impact", take: "impact_b", event: "the breakdown's one hit" },
+  { frame: 2016, role: "thud", take: "thud_b", event: "the end-card landing", duckDb: 1.5 },
+  { frame: 2016, role: "impact", take: "impact_b", event: "the end-card landing" },
+  { frame: 2160, role: "impact", take: "impact_a", event: "the final hit", duckDb: 2 },
 ];
+
+/**
+ * Mix automation (ENERGY_SPEC §8.3; tools/audio/sfx_kit.json "automation"): spans, not effects. The exporter writes
+ * each into tools/audio/cues.json as an entry with no file; tools/audio/mix_master.py applies it, cut_cues.py clips it
+ * to a cut's ranges, and it never counts toward the three-effects limit. Effects are never gapped.
+ * - gap: the bed and the drive −24 dB from `frame` to `toFrame`, the hit frame (each 9 frames, the last eighth before a
+ *   bar line); the bed's own pickup on the "and" of 4 is swallowed: that is the breath;
+ * - hold: from f891 (the "and" of beat 2, one frame after the app holds the task at f890) the drive is muted and the
+ *   bed sinks behind a low-pass; the Run the tests click (`toFrame`, f990) releases it, back by `releaseFrame` (f1008);
+ * - tail: the master fades from `frame` and is digital silence from `toFrame` (f2250) to the end.
+ * The composed breath f486–503 has no automation: the bed and the drive are silent there by their own notes.
+ */
+export type AutomationRole = "gap" | "hold" | "tail";
+export interface AutomationCue {
+  role: AutomationRole;
+  /** the span's first frame */
+  frame: number;
+  /** the frame it ends on: a gap's hit, the hold's releasing click, the tail's first silent frame */
+  toFrame: number;
+  /** the hold only: the bar line its release ends on */
+  releaseFrame?: number;
+  event: string;
+}
+export const AUTOMATION: readonly AutomationCue[] = [
+  { role: "gap", frame: at(2, 4, 9), toFrame: at(3), event: "the breath before the first slam; the dive into the pebble" },
+  { role: "hold", frame: at(13, 2, 9), toFrame: at(14, 4), releaseFrame: at(15), event: "AgentGuard holds the task; Run the tests releases it" },
+  { role: "gap", frame: at(16, 4, 9), toFrame: at(17), event: "the breath before Verified; the app's own \"· 11 s\" lands in it" },
+  { role: "gap", frame: at(22, 4, 9), toFrame: at(23), event: "the breath before the second lift" },
+  { role: "gap", frame: at(30, 4, 9), toFrame: at(31), event: "the last breath before the final hit" },
+  { role: "tail", frame: at(31, 4), toFrame: at(32, 2), event: "the master fades, then digital silence to the end" },
+];
+/** The composed breath before the drop (ENERGY_SPEC §6): an empty beat by composition, H2 hanging through it. */
+export const COMPOSED_BREATH = { from: at(7, 4), to: at(8) } as const;
 
 export interface Seam {
   frame: number;

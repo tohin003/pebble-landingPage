@@ -10,10 +10,15 @@
 // "peak"); the one riser ENDS on the reveal (t = reveal frame / fps, align "end"); takes rotate as the timeline names
 // them; pans are the timeline's (§11's formula at the pointer's 16:9 x), else the role's. When the kit's WAVs are on
 // disk (.work/audio/sfx), it also checks that no more than three effects sound at once.
+//
+// The energetic recut (ENERGY_SPEC §8.3): after the effects come the mix's automation spans (timeline AUTOMATION: the
+// gaps, the hold and the tail) as entries with NO "file", in the kit's format (sfx_kit.json "automation"): role, frame,
+// to_frame, release_frame (the hold only), t = frame / fps, t_end = to_frame / fps, event, then the role's params from
+// the kit. They are spans, not effects: they never count toward the three-at-once limit.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { FPS, REVEAL_FRAME, SFX, validateTimeline } from "../src/film/timeline";
+import { AUTOMATION, FPS, REVEAL_FRAME, SFX, validateTimeline } from "../src/film/timeline";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, "..", "..");
@@ -27,7 +32,11 @@ interface Role {
   duck_db?: number;
   pan: number | string;
 }
-const kit = JSON.parse(readFileSync(join(audio, "sfx_kit.json"), "utf8")) as { dir: string; roles: Record<string, Role> };
+const kit = JSON.parse(readFileSync(join(audio, "sfx_kit.json"), "utf8")) as {
+  dir: string;
+  roles: Record<string, Role>;
+  automation?: Record<string, Record<string, unknown>>;
+};
 
 const problems = validateTimeline();
 const r4 = (v: number) => Math.round(v * 10000) / 10000;
@@ -55,6 +64,26 @@ const cues = SFX.map((c) => {
   };
 });
 if (cues.filter((c) => c.role === "riser").length !== 1) problems.push("there must be exactly one riser");
+
+// the automation spans, each with its role's params from the kit (its prose "when" stays in the kit)
+const spans = AUTOMATION.map((a) => {
+  const params = kit.automation?.[a.role];
+  if (!params || typeof params !== "object") {
+    problems.push(`sfx_kit.json has no automation role "${a.role}"`);
+    return null;
+  }
+  const rest = Object.fromEntries(Object.entries(params).filter(([k]) => k !== "when"));
+  return {
+    role: a.role,
+    frame: a.frame,
+    to_frame: a.toFrame,
+    ...(a.releaseFrame !== undefined ? { release_frame: a.releaseFrame } : {}),
+    t: r4(a.frame / FPS),
+    t_end: r4(a.toFrame / FPS),
+    event: a.event,
+    ...rest,
+  };
+});
 
 /** Seconds of a 16/24/32-bit PCM or float WAV (RIFF header only). */
 function wavSeconds(path: string): number | null {
@@ -102,15 +131,16 @@ if (problems.length) {
   console.error(`export-cues: problems:\n  ${problems.join("\n  ")}`);
   process.exit(1);
 }
-const text = `${JSON.stringify(cues, null, 1)}\n`;
+const text = `${JSON.stringify([...cues, ...spans], null, 1)}\n`;
+const counts = `${cues.length} effects and ${spans.length} automation spans`;
 if (process.argv.includes("--check")) {
   const current = existsSync(out) ? readFileSync(out, "utf8") : "";
   if (current !== text) {
     console.error("export-cues: tools/audio/cues.json is out of date; run bun video/scripts/export-cues.ts");
     process.exit(1);
   }
-  console.log(`export-cues: tools/audio/cues.json is current (${cues.length} cues; ${overlapNote})`);
+  console.log(`export-cues: tools/audio/cues.json is current (${counts}; ${overlapNote})`);
 } else {
   writeFileSync(out, text);
-  console.log(`export-cues: wrote ${cues.length} cues to tools/audio/cues.json (${overlapNote})`);
+  console.log(`export-cues: wrote ${counts} to tools/audio/cues.json (${overlapNote})`);
 }
