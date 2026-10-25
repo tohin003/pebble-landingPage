@@ -4,14 +4,15 @@ numpy, scipy and pedalboard only, no samples: our own work, released CC0 1.0 wit
 tools/audio/mix_master.py --drive mixes it under the bed, so the hold and the gaps can treat the two apart.
 
 Voices (all mono except the hats and the crash):
-  SUB    a sine on the bar's root, through a biased tanh (2nd harmonic -14 dB, 3rd -19.5 dB, so laptops hear it),
+  SUB    a sine on the bar's root, through a biased tanh (2nd harmonic -21 dB, 3rd -22 dB, so laptops hear it),
          HPF 28 Hz. On a hit it starts an octave above and falls to the root in 25 ms. In a groove it is ducked 6 dB
          for 90 ms by each kick, the drive's own and the bed's felt kick (compose_score.py: bars 8-25 on 1 and 3, 2.5
          in 23-25; bars 29-31 on 1).
   KICK   a 2 ms click and a 160 -> 48 Hz sine, tau 0.18 s.
-  SNAP   three 1-3 kHz noise bursts 7 ms apart and a 120 ms plate tail. CLAP is the same at 60 % with a 190 Hz noise
-         body, used in groove C only.
-  HAT    7-12 kHz noise, closed (tau 18 ms, pan +0.2) and open (tau 110 ms, pan -0.2); 16ths accented 1 .45 .7 .45.
+  SNAP   three 1-3 kHz noise bursts 6-11 ms apart (irregular, per hit) and a 120 ms plate tail. CLAP is the same at
+         60 % with a 190 Hz noise body, used in groove C only.
+  HAT    7-12 kHz noise, closed (tau 18 ms, 3 ms attack, pan +0.2) and open (tau 110 ms, pan -0.2); 16ths accented
+         1 .45 .7 .45.
   TOM    A2, D3 and E3 (110, 147, 165 Hz: chord tones of bars 9 and 22), each falling 25 % in 60 ms.
   CRASH  5-12 kHz noise, 8 ms attack, tau 1.1 s, no tone.
   RIM    a 12 ms 2-6 kHz noise click (the breakdown's tick-hits only).
@@ -25,6 +26,28 @@ beats against the sub it picks a ripple up to 30 ms after the onset. On this ste
 (10 ms down, ending on that frame; back on the next bar line): the composed breath f486-503 is silent by itself.
 Each event draws its noise from its own generator, seeded by (seed, score bar, beat, voice), so a bar sounds the same
 wherever an arrangement plays it.
+
+CLASSIFIER (the gate binds over §8.2's recipe: OVERRIDES §34, ENERGY_SPEC §11). The drive alone tags clean (phone 0.067,
+voice 0.043, alarm 0.109), but under the kept bed the spec's pattern made Apple's SoundAnalysis hear a phone:
+telephone and ringtone up to 0.63 (gate 0.30, target 0.25), where the bed alone reads under 0.15. The bed's mallets
+(marimba and kalimba ostinatos in 8ths) with any steady percussion over them read as a ringtone; the level hardly
+matters (the whole drive 6 dB down still read 0.59). Measured one change at a time on test mixes (bed + automation
++ drive, -16 LUFS, both window grids), these changes bring it to 0.25:
+  - the closed hats play quarter notes (QUARTER_HAT_BARS) instead of 8ths and 16ths: 0.63 -> 0.41; 8ths kept 12 dB
+    down still read 0.48. The drop (bar 8) and the AgentGuard climax (bars 13-17, the bar 16 build included) keep
+    their 8ths and 16ths, which read no worse; 8ths in the hook read 0.30 (3-6 s);
+  - grooves A and A' have no snaps on 2 and 4 (the bed's own groove carries the proof's backbeat): the windows over
+    bars 9-12 and 18-22 fall under 0.25; snaps there at half velocity still read 0.41;
+  - no short ghost subs in bars 4-5 (f252, f315, f324) and no sub on 2.5 in groove C: short pitched sub blips over
+    the kalimba read as a ringtone (0.34 -> 0.28);
+  - the snap's three bursts at irregular gaps (exactly 7 ms apart they buzz at 143 Hz: "mosquito_buzz" 0.79), the
+    snap and clap 4 dB down, softer hat and burst attacks, half the kick's click, and a gentler bias on the sub's
+    tanh (2nd and 3rd harmonics at -21 and -22 dB instead of -14 and -19.5).
+Darker snaps (400-1500 Hz) read worse in the build (0.57). The tension bars' slams, the drop, the lift, the final hit,
+grooves B and C, the fills and the bar 16 build keep the spec's shape. On scratch masters with the film's cues.json
+(2026-10-25) every gate passed: phone max 0.279 web, 0.282 social, 0.167 x30, with warnings (0.25-0.28) at 21-25.5 s
+and 67.5-70.5 s; the drive alone reads phone 0.082, voice 0.042, alarm 0.142. Note: 'foghorn' (not gated) reads
+0.52-0.65 over the final hit's 2.5 s sub.
 
 Level: one bus gain (BUS_DB), calibrated so the drive alone over bars 3-30 sits 4 LU under the bed alone over the same
 bars (ENERGY_SPEC §8.2: 3-5 LU, start at 4). With the bed on disk the script measures and prints that difference.
@@ -69,7 +92,7 @@ BEAT_F = 18                      # frames per beat (100 BPM at 30 fps)
 BAR_F = 72
 SPF = SR // FPS                  # 1,600 samples per frame: every 16th (4.5 frames) is a whole number of samples
 N_BARS = 32
-BUS_DB = -10.8                   # the bus gain: 4.0 LU under the film bed over bars 3-30 (see "Level" above)
+BUS_DB = -9.9                    # the bus gain: 4.1 LU under the film bed over bars 3-30 (see "Level" above)
 
 # ---- the arrangement: the score's bars in playing order (as compose_score.py's FORMS) ----
 FORMS = {"film": list(range(1, N_BARS + 1)), "x30": [1, 6, 7, 8, 9, 14, 15, 16, 17, 30, 31, 32],
@@ -141,6 +164,7 @@ def frame_of(bar, beat):
 assert sorted(frame_of(b, t) for b, t in SKIP_HAT) == [18, 54, 810, 1080, 1224, 1332, 1404, 1440, 1530]
 
 # ---- the pattern: events per score bar, (beat, voice, params) ----
+QUARTER_HAT_BARS = set(range(1, N_BARS + 1)) - {8, 13, 14, 15, 16, 17}   # quarter-note hats (CLASSIFIER, above)
 EV = {b: [] for b in range(1, N_BARS + 1)}
 GATES = {}          # score bar -> beat from which the drive is silent to the bar's end
 
@@ -155,8 +179,9 @@ def sub(bar, beat, length, vel, hit=False, duck=None):
 
 
 def hats(bar, beats, vel, open_at=(), sixteenths=False, ramp=None):
-    """Closed hats on each 8th (or 16th) in [beats[0], beats[1]); open hats at open_at; ramp=(v0, v1) for a swell."""
-    step = 0.25 if sixteenths else 0.5
+    """Closed hats on each 8th (or 16th) in [beats[0], beats[1]), on the quarters in QUARTER_HAT_BARS (CLASSIFIER, above);
+    open hats at open_at; ramp=(v0, v1) for a swell."""
+    step = 1.0 if bar in QUARTER_HAT_BARS else 0.25 if sixteenths else 0.5
     grid = np.arange(beats[0], beats[1] - 1e-9, step)
     for i, t in enumerate(grid):
         if any(abs(t - o) < 1e-9 for o in open_at):
@@ -176,10 +201,7 @@ def groove(bar, kind, start=1.0, end=5.0, sub_on_3=False, hat_vel=0.5, vel=1.0):
             sub(bar, 1.0, 0.8, 0.6 * vel)
         if kind == "A" and sub_on_3 and inside(3.0):
             sub(bar, 3.0, 0.8, 0.55 * vel)
-        for t in (2.0, 4.0):
-            if inside(t):
-                ev(bar, t, "snap", 0.7 * vel)
-        hats(bar, (start, end), hat_vel)
+        hats(bar, (start, end), hat_vel)              # no snaps on 2 and 4 (CLASSIFIER, above)
     elif kind == "B":
         for t in (1.0, 3.0):
             if inside(t):
@@ -191,7 +213,7 @@ def groove(bar, kind, start=1.0, end=5.0, sub_on_3=False, hat_vel=0.5, vel=1.0):
                 ev(bar, t, "snap", 0.7 * vel)
         hats(bar, (start, end), hat_vel, open_at=[t for t in (4.5,) if inside(t)], sixteenths=True)
     elif kind == "C":
-        for t, ln in ((1.0, 0.5), (2.5, 0.25), (3.0, 0.5)):
+        for t, ln in ((1.0, 0.5), (3.0, 0.5)):        # the sub on 2.5 left out (CLASSIFIER, above)
             if inside(t):
                 sub(bar, t, ln, 0.6 * vel)
         for t in (2.0, 4.0):
@@ -231,12 +253,9 @@ for t in (2.0, 3.0, 4.0):
 ev(3, 4.5, "snap", 0.35)
 slam(4)
 hats(4, (1.0, 5.0), 0.42)
-sub(4, 3.0, 0.25, 0.3)
-ev(4, 4.5, "snap", 0.35)
+ev(4, 4.5, "snap", 0.35)                          # no ghost sub on f252 (CLASSIFIER, above)
 slam(5)
-hats(5, (1.0, 5.0), 0.46, sixteenths=True)
-sub(5, 2.5, 0.25, 0.45)
-sub(5, 3.0, 0.35, 0.5)
+hats(5, (1.0, 5.0), 0.46, sixteenths=True)        # no subs on f315 and f324 (CLASSIFIER, above)
 for i, t in enumerate((4.0, 4.25, 4.5, 4.75)):
     ev(5, t, "snap", 0.4 + 0.5 * i / 3)
 # bar 6: a hit, then four on the floor, snaps on 2 and 4, 8th hats in a crescendo
@@ -247,16 +266,16 @@ for t in (2.0, 4.0):
     ev(6, t, "snap", 0.7)
 hats(6, (1.0, 5.0), 0.5, ramp=(0.25, 0.7))
 # bar 7: kicks on 1, 2, 3 and 3.5; a snap roll in 8ths then 16ths, 0.3 -> 1.0; 16th hats; sub A1 on 1 and 3;
-# nothing from beat 4 (the composed breath, f486-503). Held under bar 6 (velocities x 0.85), so the drop lands at
-# least 3 LU over this bar (ENERGY_SPEC §8.5)
-for t, v in ((1.0, 0.65), (2.0, 0.6), (3.0, 0.65), (3.5, 0.6)):
+# nothing from beat 4 (the composed breath, f486-503). Held under bar 6, so the drop lands at least 3 LU over this
+# bar on the web master (ENERGY_SPEC §8.5; measured: 2.78 LU with bar 7 a quarter louder, 3.13 as here)
+for t, v in ((1.0, 0.49), (2.0, 0.45), (3.0, 0.49), (3.5, 0.45)):
     ev(7, t, "kick", v)
 roll = (1.0, 1.5, 2.0, 2.5, 3.0, 3.25, 3.5, 3.75)
 for i, t in enumerate(roll):
-    ev(7, t, "snap", 0.85 * (0.3 + 0.7 * i / (len(roll) - 1)))
+    ev(7, t, "snap", 0.64 * (0.3 + 0.7 * i / (len(roll) - 1)))
 hats(7, (1.0, 4.0), 0.36, sixteenths=True)
-sub(7, 1.0, 0.6, 0.45)
-sub(7, 3.0, 0.5, 0.45)
+sub(7, 1.0, 0.6, 0.34)
+sub(7, 3.0, 0.5, 0.34)
 GATES[7] = 4.0
 # bar 8: THE DROP (crash, kick, a 1.5 s sub D2 from the octave above), then groove B from beat 2
 slam(8, sub_len=1.5, snap=False, crash=1.0)
@@ -269,9 +288,7 @@ for i, (t, tom) in enumerate(((4.0, "A2"), (4.0 + 1 / 3, "D3"), (4.0 + 2 / 3, "E
 for b in (10, 11, 12):
     groove(b, "A", sub_on_3=b in (10, 12), end=4.0 if b == 12 else 5.0)
 ev(10, 2.0, "kick", 0.75)
-for e in EV[10]:
-    if e["voice"] == "snap" and e["beat"] == 2.0:
-        e["vel"] = 0.85
+ev(10, 2.0, "snap", 0.85)
 hats(12, (4.0, 5.0), 0.5)
 for i, t in enumerate((4.0, 4.25, 4.5, 4.75)):
     ev(12, t, "snap", 0.4 + 0.5 * i / 3)
@@ -348,9 +365,9 @@ for b in EV:
 # ---- the voices (mono numpy arrays at SR, starting at their onset) ----
 # voice levels, set on each hit's K-weighted level over its first 100 ms against the kick's: the hit sub level with
 # it, the groove sub about 5 dB under, snap 3.5, open hat 12, closed hat 14, crash 6 and the toms 2 dB under
-VOICE_DB = {"sub": -2.0, "kick": 0.0, "snap": 8.0, "clap": 6.0, "hat": -8.0, "ohat": -13.0, "tom": -4.0,
-            "crash": -10.0, "rim": 8.0}
-SUB_DC = float(np.mean(np.tanh(1.8 * (np.sin(2 * np.pi * np.arange(4800) / 4800) + 0.3)) - np.tanh(0.54)))
+VOICE_DB = {"sub": -2.0, "kick": 0.0, "snap": 4.0, "clap": 2.0, "hat": -8.0, "ohat": -13.0, "tom": -4.0,
+            "crash": -10.0, "rim": 8.0}                                   # snap and clap 4 dB down (CLASSIFIER)
+SUB_DC = float(np.mean(np.tanh(1.2 * (np.sin(2 * np.pi * np.arange(4800) / 4800) + 0.2)) - np.tanh(0.24)))
 
 
 def band(g, n, lo, hi, order=2):
@@ -375,7 +392,7 @@ def v_sub(g, root, length, hit):
     f0 = mtof(root)
     f = f0 * 2 ** np.clip(1 - t / 0.025, 0, 1) if hit else np.full(n, f0)   # the octave drop in 25 ms
     s = np.sin(2 * np.pi * np.cumsum(f) / SR)
-    y = np.tanh(1.8 * (s + 0.3)) - np.tanh(0.54) - SUB_DC                    # 2nd and 3rd harmonics, no DC
+    y = np.tanh(1.2 * (s + 0.2)) - np.tanh(0.24) - SUB_DC                    # 2nd and 3rd harmonics, no DC
     e = np.minimum(1.0, t / 0.003) * np.exp(-t / max(0.25, 1.2 * length))
     return close(y * e, min(0.12, 0.35 * length))
 
@@ -388,16 +405,17 @@ def v_kick(g):
     k = int(0.002 * SR)
     click = np.zeros(n)
     click[:k] = band(g, k, 1500, 6000) * np.linspace(1, 0, k)
-    click *= 0.5 / (np.abs(click).max() + 1e-12)
+    click *= 0.25 / (np.abs(click).max() + 1e-12)
     return close(body + click, 0.1)
 
 
 def v_snap(g, clap=False):
     n = int(0.16 * SR)
     y = np.zeros(n)
-    for i, (at, amp) in enumerate(((0.0, 1.0), (0.007, 0.85), (0.014, 0.95))):
+    d1, d2 = g.uniform(0.006, 0.011), g.uniform(0.006, 0.011)             # irregular gaps: no 143 Hz buzz
+    for i, (at, amp) in enumerate(((0.0, 1.0), (d1, 0.85), (d1 + d2, 0.95))):
         k, i0 = int(0.006 * SR), int(at * SR)
-        y[i0:i0 + k] += amp * band(g, k, 1000, 3000) * env_decay(k, 0.0025, 0.0002)
+        y[i0:i0 + k] += amp * band(g, k, 1000, 3000) * env_decay(k, 0.0025, 0.0012)
     k, i0 = int(0.106 * SR), int(0.014 * SR)                                  # the 120 ms plate tail
     y[i0:i0 + k] += 0.32 * band(g, k, 800, 6000) * env_decay(k, 0.035, 0.002)
     if clap:
@@ -410,7 +428,7 @@ def v_snap(g, clap=False):
 def v_hat(g, open_):
     tau = 0.11 if open_ else 0.018
     n = int((6 * tau + 0.01) * SR)
-    return close(band(g, n, 7000, 12000) * env_decay(n, tau, 0.0003), 0.01)
+    return close(band(g, n, 7000, 12000) * env_decay(n, tau, 0.003), 0.01)
 
 
 def v_tom(g, note):
@@ -499,7 +517,8 @@ for out_bar, bar in enumerate(FORM, 1):
         f1 = BAR_F * out_bar
         i0, i1 = int(round(f0 * SPF)), f1 * SPF
         k = int(0.01 * SR)
-        gain[i0 - k:i0] = np.minimum(gain[i0 - k:i0], np.cos(0.5 * np.pi * np.arange(k) / k) ** 2)
+        k0 = max(0, i0 - k)
+        gain[k0:i0] = np.minimum(gain[k0:i0], (np.cos(0.5 * np.pi * np.arange(k) / k) ** 2)[k0 - (i0 - k):])
         gain[i0:i1] = 0.0
         gates.append({"out_bar": out_bar, "bar": bar, "from_frame": round(f0, 2), "to_frame": f1})
 y *= gain
