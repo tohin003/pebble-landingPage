@@ -609,9 +609,10 @@ export interface SfxCue {
  * exporter's job), except the riser, whose end sits on the reveal. At most three sound at once (export-cues.ts).
  * - Unpitched only: ui_done replaces the tuned pop_a (f814), ui_forget the pop_c plip (it sat on f1542, it now runs
  *   under the dissolve from the click), impact_a the reveal's soft_hit_b, ui_verified the shimmer.
- * - The hold's clock (OVERRIDES §35, decision 3): rim ticks on beats 1 and 3 only to begin with (f900, f936, f972),
- *   not §8.4's every beat; every beat (add f918 and f954) only if the classifier stays clean, none if 1 and 3 trip it.
- *   So the list holds 34 effects, not §8.4's 36.
+ * - The hold's clock (OVERRIDES §35 decision 3, §36): a rim tick on every beat, f900–972, alternating a and b, as
+ *   §8.4 has it. The ladder started on beats 1 and 3 only and went to every beat because the classifier stayed clean
+ *   (the score lane, part 2, on the final masters: the hold window 29–34 s reads phone 0.166 web / 0.171 social /
+ *   0.164 x30, against 0.109 / 0.109 / 0.0 on beats 1 and 3; no voice or alarm label). 36 effects.
  * - Lane fin-audio (OVERRIDES §19): no pop on the end-card landing; its thud keeps the weight, now with impact_b.
  */
 export const SFX: readonly SfxCue[] = [
@@ -628,8 +629,10 @@ export const SFX: readonly SfxCue[] = [
   { frame: 814, role: "ui", take: "ui_done", event: "Done" },
   { frame: 890, role: "ui", take: "ui_lock", event: "AgentGuard holds the task" },
   { frame: 900, role: "rim", take: "rim_a", event: "the hold's clock (bar 13, beat 3)" },
-  { frame: 936, role: "rim", take: "rim_b", event: "the hold's clock (bar 14, beat 1)" },
+  { frame: 918, role: "rim", take: "rim_b", event: "the hold's clock (bar 13, beat 4)" },
+  { frame: 936, role: "rim", take: "rim_a", event: "the hold's clock (bar 14, beat 1)" },
   { frame: 936, role: "thump", take: "soft_hit_a", event: "T8 lands in the hold" },
+  { frame: 954, role: "rim", take: "rim_b", event: "the hold's clock (bar 14, beat 2)" },
   { frame: 972, role: "rim", take: "rim_a", event: "the hold's clock (bar 14, beat 3)" },
   { frame: 990, role: "click", take: "click_c", event: "Run the tests", pan: 0.09 },
   { frame: 1080, role: "click", take: "click_a", event: "Run tests", pan: 0.3 },
@@ -660,21 +663,26 @@ export const SFX: readonly SfxCue[] = [
  *   bar line); the bed's own pickup on the "and" of 4 is swallowed: that is the breath;
  * - hold: from f891 (the "and" of beat 2, one frame after the app holds the task at f890) the drive is muted and the
  *   bed sinks behind a low-pass; the Run the tests click (`toFrame`, f990) releases it, back by `releaseFrame` (f1008);
- * - tail: the master fades from `frame` and is digital silence from `toFrame` (f2250) to the end.
+ * - tail: the master fades from `frame` and is digital silence from `toFrame` (f2250) to the end;
+ * - ride: the hook's level (OVERRIDES §36: at most 2 dB on the bed and the drive over bars 1–2, the bed file
+ *   unchanged): from f0 the bed and the drive sit the kit's ride level down, and come back on the first slam's hit
+ *   (`toFrame`, f144) with the hook's gap, so bars 1–2 sit 4–8 LU under the master (ENERGY_SPEC §8.5). A level, not a
+ *   breath: the gap rules don't apply to it.
  * The composed breath f486–503 has no automation: the bed and the drive are silent there by their own notes.
  */
-export type AutomationRole = "gap" | "hold" | "tail";
+export type AutomationRole = "gap" | "hold" | "tail" | "ride";
 export interface AutomationCue {
   role: AutomationRole;
   /** the span's first frame */
   frame: number;
-  /** the frame it ends on: a gap's hit, the hold's releasing click, the tail's first silent frame */
+  /** the frame it ends on: a gap's or the ride's hit, the hold's releasing click, the tail's first silent frame */
   toFrame: number;
   /** the hold only: the bar line its release ends on */
   releaseFrame?: number;
   event: string;
 }
 export const AUTOMATION: readonly AutomationCue[] = [
+  { role: "ride", frame: at(1), toFrame: at(3), event: "the hook's ride: the quiet open, back on the first slam" },
   { role: "gap", frame: at(2, 4, 9), toFrame: at(3), event: "the breath before the first slam; the dive into the pebble" },
   { role: "hold", frame: at(13, 2, 9), toFrame: at(14, 4), releaseFrame: at(15), event: "AgentGuard holds the task; Run the tests releases it" },
   { role: "gap", frame: at(16, 4, 9), toFrame: at(17), event: "the breath before Verified; the app's own \"· 11 s\" lands in it" },

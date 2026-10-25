@@ -42,7 +42,7 @@
   "file": "../../.work/audio/sfx/riser.wav",
   "t": 16.8,
   "align": "end",
-  "gain_db": -10,
+  "gain_db": -11,
   "pan": 0,
   "duck_db": 0,
   "event": "bars 6–7, its end on the reveal",
@@ -55,7 +55,7 @@
   "file": "../../.work/audio/sfx/impact_a.wav",
   "t": 16.8333,
   "align": "peak",
-  "gain_db": -6,
+  "gain_db": -4,
   "pan": 0,
   "duck_db": 2.5,
   "event": "the drop: the pebble lands as the full stop",
@@ -157,6 +157,19 @@
  },
  {
   "file": "../../.work/audio/sfx/rim_b.wav",
+  "t": 30.6333,
+  "align": "peak",
+  "gain_db": -15,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "the hold's clock (bar 13, beat 4)",
+  "frame": 918,
+  "peak_frame": 919,
+  "role": "rim",
+  "take": "rim_b"
+ },
+ {
+  "file": "../../.work/audio/sfx/rim_a.wav",
   "t": 31.2333,
   "align": "peak",
   "gain_db": -15,
@@ -166,7 +179,7 @@
   "frame": 936,
   "peak_frame": 937,
   "role": "rim",
-  "take": "rim_b"
+  "take": "rim_a"
  },
  {
   "file": "../../.work/audio/sfx/soft_hit_a.wav",
@@ -180,6 +193,19 @@
   "peak_frame": 937,
   "role": "thump",
   "take": "soft_hit_a"
+ },
+ {
+  "file": "../../.work/audio/sfx/rim_b.wav",
+  "t": 31.8333,
+  "align": "peak",
+  "gain_db": -15,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "the hold's clock (bar 14, beat 2)",
+  "frame": 954,
+  "peak_frame": 955,
+  "role": "rim",
+  "take": "rim_b"
  },
  {
   "file": "../../.work/audio/sfx/rim_a.wav",
@@ -250,7 +276,7 @@
   "file": "../../.work/audio/sfx/impact_b.wav",
   "t": 38.4333,
   "align": "peak",
-  "gain_db": -6,
+  "gain_db": -4,
   "pan": 0,
   "duck_db": 1.5,
   "event": "Verified",
@@ -354,7 +380,7 @@
   "file": "../../.work/audio/sfx/impact_a.wav",
   "t": 52.8333,
   "align": "peak",
-  "gain_db": -6,
+  "gain_db": -4,
   "pan": 0,
   "duck_db": 1.5,
   "event": "the second lift",
@@ -393,7 +419,7 @@
   "file": "../../.work/audio/sfx/impact_b.wav",
   "t": 60.0333,
   "align": "peak",
-  "gain_db": -6,
+  "gain_db": -4,
   "pan": 0,
   "duck_db": 0,
   "event": "the breakdown's one hit",
@@ -419,7 +445,7 @@
   "file": "../../.work/audio/sfx/impact_b.wav",
   "t": 67.2333,
   "align": "peak",
-  "gain_db": -6,
+  "gain_db": -4,
   "pan": 0,
   "duck_db": 0,
   "event": "the end-card landing",
@@ -432,7 +458,7 @@
   "file": "../../.work/audio/sfx/impact_a.wav",
   "t": 72.0333,
   "align": "peak",
-  "gain_db": -6,
+  "gain_db": -4,
   "pan": 0,
   "duck_db": 2,
   "event": "the final hit",
@@ -440,6 +466,21 @@
   "peak_frame": 2161,
   "role": "impact",
   "take": "impact_a"
+ },
+ {
+  "role": "ride",
+  "frame": 0,
+  "to_frame": 144,
+  "t": 0,
+  "t_end": 4.8,
+  "event": "the hook's ride: the quiet open, back on the first slam",
+  "db": -1.5,
+  "attack_ms": 10,
+  "release_ms": 4,
+  "applies_to": [
+   "bed",
+   "drive"
+  ]
  },
  {
   "role": "gap",
@@ -527,6 +568,7 @@
   "t": 73.8,
   "t_end": 75,
   "event": "the master fades, then digital silence to the end",
+  "curve": "sine",
   "fade_to_db": -60,
   "then": "zeros",
   "after_limiter": true,

@@ -31,7 +31,7 @@
   "file": "../../.work/audio/sfx/riser.wav",
   "t": 7.2,
   "align": "end",
-  "gain_db": -10,
+  "gain_db": -11,
   "pan": 0,
   "duck_db": 0,
   "event": "bars 6–7, its end on the reveal",
@@ -45,7 +45,7 @@
   "file": "../../.work/audio/sfx/impact_a.wav",
   "t": 7.2333,
   "align": "peak",
-  "gain_db": -6,
+  "gain_db": -4,
   "pan": 0,
   "duck_db": 2.5,
   "event": "the drop: the pebble lands as the full stop",
@@ -98,6 +98,20 @@
  },
  {
   "file": "../../.work/audio/sfx/rim_b.wav",
+  "t": 11.4333,
+  "align": "peak",
+  "gain_db": -15,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "the hold's clock (bar 13, beat 4)",
+  "frame": 342,
+  "peak_frame": 343,
+  "role": "rim",
+  "take": "rim_b",
+  "source_frame": 918
+ },
+ {
+  "file": "../../.work/audio/sfx/rim_a.wav",
   "t": 12.0333,
   "align": "peak",
   "gain_db": -15,
@@ -107,7 +121,7 @@
   "frame": 360,
   "peak_frame": 361,
   "role": "rim",
-  "take": "rim_b",
+  "take": "rim_a",
   "source_frame": 936
  },
  {
@@ -123,6 +137,20 @@
   "role": "thump",
   "take": "soft_hit_a",
   "source_frame": 936
+ },
+ {
+  "file": "../../.work/audio/sfx/rim_b.wav",
+  "t": 12.6333,
+  "align": "peak",
+  "gain_db": -15,
+  "pan": 0,
+  "duck_db": 0,
+  "event": "the hold's clock (bar 14, beat 2)",
+  "frame": 378,
+  "peak_frame": 379,
+  "role": "rim",
+  "take": "rim_b",
+  "source_frame": 954
  },
  {
   "file": "../../.work/audio/sfx/rim_a.wav",
@@ -198,7 +226,7 @@
   "file": "../../.work/audio/sfx/impact_b.wav",
   "t": 19.2333,
   "align": "peak",
-  "gain_db": -6,
+  "gain_db": -4,
   "pan": 0,
   "duck_db": 1.5,
   "event": "Verified",
@@ -226,7 +254,7 @@
   "file": "../../.work/audio/sfx/impact_a.wav",
   "t": 24.0333,
   "align": "peak",
-  "gain_db": -6,
+  "gain_db": -4,
   "pan": 0,
   "duck_db": 2,
   "event": "the final hit",
@@ -235,6 +263,23 @@
   "role": "impact",
   "take": "impact_a",
   "source_frame": 2160
+ },
+ {
+  "role": "ride",
+  "frame": 0,
+  "to_frame": 72,
+  "t": 0.0,
+  "t_end": 2.4,
+  "event": "the hook's ride: the quiet open, back on the first slam",
+  "db": -1.5,
+  "attack_ms": 10,
+  "release_ms": 4,
+  "applies_to": [
+   "bed",
+   "drive"
+  ],
+  "source_frame": 0,
+  "source_to_frame": 72
  },
  {
   "role": "hold",
@@ -300,6 +345,7 @@
   "t": 25.8,
   "t_end": 27.0,
   "event": "the master fades, then digital silence to the end",
+  "curve": "sine",
   "fade_to_db": -60,
   "then": "zeros",
   "after_limiter": true,
