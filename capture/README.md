@@ -19,10 +19,15 @@ against the tag's git tree, and links `node_modules` only if the checkout's depe
 `export PEBBLE_REPO=<new-dir>` before `source scripts/env.sh`, and `freeze-release.py --verify <new-dir>` around the
 batch. The 1.1.0 captures (24 Oct) were made this way: the checkout took the next version's work in progress within
 an hour of 1.1.0's publication. So was the 1.2.0 retake (24 Oct, `v1.2.0` at `a4af2e5`): the fixtures say 1.2.0, and
-the `tests/test_dates.py` edit carries the host's 1.2.0 reason for a test change the request didn't ask for.
+the `tests/test_dates.py` edit carries the host's 1.2.0 reason for a test change the request didn't ask for. The
+trailer's captures (25 Oct) came from `v1.5.0` at `16dd425` the same way; the host templates the fixtures use were
+compared with that tag (`mock/fixtures.js`, its header), and `record.mjs` and `capture.mjs` pass `version=1.5.0`.
 
 | Task | Command |
 |---|---|
+| The trailer's held run, every clock its own (P0) | `scripts/heavy.sh rec capture/with-server.sh node capture/record.mjs main-live-film-150 --theme=light --scale=3 --out=video/public/ui-frames/main-live-film-150` (825 frames, about 490 MB); the dark twin with `--theme=dark --from=6.0 --frames=499` |
+| Check its clocks | `/usr/bin/python3 -I -B capture/check_live_film.py <frames-dir> [--corpus=<frozen>/src,<backend files>,capture/mock/fixtures.js,capture/record.mjs]`: every "+N s" stamp, "· N s" duration, status-line time, receipt, usage line and the toast against the recording's own frames; with `--corpus`, every visible string not found literally in the sources is listed for review |
+| The picture lane's manifest | `/usr/bin/python3 -I -B capture/manifest_live_film.py <frames-dir> capture/manifests/<shot>.json --check=<check.json>`: each moment's source frame and second, the boxes of the controls the film aims at, how long each waiting state holds |
 | Stills (PNG, light and dark) | `scripts/heavy.sh capture capture/with-server.sh node capture/capture.mjs main-done [--exact] [--themes=light] [--scale=2,3] [--out=DIR] --locale=en-GB --tz=Europe/London` |
 | Film and loop stills | the same with `--themes=light --scale=2,3 --naming=video --out=video/public/ui` (writes `<scene>[-<step>]@2x.png` and `@3x.png`) |
 | Page stills (AVIF + WebP) | capture the sources with `--scale=3 --themes=light,dark --out=capture/shots/page`, then `scripts/heavy.sh stills node tools/assets/stills.mjs` (writes `public/ui/v1/<name>-<theme>-2400.avif` and `.webp`, and the same at 1200) |
@@ -30,7 +35,8 @@ the `tests/test_dates.py` edit carries the host's 1.2.0 reason for a test change
 | Compare a re-capture with the stills' sources | `"$PYQA" -I capture/diff.py capture/shots/page <new-dir> --out=<dir>` (per pair: same, or the differing regions as old \| new \| difference crops) |
 | README media | capture at `--scale=1.6667` (the 1440×900 window at 2400 px) or `1.675` (hero) into `capture/shots/readme`, record `pet-gaze` (below), then `node tools/assets/readme.mjs --out=<folder>` |
 | Deterministic frames (vclock, RGBA) | `scripts/heavy.sh record capture/with-server.sh node capture/record.mjs pet-live-error --theme=light --out=video/public/ui-frames/<shot>` |
-| A short excerpt or sampled states | `record.mjs <timeline> --frames=60` records only the first 60 frames; `--at=2.6,9.9,15.3` saves stills at those seconds instead of a sequence |
+| A short excerpt or sampled states | `record.mjs <timeline> --frames=60` records only the first 60 frames; `--at=2.6,9.9,15.3` saves stills at those seconds instead of a sequence; a timeline with `probe: true` also writes `probes.json` (per-frame positions, status line, toast, receipts, usage lines, the drawer's visible steps, and the visible text every `--text-every=10` frames and on `--text-at=F1,F2,…`) |
+| A release's own version, or hidden elements, in stills | `capture.mjs … --version=1.5.0 [--hide=SELECTORS]` (opacity 0, as `record.mjs --hide`) |
 | Check frames for raster glitches | `"$PYQA" -I capture/check_frames.py <frames-dir> 1` (the Veil's glass pebble: add `--box=0.3,0.3,0.7,0.7 --alpha=120`) |
 | Contact sheet / animated preview | `"$PYQA" -I capture/contact.py out.png a.png b.png …` / `"$PYQA" -I capture/preview.py <frames-dir> out.webp` |
 | Static demo bundle | `scripts/heavy.sh demo-build node capture/build.mjs` (writes `capture/demo-build/`) |
@@ -65,6 +71,8 @@ image: some failures show only as text on screen (for example "Notification sett
 |---|---|---|
 | `pet-live-error` (alias `pet-live`) | 9 s | The pebble expands, the question is typed and sent, Thinking, the reply streams (Writing), the task completes |
 | `main-live-film` | 27 s | Request, Searching, Reading, two edit cards, Apply edit twice, the gate holds ("Pebble's change isn't verified yet."), Run the tests, the "Run isolated tests" card, Run tests, "Requesting isolated tests · 11 s", "Verified · pytest 42 passed on current files", the final reply |
+| `main-live-film-150` | 27.5 s | The same run on 1.5.0, every clock the window prints taken from the recording: Apply edit at 9.20 and 9.70 s (the toast is gone by 13.45 s), the hold at 14.03 s, Run the tests 16.00 s, the card 16.13 s, Run tests 17.80 s, the isolated tests for exactly 2.4 s, "Verified" at 20.20 s, completion at 22.50 s. Its schedule is in `timeline.json` (meta), its probes in `probes.json`; `capture/manifests/main-live-film-150.json` has the moments and boxes |
+| `main-challenge-live` | 11.5 s | 1.5.0, Auto in project: the scope-challenge run on the clock, the refused step arriving in Details › Activity with the engine's words as its error, then the person opening its Details |
 | `pet-gaze` | 6.5 s | The collapsed pebble's eyes follow a pointer circling it (the shell's quantized gaze messages); the extra half second lets `readme.mjs` cross-fade the loop |
 | `pet-veil` | 7.4 s | 1.1.0: Stealth Lockdown on at 1.0 s (the Veil's cast, then one shimmer), off at 6.0 s (the release), as the host switches it for every window. A render of the pebble by Pebble's own code, never a screen recording |
 

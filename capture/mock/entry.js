@@ -18,7 +18,9 @@ const theme = params.get("theme") === "dark" ? "dark" : "light";
 // `native = isTauri()` once at import time, so it must be true before /src/main.ts loads App.vue or Pet.vue.
 window.isTauri = true;
 
-const world = buildWorld({ scene, theme, surface, drawer: Number(params.get("drawer")) || null, stealth: params.has("stealth") });
+// `version`: the release the harness serves, as the backend's VERSION in state() (record.mjs main-live-film-150: 1.5.0).
+const world = buildWorld({ scene, theme, surface, drawer: Number(params.get("drawer")) || null, stealth: params.has("stealth"),
+  version: /^\d+\.\d+\.\d+$/.test(params.get("version") || "") ? params.get("version") : null });
 
 // Deterministic per-scene browser storage (drawer state, the pet's remembered conversation, quiz drafts).
 try {

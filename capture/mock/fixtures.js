@@ -19,8 +19,17 @@
 //   - Model labels are provider-neutral: only the local GGUF file the project tests with (docs/MODEL_SELECTION.md,
 //     config/model.json) is connected, so no cloud model name dates the captures (critic H14).
 //
-// buildWorld({scene, theme, surface, drawer, stealth}) returns { storage, has(method), rpc(method, params), live, ... }.
-// `stealth` starts the world with Stealth Lockdown already on (the host keeps it across a restart).
+// 1.5.0 (the trailer's captures, 25 Oct 2026): the host templates used below were compared with tag v1.5.0 (commit
+// 16dd425). run_activity.py, controller.py, edit_scope.py and testing.py are unchanged since v1.2.0; runtime.py,
+// runner.py and app.py changed only in context sealing, prompt caching and Code Mode (offered above an 8K window, so
+// never to the 4,096-token sample model); the vendored AgentGuard challenge (validate/checks.py, challenge/renderer.py,
+// guard.py refusal()) is unchanged since v1.0.4. record.mjs main-live-film-150 and main-challenge-live run on the host's
+// own clock (clock(), origin(), publish()) and play the approved tests out before the approval answers
+// (deferApproval(), finishApproval()); every other scene is as before.
+//
+// buildWorld({scene, theme, surface, drawer, stealth, version}) returns { storage, has(method), rpc(method, params), live, ... }.
+// `stealth` starts the world with Stealth Lockdown already on (the host keeps it across a restart); `version` is the
+// backend's VERSION in state() (default 1.2.0).
 
 const ID = {
   coding: "chat-invoice-fix", trip: "chat-lisbon-trip", quiz: "chat-datetime-quiz", pet: "chat-pet-dates",
@@ -224,7 +233,7 @@ const STATIC_COUNTS = { working: 2, episodic: 14 };
 const LAYERS = [["working", "Working context"], ["episodic", "Past experiences"], ["semantic", "Facts & knowledge"],
   ["procedural", "Procedures"], ["temporal", "Time-sensitive information"], ["profile", "Your preferences"]]; // memory.py KINDS
 
-export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null, stealth = false }) {
+export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null, stealth = false, version = null }) {
   const now = Math.floor(Date.now() / 1000);
   const ago = (s) => now - s;
   const model = modelStatus();
@@ -475,6 +484,26 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null, 
     companion: { pointer: true, reactions: true, status_words: "rotate", ui_guidance: true },
   };
   const live = { active: null, activeRun: null };
+  // The host's own clock for a run a capture plays live (record.mjs main-live-film-150, the 1.5.0 re-record). The
+  // timeline gives the run's state changes in recording seconds; run_activity then answers as run_activity.py read()
+  // does: `started` is the run's creation (runs.created, epoch seconds) and `elapsed` its live seconds so far
+  // (runtime.py accrues them only while queued, running or retry_wait). The window's exact elapsed time comes from them
+  // (activity.ts load(): hostStart = now - elapsed), so it matches the recording. origin() marks recording second 0.
+  const clocks = {};
+  let originMs = null;
+  const recNow = () => (originMs === null ? null : (Date.now() - originMs) / 1000);
+  const r3 = (x) => Math.round(x * 1000) / 1000;
+  const LIVE_STATES = new Set(["queued", "running", "retry_wait"]);
+  const clockState = (c, t) => c.transitions.reduce((s, [at, st]) => (at <= t + 1e-9 ? st : s), c.transitions[0][1]);
+  const clockElapsed = (c, t) =>
+    r3(c.transitions.reduce((sum, [at, st], i) => {
+      const end = i + 1 < c.transitions.length ? c.transitions[i + 1][0] : Infinity;
+      return LIVE_STATES.has(st) ? sum + Math.max(0, Math.min(end, t) - at) : sum;
+    }, 0));
+  // app.py _approve(): an approved action is 'running' while its effect runs, and the approve route answers once the
+  // receipt is committed. A capture that plays a long effect (the isolated tests) defers the answer until it says so.
+  const deferIds = new Set();
+  const deferred = new Map();
   const state = () => ({
     job_notifications: [],
     chats: listed(),
@@ -486,7 +515,9 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null, 
     settings,
     data_dir: "/Users/maya/.pebble",
     platform: "darwin",
-    version: "1.2.0", // backend/pebble/__init__.py VERSION (Settings' About block shows "Pebble 1.2.0")
+    // backend/pebble/__init__.py VERSION (Settings' About block shows "Pebble 1.2.0"); a capture of a later release passes
+    // its own (entry.js `version`)
+    version: version || "1.2.0",
     memory: {
       enabled: settings.memory_enabled,
       strategy: "SQLite FTS5 · hybrid lexical/trigram/metadata ranking · bounded retrieval · no extra model", // memory.py
@@ -523,6 +554,10 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null, 
     cancel: () => true,
     approve: ({ id, action_id }) => {
       const a = chats.get(id)?.actions.find((x) => x.id === action_id);
+      if (a && deferIds.has(action_id)) {
+        a.status = "running";
+        return new Promise((resolve) => deferred.set(action_id, resolve)); // liveApi.finishApproval() answers it
+      }
       if (a) a.status = "applied";
       return true;
     },
@@ -544,8 +579,17 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null, 
       c.actions = [...c.actions.filter((a) => a.id !== "act-tests-1"), testsAction("pending", id)];
       run.state = "waiting_approval";
       run.error = null;
-      const record = activity[run_id];
-      if (record) {
+      const record = activity[run_id], clock = clocks[run_id], t = recNow();
+      if (record && clock && t !== null) {
+        // A run on the host's clock (main-live-film-150): each row at its own time from the run's start. The decision
+        // note at the click (held_decision), the approval bound to the staged recipe one frame later (action_bound),
+        // then the note for the new state (STATE_NOTES waiting_approval).
+        const seq = Math.max(0, ...record.items.map((i) => i.seq)) + 64, at = r3(t - clock.t0);
+        record.state = "waiting_approval";
+        record.items.push(item(seq, at, "note", "You asked Pebble to run the tests"),
+          item(seq + 64, r3(at + 1 / 30), "approval", "Waiting for your approval: Requesting isolated tests", { status: "running" }),
+          item(seq + 128, r3(at + 2 / 30), "note", "Waiting for your approval"));
+      } else if (record) {
         // The decision comes `heldGap` s after the record's last row: 26 s in the static scenes; record.mjs main-live-film
         // passes 2 (held 14.03 s, click 16.0 s), so the drawer's offsets stay in order (+16.4 s, then +18.5 s …).
         const seq = Math.max(0, ...record.items.map((i) => i.seq)) + 64, at = Math.max(0, ...record.items.map((i) => i.at)) + (record.heldGap ?? 26);
@@ -562,7 +606,13 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null, 
       return { run_id, status: "completed", verified: false, origin: "human" };
     },
     run_activity: ({ run_id, after = 0 }) => {
-      const a = activity[run_id];
+      const a = activity[run_id], clock = clocks[run_id], t = recNow();
+      if (clock && t !== null) {
+        // run_activity.py read(): the items above the cursor and every item still running, the newest seq as `next`.
+        const page = (a?.items || []).filter((i) => i.seq > (after || 0) || i.status === "running").sort((x, y) => x.seq - y.seq);
+        return { run_id, state: clockState(clock, t), started: r3((originMs + clock.t0 * 1000) / 1000), elapsed: clockElapsed(clock, t),
+          items: page, next: Math.max(after || 0, ...page.map((i) => i.seq)), reasoning: null };
+      }
       // A run the capture script is playing live: the host reports it running, with its items still arriving as events.
       if (!a && live.activeRun === run_id) return { run_id, state: "running", items: [], next: 0, started: Math.floor(Date.now() / 1000) - 1, elapsed: null, reasoning: null };
       if (!a) return { run_id, state: "completed", items: [], next: 0, started: null, elapsed: null, reasoning: null };
@@ -642,11 +692,33 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null, 
     actions(chatId, actions) { chats.get(chatId).actions = actions; },
     run(chatId, run) {
       const c = chats.get(chatId);
-      c.runs = [{ error: null, ...run }, ...(c.runs || []).filter((r) => r.id !== run.id)];
+      // created_t / updated_t: recording seconds, turned into the host's epoch seconds (main-live-film-150)
+      const { created_t, updated_t, ...rest } = run;
+      const times = originMs === null ? {} : { ...(created_t !== undefined ? { created: r3((originMs + created_t * 1000) / 1000) } : {}),
+        ...(updated_t !== undefined ? { updated: r3((originMs + updated_t * 1000) / 1000) } : {}) };
+      c.runs = [{ error: null, ...rest, ...times }, ...(c.runs || []).filter((r) => r.id !== run.id)];
     },
     title(chatId, title) { chats.get(chatId).title = title; },
     active(chatId, runId) { live.active = chatId; live.activeRun = runId; },
     activity(runId, record) { activity[runId] = record; },
+    // main-live-film-150: recording second 0 (the first frame), the run's state changes on that clock, the rows as the
+    // host publishes them (an update keeps its seq), and the approvals whose effect the capture plays out.
+    origin() { originMs = Date.now(); },
+    clock(runId, spec) { clocks[runId] = { t0: spec.t0, transitions: spec.transitions }; },
+    publish(runId, row) {
+      const record = activity[runId] || (activity[runId] = { state: "running", started: null, elapsed: null, items: [] });
+      record.items = [...record.items.filter((i) => i.seq !== row.seq), row].sort((x, y) => x.seq - y.seq);
+    },
+    items(runId) { return (activity[runId]?.items || []).map((i) => ({ ...i })); },
+    deferApproval(actionId) { deferIds.add(actionId); },
+    finishApproval(chatId, actionId, action) {
+      const c = chats.get(chatId);
+      c.actions = c.actions.map((x) => (x.id === actionId ? action : x));
+      deferIds.delete(actionId);
+      const answer = deferred.get(actionId);
+      deferred.delete(actionId);
+      if (answer) answer(true);
+    },
     reply: { pet: PET_REPLY, proposed: REPLY_PROPOSED, done: REPLY_DONE, held: REPLY_HELD, proposedHeld: REPLY_PROPOSED_HELD,
       continueHeld: CONTINUE_HELD, heldNotice: "\n\n> Verification remains incomplete: " + HELD_NOTICE, continueVerified: CONTINUE_VERIFIED },
     text: { request: REQUEST, petQuestion: PET_QUESTION, challengeRequest: CHALLENGE_REQUEST, challenge: CHALLENGE, heldIssue: HELD_ISSUE },

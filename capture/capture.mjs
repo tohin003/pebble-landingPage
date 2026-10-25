@@ -6,6 +6,8 @@
 //          [--naming=video]     name files <scene>[-<step>]@<scale>x.png (one theme only), as video/public/ui/ expects;
 //                               the default is <scene>[-<step>]-<theme>.png at 2x and <scene>[-<step>]-<theme>@<scale>x.png
 //          [--record]           also save every repainted frame (CDP screencast) to frames/ (1x; prefer record.mjs)
+//          [--version=1.5.0]    the release the harness serves, as the backend's VERSION (fixtures.js state())
+//          [--hide=SELECTORS]   make these elements invisible (opacity 0: still laid out), e.g. --hide=.app-shell .pet-avatar
 // Filters match scene names by substring (or exactly with --exact). Ends with a SUMMARY line and exits 1 if any run had
 // an unhandled IPC call, an error banner or a console error. The per-run JSON report goes to capture/logs/.
 import fs from "node:fs";
@@ -27,6 +29,8 @@ const TZ = opt("tz", "");
 const RECORD = args.includes("--record");
 const NAMING = opt("naming", "default");
 const OUT = path.resolve(opt("out", path.join(HERE, "shots")));
+const VERSION = /^\d+\.\d+\.\d+$/.test(opt("version", "")) ? opt("version", "") : "";
+const HIDE = opt("hide", "");
 const LOGS = path.join(HERE, "logs");
 fs.mkdirSync(OUT, { recursive: true });
 fs.mkdirSync(LOGS, { recursive: true });
@@ -627,9 +631,10 @@ try {
         await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: theme }, { name: "prefers-reduced-motion", value: "no-preference" }]);
         if (LOCALE) await (await page.createCDPSession()).send("Emulation.setLocaleOverride", { locale: LOCALE });
         if (TZ) await page.emulateTimezone(TZ);
-        const url = `${BASE}?${scene.query}&theme=${theme}`;
+        const url = `${BASE}?${scene.query}&theme=${theme}${VERSION ? "&version=" + VERSION : ""}`;
         await page.goto(url, { waitUntil: "networkidle0", timeout: 60000 });
         await page.waitForSelector(scene.query.startsWith("pet") ? ".pet-root" : ".app-shell", { timeout: 30000 });
+        if (HIDE) await page.addStyleTag({ content: `${HIDE} { opacity: 0 !important; }` });
         await settle(page, 600);
         const files = [];
         const shot = async (step = "", { clip } = {}) => {
