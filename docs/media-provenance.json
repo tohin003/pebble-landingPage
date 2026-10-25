@@ -1,10 +1,10 @@
 {
  "schema": "pebble-media-provenance/1",
- "updated": "2026-10-25",
+ "updated": "2026-10-26",
  "notice": "The films, loops and images are (c) 2026 Tohin Majumder and are not covered by the code licence (Apache-2.0). Audio is distributed only inside the rendered films, never as standalone files: no audio file is committed (.gitignore lists *.wav *.mp3 *.flac *.aiff *.m4a *.mov).",
  "music": {
-  "selected": "original-sampled",
-  "selected_title": "Pebble launch cue (sampled instruments)",
+  "selected": "trailer-b",
+  "selected_title": "Pebble launch trailer score (candidate B: a bright electro-pop launch)",
   "selection_method": "MASTER_PLAN 6.1: shortlist from the cached Mixkit catalogue (281 tracks parsed from 18 category pages saved 2026-10-22; no new catalogue requests), Pebble-profile ranking from tags and public waveform envelopes (tools/audio/mixkit_rank_pebble.py), then a no-ears audition of the top 5 (analyze_track.py PNGs, all looked at; Apple SoundAnalysis via sound_tags; rubric_metrics.py), scored with tools/audio/score_rubric.py and tools/audio/rubric_judgments.json.",
   "audition_set_note": "The ranker's top three (282, 431, 79) plus the plan's two other seeds (817, 148). Places 4-5 were a four-way tie at 10.8; the waveform envelopes showed 682, 717 (and 713, 710) are solo piano with no lift to put a reveal on, 614 is melancholic with a 42 s intro, 250 repeats 282 (same artist, tags and shape), 351 has no intro and 1037 is the flattest.",
   "rubric": {
@@ -2801,6 +2801,805 @@
     "C": "-16.0 LUFS, -4.0 dBTP, 77.3 s"
    },
    "B_sha256": "709357d2f1337ac3473188682fca98ae00491362c6ace68842bcf6c2bbb0f175"
+  },
+  "trailer_score": {
+   "what": "the launch trailer's music and soundtracks (TRAILER_RESEARCH §7 and report.music; OVERRIDES §37-§41): two candidate scores synthesised on tools/audio/synth, a judge's pick, and the final masters with the picture's own effects and automation; the narrated twin's mix (OVERRIDES §38)",
+   "made": "2026-10-26, the judge-and-final-mix lane",
+   "supersedes": "the energetic recut's soundtracks (music.sampled_score.energetic_recut.final_masters: 2ffcba9c..., 7dc992fe..., 435f33f9...), still carried by public/media/v2's encodes and the Desktop films until they are re-muxed with these masters",
+   "origin": "original synthesis, made for this project: no samples, no downloads, no vocals; the effects are the kit's (sfx.synthesised and sfx.foley); the narration is Sarvam AI's Bulbul voice (docs/film-narration.json)",
+   "licence": "part of the film media, (c) 2026 Tohin Majumder",
+   "selected": "candidate B: tools/audio/scores/trailer_b.py",
+   "candidates": {
+    "A": {
+     "title": "hybrid trailer electronic",
+     "generator": "tools/audio/scores/trailer_a.py (seed 31; commits 74265ac, 4fb110b)",
+     "stems": ".work/audio/render/candidates/trailer-a/ (not committed; kept for a swap)",
+     "bed_sha256": "2824c981a43ff40e4b180d7c10f321974795499469896e1ec60183b8c06b11a2",
+     "drive_sha256": "f37d2a98562d8a3994357aa70ab5fed5f91e1e95078d07291af02328493a5c57",
+     "status": "not used. A swap is a re-mix; A's climax would first need OVERRIDES §41's push on f1723"
+    },
+    "B": {
+     "title": "bright electro-pop launch",
+     "generator": "tools/audio/scores/trailer_b.py (seed 52; commit 58ba6c4 as delivered)",
+     "stems_as_delivered": ".work/audio/render/candidates/trailer-b/ (not committed)",
+     "bed_sha256": "c6e6ca13d429a48c857d43bf6561c14d96e035d1eea187acc17a7c4dfa1c503c",
+     "drive_sha256": "4d3ecc15895343067d92b21f8408a76715b84ac87bf86fa096cbbf4789f7be9b"
+    }
+   },
+   "judge": {
+    "method": "both candidates' film stems as their composers delivered them (A: tools/audio/scores/trailer_a.py at 4fb110b; B: trailer_b.py at 58ba6c4), each mixed with the picture's final cue list (tools/audio/cues.json: 41 effects, 7 automation spans) at -16 LUFS by mix_master.py, then measured with the same scripts: the loudness curve by movement, the dead stop and the drop, onset density and groove (spectral-flux onsets on the score, the drive's grid alignment and pulse), brightness and the power shares, the same mix through a small-speaker band (150 Hz-12 kHz), the classifier (mix_checks.py and the trailer's after-silence passes), and the score's accents against every cue. Values are [A, B]",
+    "integrated_and_lra": [
+     [
+      -16.03,
+      11.54
+     ],
+     [
+      -16.13,
+      10.97
+     ]
+    ],
+    "movements_lufs": {
+     "I tension (bars 1-9)": [
+      -23.62,
+      -22.85
+     ],
+     "II reveal (10-14)": [
+      -14.83,
+      -16.05
+     ],
+     "III montage (15-20)": [
+      -14.78,
+      -14.25
+     ],
+     "IV climax (21-25)": [
+      -14.4,
+      -14.37
+     ],
+     "V breakdown (26-28)": [
+      -21.4,
+      -20.95
+     ],
+     "VI title and button (29-32)": [
+      -17.92,
+      -17.72
+     ]
+    },
+    "question_hits_over_the_600ms_before_db": {
+     "Q1": [
+      11.9,
+      7.3
+     ],
+     "Q2": [
+      12.5,
+      10.3
+     ],
+     "Q3": [
+      14.8,
+      18.0
+     ]
+    },
+    "drop": {
+     "over_bar9_first_half_lu": [
+      11.1,
+      7.67
+     ],
+     "drop_3s_over_integrated_lu": [
+      2.93,
+      1.76
+     ],
+     "stems_exact_zeros_f612_647": [
+      true,
+      true
+     ]
+    },
+    "push_f1723_minus_f1656_first_0.4s_lu": [
+     -0.8,
+     0.09
+    ],
+    "onsets_per_s": {
+     "I tension (bars 1-9)": [
+      4.17,
+      4.07
+     ],
+     "II reveal (10-14)": [
+      6.75,
+      6.92
+     ],
+     "III montage (15-20)": [
+      6.81,
+      6.11
+     ],
+     "IV climax (21-25)": [
+      5.58,
+      5.0
+     ],
+     "V breakdown (26-28)": [
+      4.03,
+      4.17
+     ],
+     "VI title and button (29-32)": [
+      3.13,
+      2.71
+     ]
+    },
+    "pulse_clarity_at_one_beat": {
+     "II reveal (10-14)": [
+      0.704,
+      0.651
+     ],
+     "III montage (15-20)": [
+      0.632,
+      0.599
+     ],
+     "IV climax (21-25)": [
+      0.759,
+      0.629
+     ]
+    },
+    "drive_over_bed_lu_full_band": {
+     "II reveal (10-14)": [
+      -4.96,
+      0.85
+     ],
+     "III montage (15-20)": [
+      -2.07,
+      4.31
+     ],
+     "IV climax (21-25)": [
+      -4.76,
+      -0.18
+     ]
+    },
+    "drive_over_bed_lu_small_speaker_band": {
+     "reveal": [
+      -9.85,
+      -3.84
+     ],
+     "montage": [
+      -7.49,
+      -0.9
+     ],
+     "climax": [
+      -12.03,
+      -6.88
+     ]
+    },
+    "bed_pump_db_montage": [
+     7.7,
+     9.1
+    ],
+    "spectral_centroid_hz": {
+     "II reveal (10-14)": [
+      904.0,
+      551.0
+     ],
+     "whole film": [
+      753.0,
+      528.0
+     ]
+    },
+    "power_share_above_150hz": [
+     0.547,
+     0.346
+    ],
+    "small_speaker_band_lufs": {
+     "whole": [
+      -16.86,
+      -18.17
+     ],
+     "reveal": [
+      -15.37,
+      -17.72
+     ],
+     "montage": [
+      -15.97,
+      -16.9
+     ],
+     "climax": [
+      -15.38,
+      -16.51
+     ],
+     "the drop's first 400 ms": [
+      -14.47,
+      -17.8
+     ]
+    },
+    "cue_effects_with_a_score_accent_within_1_frame": [
+     16,
+     25
+    ],
+    "classifier_with_the_final_cues": {
+     "note": "mix_checks.py's gates as they stood before its trailer windows (its 3 s windows on both grids and the opening; no fails for either), plus the judge's own after-silence passes at f0, f648, f1512 and f1656 and its readings in the trailer's windows (both holds, the push, the end card)",
+     "A": {
+      "phone_max": {
+       "main": 0.105,
+       "shift": 0.157,
+       "opening": 0.157
+      },
+      "voice_max": 0.074,
+      "alarm_max": 0.023,
+      "gate_fails": [],
+      "after_silence_fails": [],
+      "trailer_windows": {
+       "hold 1": {
+        "french_horn": 0.389,
+        "singing_bowl": 0.148,
+        "foghorn": 0.148
+       },
+       "hold 2": {},
+       "the push": {
+        "telephone": 0.124,
+        "ringtone": 0.117
+       },
+       "end card": {
+        "french_horn": 0.216
+       }
+      }
+     },
+     "B": {
+      "phone_max": {
+       "main": 0.151,
+       "shift": 0.176,
+       "opening": 0.176
+      },
+      "voice_max": 0.135,
+      "alarm_max": 0.024,
+      "gate_fails": [],
+      "after_silence_fails": [],
+      "trailer_windows": {
+       "hold 1": {
+        "french_horn": 0.154
+       },
+       "hold 2": {},
+       "the push": {},
+       "end card": {
+        "french_horn": 0.221
+       }
+      }
+     }
+    },
+    "pick": "B",
+    "why": [
+     "Energy, the person's ask (frontier-lab launches; the research: energy from groove, double time and hits): B's drums and bass sit 4.3 LU over its music in the montage (A: 2.1 under), and through a small-speaker band B's drums stay level with its music (-0.9 LU) where A's fall 7.5 LU under its synths.",
+     "Promise: B's hook, the motif, runs through the whole proof section; A's montage has no melody until bar 18's arp.",
+     "OVERRIDES §41: B already built the two-moment climax (the tests pass on Gmaj9 at f1656, the climb, D on the push at f1723.5); A peaks at f1656 and sat 0.8 LU under it at f1723.",
+     "Sync: B lands a score accent within a frame of 25 of the cue list's 41 effects (A: 16); its montage cuts jump 7-9 dB (A: 4-6)."
+    ],
+    "against_B_and_what_was_done": [
+     "Its question hits were 3.5-6 dB softer than A's; with the timeline's suck-back at -16 dB its Q1 cleared the 0.6 s before it by 7.3 dB (gate 10): the hits were raised (now 10.8 / 13.4 / 22.2 dB).",
+     "A hits harder and brighter on a phone: A's drop lands 3.3 dB louder in the small-speaker band, and A keeps 55 % of its power above 150 Hz against B's 35 % (both over the 30 % gate). Not changed: it is B's sound.",
+     "Its LRA is about 11 LU, against the 8-10 LU target (A: 11.5); a target, not a gate."
+    ]
+   },
+   "score": {
+    "file": "tools/audio/scores/trailer_b.py",
+    "commit": "6137540",
+    "seed": 52,
+    "engine": "tools/audio/synth (fdc35f7)",
+    "render": "python -I tools/audio/scores/trailer_b.py render --out .work/audio/render/score (final_mix.sh runs it when a stem is missing or older than the score)",
+    "changes_after_the_judge": [
+     "the x30 reads its bars and ranges from docs/film-cuts/x30.json: score bars 1 6 7 8 9 10 22 23 24 25 31 32",
+     "the question hits 3.4-4.4 dB up (QHIT_DB) and the rest of the tension 0.4 dB down (TENSION_DB -7.7)",
+     "the push (f1723.5): its chord +2 dB (unpumped), its kick 0.5 and sub 0.45, no score impact (the timeline's impact_a), clap 0.6 and snap 0.5, a second crash, its layers 0-12 ms apart (PUSH_FLAM_MS)",
+     "f1656: kick 0.5, impact 0.4, sub 0.85 (0.85, 0.55, 1.0 before); it keeps the timeline's impact_b"
+    ]
+   },
+   "stems": {
+    "bed.wav": {
+     "path": ".work/audio/render/score/bed.wav (not committed)",
+     "sha256": "7dc60e2b83674a1aa16a194d0dc171066a61f92083d4c9d15f396889846045e1",
+     "samples_sha256": "8291a52beffeea7f846ce0bbcf5ab03145f93c578613963b5d685e877e614bc4",
+     "hash_note": "the file's SHA-256 changes with each render: libsndfile stamps the write time into a float WAV's PEAK chunk; samples_sha256 (the float32 samples, interleaved) is what a rebuild reproduces",
+     "format": "48000 Hz, FLOAT, stereo, 3,686,400 samples (76.800 s)",
+     "lufs": -22.31,
+     "peak_dbfs": -6.97,
+     "true_peak_dbtp": -6.94
+    },
+    "drive.wav": {
+     "path": ".work/audio/render/score/drive.wav (not committed)",
+     "sha256": "a61f1ff76f80c9058aee04c417d5c46a9780a3079d85bc8ca9e7f6f3ba504cf7",
+     "samples_sha256": "2f6654ec9fa2c97998f819703469dd3c5cefb5cd6d3e16fd3c448936e71cf398",
+     "hash_note": "the file's SHA-256 changes with each render: libsndfile stamps the write time into a float WAV's PEAK chunk; samples_sha256 (the float32 samples, interleaved) is what a rebuild reproduces",
+     "format": "48000 Hz, FLOAT, stereo, 3,686,400 samples (76.800 s)",
+     "lufs": -20.98,
+     "peak_dbfs": -7.3,
+     "true_peak_dbtp": -7.16
+    },
+    "bed_x30.wav": {
+     "path": ".work/audio/render/score/bed_x30.wav (not committed)",
+     "sha256": "a48838c8ddd575f5d49bacb9df02521a7d96e7d108a5e92f9e269c514794b039",
+     "samples_sha256": "a52627c7510a6b504d173651393b615e0ba24f4030716dc0df8b142aa6928e5a",
+     "hash_note": "the file's SHA-256 changes with each render: libsndfile stamps the write time into a float WAV's PEAK chunk; samples_sha256 (the float32 samples, interleaved) is what a rebuild reproduces",
+     "format": "48000 Hz, FLOAT, stereo, 1,382,400 samples (28.800 s)",
+     "lufs": -20.74,
+     "peak_dbfs": -5.97,
+     "true_peak_dbtp": -5.94
+    },
+    "drive_x30.wav": {
+     "path": ".work/audio/render/score/drive_x30.wav (not committed)",
+     "sha256": "1742a3e3415d117d98112dff90406cca8f59cb92656c813715bd0c5848638d5c",
+     "samples_sha256": "685cade8f898c59c871078e50d991b67eaf0925f565788109649b042618592cb",
+     "hash_note": "the file's SHA-256 changes with each render: libsndfile stamps the write time into a float WAV's PEAK chunk; samples_sha256 (the float32 samples, interleaved) is what a rebuild reproduces",
+     "format": "48000 Hz, FLOAT, stereo, 1,382,400 samples (28.800 s)",
+     "lufs": -20.9,
+     "peak_dbfs": -6.99,
+     "true_peak_dbtp": -6.88
+    },
+    "render_film": "score bars 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32; 1112 events, seed 52; the drive's exact zeros [[445, 504], [1453, 1512]] and the dead stop's in both stems [[612, 648]] (output frames); the linked limiter's ceiling -7.39 dBFS (-18.89 LUFS + 11.5), at most 5.27 dB, over 1 dB for 3.19 s; the bass bus 6.31 LU under the music bus",
+    "render_x30": "score bars 1 6 7 8 9 10 22 23 24 25 31 32; 407 events, seed 52; the drive's exact zeros [[157, 216]] and the dead stop's in both stems [[324, 360]] (output frames); the linked limiter's ceiling -6.58 dBFS (-18.08 LUFS + 11.5), at most 5.18 dB, over 1 dB for 1.75 s; the bass bus 7.0 LU under the music bus"
+   },
+   "cues": {
+    "tools/audio/cues.json": {
+     "sha256": "ef49c6b5f3d2a9e112164b4c2336a2832d44d4f48ecee3526a255183c1f25f6f",
+     "commit": "927dda6",
+     "effects": 41,
+     "automation": 7,
+     "from": "video/src/film/timeline.ts by video/scripts/export-cues.ts (the picture lane)"
+    },
+    "tools/audio/cues.x30.json": {
+     "sha256": "7cad82b7457c1f7413b884980dc1c00079534e1a287c1e5ed54aeb5567bc806e",
+     "commit": "927dda6",
+     "effects": 16,
+     "automation": 6,
+     "from": "tools/audio/cut_cues.py docs/film-cuts/x30.json"
+    }
+   },
+   "kit_take_added": "suck_a.wav (the picture lane's suck role, tools/audio/sfx_kit.json; see sfx.synthesised)",
+   "voice": {
+    "path": ".work/audio/render/candidates/voice/vo.wav (not committed; never published on its own)",
+    "sha256": "1f79b1a6d9e36127dc4d67df8af729b913276a0b945995c21f697374f431d326",
+    "from": "tools/audio/narration.py (lane voice; docs/film-narration.json)",
+    "lines": "n1 f75, n2 f219, n3 f363, n4 f1803 (docs/film-narration.json cues)"
+   },
+   "pipeline": {
+    "mix": "tools/audio/final_mix.sh (149aed0), mix_master.py (6d5a010)",
+    "gates": "tools/audio/mix_checks.sh (149aed0), mix_checks.py (8956f26); reports in .work/audio/analysis/trailer/ (not committed)"
+   },
+   "final_masters": {
+    "soundtrack_web.wav": {
+     "format": "PCM 24-bit, 48 kHz, stereo, in .work/audio/render/ (not committed)",
+     "sha256": "913f9dca33c6c26e18e01221ad5003e1b0ee884e3e462b2c00034434679fd35f",
+     "bytes": 22118444,
+     "for": "the website film (public/media/v2: film-1080 and film-720, HEVC and H.264; tools/encode/encode.sh film)",
+     "length": "76.800 s, 3,686,400 samples (2304 frames at 30 fps)",
+     "integrated_lufs": -16.1,
+     "true_peak_dbtp": -1.8,
+     "lra_lu": 11.0,
+     "integrated_lufs_pyloudnorm": -16.12,
+     "limiter_ceiling_dbtp": -1.8,
+     "ceiling_note": "the --aac loop's tries (ceiling dBTP: the AAC encode's true peak): -1.7: -1.453, -1.8: -1.587",
+     "aac_160k_true_peak_dbtp": -1.587,
+     "aac_192k_true_peak_dbtp": -1.608,
+     "aac_gate": "160k: -1.587 dBTP (gate -1.5)",
+     "mono_loss_db": 0.37,
+     "power_share_above_150hz": 0.351,
+     "classifier_max": {
+      "windows (main, shifted)": {
+       "phone": [
+        0.217,
+        0.175
+       ],
+       "voice": [
+        0.107,
+        0.136
+       ],
+       "alarm": [
+        0.023,
+        0.022
+       ],
+       "foghorn": [
+        0.052,
+        0.048
+       ]
+      },
+      "opening after silence, phone": 0.175,
+      "after silence at f648, f1512 and f1656": {
+       "phone": 0.124,
+       "voice": 0.079,
+       "alarm": 0.034,
+       "foghorn": 0.054
+      },
+      "holds": "f445-504: phone 0.0, voice 0.0, alarm 0.0, foghorn 0.0; f1453-1512: phone 0.0, voice 0.0, alarm 0.0, foghorn 0.0",
+      "end card": "from 67.2 s: phone 0.0, foghorn 0.0",
+      "other watch labels": "french_horn 0.221, singing_bowl 0.119",
+      "top tags": "music 0.806, synthesizer 0.722, keyboard_musical 0.704"
+     },
+     "silence_last_54_frames": "exact zeros",
+     "dynamics": {
+      "bars 1-9 under the integrated level (LU)": 6.4,
+      "the question hit on f72: its 300 ms over the 600 ms before (dB)": 10.8,
+      "the question hit on f216: its 300 ms over the 600 ms before (dB)": 13.4,
+      "the question hit on f360: its 300 ms over the 600 ms before (dB)": 22.2,
+      "the dead stop f612-638 under the drop's first 300 ms (dB)": 87.7,
+      "the drop's 3 s over bar 9's first half (LU)": 7.73,
+      "the hold on f445: its 2 s under the integrated level (LU)": 5.76,
+      "the hold on f445: its 2 s under the montage, bars 15-20 (LU)": 7.57,
+      "the hold on f1453: its 2 s under the integrated level (LU)": 5.51,
+      "the hold on f1453: its 2 s under the montage, bars 15-20 (LU)": 7.32,
+      "Verified (the push on f1723) is in the loudest 3 s window": "the loudest from 56.4 s at -11.69 LUFS; the best holding the push and its next 300 ms -11.69",
+      "Verified's loudest 3 s over the montage (LU)": 2.62,
+      "the push at least as big as the tests passing (f1656): momentary maximum (400 ms) within 0.6 s (LU)": 1.49,
+      "the push at least as big as the tests passing (f1656): its first 0.3 s (LU)": 1.26,
+      "the push at least as big as the tests passing (f1656): its first 0.4 s (LU)": 1.49,
+      "the push at least as big as the tests passing (f1656): its first 1.0 s (LU)": 2.4,
+      "the breakdown (bars 26-28) under the climax (bars 21-25) (LU)": 6.75,
+      "gap f63-72: the 300 ms from its hit over its middle 200 ms (dB)": 7.0,
+      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB)": 10.6,
+      "gap f1647-1656: the 300 ms from its hit over its middle 200 ms (dB)": 26.6,
+      "gap f2151-2160: the 300 ms from its hit over its middle 200 ms (dB)": 45.3,
+      "bars 23-25 over the mean of bars 9-22 (LU)": 3.78,
+      "the loudest 3-bar span": "bars 23-25 at -12.87 LUFS",
+      "bars 26-28 under bars 23-25 (LU)": 8.16,
+      "the last 54 frames are digital silence": "exact zeros"
+     },
+     "dynamics_misses": [
+      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB): 10.6 (want >= 12)"
+     ],
+     "gates_pass": true,
+     "fails": []
+    },
+    "soundtrack_social.wav": {
+     "format": "PCM 24-bit, 48 kHz, stereo, in .work/audio/render/ (not committed)",
+     "sha256": "e517eb994317690f87ae50fe51c507565d2690691ce83b15a5b6f81d295e5cbe",
+     "bytes": 22118444,
+     "for": "the full-length social films (Pebble-launch-film-1920x1080, -1080x1080, -1080x1920)",
+     "length": "76.800 s, 3,686,400 samples (2304 frames at 30 fps)",
+     "integrated_lufs": -14.3,
+     "true_peak_dbtp": -1.6,
+     "lra_lu": 10.6,
+     "integrated_lufs_pyloudnorm": -14.36,
+     "limiter_ceiling_dbtp": -1.7,
+     "ceiling_note": "the --aac loop's tries (ceiling dBTP: the AAC encode's true peak): -1.5: -0.724, -1.6: -0.81, -1.7: -1.27",
+     "aac_160k_true_peak_dbtp": -0.993,
+     "aac_192k_true_peak_dbtp": -1.27,
+     "aac_gate": "192k: -1.27 dBTP (gate -1.0)",
+     "mono_loss_db": 0.39,
+     "power_share_above_150hz": 0.355,
+     "classifier_max": {
+      "windows (main, shifted)": {
+       "phone": [
+        0.223,
+        0.18
+       ],
+       "voice": [
+        0.106,
+        0.107
+       ],
+       "alarm": [
+        0.022,
+        0.023
+       ],
+       "foghorn": [
+        0.052,
+        0.048
+       ]
+      },
+      "opening after silence, phone": 0.18,
+      "after silence at f648, f1512 and f1656": {
+       "phone": 0.104,
+       "voice": 0.072,
+       "alarm": 0.032,
+       "foghorn": 0.062
+      },
+      "holds": "f445-504: phone 0.0, voice 0.0, alarm 0.0, foghorn 0.0; f1453-1512: phone 0.0, voice 0.0, alarm 0.0, foghorn 0.0",
+      "end card": "from 67.2 s: phone 0.0, foghorn 0.0",
+      "other watch labels": "french_horn 0.225, singing_bowl 0.116",
+      "top tags": "music 0.806, synthesizer 0.721, keyboard_musical 0.704"
+     },
+     "silence_last_54_frames": "exact zeros",
+     "dynamics": {
+      "bars 1-9 under the integrated level (LU)": 6.16,
+      "the question hit on f72: its 300 ms over the 600 ms before (dB)": 10.8,
+      "the question hit on f216: its 300 ms over the 600 ms before (dB)": 13.4,
+      "the question hit on f360: its 300 ms over the 600 ms before (dB)": 22.2,
+      "the dead stop f612-638 under the drop's first 300 ms (dB)": 86.4,
+      "the drop's 3 s over bar 9's first half (LU)": 7.38,
+      "the hold on f445: its 2 s under the integrated level (LU)": 5.52,
+      "the hold on f445: its 2 s under the montage, bars 15-20 (LU)": 7.36,
+      "the hold on f1453: its 2 s under the integrated level (LU)": 5.27,
+      "the hold on f1453: its 2 s under the montage, bars 15-20 (LU)": 7.11,
+      "Verified (the push on f1723) is in the loudest 3 s window": "the loudest from 56.4 s at -10.12 LUFS; the best holding the push and its next 300 ms -10.12",
+      "Verified's loudest 3 s over the montage (LU)": 2.4,
+      "the push at least as big as the tests passing (f1656): momentary maximum (400 ms) within 0.6 s (LU)": 0.98,
+      "the push at least as big as the tests passing (f1656): its first 0.3 s (LU)": 0.55,
+      "the push at least as big as the tests passing (f1656): its first 0.4 s (LU)": 0.91,
+      "the push at least as big as the tests passing (f1656): its first 1.0 s (LU)": 2.06,
+      "the breakdown (bars 26-28) under the climax (bars 21-25) (LU)": 6.43,
+      "gap f63-72: the 300 ms from its hit over its middle 200 ms (dB)": 7.0,
+      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB)": 9.3,
+      "gap f1647-1656: the 300 ms from its hit over its middle 200 ms (dB)": 25.9,
+      "gap f2151-2160: the 300 ms from its hit over its middle 200 ms (dB)": 44.0,
+      "bars 23-25 over the mean of bars 9-22 (LU)": 3.55,
+      "the loudest 3-bar span": "bars 23-25 at -11.22 LUFS",
+      "bars 26-28 under bars 23-25 (LU)": 7.81,
+      "the last 54 frames are digital silence": "exact zeros"
+     },
+     "dynamics_misses": [
+      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB): 9.3 (want >= 12)"
+     ],
+     "gates_pass": true,
+     "fails": []
+    },
+    "soundtrack_x30_social.wav": {
+     "format": "PCM 24-bit, 48 kHz, stereo, in .work/audio/render/ (not committed)",
+     "sha256": "b2187537c5998419165890174769f79265d4442278969697b1ceef3afc590824",
+     "bytes": 8294444,
+     "for": "the 30 s cut x30 (Pebble-launch-film-30s-1920x1080, -1080x1080, -1080x1920)",
+     "length": "28.800 s, 1,382,400 samples (864 frames at 30 fps)",
+     "integrated_lufs": -14.3,
+     "true_peak_dbtp": -1.5,
+     "lra_lu": 11.6,
+     "integrated_lufs_pyloudnorm": -14.31,
+     "limiter_ceiling_dbtp": -1.5,
+     "ceiling_note": "the --aac loop's tries (ceiling dBTP: the AAC encode's true peak): -1.5: -1.25",
+     "settle": "0.3 dB of make-up after the limiter (passes, gain: LUFS: 0.0: -14.521, 0.3: -14.315)",
+     "aac_160k_true_peak_dbtp": -1.23,
+     "aac_192k_true_peak_dbtp": -1.25,
+     "aac_gate": "192k: -1.25 dBTP (gate -1.0)",
+     "mono_loss_db": 0.41,
+     "power_share_above_150hz": 0.335,
+     "classifier_max": {
+      "windows (main, shifted)": {
+       "phone": [
+        0.107,
+        0.179
+       ],
+       "voice": [
+        0.117,
+        0.06
+       ],
+       "alarm": [
+        0.027,
+        0.035
+       ],
+       "foghorn": [
+        0.075,
+        0.045
+       ]
+      },
+      "opening after silence, phone": 0.179,
+      "after silence at f648, f1512 and f1656": {
+       "phone": 0.194,
+       "voice": 0.053,
+       "alarm": 0.027,
+       "foghorn": 0.035
+      },
+      "holds": "f445-504: phone 0.0, voice 0.0, alarm 0.0, foghorn 0.0",
+      "end card": "from 24.0 s: phone 0.0, foghorn 0.0",
+      "other watch labels": "french_horn 0.138",
+      "top tags": "music 0.788, synthesizer 0.761, keyboard_musical 0.702"
+     },
+     "silence_last_54_frames": "exact zeros",
+     "dynamics": {
+      "bars 1-9 under the integrated level (LU)": 6.25,
+      "the question hit on f360: its 300 ms over the 600 ms before (dB)": 11.7,
+      "the dead stop f612-638 under the drop's first 300 ms (dB)": 87.5,
+      "the drop's 3 s over bar 9's first half (LU)": 6.49,
+      "the hold on f445: its 2 s under the integrated level (LU)": 5.95,
+      "Verified (the push on f1723) is in the loudest 3 s window": "the loudest from 20.4 s at -10.32 LUFS; the best holding the push and its next 300 ms -10.32",
+      "the push at least as big as the tests passing (f1656): momentary maximum (400 ms) within 0.6 s (LU)": 1.1,
+      "the push at least as big as the tests passing (f1656): its first 0.3 s (LU)": -0.02,
+      "the push at least as big as the tests passing (f1656): its first 0.4 s (LU)": 0.46,
+      "the push at least as big as the tests passing (f1656): its first 1.0 s (LU)": 1.81,
+      "gap f63-72: the 300 ms from its hit over its middle 200 ms (dB)": 7.9,
+      "gap f351-360: the 300 ms from its hit over its middle 200 ms (dB)": 10.2,
+      "gap f567-576: the 300 ms from its hit over its middle 200 ms (dB)": 26.4,
+      "bars 23-25 over the mean of bars 9-22 (LU)": 5.98,
+      "the loudest 3-bar span": "bars 8-10 at -11.38 LUFS",
+      "the last 54 frames are digital silence": "exact zeros"
+     },
+     "dynamics_misses": [
+      "the push at least as big as the tests passing (f1656): its first 0.3 s (LU): -0.02 (want >= 0)",
+      "gap f351-360: the 300 ms from its hit over its middle 200 ms (dB): 10.2 (want >= 12)"
+     ],
+     "gates_pass": true,
+     "fails": []
+    },
+    "soundtrack_social_narrated.wav": {
+     "format": "PCM 24-bit, 48 kHz, stereo, in .work/audio/render/ (not committed)",
+     "sha256": "8525183924e13f7f88a1e4699c79dc062778856d59c4fd638e263c8d2cf92265",
+     "bytes": 22118444,
+     "for": "the narrated twin (at least the 16:9 full film; OVERRIDES §38): never published on its own (Sarvam ToS §10.2 item 9)",
+     "length": "76.800 s, 3,686,400 samples (2304 frames at 30 fps)",
+     "integrated_lufs": -14.3,
+     "true_peak_dbtp": -1.6,
+     "lra_lu": 9.2,
+     "integrated_lufs_pyloudnorm": -14.33,
+     "limiter_ceiling_dbtp": -1.7,
+     "ceiling_note": "the --aac loop's tries (ceiling dBTP: the AAC encode's true peak): -1.5: -0.8, -1.6: -1.012, -1.7: -1.32",
+     "voice": {
+      "gain_db": -5.54,
+      "duck": "-4.5 dB under each line, from its first sample (lead 0.0 ms), down in 40.0 ms, back over 300.0 ms",
+      "target_line_lufs": -15.0,
+      "lines": [
+       "f75.0-108.67: the voice -14.75 LUFS over the music and effects -27.21 LUFS (+12.5 dB)",
+       "f219.0-244.71: the voice -14.94 LUFS over the music and effects -27.99 LUFS (+13.1 dB)",
+       "f363.0-401.85: the voice -15.13 LUFS over the music and effects -25.77 LUFS (+10.6 dB)",
+       "f1803.0-1841.95: the voice -15.27 LUFS over the music and effects -22.47 LUFS (+7.2 dB)"
+      ],
+      "measured_duck": "the music and effects 4.55-4.58 dB under each line against the social master (a 0.06 dB normalisation difference included); 0.06 dB elsewhere"
+     },
+     "aac_160k_true_peak_dbtp": -1.17,
+     "aac_192k_true_peak_dbtp": -1.32,
+     "aac_gate": "192k: -1.32 dBTP (gate -1.0)",
+     "mono_loss_db": 0.35,
+     "power_share_above_150hz": 0.381,
+     "classifier_max": {
+      "windows (main, shifted)": {
+       "phone": [
+        0.146,
+        0.179
+       ],
+       "voice": [
+        0.022,
+        0.108
+       ],
+       "alarm": [
+        0.053,
+        0.028
+       ],
+       "foghorn": [
+        0.052,
+        0.062
+       ]
+      },
+      "opening after silence, phone": 0.179,
+      "after silence at f648, f1512 and f1656": {
+       "phone": 0.106,
+       "voice": 0.072,
+       "alarm": 0.032,
+       "foghorn": 0.062
+      },
+      "holds": "f445-504: phone 0.0, voice 0.892, alarm 0.0, foghorn 0.0; f1453-1512: phone 0.0, voice 0.0, alarm 0.0, foghorn 0.0",
+      "end card": "from 67.2 s: phone 0.0, foghorn 0.0",
+      "other watch labels": "french_horn 0.224, singing_bowl 0.114",
+      "top tags": "music 0.813, synthesizer 0.728, keyboard_musical 0.71"
+     },
+     "silence_last_54_frames": "exact zeros",
+     "dynamics": {
+      "bars 1-9 under the integrated level (LU)": 4.23,
+      "the question hit on f72: its 300 ms over the 600 ms before (dB)": 13.1,
+      "the question hit on f216: its 300 ms over the 600 ms before (dB)": 16.3,
+      "the question hit on f360: its 300 ms over the 600 ms before (dB)": 24.1,
+      "the dead stop f612-638 under the drop's first 300 ms (dB)": 86.4,
+      "the drop's 3 s over bar 9's first half (LU)": 7.4,
+      "the hold on f445: its 2 s under the integrated level (LU)": 5.64,
+      "the hold on f445: its 2 s under the montage, bars 15-20 (LU)": 7.39,
+      "the hold on f1453: its 2 s under the integrated level (LU)": 5.38,
+      "the hold on f1453: its 2 s under the montage, bars 15-20 (LU)": 7.13,
+      "Verified (the push on f1723) is in the loudest 3 s window": "the loudest from 56.4 s at -10.16 LUFS; the best holding the push and its next 300 ms -10.16",
+      "Verified's loudest 3 s over the montage (LU)": 2.42,
+      "the push at least as big as the tests passing (f1656): momentary maximum (400 ms) within 0.6 s (LU)": 1.01,
+      "the push at least as big as the tests passing (f1656): its first 0.3 s (LU)": 0.62,
+      "the push at least as big as the tests passing (f1656): its first 0.4 s (LU)": 0.96,
+      "the push at least as big as the tests passing (f1656): its first 1.0 s (LU)": 2.1,
+      "the breakdown (bars 26-28) under the climax (bars 21-25) (LU)": 5.33,
+      "gap f63-72: the 300 ms from its hit over its middle 200 ms (dB)": 9.3,
+      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB)": 9.3,
+      "gap f1647-1656: the 300 ms from its hit over its middle 200 ms (dB)": 25.9,
+      "gap f2151-2160: the 300 ms from its hit over its middle 200 ms (dB)": 44.0,
+      "bars 23-25 over the mean of bars 9-22 (LU)": 3.58,
+      "the loudest 3-bar span": "bars 23-25 at -11.26 LUFS",
+      "bars 26-28 under bars 23-25 (LU)": 6.72,
+      "the last 54 frames are digital silence": "exact zeros"
+     },
+     "dynamics_misses": [
+      "bars 1-9 under the integrated level (LU): 4.23 (want >= 6)",
+      "the breakdown (bars 26-28) under the climax (bars 21-25) (LU): 5.33 (want >= 6)",
+      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB): 9.3 (want >= 12)"
+     ],
+     "gates_pass": true,
+     "fails": [],
+     "voice_spans_s": "2.5-3.622; 7.3-8.157; 12.1-13.395; 60.1-61.398",
+     "speech_notes": "10 windows overlapping the narrator's lines read speech (up to 0.892): expected; none outside them. The hold on f445's report includes the 12.0-15.0 s window, which also holds the third line (12.1-13.4 s): its speech reading is the narration"
+    },
+    "soundtrack_social_narrated_me.wav": {
+     "format": "PCM 24-bit, 48 kHz, stereo, in .work/audio/render/ (not committed)",
+     "sha256": "6de72dd9c34dfab24ae65817b336c3fe2cc4882451dab2d40b9ff74c915538f9",
+     "bytes": 22118444,
+     "for": "a check file, never delivered: the narrated twin's music and effects alone, gated with no voice expected",
+     "length": "76.800 s, 3,686,400 samples (2304 frames at 30 fps)",
+     "integrated_lufs": -14.4,
+     "true_peak_dbtp": -1.6,
+     "lra_lu": 10.9,
+     "aac_160k_true_peak_dbtp": -1.17,
+     "aac_192k_true_peak_dbtp": -1.32,
+     "aac_gate": "192k: -1.32 dBTP (gate -1.0)",
+     "mono_loss_db": 0.4,
+     "power_share_above_150hz": 0.356,
+     "classifier_max": {
+      "windows (main, shifted)": {
+       "phone": [
+        0.166,
+        0.179
+       ],
+       "voice": [
+        0.119,
+        0.108
+       ],
+       "alarm": [
+        0.025,
+        0.021
+       ],
+       "foghorn": [
+        0.052,
+        0.048
+       ]
+      },
+      "opening after silence, phone": 0.179,
+      "after silence at f648, f1512 and f1656": {
+       "phone": 0.106,
+       "voice": 0.072,
+       "alarm": 0.032,
+       "foghorn": 0.062
+      },
+      "holds": "f445-504: phone 0.0, voice 0.0, alarm 0.0, foghorn 0.0; f1453-1512: phone 0.0, voice 0.0, alarm 0.0, foghorn 0.0",
+      "end card": "from 67.2 s: phone 0.0, foghorn 0.0",
+      "other watch labels": "french_horn 0.224, singing_bowl 0.11",
+      "top tags": "music 0.808, synthesizer 0.723, keyboard_musical 0.706"
+     },
+     "silence_last_54_frames": "exact zeros",
+     "dynamics": {
+      "bars 1-9 under the integrated level (LU)": 6.41,
+      "the question hit on f72: its 300 ms over the 600 ms before (dB)": 10.1,
+      "the question hit on f216: its 300 ms over the 600 ms before (dB)": 12.8,
+      "the question hit on f360: its 300 ms over the 600 ms before (dB)": 21.4,
+      "the dead stop f612-638 under the drop's first 300 ms (dB)": 86.4,
+      "the drop's 3 s over bar 9's first half (LU)": 7.4,
+      "the hold on f445: its 2 s under the integrated level (LU)": 5.56,
+      "the hold on f445: its 2 s under the montage, bars 15-20 (LU)": 7.39,
+      "the hold on f1453: its 2 s under the integrated level (LU)": 5.3,
+      "the hold on f1453: its 2 s under the montage, bars 15-20 (LU)": 7.13,
+      "Verified (the push on f1723) is in the loudest 3 s window": "the loudest from 56.4 s at -10.16 LUFS; the best holding the push and its next 300 ms -10.16",
+      "Verified's loudest 3 s over the montage (LU)": 2.42,
+      "the push at least as big as the tests passing (f1656): momentary maximum (400 ms) within 0.6 s (LU)": 1.01,
+      "the push at least as big as the tests passing (f1656): its first 0.3 s (LU)": 0.62,
+      "the push at least as big as the tests passing (f1656): its first 0.4 s (LU)": 0.96,
+      "the push at least as big as the tests passing (f1656): its first 1.0 s (LU)": 2.1,
+      "the breakdown (bars 26-28) under the climax (bars 21-25) (LU)": 7.22,
+      "gap f63-72: the 300 ms from its hit over its middle 200 ms (dB)": 6.3,
+      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB)": 9.3,
+      "gap f1647-1656: the 300 ms from its hit over its middle 200 ms (dB)": 25.9,
+      "gap f2151-2160: the 300 ms from its hit over its middle 200 ms (dB)": 44.0,
+      "bars 23-25 over the mean of bars 9-22 (LU)": 3.58,
+      "the loudest 3-bar span": "bars 23-25 at -11.26 LUFS",
+      "bars 26-28 under bars 23-25 (LU)": 8.61,
+      "the last 54 frames are digital silence": "exact zeros"
+     },
+     "dynamics_misses": [
+      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB): 9.3 (want >= 12)"
+     ],
+     "gates_pass": true,
+     "fails": []
+    }
+   },
+   "sync": {
+    "cue_list": "tools/audio/cues.json puts impact_b and ui_done on f1656, impact_a and ui_verified on f1723 (each peaking one frame after its picture frame, the kit's convention)",
+    "f1656": {
+     "score_onset_frame": 1655.92,
+     "impact_b_onset": 1656.94,
+     "ui_done_onset": 1656.76,
+     "peaks": 1657.0
+    },
+    "f1723": {
+     "score_push_onset_frame": 1723.69,
+     "push_written_at": 1723.5,
+     "impact_a_onset": 1723.66,
+     "ui_verified_onset": 1724.0,
+     "peaks": 1724.0
+    },
+    "result": "the score's push and the two effects begin within 0.34 frames of each other and within 1 frame of Verified on f1723 (onset: spectral flux on the stems and the master; an effect's: its first sample within 20 dB of its peak, as mix_master.py places it)"
+   },
+   "previews_for_the_person": {
+    "folder": "Desktop/Pebble launch film/music-preview/ on the build Mac (not committed)",
+    "sha256": {
+     "Pebble-trailer-film-soundtrack.m4a": "54ac3d6da56499a2f144ac102215c5d9aaa24e1c050b18d3aae2aef3739e9553",
+     "Pebble-trailer-score-a.m4a": "e723e0383b1a6d6d5c33e1e840ab9125c28a33440d05c23e2688493472580112",
+     "Pebble-trailer-score-b.m4a": "327e9e95b54551c7d141b9049db22347295f5001385ec6078778d0e1e494df08",
+     "README.txt": "76b087a94cdecb694aed2e72f75415e9c38c0705dfeaaa33928606eef244be74"
+    },
+    "notes": "Pebble-trailer-film-soundtrack.m4a is soundtrack_web.wav as AAC 192 kb/s (48 kHz stereo, 76.800 s, -16.2 LUFS); the two score files are the composers' own previews (stand-in effects, no UI sounds); README.txt says which is in the film"
+   }
   }
  },
  "sfx": {
@@ -2977,6 +3776,17 @@
     "sound_tags": "click 0.24, tick 0.14 (alone); no voice, alarm or phone label at 0.1 or more",
     "sha256": "e1efa3b79c48ec9af02452abeeb5e5b12c52dee4037d297c9a4a29e039a84742",
     "format": "48 kHz, 24-bit, stereo"
+   },
+   {
+    "file": "suck_a.wav",
+    "what": "a 0.3 s reverse noise swell (7 kHz bright), loudest at its end; 48 kHz stereo float",
+    "used": "the trailer's suck-backs inside its breath gaps: into the first question (f72) and into the drop (f648), -16 dB, align end",
+    "generator": "tools/audio/synth sfx.reverse_swell(source='noise', bright=7000, dur=0.3 s, vel 1.0, rng core.rng(7, 'suck')), written by stems.write_stem (the picture lane, commit 27083e8; the score lanes' stand-in recipe)",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sha256": "df9cc498cd9e4e62e3f282cf2c75f00a0fab6b693c7c8f4eeea05a06c5a7e718",
+    "samples_sha256": "1e771eb4b22809a220a372e086d34d9f8074d607420e8525dd91b7ead2f7056c",
+    "format": "48 kHz, 32-bit float, stereo"
    }
   ],
   "foley": {
