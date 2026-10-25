@@ -37,14 +37,15 @@ const securityHeaders = [
 ];
 
 // Media and UI stills live under versioned folders (public/media/v1, public/ui/v1; critic M2), so they can be cached
-// for a year: a re-render goes to v2/, never over v1/.
+// for a year: a re-render goes to v2/, never over v1/. The energetic recut's film is the first such re-render: its
+// videos and text tracks are in public/media/v2 (OVERRIDES §35 decision 8; src/lib/media.ts FILM_MEDIA).
 const immutable = [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }];
 
 /**
- * The media files that exist when the build starts, as public paths ("/media/v1/loop-memory.h264.mp4"). Inlined into
- * the bundle as process.env.PEBBLE_MEDIA_FILES and read by src/lib/media.ts, so "is this loop rendered yet?" is decided
- * once, at build time. A check at request time would run inside Vercel's functions on each hourly revalidation, where
- * public/ isn't on disk.
+ * The media files that exist when the build starts, as public paths ("/media/v1/loop-memory.h264.mp4",
+ * "/media/v2/film-1080.hevc.mp4"). Inlined into the bundle as process.env.PEBBLE_MEDIA_FILES and read by
+ * src/lib/media.ts, so "is this loop rendered yet?" is decided once, at build time. A check at request time would run
+ * inside Vercel's functions on each hourly revalidation, where public/ isn't on disk.
  */
 function listMediaFiles(): string[] {
   const out: string[] = [];
@@ -58,6 +59,7 @@ function listMediaFiles(): string[] {
     }
   };
   walk(path.join(root, "public", "media", "v1"), "/media/v1");
+  walk(path.join(root, "public", "media", "v2"), "/media/v2");
   walk(path.join(root, "public", "ui", "v1"), "/ui/v1");
   return out;
 }
@@ -80,6 +82,7 @@ export default function nextConfig(phase: string): NextConfig {
       return [
         { source: "/:path*", headers: [...securityHeaders, { key: "Content-Security-Policy", value: contentSecurityPolicy() }] },
         { source: "/media/v1/:path*", headers: immutable },
+        { source: "/media/v2/:path*", headers: immutable },
         { source: "/ui/v1/:path*", headers: immutable },
       ];
     },

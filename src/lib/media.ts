@@ -2,11 +2,13 @@
 // the file exists (MASTER_PLAN §5.3, §5.5; critic H3, H5, C6). Use it from server components and pass the entries to
 // client components as props.
 //
-// `available` is decided at build time: next.config.ts lists the files under public/media/v1 and public/ui/v1 when the
-// build starts and inlines the list as process.env.PEBBLE_MEDIA_FILES. (An `fs` check here would run again inside
-// Vercel's functions on each hourly revalidation, where public/ isn't on disk, and would hide every video.) Media that
-// isn't rendered yet degrades to its poster or a still, never to a broken player. Paths are versioned (/v1/); a
-// re-render goes to v2/, because /media/v1 and /ui/v1 are cached as immutable for a year.
+// `available` is decided at build time: next.config.ts lists the files under public/media/v1, public/media/v2 and
+// public/ui/v1 when the build starts and inlines the list as process.env.PEBBLE_MEDIA_FILES. (An `fs` check here would
+// run again inside Vercel's functions on each hourly revalidation, where public/ isn't on disk, and would hide every
+// video.) Media that isn't rendered yet degrades to its poster or a still, never to a broken player. Paths are
+// versioned (/v1/); a re-render goes to v2/, because /media/v1 and /ui/v1 are cached as immutable for a year. The
+// energetic recut's film is one: its videos and text tracks are in /media/v2 (FILM_MEDIA), and everything else, its
+// poster included, stays in /media/v1.
 
 export type MediaFile = Readonly<{ src: string; available: boolean }>;
 
@@ -93,11 +95,17 @@ export const VIDEO_TYPES: Readonly<Record<VideoCodec, string>> = {
 };
 
 const MEDIA = "/media/v1";
+/**
+ * The film's own files since the energetic recut (OVERRIDES §34, §35 decision 8): film-1080 and film-720 (HEVC and
+ * H.264) and the film's three text tracks. Its poster (the teaser T0's frame 0), the teaser, the loops and the
+ * wallpaper didn't change, so they stay in MEDIA. tools/encode/verify.mjs reads this name.
+ */
+const FILM_MEDIA = "/media/v2";
 const UI = "/ui/v1";
 
 let known: ReadonlySet<string> | null = null;
 
-/** The files that exist under public/media/v1 and public/ui/v1, as listed by next.config.ts at build time. */
+/** The files that exist under public/media/v1, public/media/v2 and public/ui/v1, as listed by next.config.ts at build time. */
 function knownFiles(): ReadonlySet<string> {
   if (!known) {
     let list: unknown = [];
@@ -143,12 +151,12 @@ export function loopMedia(id: LoopId): LoopMedia {
 }
 
 export function filmMedia(): FilmMedia {
-  const sources = { "720": videoSources(`${MEDIA}/film-720`), "1080": videoSources(`${MEDIA}/film-1080`) };
+  const sources = { "720": videoSources(`${FILM_MEDIA}/film-720`), "1080": videoSources(`${FILM_MEDIA}/film-1080`) };
   return {
     sources,
-    captions: mediaFile(`${MEDIA}/film.en.vtt`),
-    chapters: mediaFile(`${MEDIA}/film.chapters.vtt`),
-    descriptions: mediaFile(`${MEDIA}/film.descriptions.en.vtt`),
+    captions: mediaFile(`${FILM_MEDIA}/film.en.vtt`),
+    chapters: mediaFile(`${FILM_MEDIA}/film.chapters.vtt`),
+    descriptions: mediaFile(`${FILM_MEDIA}/film.descriptions.en.vtt`),
     poster: imageSet(`${MEDIA}/film.poster`, 1920, 1080),
     available: sources["720"].length > 0 || sources["1080"].length > 0,
   };
