@@ -11,10 +11,14 @@
     "score_bars": [1, 6, 7, 8, 9, 14, 15, 16, 17, 30, 31, 32],
     "cadence": "7 A7sus4 -> 8 D (the reveal, cut frame 216); 30 Gmaj9 -> 31 D(add9) (plagal; the final chord at cut frame 720), ringing through 32"
   },
-  "sfx": { "add": [], "replace": [], "drop": [] },
+  "sfx": {
+    "add": [
+      { "frame": 324, "role": "ui", "take": "ui_lock", "event": "the joint onto the held run: the lock, as the music muffles",
+        "why": "the film's ui_lock sits on f890, before the range [900, 1224); the cut's hold starts on this joint (ENERGY_SPEC §10)" }
+    ],
+    "replace": [],
+    "drop": []
+  },
   "exclude": [],
-  "add": [
-    { "id": "x09", "start": 324, "end": 360, "lines": ["[Music picks up]"],
-      "why": "c09's sound at the same beat of the same score bar (bar 9, beats 3-4), where the groove picks up" }
-  ]
+  "add": []
 }

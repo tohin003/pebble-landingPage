@@ -27,7 +27,8 @@ test("chapters.ts lists every on-screen line of the captions, in its own chapter
 });
 
 test("chapterSounds strips the brackets and keeps the order", () => {
-  expect(chapterSounds("desktop")[0]).toBe("Gentle music begins");
+  expect(chapterSounds("desktop")[0]).toBe("Soft piano, a click, then a beat");
   expect(chapterSounds("project")).toEqual([]);
-  expect(chapterSounds("get")).toEqual(["Soft thud", "Final chord"]);
+  expect(chapterSounds("tested")).toEqual(["Music muffles", "Music returns", "Hit and shimmer"]);
+  expect(chapterSounds("get")).toEqual(["The beat returns", "Final hit"]);
 });

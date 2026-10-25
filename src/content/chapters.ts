@@ -50,7 +50,7 @@ export const chapters: readonly Chapter[] = [
       "A small companion for your Mac",
     ], // [C-CH-1] [C-CH-16] [C-CH-2]
     description:
-      "A calm sage-green desktop with the pebble in its lower-right corner. The pointer moves in and the pebble's eyes follow it. A click opens the quick chat, the question “What does ‘day is out of range for month’ mean?” is sent, and the pebble starts thinking. The camera moves into the pebble. Three questions appear one at a time on a sage background, then the line “An agent shouldn't grade its own work”. The pebble hops in, leaps and lands as the full stop of the word “pebble.”, and the screen turns light.",
+      "A calm sage-green desktop with the pebble in its lower-right corner. The pointer moves in and the pebble's eyes follow it. A click opens the quick chat. The question “What does ‘day is out of range for month’ mean?” types itself and is sent. Pebble thinks, then its answer starts to appear: “Python is being asked for a date that doesn't exist, like 31 February.” The camera moves into the pebble. Three questions appear one at a time on a sage background, then the line “An agent shouldn't grade its own work”. The pebble hops in, leaps, hangs for a moment and lands as the full stop of the word “pebble.”, and the screen turns light.",
     sounds: [],
   },
   {
@@ -72,7 +72,7 @@ export const chapters: readonly Chapter[] = [
     sectionIds: ["project"],
     onScreen: ["AgentGuard checks the evidence", "Tests run in an isolated copy", "Evidence before done"], // [C-CH-17] [C-CH-5] [C-CH-6]
     description:
-      "Pebble's reply says both edits are in, but the task is held: “Blocked” and “Pebble's change isn't verified yet.”, with Run the tests, Ask Pebble to finish and Accept as unverified. The pointer clicks Run the tests. A “Run isolated tests” card reads “Runs the project's tests in a temporary copy. Your project files don't change.” The pointer clicks Run tests; the steps show “Requesting isolated tests · 11 s”, then “Verified · pytest 42 passed on current files”. Pebble's final reply says the tests ran in an isolated copy and both edits are verified, and the pebble celebrates.",
+      "Pebble's reply says both edits are in, but the task is held: “Blocked” and “Pebble's change isn't verified yet.”, with Run the tests, Ask Pebble to finish and Accept as unverified. The pointer clicks Run the tests. A “Run isolated tests” card reads “Runs the project's tests in a temporary copy. Your project files don't change.” The pointer clicks Run tests; the steps show “Requesting isolated tests · 11 s”, then “Verified · pytest 42 passed on current files”, which comes forward as the other steps fade back. Pebble's final reply says the tests ran in an isolated copy and both edits are verified, and the pebble celebrates.",
     sounds: [],
   },
   {
