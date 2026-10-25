@@ -1,21 +1,61 @@
 {
   "schema": "pebble-film-cut/1",
   "name": "x30",
-  "about": "The 30 s cut of the launch film for X, reveal first (the lead's pick, 2026-10-24). ranges: LaunchFilm source frames [first, end), in playing order (30 fps, 18 frames a beat, 72 a bar). Every range starts on the same beat of the bar in the film and in the cut, so the film's clicks, cuts and lines stay on their beats and the score's own bars play under them (music.score_bars). Read by tools/captions/build.mjs --cut (captions), tools/encode/encode.sh --cut (picture), tools/audio/cut_cues.py (the cut's sound effects) and tools/audio/cut_soundtrack.sh (its music and mix).",
+  "about": "The 30 s cut of the launch trailer for X (the blueprint's x30, TRAILER_RESEARCH §6.7): ranges are LaunchFilm source frames [first, end), in playing order (30 fps, 18 frames a beat, 72 a bar). Every range starts on a bar line in the film and in the cut, so the film's clicks, cuts and lines stay on their beats and the score's own bars play under them (music.score_bars). The cut: the look; \"Did it run the tests?\"; the hold; the turn; the build and the dead stop; the drop at cut 12.0 s; Run the tests; the tests at 1x; the tests pass at cut 19.2 s and Verified, with Evidence before done, at cut 21.43 s; the celebration (OVERRIDES §41 moved Verified to film f1723, so the climax's range runs through bar 25, which takes the title bar's place: the end card is already whole on the final hit); the final hit at cut 24.0 s; 1.8 s of silence. Read by tools/captions/build.mjs --cut (captions), tools/encode/encode.sh --cut (picture), tools/audio/cut_cues.py (the cut's sound effects and automation) and the score's x30 render.",
   "fps": 30,
-  "ranges": [[0, 72], [360, 612], [900, 1224], [2088, 2304]],
+  "ranges": [
+    [
+      0,
+      72
+    ],
+    [
+      360,
+      720
+    ],
+    [
+      1512,
+      1800
+    ],
+    [
+      2160,
+      2304
+    ]
+  ],
   "frames": 864,
-  "compositions": { "LaunchFilm30": [1920, 1080], "LaunchFilm30Square": [1080, 1080], "LaunchFilm30Vertical": [1080, 1920] },
+  "compositions": {
+    "LaunchFilm30": [
+      1920,
+      1080
+    ],
+    "LaunchFilm30Square": [
+      1080,
+      1080
+    ],
+    "LaunchFilm30Vertical": [
+      1080,
+      1920
+    ]
+  },
   "music": {
     "form": "x30",
-    "score_bars": [1, 6, 7, 8, 9, 14, 15, 16, 17, 30, 31, 32],
-    "cadence": "7 A7sus4 -> 8 D (the reveal, cut frame 216); 30 Gmaj9 -> 31 D(add9) (plagal; the final chord at cut frame 720), ringing through 32"
+    "score_bars": [
+      1,
+      6,
+      7,
+      8,
+      9,
+      10,
+      22,
+      23,
+      24,
+      25,
+      31,
+      32
+    ],
+    "cadence": "bar 1 (the D motif) into bar 6 (the B-minor question hit); bar 10 (the D drop, cut frame 288) into bar 22 (the release over Asus4, cut frame 432); bar 24 (the tests pass at cut 576, Verified's push at cut 643) into bar 25 (the celebration); bar 25 into bar 31 (the final D(add9), cut 720), ringing through bar 32"
   },
   "sfx": {
-    "add": [
-      { "frame": 324, "role": "ui", "take": "ui_lock", "event": "the joint onto the held run: the lock, as the music muffles",
-        "why": "the film's ui_lock sits on f890, before the range [900, 1224); the cut's hold starts on this joint (ENERGY_SPEC §10)" }
-    ],
+    "add": [],
     "replace": [],
     "drop": []
   },

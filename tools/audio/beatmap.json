@@ -1,15 +1,13 @@
 {
  "schema": "pebble-beatmap/1",
- "id": "original-sampled",
- "title": "Pebble launch cue (sampled instruments)",
+ "id": "trailer",
+ "title": "Pebble launch trailer (the film's grid and the trailer's sections)",
  "music": {
-  "source": "the composed score (tools/audio/compose_score.py --seed 7, the same notes) played on recorded instrument samples; bar 1 re-voiced for the film's start from silence (lane M2: the motif on a soft upright piano, the strings under it)",
-  "generator": "tools/audio/render_sampled.py --seed 7",
-  "samples": "Versilian Community Sample Library (VCSL) and VS Chamber Orchestra: Community Edition (VSCO 2 CE), CC0 1.0; files, pinned commits and SHA-256: tools/audio/sample_kit.json",
-  "rebuild": "tools/audio/use_music.sh original-sampled",
-  "licence": "part of the film media, (c) 2026 Tohin Majumder; the instrument samples are CC0 1.0 (credit is courtesy)"
+  "source": "the trailer's synthesised score, written to this grid on tools/audio/synth (candidates tools/audio/scores/trailer_a.py and trailer_b.py; the judge picks one), sample-exact on the 18-frame beat",
+  "generator": "tools/audio/scores/trailer_a.py or trailer_b.py (render step)",
+  "plan": "scratchpad/research/TRAILER_RESEARCH.md section 7 and its .json report.music (the lead's binding blueprint, OVERRIDES 39-41)",
+  "licence": "part of the film media, (c) 2026 Tohin Majumder; original synthesis, no samples"
  },
- "bed_wav": ".work/audio/render/music_bed.wav",
  "fps": 30,
  "bpm": 100.0,
  "beats_per_bar": 4,
@@ -20,51 +18,44 @@
  "duration_s": 76.8,
  "first_downbeat_frame": 0,
  "reveal": {
-  "bar": 8,
-  "frame": 504,
-  "s": 16.8
+  "bar": 10,
+  "frame": 648,
+  "s": 21.6
  },
  "sections": [
   {
    "name": "hook",
    "first_bar": 1,
-   "last_bar": 2,
+   "last_bar": 1,
    "start_frame": 0,
-   "end_frame": 144
+   "end_frame": 72
   },
   {
    "name": "tension",
-   "first_bar": 3,
-   "last_bar": 5,
-   "start_frame": 144,
-   "end_frame": 360
-  },
-  {
-   "name": "build",
-   "first_bar": 6,
-   "last_bar": 7,
-   "start_frame": 360,
-   "end_frame": 504
+   "first_bar": 2,
+   "last_bar": 9,
+   "start_frame": 72,
+   "end_frame": 648
   },
   {
    "name": "reveal",
-   "first_bar": 8,
-   "last_bar": 8,
-   "start_frame": 504,
-   "end_frame": 576
+   "first_bar": 10,
+   "last_bar": 14,
+   "start_frame": 648,
+   "end_frame": 1008
   },
   {
    "name": "proof",
-   "first_bar": 9,
-   "last_bar": 22,
-   "start_frame": 576,
-   "end_frame": 1584
+   "first_bar": 15,
+   "last_bar": 20,
+   "start_frame": 1008,
+   "end_frame": 1440
   },
   {
-   "name": "payoff",
-   "first_bar": 23,
+   "name": "climax",
+   "first_bar": 21,
    "last_bar": 25,
-   "start_frame": 1584,
+   "start_frame": 1440,
    "end_frame": 1800
   },
   {
@@ -253,78 +244,55 @@
   2268,
   2286
  ],
- "how_to_use": "Cut and change layouts on downbeat_frames, smaller moves on beat_frames; put the reveal on reveal.frame; each sound effect peaks at its picture event + 1 frame (tools/audio/cues.json). Frame of beat k (0-based) = first_downbeat_frame + k * frames_per_beat.",
+ "how_to_use": "Cut and change layouts on downbeat_frames, smaller moves on beat_frames; put the drop on reveal.frame (f648, bar 10); each sound effect peaks at its picture event + 1 frame (tools/audio/cues.json). Frame of beat k (0-based) = first_downbeat_frame + k * frames_per_beat. The trailer's movements: Tension (bars 1-9: the hook is bar 1's cold open), Reveal (10-14), Proof (15-20) and its climax (21-25), the breakdown (26-28), the title (the endcard, 29-30) and the button (final, 31-32).",
  "cues": {
-  "breath_frame": 486,
-  "riser_bars": [
-   6,
-   7
+  "breath_frame": 612,
+  "dead_stop_frames": [
+   612,
+   639
   ],
-  "riser_end_frame": 504,
+  "gap_frames": [
+   63,
+   639,
+   1647,
+   2151
+  ],
+  "hold_frames": [
+   [
+    445,
+    504,
+    576
+   ],
+   [
+    1453,
+    1512,
+    1584
+   ]
+  ],
+  "riser_bars": [
+   8,
+   9
+  ],
+  "riser_end_frame": 612,
+  "tests_pass_frame": 1656,
+  "verified_frame": 1723,
+  "completion_frame": 1725,
   "final_chord_frame": 2160,
   "final_chord_ring_frames": 144,
   "motif_bars": [
    1,
    8,
-   23,
+   10,
+   24,
    29
   ]
  },
- "chords_by_bar": {
-  "1": "D(add9)",
-  "2": "Gmaj7/D",
-  "3": "Bm7",
-  "4": "Gmaj7",
-  "5": "Em7",
-  "6": "Gmaj9",
-  "7": "A7sus4",
-  "8": "D(add9)",
-  "9": "D(add9)",
-  "10": "A/C#",
-  "11": "Bm7",
-  "12": "Gmaj9",
-  "13": "D(add9)",
-  "14": "A/C#",
-  "15": "Bm7",
-  "16": "Gmaj9",
-  "17": "Em7",
-  "18": "A7sus4",
-  "19": "F#m7",
-  "20": "Bm7",
-  "21": "Gmaj9",
-  "22": "A7sus4",
-  "23": "D(add9)",
-  "24": "A/C#",
-  "25": "Gmaj9",
-  "26": "Bm7",
-  "27": "Gmaj9",
-  "28": "A7sus4",
-  "29": "D(add9)",
-  "30": "Gmaj9",
-  "31": "D(add9)",
-  "32": "D(add9)"
- },
- "motif": "D5 A5 G#5 A5 (eighth, eighth, sixteenth, dotted eighth tied)",
- "key": "D major",
- "validation": {
-  "median_offset_ms": 3.42,
-  "median_abs_offset_ms": 3.42,
-  "max_abs_offset_ms": 30.67,
-  "within_1_frame_pct": 100.0,
-  "downbeats_measured": 32,
-  "downbeats_total": 32,
-  "reveal": {
-   "planned_frame": 504,
-   "attack_s": 16.80379,
-   "attack_frame": 504,
-   "offset_ms": 3.79,
-   "strength": 454.1
-  },
-  "gates": {
-   "median_abs_offset_le_5ms": true,
-   "reveal_within_1_frame": true,
-   "duration_exact": true
-  },
-  "pass": true
+ "harmony": "the blueprint's plan (TRAILER_RESEARCH section 7): a B-minor tension (Bm(add9)); the build on G to Asus4; the drop on D major; a montage loop of D, A/C#, Bm and G in open voicing; the holds on an unresolved Asus4; the climax resolving to D (OVERRIDES 41: the tests pass on f1656, Verified's push on f1723); the final chord D(add9) on bar 31. Each candidate voices it in its own way; the per-bar chords are the chosen score's (render.json).",
+ "motif": "D5 A5 G#5 A5 (five statements: bar 1 soft, bar 8 a two-note fragment, bar 10 at full level on the drop, bar 24 harmonised, bar 29 resolved)",
+ "key": "D major, with a B-minor tension",
+ "superseded": {
+  "id": "original-sampled",
+  "reveal_frame": 504,
+  "note": "the recut's beat map (its reveal on bar 8, its sampled score's chords and measured offsets) is kept in tools/audio/beatmaps/original-sampled.json"
  }
 }

@@ -89,12 +89,12 @@ Film on-screen text and transcript (`chapters.ts`; draft, Lane E reconciles with
 |---|---|---|---|
 | C-CH-1 | "Did it run the tests?" · "What did it change?" · "Can I undo it?" | OVERRIDES §2 (the tension beat must be neutral questions; these are its examples) | Not a claim: questions about any AI helper. No competitor, no comparison |
 | C-CH-2 | "A small companion for your Mac" | `README.md@v1.0.1:3` ("a desktop companion for Macs … A small animated pebble") | Q |
-| C-CH-3 | "It reads your project" | `README.md@v1.0.1:109` ("Connect a folder and Pebble can read it") | Q |
-| C-CH-4 | "Review, apply, undo" | `src/App.vue@v1.0.1:2565` (Apply edit), `:2588` (Undo this edit); `docs/USER_GUIDE.md@v1.0.1:109` | Q. Avoids the mode-dependent "every edit" (PLAN §5.1) |
+| C-CH-3 | "It reads your project" | `README.md@v1.0.1:109` ("Connect a folder and Pebble can read it") | Q. (trailer, 2026-10-25) No longer on screen: the trailer's glimpses show the review, the apply and the undo themselves, answering the questions |
+| C-CH-4 | "Review, apply, undo" | `src/App.vue@v1.0.1:2565` (Apply edit), `:2588` (Undo this edit); `docs/USER_GUIDE.md@v1.0.1:109` | Q. Avoids the mode-dependent "every edit" (PLAN §5.1). (trailer) No longer on screen (as C-CH-3) |
 | C-CH-5 | "Tests run in an isolated copy" | `docs/USER_GUIDE.md@v1.0.1:111`; `README.md@v1.0.1:110` | Q |
 | C-CH-6 | (1.0.3) **Withdrawn:** "Done means tested" (also the chapter's title). The film lane replaces the line with "Evidence before done" | Withdrawn by `CHANGELOG.md@v1.0.4:57` ("**AgentGuard** holds changed code only when tests cover it"), `docs/USER_GUIDE.md@v1.0.4:124-126` ("Changed code without covering tests is not held."). The new line: the README's AgentGuard heading (C-AG-5, `README.md@207ec74:107`); STATUS 15:25 (the landing session's proposal; the release session's confirmation was still requested) | The old line said any changed code is tested before "done". The line lives in the film lane's files (`chapters.ts`, `filmCaptions.ts`, `docs/film-captions.json`, `video/`), which this register doesn't change; the film is re-rendered after the release session's trial |
 | C-CH-7 | "Your model, your choice" | `README.md@v1.0.1:76-82` (three ways to connect a model) | Q |
-| C-CH-8 | "Even one on your Mac" | `README.md@v1.0.1:81` | Q |
+| C-CH-8 | "Even one on your Mac" | `README.md@v1.0.1:81` | Q. (trailer) No longer on screen: in the trailer's one-bar montage beat it would break the 3-words-a-second rule |
 | C-CH-9 | "You set what it may do" | `docs/USER_GUIDE.md@v1.0.1:82-94`; `README.md@v1.0.1:112-113` | Q |
 | C-CH-10 | "Memory you can read and forget" | `docs/USER_GUIDE.md@v1.0.1:139-163` | Q |
 | C-CH-11 | "Views, not just text" | `README.md@v1.0.1:118` | Q |
@@ -104,11 +104,22 @@ Film on-screen text and transcript (`chapters.ts`; draft, Lane E reconciles with
 | C-CH-15 | "Free for Macs with Apple silicon" | `README.md@v1.0.1:3`, `:12` | Q |
 | C-CH-16 | (review) "An agent shouldn't grade its own work" (FILM_SPEC T4) | OVERRIDES §2 (the one allowed comparative framing, as intent, in this paraphrase); STATUS 23:32 | Intent, not a claim; no competitor named, no measure |
 | C-CH-17 | (review) "AgentGuard checks the evidence" (FILM_SPEC T8) | `docs/USER_GUIDE.md@v1.0.1:120`, `:123` ("AgentGuard checks evidence") | Q |
+| C-CH-18 | (trailer, 2026-10-25) "Your tests stay yours" (the montage's fifth beat, over Pebble's own test-file card) | `docs/USER_GUIDE.md@v1.5.0:122` (the guide's own bold heading: "**Your tests stay yours**: when Pebble wants to create or change a test file and your request didn't ask for test changes ("add a test for…", "update the tests…"), that change waits for your approval, in Auto mode too."); the card's own reason on screen (`backend/pebble/edit_scope.py@v1.2.0:23`, unchanged at v1.5.0) | Q. Its limits go beside it wherever it is described at length: an explicit test request ("add a test for…") lets the change through, and Full access is unchanged |
+| C-CH-19 | (trailer, 2026-10-25) "Not notarized" (the end card, right under "Free for Macs with Apple silicon", in the same voice and size: the limit beside the promise, OVERRIDES §39) | `README.md@v1.5.0:548` ("Not notarized and no automatic updates"), `:472`; C-LIM-2; the sticky call to action's short form (C-F1-3) | Q |
 | — | (review) "Pebble's character engine: bloub by Jérémy Perret (MIT)" on the end card (T22) | OVERRIDES §2 | Required credit |
 
 Transcript descriptions (what you see) follow the cut in `docs/FILM_SPEC.md` §18 (applied 2026-10-23 by the claims
 review): every string they quote is the real interface or the engine's verbatim text (FILM_SPEC §6, §7), with
 fixture numbers (S). The withdrawn test counter and "network off" (critic C3) are gone.
+
+(trailer, 2026-10-25; `docs/FILM_SPEC.md` §24) The film is now a trailer. Its on-screen lines are C-CH-1, C-CH-16,
+C-CH-2, C-CH-11, C-CH-7, C-CH-10, C-CH-9, C-CH-18 (new), C-CH-17, C-CH-5, C-AG-5 ("Evidence before done"), C-CH-12 to
+C-CH-15, C-CH-19 (new), C-HERO-1, the URL, C-SAMPLE-1 and the bloub credit; C-CH-3, C-CH-4 and C-CH-8 left it. Every
+glimpse and moment is Pebble 1.5.0's own frontend (the capture manifests, fidelity round 2) or a 1.0.4 Settings or
+dashboard still whose view is unchanged at 1.5.0 and shows no run; the transcript's and the time-coded audio
+descriptions' strings are the interface's own words or the sample data's (S). The method, for the description and the
+posts: "Pebble's own interface, driven by a scripted sample run; the sounds are the film's sound design" (Pebble 1.5.0
+makes no sounds).
 
 (§12, 2026-10-23) No on-screen line, caption (`docs/film-captions.json`) or transcript description is affected by the
 release session's corrections: the film shows no export, no Chrome, no schedule, no ⌘+ or ⌘−, never says memories are
