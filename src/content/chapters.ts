@@ -61,7 +61,7 @@ export const chapters: readonly Chapter[] = [
     bars: "15",
     sectionIds: ["views"],
     onScreen: ["Views, not just text"], // [C-CH-11]
-    description: "A “Lisbon trip budget” dashboard. Its spending chart grows until it fills the frame.",
+    description: "A “Lisbon trip budget” dashboard. The camera moves in on its spending chart.",
     sounds: [],
   },
   {
@@ -94,7 +94,7 @@ export const chapters: readonly Chapter[] = [
     sectionIds: ["permissions"],
     onScreen: ["You set what it may do"], // [C-CH-9]
     description:
-      "Settings › Permissions. The pointer chooses Auto in project instead of Ask for approval, with each mode's own words on screen.",
+      "Settings › Permissions, with each mode's own words. The pointer chooses Auto in project instead of Ask for approval, and its card comes forward.",
     sounds: [],
   },
   {
@@ -116,7 +116,7 @@ export const chapters: readonly Chapter[] = [
     sectionIds: ["project"],
     onScreen: ["AgentGuard checks the evidence", "Tests run in an isolated copy", "Evidence before done"], // [C-CH-17] [C-CH-5] [C-AG-5]
     description:
-      "The held task again: “Pebble's change isn't verified yet.”, then “Blocked” with Run the tests, Ask Pebble to finish and Accept as unverified. The pointer clicks Run the tests. A “Run isolated tests” card reads “Runs the project's tests in a temporary copy. Your project files don't change.” The pointer clicks Run tests; the card reads Running, then Done, with 42 passed. The steps show “Verified · pytest 42 passed on current files”, which comes forward as the other steps fade back. Pebble's final reply says the tests ran in an isolated copy and both edits are verified, and the pebble celebrates.",
+      "The held task again: “Pebble's change isn't verified yet.”, with Run the tests, Ask Pebble to finish and Accept as unverified. In the conversation it reads “Blocked”, and the pointer clicks Run the tests. A “Run isolated tests” card reads “Runs the project's tests in a temporary copy. Your project files don't change.” The pointer clicks Run tests; the card reads Running, then Done, with 42 passed. The steps show “Verified · pytest 42 passed on current files”, which comes forward as the other steps fade back. Pebble's final reply says the tests ran in an isolated copy and both edits are verified, and the pebble celebrates.",
     sounds: [],
   },
   {
