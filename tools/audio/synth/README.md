@@ -289,8 +289,9 @@ What that means for a composer:
   `video/src/film/timeline.ts`, which is another lane's file.
 - mix_master normalises the whole master (-16 LUFS web, -14 social), so only the stems' balance and peaks matter.
   Keep every stem under 0 dBFS: `write_stem` refuses louder.
-- `final_mix.sh` reads `.work/audio/render/music_bed.wav` and `drive.wav`, and re-renders `drive.wav` from `drive.py`
-  when drive.py is newer. Until the score lane points it at the new stems, call mix_master.py directly:
+- `final_mix.sh` makes the trailer's masters from the chosen score's stems (`tools/audio/scores/trailer_b.py`, rendered
+  into `.work/audio/render/score/` when they are missing or older than the score), and `mix_checks.sh` gates them. For
+  a quick master of other stems, call mix_master.py directly:
 
 ```sh
 PY=.work/audio/.venv/bin/python; R=.work/audio/render/score

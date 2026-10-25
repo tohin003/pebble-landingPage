@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# NOT USED FOR THE TRAILER (2026-10-26): tools/audio/final_mix.sh makes the trailer's x30 from its score's own x30 stems
+# (tools/audio/scores/trailer_b.py) and tools/audio/cues.x30.json. This script made the retired sampled score's cut.
 # A cut's soundtrack (lane fin-audio, from the x30 plan): its own arrangement of the score, its sound effects, and the
 # social master, with the film's gates.
 #   tools/audio/cut_soundtrack.sh <cut.json> [bed|mix|checks|all]        (default: all, in that order)
