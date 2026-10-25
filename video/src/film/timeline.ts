@@ -147,12 +147,16 @@ export const S1_CAMERA = {
    * C2, f72 (hard cut, punch-in): the bubble to the pebble, held to the dive. Measured on the recording: at 5.43 s
    * (f127) the feed scrolls up 17 CSS px as the answer takes its second line, so the question's first line moves to
    * CSS y 80.3 (its box to 71). The spec's 16:9 m 2.9 at y 935 and square m 2.95 at y 951 put that line 16 px under
-   * the frame's top for f127–134 (the box sliced); here it stays 62 px inside to the dive and the pebble's foot
-   * 23 px above the bottom: 16:9 m 2.8 (+19 % on C1, text 36.4 px), the square m 2.8 (+7 %, the most the
-   * bubble-to-pebble height allows at 1,080 px; the answer's lines 83 px inside both sides). The vertical keeps the
-   * spec's m 2.95: its band starts at y 250, and the line sits at 281 (the answer's lines 62 px inside both sides).
+   * the frame's top for f127–134, its box sliced. Here: 16:9 m 2.8 (+19 % on C1, text 36.4 px) and the square m 2.8
+   * (+7 %, the most the bubble-to-pebble height allows at 1,080 px; the answer's lines 83 px inside both sides), the
+   * pebble at y 945, its foot 28 px above the bottom. The header's status line ("Thinking", "Writing"; its ink ends
+   * at CSS y 59) sits wholly above the frame's top (at y 950 its descender showed as a sliver for f72–134), and the
+   * question's first line 105 px under the top to f126, 57 px for f127–134 after the app's scroll: 3 px inside the
+   * 60 px rule, because the two are 21 CSS px apart and m 2.82 or more would push the pebble's foot off the frame.
+   * The vertical keeps the spec's m 2.95: its band starts at y 250, and the line sits at 281 (the answer's lines 62 px
+   * inside both sides; its header shows whole in the phone UI's top zone).
    */
-  c2: { m: per(2.8, 2.8, 2.95), pebbleAt: per({ x: 1300, y: 950 }, { x: 928, y: 950 }, { x: 949, y: 1216 }) },
+  c2: { m: per(2.8, 2.8, 2.95), pebbleAt: per({ x: 1300, y: 945 }, { x: 928, y: 945 }, { x: 949, y: 1216 }) },
   /** where the pointer enters, frame px at C0 (above the frame and a little left of the pebble in 16:9 and 1:1; from
    *  the left inside the band in 9:16) */
   pointerFrom: per({ x: 1150, y: -60 }, { x: 500, y: -60 }, { x: -70, y: 700 }),

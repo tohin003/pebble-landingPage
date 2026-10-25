@@ -256,11 +256,14 @@ y 162 (x 26–350.3).
 - **f72 (bar 2): a punch-in cut** to C2, the conversation from the bubble to the pebble; pose `thinking` (queued at
   3.15 s, "Thinking" in the header since 3.30 s). C2 is reframed from ENERGY_SPEC's numbers on a measurement: at 5.43 s
   (f127) the feed scrolls up 17 CSS px, and the spec's 16:9 m 2.9 at y 935 and square m 2.95 at (949, 951) then put the
-  question's first line 16 px under the frame's top for f127–134, its box sliced. Here: 16:9 m 2.8 at (1300, 950)
-  (+19 %, 36.4 px; the line 110 px under the top at f72, 62 px from f127; the foot 23 px above the bottom); square
-  m 2.8 at (928, 950) (+7 %: the most the bubble-to-pebble height allows at 1,080 px; the answer's lines 83 px inside
-  both sides); vertical m 2.95 at (949, 1216) as specified (the band starts at y 250 and the line sits at 281; the
-  answer's lines 62 px inside both sides; the header in the phone UI's top zone).
+  question's first line 16 px under the frame's top for f127–134, its box sliced. Here: 16:9 m 2.8 at (1300, 945)
+  (+19 %, 36.4 px) and square m 2.8 at (928, 945) (+7 %: the most the bubble-to-pebble height allows at 1,080 px; the
+  answer's lines 83 px inside both sides), the pebble's foot 28 px above the bottom. The header's status line
+  ("Thinking", "Writing", ink to CSS y 59) stays wholly above the frame (at y 950 its descender showed as a sliver),
+  and the question's first line sits 105 px under the top to f126 and 57 px for f127–134, after the app's scroll: 3 px
+  inside the 60 px rule, the one documented exception, since the two lines are 21 CSS px apart and m ≥ 2.82 would push
+  the pebble's foot off the frame. Vertical m 2.95 at (949, 1216) as specified (the band starts at y 250 and the line
+  sits at 281; the answer's lines 62 px inside both sides; the header whole in the phone UI's top zone).
 - **f102 (source 4.60 s): the answer starts** under the question ("Python…"); pose `writing`. By f135 the frame reads
   "Python is being asked for a date that doesn't exist, like 31 February. If it's" under the question: what the person
   asked and what Pebble answered, in one frame. (For f126–127 the app's stream shows "like **31" before its Markdown
