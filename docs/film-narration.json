@@ -1,0 +1,99 @@
+{
+ "schema": "pebble-film-narration/1",
+ "about": "The narrated twin's voice: four CLAIMS lines spoken by one synthetic narrator over pebble-free frames (OVERRIDES §38 and §39; TRAILER_RESEARCH §6, report.music 'THE NARRATED TWIN'). The master stays wordless. Written by tools/audio/narration.py build --doc; the frames follow tools/audio/beatmap.json (30 fps, 1,600 samples a frame at 48 kHz). The captions lane reads `cues`.",
+ "film": "the narrated twin of LaunchFilm (at least the 16:9 full film); never the master",
+ "fps": 30,
+ "total_frames": 2304,
+ "conventions": {
+  "start": "the first frame of the voice; the line's audio starts on this frame's first sample",
+  "end": "the first frame after the voice (exclusive); seconds = frame / 30",
+  "card": "the frames the line is the focus on screen, [start, end): a question card's whole life (it blurs out over its last 6 frames); for n4, from its landing to the next fact's pre-roll (it then dims to 45 % and stays until the list leaves at f1998-2004, FILM_SPEC S8)",
+  "captions": "film-captions.json's rules still hold for a cue made from these: at least 1.2 s (36 frames) on screen and at most 3 words a second, so a caption may stay up after the voice ends; the spoken words are the card's words"
+ },
+ "voice": {
+  "provider": "Sarvam AI",
+  "model": "bulbul:v4-flash",
+  "speaker": "simran_en_narration",
+  "language_code": "en-IN",
+  "pace": [
+   0.85,
+   0.9
+  ],
+  "loudness": 0.7,
+  "sample_rate": 48000,
+  "codec": "wav"
+ },
+ "disclosure": {
+  "credits": "Narration: an AI voice by Sarvam AI, Bulbul",
+  "description": "Narration: an AI voice by Sarvam AI, Bulbul.",
+  "unnamed_fallback": "Narration: an AI-generated voice",
+  "why": "OVERRIDES §38 asks for the voice to be disclosed as AI-generated in the credits or the description, as Sarvam's terms require. The line says the voice is an AI voice and names its source, so no viewer can take it for a human narrator or an authentic recording (§10.2 item 8, §17.6). Use it in both places, word for word, and never beside a claim that the twin has no voiceover (C-FILM-1 describes the wordless master only).",
+  "terms": [
+   "Commercial use: audio generated on our account while credits are consumed carries the Production License (Commercial Licensing page; ToS §4.1 'including for commercial purposes'). It covers the output only, not Sarvam's voices, models or trademarks.",
+   "§10.2 item 8: where the law requires it, clearly label synthetic audio that could be mistaken for genuine human speech; never present AI output as wholly human-generated or as an authentic original recording; never remove, alter or defeat a watermark, label, disclosure or provenance signal Sarvam applies. §17.6 and §9 item 12 say the same.",
+   "§10.2 item 9: never sell or distribute audio output on a standalone basis (isolated files, audio samples, sound libraries): the voice ships only mixed into the narrated twin.",
+   "Attribution: no clause requires crediting Sarvam (§4.1 leaves attribution to product-specific terms, and none were found for text-to-speech).",
+   "§11.1: Sarvam's trademarks and logos are its IP, not to be displayed or exploited without written permission. The credit therefore names Sarvam and Bulbul in plain text only, as the factual source of the voice: no logo, no styling and no suggestion of endorsement."
+  ]
+ },
+ "rules": [
+  "Never the intent line, Pebble's own voice, a number, Stealth or a line that isn't a CLAIMS row.",
+  "Only over pebble-free frames: the three question cards and the 'Free and open source' card.",
+  "The music and effects duck 3-6 dB under the voice only; the 'nothing voice-like' classifier gate applies to the music and effects stems, not to the twin's master.",
+  "The stem and the takes are never published on their own (Sarvam ToS §10.2 item 9); raw audio is never committed."
+ ],
+ "stem": {
+  "path": ".work/audio/render/candidates/voice/vo.wav",
+  "sample_rate": 48000,
+  "channels": 1,
+  "samples": 3686400,
+  "format": "WAV, 32-bit float",
+  "level": "each line -18.0 LUFS measured mono (-14.99 as dual mono)"
+ },
+ "cues": [
+  {
+   "id": "n1",
+   "text": "What did it change?",
+   "claims": "C-CH-1",
+   "start": 75,
+   "end": 108,
+   "card": [
+    72,
+    144
+   ]
+  },
+  {
+   "id": "n2",
+   "text": "Can I undo it?",
+   "claims": "C-CH-1",
+   "start": 219,
+   "end": 245,
+   "card": [
+    216,
+    288
+   ]
+  },
+  {
+   "id": "n3",
+   "text": "Did it run the tests?",
+   "claims": "C-CH-1",
+   "start": 363,
+   "end": 401,
+   "card": [
+    360,
+    432
+   ]
+  },
+  {
+   "id": "n4",
+   "text": "Free and open source.",
+   "claims": "C-CH-12",
+   "start": 1803,
+   "end": 1842,
+   "card": [
+    1800,
+    1872
+   ]
+  }
+ ]
+}
