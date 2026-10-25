@@ -2805,7 +2805,7 @@
   "trailer_score": {
    "what": "the launch trailer's music and soundtracks (TRAILER_RESEARCH §7 and report.music; OVERRIDES §37-§41): two candidate scores synthesised on tools/audio/synth, a judge's pick, and the final masters with the picture's own effects and automation; the narrated twin's mix (OVERRIDES §38)",
    "made": "2026-10-26, the judge-and-final-mix lane",
-   "supersedes": "the energetic recut's soundtracks (music.sampled_score.energetic_recut.final_masters: 2ffcba9c..., 7dc992fe..., 435f33f9...), still carried by public/media/v2's encodes and the Desktop films until they are re-muxed with these masters",
+   "supersedes": "the energetic recut's soundtracks (music.sampled_score.energetic_recut.final_masters: 2ffcba9c..., 7dc992fe..., 435f33f9...); since 2026-10-26 public/media/v2's encodes and the Desktop films carry these masters instead (lane trailer-deliver; assets)",
    "origin": "original synthesis, made for this project: no samples, no downloads, no vocals; the effects are the kit's (sfx.synthesised and sfx.foley); the narration is Sarvam AI's Bulbul voice (docs/film-narration.json)",
    "licence": "part of the film media, (c) 2026 Tohin Majumder",
    "selected": "candidate B: tools/audio/scores/trailer_b.py",
@@ -3968,32 +3968,77 @@
  },
  "assets": [
   {
-   "file": "public/media/v2/film-1080.hevc.mp4, film-1080.h264.mp4, film-720.hevc.mp4, film-720.h264.mp4 (the energetic recut; src/lib/media.ts FILM_MEDIA)",
-   "status": "encoded 2026-10-25 by tools/encode/encode.sh film --out-dir public/media/v2 (lane energy-deliver, HANDOFF-energy-deliver) from the LaunchFilm master rendered at 2e37b26: 2,304 frames at 30 fps each, every file at its starting CRF (HEVC 25 and 26, H.264 20 and 21); 22.90 MB for the set (C6 allows 45 MB). The pre-recut files in public/media/v1 (lane fin-deliver, 2026-10-24) left the working tree",
+   "file": "public/media/v2/film-1080.hevc.mp4, film-1080.h264.mp4, film-720.hevc.mp4, film-720.h264.mp4 (the trailer; src/lib/media.ts FILM_MEDIA)",
+   "status": "encoded 2026-10-26 by tools/encode/encode.sh film --out-dir public/media/v2 (lane trailer-deliver) from the LaunchFilm picture master (video/out/masters/LaunchFilm.mp4, sha256 1325e78c36d1bccf3af14df2468c765cfa0c072940be7abb63d3133c1395cf95, the picture lane's render, FILM_SPEC 24.11): 2,304 frames at 30 fps each, every file at its starting CRF (HEVC 25 and 26, H.264 20 and 21); 22.50 MB for the set (C6 allows 45 MB). They replaced the energetic recut's files of the same names (lane energy-deliver, 2026-10-25; never committed)",
    "sha256": {
+    "film-1080.hevc.mp4": "7a975acc537fe44e5a796062d38deca1d7315bc08f45988c0e344ace2110c753",
+    "film-1080.h264.mp4": "c0075f6229a825d04ad37860bdfe698c4a417e7ef9884e92e3a76decb24a3c94",
+    "film-720.hevc.mp4": "b48f6ca8e3524f2dfc50e6a5d6e620ee2088a94d1d00fea43dda768856a72af9",
+    "film-720.h264.mp4": "2dfce8a8089126b6c7a621e94863754573f92af3dad1f73ba8d4fac0ac253130"
+   },
+   "bytes": {
+    "film-1080.hevc.mp4": 6493315,
+    "film-1080.h264.mp4": 7207669,
+    "film-720.hevc.mp4": 4114127,
+    "film-720.h264.mp4": 4681384
+   },
+   "codecs": {
+    "film-1080.hevc.mp4": "hvc1.1.6.L120.90",
+    "film-1080.h264.mp4": "avc1.640028",
+    "film-720.hevc.mp4": "hvc1.1.6.L93.90",
+    "film-720.h264.mp4": "avc1.640028"
+   },
+   "music": "the trailer's score B: soundtrack_web.wav (913f9dca...), see music.trailer_score.final_masters",
+   "sfx": "tools/audio/cues.json (41 effects and 7 automation spans), mixed into the soundtrack",
+   "loudness": "measured on the final AAC by tools/encode/verify.mjs: film-1080.hevc.mp4 -16.23 LUFS, -1.587 dBTP; film-1080.h264.mp4 -16.23 LUFS, -1.587 dBTP; film-720.hevc.mp4 -16.23 LUFS, -1.587 dBTP; film-720.h264.mp4 -16.23 LUFS, -1.587 dBTP",
+   "replaced": {
     "film-1080.hevc.mp4": "df33ceed47fb15d24d81ff1c112049aafc2140c78119422df4c5467737bf176d",
     "film-1080.h264.mp4": "80533f094fd2fef503e8fe29f30e438ef6c3343a6fdc069e5b5827433709ba39",
     "film-720.hevc.mp4": "cd921058578a4e08e6241c54e6d6167391f11a0bb421ac3eaf64ebdf076cc1b1",
     "film-720.h264.mp4": "dc28393a8ec545a0a440c45f2eb90c7254e7bd7da340b8dfc3635bb002215758"
-   },
-   "music": "the energetic recut's score: soundtrack_web.wav (2ffcba9c...), see music.sampled_score.energetic_recut.final_masters",
-   "sfx": "tools/audio/cues.json (36 effects and 7 automation spans), mixed into the soundtrack",
-   "loudness": "measured on the final AAC by tools/encode/verify.mjs: -16.11 LUFS, -1.618 dBTP in all four files"
+   }
   },
   {
    "file": "public/media/v2/film.en.vtt, film.chapters.vtt, film.descriptions.en.vtt",
-   "status": "built 2026-10-25 by tools/captions/build.mjs --out-dir public/media/v2 (lane energy-deliver) from docs/film-captions.json (27 captions) and src/content/chapters.ts (9 chapters, 9 descriptions); verify.mjs checks they equal what build.mjs makes now",
+   "status": "built 2026-10-26 by tools/captions/build.mjs --out-dir public/media/v2 (lane trailer-deliver) from docs/film-captions.json (25 captions, 21 time-coded descriptions) and src/content/chapters.ts (9 chapters); verify.mjs checks they equal what build.mjs makes now",
    "sha256": {
+    "film.en.vtt": "441f9c01669b0ebce46f35383650f476f01d9cdcecb9e75d42d5f9e4f63eed36",
+    "film.chapters.vtt": "01bfe6d6e5a496aaccd80e011d7cb3fe3326f5f9a89735e81ce1b626b92f9bb3",
+    "film.descriptions.en.vtt": "94a73d5771324e5460571ddf5edbbcd0507e3ba1adb3cdbbe42be9da108033ad"
+   },
+   "music": null,
+   "replaced": {
     "film.en.vtt": "4f36a89cc2ae025b6c791bf3b3c8acfe4cd71bd9040896e6c0d5374dbc5e70c4",
     "film.chapters.vtt": "87f97b416311af182ae52e03a3a4f3ca48ae95aae2c749a3a0e2a64b67d96407",
     "film.descriptions.en.vtt": "f0387f9ecf2b0ead760b857fb0a17730176cacdfdcc8842d3ad00550495a2ded"
-   },
-   "music": null
+   }
   },
   {
-   "file": "Desktop deliverables (not committed, OVERRIDES 4): the full film as Pebble-launch-film-1920x1080.mp4, Pebble-launch-film-1080x1080.mp4 and Pebble-launch-film-1080x1920.mp4 (LinkedIn); the 30 s cut x30 as Pebble-launch-film-30s-1920x1080.mp4, -30s-1080x1080.mp4 and -30s-1080x1920.mp4 (X)",
-   "status": "encoded 2026-10-25 by tools/encode/encode.sh social (lane energy-deliver), the energetic recut; the 30 s files with --cut docs/film-cuts/x30.json, from the full film's masters (rendered at 2e37b26); the SRTs by tools/captions/build.mjs (27 and 12 cues). They replaced lane fin-deliver's files of 2026-10-24",
+   "file": "Desktop deliverables (not committed, OVERRIDES 4): the full film as Pebble-launch-film-1920x1080.mp4, Pebble-launch-film-1080x1080.mp4 and Pebble-launch-film-1080x1920.mp4 (LinkedIn); the 30 s cut x30 as Pebble-launch-film-30s-1920x1080.mp4, -30s-1080x1080.mp4 and -30s-1080x1920.mp4 (X); and their two SRTs",
+   "status": "encoded 2026-10-26 by tools/encode/encode.sh social (lane trailer-deliver), the trailer: each aspect from its own picture master (LaunchFilm, LaunchFilmSquare f2e284a8..., LaunchFilmVertical bb0fdb72...); the 30 s files with --cut docs/film-cuts/x30.json; the SRTs by tools/captions/build.mjs (25 and 11 cues). They replaced the energetic recut's files of the same names",
    "sha256": {
+    "Pebble-launch-film-1920x1080.mp4": "f8681d87b6f25c7efa2725d8290332859170f0469a1c4b6ae9f3b78600e89838",
+    "Pebble-launch-film-1080x1080.mp4": "25921750a65d6605251e7dd1263c730ad6f1996dcb110036cb1151738e03ca43",
+    "Pebble-launch-film-1080x1920.mp4": "b4feef40fd3eff48cc8faeb77bedda61a2e35300654a2f96562e3745d625dc57",
+    "Pebble-launch-film-30s-1920x1080.mp4": "cd01b5b390f40dd99013e88b61d034e493acf92d1ac1f35c13cbe6b122505137",
+    "Pebble-launch-film-30s-1080x1080.mp4": "bafaf1123769df67918f78ceee246cc65c081a0be927c39e3c1537a8e2c47d5d",
+    "Pebble-launch-film-30s-1080x1920.mp4": "56585698700e877e5b4bcd3a6f82a55cd6ac6beb1d8d186d10d09cbadb316fe6",
+    "Pebble-launch-film.srt": "ed3eeb00cfa4960c29135067bc6a50d387d1fb4fd852003120e690ab718fa96a",
+    "Pebble-launch-film-30s.srt": "c48b88689b897f49c32949cabcc9c2e3b367403fc4f8593d4e86c84723fd1d4e"
+   },
+   "bytes": {
+    "Pebble-launch-film-1920x1080.mp4": 8643127,
+    "Pebble-launch-film-1080x1080.mp4": 7131980,
+    "Pebble-launch-film-1080x1920.mp4": 8116119,
+    "Pebble-launch-film-30s-1920x1080.mp4": 3157302,
+    "Pebble-launch-film-30s-1080x1080.mp4": 2573526,
+    "Pebble-launch-film-30s-1080x1920.mp4": 2848974,
+    "Pebble-launch-film.srt": 1562,
+    "Pebble-launch-film-30s.srt": 709
+   },
+   "music": "the trailer's score B: soundtrack_social.wav (e517eb99...) for the full film, soundtrack_x30_social.wav (b2187537...) for the cut, see music.trailer_score.final_masters",
+   "loudness": "-14 LUFS, <= -1.0 dBTP after encoding (OVERRIDES 4); measured by tools/encode/verify.mjs: Pebble-launch-film-1920x1080.mp4 -14.44 LUFS, -1.270 dBTP; Pebble-launch-film-1080x1080.mp4 -14.44 LUFS, -1.270 dBTP; Pebble-launch-film-1080x1920.mp4 -14.44 LUFS, -1.270 dBTP; Pebble-launch-film-30s-1920x1080.mp4 -14.39 LUFS, -1.250 dBTP; Pebble-launch-film-30s-1080x1080.mp4 -14.39 LUFS, -1.250 dBTP; Pebble-launch-film-30s-1080x1920.mp4 -14.39 LUFS, -1.250 dBTP",
+   "replaced": {
     "Pebble-launch-film-1920x1080.mp4": "c9001151da34b759fe4e9fc59ad795c7eb8ce6065beaecc582012443c0cf09dc",
     "Pebble-launch-film-1080x1080.mp4": "5ddaaeea6d24241c6196d1f6ab7a57128f16cf8474b8fc6e378c8fc1dda8b195",
     "Pebble-launch-film-1080x1920.mp4": "59310613092d50cdf67124d3f1b021a32ecb2fd993575bd88bd54fc3723e5e78",
@@ -4002,9 +4047,23 @@
     "Pebble-launch-film-30s-1080x1920.mp4": "55de4ab5c96bc5f6aeb6991035ec67f0d7334ff570f1288751943f09c5c5a6ea",
     "Pebble-launch-film.srt": "f55b38cfa172d16f0f6bee2e81828630b61b6c91a985804775dc7c3ac2720592",
     "Pebble-launch-film-30s.srt": "50361ff8711508154334cb16a6cb206bd37ec23960a66c24eed03762ced0675a"
+   }
+  },
+  {
+   "file": "Desktop deliverable (not committed): the narrated twin, Pebble-launch-film-narrated-1920x1080.mp4, and its captions, Pebble-launch-film-narrated.srt (OVERRIDES 38: at least the 16:9 full film; the master stays wordless)",
+   "status": "encoded 2026-10-26 by tools/encode/encode.sh social (lane trailer-deliver) from the LaunchFilm picture master with soundtrack_social_narrated.wav; its video stream is the 16:9 social film's, packet for packet. The SRT by tools/captions/build.mjs --narrated-srt: the film's 25 captions with the four spoken lines marked 'Narrator: ...' (docs/film-narration.json cues n1-n4)",
+   "sha256": {
+    "Pebble-launch-film-narrated-1920x1080.mp4": "ac36278a1a719fb138eea352facf6b4ae3ea26e80fe5f3a692fc2e1fae9388a1",
+    "Pebble-launch-film-narrated.srt": "d7adf240381add9a54804f69af809c23a13f9a2e4721b572d1b7bb6518bacfeb"
    },
-   "music": "the energetic recut's score: soundtrack_social.wav (7dc992fe...) for the full film, soundtrack_x30_social.wav (435f33f9...) for the cut",
-   "loudness": "-14 LUFS, <= -1.0 dBTP after encoding (OVERRIDES 4); measured by tools/encode/verify.mjs: -14.29 LUFS, -1.051 dBTP (full film) and -14.43 LUFS, -1.330 dBTP (30 s cut)"
+   "bytes": {
+    "Pebble-launch-film-narrated-1920x1080.mp4": 8642900,
+    "Pebble-launch-film-narrated.srt": 1603
+   },
+   "music": "the trailer's score B, ducked about 4.5 dB under each line: soundtrack_social_narrated.wav (85251839...)",
+   "voice": "four lines by one synthetic narrator, Sarvam AI bulbul:v4-flash, simran_en_narration (music.trailer_score.voice; the stem .work/audio/render/candidates/voice/vo.wav 1f79b1a6..., never published on its own)",
+   "disclosure": "Narration: an AI voice by Sarvam AI, Bulbul. (docs/film-narration.json; in the twin's description and post)",
+   "loudness": "measured by tools/encode/verify.mjs: -14.40 LUFS, -1.320 dBTP"
   },
   {
    "file": "public/media/v1/teaser-*.mp4, loop-*.mp4",

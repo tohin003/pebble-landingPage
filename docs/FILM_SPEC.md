@@ -1469,6 +1469,13 @@ title's small print; the silence. Its captions: 11 (`build.mjs --check --cut`); 
   | Flat frames | f203–215 (the dark after glimpse 1's press, before the second question), f504 (the turn's first frame, before its line rises) | the same | the same |
 
   The largest changes all sit on beats, except the floods' own frames and the dawn's 8-frame steps.
+- The encodes (2026-10-26): the website's four files in `public/media/v2/` (22.50 MB; −16.23 LUFS and −1.587 dBTP on
+  the AAC) and the seven social films (−14.44 LUFS and −1.270 dBTP at full length, −14.39 and −1.250 for the 30 s cut,
+  −14.40 and −1.320 for the narrated twin, whose video is the 16:9 film's packet for packet) pass `verify.mjs`. Every
+  sampled frame matches its master frame at shift 0 (both sides of every 30 s joint included), each AAC decodes to its
+  soundtrack's exact sample count at lag 0, and the flash counter passes on the encodes too (0 flashes on the frame mean,
+  at most 1 in a region). The masters were deleted after that; their sizes and SHA-256 are in the delivery's cleanup
+  record (`.work/trailer-deliver/cleanup-2026-10-26.json`, not tracked), and a new encode needs them rendered again.
 
 ### 24.12 Departures from the blueprint
 
