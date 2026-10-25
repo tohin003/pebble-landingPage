@@ -1,0 +1,93 @@
+{
+ "stills": {
+  "light": "video/public/ui/v150",
+  "dark": "video/public/ui/v150-dark",
+  "files": [
+   "settings-permissions@2x.png",
+   "settings-permissions@3x.png",
+   "settings-permissions-auto@2x.png",
+   "settings-permissions-auto@3x.png",
+   "crop-permissions-modes@2x.png",
+   "crop-permissions-modes@3x.png",
+   "crop-permissions-modes-auto@2x.png",
+   "crop-permissions-modes-auto@3x.png"
+  ]
+ },
+ "made_by": "capture/capture.mjs settings-permissions settings-permissions-auto crop-permissions-modes crop-permissions-modes-auto --exact --themes=<theme> --scale=2,3 --naming=video --version=1.5.0",
+ "release": "Pebble v1.5.0's frontend, frozen with capture/freeze-release.py and verified (tag commit 16dd425)",
+ "what": "Settings > Permissions with 'Ask for approval' selected, then 'Auto in project' chosen by a real click on #permission-mode-auto (App.vue / AdvancedSettings.vue permission()); the modes' words are permissionModes.ts at v1.5.0, Auto's 'Always asks' leading with 'Changes to test files your request didn't ask for'",
+ "geometry_css_px": {
+  "window": [
+   1160,
+   800
+  ],
+  "modal": [
+   320,
+   40,
+   520,
+   720
+  ],
+  "permissions_tab": [
+   442.7,
+   116,
+   114.9,
+   31
+  ],
+  "permissions_tab_centre": [
+   500.1,
+   131.5
+  ],
+  "how_pebble_acts_label": [
+   346,
+   203,
+   468,
+   13
+  ],
+  "modes": [
+   346,
+   228,
+   468,
+   397.7
+  ],
+  "ask": [
+   346,
+   228,
+   468,
+   103.8
+  ],
+  "auto": [
+   346,
+   339.8,
+   468,
+   139
+  ],
+  "full": [
+   346,
+   486.8,
+   468,
+   139
+  ],
+  "auto_title": [
+   386,
+   354.8,
+   88.5,
+   15
+  ],
+  "auto_title_centre": [
+   430.2,
+   362.3
+  ],
+  "auto_radio": [
+   359,
+   401.8,
+   15,
+   15
+  ],
+  "auto_radio_centre": [
+   366.5,
+   409.3
+  ]
+ },
+ "same_in_both_states": true,
+ "differs_from_the_film_settings_constants": "video/src/film/ui.ts SETTINGS was measured on 1.0.4 stills: permissionsTab 510.7,131.4 (now 500.2,131.5: 1.5.0 adds a second tab row), autoTitle 430,363.4, autoRadio 361.5,408.5, modal 321,41-839,759"
+}

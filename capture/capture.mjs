@@ -8,6 +8,7 @@
 //          [--record]           also save every repainted frame (CDP screencast) to frames/ (1x; prefer record.mjs)
 //          [--version=1.5.0]    the release the harness serves, as the backend's VERSION (fixtures.js state())
 //          [--hide=SELECTORS]   make these elements invisible (opacity 0: still laid out), e.g. --hide=.app-shell .pet-avatar
+//          [--measure=S1|S2]    report the CSS-px boxes of these selectors' first matches after each scene (`measured`)
 // Filters match scene names by substring (or exactly with --exact). Ends with a SUMMARY line and exits 1 if any run had
 // an unhandled IPC call, an error banner or a console error. The per-run JSON report goes to capture/logs/.
 import fs from "node:fs";
@@ -31,6 +32,8 @@ const NAMING = opt("naming", "default");
 const OUT = path.resolve(opt("out", path.join(HERE, "shots")));
 const VERSION = /^\d+\.\d+\.\d+$/.test(opt("version", "")) ? opt("version", "") : "";
 const HIDE = opt("hide", "");
+// --measure=SEL1|SEL2: after a scene's last shot, the boxes of these elements go into the run's report (`measured`)
+const MEASURE = opt("measure", "").split("|").filter(Boolean);
 const LOGS = path.join(HERE, "logs");
 fs.mkdirSync(OUT, { recursive: true });
 fs.mkdirSync(LOGS, { recursive: true });
@@ -653,11 +656,16 @@ try {
         } catch (error) {
           log.push(`scene error: ${error.message}`);
         }
-        const debug = await page.evaluate(() => ({
+        const debug = await page.evaluate((measure) => ({
           unhandled: window.__pebble?.unhandled || [],
           calls: (window.__pebble?.calls || []).map((c) => (c.cmd === "rpc" ? "rpc:" + c.method : c.cmd)),
           errorBanner: document.querySelector(".error-banner, .pet-error, .modal-error")?.textContent?.trim() || null,
-        }));
+          // --measure: each selector's first match, [left, top, width, height] in CSS px of the window (null: absent)
+          ...(measure.length ? { measured: Object.fromEntries(measure.map((sel) => {
+            const b = document.querySelector(sel)?.getBoundingClientRect();
+            return [sel, b ? [b.left, b.top, b.width, b.height].map((v) => Math.round(v * 10) / 10) : null];
+          })) } : {}),
+        }), MEASURE);
         report.push({ scene: scene.name, theme, scale, url, files, log, ...debug });
         console.log(`${scene.name} [${theme} @${scale}x] -> ${files.join(", ")}${debug.errorBanner ? "  ERROR BANNER: " + debug.errorBanner : ""}${log.length ? "  (" + log.length + " console issues: " + log.join(" | ").slice(0, 400) + ")" : ""}${debug.unhandled.length ? "  unhandled: " + debug.unhandled.map((u) => u.method || u.cmd).join(",") : ""}`);
         if (recorder) {
