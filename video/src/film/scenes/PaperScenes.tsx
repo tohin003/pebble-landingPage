@@ -24,20 +24,21 @@ const TwoTonePebble: React.FC<{ instance: "end"; light: boolean }> = ({ instance
   return <FilmPebble x={inst.start[a].x * L.s} y={inst.start[a].y * L.s} size={L.pebbleSize} hops={hopsFor(inst.hops, a, L.s)} colors={light ? PEBBLE_LIGHT : PEBBLE_DARK} />;
 };
 
-/** S9, the end card (2016–2303): the pebble lands on bar 29; flood f2016–2035; (W) unroll f2018–2032; T18 at f2088;
+/** S9, the end card (2016–2303): the pebble lands on bar 29; the flood from f2016 (20–22 frames); (W) unroll f2018–2032; T18 at f2088;
  *  T19 slams onto the final hit (f2160) with its limit right under it in the same voice ("Not notarized", OVERRIDES §39),
  *  T20 (the URL, f2164); the small print at f2196. Everything holds to the last frame. */
 export const S9EndCard: React.FC = () => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
   const g = useLockup();
+  const L = useLayout();
   const unroll = ramp(frame, WORDMARK.w2.unroll.at, WORDMARK.w2.unroll.dur, EASE.enter);
   return (
     <>
       <FlatGround color={SYSTEM.sage}>
         <TwoTonePebble instance="end" light={false} />
       </FlatGround>
-      <ColourFlood from={g.period} at={2016} dur={FLOOD.dur} ease={FLOOD.ease} radius={floodRadius(g.period, width, height)}>
+      <ColourFlood from={g.period} at={2016} dur={FLOOD.dur[L.aspect]} ease={FLOOD.ease} radius={floodRadius(g.period, width, height)}>
         <FlatGround color={SYSTEM.bg}>
           <LockupLine g={g} id="end-card-line" />
           {frame >= WORDMARK.w2.unroll.at ? <Wordmark geometry={g} reveal={unroll} pebble={null} color={SYSTEM.ink} /> : null}

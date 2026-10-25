@@ -1,6 +1,6 @@
 // The reveal's first two bars (f648–791):
 // - bar 10, the drop (the approved recut's reveal, re-timed): the pebble lands as the full stop of `pebble` on f648 and
-//   paper floods out from where it lands (20 frames, the film's first bright frame, ramped, never a flash); the
+//   paper floods out from where it lands (20–22 frames, the film's first bright frame, ramped, never a flash); the
 //   wordmark unrolls over f650–664 with its tracking settle; "A small companion for your Mac" blurs in at f666;
 // - bar 11, the star beat: the lockup holds; the wordmark rolls back into the pebble over f738–752; the pebble hops down
 //   (take-off f756) and lands in its corner of the light riverbed desktop at f774, as the desktop slides in under it
@@ -17,9 +17,11 @@ import { filmCues, shiftCues } from "../gaze";
 import { DESK_CAMERA, PEBBLE_INSTANCES, PET, REVEAL_FRAME, TYPE_PEBBLE, WORDMARK } from "../timeline";
 import { FilmPebble, FlatGround, Horizon, Lines, hopsFor } from "./common";
 
-/** The floods' timing (lane G-fix, REVIEW-G2 P1-1): 20 frames on 1 − (1 − t)^1.5, so the covered share of the frame
- *  takes about 7 frames from 20 % to 80 % (the flash rule's ≥ 7 frames). */
-export const FLOOD = { dur: 20, ease: (t: number) => 1 - Math.pow(1 - t, 1.5) } as const;
+/** The floods' timing (lane G-fix, REVIEW-G2 P1-1): 1 − (1 − t)^1.5 over 20 frames in 16:9, 21 in 1:1 and 22 in 9:16,
+ *  so the covered share of the frame takes at least 7 frames from 20 % to 80 % in 16:9 and 6.75 in the narrow frames
+ *  (the recut's flash gate), whose circles reach their far corners sooner (at 20 frames the trailer's animatics measured
+ *  7.01, 6.6 and 6.2). */
+export const FLOOD = { dur: { wide: 20, square: 21, vertical: 22 } as Record<AspectId, number>, ease: (t: number) => 1 - Math.pow(1 - t, 1.5) } as const;
 
 export const useLockup = () => {
   const L = useLayout();
@@ -76,7 +78,7 @@ export const Reveal: React.FC = () => {
   const pan = EASE.camera(Math.min(1, Math.max(0, (frame - STAR_PAN.from) / STAR_PAN.dur)));
   const dy = -pan * height;
   const blur = panBlur(frame, height);
-  const flooding = frame < REVEAL_FRAME + FLOOD.dur;
+  const flooding = frame < REVEAL_FRAME + FLOOD.dur[a];
   const filter = blur > 0.2 ? `url(#star-pan-blur)` : undefined;
   const pointer = landPointer(a, L.s, width, height);
   return (
@@ -93,7 +95,7 @@ export const Reveal: React.FC = () => {
       {/* the page: the flood, the lockup, the line; it rises out of the top as the camera tilts down */}
       <AbsoluteFill style={{ transform: dy !== 0 ? `translateY(${dy.toFixed(2)}px)` : undefined, filter }}>
         <FlatGround color={SYSTEM.sage}>{flooding ? <MainPebble light={false} /> : null}</FlatGround>
-        <ColourFlood from={g.period} at={REVEAL_FRAME} dur={FLOOD.dur} ease={FLOOD.ease} radius={floodRadius(g.period, width, height)}>
+        <ColourFlood from={g.period} at={REVEAL_FRAME} dur={FLOOD.dur[a]} ease={FLOOD.ease} radius={floodRadius(g.period, width, height)}>
           <FlatGround color={SYSTEM.bg}>
             <LockupLine g={g} id="reveal-line" />
             <Wordmark geometry={g} reveal={unroll} tracking={tracking} pebble={null} color={SYSTEM.ink} />
