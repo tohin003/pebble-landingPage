@@ -34,7 +34,7 @@ issues · 22 The vertical (9:16) · 23 The 30 s cut `x30`.
 | Bar n (1-based) downbeat | frame `72·(n−1)` |
 | Reveal | bar 8, **frame 504** (16.8 s, 21.9 % in) |
 | Riser | bars 6–7; its end sits on frame 504. The breath (an empty beat) is frames 486–503 |
-| Breaths and the hold (the energetic recut) | four 9-frame gaps that end the frame before a bar line, f135, 1143, 1575 and 2151, each opening onto a hit (f144, 1152, 1584, 2160), plus the composed breath f486–503 before the drop; the hits after them are ≥ 4 bars apart. The hold f891–989 (the drive muted, the bed behind a low-pass) is released by the f990 click to the f1008 bar line. The tail fades f2214–2249; f2250–2303 is digital silence (§11) |
+| Breaths and the hold (the energetic recut) | four 9-frame gaps that end the frame before a bar line, f135, 1143, 1575 and 2151, each opening onto a hit (f144, 1152, 1584, 2160), plus the composed breath f486–503 before the drop; the hits after them are ≥ 4 bars apart. The hold f891–989 (the drive muted, the bed behind a low-pass) is released by the f990 click to the f1008 bar line. The hook's ride keeps the bed and the drive 1.5 dB down over bars 1–2 (f0–143). The tail fades f2214–2249 on an equal-power curve; f2250–2303 is digital silence (§11) |
 | Final chord | D(add9) at **frame 2160** (bar 31), rings 144 frames to the end |
 | Motif statements | bars 1, 8, 23, 29 (frames 0, 504, 1584, 2016) |
 | Sections | hook 1–2, tension 3–5, build 6–7, reveal 8, proof 9–22, payoff 23–25, breakdown 26–28, end card 29–30, final 31–32 |
@@ -829,7 +829,7 @@ kept bed (compose_score.py --seed 7, rendered by render_sampled.py, bit for bit)
 | 810 | 811 | click, click_b | Apply edit | pan +0.3 |
 | 814 | 815 | ui, ui_done | Done | replaces the tuned pop_a |
 | 890 | 891 | ui, ui_lock | AgentGuard holds the task | |
-| 900, 936, 972 | +1 | rim, rim_a / rim_b / rim_a | the hold's clock on beats 1 and 3 | −15 dB; OVERRIDES §35 decision 3: beats 1 and 3 to begin with (every beat, adding f918 and f954, only if the classifier stays clean; none if 1 and 3 trip it) |
+| 900, 918, 936, 954, 972 | +1 | rim, rim_a / rim_b alternating | the hold's clock on every beat | −15 dB; OVERRIDES §35 decision 3 and §36: beats 1 and 3 to begin with, every beat because the classifier stayed clean (the hold window 29–34 s reads phone 0.166 web, 0.171 social, 0.164 x30, no voice or alarm label) |
 | 936 | 937 | thump, soft_hit_a | T8 lands in the hold | −12 dB |
 | 990 | 991 | click, click_c | Run the tests | pan +0.09; it releases the hold |
 | 1080 | 1081 | click, click_a | Run tests | pan +0.3 |
@@ -848,9 +848,11 @@ kept bed (compose_score.py --seed 7, rendered by render_sampled.py, bit for bit)
 | 2016 | 2017 | impact, impact_b | the end-card landing | |
 | 2160 | 2161 | impact, impact_a | the final hit | duck 2 dB |
 
-34 effects (ENERGY_SPEC §8.4's 36 less the two off-beat rim ticks, §35.3). No chimes, dings, pitched pops or anything
-voice-like: the pitched pop_a and pop_c, the reveal's soft_hit_b and the shimmer left the film (they stay in the kit,
-unused). No downlifter. The final chord is music, not an effect.
+36 effects, as ENERGY_SPEC §8.4 lists them. No chimes, dings, pitched pops or anything voice-like: the pitched pop_a
+and pop_c, the reveal's soft_hit_b and the shimmer left the film (they stay in the kit, unused). No downlifter. The
+final chord is music, not an effect. Gains are the kit's (`tools/audio/sfx_kit.json`); the score lane's final mixes
+set impact at −4 dB and the riser at −11 dB, so the hits sit 3.4–5.6 dB over the bed (the impact with the effects and
+the drive's hit on its frame, K-weighted over the impact's peak ± 100 ms).
 
 **Mix automation** (timeline.ts AUTOMATION; exported after the effects as entries with no file, in the kit's
 "automation" format: role, frame, to_frame, release_frame, t, t_end, the role's params; mix_master.py applies them,
@@ -859,18 +861,30 @@ gapped):
 
 | Role | Frames | What |
 |---|---|---|
+| ride | f0–143, back on f144 | the hook's level (OVERRIDES §36: at most 2 dB, the bed file unchanged): bed and drive −1.5 dB, back in 4 ms on the first slam's hit with the gap, so bars 1–2 sit 4.89 LU under the web master (4–8 wanted; 3.5 without it). Not a breath: the gap rules don't apply to it |
 | gap | f135–143, the hit on f144 | bed and drive −24 dB (10 ms down, 4 ms back on the hit frame); the whoosh rises through it |
 | hold | f891–989, release f990–1007 | the drive muted; the bed −6 dB behind a 1.2 kHz low-pass (a 30 ms crossfade to a filtered copy); from the click the filter opens and the gain returns into the f1008 downbeat. Caption c11b "[Music muffles]" |
 | gap | f1143–1151, then f1152 | as above; tick_b sounds inside |
 | gap | f1575–1583, then f1584 | as above |
 | gap | f2151–2159, then f2160 | as above |
-| tail | fade f2214–2249; zeros f2250–2303 | the whole master, after the limiter |
+| tail | fade f2214–2249; zeros f2250–2303 | the whole master, after the limiter, on an equal-power curve (amplitude cos(πu/2)): a fade linear in dB took the final chord 30 dB down in 0.6 s, and SoundAnalysis heard the hit and its quick decay as "foghorn" (0.46–0.59) |
 | (breath) | f486–503 | composed, with no automation: the bed and the drive are silent by their own notes; the riser alone |
 
 Each gap swallows the bed's own pickup on the "and" of 4: that is the breath. validateTimeline checks the gaps (9
 frames, ending the frame before a bar line, their hits ≥ 4 bars apart with the f504 breath), the hold (from an eighth
 to the Run the tests click, released to a bar line) and that nothing cuts, moves, changes pose or lands inside a
 breath (but the hook's dive, H2's take-off and slam pre-rolls in a gap's last three frames).
+
+**The drive and the masters** (the score lane; numbers in `docs/media-provenance.json`,
+`music.sampled_score.energetic_recut`). Apple's sound classifier binds over the spec's drum pattern (OVERRIDES §36):
+under the kept bed's mallets a steady beat reads as a telephone or a ringtone, so `tools/audio/drive.py` plays
+quarter-note hats outside the drop and the climax, no snaps in grooves A and A′, no short ghost subs, and, from the
+final mixes, no sub on 3 in bars 10 and 12, half-velocity hats in bars 10–11, no claps and softer snaps in bars 24–25,
+no soft snap in bar 29, and a final hit with a 1.5 s sub, a softer kick and a louder crash. Every phone reading is under
+0.25 on the web, social and x30 masters. The masters: `soundtrack_web.wav` −16.1 LUFS, −1.8 dBTP (the limiter's ceiling
+came down from −1.7 so that the film's AAC 160 kb/s encode reads −1.62 dBTP, under verify.mjs's −1.5),
+`soundtrack_social.wav` −14.3 LUFS, −1.5 dBTP (AAC 192 kb/s −1.05) and `soundtrack_x30_social.wav` −14.4 LUFS, −1.5 dBTP
+(AAC 192 kb/s −1.33), all in `.work/audio/render/`.
 
 ## 12. Transitions and seams
 
@@ -1199,11 +1213,13 @@ for.
   `.score.json` plays them at the film's gains. The reveal (score bar 7 → 8) lands on cut 216 and the final chord
   (30 → 31) on cut 720, ringing through bar 32. The effects are the film's, mapped by `tools/audio/cut_cues.py` into
   `tools/audio/cues.x30.json` (before the energetic recut: 8 cues, no whoosh, nothing in the end card; with the
-  recut's effects: 17, the ui_lock add included, the final hit in the end card). One command builds the bed, the mix
-  and the gates: `scripts/heavy.sh cut-x30 tools/audio/cut_soundtrack.sh docs/film-cuts/x30.json`, which writes
-  `.work/audio/render/soundtrack_x30_social.wav` (before the recut `b8e34c32…`, −14.1 LUFS, −1.5 dBTP, exactly 864
-  frames; the recut keeps the x30 bed as rendered and re-mixes it with the cut's drive, its step only). Hashes and
-  gates: `docs/media-provenance.json`, `music.sampled_score.cut_x30`.
+  recut's effects: 19, the ui_lock add and the five rim ticks included, the final hit in the end card). One command
+  builds the bed, the mix and the gates:
+  `scripts/heavy.sh cut-x30 tools/audio/cut_soundtrack.sh docs/film-cuts/x30.json`, which writes
+  `.work/audio/render/soundtrack_x30_social.wav` (before the recut `b8e34c32…`, −14.1 LUFS, −1.5 dBTP;
+  the recut's `435f33f9…`, −14.4 LUFS, −1.5 dBTP, its AAC 192 kb/s −1.33 dBTP; exactly 864 frames). The recut keeps
+  the x30 bed as rendered and re-mixes it with the cut's drive: run the `mix` and `checks` steps only. Hashes and
+  gates: `docs/media-provenance.json`, `music.sampled_score.cut_x30` and `music.sampled_score.energetic_recut`.
 - **Captions:** `node tools/captions/build.mjs --cut docs/film-cuts/x30.json --srt <file>` (`--check` validates only)
   maps the film's cues onto the cut. Since the energetic recut that gives 12 cues: c01, c06–c08, c12, c12b, c13, c14
   and c23–c25 whole, plus c11b "[Music muffles]" clipped to cut 324–360 (1.2 s of its 1.53 s; a note, not an error):
@@ -1211,12 +1227,12 @@ for.
   fall outside the ranges.
 - **The energetic recut** (ENERGY_SPEC §10; OVERRIDES §35 decision 5): the ranges and score bars stay. The cut's
   `sfx.add` puts ui_lock on cut frame 324 (the film's sits on f890, before the range [900, 1224)), so the joint gets
-  the lock; `tools/audio/cut_cues.py` maps the effects and the automation (the hold from cut 324 to the click at 414,
-  released to 432; gaps at 567 and 711; the tail at 774), and `drive.py --cut` renders the cut's drum-and-sub stem
-  from the same bar table (the score lane's tools). The cut's shape: the muted hook (the click at 0.6 s, the question
-  sent at 1.8 s), T4 on a hit at cut 72, the drop at 216 (7.2 s), the muffled joint at 324, T8 on the thump at 360,
-  the release at 414, the groove back at 432, the gap at 567, Verified at 576, T18 at 648, the gap at 711, the final
-  hit at 720 (24.0 s), the fade from 774 and 1.8 s of silence from 810.
+  the lock; `tools/audio/cut_cues.py` maps the effects and the automation (the hook's ride on cut 0–72; the hold from
+  cut 324 to the click at 414, released to 432; gaps at 567 and 711; the tail at 774), and `drive.py --cut` renders
+  the cut's drum-and-sub stem from the same bar table (the score lane's tools). The cut's shape: the muted hook (the
+  click at 0.6 s, the question sent at 1.8 s), T4 on a hit at cut 72, the drop at 216 (7.2 s), the muffled joint at
+  324, T8 on the thump at 360, the release at 414, the groove back at 432, the gap at 567, Verified at 576, T18 at
+  648, the gap at 711, the final hit at 720 (24.0 s), the fade from 774 and 1.8 s of silence from 810.
 - **Picture and delivery:** there is **no separate Remotion composition**. The cut is the film's own frames, so the
   film's fixes reach it with the next encode. The `LaunchFilm30*` ids in the cut file's `compositions` are not
   registered in `video/src/Root.tsx`. Each aspect's 76.8 s master is cut and muxed in one step:

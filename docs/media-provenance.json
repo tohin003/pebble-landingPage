@@ -1,6 +1,6 @@
 {
  "schema": "pebble-media-provenance/1",
- "updated": "2026-10-24",
+ "updated": "2026-10-25",
  "notice": "The films, loops and images are (c) 2026 Tohin Majumder and are not covered by the code licence (Apache-2.0). Audio is distributed only inside the rendered films, never as standalone files: no audio file is committed (.gitignore lists *.wav *.mp3 *.flac *.aiff *.m4a *.mov).",
  "music": {
   "selected": "original-sampled",
@@ -1187,7 +1187,8 @@
       "alarm_max": 0.016,
       "note": "bell 0.615 on the final ring (25.5-28.5 s, shifted grid; bed alone 0.619, so the music, not the effects), with bell in that window's top 3; the film's same window reads 0.409. Not a gated label; it waits for the human listen (HANDOFF-fin-audio issue 2)",
       "pass": true
-     }
+     },
+     "superseded_by": "music.sampled_score.energetic_recut.final_masters (2026-10-25)"
     }
    },
    "cut_x30": {
@@ -1289,7 +1290,8 @@
     "master": "soundtrack_x30_social.wav, under opening.final_masters",
     "captions": "tools/captions/build.mjs --cut docs/film-cuts/x30.json: 12 cues, c01, c02, c06, c07, c08, c12, c13, c14, c23, c24 and c25 from docs/film-captions.json, and the cut's own x09 '[Music picks up]'",
     "picture": "tools/encode/encode.sh social --cut docs/film-cuts/x30.json cuts the full film's social masters (the plan's path A). There is no separate Remotion composition: the LaunchFilm30* ids in the cut file's compositions are not registered in video/src/Root.tsx",
-    "needs": "one human listen of soundtrack_x30_social.wav: its ending reads more bell-like than the film's (HANDOFF-fin-audio issues 2 and 7)"
+    "needs": "one human listen of soundtrack_x30_social.wav: its ending reads more bell-like than the film's (HANDOFF-fin-audio issues 2 and 7)",
+    "energetic_recut": "the x30's recut mix (19 effects and 5 automation spans, the bed unchanged): music.sampled_score.energetic_recut"
    },
    "instruments": {
     "mallet": {
@@ -2426,7 +2428,172 @@
      "true_peak_dbtp": -1.7
     }
    },
-   "needs": "one human listen before the film ships (the audition set: A synthesised, B sampled, C Mixkit 79); taste is the part an agent cannot verify; since lane M2 also: does the film's first second still sound like a phone? (audition file B carries the re-voiced opening)"
+   "needs": "one human listen before the film ships (the audition set: A synthesised, B sampled, C Mixkit 79); taste is the part an agent cannot verify; since lane M2 also: does the film's first second still sound like a phone? (audition file B carries the re-voiced opening)",
+   "energetic_recut": {
+    "what": "the energetic recut's score (ENERGY_SPEC §8; OVERRIDES §34-36): the kept bed, bit for bit (74f88e24..., and the x30's 8961b417...), with a synthesised drum-and-sub drive under it, the recut's effects (the nine takes under sfx.synthesised, from impact_a.wav on) and the mix's automation",
+    "made": "2026-10-25, the score lanes, parts 1 and 2 (.work/handoffs/HANDOFF-energy-score-1.md and -2.md)",
+    "cues": "tools/audio/cues.json: 36 effects and 7 automation spans (the hook's ride f0-144, gaps at f135, 1143, 1575 and 2151, the hold f891-990 released to f1008, the tail f2214-2250); tools/audio/cues.x30.json: 19 effects and 5 spans (cut_cues.py)",
+    "drive": {
+     "path": ".work/audio/render/drive.wav (not committed)",
+     "sha256": "40cd88d326141d45163e6d6ab66019cc2cb77062fb2f0e231b0861a3128cffd6",
+     "generator": "tools/audio/drive.py (seed 7; numpy, scipy and pedalboard; deterministic: the same file re-renders bit for bit)",
+     "origin": "original synthesis, made for this project",
+     "licence": "CC0 1.0",
+     "format": "48 kHz, 24-bit, stereo, 76.8 s, exactly 3,686,400 samples",
+     "level": "-21.76 LUFS over bars 3-30, 4.04 LU under the bed over the same bars (ENERGY_SPEC §8.2: 3-5); bus -9.9 dB; peak -3.71 dBFS",
+     "grid": "tools/audio/validate_bed.py: median 2.48 ms alone, 4.12 ms with the bed (gate <= 5 ms; the bed alone 3.42)",
+     "sound_tags_alone": "phone 0.082, voice 0.042, alarm 0.142 ('beep', in the 0.75 s opening pass, not in a top 3); report in .work/audio/analysis/drive/",
+     "departures": "from ENERGY_SPEC §8.2, for Apple's sound classifier (OVERRIDES §36: the phone gate binds over the pattern): quarter-note hats outside bars 8 and 13-17; no snaps in grooves A and A'; no short ghost subs; no sub on 2.5 in groove C; no sub on 3 in bars 10 and 12; half-velocity hats in bars 10-11; no claps and snaps 3 dB down in bars 24-25; no soft snap on beat 4 of bar 29; the final hit with a 1.5 s sub, the kick at 0.6 and the crash at 1.4 (with the kit's equal-power tail, for 'foghorn'). Measurements: tools/audio/drive.py's CLASSIFIER and FINAL MIXES notes"
+    },
+    "drive_x30": {
+     "path": ".work/audio/render/drive_x30.wav (not committed)",
+     "sha256": "41a1163fe559e243a1a376878950502cd91aed5eeed9b305e539038fdebb2ff1",
+     "generator": "tools/audio/drive.py --cut docs/film-cuts/x30.json (the cut's score bars 1, 6, 7, 8, 9, 14, 15, 16, 17, 30, 31, 32, in order); cut_soundtrack.sh's mix step renders it",
+     "format": "48 kHz, 24-bit, stereo, 28.8 s, exactly 1,382,400 samples",
+     "sound_tags_alone": "phone 0.082, voice 0.043, alarm 0.142; report in .work/audio/analysis/drive/x30/"
+    },
+    "final_masters": {
+     "made": "2026-10-25, the score lane part 2: tools/audio/final_mix.sh (mix_master.py --drive with the automation, and --aac) and tools/audio/cut_soundtrack.sh docs/film-cuts/x30.json mix; gates tools/audio/mix_checks.sh and cut_soundtrack.sh ... checks",
+     "supersedes": "lane fin-audio's masters (opening.final_masters: c81de730..., 3f4c7cb8..., b8e34c32...), which the v1 film files in public/media/v1 still carry",
+     "measured": "tools/audio/mix_checks.py (JSON in .work/audio/analysis/m1/ and x30/, not committed): FFmpeg ebur128 on the WAV and on AAC 160 kb/s and 192 kb/s encodes (true peak read as tools/encode/verify.mjs reads it); Apple SoundAnalysis over 3 s windows on the main and the 1.5 s-shifted grids, the opening after silence (0.75 s and 1.5 s), the end card and the hold window (29-34 s); the dynamics report. Each master's AAC, muxed with a synthetic picture as encode.sh muxes it, read the same true peak and loudness",
+     "soundtrack_web.wav": {
+      "format": "PCM 24-bit, 48 kHz, stereo, in .work/audio/render/ (not committed)",
+      "sha256": "2ffcba9c67e9c82743a983651af11f4ff2cdd0034b7b9473148b5f628ee1ba56",
+      "for": "the website film (v2: film-1080 and film-720, HEVC and H.264; tools/encode/encode.sh film)",
+      "length": "76.800 s, 3,686,400 samples (2,304 frames at 30 fps)",
+      "bytes": 22118444,
+      "integrated_lufs": -16.1,
+      "true_peak_dbtp": -1.8,
+      "lra_lu": 6.9,
+      "limiter_ceiling_dbtp": -1.8,
+      "ceiling_note": "the spec's -1.7 read -1.525 dBTP on the film's AAC 160 kb/s encode, over verify.mjs's -1.5; mix_master.py --aac 160k:-1.5 lowered it once",
+      "aac_160k_true_peak_dbtp": -1.618,
+      "aac_192k_true_peak_dbtp": -1.34,
+      "mono_loss_db": 0.9,
+      "power_share_above_150hz": 0.549,
+      "phone_max": {
+       "main": 0.203,
+       "shift": 0.219,
+       "opening": 0.116,
+       "end_card": 0.177,
+       "hold_window": 0.166
+      },
+      "voice_max": 0.098,
+      "alarm_max": 0.074,
+      "watch_notes": "foghorn 0.248 (73.5-76.5 s, shifted grid) and 0.247 (60-63 s, the breakdown's hit); bed alone 0.0 in both",
+      "dynamics": {
+       "bars_1_2_under_integrated_lu": 4.89,
+       "gaps_db": [
+        22.7,
+        25.5,
+        30.2,
+        34.2
+       ],
+       "hold_under_integrated_lu": 6.07,
+       "bar8_over_bar7_lu": 3.34,
+       "bars_23_25_over_mean_9_22_lu": 2.77,
+       "loudest_3_bar_span": "bars 23-25",
+       "bars_26_28_under_23_25_lu": 7.41,
+       "pass": true
+      },
+      "hits_over_bed_db": {
+       "f144": 4.93,
+       "f504": 3.56,
+       "f1152": 5.61,
+       "f1584": 3.39,
+       "f1800": 3.9,
+       "f2016": 3.72,
+       "f2160": 5.59
+      },
+      "last_54_frames": "exact zeros from 75.0 s",
+      "pass": true,
+      "warnings": 0
+     },
+     "soundtrack_social.wav": {
+      "format": "PCM 24-bit, 48 kHz, stereo, in .work/audio/render/ (not committed)",
+      "sha256": "7dc992fe766ea96eabc8fef826b6632ebe1891b8ba704090cf8b0e948ca93bb5",
+      "for": "the full-length social films (Pebble-launch-film-1920x1080, -1080x1080 and -1080x1920)",
+      "length": "76.800 s, 3,686,400 samples (2,304 frames at 30 fps)",
+      "bytes": 22118444,
+      "integrated_lufs": -14.3,
+      "true_peak_dbtp": -1.5,
+      "lra_lu": 6.7,
+      "limiter_ceiling_dbtp": -1.5,
+      "aac_192k_true_peak_dbtp": -1.051,
+      "aac_160k_true_peak_dbtp": -1.012,
+      "mono_loss_db": 0.93,
+      "power_share_above_150hz": 0.561,
+      "phone_max": {
+       "main": 0.188,
+       "shift": 0.194,
+       "opening": 0.113,
+       "end_card": 0.171,
+       "hold_window": 0.171
+      },
+      "voice_max": 0.088,
+      "alarm_max": 0.075,
+      "watch_notes": "foghorn 0.246 (73.5-76.5 s, shifted grid) and 0.241 (60-63 s); bed alone 0.0",
+      "dynamics": {
+       "bars_1_2_under_integrated_lu": 4.71,
+       "gaps_db": [
+        21.7,
+        24.6,
+        28.9,
+        33.1
+       ],
+       "hold_under_integrated_lu": 5.88,
+       "bar8_over_bar7_lu": 2.82,
+       "bars_23_25_over_mean_9_22_lu": 2.58,
+       "loudest_3_bar_span": "bars 23-25",
+       "bars_26_28_under_23_25_lu": 7.31,
+       "pass": false,
+       "note": "bar 8 over bar 7 misses its 3 LU (the heavier limiting at -14 LUFS); OVERRIDES §36 accepts it: the acceptance names the web master"
+      },
+      "last_54_frames": "exact zeros from 75.0 s",
+      "pass": true,
+      "warnings": 1
+     },
+     "soundtrack_x30_social.wav": {
+      "format": "PCM 24-bit, 48 kHz, stereo, in .work/audio/render/ (not committed)",
+      "sha256": "435f33f9ed6100ddcc96bb09949e7388b9456e3c295042a5bb6ae3fe25277758",
+      "for": "the 30 s cut x30 (Pebble-launch-film-30s-1920x1080, -1080x1080 and -1080x1920); the x30 bed as rendered (8961b417...)",
+      "length": "28.800 s, 1,382,400 samples (864 frames at 30 fps, exactly)",
+      "bytes": 8294444,
+      "integrated_lufs": -14.4,
+      "true_peak_dbtp": -1.5,
+      "lra_lu": 6.1,
+      "limiter_ceiling_dbtp": -1.5,
+      "aac_192k_true_peak_dbtp": -1.33,
+      "aac_160k_true_peak_dbtp": -1.16,
+      "mono_loss_db": 0.78,
+      "power_share_above_150hz": 0.499,
+      "phone_max": {
+       "main": 0.143,
+       "shift": 0.178,
+       "opening": 0.113,
+       "end_card": 0.0,
+       "hold_window": 0.164
+      },
+      "voice_max": 0.086,
+      "alarm_max": 0.034,
+      "watch_notes": "foghorn 0.279 (25.5-28.5 s, shifted grid: the tail) and 0.246 (24-27 s); bed alone 0.0",
+      "dynamics": {
+       "bars_1_2_under_integrated_lu": 6.05,
+       "gaps_db": [
+        24.9,
+        30.1
+       ],
+       "hold_under_integrated_lu": 5.23,
+       "hold_centre": "cut f364",
+       "bar8_over_bar7_lu": 3.05,
+       "pass": true
+      },
+      "last_54_frames": "exact zeros from 27.0 s",
+      "pass": true,
+      "warnings": 0
+     }
+    }
+   }
   },
   "gates_A_B_C": {
    "what": "every gate on the three beds the user auditions (2026-10-23); rubric per tools/audio/score_rubric.py",
@@ -2711,6 +2878,105 @@
     "origin": "original, made for this project",
     "licence": "CC0 1.0",
     "sound_tags": "whoosh 0.57"
+   },
+   {
+    "file": "impact_a.wav",
+    "what": "the recut's hit: a 70 -> 32 Hz sine drop over 120 ms (tau 0.35 s), a low-passed noise body (800 Hz, tau 80 ms), an 8 ms 600-2,000 Hz thwack, room 0.7 at 12 % wet; nothing tonal above 200 Hz; 2.1 s, peak -2 dBFS",
+    "used": "the reveal f504, the second lift f1584 and the final hit f2160",
+    "generator": "tools/audio/sfx_synth.py .work/audio/sfx --bpm 100 --riser-bars 2 --seed 7 (appended after the older takes, commit 369ce96, so seed 7 still writes those bit for bit)",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sound_tags": "artillery_fire 0.24, hammer 0.23, whoosh 0.22 (alone); no voice, alarm or phone label at 0.1 or more",
+    "sha256": "e4bdafea88c3fd25e68569664d86efa71ed90f0ead43b828743ad12e9866e52a",
+    "format": "48 kHz, 24-bit, stereo"
+   },
+   {
+    "file": "impact_b.wav",
+    "what": "impact_a at 60 % of the length, dry; 0.94 s, peak -2 dBFS",
+    "used": "Verified f1152, the breakdown f1800 and the end-card landing f2016",
+    "generator": "tools/audio/sfx_synth.py .work/audio/sfx --bpm 100 --riser-bars 2 --seed 7 (appended after the older takes, commit 369ce96, so seed 7 still writes those bit for bit)",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sound_tags": "door 0.41, knock 0.31, hammer 0.19 (alone); no voice, alarm or phone label at 0.1 or more",
+    "sha256": "be7255313df73ae58971c88e608b5bdbd7ea9d7535802b3c5c5be0135abc133f",
+    "format": "48 kHz, 24-bit, stereo"
+   },
+   {
+    "file": "ui_card.wav",
+    "what": "a 230 ms noise slide band-passed 1.2 -> 3.4 kHz, then a 3 ms settle; 0.44 s, peak -6 dBFS",
+    "used": "the drawer opens with the edit card, f722",
+    "generator": "tools/audio/sfx_synth.py .work/audio/sfx --bpm 100 --riser-bars 2 --seed 7 (appended after the older takes, commit 369ce96, so seed 7 still writes those bit for bit)",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sound_tags": "music 0.34, synthesizer 0.21, whoosh 0.19 (alone); no voice, alarm or phone label at 0.1 or more",
+    "sha256": "5f54ee309547d50ca1851b28cde7d043c22bfee6d748995240f124122e19bb2f",
+    "format": "48 kHz, 24-bit, stereo"
+   },
+   {
+    "file": "ui_lock.wav",
+    "what": "a 12 ms 1-4 kHz click over a 60 -> 45 Hz thump (tau 60 ms), low-passed at 1.2 kHz; 0.47 s, peak -3 dBFS",
+    "used": "AgentGuard holds the task, f890 (and the x30's joint, cut 324)",
+    "generator": "tools/audio/sfx_synth.py .work/audio/sfx --bpm 100 --riser-bars 2 --seed 7 (appended after the older takes, commit 369ce96, so seed 7 still writes those bit for bit)",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sound_tags": "music 0.47, synthesizer 0.38, keyboard 0.34 (alone); no voice, alarm or phone label at 0.1 or more",
+    "sha256": "da02030552fd7f59011e9a4085fa80034829149000a9979cf0e8079f7c002160",
+    "format": "48 kHz, 24-bit, stereo"
+   },
+   {
+    "file": "ui_done.wav",
+    "what": "a 5 ms 1.5-3 kHz click and a 40 ms 150-400 Hz noise body; 0.24 s, peak -6 dBFS (replaces the tuned pop_a)",
+    "used": "Done, f814",
+    "generator": "tools/audio/sfx_synth.py .work/audio/sfx --bpm 100 --riser-bars 2 --seed 7 (appended after the older takes, commit 369ce96, so seed 7 still writes those bit for bit)",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sound_tags": "knock 0.43, door 0.26 (alone); no voice, alarm or phone label at 0.1 or more",
+    "sha256": "13efd64b84647850bdfdfb1036e92a1802030dad45c04fda5d43b25e52e2e8a7",
+    "format": "48 kHz, 24-bit, stereo"
+   },
+   {
+    "file": "ui_verified.wav",
+    "what": "a 6 ms 3-8 kHz transient, then 30 grains (5-9.5 kHz) over 0.8 s with the shimmer's grain method and none of its D-major partials, and a 60 ms 120-200 Hz noise seal; 1.9 s, peak -2 dBFS (replaces shimmer_a)",
+    "used": "Verified, f1152",
+    "generator": "tools/audio/sfx_synth.py .work/audio/sfx --bpm 100 --riser-bars 2 --seed 7 (appended after the older takes, commit 369ce96, so seed 7 still writes those bit for bit)",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sound_tags": "snake_rattle 0.31, music 0.25, percussion 0.13 (alone); no voice, alarm or phone label at 0.1 or more",
+    "sha256": "968d6e5e604d53a9fa6827fa1b613b4853851cdf24b5289ea72dc134752066a7",
+    "format": "48 kHz, 24-bit, stereo"
+   },
+   {
+    "file": "ui_forget.wav",
+    "what": "24 grains, each an octave wide, short and scattered, whose band falls 5.5 -> 1.4 kHz over 0.4 s, densest first; 1.0 s, peak -5 dBFS (replaces the pop_c plip; its first version read bird_chirp 0.56)",
+    "used": "the record dissolves, f1530",
+    "generator": "tools/audio/sfx_synth.py .work/audio/sfx --bpm 100 --riser-bars 2 --seed 7 (appended after the older takes, commit 369ce96, so seed 7 still writes those bit for bit)",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sound_tags": "whoosh 0.20, music 0.17, thump 0.10 (alone); no voice, alarm or phone label at 0.1 or more",
+    "sha256": "464ae00610b76810dc40c97dcf8813dc9d890fb3d2a9158bf23e7dd1a71f0f1c",
+    "format": "48 kHz, 24-bit, stereo"
+   },
+   {
+    "file": "rim_a.wav",
+    "what": "a 12 ms 2-6 kHz noise click with a 25 ms decay (centroid 4.5 kHz); 0.06 s, peak -6 dBFS",
+    "used": "the hold's clock, f900, f936, f972",
+    "generator": "tools/audio/sfx_synth.py .work/audio/sfx --bpm 100 --riser-bars 2 --seed 7 (appended after the older takes, commit 369ce96, so seed 7 still writes those bit for bit)",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sound_tags": "click 0.17, tick 0.12 (alone); no voice, alarm or phone label at 0.1 or more",
+    "sha256": "08bc6bcdd74bdf616f7b228a9cbff3b865a72ba69994b36668a619aedfe83eb9",
+    "format": "48 kHz, 24-bit, stereo"
+   },
+   {
+    "file": "rim_b.wav",
+    "what": "rim_a 1.5 dB softer and brighter (2.6-7.6 kHz, centroid 5.9 kHz); 0.06 s, peak -7.5 dBFS",
+    "used": "the hold's clock, f918, f954",
+    "generator": "tools/audio/sfx_synth.py .work/audio/sfx --bpm 100 --riser-bars 2 --seed 7 (appended after the older takes, commit 369ce96, so seed 7 still writes those bit for bit)",
+    "origin": "original, made for this project",
+    "licence": "CC0 1.0",
+    "sound_tags": "click 0.24, tick 0.14 (alone); no voice, alarm or phone label at 0.1 or more",
+    "sha256": "e1efa3b79c48ec9af02452abeeb5e5b12c52dee4037d297c9a4a29e039a84742",
+    "format": "48 kHz, 24-bit, stereo"
    }
   ],
   "foley": {

@@ -241,8 +241,8 @@ read as a telephone or a ringtone to Apple's sound classifier. `tools/audio/musi
 including the stock tracks that were auditioned and not used. After any switch, the film must re-snap to the new beat
 map and the cue list must be exported again.
 
-**The sound effects** (`.work/audio/sfx/`). The whooshes, the riser, the soft hits, the shimmer and the downlifter are
-synthesised:
+**The sound effects** (`.work/audio/sfx/`). The whooshes, the riser, the soft hits, the shimmer, the downlifter and
+the energetic recut's impacts, UI sounds and rim clicks are synthesised:
 
 ```bash
 .work/audio/.venv/bin/python -I tools/audio/sfx_synth.py .work/audio/sfx --bpm 100 --riser-bars 2
@@ -257,17 +257,20 @@ Download the two zips from the URLs in the header of `tools/audio/sfx_foley.py`,
 .work/audio/.venv/bin/python -I tools/audio/sfx_foley.py .work/audio/kenney .work/audio/sfx .work/audio/sfx/foley-manifest.json
 ```
 
-**The cue list.** The film's timeline places every effect; the exporter turns it into `tools/audio/cues.json`
-(21 cues):
+**The cue list.** The film's timeline places every effect and the mix's automation; the exporter turns them into
+`tools/audio/cues.json` (36 effects, and 7 automation spans: the hook's ride, four gaps, the hold and the tail):
 
 ```bash
 bun video/scripts/export-cues.ts           # write tools/audio/cues.json from video/src/film/timeline.ts
 bun video/scripts/export-cues.ts --check   # exit 1 if the file on disk is out of date
 ```
 
-**The masters and their checks.** `final_mix.sh` refuses to mix with a stale cue list and prints the bed's
-SHA-256. It writes a web master at −16 LUFS (limiter ceiling −1.7 dBTP) and a social master at −14 LUFS (−1.5 dBTP,
-so the AAC encode stays at or below −1.0 dBTP), both in `.work/audio/render/`:
+**The masters and their checks.** `final_mix.sh` refuses to mix with a stale cue list, renders the drum-and-sub drive
+(`tools/audio/drive.py` → `.work/audio/render/drive.wav`) when it is missing or older than `drive.py`, and prints the
+bed's and the drive's SHA-256. It writes a web master at −16 LUFS (limiter ceiling −1.7 dBTP) and a social master at
+−14 LUFS (−1.5 dBTP), both in `.work/audio/render/`. Each is then encoded as `encode.sh` encodes it (AAC 160 kb/s for
+the film, 192 kb/s for the social films), and the ceiling comes down in 0.1 dB steps until that encode's true peak
+stays under `verify.mjs`'s gate (−1.5 and −1.0 dBTP), because the recut's drums make the codec overshoot the ceiling:
 
 ```bash
 scripts/heavy.sh final-mix tools/audio/final_mix.sh
@@ -277,8 +280,10 @@ scripts/heavy.sh mix-checks tools/audio/mix_checks.sh     # exit 1 when a gate f
 The checks measure loudness, true peak and loudness range with FFmpeg, the mono fold-down and the share of energy a
 small speaker can play, and run Apple's SoundAnalysis over the mix to catch anything that reads as a voice, an alarm,
 a siren or a ringtone, including the opening heard straight after silence and the end card. Results go to
-`.work/audio/analysis/m1/`; look at the spectrogram PNGs, then delete them. This release's masters measure −16.0 LUFS
-and −1.7 dBTP (web) and −14.1 LUFS and −1.5 dBTP (social); their hashes are in `docs/media-provenance.json`.
+`.work/audio/analysis/m1/`; look at the spectrogram PNGs, then delete them. The checks also gate the AAC encodes' true
+peak and the last 54 frames' digital silence, and report the loudness curve (the dynamics report). The energetic
+recut's masters measure −16.1 LUFS and −1.8 dBTP (web; its AAC 160 kb/s encode −1.62 dBTP) and −14.3 LUFS and −1.5 dBTP
+(social; AAC 192 kb/s −1.05); their hashes are in `docs/media-provenance.json`.
 
 **The 30 s cut's soundtrack.** The cut for X (`docs/film-cuts/x30.json`, section 5) has its own music: a 12-bar
 arrangement of the same score, not a splice of the bed, with the film's effects mapped onto the cut. One command
@@ -288,6 +293,10 @@ builds the bed, the mix and the checks (the film's bed must be current, and the 
 scripts/heavy.sh cut-x30 tools/audio/cut_soundtrack.sh docs/film-cuts/x30.json   # soundtrack_x30_social.wav, -14 LUFS
 .work/audio/.venv/bin/python -I tools/audio/cut_cues.py docs/film-cuts/x30.json --check   # the cut's cue list is current
 ```
+
+The energetic recut keeps the x30 bed as rendered: after a new cue export, run `cut_cues.py docs/film-cuts/x30.json`
+(without `--check`) to re-map the cut's cues, then only the `mix` and `checks` steps (`cut_soundtrack.sh
+docs/film-cuts/x30.json mix`, then `… checks`). The mix renders the cut's drive (`drive.py --cut`) every time.
 
 ## 4. The films, the loops and the stills in Remotion
 
