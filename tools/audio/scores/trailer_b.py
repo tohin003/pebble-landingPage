@@ -52,10 +52,11 @@ Form. Bar n starts on film frame 72(n-1); beat b of a bar falls 18(b-1) frames l
                         the wait (the model's turn) climbs: four on the floor, 8th subs G1 -> A1, Asus4 -> A, a rising
                         arp, a roll (16ths to 32nds) and a riser into the push
   24.4.4 Verified       f1723.5 (OVERRIDES §41: Verified arrives on f1723): bar 25's downbeat hit, chord and crash a
-                        16th early and tied over the line: crash, big kick, impact, clap, snare, snap and an open hat,
-                        a short sub on D2, D(add9) on its own unpumped track, the harmonised hook's first note. The
-                        climax's peak, louder than f1656 (its weight is in the mids and highs: the stems' limiter takes
-                        every hit's low peaks alike)
+                        16th early and tied over the line: two crashes, a big kick, clap, snare, snap and an open hat a
+                        few ms apart, a short sub on D2, D(add9) on its own unpumped track, the harmonised hook's first
+                        note; the timeline's impact_a and ui_verified land with it. The climax's peak, louder than
+                        f1656 (its weight is in the mids and highs: the stems' limiter takes every hit's low peaks
+                        alike)
   25     celebration    the hook harmonised a third below (lead and lead_harm) and on the supersaw pluck, the
                         four-on-the-floor groove with offbeat open hats, D -> A/C#; a downlifter over f1782-1799
   26-28  the breakdown  no drums: an impact and one short sub on B1 (f1800); pads Bm(add9), Gmaj9, Asus4 -> A pumping
@@ -84,10 +85,20 @@ so the -14 LUFS masters keep their level through mix_master.py's own limiter.
 Stems (tools/audio/mix_master.py takes them as BED and --drive): bed.wav (pads, chords, the pulse, the hook, leads,
 plucks, and the score's own hits, risers and swells, which carry on through the holds) and drive.wav (drums and bass,
 which stop in the holds: the stem is silent there by itself). Both are 48 kHz stereo float32, exactly 3,686,400
-samples. The x30 cut (report.music: score bars 1 6 7 8 9 10 22 23 24 29 31 32, in that order, joined on bar lines) is
-the same arrangement placed on those bars: bed_x30.wav and drive_x30.wav, 1,382,400 samples. A sound runs over a bar
-line only where the next bar follows in that order (the push is tied over its line in both); elsewhere it is cut at
-the line and its release rings on.
+samples. The x30 cut (docs/film-cuts/x30.json: score bars 1 6 7 8 9 10 22 23 24 25 31 32, in that order, joined on bar
+lines) is the same arrangement placed on those bars: bed_x30.wav and drive_x30.wav, 1,382,400 samples. A sound runs
+over a bar line only where the next bar follows in that order (the push is tied over its line in both); elsewhere it is
+cut at the line and its release rings on.
+
+The judge's pick (2026-10-26): this score is the film's (tools/audio/final_mix.sh renders it into
+.work/audio/render/score/). Mixed with the picture's own cue list (tools/audio/cues.json, after this score), it changed:
+  - the x30 follows its cut file (bar 25 where the blueprint had bar 29);
+  - the three question hits rise QHIT_DB over the tension (Q1 cleared the timeline's suck-back by 7.3 dB, gate 10), and
+    the rest of the tension sits 0.4 dB lower (TENSION_DB), so bars 1-9 stay 6 LU under every master;
+  - the climax, so the push (Verified, f1723) stays at least as big as the tests passing (f1656) through the stems'
+    limiter and the -14 LUFS masters: the push's chord 2 dB up; its low layers down and its impact left to the
+    timeline's impact_a; its clap and snap down and a second crash in; its layers a few ms apart (PUSH_FLAM_MS); and
+    f1656's kick, impact and sub a little lighter (it keeps the timeline's impact_b and its breath).
 
 Preview mixes. The picture lane exports the effects and the automation to tools/audio/cues.json after this score, so the
 previews use the blueprint's automation (gaps f63, f639, f1647, f2151; holds f445-503 and f1453-1511, released to the
@@ -146,8 +157,14 @@ FFMPEG = os.environ.get("FF", "/opt/homebrew/bin/ffmpeg")
 PY = sys.executable
 
 FILM_BARS = list(range(1, 33))
-X30_BARS = [1, 6, 7, 8, 9, 10, 22, 23, 24, 29, 31, 32]                # report.music: the x30's score bars
-X30_RANGES = [[0, 72], [360, 720], [1512, 1728], [2016, 2088], [2160, 2304]]
+# The x30 follows its cut file, the picture's and the captions' source too (docs/film-cuts/x30.json): since OVERRIDES
+# §41 its climax range runs through bar 25, so its score bars are 1 6 7 8 9 10 22 23 24 25 31 32 (the blueprint's
+# report.music had bar 29 where bar 25 now plays)
+X30_CUT = os.path.join(REPO, "docs", "film-cuts", "x30.json")
+with open(X30_CUT) as _f:
+    _x30 = json.load(_f)
+X30_BARS = list(_x30["music"]["score_bars"])
+X30_RANGES = [list(r) for r in _x30["ranges"]]
 
 # The sync points, in film frames: the blueprint's beat sheet with OVERRIDES §41's climax
 Q_HITS = (72, 216, 360)                                 # the three questions' hits
@@ -163,9 +180,17 @@ STEM_PEAK_DB = -1.0                                     # both stems trimmed tog
 # at least 6 LU over bar 9's first half): at their written velocities bars 1-9 sat 1.9 LU under the web master and the
 # build 0.5 LU under the drop. Everything before the drop plays TENSION_DB under its velocity, and the build (bar 9,
 # its riser and cluster) BUILD_DB, all but the holds' pad, which keeps hold 1 5-9 LU under the montage.
-TENSION_DB = -7.3
-BUILD_DB = -9.5
-SUCK_Q1_DB = -24.0                                      # the f72 suck-back stand-in, against the trimmed bar 1
+TENSION_DB = -7.7                                       # -7.3 until the judge's final mix: bars 1-9 sat 5.99 LU under
+BUILD_DB = -9.5                                         # the social master with the final cue list
+# The question hits over the timeline's own suck-back into f72 (tools/audio/cues.json: suck_a at -16 dB, inside the
+# breath gap; this score's preview stand-in had sat at -24 dB): in the judge's mix with the final cue list, Q1 cleared
+# the 0.6 s before it by 7.3 dB and Q2 by 10.3 (the gate is 10). The hits rise this much over TENSION_DB; Q3, with its
+# impact, stays the biggest of the three (report.music: "the biggest of the three hits")
+QHIT_DB = {72: 3.9, 216: 3.4, 360: 4.4}                 # +0.4 each with TENSION_DB's -0.4: the hits stay put
+# The push's layers, a few ms apart so their attacks don't stack into one peak (see the push in compose())
+PUSH_FLAM_MS = {"crash2": 7.0, "clap": 3.0, "snare": 5.0, "hat_open": 9.0, "snap": 11.0, "lead": 4.0, "hook": 8.0,
+                "lead_harm": 12.0}
+SUCK_Q1_DB = -16.0                                      # the f72 suck-back stand-in: the timeline's own gain
 # The stems' peaks against their loudness. mix_master.py normalises, then limits at -1.7 (web) or -1.5 dBTP (social,
 # x30): with the stems' sum peaking 14 dB over its loudness, its limiter took 0.57 dB off the social master and 1.04 dB
 # off the x30 (both outside -14 +-0.5). A linked lookahead limiter (one gain on both stems, from their sum) holds the
@@ -615,7 +640,8 @@ def compose(A):
     P("heart", 1, [E(b(1, 1), 0, 0.8, "F#1"), E(b(1, 3), 0, 0.72, "F#1")])
     P("pluck", 1, line(g, 1, MOTIF_1, vel=0.62))
 
-    P("qhit", 2, [E(b(2), 0, 0.82, "B1")])                                        # Q1 "What did it change?"
+    q = lambda f: core.amp(QHIT_DB[f])  # noqa: E731
+    P("qhit", 2, [E(b(2), 0, 0.82 * q(72), "B1")])                                # Q1 "What did it change?"
     P("heart", 2, [E(b(2, 3), 0, 0.7, "F#1")])
     P("tick", 2, ticks(g, 2, 2.0, 5.0, 1.0, (0.5, 0.56)))
 
@@ -627,7 +653,7 @@ def compose(A):
     P("pulse", 3, pulses(g, 3, PULSE["Bm"], 1.0, 4.0, step=0.5, vel=(0.75, 0.95), cutoff=(560.0, 760.0)))
     P("swell", 4, [E(fr(216), 0.3, 0.5)], anchor="end")                          # the suck-back into Q2
 
-    P("qhit", 4, [E(b(4), 0, 0.9, "G1")])                                         # Q2 "Can I undo it?"
+    P("qhit", 4, [E(b(4), 0, 0.9 * q(216), "G1")])                                # Q2 "Can I undo it?"
     P("heart", 4, [E(b(4, 3), 0, 0.72, "G1")])
     P("tick", 4, ticks(g, 4, 1.5, 5.0, 0.5, (0.45, 0.6)))
 
@@ -639,8 +665,8 @@ def compose(A):
                          accents=(1.0, 0.6, 0.85, 0.6)))
     P("swell", 6, [E(fr(360), 0.3, 0.55)], anchor="end")                         # the suck-back into Q3
 
-    P("qhit", 6, [E(b(6), 0, 1.0, "A1")])                                         # Q3 "Did it run the tests?"
-    P("impact", 6, [E(b(6), 0, 0.4)])                                             # the biggest of the three
+    P("qhit", 6, [E(b(6), 0, 1.0 * q(360), "A1")])                                # Q3 "Did it run the tests?"
+    P("impact", 6, [E(b(6), 0, 0.4 * q(360))])                                    # the biggest of the three
     P("heart", 6, [E(b(6, 3), 0, 0.75, "A1")])
     P("tick", 6, ticks(g, 6, 1.25, 5.0, 0.25, (0.32, 0.58)))
 
@@ -733,7 +759,9 @@ def compose(A):
     P("riser_s", 23, [E(fr(1647), 0.9, 0.6)], anchor="end")
     pump(A, 23)
 
-    hit(A, 24, crash=0.4, kick=0.85, impact=0.55, sub="G1")                      # f1656: the tests pass (Done)
+    # f1656: the tests pass (Done), the first big hit (OVERRIDES §41); its kick 0.85, impact 0.55 and sub 1.0 until the
+    # judge's final mixes, where its first 0.3 s outweighed the push's at -14 LUFS (the timeline adds impact_b and ui_done)
+    hit(A, 24, crash=0.4, kick=0.5, impact=0.4, sub="G1", sub_vel=0.85)
     groove_four(A, 24, until=4.75)
     P("sub8", 24, pulses(g, 24, "G1", 1.5, 3.0, step=0.5, gate=0.7, vel=0.8) +
       pulses(g, 24, "A1", 3.0, 4.5, step=0.5, gate=0.7, vel=0.84) +
@@ -752,15 +780,26 @@ def compose(A):
     # louder kick or sub would not make it bigger than f1656
     # (its kick, sub and impact sit lower than f1656's: stacked, their low peaks made the limiter pull the whole push
     # down, and in round 10 the x30's push came 0.37 LU under f1656 over its first 0.4 s)
-    for name, v in (("crash", 1.0), ("kick_big", 0.75), ("impact", 0.6), ("clap", 1.0), ("snare", 1.0),
-                    ("hat_open", 1.0), ("snap", 1.0)):
-        P(name, 24, [E(tp, 0.0 if name != "hat_open" else 0.3, v)], tie=True)
-    P("sub", 24, [E(tp, 0.6, 0.6, "D2", glide_from=12.0, glide_s=0.025)], tie=True)
+    # After the judge's final mixes: the timeline's own impact_a lands on f1723 (tools/audio/cues.json), so the score's
+    # impact left the push, and its kick and sub came down (0.75 and 0.6 before), while a second crash joined it.
+    # Measured before and after the stems' linked limiter (film, its first 0.3 s): stacked, the low layers peaked
+    # 2.5 dB over f1656's and the limiter took 3.7 dB (mean) off the whole push against 1.5 off f1656, so a push
+    # 2.3 LU bigger before it came out level with f1656, and under it at -14 LUFS. Its clap and snap came down too
+    # (1.0 before): track by track (x30), the clap peaked at -6.9 dBFS for -23.6 LUFS and the snap at -11.5 for -31.4,
+    # peak without loudness, while the unpumped chord gives the push its weight.
+    # The layers land a few ms apart (PUSH_FLAM_MS, 0-12 ms, one hit to the ear: a 16th is 150 ms): on one sample the
+    # chord, the lead and the hook (both on D5) and the drums stacked into the push's peak, the music bus alone peaking
+    # 2.5 dB over the chord, and the stems' limiter then pulled the whole push down with it
+    fl = lambda name: PUSH_FLAM_MS.get(name, 0.0) / 1000.0  # noqa: E731
+    for name, v in (("crash", 1.0), ("crash2", 0.8), ("kick_big", 0.5), ("clap", 0.6), ("snare", 1.0),
+                    ("hat_open", 1.0), ("snap", 0.5)):
+        P(name.rstrip("2"), 24, [E(tp + fl(name), 0.0 if name != "hat_open" else 0.3, v)], tie=True)
+    P("sub", 24, [E(tp, 0.6, 0.45, "D2", glide_from=12.0, glide_s=0.025)], tie=True)
     P("push_chord", 24, [E(tp, b(25, 3) - tp - 0.02, 1.0, CH["Dadd9"])], tie=True)
     first = b(25, 1.5) - tp - 0.02                                                # the harmonised hook's first note
-    P("lead", 24, [E(tp, first, 1.0, "D5")], tie=True)
-    P("lead_harm", 24, [E(tp, first, 0.9, THIRD["D5"])], tie=True)
-    P("hook", 24, [E(tp, first, 1.0, "D5")], tie=True)
+    P("lead", 24, [E(tp + fl("lead"), first - fl("lead"), 1.0, "D5")], tie=True)
+    P("lead_harm", 24, [E(tp + fl("lead_harm"), first - fl("lead_harm"), 0.9, THIRD["D5"])], tie=True)
+    P("hook", 24, [E(tp + fl("hook"), first - fl("hook"), 1.0, "D5")], tie=True)
 
     groove_four(A, 25, b_from=2.0, until=4.25)                                    # the one celebration
     P("hat", 25, [e for e in hat16(g, 25, b0=1.25, b1=2.0)])
@@ -840,7 +879,9 @@ LEVELS = {  # track: (bus, gain dB)
     "heart": ("bass", -2.0), "reese": ("bass", -9.0), "bass": ("bass", -7.0), "sub": ("bass", -7.0),
     "sub8": ("bass", -12.0),
     "pad_open": ("music", -9.0), "pad": ("music", -10.0), "pad_hold": ("music", -5.0), "pad_bd": ("music", -15.5),
-    "frag": ("music", -12.0), "pulse": ("music", -9.0), "chords": ("music", -8.0), "push_chord": ("music", -2.5),
+    # the push's chord 2 dB up after the judge's final mixes (with the timeline's own impact_a and ui_verified on f1723):
+    # at -2.5 its first 0.4 s sat 0.32 LU (social) and 0.85 LU (x30) under the tests passing at f1656
+    "frag": ("music", -12.0), "pulse": ("music", -9.0), "chords": ("music", -8.0), "push_chord": ("music", -0.5),
     "hook": ("music", -8.0),
     "lead": ("music", -11.0), "lead_harm": ("music", -15.0), "counter": ("music", -11.0), "pluck": ("music", -8.0),
     "final": ("music", -7.0),
@@ -1265,7 +1306,7 @@ AFTER_SILENCE = {"film": [(0, "bar 1"), (648, "the drop, after the dead stop"), 
                          (576, "the tests pass (film f1656), after the breath")]}
 WINDOWS = {"film": {"hold 1": (14.8, 16.8), "hold 2": (48.4, 50.4), "the push (Verified)": (56.4, 59.4),
                     "end card": (67.2, 72.0)},
-           "x30": {"hold 1": (5.2, 7.2), "the push (Verified)": (20.4, 23.4), "end card": (21.6, 24.0)}}
+           "x30": {"hold 1": (5.2, 7.2), "the push (Verified)": (20.4, 23.4), "end card": (24.0, 28.8)}}
 
 
 def after_silence(master, points, tmp):
