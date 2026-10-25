@@ -5,8 +5,11 @@ For one master (--name web|social sets the targets; any other name, e.g. a cut's
             its fps: 76.8 s for the film, 28.8 s for x30. Gate.
   loudness  FFmpeg ebur128 (peak=true, 4x oversampled true peak): integrated loudness, LRA, true peak.
             Gates: web -16 +-0.5 LUFS and <= -1.5 dBTP; social -14 +-0.5 LUFS and <= -1.0 dBTP.
-  aac       the same measurement on an AAC 192 kb/s 48 kHz encode (FFmpeg's aac). Not a gate: it tells the encode
-            lanes how much true-peak headroom survives the codec. The encode is deleted.
+  aac       the same measurement on AAC 160 kb/s and 192 kb/s 48 kHz stereo encodes (FFmpeg's aac, as
+            tools/encode/encode.sh makes the film's and the social films' audio), with the true peak read as
+            tools/encode/verify.mjs reads it: the largest of ebur128's per-frame true_peak, full precision. Gate (the
+            energetic recut, ENERGY_SPEC §8.5): web, the film's 160 kb/s encode <= -1.5 dBTP (verify.mjs D10); social
+            and cuts, the 192 kb/s encode <= -1.0 dBTP. The encodes are deleted.
   tags      Apple SoundAnalysis through the sound_tags helper (3 s windows, no overlap).
             Gate (the helper's own windows): no voice-like label (speech, singing, shouting, laughter ...) and no
             siren/alarm/beep/buzzer label reaches 0.3 in any window or enters a window's top 3; every 'telephone' and
@@ -42,8 +45,8 @@ For one master (--name web|social sets the targets; any other name, e.g. a cut's
             the hold's middle through its ranges.
   cues      for every effect in cues.json (automation entries, with no "file", are left out), placed exactly as
             mix_master.py places it, around the effect's peak (30 ms for clicks, pops, ticks and thuds; 200 ms for the
-            rest), both K-weighted (BS.1770): the effect's level over the bed as the mix plays it (ducked, gapped and
-            held: the automation's gains; the hold's low-pass is not modelled, so a margin in the hold reads low); its
+            rest), both K-weighted (BS.1770): the effect's level over the bed as the mix plays it (ducked, gapped, ridden
+            and held: the automation's gains; the hold's low-pass is not modelled, so a margin in the hold reads low); its
             margin in its own loudest third-octave band (its body); and its best margin among the bands where it has
             energy (within 20 dB of its loudest), which is where it can be heard. FILM_SPEC §11 aims hits 3-6 dB over
             the bed. Not a gate: read it with the spectrograms.
@@ -71,7 +74,8 @@ import pyloudnorm as pyln
 import soundfile as sf
 from scipy.signal import lfilter, resample_poly, welch
 
-TARGETS = {"web": {"lufs": -16.0, "tol": 0.5, "tp_max": -1.5}, "social": {"lufs": -14.0, "tol": 0.5, "tp_max": -1.0}}
+TARGETS = {"web": {"lufs": -16.0, "tol": 0.5, "tp_max": -1.5, "aac": ["160k", -1.5]},
+           "social": {"lufs": -14.0, "tol": 0.5, "tp_max": -1.0, "aac": ["192k", -1.0]}}
 # Matched against the label's "_"-separated words by prefix (a plain substring test would read "vibraphone" as "rap").
 VOICE = ["speech", "speak", "talk", "conversation", "narration", "whisper", "sing", "choir", "chant", "yodel", "rap",
          "humming", "whistling", "shout", "yell", "scream", "laugh", "giggl", "snicker", "chuckle", "cry", "sigh",
@@ -172,6 +176,16 @@ def ebur128(path):
     return {"integrated_lufs": grab("I"), "lra_lu": grab("LRA"), "true_peak_dbtp": grab("Peak")}
 
 
+def true_peak_full(path):
+    """The true peak (dBTP) as tools/encode/verify.mjs reads it: the largest of ebur128's per-frame lavfi.r128.true_peak
+    (linear), at full precision; the summary above rounds to 0.1 dB."""
+    p = subprocess.run([a.ffmpeg, "-hide_banner", "-nostats", "-nostdin", "-loglevel", "error", "-i", path, "-map", "0:a:0",
+                        "-af", "ebur128=peak=true:framelog=quiet:metadata=1,ametadata=mode=print:file=-", "-f", "null", "-"],
+                       capture_output=True, text=True, check=True)
+    pk = max((float(v) for v in re.findall(r"^lavfi\.r128\.true_peak=([\d.]+)", p.stdout, re.M)), default=0.0)
+    return round(20 * np.log10(pk), 3) if pk > 0 else None
+
+
 def load(p, SR):
     x, s = sf.read(p, always_2d=True)
     x = x.T.astype(np.float64)
@@ -209,12 +223,17 @@ bed_gain_db = round(float(full - meter.integrated_loudness(bed.T)), 2)  # the be
 res["bed_gain_db"] = bed_gain_db
 
 with tempfile.TemporaryDirectory(dir=a.out_dir) as tmp:
-    # ---- the AAC encode's headroom (informational) ----
-    m4a = os.path.join(tmp, "aac.m4a")
-    ff("-i", a.master, "-c:a", "aac", "-b:a", "192k", "-ar", "48000", m4a)
-    res["aac_192k"] = ebur128(m4a)
-    if res["aac_192k"]["true_peak_dbtp"] is not None and res["aac_192k"]["true_peak_dbtp"] > -1.0:
-        notes.append(f"the AAC 192k encode peaks at {res['aac_192k']['true_peak_dbtp']} dBTP (over -1.0)")
+    # ---- the AAC encodes' true peak: the film's 160 kb/s and the social films' 192 kb/s (gate: the target's own) ----
+    for rate in ("160k", "192k"):
+        m4a = os.path.join(tmp, f"aac-{rate}.m4a")
+        ff("-i", a.master, "-c:a", "aac", "-b:a", rate, "-ar", "48000", "-ac", "2", m4a)
+        res[f"aac_{rate}"] = {**ebur128(m4a), "true_peak_dbtp_full": true_peak_full(m4a)}
+    AAC_RATE, AAC_GATE = T["aac"]
+    aac_tp = res[f"aac_{AAC_RATE}"]["true_peak_dbtp_full"]
+    res["aac_gate"] = {"bitrate": AAC_RATE, "gate_dbtp": AAC_GATE, "true_peak_dbtp": aac_tp}
+    if aac_tp is None or aac_tp > AAC_GATE:
+        fails.append(f"the AAC {AAC_RATE} encode peaks at {aac_tp} dBTP, above {AAC_GATE} (tools/encode/verify.mjs reads "
+                     f"the same; mix_master.py --aac lowers the ceiling until it fits)")
 
     # ---- SoundAnalysis: master and level-matched bed, on the helper's windows and shifted by 1.5 s ----
     ms = int(SHIFT_S * 1000)
@@ -525,8 +544,8 @@ def lin(env, i0, i1, v0, v1):
 
 for c in auto:                                       # the automation's gains on the bed (linear ramps; no low-pass)
     i0, i1, nb = smp(c, "frame", "t"), smp(c, "to_frame", "t_end"), bed.shape[1]
-    if c.get("role") == "gap":
-        g = 10 ** (c.get("db", -24) / 20)
+    if c.get("role") in ("gap", "ride"):                            # the hook's ride is a gap's envelope at its own db
+        g = 10 ** (c.get("db", -24 if c.get("role") == "gap" else -1.5) / 20)
         ka, kr = int(c.get("attack_ms", 10) * SR / 1000), int(c.get("release_ms", 4) * SR / 1000)
         env = np.ones(nb)
         env[max(0, i0):max(0, i1)] = g
@@ -622,7 +641,9 @@ res.update({"fails": fails, "warnings": warnings, "notes": notes, "pass": not fa
 with open(os.path.join(a.out_dir, f"{a.name}.checks.json"), "w") as f:
     json.dump(res, f, indent=1, ensure_ascii=False)
 summary = {"name": a.name, "pass": not fails, "seconds": res["length"]["seconds"], "lufs": L["integrated_lufs"], "lra": L["lra_lu"],
-           "tp": L["true_peak_dbtp"], "aac_tp": res["aac_192k"]["true_peak_dbtp"], "mono_loss_db": res["mono"]["lufs_lost_db"],
+           "tp": L["true_peak_dbtp"], "aac": res["aac_gate"],
+           "aac_tp_160k_192k": [res["aac_160k"]["true_peak_dbtp_full"], res["aac_192k"]["true_peak_dbtp_full"]],
+           "mono_loss_db": res["mono"]["lufs_lost_db"],
            "share_150": res["speaker"]["power_share_above_150hz"], "phone_max": res["tags"]["phone_max"],
            "silence_last_54_frames": res["silence"], "dynamics_pass": res["dynamics"]["pass"],
            "dynamics": [[c["check"], c["value"], c["ok"]] for c in res["dynamics"]["checks"]],

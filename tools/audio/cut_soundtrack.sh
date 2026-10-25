@@ -15,8 +15,9 @@
 #   mix     export-cues.ts --check and tools/audio/cut_cues.py --check (tools/audio/cues.json must match the film's
 #           timeline, and tools/audio/cues.<name>.json must be current against it); tools/audio/drive.py --cut renders
 #           the cut's drive stem (its score bars, in order) -> drive_<name>.wav; then mix_master.py --drive (the cut's
-#           effects and automation) -> soundtrack_<name>_social.wav: -14 LUFS, limiter ceiling -1.5 dBTP so the AAC
-#           stays <= -1.0 dBTP; exactly frames / fps long.
+#           effects and automation) -> soundtrack_<name>_social.wav: -14 LUFS, limiter ceiling -1.5 dBTP, lowered in
+#           0.1 dB steps (mix_master.py --aac 192k:-1.0) until the social encode's AAC 192 kb/s stays <= -1.0 dBTP;
+#           exactly frames / fps long.
 #   checks  mix_checks.py --target social --cut: length, loudness, true peak, AAC, SoundAnalysis (both window grids, the
 #           opening after silence, the end card), mono, small speakers, cue audibility, spectrograms
 #           -> .work/audio/analysis/<name>/ (look at the PNGs, then delete them).
@@ -133,7 +134,8 @@ if [ "$STEP" = mix ] || [ "$STEP" = all ]; then
   echo "cut_soundtrack: bed sha256 $(shasum -a 256 "$BED" | cut -d ' ' -f 1)"
   "$PY" -I tools/audio/drive.py --cut "$CUT" --out "$DRIVE"     # the cut's drive: its score bars, in order
   echo "cut_soundtrack: drive sha256 $(shasum -a 256 "$DRIVE" | cut -d ' ' -f 1)"
-  "$PY" -I tools/audio/mix_master.py "$BED" "$CUES" "$MASTER" --drive "$DRIVE" --lufs -14 --tp -1.5
+  "$PY" -I tools/audio/mix_master.py "$BED" "$CUES" "$MASTER" --drive "$DRIVE" --lufs -14 --tp -1.5 \
+    --aac 192k:-1.0 --ffmpeg "$FF"                              # the social encode's AAC stays <= -1.0 dBTP
   "$PY" -I -c "
 import sys, soundfile as sf
 i = sf.info(sys.argv[1])

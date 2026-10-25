@@ -4,6 +4,9 @@
 #   web     -16 LUFS integrated, limiter ceiling -1.7 dBTP (D10)     -> .work/audio/render/soundtrack_web.wav
 #   social  -14 LUFS integrated, limiter ceiling -1.5 dBTP (OVERRIDES §4; the AAC encode then stays <= -1.0 dBTP)
 #                                                                     -> .work/audio/render/soundtrack_social.wav
+# Each master is then encoded as tools/encode/encode.sh encodes it (the film's AAC 160 kb/s, the social films' 192 kb/s)
+# and, where the codec's overshoot would take it over verify.mjs's gate (-1.5 dBTP film, -1.0 social), the ceiling comes
+# down in 0.1 dB steps (mix_master.py --aac): the recut's drums made the 160 kb/s encode read up to 0.5 dB over it.
 # The drive (tools/audio/drive.py -> .work/audio/render/drive.wav) is rendered first when it is missing or older than
 # drive.py, and its SHA-256 is printed next to the bed's. It refuses to mix when tools/audio/cues.json no longer matches
 # the film's timeline (run `bun video/scripts/export-cues.ts` first).
@@ -31,6 +34,8 @@ if [ ! -f "$DRIVE" ] || [ "$DRIVE" -ot "$REPO/tools/audio/drive.py" ]; then
 fi
 echo "final_mix: drive sha256 $(shasum -a 256 "$DRIVE" | cut -d ' ' -f 1)"
 
-"$PY" -I "$REPO/tools/audio/mix_master.py" "$BED" "$CUES" "$OUT/soundtrack_web.wav" --drive "$DRIVE" --lufs -16 --tp -1.7
-"$PY" -I "$REPO/tools/audio/mix_master.py" "$BED" "$CUES" "$OUT/soundtrack_social.wav" --drive "$DRIVE" --lufs -14 --tp -1.5
+"$PY" -I "$REPO/tools/audio/mix_master.py" "$BED" "$CUES" "$OUT/soundtrack_web.wav" --drive "$DRIVE" --lufs -16 --tp -1.7 \
+  --aac 160k:-1.5 --ffmpeg "$FF"
+"$PY" -I "$REPO/tools/audio/mix_master.py" "$BED" "$CUES" "$OUT/soundtrack_social.wav" --drive "$DRIVE" --lufs -14 --tp -1.5 \
+  --aac 192k:-1.0 --ffmpeg "$FF"
 shasum -a 256 "$OUT/soundtrack_web.wav" "$OUT/soundtrack_social.wav"
