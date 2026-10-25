@@ -582,6 +582,21 @@
   ]
  },
  {
+  "role": "ride",
+  "frame": 792,
+  "to_frame": 801,
+  "t": 26.4,
+  "t_end": 26.7,
+  "event": "the send key reads: the groove ducks under it and is back by the and of beat 1, then builds through bar 13 into bar 14",
+  "db": -6,
+  "attack_ms": 10,
+  "release_ms": 150,
+  "applies_to": [
+   "bed",
+   "drive"
+  ]
+ },
+ {
   "role": "hold",
   "frame": 1453,
   "to_frame": 1512,

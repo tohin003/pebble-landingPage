@@ -13,9 +13,10 @@
 // disk (.work/audio/sfx), it also checks that no more than three effects sound at once.
 //
 // The energetic recut (ENERGY_SPEC §8.3): after the effects come the mix's automation spans (timeline AUTOMATION: the
-// gaps, the hold and the tail) as entries with NO "file", in the kit's format (sfx_kit.json "automation"): role, frame,
-// to_frame, release_frame (the hold only), t = frame / fps, t_end = to_frame / fps, event, then the role's params from
-// the kit. They are spans, not effects: they never count toward the three-at-once limit.
+// gaps, the holds, the tail and the send key's ride) as entries with NO "file", in the kit's format (sfx_kit.json
+// "automation"): role, frame, to_frame, release_frame (the hold only), t = frame / fps, t_end = to_frame / fps, event,
+// then the role's params from the kit, then the span's own (db, attack_ms, release_ms), which win. They are spans, not
+// effects: they never count toward the three-at-once limit.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -72,6 +73,10 @@ const spans = AUTOMATION.map((a) => {
     return null;
   }
   const rest = Object.fromEntries(Object.entries(params).filter(([k]) => k !== "when"));
+  // the span's own level and ramps (the send key's duck) win over its role's
+  const own = Object.fromEntries(
+    ([["db", a.db], ["attack_ms", a.attackMs], ["release_ms", a.releaseMs]] as const).filter(([, v]) => v !== undefined),
+  );
   return {
     role: a.role,
     frame: a.frame,
@@ -81,6 +86,7 @@ const spans = AUTOMATION.map((a) => {
     t_end: r4(a.toFrame / FPS),
     event: a.event,
     ...rest,
+    ...own,
   };
 });
 
