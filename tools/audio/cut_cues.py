@@ -12,10 +12,17 @@ The rules are the x30 plan's (lane prep-x30, map_cues.py):
     effect takes its role's gain and alignment from tools/audio/sfx_kit.json;
   - everything else stays as in cues.json: takes, gains, pans, ducks and events. Each cue also records source_frame,
     the film frame it comes from.
+  - the mix automation (entries with no "file": gap, hold, tail; ENERGY_SPEC §8.3) maps span by span, each span
+    clipped to every range it overlaps: a span that starts before a range starts on the range's first cut frame (the
+    x30's hold, film f891, starts on the joint at cut 324), and one that runs past a range's end stops at the joint.
+    A hold's release (to_frame -> release_frame) maps on as its own span: when it follows its hold in the same range,
+    the two stay one entry; otherwise the hold ends on its clipped edge with no release (noted). The params are the
+    film's. Each entry records source_frame and source_to_frame. Automation never counts as an effect.
 Checks:
   - every cue lies inside the cut;
   - at most three effects sound at once, measured as export-cues.ts does when the kit's WAVs are on disk;
-  - notes for an effect that starts before its range or rings past its range's end (it then sounds over a joint).
+  - notes for an effect that starts before its range or rings past its range's end (it then sounds over a joint), and
+    for an automation span clipped at a joint.
 Usage, from the repo root, with any Python 3.9+ (standard library only):
   python3 -I tools/audio/cut_cues.py docs/film-cuts/x30.json            writes tools/audio/cues.x30.json
   python3 -I tools/audio/cut_cues.py docs/film-cuts/x30.json --check    exit 1 if the file on disk is not current
@@ -87,8 +94,9 @@ def from_kit(w, frame, src=None):
     return c
 
 
+film_auto = [c for c in film if "file" not in c]            # the mix automation: mapped span by span, below
 out, replaced = [], set()
-for c in film:
+for c in (c for c in film if "file" in c):
     nf, ri = place(c["frame"], c["align"] == "end")
     if nf is None or c["frame"] in drop:
         continue
@@ -113,6 +121,64 @@ for c in out:
 for src in replace:
     if src not in replaced:
         problems.append(f"sfx.replace names film frame {src}, which has no cue inside the cut")
+
+
+def clip(f0, f1):
+    """Where film frames [f0, f1) play in the cut: [(cut0, cut1, film0, film1, range index)], in playing order."""
+    spans = []
+    for i, ((first, end), s) in enumerate(zip(ranges, starts)):
+        o0, o1 = max(f0, first), min(f1, end)
+        if o1 > o0:
+            spans.append((s + o0 - first, s + o1 - first, o0, o1, i))
+    return spans
+
+
+SPAN_KEYS = {"role", "frame", "to_frame", "release_frame", "t", "t_end", "t_release", "event", "source_frame",
+             "source_to_frame", "source_release_frame"}
+auto = []
+for c in film_auto:
+    params = {k: v for k, v in c.items() if k not in SPAN_KEYS}
+    has_release = c.get("release_frame") is not None
+    body = clip(c["frame"], c["to_frame"])
+    release = clip(c["to_frame"], c["release_frame"]) if has_release else []
+    used = set()
+
+    def entry(c0, c1, f0, f1, rspan=None, **extra):
+        e = {"role": c["role"], "frame": c0, "to_frame": c1}
+        if rspan is not None:
+            e["release_frame"] = rspan[1]
+        e["t"], e["t_end"] = r4(c0 / FPS), r4(c1 / FPS)
+        if rspan is not None:
+            e["t_release"] = r4(rspan[1] / FPS)
+        e["event"] = c.get("event", "")
+        e.update(params)
+        e.update(extra)
+        e["source_frame"], e["source_to_frame"] = f0, f1
+        if rspan is not None:
+            e["source_release_frame"] = rspan[3]
+        return e
+
+    for c0, c1, f0, f1, ri in body:
+        follow = next((r for r in release if r[0] == c1 and r[4] == ri), None)   # its release follows it in the cut
+        if follow is not None:
+            used.add(follow)
+            auto.append(entry(c0, c1, f0, f1, follow))
+        elif has_release:                                     # the release is not in the cut: none, on the edge
+            auto.append(entry(c0, c1, f0, f1, (c1, c1, f1, f1)))
+            notes.append(f"{c['role']} film f{f0}-{f1} ends on a joint at cut f{c1} with no release")
+        else:
+            auto.append(entry(c0, c1, f0, f1))
+        if (f0, f1) != (c["frame"], c["to_frame"]):
+            notes.append(f"{c['role']} film f{c['frame']}-{c['to_frame']} is clipped to its range: film f{f0}-{f1} "
+                         f"plays at cut f{c0}-{c1}")
+    for r in release:                                         # a release in the cut without its hold before it
+        if r not in used:
+            auto.append(entry(r[0], r[0], r[2], r[2], r, crossfade_ms=0, drive_ms=0))
+            notes.append(f"{c['role']} film f{r[2]}-{r[3]}: only its release plays, at cut f{r[0]}-{r[1]}")
+auto.sort(key=lambda e: e["frame"])
+for e in auto:
+    if not (0 <= e["frame"] <= e["to_frame"] <= e.get("release_frame", e["to_frame"]) <= TOTAL):
+        problems.append(f"automation {e['role']} at cut frame {e['frame']} lies outside the cut's {TOTAL} frames")
 
 
 def wav_seconds(path):
@@ -163,8 +229,8 @@ if os.path.isdir(sfx_dir):
 if problems:
     print(f"cut_cues: {rel(a.cut)}: problems:\n  " + "\n  ".join(problems), file=sys.stderr)
     sys.exit(1)
-text = json.dumps(out, indent=1, ensure_ascii=False) + "\n"
-summary = f"{len(out)} cues on {TOTAL} frames ({TOTAL / FPS:.2f} s); {overlap}"
+text = json.dumps(out + auto, indent=1, ensure_ascii=False) + "\n"
+summary = f"{len(out)} effects and {len(auto)} automation spans on {TOTAL} frames ({TOTAL / FPS:.2f} s); {overlap}"
 if a.check:
     current = open(out_path, encoding="utf-8").read() if os.path.exists(out_path) else ""
     if current != text:
@@ -179,5 +245,9 @@ else:
     for c in out:
         print(f"  film f{c.get('source_frame', '-'):>4} -> cut f{c['frame']:>3}  {c['role']:<7} {c['take']:<10} "
               f"t={c['t']:<7} gain={c['gain_db']} duck={c['duck_db']}  {c['event']}")
+    for e in auto:
+        tail = f", release to f{e['release_frame']}" if "release_frame" in e else ""
+        print(f"  film f{e['source_frame']:>4}-{e['source_to_frame']:<4} -> cut f{e['frame']:>3}-{e['to_frame']:<3}{tail}  "
+              f"{e['role']:<5} {e['event']}")
 for n in notes:
     print(f"  note: {n}")

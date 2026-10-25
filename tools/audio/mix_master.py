@@ -78,7 +78,8 @@ tails, applied, lp_hz = [], [], None
 for c in sorted(auto, key=lambda c: sample(c, 'frame', 't')):
     role = c.get('role')
     i0, i1 = sample(c, 'frame', 't'), sample(c, 'to_frame', 't_end')
-    if i1 <= i0: sys.exit(f"mix_master: automation {role!r} at {i0} ends before it starts")
+    release_only = role == 'hold' and i1 == i0 and sample(c, 'release_frame', 't_release') > i1   # a cut kept its release
+    if i1 < i0 or (i1 == i0 and not release_only): sys.exit(f"mix_master: automation {role!r} at {i0} ends before it starts")
     if role == 'gap':                                                  # down over [i0 - attack, i0], held, back by i1
         g = 10 ** (param(c, 'db') / 20); k_a, k_r = int(param(c, 'attack_ms') * SR / 1000), int(param(c, 'release_ms') * SR / 1000)
         env = np.full(N, g); ramp(env, i0 - k_a, i0, 1.0, g); ramp(env, i1 - k_r, i1, g, 1.0)
