@@ -23,18 +23,36 @@ For one master (--name web|social sets the targets; any other name, e.g. a cut's
             End card (lane fin-audio): a report; the passes above hold its gates. It lists every 'telephone' and
             'ringtone' reading, master and bed alone, in each window of either grid that overlaps the end card. The end
             card starts at the beat map's "endcard" section (f2016), or in a cut where it first plays a frame from there.
+            Hold window (the energetic recut, ENERGY_SPEC §11): the same kind of report for film 29-34 s (f870-1020,
+            AgentGuard's hold and its release; in a cut, where it plays those frames), with the phone, voice-like and
+            alarm readings. The bed alone is always the original bed (--bed: music_bed.wav, or a cut's
+            music_bed_<name>.wav), never the bed with the drive, so a label the drive stem causes counts against the
+            gates as an effect's does.
   mono      loudness lost when the mix folds down to mono, (L+R)/2 on both channels (gate <= 3 dB), L/R correlation.
   speaker   share of signal power above 150 Hz (H9 small-speaker translation, >= 0.30).
-  cues      for every cue in cues.json, placed exactly as mix_master.py places it, around the effect's peak (30 ms for
-            clicks, pops, ticks and thuds; 200 ms for the rest), both K-weighted (BS.1770): the effect's level over the
-            ducked bed's; its margin in its own loudest third-octave band (its body); and its best margin among the
-            bands where it has energy (within 20 dB of its loudest), which is where it can be heard. FILM_SPEC §11 aims
-            hits 3-6 dB over the bed. Not a gate: read it with the spectrograms.
+  silence   the last 54 frames (1.8 s) at or below -70 dBFS, sample peak (ENERGY_SPEC §8.5: the tail ends in digital
+            silence). Gate.
+  dynamics  the loudness curve (ENERGY_SPEC §8.5), a report: each check is a warning when it misses, with its numbers.
+            BS.1770 (pyloudnorm, gated) per bar and per span of bars, against the master's integrated loudness:
+            bars 1-2 4-8 LU under it; each gap's middle 200 ms at least 12 dB (K-weighted power) under the 300 ms from
+            its hit (the hook gap 6 dB); the hold's 3 s short-term loudness, centred on the film hold's middle (f940),
+            5-9 LU under it; bar 8 at least 3 LU over bar 7; bars 23-25 the loudest 3-bar span and at least 1.5 LU over
+            the mean of bars 9-22; bars 26-28 at least 6 LU under bars 23-25. A cut maps the checks onto its bars by
+            music.score_bars (a check whose bars the cut leaves out is skipped), its gaps from its own cue list and
+            the hold's middle through its ranges.
+  cues      for every effect in cues.json (automation entries, with no "file", are left out), placed exactly as
+            mix_master.py places it, around the effect's peak (30 ms for clicks, pops, ticks and thuds; 200 ms for the
+            rest), both K-weighted (BS.1770): the effect's level over the bed as the mix plays it (ducked, gapped and
+            held: the automation's gains; the hold's low-pass is not modelled, so a margin in the hold reads low); its
+            margin in its own loudest third-octave band (its body); and its best margin among the bands where it has
+            energy (within 20 dB of its loudest), which is where it can be heard. FILM_SPEC §11 aims hits 3-6 dB over
+            the bed. Not a gate: read it with the spectrograms.
   png       spectrograms (FFmpeg showspectrumpic): the full master, plus zooms on the reveal, the proof's hits and the end
             card (web; and a cut, with the film's zoom windows mapped onto the cut's timeline). Look at them, then
             delete them: mix_checks.sh (the film) and cut_soundtrack.sh (a cut) re-create them.
 Usage: python -I mix_checks.py MASTER.wav OUT_DIR --name NAME [--target web|social] [--cut CUT.json] [--bed BED.wav]
-       [--cues cues.json] [--sound-tags .work/audio/sound_tags] [--ffmpeg /opt/homebrew/bin/ffmpeg] [--no-png]
+       [--cues cues.json] [--film-cues tools/audio/cues.json] [--sound-tags .work/audio/sound_tags]
+       [--ffmpeg /opt/homebrew/bin/ffmpeg] [--no-png]
 Writes OUT_DIR/<name>.checks.json and the raw tag JSONs <name>.{tags,tags-shift,tags-open0.75,tags-open1.5}.json and
 <name>.bed-*.json, the same for the bed alone (+ PNGs). Exit 1 when a gate fails.
 For a cut (tools/audio/cut_soundtrack.sh runs this): --name x30 --target social --cut docs/film-cuts/x30.json, with the
@@ -92,6 +110,7 @@ repo = os.path.abspath(os.path.join(here, "..", ".."))
 ap.add_argument("--beatmap", default=os.path.join(here, "beatmap.json"))
 ap.add_argument("--bed", default=os.path.join(repo, ".work", "audio", "render", "music_bed.wav"))
 ap.add_argument("--cues", default=os.path.join(here, "cues.json"))
+ap.add_argument("--film-cues", default=os.path.join(here, "cues.json"), help="the film's list: its hold's middle (f940)")
 ap.add_argument("--sound-tags", default=os.path.join(repo, ".work", "audio", "sound_tags"))
 ap.add_argument("--ffmpeg", default="/opt/homebrew/bin/ffmpeg")
 ap.add_argument("--no-png", action="store_true")
@@ -129,6 +148,12 @@ def film_to_cut_s(f0, f1):
 
 # where the end card starts on this timeline: the first frame played from the film's end card on
 END_CARD_S = next(((at + max(0, END_CARD_FRAME - first)) / FPS for first, end, at in RANGES if end > END_CARD_FRAME), None)
+HOLD_WINDOW_FRAMES = (870, 1020)  # film 29-34 s: AgentGuard's hold (f891) and its release (to f1008), ENERGY_SPEC §11
+
+
+def film_to_cut_frame(f):
+    """The cut frame where film frame f plays, or None when the cut leaves it out."""
+    return next((at + f - first for first, end, at in RANGES if first <= f < end), None)
 
 
 def ff(*args):
@@ -326,6 +351,32 @@ if END_CARD_S is not None:
         "phone_max": max((v[0] for r in ec_rows for k, v in r.items() if k not in ("view", "window_s")), default=0.0)}
     res["tags"]["phone_max"]["end_card"] = res["tags"]["end_card"]["phone_max"]
 
+# the hold window (a report; the passes above gate it): film 29-34 s, the hold and its release, wherever this timeline
+# plays those frames; every phone, voice-like and alarm reading, master and bed alone, in each window of either grid
+# that overlaps it
+HOLD_SPAN = film_to_cut_s(*HOLD_WINDOW_FRAMES)
+if HOLD_SPAN is not None:
+    hw_rows = []
+    for view in ("main", "shift"):
+        tg, bg = tags[("master", view)], tags[("bed", view)]
+        off = SHIFT_S if view == "shift" else 0.0
+        labs = sorted({lab for t_ in (tg, bg) for lab in t_.get("watch_windows", {})
+                       if label_kind(lab) in ("phone", "voice", "alarm")})
+        for w in tg["timeline"]:
+            s = w["t"] - off
+            if s + 3.0 <= HOLD_SPAN[0] + 1e-9 or s >= HOLD_SPAN[1] - 1e-9:
+                continue
+            hw_rows.append({"view": view, "window_s": [round(s, 1), round(s + 3.0, 1)],
+                            "top3": [t_["label"] for t_ in w["top"]],
+                            **{lab: [readings(tg, lab).get(w["t"], 0.0), readings(bg, lab).get(w["t"], 0.0)]
+                               for lab in labs}})
+    kinds = lambda r, k: [v[0] for lab, v in r.items() if lab not in ("view", "window_s", "top3") and label_kind(lab) == k]  # noqa: E731
+    res["tags"]["hold_window"] = {
+        "span_s": [round(HOLD_SPAN[0], 3), round(HOLD_SPAN[1], 3)],
+        "note": "per window and watch label: [master, bed alone]; 0.0 = below 0.1", "windows": hw_rows,
+        **{f"{k}_max": max((v for r in hw_rows for v in kinds(r, k)), default=0.0) for k in ("phone", "voice", "alarm")}}
+    res["tags"]["phone_max"]["hold_window"] = res["tags"]["hold_window"]["phone_max"]
+
 # ---- mono fold-down and small-speaker share ----
 m2 = np.stack([y.mean(axis=1)] * 2, axis=1)
 res["mono"] = {"lufs_lost_db": round(full - meter.integrated_loudness(m2), 2),
@@ -338,11 +389,125 @@ res["speaker"] = {"power_share_above_150hz": round(float(pxx[band & (f >= 150)].
 if res["speaker"]["power_share_above_150hz"] < 0.30:
     fails.append(f"small-speaker share {res['speaker']['power_share_above_150hz']} (< 0.30)")
 
-# ---- every cue over the ducked bed, placed as mix_master.py places it ----
+# ---- the tail's digital silence: the last 54 frames at or below -70 dBFS (a gate) ----
+SPF = SR / FPS
+s_last = int(round((FRAMES - 54) * SPF))
+peak_last = float(np.abs(y[s_last:]).max()) if y.shape[0] > s_last else 0.0
+res["silence"] = {"last_frames": 54, "from_s": round(s_last / SR, 3), "exact_zeros": peak_last == 0.0,
+                  "peak_dbfs": None if peak_last == 0.0 else round(20 * np.log10(peak_last), 1)}
+if peak_last > 10 ** (-70 / 20):
+    fails.append(f"the last 54 frames peak at {20 * np.log10(peak_last):.1f} dBFS (want <= -70: digital silence)")
+
+# BS.1770 K-weighting at 48 kHz (high shelf, then the RLB high-pass)
+KW = [([1.53512485958697, -2.69169618940638, 1.19839281085285], [1.0, -1.69065929318241, 0.73248077421585]),
+      ([1.0, -2.0, 1.0], [1.0, -1.99004745483398, 0.99007225036621])]
+THIRDS = 1000.0 * 2.0 ** (np.arange(-12, 13) / 3.0)  # third-octave centres, 63 Hz .. 16 kHz
+
+
+def kweight(x):
+    for b, a_ in KW:
+        x = lfilter(b, a_, x, axis=1)
+    return x
+
+
+# ---- the loudness curve (ENERGY_SPEC §8.5): a report; a miss is a warning with its numbers ----
 cues = json.load(open(a.cues))
+effects = [c for c in cues if "file" in c]
+auto = [c for c in cues if "file" not in c]                            # the mix automation: gaps, the hold, the tail
+z = kweight(y.T)                                                       # the K-weighted master, channels x samples
+BAR_F = BM["bar_frames"]
+SCORE_BARS = cut["music"]["score_bars"] if a.cut else list(range(1, FRAMES // BAR_F + 1))
+HOOK_END = next(s["end_frame"] for s in BM["sections"] if s["name"] == "hook")                 # f144
+
+
+def kpow(s0, s1):
+    """The K-weighted power over samples [s0, s1), summed over the channels as BS.1770 does, in dB."""
+    seg = z[:, max(0, s0):max(0, min(z.shape[1], s1))]
+    return float(10 * np.log10(np.sum(np.mean(seg ** 2, axis=1)) + 1e-20)) if seg.shape[1] else None
+
+
+def lufs_bars(out_bars):
+    """BS.1770 integrated (gated) loudness of the master over these bars of this timeline (1-based), or None."""
+    if not out_bars:
+        return None
+    x = np.concatenate([y[int(round((b - 1) * BAR_F * SPF)):int(round(b * BAR_F * SPF))] for b in out_bars])
+    v = meter.integrated_loudness(x)
+    return round(float(v), 2) if np.isfinite(v) else None
+
+
+def bars_of(score):
+    """The bars of this timeline (1-based) that play these score bars (the film: the same bars)."""
+    return [i + 1 for i, b in enumerate(SCORE_BARS) if b in score]
+
+
+def smp(c, frame_key, t_key):
+    if c.get(frame_key) is not None:
+        return int(round(c[frame_key] * SPF))
+    return None if c.get(t_key) is None else int(round(c[t_key] * SR))
+
+
+dyn = {"integrated_lufs": round(float(full), 2),
+       "per_bar": [{"bar": i + 1, "score_bar": b, "lufs": lufs_bars([i + 1])} for i, b in enumerate(SCORE_BARS)],
+       "checks": []}
+
+
+def check(name, value, ok, want, **extra):
+    dyn["checks"].append({"check": name, "value": value, "want": want, "ok": bool(ok), **extra})
+    if not ok:
+        warnings.append(f"dynamics: {name} is {value} (want {want})")
+
+
+ob = bars_of({1, 2})
+if ob and lufs_bars(ob) is not None:
+    v = round(full - lufs_bars(ob), 2)
+    check("bars 1-2 under the integrated level (LU)", v, 4.0 <= v <= 8.0, "4-8", bars=ob)
+for c in (c for c in auto if c.get("role") == "gap"):
+    g0, g1 = smp(c, "frame", "t"), smp(c, "to_frame", "t_end")
+    hook = c.get("source_frame", c.get("frame", HOOK_END)) < HOOK_END
+    mid = (g0 + g1) // 2
+    middle, after = kpow(mid - int(0.1 * SR), mid + int(0.1 * SR)), kpow(g1, g1 + int(0.3 * SR))
+    if middle is not None and after is not None:
+        v = round(after - middle, 1)
+        want = 6.0 if hook else 12.0
+        check(f"gap f{c.get('frame')}-{c.get('to_frame')}: the 300 ms from its hit over its middle 200 ms (dB)", v,
+              v >= want, f">= {want:g}", source_frame=c.get("source_frame", c.get("frame")), hook=hook)
+film_hold = next((c for c in json.load(open(a.film_cues)) if "file" not in c and c.get("role") == "hold"), None)
+if film_hold is not None:
+    centre = film_to_cut_frame((film_hold["frame"] + film_hold["to_frame"]) // 2)                  # f940 in the film
+    if centre is not None:
+        c0 = int(round(centre * SPF))
+        st = kpow(c0 - int(1.5 * SR), c0 + int(1.5 * SR))
+        if st is not None:
+            v = round(full - (st - 0.691), 2)
+            check(f"the hold's 3 s short-term loudness (centred on f{centre}) under the integrated level (LU)", v,
+                  5.0 <= v <= 9.0, "5-9", short_term_lufs=round(st - 0.691, 2))
+b7, b8 = bars_of({7}), bars_of({8})
+if b7 and b8 and lufs_bars(b7) is not None and lufs_bars(b8) is not None:
+    v = round(lufs_bars(b8) - lufs_bars(b7), 2)
+    check("bar 8 over bar 7 (LU)", v, v >= 3.0, ">= 3", bar7=lufs_bars(b7), bar8=lufs_bars(b8))
+p = bars_of({23, 24, 25})
+if len(p) == 3 and lufs_bars(p) is not None:
+    lp = lufs_bars(p)
+    proof = [r["lufs"] for r in dyn["per_bar"] if 9 <= r["score_bar"] <= 22 and r["lufs"] is not None]
+    if proof:
+        v = round(lp - float(np.mean(proof)), 2)
+        check("bars 23-25 over the mean of bars 9-22 (LU)", v, v >= 1.5, ">= 1.5", bars_23_25=lp,
+              mean_9_22=round(float(np.mean(proof)), 2))
+    spans = [(i, lufs_bars([i, i + 1, i + 2])) for i in range(1, len(SCORE_BARS) - 1)]
+    best = max((s for s in spans if s[1] is not None), key=lambda s: s[1])
+    check("the loudest 3-bar span", f"bars {best[0]}-{best[0] + 2} at {best[1]} LUFS", best[0] == p[0],
+          f"bars {p[0]}-{p[2]}")
+    q = bars_of({26, 27, 28})
+    if len(q) == 3 and lufs_bars(q) is not None:
+        v = round(lp - lufs_bars(q), 2)
+        check("bars 26-28 under bars 23-25 (LU)", v, v >= 6.0, ">= 6", bars_26_28=lufs_bars(q))
+dyn["pass"] = all(c["ok"] for c in dyn["checks"])
+res["dynamics"] = dyn
+
+# ---- every effect over the bed as the mix plays it (ducked, gapped, held), placed as mix_master.py places it ----
 base = os.path.dirname(os.path.abspath(a.cues))
 duck = np.ones(bed.shape[1])
-for c in cues:
+for c in effects:
     if c.get("duck_db", 0):
         d = 10 ** (-abs(c["duck_db"]) / 20)
         k = int(c["t"] * SR)
@@ -350,11 +515,33 @@ for c in cues:
         env = np.concatenate([np.linspace(1, d, a1), np.linspace(d, 1, r1)])
         k0 = max(0, k - a1)
         duck[k0:k0 + len(env)] = np.minimum(duck[k0:k0 + len(env)], env[: len(duck[k0:k0 + len(env)])])
+def lin(env, i0, i1, v0, v1):
+    """env[i0:i1] goes linearly from v0 to v1 (clipped to env)."""
+    if i1 > i0:
+        k0, k1 = max(0, i0), min(len(env), i1)
+        if k1 > k0:
+            env[k0:k1] = (v0 + (v1 - v0) * (np.arange(i0, i1) - i0 + 1) / (i1 - i0))[k0 - i0:k1 - i0]
+
+
+for c in auto:                                       # the automation's gains on the bed (linear ramps; no low-pass)
+    i0, i1, nb = smp(c, "frame", "t"), smp(c, "to_frame", "t_end"), bed.shape[1]
+    if c.get("role") == "gap":
+        g = 10 ** (c.get("db", -24) / 20)
+        ka, kr = int(c.get("attack_ms", 10) * SR / 1000), int(c.get("release_ms", 4) * SR / 1000)
+        env = np.ones(nb)
+        env[max(0, i0):max(0, i1)] = g
+        lin(env, i0 - ka, i0, 1.0, g)
+        lin(env, i1 - kr, i1, g, 1.0)
+        duck *= env
+    elif c.get("role") == "hold":
+        ir = smp(c, "release_frame", "t_release") or i1
+        kx = int(c.get("crossfade_ms", 30) * SR / 1000)
+        share = np.zeros(nb)
+        lin(share, i0 - kx, i0, 0.0, 1.0)
+        share[max(0, i0):max(0, i1)] = 1.0
+        lin(share, i1, ir, 1.0, 0.0)
+        duck *= 10 ** (c.get("bed_db", -6) * share / 20)
 bed_d = bed * duck
-# BS.1770 K-weighting at 48 kHz (high shelf, then the RLB high-pass)
-KW = [([1.53512485958697, -2.69169618940638, 1.19839281085285], [1.0, -1.69065929318241, 0.73248077421585]),
-      ([1.0, -2.0, 1.0], [1.0, -1.99004745483398, 0.99007225036621])]
-THIRDS = 1000.0 * 2.0 ** (np.arange(-12, 13) / 3.0)  # third-octave centres, 63 Hz .. 16 kHz
 
 
 def window(x, start, a0, a1):
@@ -364,12 +551,6 @@ def window(x, start, a0, a1):
     if k1 > k0:
         seg[:, k0 - a0:k1 - a0] = x[:, k0 - start:k1 - start]
     return seg
-
-
-def kweight(x):
-    for b, a_ in KW:
-        x = lfilter(b, a_, x, axis=1)
-    return x
 
 
 TRANSIENTS = {"click", "pop", "tick", "thud"}  # measured over 30 ms around the peak; the other roles over 200 ms
@@ -400,7 +581,7 @@ def compare(s, i, pk, half, pre=int(0.5 * SR)):
 
 
 rows = []
-for c in cues:
+for c in effects:
     s = load(c["file"] if os.path.isabs(c["file"]) else os.path.join(base, c["file"]), SR)
     g = 10 ** (c.get("gain_db", -6) / 20)
     ang = (float(c.get("pan", 0)) + 1) * np.pi / 4
@@ -443,6 +624,8 @@ with open(os.path.join(a.out_dir, f"{a.name}.checks.json"), "w") as f:
 summary = {"name": a.name, "pass": not fails, "seconds": res["length"]["seconds"], "lufs": L["integrated_lufs"], "lra": L["lra_lu"],
            "tp": L["true_peak_dbtp"], "aac_tp": res["aac_192k"]["true_peak_dbtp"], "mono_loss_db": res["mono"]["lufs_lost_db"],
            "share_150": res["speaker"]["power_share_above_150hz"], "phone_max": res["tags"]["phone_max"],
+           "silence_last_54_frames": res["silence"], "dynamics_pass": res["dynamics"]["pass"],
+           "dynamics": [[c["check"], c["value"], c["ok"]] for c in res["dynamics"]["checks"]],
            "fails": fails, "warnings": warnings, "notes": notes}
 print(json.dumps(summary, ensure_ascii=False))
 sys.exit(1 if fails else 0)
