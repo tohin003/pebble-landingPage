@@ -7,15 +7,19 @@
 //   "blur" (A): per word, blur 6 px → 0 and opacity 0 → 1 over 5 frames, words 2 frames apart, no movement;
 //   "ink"  (B): per word, opacity 0.35 → 1 over 5 frames, words 2 frames apart (pass inkFrom #B0C2AE on light grounds);
 //   "rise" (C): each line rises translateY(105 %) → 0 inside its own clip over 15 frames, lines 4 frames apart;
-//   "fade": the line fades in over 15 frames (small print); "none".
+//   "fade": the line fades in over 15 frames (small print); "none";
+//   "slam" (S, the energetic recut): the line LANDS on `at` (its beat): over the 3 frames before it, it accelerates
+//          in from `slamK` × its size, blurred 6 px and transparent (motion/spec.ts slamIn), scaling about its left
+//          middle (left-aligned) or its centre (centred); from `at` it is FX_REST. With `wordStarts`, each word slams
+//          on its own landing frame (T7), about the word's own left middle.
 // Exit: blur 0 → 8 px and opacity → 0 over 6 frames. `wordStarts` gives each word its own frame (T7 builds with its
-// verbs).
+// verbs; for a slam, each start is that word's landing frame).
 import type { CSSProperties } from "react";
 import { interpolateColors, useCurrentFrame, useVideoConfig } from "remotion";
 import { FONT } from "../fonts";
 import type { Rect } from "../motion/camera";
 import { useLayout, type TypeScale } from "../motion/layout";
-import { COLOR, EASE, FX_REST, T, T2, TYPO, blurIn, blurOut, fadeIn, fadeOut, fxStyle, mixFx, ramp, sec, type Fx, type TypoRole } from "../motion/spec";
+import { COLOR, EASE, FX_REST, SLAM, T, T2, TYPO, blurIn, blurOut, fadeIn, fadeOut, fxStyle, mixFx, ramp, sec, slamIn, type Fx, type TypoRole } from "../motion/spec";
 
 export type TextRole = "hero" | "headline" | "side" | "tagline" | "support" | "data" | "cta" | "mono" | "small";
 
@@ -55,7 +59,9 @@ export interface KineticTextProps {
   at?: number;
   /** local frame the exit starts on */
   exitAt?: number;
-  enter?: "blur" | "ink" | "rise" | "fade" | "none";
+  enter?: "blur" | "ink" | "rise" | "fade" | "none" | "slam";
+  /** the slam's overscale k (default SLAM.k.wide, 1.10): the line starts at k × its size, 3 frames before it lands */
+  slamK?: number;
   exit?: "blur" | "fade" | "none";
   color?: string;
   /** the colour words start from with enter="ink" (default: the text colour at 35 %) */
@@ -101,6 +107,7 @@ export const KineticText: React.FC<KineticTextProps> = ({
   wordStagger = WORD_STEP_S,
   lineStagger = T.lineStagger,
   wordStarts,
+  slamK = SLAM.k.wide,
   style,
 }) => {
   const frame = useCurrentFrame();
@@ -171,6 +178,32 @@ export const KineticText: React.FC<KineticTextProps> = ({
             </div>
           );
         }
+        if (enter === "slam") {
+          if (wordStarts) {
+            // per word (T7): each word lands on its own start, about its own left middle; the words not yet landed
+            // keep their place in the line (opacity 0), so a landed word never moves when the next one arrives
+            const ws = wordsOf(line);
+            return (
+              <div key={li} style={{ ...lineStyle, ...fxStyle(out) }}>
+                {ws.map((w, wi) => {
+                  const fx = slamIn(frame, starts[li]![wi]!, fps, slamK);
+                  return (
+                    <span key={wi}>
+                      {wi > 0 ? " " : ""}
+                      <span style={{ display: "inline-block", transformOrigin: "0% 50%", ...fxStyle(fx) }}>{w}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            );
+          }
+          const fx = mixFx(slamIn(frame, at, fps, slamK), out);
+          return (
+            <div key={li} style={{ ...lineStyle, transformOrigin: align === "center" ? "50% 50%" : align === "right" ? "100% 50%" : "0% 50%", ...fxStyle(fx) }}>
+              {line}
+            </div>
+          );
+        }
         if (enter === "fade" || enter === "none") {
           const fx = enter === "fade" ? mixFx(fadeIn(frame, at + sec(li * lineStagger, fps), fps, T.textIn), out) : out;
           return (
@@ -212,6 +245,7 @@ export const KineticText: React.FC<KineticTextProps> = ({
 
 /** Local frame on which a KineticText's last word has landed (for timing holds and the next beat). */
 export const landedAt = (lines: readonly string[], at: number, fps: number, enter: KineticTextProps["enter"] = "blur") => {
+  if (enter === "slam") return at; // a slam is at rest on its landing frame
   if (enter === "rise" || enter === "fade") return at + sec((lines.length - 1) * T.lineStagger + T.textIn, fps);
   const words = lines.reduce((k, l) => k + wordsOf(l).length, 0);
   return at + sec((words - 1) * WORD_STEP_S + T.wordIn, fps);

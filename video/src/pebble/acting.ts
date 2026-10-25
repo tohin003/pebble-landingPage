@@ -21,6 +21,12 @@ export interface Hop {
   duration?: number;
   /** apex height above the straight line between the two feet, px (default 0.45 × the body's height) */
   height?: number;
+  /**
+   * The flight's timing (the energetic recut, ENERGY_SPEC §6: H2 hangs at its apex): maps the flight's linear progress
+   * u ∈ [0, 1] to the progress the ground, the lift and the stretch use. Identity by default; it must map 0 → 0 and
+   * 1 → 1, so the take-off and the landing keep their frames.
+   */
+  timing?: (u: number) => number;
 }
 
 export const ACTING = {
@@ -48,6 +54,7 @@ export interface Acting {
 }
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const identity = (u: number) => u;
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 
@@ -65,8 +72,9 @@ export function actingAt(t: number, fps: number, start: Point, hops: readonly Ho
       const sy = 1 - (1 - ACTING.anticipation.sy) * easeInOut(clamp01((t - anticipate) / ACTING.anticipation.s));
       state = { foot: pos, ground: pos, lift: 0, sx: 1 / sy, sy };
     } else if (t < land) {
-      // flight on a parabola; stretched along the motion at take-off and landing, round at the apex
-      const u = (t - hop.at) / duration;
+      // flight on a parabola; stretched along the motion at take-off and landing, round at the apex. The hop's timing
+      // (identity by default) re-times the whole flight: ground, lift and stretch move together
+      const u = (hop.timing ?? identity)((t - hop.at) / duration);
       const height = hop.height ?? ACTING.defaultHeight * bodyHeightPx;
       const ground = { x: lerp(pos.x, hop.to.x, u), y: lerp(pos.y, hop.to.y, u) };
       const lift = 4 * u * (1 - u);

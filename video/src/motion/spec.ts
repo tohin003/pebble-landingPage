@@ -40,6 +40,7 @@ export const EASE = {
   exit: Easing.bezier(0.3, 0, 0.8, 0.15),     // exits & zoom-throughs (accelerate away)
   drawer: Easing.bezier(0.32, 0.72, 0, 1),    // sheet/drawer-like panels
   linear: Easing.linear,                      // rotation, progress, constant drift ONLY
+  ramp: Easing.bezier(0.85, 0, 0.15, 1),      // speed-ramped camera moves (the energetic recut: the hook's f19-30, the f1188-1211 pull-back)
 };
 /** Minimum-jerk (Flash & Hogan 1985): rest-to-rest, peak speed = 1.875 × mean. */
 export const minJerk = (t: number) => t * t * t * (10 - 15 * t + 6 * t * t);
@@ -201,6 +202,21 @@ export const fxStyle = (fx: Fx): {opacity: number; filter?: string; transform?: 
 export const blurIn = (frame: number, at: number, fps: number, px = 6): Fx => {
   const p = ramp(frame, at, sec(T.wordIn, fps), EASE.enter);
   return p >= 1 ? FX_REST : {...FX_REST, opacity: p, blur: (1 - p) * px};
+};
+/**
+ * The slam (the energetic recut, ENERGY_SPEC §7): a line lands ON its beat. `landing` is the cue's `in`, the frame it
+ * is first at rest; over the 3 frames before it (0.1 s), p = ramp(frame, landing − 3, 3, EASE.exit), so it accelerates
+ * into the beat: scale 1 + (k − 1)(1 − p) about the line's anchor (its left middle, or its centre when centred),
+ * blur 6(1 − p) px, opacity min(1, 3p). FX_REST from the landing frame: landed type is dead still. k is SLAM.k's (the
+ * overscale, ≤ 1.10 / 1.06 / 1.04 by aspect and place).
+ */
+export const SLAM = {preRollS: 0.1, blur: 6, k: {wide: 1.1, narrow: 1.06, narrowColumn: 1.04}} as const;
+export const slamPreRoll = (fps: number) => Math.max(1, sec(SLAM.preRollS, fps));
+export const slamIn = (frame: number, landing: number, fps: number, k: number, px: number = SLAM.blur): Fx => {
+  if (frame >= landing) return FX_REST;
+  const n = slamPreRoll(fps);
+  const p = ramp(frame, landing - n, n, EASE.exit);
+  return {...FX_REST, opacity: Math.min(1, 3 * p), blur: px * (1 - p), scale: 1 + (k - 1) * (1 - p)};
 };
 /** A line or element leaves: blur 0 → 8 px and opacity → 0 over 0.2 s, accelerating away. FX_REST before `at`. */
 export const blurOut = (frame: number, at: number, fps: number, px = 8, dur: number = T2.lineOut): Fx => {
