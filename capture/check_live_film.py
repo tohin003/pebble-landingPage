@@ -48,16 +48,17 @@ for e in schedule:
     if e["status"] == "done" and e["duration"] is not None and e["label"].startswith(("The model responded", "Searching", "Reading", "Preparing", "Requesting")):
         if abs(e["duration"] - r3((e["f"] - e["made"]) / fps)) > 0.0005:
             fail(f"schedule: {e['label']} lasts {e['duration']} s but runs frames {e['made']}-{e['f']}")
-waits = meta["waits"]
-for label, key, made, click in (("invoice_kit/dates.py", "dates", 168, K["p1"]), ("tests/test_dates.py", "tests", 174, K["p2"]),
-                                ("Requesting isolated tests", "run", K["runTheTests"] + 1, K["runTests"])):
+waits = meta.get("waits") or {}
+held_run = "runTests" in K  # main-live-film-150's own checks: the approvals' waits and the 2.4-s isolated test step
+for label, key, made, click in (() if not held_run else (("invoice_kit/dates.py", "dates", 168, K["p1"]), ("tests/test_dates.py", "tests", 174, K["p2"]),
+                                ("Requesting isolated tests", "run", K["runTheTests"] + 1, K["runTests"]))):
     if abs(waits[key] - r3((click - made) / fps)) > 0.0005:
         fail(f"schedule: the wait on {label} is {waits[key]} s, not frames {made}-{click}")
 tests_run = [e for e in schedule if e["label"] == "Requesting isolated tests" and e["status"] == "done"]
-if not tests_run or tests_run[0]["made"] != K["runTests"] or tests_run[0]["f"] - tests_run[0]["made"] != round(2.4 * fps):
+if held_run and (not tests_run or tests_run[0]["made"] != K["runTests"] or tests_run[0]["f"] - tests_run[0]["made"] != round(2.4 * fps)):
     fail("the isolated test step does not run exactly 2.4 s from the Run tests click")
 verified = [e for e in schedule if e["label"].startswith("Verified")]
-if not verified or verified[0]["f"] != K["runTests"] + round(2.4 * fps):
+if held_run and (not verified or verified[0]["f"] != K["runTests"] + round(2.4 * fps)):
     fail("Verified does not arrive 2.4 s after the Run tests click")
 
 # 2. Replay the probes frame by frame.
@@ -132,12 +133,12 @@ for f in range(0, last + 1):
         toast_frames.append(f)
 
 # 3. Receipts: the live "Worked · N steps", or the host's live seconds and waits once settled.
-L = meta["live"]
-allowed = {f"Worked for {fmt_duration(L[0])} · 4 steps",
+L = meta.get("live") or [0, 0, 0]
+allowed = set() if not held_run else {f"Worked for {fmt_duration(L[0])} · 4 steps",
            f"Worked for {fmt_duration(L[1])} · 7 steps · waited {fmt_duration(waits['dates'] + waits['tests'])} for you",
            f"Worked for {fmt_duration(L[2])} · 9 steps · waited {fmt_duration(waits['dates'] + waits['tests'] + waits['run'])} for you"}
 for text, fs in seen_receipts.items():
-    if text not in allowed and not re.fullmatch(r"Worked · \d+ steps?", text) and text != "What Pebble did":
+    if held_run and text not in allowed and not re.fullmatch(r"Worked · \d+ steps?", text) and text != "What Pebble did":
         fail(f"receipt {text!r} on frames {fs[0]}-{fs[-1]} is not the host's live seconds")
 
 # 4. Usage lines: under the 4,096-token window, and the time is the model attempts' own.
@@ -151,11 +152,11 @@ for text, fs in seen_usage.items():
         fail(f"usage {text!r}: more input than the 4,096-token window")
     if m.group(5):
         fail(f"usage {text!r}: shows a rate")
-    if m.group(4) and m.group(4) not in {f"{u['seconds']:.1f}" for u in meta["usage"]}:
+    if m.group(4) and m.group(4) not in {f"{u['seconds']:.1f}" for u in meta.get("usage") or []}:
         fail(f"usage {text!r}: its time is not the attempts' sum")
 
 # 5. The toast: never during the held run's shots, and gone before them.
-held = [int(x) for x in opts.get("held", f"{K['hold'] - 13},{K['runTheTests']}").split(",")]
+held = [int(x) for x in opts.get("held", f"{K['hold'] - 13},{K['runTheTests']}" if "hold" in K else "-1,-1").split(",")]
 spans_t = []
 for f in toast_frames:
     if spans_t and f == spans_t[-1][1] + 1:

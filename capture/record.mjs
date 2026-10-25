@@ -586,13 +586,15 @@ const TIMELINES = {
     url: "?scene=challenge&drawer=520&version=1.5.0",
     viewport: { width: 1160, height: 800 },
     transparent: false,
-    seconds: 11.5,
+    seconds: 12.5,
     probe: true,
     note: "Pebble 1.5.0's frontend (the frozen v1.5.0 tree) driven by scripted host events and fixture timings: a re-enactment with sample data. Every clock the window prints is the recording's own.",
     async build(page) {
       const chat = "chat-pdf-dates", run = "run-live-1";
       const F = (f) => f / 30, r3 = (x) => Math.round(x * 1000) / 1000;
-      const K = { send: 30, running: 33, refused: [229, 232], details: 285 };
+      // refused: the write's tool step (it fails on its own frame f1); details: the person opens them; scroll: the person
+      // brings the whole challenge into view, which then holds still to the end (12.5 s)
+      const K = { send: 30, running: 33, refused: [229, 232], details: 270, scroll: [282, 297] };
       const T0 = K.send, at = (f) => r3((f - T0) / 30), span = (a, b) => r3((b - a) / 30);
       const request = await fixture(page, "text.challengeRequest");
       const challenge = await fixture(page, "text.challenge");
@@ -616,7 +618,8 @@ const TIMELINES = {
         on(f1, status === "failed" ? P(name, activity, detail, "blocked") : P(name, activity, label, "done"));
       };
       on(0, live("origin"));
-      on(0, live("clock", run, { t0: F(T0), transitions: [[F(T0), "queued"], [F(K.running), "running"]] }));
+      const transitions = [[F(T0), "queued"], [F(K.running), "running"]];
+      on(0, live("clock", run, { t0: F(T0), transitions }));
       on(9, (pg) => pg.type("textarea[aria-label='Message Pebble']", request, { delay: 0 }));
       on(T0, (pg) => pg.keyboard.press("Enter"));
       on(31, emit("run", { chat_id: chat, run_id: run, state: "queued" }));
@@ -640,9 +643,10 @@ const TIMELINES = {
       // The next write, outside the task's reach, is refused before it runs; the step's error is AgentGuard's challenge.
       tool(832, K.refused[0], K.refused[1], "Edit", "editing", "Preparing an edit to invoice_kit/templates/statement.html", "failed", challenge);
       attempt(896, K.refused[1] + 2, null);
-      // The person opens the refused step's Details.
+      // The person opens the refused step's Details, then scrolls the drawer a little so all of it is in view.
       on(K.details, (pg) => pg.click("#details-drawer .thinking-step.failed .thinking-detail summary"));
-      TIMELINES["main-challenge-live"].meta = { T0, K, schedule };
+      scrollPanel(steps, F(K.scroll[0]), F(K.scroll[1]), "#details-drawer .details-panel", "#details-drawer .thinking-step.failed", { pick: "first", y: 430 }, 30);
+      TIMELINES["main-challenge-live"].meta = { T0, K, transitions, schedule };
       return steps;
     },
   },
