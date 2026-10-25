@@ -142,21 +142,33 @@ const per3 = <T,>(wide: T, square: T, vertical: T): PerAspect<T> => ({ wide, squ
 
 /** The window world's framings, each per aspect (see the module comment; numbers are fit()'s m, left, top). */
 export const WIN: Record<string, PerAspect<Framing>> = {
-  /** M1 views: the "Lisbon trip budget" canvas (main-dashboard@3x), then the chart panel filling the stage */
+  // The edges, measured on each capture's ink rows and columns: the top and bottom edges fall between lines; a side
+  // edge never cuts into a line's start, never slices a control, and lets a line run off the right edge only where
+  // §2's floor (the UI text a viewer must read at ≥ 28 px in 16:9 and ≥ 34 px in 1:1 and 9:16) leaves no room for it
+  // (v2's held block, FILM_SPEC §6 S5c); where 16:9 can show a moment whole at about v2's m 2.0, it does.
+  /** M1 views: the "Lisbon trip budget" canvas (main-dashboard@3x), then the chart panel: its heading (ink from 438.7)
+   *  and its bars, the right edge between two categories' bars */
   m1Canvas: per3(fit(W, 1.255, 643.2, 70), fit(Q, 1.325, 643, 66), fit(V, 1.325, 643, 66)),
-  m1Chart: per3(fit(W, 2.0, 690, 440), fit(Q, 1.85, 680, 440), fit(V, 1.7, 680, 440)),
-  /** M2 your model: YOUR MODELS, the model row, the three ways in (settings-models@3x) */
-  m2: per3(fit(W, 2.55, 340, 196), fit(Q, 2.75, 340, 200), fit(V, 3.0, 340, 196)),
+  m1Chart: per3(fit(W, 2.0, 670, 408), fit(Q, 1.85, 670, 420), fit(V, 1.72, 670, 404)),
+  /** M2 your model: YOUR MODELS, the model row and the three ways in (settings-models@3x): 16:9 with the notes under
+   *  them whole; 1:1 and 9:16 at 36 px, the ways in whole, the row's text whole (its bin past the right edge) */
+  m2: per3(fit(W, 2.083, 339, 190), fit(Q, 2.7, 340, 197), fit(V, 2.7, 340, 145)),
   /** M3 memory: the records and their bins (settings-memory@3x); the bin's click 60 px inside the frame */
-  m3: per3(fit(W, 2.025, 342, 330), fit(Q, 2.12, 330, 468), fit(V, 2.12, 330, 400)),
-  /** M4 permissions (1.5.0): Ask for approval and Auto in project; then a punch-in on Auto's own words */
-  m4: per3(fit(W, 2.3, 340, 198), fit(Q, 2.85, 340, 222), fit(V, 2.85, 340, 222)),
-  m4Auto: per3(fit(W, 2.9, 376, 336), fit(Q, 3.0, 376, 340), fit(V, 3.0, 376, 336)),
+  m3: per3(fit(W, 2.025, 342, 330), fit(Q, 2.12, 330, 468), fit(V, 2.05, 323, 378)),
+  /** M4 permissions (1.5.0): the modes' cards (16:9 all three whole, at v2's m 2.0; 1:1 and 9:16 Ask for approval and
+   *  Auto in project at 36 px, their titles whole); after the click the focus settles on Auto's card (WindowWorld),
+   *  and in 1:1 and 9:16 the camera punches in on it (the radio whole). 16:9 keeps its framing: closer, with Auto's
+   *  lines whole, its tall stage takes in the paragraph under the cards (ink 345–806) cut at a side. */
+  m4: per3(fit(W, 1.96, 324, 196), fit(Q, 2.8, 340, 221), fit(V, 2.8, 340, 221)),
+  m4Auto: per3(fit(W, 1.96, 324, 196), fit(Q, 3.0, 354, 326), fit(V, 3.0, 354, 332)),
   /** M5 your tests stay yours: the waiting test-file card (main-live-film-150 at 9.50 s), pushing in on its lead */
   m5: per3(fit(W, 2.84, 808, 205), fit(Q, 3.0, 808, 214), fit(V, 3.0, 808, 210)),
   m5Lead: per3(fit(W, 3.1, 815, 214), fit(Q, 3.2, 814, 222), fit(V, 3.2, 814, 220)),
-  /** M6 the scope challenge: the refused (red) step and its details, locked on the step through the person's scroll */
-  m6: per3(fit(W, 2.5, 676, 455), fit(Q, 2.72, 680, 480), fit(V, 2.72, 680, 470)),
+  /** M6 the scope challenge: the refused (red) step and its details, locked on the step through the person's scroll
+   *  (251 px). "AgentGuard — evidence check" and "5 file(s) changed that the task does not reach" (12 px) at the floor;
+   *  every line starts whole, the steps' times and Pause stay wholly past the right edge, the details' longest lines
+   *  run off it */
+  m6: per3(fit(W, 2.33, 650, 425), fit(Q, 2.72, 649, 520), fit(V, 2.72, 649, 520)),
   /** C1 the held run: the drawer's held state (from f1440), then the conversation's held block (from f1494) */
   c1Drawer: per3(fit(W, 2.84, 808, 98), fit(Q, 3.0, 808, 104), fit(V, 3.0, 808, 100)),
   c1Held: per3(fit(W, 3.4, 243, 432), fit(Q, 3.6, 244, 440), fit(V, 3.6, 244, 436)),
@@ -167,22 +179,25 @@ export const WIN: Record<string, PerAspect<Framing>> = {
   c3: per3(fit(W, 2.84, 808, 440), fit(Q, 3.0, 808, 444), fit(V, 3.0, 808, 444)),
   /** C4 the newest steps, Verified at the bottom, above the drawer's "Done." and its jumping cards */
   c4: per3(fit(W, 2.81, 804, 136.5), fit(Q, 3.0, 808, 227), fit(V, 3.15, 808, 202.7)),
-  /** C5 the final reply (its last paragraph ends at 494; the usage line under it starts at 507) */
-  c5: per3(fit(W, 1.9, 243, 52), fit(Q, 2.0, 243, 210), fit(V, 2.0, 243, 129)),
+  /** C5 the final reply (its last paragraph's ink ends at 492.7; the usage line's starts at 510) */
+  c5: per3(fit(W, 1.9, 243, 52), fit(Q, 2.21, 289, 242), fit(V, 2.0, 243, 129)),
 };
 
 /**
- * The window world's camera keys (f1008–1799). A one-frame key is a cut. Moves: f1028–1052 into the chart; f1266–1290
- * the punch-in on Auto's words; f1300–1366 the slow push on the test-file card's lead; f1554–1577 the tilt to Run
- * tests; f1586–1606 down to where the Running card settles; f1698–1716 up to the steps, with the person's scroll; and
- * f1760–1783 the pull-back to the final reply (EASE.ramp), after Verified's 36 frames. Nothing moves in the breath
- * before the tests pass (f1647–1655) or while Verified is held (f1723–1758).
+ * The window world's camera keys (f1008–1799). A one-frame key is a cut. Moves: f1034–1058 into the chart (its fastest
+ * frame f1046, under the whoosh's peak); f1266–1290
+ * the punch-in on Auto's words (1:1 and 9:16); f1300–1366 the slow push on the test-file card's lead; f1554–1577 the
+ * tilt to Run tests; f1586–1606 down to where the Running card settles; f1698–1716 up to the steps, with the person's
+ * scroll; and f1760–1783 the pull-back to the final reply (EASE.ramp), after Verified's 36 frames. Nothing moves in the
+ * breath before the tests pass (f1647–1655) or while Verified is held (f1723–1758). A move whose framing is the one
+ * already on screen is left out (16:9's M4).
  */
 export function windowKeys(a: Aspect, s: number): CamKey[] {
   const F = (n: string) => WIN[n]![a];
+  const same = (k: CamKey, j: CamKey) => k.x === j.x && k.y === j.y && k.zoom === j.zoom;
   return [
     key(1008, F("m1Canvas"), s),
-    key(1052, F("m1Chart"), s, 24),
+    key(1058, F("m1Chart"), s, 24),
     key(1080, F("m2"), s),
     key(1152, F("m3"), s),
     key(1224, F("m4"), s),
@@ -197,7 +212,7 @@ export function windowKeys(a: Aspect, s: number): CamKey[] {
     key(1606, F("c3"), s, 20),
     key(1716, F("c4"), s, 18),
     key(1783, F("c5"), s, 23, EASE.ramp),
-  ];
+  ].filter((k, i, all) => i === 0 || (k.dur ?? 1) === 1 || !same(k, all[i - 1]!));
 }
 /** Frames where the stage's picture is cut: no motion blur there. */
 export const STAGE_CUTS: readonly number[] = [1008, 1080, 1152, 1224, 1296, 1368, 1440, 1494, 1516];

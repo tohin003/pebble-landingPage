@@ -265,7 +265,7 @@ export const SHOTS: readonly Shot[] = [
     transitionIn: "hard-cut",
     ui: ["main-dashboard", "settings-models", "settings-memory", "settings-memory-forgotten", "v150/settings-permissions(-auto)", "main-live-film-150 (the test-file card)", "main-challenge-live"],
     beats: [
-      { id: "M1", from: at(15), to: at(16), note: "views: the chart grows to fill the stage" },
+      { id: "M1", from: at(15), to: at(16), note: "views: the Lisbon trip budget canvas, then a push into its chart" },
       { id: "M2", from: at(16), to: at(17), note: "your model: the three ways in come forward on beats 1, 2 and 3" },
       { id: "M3", from: at(17), to: at(18), note: "memory: a record is binned on f1170 and dissolves" },
       { id: "M4", from: at(18), to: at(19), note: "permissions: from Ask for approval to Auto in project, chosen on f1260" },
@@ -882,7 +882,7 @@ export const STYLE_FRAMES: readonly ReviewFrame[] = [
   { id: "SF17", shot: "R2", frame: 910, note: "the answer whole, Task: completed" },
   { id: "SF18", shot: "R2", frame: 926, note: "the punch-in on the answer" },
   { id: "SF19", shot: "R3", frame: 980, note: "the whole workspace, the pebble in its home place" },
-  { id: "SF20", shot: "P1", frame: 1060, note: "views: the chart fills the stage" },
+  { id: "SF20", shot: "P1", frame: 1060, note: "views: the push into the chart, landed" },
   { id: "SF21", shot: "P1", frame: 1124, note: "your model: Continue with ChatGPT comes forward" },
   { id: "SF22", shot: "P1", frame: 1200, note: "memory: the record forgotten" },
   { id: "SF23", shot: "P1", frame: 1280, note: "permissions: Auto in project chosen" },

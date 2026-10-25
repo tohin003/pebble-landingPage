@@ -2,12 +2,12 @@
 // the stage, a hairline-framed moment of Pebble's real UI that ends above the caption band (film/framing.ts WIN_STAGE).
 // - The montage (bars 15–20), one bar each, each line taken by the next bar's cut: views (the trip budget's chart
 //   fills the stage), your model (the three ways in come forward on beats 1, 2 and 3), memory (a record binned on
-//   f1170 dissolves; the list closes up on f1182), permissions (1.5.0: Auto in project chosen on f1260, then its own
-//   words), your tests stay yours (the waiting test-file card's reason, v1.5.0), the scope challenge (the refused step,
+//   f1170 dissolves; the list closes up on f1182), permissions (1.5.0: Auto in project chosen on f1260, then the focus
+//   on its own words), your tests stay yours (the waiting test-file card's reason, v1.5.0), the scope challenge (the refused step,
 //   Details opened on f1386, the camera locked on it through the person's scroll).
 // - The climax (bars 21–25, the held run from main-live-film-150, v1.5.0, retake 2b): the drawer's held state arrives
-//   on f1453; f1494 the conversation's Blocked block; Run the tests on f1512 (the press over the frame before the
-//   click, a match cut on its rebound to the card); the person reads the card; Run tests on f1584; the card reads
+//   on f1453; f1494 the conversation's Blocked block, the focus on Run the tests; Run the tests on f1512 (the press
+//   over the frame before the click, a match cut on its rebound to the card); the person reads the card; Run tests on f1584; the card reads
 //   Running for exactly 2.4 s (the focus on it); Done on f1656, the Result scrolls into view; up to the steps;
 //   Verified on f1723, the focus jumping onto it, held 36 frames; the run completes on f1725 (the one celebration);
 //   the pull-back to the final reply. The pebble stands on its line, in the app's own poses, from f1440.
@@ -20,7 +20,7 @@ import { SYSTEM } from "../../motion/system";
 import { PEBBLE_LIGHT } from "../../pebble/PebbleSvg";
 import { PRESS_RUN_THE_TESTS, STAGE_CUTS, WIN, WIN_STAGE, pointerSpans, stageMotionBlur, stagePoseAt, stageToFrame } from "../framing";
 import { MOMENTS, PEBBLE_INSTANCES, SOURCE_MAPS, at, sourceAt } from "../timeline";
-import { CHALLENGE_150, LIVE_150, RUN, SETTINGS, centreOf } from "../ui";
+import { CHALLENGE_150, LIVE_150, PERMS_150, RUN, SETTINGS, centreOf } from "../ui";
 import { FilmPebble, FilmStage, FlatGround, Horizon, Lines, RecordedUi, recFrame, type RecordedFocus } from "./common";
 
 /** UiStill's focus at the film's pointing (FOCUS in common.tsx: the window's own colour at 45 %, 2.5 px blur). */
@@ -33,9 +33,15 @@ const WAYS = [
   { from: at(16, 3), rect: SETTINGS.continueChatGPT },
 ] as const;
 
-/** The climax's focus: onto the card reading Running (f1620–1626, held to the tests' end) and, on f1723, a jump onto
- *  "Verified · pytest 42 passed on current files" at full amount, held to f1754 and released before the pull-back. */
+/** The climax's focus: on Run the tests in the conversation's held block from the cut (f1494) through the press (its
+ *  explanation runs past the stage's edge, so it stays under the veil); onto the card reading Running (f1620–1626, held
+ *  to the tests' end) and, on f1723, a jump onto "Verified · pytest 42 passed on current files" at full amount, held to
+ *  f1754 and released before the pull-back. */
 function climaxFocus(frame: number, zoom: number): RecordedFocus | null {
+  if (frame >= 1494 && frame < PRESS_RUN_THE_TESTS.to) {
+    const r = RUN.runTheTests.rect;
+    return { rect: { x: r.x - 5, y: r.y - 5, w: r.w + 10, h: r.h + 10 }, amount: 1, zoom, radius: 10 };
+  }
   if (frame >= 1620 && frame < at(24, 1, 6)) {
     const amount = ramp(frame, 1620, 6, EASE.enter) * (1 - ramp(frame, at(24), 6, EASE.exit));
     const c = RUN.runningCard;
@@ -80,7 +86,12 @@ const StageContent: React.FC<{ frame: number; zoom: number }> = ({ frame, zoom }
       </>
     );
   }
-  if (frame < at(19)) return <UiStill name={frame < at(18, 3) ? "v150/settings-permissions" : "v150/settings-permissions-auto"} />;
+  if (frame < at(19)) {
+    // Auto in project chosen on f1260; from f1266 the focus settles on its card (its own words), the other modes recede
+    const name: UiStillName = frame < at(18, 3) ? "v150/settings-permissions" : "v150/settings-permissions-auto";
+    const amount = ramp(frame, at(18, 3) + 6, 6, EASE.enter);
+    return <UiStill name={name} focus={amount > 0 ? stillFocus(PERMS_150.autoCard, amount, 10) : undefined} />;
+  }
   if (frame < at(20)) {
     const s = (sourceAt(SOURCE_MAPS.m5, frame) ?? 9.5) * 30;
     return <RecordedUi src={recFrame(LIVE_150, s)} width={LIVE_150.width} height={LIVE_150.height} />;
