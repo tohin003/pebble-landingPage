@@ -59,7 +59,7 @@ class TestGrid(unittest.TestCase):
         self.assertEqual((g.bpm, g.beats_per_bar, g.fps), (bm["bpm"], bm["beats_per_bar"], bm["fps"]))
         self.assertEqual(g.s(g.sixteenth / g.beat), 7200)                  # a 16th is 7,200 samples at 100 BPM
         self.assertEqual(g.frame_s(1), 1600)                                # a frame is 1,600 samples at 30 fps
-        self.assertEqual(g.s("8"), bm["reveal"]["frame"] * 1600)            # bar 8 = the reveal, f504
+        self.assertEqual(g.s(str(bm["reveal"]["bar"])), bm["reveal"]["frame"] * 1600)  # the reveal's bar (the trailer: bar 10, f648)
         self.assertEqual(g.s("f504"), 806400)
         self.assertEqual(g.s((8, 1)), g.s("8.1.1"))
         self.assertAlmostEqual(g.t("16.8s"), 16.8)
