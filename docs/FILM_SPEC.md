@@ -265,10 +265,16 @@ y 162 (x 26–350.3).
   "Python is being asked for a date that doesn't exist, like 31 February. If it's" under the question: what the person
   asked and what Pebble answered, in one frame. (For f126–127 the app's stream shows "like **31" before its Markdown
   renders: real UI.)
-- **f135–143: the breath and the dive** into the pebble (ZOOM_THROUGH from f135, ×1 → ×30 in log space on `EASE.exit`,
-  aimed at the body point (−36, −10) viewBox units, the aim drifting to the frame's centre on `EASE.camera`; zoom blur
-  f141–143). The body's `#536B54` fills the frame on f143; the world changes on f144 with the whoosh's peak. It is one
-  light-to-dark change (≥ 3 frames from 20 % to 80 % of its swing, analyze.py) with no reversal until f504.
+- **f135–143: the breath and the dive** into the pebble (ZOOM_THROUGH from f135; zoom blur f141–143). The body's
+  `#536B54` fills the frame on f143; the world changes on f144 with the whoosh's peak. It is one light-to-dark change
+  that must take ≥ 3 frames from 20 % to 80 % of its swing (ENERGY_SPEC §11), with no reversal until f504. Measured on
+  renders, the spec's ×30 on `EASE.exit` in nine frames took 1.8–2.3 frames (the body covers the frame between ×1.8
+  and ×8.3, and EASE.exit crosses that in two), so the dive follows hook.ts DIVE_LOG_ZOOM instead: it lunges in over
+  f135–137 (×1.43 a frame), slows through the band where the body covers the frame (×1.26 a frame, f137–141), quickens
+  (×1.35) and rushes into the fill on its last frame (×2.4), reaching ×17 on f143; measured: 3.92 frames (16:9), 3.18
+  (1:1), 3.52 (9:16). It aims at the body point (−3, 20) viewBox units, below the eyes, drifting to the frame's centre
+  on `EASE.camera`: G2a's (−36, −10) was chosen for the `thinking` pose, and the recut's hook ends on `writing`, whose
+  left eye then showed in the 16:9 fill frame's corner.
 - "Task: completed" (6.60 s) is never shown, and the hook has no happy pose (the one celebration is f1204).
 
 ### S2 Questions (144–359) — sage field, chapter `desktop`

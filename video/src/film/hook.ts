@@ -35,26 +35,47 @@ export function hookKeys(a: AspectId, width: number, height: number, s: number):
 
 /**
  * The zoom through the pebble (f135–143, the first breath). The camera aims at a body point and dives:
- * - the aim is the point of the body farthest from both its edge and the eyes over the dive (28 viewBox units clear),
- *   (−36, −10) from the body's centre, left of the eyes: §6's (−20, +25) sits 4 units from the thinking pose's eye;
- * - zoom ×1 → ×30 in log space on EASE.exit (accelerating), reached on f143, when the body covers the whole frame
- *   (needs ×26.6 in 16:9, ×18.4 in the square for 28 units of clearance); §6's ×22 leaves the frame unfilled;
+ * - the aim is the point of the body farthest from both its edge and the eyes on the fill frame: (−3, 20) viewBox
+ *   units from the body's centre, below the eyes. The energetic recut's hook ends on the `writing` pose (from f102),
+ *   whose eyes sit 17.8 units up and right of G2a's (−36, −10) on f143 (it was chosen for `thinking`): at ×30 the left
+ *   eye showed in the 16:9 fill frame's top-right corner. (−3, 20) needs 26 px per unit in 16:9 and 31 in 9:16 for the
+ *   eyes and the body's edge to clear every frame edge by 24 px on f143; ×30 gives 56.5–59.5;
+ * - the zoom grows in log space on DIVE_LOG_ZOOM, reaching ×17 on f143, when the body covers the whole frame (from
+ *   the recut's C2 it needs ×13.9 in 16:9 and ×15.6 in 9:16 for the 24 px of clearance above). The energetic recut's
+ *   dive has nine frames, not thirteen, and ENERGY_SPEC §11 asks that its light-to-dark change still take ≥ 3 frames
+ *   from 20 % to 80 % of its swing: on the spec's ×30 on EASE.exit it took 1.8 (9:16) to 2.3 (1:1) frames, measured,
+ *   because the body covers the frame between ×1.8 and ×8.3 and EASE.exit crosses that in two frames. So the dive
+ *   lunges in over f135–137 (×1.43 a frame), slows through the band where the body covers the frame (×1.26 a frame,
+ *   f137–141: the square's band, the narrowest, runs ×2.4 to ×5.2), quickens (×1.35, f141–142: the vertical's
+ *   band ends at ×8) and rushes only into the fill on its last frame (×2.4);
  * - the aim point drifts from where C2 shows it to the frame's centre on EASE.camera over the same frames.
  * Lane G-fix (REVIEW-G2 P1-2): the fill lands on f143, the last frame before the bar line, the world changes on f144
  * and the whoosh peaks there (SFX f143 + 1). The energetic recut: it starts on f135 (was f131), so the dive fills the
  * breath's nine frames, one light-to-dark change (≥ 3 frames from 20 % to 80 % of its swing; analyze.py checks it).
  */
+/** The dive's zoom, cumulative natural log of the factor on C2, one value a frame from f135 to the fill (f143). */
+export const DIVE_LOG_ZOOM = [0, 0.36, 0.72, 0.95, 1.18, 1.41, 1.64, 1.94, 2.83] as const;
 export const ZOOM_THROUGH = {
   from: S1_CAMERA.zoomThrough.from, // f135
   fill: 143,
   solidFrom: 144,
   to: S1_CAMERA.zoomThrough.to, // f144 (exclusive)
-  aim: { x: -36, y: -10 },
-  scale: 30,
+  aim: { x: -3, y: 20 },
+  /** the factor on the fill frame, e^2.83 ≈ 17 */
+  scale: Math.exp(DIVE_LOG_ZOOM[DIVE_LOG_ZOOM.length - 1]!),
   /** zoom blur on screen, px, f141 → f143, the dive's fastest frames (FILM_SPEC: only on its last frames, ≤ 20 px) */
   blur: [0, 8, 16] as const,
   blurFrom: 141,
 } as const;
+
+/** DIVE_LOG_ZOOM on any frame (linear between its frames, clamped to the dive). */
+export const diveLogZoom = (frame: number): number => {
+  const z = DIVE_LOG_ZOOM;
+  const i = Math.min(z.length - 1, Math.max(0, frame - ZOOM_THROUGH.from));
+  const i0 = Math.floor(i);
+  const i1 = Math.min(z.length - 1, i0 + 1);
+  return z[i0]! + (z[i1]! - z[i0]!) * (i - i0);
+};
 
 /** The aim point in desktop units. */
 export const zoomAim = (): Point => {
@@ -71,7 +92,7 @@ export function hookPoseAt(frame: number, a: AspectId, width: number, height: nu
   const p0 = { x: width / 2 + (A.x - c2.x) * c2.zoom, y: height / 2 + (A.y - c2.y) * c2.zoom };
   const d = EASE.camera(u);
   const where = { x: p0.x + (width / 2 - p0.x) * d, y: p0.y + (height / 2 - p0.y) * d };
-  const zoom = c2.zoom * Math.exp(Math.log(ZOOM_THROUGH.scale) * EASE.exit(u));
+  const zoom = c2.zoom * Math.exp(diveLogZoom(frame));
   return poseAt(A, where, zoom, width, height);
 }
 
