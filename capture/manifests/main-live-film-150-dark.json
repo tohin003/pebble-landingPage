@@ -1,0 +1,281 @@
+{
+ "recording": "video/public/ui-frames/main-live-film-150-dark",
+ "made_by": "capture/record.mjs main-live-film-150 --theme=dark --scale=3",
+ "release": "Pebble v1.5.0's frontend, frozen with capture/freeze-release.py and verified (tag commit 16dd425)",
+ "method": "Pebble 1.5.0's frontend (the frozen v1.5.0 tree) driven by scripted host events and fixture timings: a re-enactment with sample data. Every clock the window prints is the recording's own.",
+ "theme": "dark",
+ "fps": 30,
+ "scale": 3,
+ "viewport_css": [
+  1160,
+  800
+ ],
+ "frames_saved": 319,
+ "from_seconds": 6,
+ "file_of_frame": "frame f is %05d.png with f+1",
+ "moments": {
+  "send": {
+   "frame": 30,
+   "what": "the request is sent; the run starts (every +N s counts from here)",
+   "seconds": 1.0,
+   "not_in_this_recording": true
+  },
+  "cards": {
+   "frame": 180,
+   "what": "the two edit cards arrive and the Details drawer opens on them",
+   "seconds": 6.0
+  },
+  "apply1_last_before": {
+   "frame": 275,
+   "what": "the invoice_kit/dates.py card waiting, the last frame before the click",
+   "seconds": 9.1667
+  },
+  "apply1_click": {
+   "frame": 276,
+   "what": "Apply edit (dates.py); the app re-renders on this frame (the card moves to Earlier actions)",
+   "seconds": 9.2
+  },
+  "apply2_click": {
+   "frame": 291,
+   "what": "Apply edit (tests/test_dates.py), under the second question card",
+   "seconds": 9.7
+  },
+  "done_in_place": {
+   "frame": 324,
+   "what": "the drawer scroll settles: the dates.py card marked Done, Undo this edit where Apply edit was",
+   "seconds": 10.8
+  },
+  "done_still_until": {
+   "frame": 407,
+   "what": "the last frame on which Undo this edit and the drawer have not moved",
+   "seconds": 13.5667
+  },
+  "notice": {
+   "frame": 411,
+   "what": "the reply ends with the host's 'Verification remains incomplete: …' notice",
+   "seconds": 13.7
+  },
+  "hold": {
+   "frame": 421,
+   "what": "verification_required: the drawer shows 'Pebble's change isn't verified yet.' with Run the tests, Ask Pebble to finish, Accept as unverified; the status line says Blocked",
+   "seconds": 14.0333
+  },
+  "held_block_in_view": {
+   "frame": 445,
+   "what": "the person's scroll brings the conversation's held run (Blocked, the sentence, the three buttons) into view",
+   "seconds": 14.8333
+  },
+  "held_settled": {
+   "frame": 453,
+   "what": "the scroll ends; the held run is static to the click",
+   "seconds": 15.1
+  },
+  "run_the_tests_last_before": {
+   "frame": 479,
+   "what": "the held run, the last frame before the click",
+   "seconds": 15.9667
+  },
+  "run_the_tests_click": {
+   "frame": 480,
+   "what": "Run the tests (the held run's first button)",
+   "seconds": 16.0
+  },
+  "isolated_card": {
+   "frame": 484,
+   "what": "the 'Run isolated tests' card arrives in the drawer ('Runs the project's tests in a temporary copy. Your project files don't change.')",
+   "seconds": 16.1333
+  },
+  "run_tests_last_before": {
+   "frame": 533,
+   "what": "the card waiting, the last frame before the click",
+   "seconds": 17.7667,
+   "not_in_this_recording": true
+  },
+  "run_tests_click": {
+   "frame": 534,
+   "what": "Run tests; the isolated test step starts on this frame (+16.8 s), the status line says Testing from about 0.23 s later",
+   "seconds": 17.8,
+   "not_in_this_recording": true
+  },
+  "verified": {
+   "frame": 606,
+   "what": "the test step ends ('Requesting isolated tests · 2 s', 2.4 s exactly) and 'Verified · pytest 42 passed on current files' arrives, on the same frame",
+   "seconds": 20.2,
+   "not_in_this_recording": true
+  },
+  "completion": {
+   "frame": 675,
+   "what": "the run completes (Done.) and the host's idle follows on the same frame: the app's own completion, for the one celebration",
+   "seconds": 22.5,
+   "not_in_this_recording": true
+  }
+ },
+ "toast_on_screen": [
+  {
+   "frames": [
+    278,
+    396
+   ],
+   "seconds": [
+    9.2667,
+    13.2
+   ]
+  }
+ ],
+ "geometry_css_px": {
+  "apply_edit_dates": {
+   "frame": 275,
+   "rect": [
+    1024.9,
+    675.9,
+    104.1,
+    32
+   ]
+  },
+  "undo_this_edit": {
+   "frame": 324,
+   "rect": [
+    832,
+    678.2,
+    109.3,
+    28
+   ]
+  },
+  "held_buttons": {
+   "frame": 479,
+   "buttons": [
+    [
+     "Run the tests",
+     [
+      295,
+      545.3,
+      97.4,
+      33
+     ]
+    ],
+    [
+     "Ask Pebble to finish",
+     [
+      400.4,
+      545.3,
+      132.8,
+      33
+     ]
+    ],
+    [
+     "Accept as unverified",
+     [
+      541.2,
+      562.3,
+      107,
+      13
+     ]
+    ]
+   ]
+  },
+  "held_sentence": {
+   "frame": 479,
+   "box": [
+    "Pebble's change isn't verified yet. · 2 file(s) changed and no tests were run, but 1 test file(s) cover this code: [\"tests/test_dates.py\"]. Run them (RunTests) before finishing and report what they said. Details",
+    [
+     295,
+     492.3,
+     470,
+     45
+    ]
+   ]
+  },
+  "drawer_held_controls": {
+   "frame": 421,
+   "box": [
+    [
+     "Pebble's change isn't verified yet.",
+     [
+      817,
+      508.6,
+      327,
+      16
+     ]
+    ]
+   ]
+  },
+  "run_tests_button": {
+   "frame": 533,
+   "rect": null
+  },
+  "requesting_step_running": {
+   "frame": 560,
+   "step": null
+  },
+  "requesting_step_done": {
+   "frame": 606,
+   "step": null
+  },
+  "verified_step": {
+   "frame": 606,
+   "step": null
+  },
+  "toast": {
+   "frame": 278,
+   "rect": [
+    500.8,
+    731,
+    158.3,
+    42
+   ]
+  }
+ },
+ "clocks": {
+  "run_start_frame": 30,
+  "live_seconds_at_settles": [
+   4.933,
+   9.233,
+   13.933
+  ],
+  "approval_waits": {
+   "dates": 3.6,
+   "tests": 3.9,
+   "run": 1.767
+  },
+  "model_attempts": {
+   "a1": 0.6,
+   "a2": 2.2,
+   "a3": 0.3,
+   "a4": 0.3,
+   "a5": 2.967,
+   "a6": 2.167
+  },
+  "usage": [
+   {
+    "input_tokens": 1200,
+    "output_tokens": 242,
+    "cached_tokens": 512,
+    "route": "model",
+    "calls": 2,
+    "seconds": 2.8
+   },
+   {
+    "input_tokens": 3200,
+    "output_tokens": 352,
+    "cached_tokens": 2048,
+    "route": "model",
+    "calls": 5,
+    "seconds": 6.367
+   },
+   {
+    "input_tokens": 3920,
+    "output_tokens": 400,
+    "cached_tokens": 2688,
+    "route": "model",
+    "calls": 6,
+    "seconds": 8.534
+   }
+  ]
+ },
+ "check": {
+  "stamps_checked": 1788,
+  "durations_checked": 155,
+  "status_checked": 245,
+  "failures": []
+ }
+}

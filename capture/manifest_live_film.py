@@ -30,7 +30,7 @@ def sec(f):
 
 
 def at(f, key):
-    return states[f].get(key)
+    return states[f].get(key) if f is not None and f in states else None  # None past a partial recording's end
 
 
 def still(key, f0):
@@ -85,8 +85,11 @@ moments = {
     "verified": {"frame": K["verified"], "what": "the test step ends ('Requesting isolated tests · 2 s', 2.4 s exactly) and 'Verified · pytest 42 passed on current files' arrives, on the same frame"},
     "completion": {"frame": K["complete"], "what": "the run completes (Done.) and the host's idle follows on the same frame: the app's own completion, for the one celebration"},
 }
+first_saved = round((timeline.get("from") or 0) * fps)
 for m in moments.values():
     m["seconds"] = sec(m["frame"]) if m["frame"] is not None else None
+    if m["frame"] is not None and not first_saved <= m["frame"] <= last:
+        m["not_in_this_recording"] = True  # a partial recording (--from, --frames) has no file for this frame
 
 geometry = {
     "apply_edit_dates": {"frame": K["p1"] - 1, "rect": at(K["p1"] - 1, "apply")},
