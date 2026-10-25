@@ -5,14 +5,18 @@ dependencies (`src/content/chapters.ts` is imported with Node's built-in type st
 
 | Source | Output |
 |---|---|
-| `docs/film-captions.json` (lane E: sound descriptions and the on-screen lines, frame-timed) | `public/media/v1/film.en.vtt`, and the social `.srt` |
-| `src/content/chapters.ts` `startSeconds` and `title` | `public/media/v1/film.chapters.vtt` |
-| `docs/film-captions.json` `"descriptions"` if it ever has them; otherwise each chapter's `description` in `chapters.ts` (FILM_SPEC §18), one cue a chapter | `public/media/v1/film.descriptions.en.vtt`, read aloud by the film player's audio-description toggle |
+| `docs/film-captions.json` (lane E: sound descriptions and the on-screen lines, frame-timed) | `public/media/v2/film.en.vtt`, and the social `.srt` |
+| `src/content/chapters.ts` `startSeconds` and `title` | `public/media/v2/film.chapters.vtt` |
+| `docs/film-captions.json` `"descriptions"` if it ever has them; otherwise each chapter's `description` in `chapters.ts` (FILM_SPEC §18), one cue a chapter | `public/media/v2/film.descriptions.en.vtt`, read aloud by the film player's audio-description toggle |
+
+The tracks live beside the film in `public/media/v2/` since the energetic recut (`src/lib/media.ts` `FILM_MEDIA`).
+`--out-dir`'s default is still `public/media/v1`, so pass `--out-dir public/media/v2`; `verify.mjs` reports tracks in
+`v1/` as strays.
 
 ```bash
-node tools/captions/build.mjs --check                        # validate only
-node tools/captions/build.mjs                                # the three VTTs into public/media/v1
-node tools/captions/build.mjs --srt "$HOME/Desktop/Pebble launch film/Pebble-launch-film.srt"   # ... and the SRT
+node tools/captions/build.mjs --check                                            # validate only
+node tools/captions/build.mjs --out-dir public/media/v2                          # the three VTTs into public/media/v2
+node tools/captions/build.mjs --out-dir public/media/v2 --srt "$HOME/Desktop/Pebble launch film/Pebble-launch-film.srt"   # ... and the SRT
 node tools/captions/build.mjs --cut <cut.json> --srt <file.srt> [--vtt <file.vtt>]               # a cut's captions
 ```
 

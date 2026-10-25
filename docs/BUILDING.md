@@ -216,7 +216,9 @@ with fontTools.
 **Versioning.** `/ui/v1/` and `/media/v1/` are served with a year-long immutable cache. Before the first deployment
 they could be replaced in place; after it, a re-capture or a re-render goes to `v2/`, never over `v1/`, or returning
 visitors keep the old pictures for a year. Moving to `v2/` also means changing the folders that `next.config.ts` lists
-and sends with the immutable header, and the paths in `src/lib/media.ts`.
+and sends with the immutable header, and the paths in `src/lib/media.ts`. The energetic recut's film was the first
+move: its four videos and three text tracks are in `public/media/v2/` (`FILM_MEDIA` in `src/lib/media.ts`), while its
+poster, the teaser, the loops and the wallpaper stay in `v1/`.
 
 ## 3. The score, the sound effects and the mix
 
@@ -416,10 +418,11 @@ tools/encode/encode.sh poster <png> <out-base> <width> <height>
   string, which must fit the one the page declares in `src/lib/media.ts` (`hvc1.1.6.L120.90` for HEVC, `avc1.640028`
   for H.264).
 
-**The website's media**, into `public/media/v1/` under the names `src/lib/media.ts` reads:
+**The website's media**, under the names `src/lib/media.ts` reads: the film's own files into `public/media/v2/`
+(`--out-dir`), everything else into `public/media/v1/`:
 
 ```bash
-tools/encode/encode.sh film video/out/masters/film.mp4 .work/audio/render/soundtrack_web.wav     # film-1080, film-720
+tools/encode/encode.sh film video/out/masters/film.mp4 .work/audio/render/soundtrack_web.wav --out-dir public/media/v2   # film-1080, film-720
 tools/encode/encode.sh teaser video/out/masters/teaser.mp4                                        # teaser-720
 tools/encode/encode.sh loop isolated-tests video/out/masters/loop-isolated-tests.mp4 video/out/masters/loop-isolated-tests-phone.mp4
 tools/encode/encode.sh loop memory video/out/masters/loop-memory.mp4      # and models, views
@@ -427,7 +430,7 @@ LOOP_HEVC_CRF=22 LOOP_H264_CRF=19 tools/encode/encode.sh loop companion video/ou
 tools/encode/encode.sh poster video/out/stills/film.poster.png public/media/v1/film.poster 1920 1080
 tools/encode/encode.sh poster video/out/stills/film.poster.png public/media/v1/teaser.poster 1280 720
 tools/encode/encode.sh poster video/out/stills/loop-memory.poster.png public/media/v1/loop-memory.poster 1600 1000
-node tools/encode/verify.mjs                  # everything in public/media/v1, and public/'s totals
+node tools/encode/verify.mjs                  # everything in public/media/v1 and v2, and public/'s totals
 node tools/encode/verify.mjs --no-analysis    # the same without the loudness and seam passes: light, no heavy job
 ```
 
@@ -435,8 +438,9 @@ node tools/encode/verify.mjs --no-analysis    # the same without the loudness an
 the colour tags, `+faststart`, the frame count (the film's against `docs/film-captions.json`), sizes and budgets
 (every file at most 45 MB, `public/` at most 90 MB, the film set at most 45 MB), the film's loudness on the encoded
 AAC (−16 LUFS ±1, at most −1.5 dBTP), the loops' and the teaser's seams on the encodes, the text tracks against what
-`tools/captions/build.mjs` makes now, and the posters against their videos. Its loudness and seam passes decode every
-file, so they run as one heavy job of their own.
+`tools/captions/build.mjs` makes now, and the posters against their videos. A file in a folder the page doesn't read
+it from (a film file left in `v1/`, say) is a warning. Its loudness and seam passes decode every file, so they run as
+one heavy job of their own.
 
 **The social films** for X and LinkedIn: 16:9, 1:1 and 9:16, each from its own master, with the social soundtrack
 (−14 LUFS). They are delivered outside the repository and never committed:
@@ -446,7 +450,7 @@ D="<a folder outside the repository>"
 tools/encode/encode.sh social video/out/masters/film.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1920x1080.mp4"
 tools/encode/encode.sh social video/out/masters/film-square.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1080x1080.mp4"
 tools/encode/encode.sh social video/out/masters/film-vertical.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1080x1920.mp4"
-node tools/captions/build.mjs --srt "$D/Pebble-launch-film.srt"
+node tools/captions/build.mjs --out-dir public/media/v2 --srt "$D/Pebble-launch-film.srt"
 ```
 
 **The 30 s cut for X** (`docs/film-cuts/x30.json`; `docs/FILM_SPEC.md` §23). It is made only of the film's own frames:
@@ -459,7 +463,7 @@ tools/encode/encode.sh social video/out/masters/film.mp4 .work/audio/render/soun
   "$D/Pebble-launch-film-30s-1920x1080.mp4" --cut docs/film-cuts/x30.json
 # the same with film-square.mp4 (-1080x1080) and film-vertical.mp4 (-1080x1920)
 node tools/captions/build.mjs --cut docs/film-cuts/x30.json --srt "$D/Pebble-launch-film-30s.srt"
-node tools/encode/verify.mjs "$D"             # public/media/v1 and the social folder together
+node tools/encode/verify.mjs "$D"             # public/media and the social folder together
 ```
 
 `node tools/captions/cues.mjs cut-inputs docs/film-cuts/x30.json 2304 30` prints the seeks the cut uses. If the
@@ -477,11 +481,13 @@ no exclamation mark) and writes nothing if one fails:
 
 ```bash
 node tools/captions/build.mjs --check                                   # validate only
-node tools/captions/build.mjs --srt <file.srt>                          # the three VTTs in public/media/v1/, and the SRT
+node tools/captions/build.mjs --out-dir public/media/v2 --srt <file.srt> # the three VTTs in public/media/v2/, and the SRT
 node tools/captions/build.mjs --check --cut docs/film-cuts/x30.json     # a cut's captions, on the cut's timeline
 ```
 
-The three VTTs land in `public/media/v1/`. A warning says when a description needs more speech than its chapter lasts
+The three VTTs land in `public/media/v2/`, beside the film. Without `--out-dir` they go to `public/media/v1/`, where the
+page no longer reads them, and `verify.mjs` reports them as strays and the v2 tracks as stale. A warning says when a
+description needs more speech than its chapter lasts
 (7 of 9 do): the film player then holds the film on the chapter's last frame until the voice is done. Run it again
 whenever the JSON or `chapters.ts` changes: `verify.mjs` fails a stale track. `src/content/filmCaptions.ts` mirrors the
 JSON for the `/film` transcript; `npm run test:site` fails if the two drift apart.

@@ -1,6 +1,6 @@
 {
   "schema": "pebble-film-captions/1",
-  "about": "The launch film's captions: sound descriptions plus the on-screen kinetic lines, word for word. The single source for public/media/v1/film.en.vtt (website) and Pebble-launch-film.srt (LinkedIn). Written by lane E from docs/FILM_SPEC.md section 13; the frames follow tools/audio/beatmap.json (100 BPM, 18 frames per beat, 72 per bar, 30 fps). The three compositions (LaunchFilm 1920x1080, LaunchFilmSquare 1080x1080 and LaunchFilmVertical 1080x1920) use the same timeline, so one track serves all three.",
+  "about": "The launch film's captions: sound descriptions plus the on-screen kinetic lines, word for word. The single source for public/media/v2/film.en.vtt (website) and Pebble-launch-film.srt (LinkedIn). Written by lane E from docs/FILM_SPEC.md section 13; the frames follow tools/audio/beatmap.json (100 BPM, 18 frames per beat, 72 per bar, 30 fps). The three compositions (LaunchFilm 1920x1080, LaunchFilmSquare 1080x1080 and LaunchFilmVertical 1080x1920) use the same timeline, so one track serves all three.",
   "film": "LaunchFilm, LaunchFilmSquare and LaunchFilmVertical",
   "language": "en-GB",
   "fps": 30,

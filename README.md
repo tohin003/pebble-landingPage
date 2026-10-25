@@ -54,7 +54,7 @@ The other pages: `/film` (the film with its transcript), `/credits`, `/privacy`,
 |---|---|
 | `src/` | The site, a Next.js App Router app: routes in `app/`, components, every visible string in `content/`, helpers in `lib/`, self-hosted fonts in `fonts/` |
 | `shared/pebble/` | The pebble's animation engine (bloub, MIT) and Pebble's own poses, shared by the site and the films; and the Veil, Stealth Lockdown's look, from Pebble's own code |
-| `public/` | Stills of Pebble's real interface (`ui/v1/`); the riverbed wallpaper, the film, the teaser, the feature loops, their posters and the film's text tracks (`media/v1/`); the media licence (`media/README.md`) |
+| `public/` | Stills of Pebble's real interface (`ui/v1/`); the riverbed wallpaper, the teaser, the feature loops and every poster, the film's included (`media/v1/`); the film and its text tracks (`media/v2/`, the energetic recut); the media licence (`media/README.md`) |
 | `video/` | The Remotion project: the launch film in 16:9, 1:1 and 9:16, the teaser, the loops, the posters and the social card. A separate npm project, not part of the site's build |
 | `capture/` | The capture harness: Pebble's real interface running in Chrome, with the app's calls mocked and fictional sample data |
 | `tools/` | `audio/` (the score, the sampler, the sound effects and the mix), `assets/` (stills, wallpaper, icons, fonts), `captions/` (the film's caption and chapter files), `encode/` (the web and social encodes, the posters and their checks), `qa/` (the quality gates) |
@@ -82,8 +82,9 @@ Good to know:
 
 - The home page and `/film` regenerate at most once an hour, so a new Pebble release reaches the page within about an
   hour without a redeploy.
-- Films and loops appear on the page only if their files are in `public/media/v1/` when the build starts
-  (`next.config.ts` lists them). Without them the page shows a poster or a still in their place.
+- Films and loops appear on the page only if their files are in `public/media/` when the build starts: the film in
+  `v2/`, the loops and the teaser in `v1/` (`next.config.ts` lists both). Without them the page shows a poster or a
+  still in their place.
 - `.vercelignore` leaves `video/`, `capture/`, `tools/`, `docs/` and `scripts/` out of the deployment: the site
   needs none of them to build.
 - After you add a custom domain, redeploy once so every page carries the new canonical address.

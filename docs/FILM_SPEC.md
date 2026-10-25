@@ -927,7 +927,7 @@ f1926–2016, and c24 split so c25 carries the URL and "Shown with sample data";
 "Free for Macs with Apple silicon" over f2160–2250, 8 words in 3.0 s, and c25 f2250–2304, 5 words in 1.8 s, so every cue
 reads at ≤ 3 words per second; c24 was 10 words in 2.4 s) (sound descriptions in brackets, kinetic lines word for word,
 at most two lines, each shown ≥ 1.2 s at ≤ 3 words per second). One track serves all three compositions (16:9, 1:1 and
-9:16 share the timeline). Convert to `public/media/v1/film.en.vtt` and `Pebble-launch-film.srt` with seconds = frame /
+9:16 share the timeline). Convert to `public/media/v2/film.en.vtt` and `Pebble-launch-film.srt` with seconds = frame /
 30 (the file states the format). No caption covers a kinetic line: all kinetic type sits above y 918 (16:9, 1:1) and
 above y 1450 in 9:16 (§2). Whooshes and most clicks are not described; the music's changes, the reveal's thud, the
 Verified shimmer, the end-card landing's thud and the final chord are. The landing's cue, c22, reads "[Soft thud]" (as

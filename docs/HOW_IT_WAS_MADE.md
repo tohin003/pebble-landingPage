@@ -25,7 +25,7 @@ video/        the film's timeline, snapped to the beat map --> 16:9, 1:1 and 9:1
                      |
                      `--> export-cues.ts --> cues.json --> mix_master.py --> web and social soundtracks
 
-tools/encode  masters + soundtrack --> HEVC and H.264 --> public/media/v1 --> the Next.js site --> Vercel
+tools/encode  masters + soundtrack --> HEVC and H.264 --> public/media/v1, v2 --> the Next.js site --> Vercel
                                    `--> the social films and the 30 s cut (kept outside the repository)
 ```
 
