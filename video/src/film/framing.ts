@@ -66,7 +66,9 @@ export const GLIMPSES: Record<GlimpseId, Glimpse> = {
    *  presses Apply edit on f198 and the glimpse ramps out with the press (the card leaves on the click frame). */
   G1: {
     stage: { wide: g(548, 72, 824, 836), square: g(40, 168, 1000, 744), vertical: g(40, 560, 1000, 860) },
-    framing: { wide: fit({ w: 824, h: 836 }, 2.34, 808, 354), square: fit({ w: 1000, h: 744 }, 2.85, 808, 452), vertical: fit({ w: 1000, h: 860 }, 2.85, 808, 410) },
+    // the top edge stays between "View diff" (ink 358–367.3) or the blank lines (468.7–517.3) and the next code line
+    // through the push, the bottom between the card's edge (721) and the next card (733)
+    framing: { wide: fit({ w: 824, h: 836 }, 2.34, 808, 372), square: fit({ w: 1000, h: 744 }, 2.85, 808, 470), vertical: fit({ w: 1000, h: 860 }, 2.85, 808, 428) },
     push: { about: { x: 980, y: 640 }, kEnd: 1.04 },
     rampIn: [140, 146],
     rampOut: [198, 204],
@@ -86,7 +88,9 @@ export const GLIMPSES: Record<GlimpseId, Glimpse> = {
    *  with the person's scroll and the usage line, stays out of frame. */
   G3: {
     stage: { wide: g(432, 162, 1056, 756), square: g(40, 201, 1000, 678), vertical: g(40, 621, 1000, 678) },
-    framing: { wide: fit({ w: 1056, h: 756 }, 3.18, 812, 98), square: fit({ w: 1000, h: 678 }, 2.85, 808, 98), vertical: fit({ w: 1000, h: 678 }, 2.85, 808, 98) },
+    // the top edge under the drawer's tabs and its rule (ink to 102, rule 114), the bottom between the held block's
+    // rows (349.7–357.3)
+    framing: { wide: fit({ w: 1056, h: 756 }, 3.18, 812, 115), square: fit({ w: 1000, h: 678 }, 2.85, 808, 115), vertical: fit({ w: 1000, h: 678 }, 2.85, 808, 115) },
     rampIn: [428, 434],
     map: "g3",
   },
