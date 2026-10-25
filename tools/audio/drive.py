@@ -18,11 +18,12 @@ Voices (all mono except the hats and the crash):
   RIM    a 12 ms 2-6 kHz noise click (the breakdown's tick-hits only).
 The pattern is the spec's 32-bar table, keyed by the score's bars, with the grooves A, A', B and C. Roots per bar are
 hard-coded and checked against tools/audio/beatmap.json chords_by_bar. Every onset sits exactly on the 18-frame beat
-grid: no humanisation, and each starts on sample frame x 1,600 (the 16ths too). validate_bed.py, made for the bed,
-measures sustained low sines poorly: its 2 ms envelope ripples at twice the tone's frequency, and where the kick's sweep
-beats against the sub it picks a ripple up to 30 ms after the onset. On this stem alone it reads a 6.4 ms median, and
-5.1 ms on the bed plus the drive (the bed alone: 3.4 ms). The hats skip every click and key frame (f18, 54, 810, 1080,
-1224, 1332, 1404, 1440, 1530). Where the table says "silent from", the drive gates itself to exact zeros
+grid: no humanisation, and each starts on sample frame x 1,600 (the 16ths too). validate_bed.py's <= 5 ms gate holds:
+a 2.5 ms median on this stem alone and 4.1 ms on the bed plus the drive (the bed alone: 3.4 ms). Single downbeats can
+read up to 34 ms late, because the validator, made for the bed, measures sustained low sines poorly: its 2 ms envelope
+ripples at twice the tone's frequency, and where the kick's sweep beats against a sub it can pick a later ripple (the
+first version of this stem, with a harder tanh, read 6.4 ms). The hats skip every click and key frame (f18, 54, 810,
+1080, 1224, 1332, 1404, 1440, 1530). Where the table says "silent from", the drive gates itself to exact zeros
 (10 ms down, ending on that frame; back on the next bar line): the composed breath f486-503 is silent by itself.
 Each event draws its noise from its own generator, seeded by (seed, score bar, beat, voice), so a bar sounds the same
 wherever an arrangement plays it.
