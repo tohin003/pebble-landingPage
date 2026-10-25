@@ -2,6 +2,9 @@
 stamp, every "· N s" duration, the status line's elapsed time, the receipts, the usage lines and the toast, from the
 recording's probes.json and timeline.json (record.mjs writes both). With --corpus, every string a viewer can see on the
 sampled frames is also looked up in the release's own source and the fixtures, and what isn't found is listed.
+A schedule with K.testsEnd follows v1.5.0's Ask-mode approval (OVERRIDES §40), and is also checked for that: no running
+"Requesting isolated tests" row and no "Testing" status anywhere, the review status and no live time while the approve
+route runs the tests, the tests card reading Running on exactly those 72 frames, and Verified after the resumed turn.
 
   python3 -I capture/check_live_film.py <frames-dir> [--corpus=FILE,FILE,…] [--held=408,480] [--json=OUT]
 
@@ -49,27 +52,14 @@ for e in schedule:
         if abs(e["duration"] - r3((e["f"] - e["made"]) / fps)) > 0.0005:
             fail(f"schedule: {e['label']} lasts {e['duration']} s but runs frames {e['made']}-{e['f']}")
 waits = meta.get("waits") or {}
-held_run = "runTests" in K  # main-live-film-150's own checks: the approvals' waits and the 2.4-s isolated test step
+held_run = "runTests" in K  # main-live-film-150's own checks: the approvals' waits and the 2.4-s isolated test run
+# v1.5.0's Ask-mode model (OVERRIDES §40): the approved tests run inside the approve route (K has testsEnd); recordings
+# made with the earlier schedule (a running test step that ends with Verified) keep its checks.
+ask_model = held_run and "testsEnd" in K
 for label, key, made, click in (() if not held_run else (("invoice_kit/dates.py", "dates", 168, K["p1"]), ("tests/test_dates.py", "tests", 174, K["p2"]),
                                 ("Requesting isolated tests", "run", K["runTheTests"] + 1, K["runTests"]))):
     if abs(waits[key] - r3((click - made) / fps)) > 0.0005:
         fail(f"schedule: the wait on {label} is {waits[key]} s, not frames {made}-{click}")
-tests_run = [e for e in schedule if e["label"] == "Requesting isolated tests" and e["status"] == "done"]
-if held_run and (not tests_run or tests_run[0]["made"] != K["runTests"] or tests_run[0]["f"] - tests_run[0]["made"] != round(2.4 * fps)):
-    fail("the isolated test step does not run exactly 2.4 s from the Run tests click")
-verified = [e for e in schedule if e["label"].startswith("Verified")]
-if held_run and (not verified or verified[0]["f"] != K["runTests"] + round(2.4 * fps)):
-    fail("Verified does not arrive 2.4 s after the Run tests click")
-
-# 2. Replay the probes frame by frame.
-state = {}
-frames = {}
-for p in probes["probes"]:
-    frames[p["f"]] = p
-last = max(frames) if frames else 0
-expected = {}  # base label -> list of schedule rows with that label
-for e in schedule:
-    expected.setdefault(e["label"], []).append(e)
 
 
 def live_seconds(t):
@@ -82,16 +72,51 @@ def live_seconds(t):
     return total
 
 
+verified = [e for e in schedule if e["label"].startswith("Verified")]
+if ask_model:
+    if K["testsEnd"] - K["runTests"] != round(2.4 * fps):
+        fail("the tests do not run exactly 2.4 s from the Run tests click to the approve route's answer")
+    if any(e["label"] == "Requesting isolated tests" and e["status"] == "running" for e in schedule):
+        fail("a running 'Requesting isolated tests' row is scheduled: v1.5.0 runs approved tests inside the approve route")
+    if live_seconds((K["testsEnd"] - 0.5) / fps) - live_seconds((K["runTests"] + 0.5) / fps) > 1e-6:
+        fail("the run accrues live time while the approved tests run (it waits for the approval until they end)")
+    responded = [e for e in schedule if e["label"] == "The model responded" and e["made"] > K["testsEnd"]]
+    if not responded or not verified or not (responded[-1]["f"] <= verified[0]["f"] <= K["complete"]):
+        fail("Verified must follow the resumed run's model turn (runner.py: the completion check runs on a finished turn) "
+             "and come before the run completes")
+elif held_run:
+    tests_run = [e for e in schedule if e["label"] == "Requesting isolated tests" and e["status"] == "done"]
+    if not tests_run or tests_run[0]["made"] != K["runTests"] or tests_run[0]["f"] - tests_run[0]["made"] != round(2.4 * fps):
+        fail("the isolated test step does not run exactly 2.4 s from the Run tests click")
+    if not verified or verified[0]["f"] != K["runTests"] + round(2.4 * fps):
+        fail("Verified does not arrive 2.4 s after the Run tests click")
+
+# 2. Replay the probes frame by frame.
+state = {}
+frames = {}
+for p in probes["probes"]:
+    frames[p["f"]] = p
+last = max(frames) if frames else 0
+expected = {}  # base label -> list of schedule rows with that label
+for e in schedule:
+    expected.setdefault(e["label"], []).append(e)
+
+
 stamp_checks = dur_checks = status_checks = 0
 seen_receipts, seen_usage, toast_frames, status_seen = {}, {}, [], {}
+card_running, card_states = [], {}
+REVIEW_WORDS = ("Needs your review", "Waiting for your review")  # statusWords.ts: the review key, a run waiting_approval
 for f in range(0, last + 1):
     p = frames.get(f)
     if p:
         state.update({k: v for k, v in p.items() if k != "f"})
     t_shown = (f + 1) / fps  # the screenshot shows the clock after the frame's advance
-    for text, stamp, _ in state.get("steps") or []:
+    for s in state.get("steps") or []:
+        text, stamp, phase = s[0], s[1], (s[3] if len(s) > 3 else None)
         if not text:
             continue
+        if ask_model and text.startswith("Requesting isolated tests") and phase == "running":
+            fail(f"frame {f}: a running 'Requesting isolated tests' row")
         m = re.match(r"^(.*?)(?: · (<1 s|\d+ s))?$", text)
         base, took = m.group(1), m.group(2)
         if text.startswith("Explored · "):  # a fold of finished reads and searches: its stamp is the first one's
@@ -113,6 +138,16 @@ for f in range(0, last + 1):
             else:
                 dur_checks += 1
     status = state.get("status")
+    if ask_model:
+        card = state.get("testsCard")
+        word = card[0].split("Run isolated tests", 1)[-1].strip() if card and card[0] else None
+        card_states.setdefault(word, []).append(f)
+        if word == "Running":
+            card_running.append(f)
+        if status and status.startswith("Testing"):
+            fail(f"frame {f}: the status line says {status!r}; v1.5.0 sends no progress while approved tests run")
+        if K["runTests"] <= f < K["testsEnd"] and status and not status.startswith(REVIEW_WORDS):
+            fail(f"frame {f}: the status line says {status!r} while the run waits for the approval")
     if status:
         m = re.search(r"(\d+) s$", status)
         status_seen.setdefault(status, f)
@@ -131,6 +166,11 @@ for f in range(0, last + 1):
     toast = state.get("toast")
     if toast and float(toast[2]) > 0.01:
         toast_frames.append(f)
+
+# The tests card reads Running exactly while the approve route runs the tests (frames runTests .. testsEnd - 1).
+if ask_model and card_running != list(range(K["runTests"], K["testsEnd"])):
+    spans_r = f"{card_running[0]}-{card_running[-1]} ({len(card_running)} frames)" if card_running else "never"
+    fail(f"the tests card reads Running on frames {spans_r}, not exactly frames {K['runTests']}-{K['testsEnd'] - 1}")
 
 # 3. Receipts: the live "Worked · N steps", or the host's live seconds and waits once settled.
 L = meta.get("live") or [0, 0, 0]
@@ -168,6 +208,7 @@ for a, b in spans_t:
         fail(f"the toast is on screen on frames {a}-{b}, inside the held run's frames {held[0]}-{held[1]}")
 
 result = {"stamps_checked": stamp_checks, "durations_checked": dur_checks, "status_checked": status_checks,
+          **({"tests_card": {str(k): [v[0], v[-1], len(v)] for k, v in card_states.items()}} if ask_model else {}),
           "receipts": {k: [v[0], v[-1]] for k, v in seen_receipts.items()},
           "usage": {k: [v[0], v[-1]] for k, v in seen_usage.items()},
           "toast_frames": spans_t, "status_first_frames": status_seen, "failures": failures}

@@ -26,6 +26,12 @@
 // guard.py refusal()) is unchanged since v1.0.4. record.mjs main-live-film-150 and main-challenge-live run on the host's
 // own clock (clock(), origin(), publish()) and play the approved tests out before the approval answers
 // (deferApproval(), finishApproval()); every other scene is as before.
+// main-live-film-150's approved tests follow v1.5.0's Ask-mode path (OVERRIDES §40): the held decision stages the
+// recipe as the run's own host call (controller.py _held_tests(): its "Requesting isolated tests" tool row, staged),
+// the approve route writes its summary into the conversation (app.py _approve(): store.message(action_summary());
+// hostMessage()), the reply saved again at the run's end moves after it (store.py message() is INSERT OR REPLACE with
+// a new `created`, get_chat lists by it; resave()), and the resumed model attempt streams into the run's stream
+// journal (stream_journal.py; streamEvent(), stream_read), which the Details drawer shows (AttemptStream.vue).
 //
 // buildWorld({scene, theme, surface, drawer, stealth, version}) returns { storage, has(method), rpc(method, params), live, ... }.
 // `stealth` starts the world with Stealth Lockdown already on (the host keeps it across a restart); `version` is the
@@ -97,6 +103,8 @@ const CONTINUE_HELD = "\n" + `Both edits are in:
 
 The CSV export should work again for invoices issued on the 29th, 30th and 31st.`;
 const CONTINUE_VERIFIED = "\n\nThe tests ran in an isolated copy of your project: **42 passed**. Both edits are verified, and the CSV export works again for invoices issued on the 29th, 30th and 31st.";
+// app.py action_summary() for an applied tests action: the approve route writes it into the conversation (_approve()).
+const testsSummary = (exitCode) => "The isolated test run finished with exit code " + exitCode + ". Review the output in Activity & review.";
 
 const REPLY_DONE = `Done, and verified:
 
@@ -504,6 +512,8 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null, 
   // receipt is committed. A capture that plays a long effect (the isolated tests) defers the answer until it says so.
   const deferIds = new Set();
   const deferred = new Map();
+  // stream_journal.py: a run's stream events (begin, delta, settle), numbered per run, for stream_read pages.
+  const journals = {};
   const state = () => ({
     job_notifications: [],
     chats: listed(),
@@ -581,14 +591,18 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null, 
       run.error = null;
       const record = activity[run_id], clock = clocks[run_id], t = recNow();
       if (record && clock && t !== null) {
-        // A run on the host's clock (main-live-film-150): each row at its own time from the run's start. The decision
-        // note at the click (held_decision), the approval bound to the staged recipe one frame later (action_bound),
-        // then the note for the new state (STATE_NOTES waiting_approval).
+        // A run on the host's clock (main-live-film-150): each row at its own time from the run's start, in the order
+        // of v1.5.0's run events. The decision note at the click (held_decision); the host's own RunTests call
+        // (controller.py _held_tests(): begin_tool at the click, end_tool once the recipe is staged one frame later, so
+        // run_activity.py _tool() shows it done, "Staged for your approval.", with no duration shown); the approval
+        // bound to the staged recipe (action_bound); then, after the call's tool_finished event (no row), the note for
+        // the new state (STATE_NOTES waiting_approval). The window reads none of them before the run resumes.
         const seq = Math.max(0, ...record.items.map((i) => i.seq)) + 64, at = r3(t - clock.t0);
         record.state = "waiting_approval";
         record.items.push(item(seq, at, "note", "You asked Pebble to run the tests"),
-          item(seq + 64, r3(at + 1 / 30), "approval", "Waiting for your approval: Requesting isolated tests", { status: "running" }),
-          item(seq + 128, r3(at + 2 / 30), "note", "Waiting for your approval"));
+          item(seq + 64, at, "tool", "Requesting isolated tests", { duration: r3(1 / 30), detail: "Staged for your approval." }),
+          item(seq + 128, r3(at + 1 / 30), "approval", "Waiting for your approval: Requesting isolated tests", { status: "running" }),
+          item(seq + 256, r3(at + 2 / 30), "note", "Waiting for your approval"));
       } else if (record) {
         // The decision comes `heldGap` s after the record's last row: 26 s in the static scenes; record.mjs main-live-film
         // passes 2 (held 14.03 s, click 16.0 s), so the drawer's offsets stay in order (+16.4 s, then +18.5 s …).
@@ -623,7 +637,14 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null, 
     context_inspect: ({ chat_id, run_id }) => ({ chat_id, run_id, used: Math.round(model.context * 0.46), total: Math.round(model.context * 0.46), window: { tokens: model.context } }),
     job_list: () => ({ jobs: [] }),
     process_list: () => [],
-    stream_read: ({ after = 0 }) => ({ events: [], next_after: after, more: false }),
+    // stream_journal.py read(): one page of a run's stream events after a cursor (none unless a capture wrote some).
+    stream_read: ({ id, run_id, after = 0, limit = 50 }) => {
+      const journal = journals[run_id];
+      if (!journal) return { events: [], next_after: after, more: false };
+      const events = journal.filter((e) => e.sequence > after).slice(0, limit).map((e) => ({ ...e }));
+      const next = events.length ? events[events.length - 1].sequence : after;
+      return { chat_id: id, run_id, after, events, next_after: next, more: next < journal.length, head: journal.length, presentation_only: true };
+    },
     screen_sessions: () => [],
     goal_list: () => [],
     agent_list: () => ({ nodes: [] }),
@@ -719,9 +740,26 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null, 
       deferred.delete(actionId);
       if (answer) answer(true);
     },
+    // app.py _approve(): once the effect is committed, the approve route writes its summary into the conversation
+    // (store.message(action_summary()), a new assistant message after every earlier one).
+    hostMessage(chatId, message) {
+      chats.get(chatId).messages.push({ attachments: [], created: Math.floor(Date.now() / 1000), ...message });
+    },
+    // app.py finish() saves the run's reply again: store.py message() is INSERT OR REPLACE with a new `created`, and
+    // get_chat lists messages by `created`, so the reply moves after anything written since its last save.
+    resave(chatId, message) {
+      const c = chats.get(chatId), old = c.messages.find((m) => m.id === message.id) || { attachments: [] };
+      c.messages = [...c.messages.filter((m) => m.id !== message.id), { ...old, ...message, created: Math.floor(Date.now() / 1000) }];
+    },
+    // stream_journal.py begin(), append() and settle(): one stream event of a run, numbered after the run's last.
+    streamEvent(runId, event) {
+      const journal = journals[runId] || (journals[runId] = []);
+      journal.push({ sequence: journal.length + 1, created: Date.now() / 1000, ...event });
+    },
     reply: { pet: PET_REPLY, proposed: REPLY_PROPOSED, done: REPLY_DONE, held: REPLY_HELD, proposedHeld: REPLY_PROPOSED_HELD,
       continueHeld: CONTINUE_HELD, heldNotice: "\n\n> Verification remains incomplete: " + HELD_NOTICE, continueVerified: CONTINUE_VERIFIED },
-    text: { request: REQUEST, petQuestion: PET_QUESTION, challengeRequest: CHALLENGE_REQUEST, challenge: CHALLENGE, heldIssue: HELD_ISSUE },
+    text: { request: REQUEST, petQuestion: PET_QUESTION, challengeRequest: CHALLENGE_REQUEST, challenge: CHALLENGE, heldIssue: HELD_ISSUE,
+      testsSummary: testsSummary(0) },
     diffs: { dates: DIFF_DATES, tests: DIFF_TESTS },
     testScope: TEST_SCOPE, // 1.2.0: what the host adds to the tests/test_dates.py edit's payload (above)
     forget: { subject: FORGET_SUBJECT, ids: ["mem-pref-5", "mem-temp-1"] },

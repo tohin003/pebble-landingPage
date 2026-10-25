@@ -106,6 +106,22 @@ function followScroll(steps, f0, f1, panel, target, yKey) {
   }
 }
 
+// Scroll a panel over frames f0..f1 (30 fps, ease-in-out) to its end, as a wheel does: each frame adds the ease
+// profile's share of the distance still left, measured on that frame, so content that the browser's scroll anchoring
+// absorbs while it runs (rows inserted above the view) never makes the view jump back, and the last frame lands on the
+// end (main-live-film-150, after the tests).
+function scrollEaseToEnd(steps, f0, f1, panel) {
+  const ease = (k) => (k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2);
+  for (let f = f0 + 1; f <= f1; f++) {
+    const before = ease((f - 1 - f0) / (f1 - f0)), now = ease((f - f0) / (f1 - f0)), share = (now - before) / (1 - before);
+    steps.push([f / 30, (page) => page.evaluate((sel, part) => {
+      const el = document.querySelector(sel);
+      if (!el) return;
+      el.scrollTop += (el.scrollHeight - el.clientHeight - el.scrollTop) * part;
+    }, panel, share)]);
+  }
+}
+
 // Per-frame probes (a timeline's `probe: true`), in CSS px of the viewport: where the controls the film aims at are,
 // what the toast, the status line, the receipts and the usage lines say, and which steps the drawer shows. Saved as
 // deltas in probes.json (a key is written on a frame when its value changed), with the visible text every few frames.
@@ -129,7 +145,9 @@ async function probeFrame(page) {
       convTop: conv ? round(conv.scrollTop) : null,
       toast: toast ? [text(toast), rect(toast), getComputedStyle(toast).opacity] : null,
       status,
-      steps: pbox ? qa("#drawer-thinking .thinking-steps > li").filter((li) => seen(li, pbox)).map((li) => [text(li.querySelector(".thinking-label") || li), text(li.querySelector(".thinking-time")), rect(li)]) : [],
+      // each visible step: its label (and "· N s"), its "+N s" stamp, its box, and its phase (ThinkingDisclosure's class)
+      steps: pbox ? qa("#drawer-thinking .thinking-steps > li").filter((li) => seen(li, pbox)).map((li) => [text(li.querySelector(".thinking-label") || li), text(li.querySelector(".thinking-time")), rect(li),
+        ["running", "done", "failed", "unfinished"].find((c) => li.classList.contains(c)) || null]) : [],
       cards: pbox ? qa("#details-drawer .action-card").filter((c) => seen(c, pbox)).map((c) => [text(c.querySelector(".action-heading")), rect(c)]) : [],
       apply: rect(q("#details-drawer .action-card.pending .primary-button")),
       undo: rect(q("#details-drawer .undo-button")),
@@ -138,6 +156,18 @@ async function probeFrame(page) {
       receipts: inConv(".thinking-title").map((el) => [text(el), rect(el)]),
       usage: inConv(".token-stats").map((el) => [text(el), rect(el)]),
       drawerRun: pbox ? qa("#details-drawer .run-panel .run-state").filter((el) => seen(el, pbox)).map((el) => [text(el), rect(el)]) : [],
+      // The "Run isolated tests" card wherever it is (its heading carries the status word), and whether it is in view.
+      testsCard: (() => {
+        const card = qa("#details-drawer .action-card").find((c) => /^Run isolated tests/.test(text(c.querySelector(".action-heading")) || ""));
+        return card ? [text(card.querySelector(".action-heading")), rect(card), pbox ? seen(card, pbox) : false] : null;
+      })(),
+      // The drawer's live model output (AttemptStream.vue), when shown and in view.
+      liveAttempt: (() => {
+        const s = q("#details-drawer section[aria-label='Live attempt output']");
+        return s && pbox && seen(s, pbox) ? [text(s.querySelector("[role=status]")), rect(s), text(s.querySelector("pre"))] : null;
+      })(),
+      // The conversation's messages in view: role, the first 64 characters, box.
+      bubbles: inConv(".messages > .message").map((el) => [el.classList.contains("user") ? "user" : "assistant", (text(el.querySelector(".message-content, .user-text")) || "").slice(0, 64), rect(el)]),
     };
   });
 }
@@ -383,15 +413,27 @@ const TIMELINES = {
   // run_activity.py `at`); a step's "· N s" is its own span (tool_started to tool_finished, an attempt's start to its
   // end, an approval's binding to the person's click); the status line's exact time is the host's live seconds
   // (fixtures.js clock(), as run_activity.py read() reports them); a receipt's time is those live seconds and its
-  // "waited" the approvals' spans; the usage line's time is the sum of the model attempts. The isolated tests run for
-  // exactly 2.4 s from the Run tests click (frames 534-606), and Verified arrives on the frame they end. The edits are
-  // applied at 9.20 s and 9.70 s, so the 3.5-s "Action completed" toast (App.vue notify; a 0.2-s leave) has gone by
-  // 13.45 s, before the held run's shots from 13.6 s; the approved tests' route answers once they ran (app.py
-  // _approve), so its toast comes with Verified. The cumulative usage stays under the sample model's 4,096-token window
-  // and reports no rate (TokenStats then shows none). The host's idle follows each settle in the same frame, so a
-  // receipt never shows the window's own wall-clock count first. Frames carry probes (probes.json): per-frame positions
-  // and the visible text, for the film's measurements and for capture/check_live_film.py; timeline.json carries the
-  // schedule (meta).
+  // "waited" the approvals' spans; the usage line's time is the sum of the model attempts. The edits are applied at
+  // 9.20 s and 9.70 s, so the 3.5-s "Action completed" toast (App.vue notify; a 0.2-s leave) has gone by 13.45 s, before
+  // the held run's shots from 13.6 s. The cumulative usage stays under the sample model's 4,096-token window and reports
+  // no rate (TokenStats then shows none). The host's idle follows each settle in the same frame, so a receipt never
+  // shows the window's own wall-clock count first. Frames carry probes (probes.json): per-frame positions and the
+  // visible text, for the film's measurements and for capture/check_live_film.py; timeline.json carries the schedule
+  // (meta).
+  // The climax follows v1.5.0's Ask-mode event model (OVERRIDES §40), read at the tag: the approved tests run inside
+  // the approve route (app.py approve() -> _approve(): the action 'running', perform_action(), commit_action()), so for
+  // exactly 2.4 s (frames 534-606) the card reads Running and nothing else changes: the run stays waiting_approval
+  // (runtime.py begin_approval() changes no state), and only the runner sends progress or publishes activity (runner.py
+  // progress(), publish()), so there is no "Testing" status and no running "Requesting isolated tests" row. When the
+  // tests end, the route commits the receipt, writes its summary into the conversation, sends actions and idle,
+  // dispatches the run's continuation (controller.py dispatch_now(): run queued, then the runner's run running) and
+  // answers, so "Action completed" comes with the test result. The resumed run recalls context (a new context row),
+  // and its model attempt streams into the run's stream journal, which the drawer shows ("Receiving model response",
+  // AttemptStream.vue), while the conversation gets the attempt's text in one token event when it commits (runner.py:
+  // V1-081). Only then does the completion check run (runner.py completion() after a turn with no tool calls):
+  // "Verified · pytest 42 passed on current files" comes one frame after the model responded, and the run completes
+  // at 22.50 s. The reply, saved again at the end (app.py finish()), moves after the tests' summary (get_chat lists by
+  // `created`).
   "main-live-film-150": {
     url: "?scene=live-film&version=1.5.0",
     viewport: { width: 1160, height: 800 },
@@ -403,16 +445,22 @@ const TIMELINES = {
       const chat = "chat-live-fix", run = "run-live-1", reply = "msg-live-reply", ids = { chat_id: chat, run_id: run, id: reply };
       const F = (f) => f / 30, r3 = (x) => Math.round(x * 1000) / 1000;
       // Key frames (30 fps). send: app.py send() creates the run (queued); p1/p2: Apply edit; hold: verification_required;
-      // runTheTests: the held run's button; runTests: the "Run isolated tests" card's button; verified: the tests end.
+      // runTheTests: the held run's button; runTests: the "Run isolated tests" card's button, and the tests start inside
+      // the approve route; cardScroll: the person scrolls the drawer to the card, now the last in Earlier actions;
+      // testsEnd: the tests end and the route answers; context: the resumed run's context row and its model attempt;
+      // stepsScroll: the person scrolls back up to the newest steps; respond: the attempt ends; verified: the
+      // completion check; complete: the run completes.
       const K = { send: 30, queued1: 31, running1: 33, settle1: 178, cards: 180, p1: 276, p2: 291, queued2: 292, running2: 294,
-        scroll: [306, 324], hold: 421, convScroll: [435, 453], runTheTests: 480, card: 484, runTests: 534, verified: 606,
-        complete: 675 };
+        scroll: [306, 324], hold: 421, convScroll: [435, 453], runTheTests: 480, card: 484, runTests: 534, cardScroll: [537, 555],
+        testsEnd: 606, context: 609, resultScroll: [612, 630], stepsScroll: [648, 666], respond: 672, verified: 673, complete: 675 };
+      const STEPS_Y = 380; // where the person brings the newest step (its centre, CSS px of the window)
       const T0 = K.send;
       const at = (f) => r3((f - T0) / 30), span = (a, b) => r3((b - a) / 30);
       const request = await fixture(page, "text.request");
       const r = await fixture(page, "reply");
       const diffs = await fixture(page, "diffs");
       const heldIssue = await fixture(page, "text.heldIssue");
+      const testsSummary = await fixture(page, "text.testsSummary"); // app.py action_summary() for the applied tests
       const testScope = await fixture(page, "testScope"); // 1.2.0+: the host's reason on the tests/test_dates.py edit
       const steps = [], schedule = [];
       const on = (f, fn) => steps.push([F(f), fn]);
@@ -455,10 +503,11 @@ const TIMELINES = {
         on(f, emit("run", { chat_id: chat, run_id: run, state: value }));
       };
       // The run's state changes on the recording's clock (fixtures.js clock(): run_activity's started and elapsed).
+      // The approved tests run while the run waits for the approval (no live time); it is queued again when they end.
       const transitions = [[F(T0), "queued"], [F(K.running1), "running"], [F(K.settle1), "waiting_approval"], [F(K.queued2), "queued"],
         [F(K.running2), "running"], [F(K.hold), "verification_required"], [F(K.runTheTests + 2), "waiting_approval"],
-        [F(K.runTests), "queued"], [F(K.runTests), "running"], [F(K.complete), "completed"]];
-      const live1 = span(T0, K.settle1), live2 = r3(live1 + span(K.queued2, K.hold)), live3 = r3(live2 + span(K.runTests, K.complete));
+        [F(K.testsEnd), "queued"], [F(K.testsEnd), "running"], [F(K.complete), "completed"]];
+      const live1 = span(T0, K.settle1), live2 = r3(live1 + span(K.queued2, K.hold)), live3 = r3(live2 + span(K.testsEnd, K.complete));
       // The person's waits on each approval (its binding to the click), which the receipt adds up as "waited … for you".
       const bindDates = 168, bindTests = 174, bindRun = K.runTheTests + 1;
       const waitDates = span(bindDates, K.p1), waitTests = span(bindTests, K.p2), waitRun = span(bindRun, K.runTests);
@@ -531,47 +580,109 @@ const TIMELINES = {
       on(K.hold, emit("idle", { chat_id: chat, run_id: run }));
       // The held row (RunPanel) sits under the reply: the person scrolls it into view, as in main-live-film.
       scrollToEnd(steps, F(K.convScroll[0]), F(K.convScroll[1]), ".conversation-scroll", 30);
-      // Run the tests (controller.py held() 'tests'): the mock adds the decision note, the approval (bound one frame later)
-      // and the state note at the click's own time; the "Run isolated tests" card arrives through the normal approval.
+      // Run the tests (controller.py held() 'tests'): the mock adds the decision note, the host's own RunTests call that
+      // stages the recipe (done one frame later, "Staged for your approval."), the approval bound to it and the state
+      // note, each at its own time; the "Run isolated tests" card arrives through the normal approval. Nothing publishes
+      // these rows: the window reads them when the run resumes (20.20 s).
       on(K.runTheTests, (pg) => pg.click(".run-held button:first-child"));
       schedule.push({ f: K.runTheTests, made: K.runTheTests, seq: 1280, label: "You asked Pebble to run the tests", status: "done", at: at(K.runTheTests), duration: null, by: "mock" },
-        { f: K.runTheTests, made: bindRun, seq: 1344, label: "Waiting for your approval: Requesting isolated tests", status: "running", at: at(bindRun), duration: null, by: "mock" },
-        { f: K.runTheTests, made: bindRun + 1, seq: 1408, label: "Waiting for your approval", status: "done", at: at(bindRun + 1), duration: null, by: "mock" });
+        { f: bindRun, made: K.runTheTests, seq: 1344, label: "Requesting isolated tests", status: "done", at: at(K.runTheTests), duration: span(K.runTheTests, bindRun), by: "mock" },
+        { f: K.runTheTests, made: bindRun, seq: 1408, label: "Waiting for your approval: Requesting isolated tests", status: "running", at: at(bindRun), duration: null, by: "mock" },
+        { f: K.runTheTests, made: bindRun + 1, seq: 1536, label: "Waiting for your approval", status: "done", at: at(bindRun + 1), duration: null, by: "mock" });
       on(K.runTheTests + 3, emit("run", { chat_id: chat, run_id: run, state: "waiting_approval" }));
       sendActions(K.card, [dates("applied"), testsEdit("applied"), tests("pending")]);
       // The announced card takes keyboard focus (App.vue announceApprovals); the pointer moves on, so no focus ring.
       on(K.card, (pg) => pg.evaluate(() => document.activeElement?.blur()));
-      // Run tests (17.80 s): the approval starts the isolated run at once; it lasts exactly 2.4 s (frames 534-606).
+      // Run tests (17.80 s): App.vue decide() calls approve, and the approve route runs the tests (app.py _approve():
+      // the action 'running' and an actions event, perform_action(), then commit_action()). The card leaves "Needs your
+      // review" and reads Running in Earlier actions (App.vue ACTION_STATES, actionGroups) for exactly 2.4 s. The run
+      // stays waiting_approval and no progress, activity or run event is sent while the tests run: the host's lane is
+      // claimed (app.active, read by no window before it ends) and nothing else moves.
       on(K.runTests, (pg) => pg.click("#details-drawer .action-card.pending .primary-button"));
       sendActions(K.runTests, [dates("applied"), testsEdit("applied"), tests("running")]);
       on(K.runTests, live("active", chat, run));
-      state(K.runTests, "queued", { elapsed: live2 });
-      state(K.runTests, "running", { elapsed: live2 });
-      pub(K.runTests, row(1344, at(bindRun), "approval", "Approved: Requesting isolated tests", "done", null, waitRun), bindRun);
-      tool(1472, K.runTests, K.verified, "RunTests", "testing", "Requesting isolated tests");
-      // The person scrolls the drawer to its newest steps, so the running test and the rows after it arrive in view.
-      scrollPanel(steps, F(540), F(558), "#details-drawer .details-panel", "#drawer-thinking .thinking-steps > li", { frac: 0.42 }, 30);
-      on(K.verified, live("finishApproval", chat, "act-tests-1", tests("applied", passed)));
-      on(K.verified, emit("actions", { chat_id: chat, actions: [dates("applied"), testsEdit("applied"), tests("applied", passed)] }));
-      pub(K.verified, row(1536, at(K.verified), "check", "Verified · pytest 42 passed on current files", "done", null, 0.01));
-      const a6 = attempt(1600, 607, 672, 0.2, 0.3);
-      streamWords(steps, F(616), F(669), ids, "\n" + r.continueVerified);
+      // The card is now the drawer's last: the person scrolls down to it.
+      scrollToEnd(steps, F(K.cardScroll[0]), F(K.cardScroll[1]), "#details-drawer .details-panel", 30);
+      // The tests end (20.20 s), exactly 2.4 s after the click. In the approve route's own order: commit_action() applies
+      // the action with its result; the route writes its summary into the conversation (store.message(action_summary()))
+      // and the run's records change with it (the approval now "Approved: …" with its wait; the staging call's receipt is
+      // the applied one, so its row has no "Staged" detail any more); it releases the lane and sends actions and idle;
+      // approve() then dispatches the continuation (app.py run_resume() queues the run, controller.py launch() sends run
+      // queued, the runner sends run running) and answers, so decide() reads the conversation and says "Action
+      // completed".
+      const approvedRun = row(1408, at(bindRun), "approval", "Approved: Requesting isolated tests", "done", null, waitRun);
+      const stagedCall = row(1344, at(K.runTheTests), "tool", "Requesting isolated tests", "done", null, span(K.runTheTests, bindRun));
+      schedule.push({ f: K.testsEnd, made: bindRun, seq: 1408, label: approvedRun.label, status: "done", at: approvedRun.at, duration: waitRun, by: "mock" });
+      on(K.testsEnd, async (pg) => {
+        await live("actions", chat, [dates("applied"), testsEdit("applied"), tests("applied", passed)])(pg);
+        await live("hostMessage", chat, { id: "msg-live-tests-summary", role: "assistant", content: testsSummary })(pg);
+        await live("publish", run, stagedCall)(pg);
+        await live("publish", run, approvedRun)(pg);
+      });
+      on(K.testsEnd, emit("actions", { chat_id: chat, actions: [dates("applied"), testsEdit("applied"), tests("applied", passed)] }));
+      on(K.testsEnd, live("active", null, null));
+      on(K.testsEnd, emit("idle", { chat_id: chat, run_id: run }));
+      on(K.testsEnd, live("active", chat, run));
+      state(K.testsEnd, "queued", { elapsed: live2 });
+      state(K.testsEnd, "running", { elapsed: live2 });
+      on(K.testsEnd, live("finishApproval", chat, "act-tests-1", tests("applied", passed)));
+      // The resumed run (runner.py run()): its first progress publishes the rows the window hasn't had; it recalls
+      // context again (a new "Recalled 3 memories" row, context_ready) and resumes the reply; then one model attempt,
+      // which streams into the run's stream journal (the drawer's "Receiving model response") and commits its text to
+      // the conversation in one token event.
+      on(K.testsEnd + 1, P(null, "thinking", "Preparing your local workspace"));
+      on(K.testsEnd + 1, async (pg) => {
+        const rows = await pg.evaluate((id) => window.__pebble.world.live.items(id), run);
+        for (const item of rows.filter((i) => i.seq >= 1280)) await A(item)(pg);
+      });
+      on(K.testsEnd + 2, P(null, null, "Recalled relevant context", "done"));
+      on(K.context, P(null, null, "Resumed committed context", "done"));
+      const contextMs = Math.round(span(K.testsEnd, K.context) * 1000);
+      pub(K.context, row(1600, at(K.context), "context", "Recalled 3 memories", "done", null, span(K.testsEnd, K.context), `Context ready in ${contextMs} ms`));
+      const attemptId = "f3a9c27e5b8d41c6a0e2d7b9c4f61a83";
+      const journal = (event) => live("streamEvent", run, { attempt_id: attemptId, step: 10, attempt: 1, ...event });
+      const streamed = (type) => emit("stream", { chat_id: chat, run_id: run, attempt_id: attemptId, type, authorization: "none" });
+      on(K.context, async (pg) => { await journal({ kind: "begin", state: "open" })(pg); await streamed("begin")(pg); });
+      pub(K.context, row(1664, at(K.context), "model", "Waiting for the model", "running"));
+      // headers after 0.2 s, first text after 0.3 s; the attempt ends at 22.40 s
+      const words = r.continueVerified.split(/(?<=\s)/), first = K.context + 9, lastWord = K.respond - 3;
+      words.forEach((w, i) => on(first + Math.floor(((lastWord - first) * i) / words.length), async (pg) => {
+        await journal({ kind: "delta", text: w })(pg);
+        await streamed("delta")(pg);
+      }));
+      const a6 = span(K.context, K.respond);
+      // In the runner's order: the attempt's record (record_attempt), the retry helper's commit event, run running,
+      // the usage (save_usage), the journal settled with the response (runs.response()) and "committed", then the text.
+      pub(K.respond, row(1664, at(K.context), "model", "The model responded", "done", null, a6, "Headers after 0.2 s; first text after 0.3 s."), K.context);
+      on(K.respond, streamed("commit"));
+      on(K.respond, emit("run", { chat_id: chat, run_id: run, state: "running" }));
       const finalText = heldText + "\n" + r.continueVerified;
       const usage3 = { input_tokens: 3920, output_tokens: 400, cached_tokens: 2688, route: "model", calls: 6, seconds: r3(usage2.seconds + a6) };
-      on(673, emit("usage", { chat_id: chat, id: reply, usage: usage3 }));
-      on(673, live("message", chat, { id: reply, role: "assistant", content: finalText, run_id: run, usage: usage3 }));
-      on(674, live("active", null, null));
+      on(K.respond, emit("usage", { chat_id: chat, id: reply, usage: usage3 }));
+      on(K.respond, async (pg) => { await journal({ kind: "settle", state: "committed", origin: "host" })(pg); await streamed("committed")(pg); });
+      on(K.respond, emit("token", { ...ids, text: "\n" + r.continueVerified }));
+      // The completion check runs on the finished turn (runner.py: controller.completion(), record_check()).
+      pub(K.verified, row(1792, at(K.verified), "check", "Verified · pytest 42 passed on current files", "done", null, 0.01));
+      // app.py finish(): the reply saved again (after the tests' summary, by `created`); then the run settles.
+      on(K.complete - 1, live("resave", chat, { id: reply, role: "assistant", content: finalText, run_id: run, usage: usage3 }));
+      on(K.complete - 1, emit("complete", { chat_id: chat, id: reply, seconds: Math.round(span(K.testsEnd, K.complete - 1) * 10) / 10 }));
+      on(K.complete - 1, live("active", null, null));
       state(K.complete, "completed", { elapsed: live3, counts: counts(9, waitDates + waitTests + waitRun) });
       on(K.complete, emit("idle", { chat_id: chat, run_id: run }));
-      // A check on the mock's own rows for the held decision (seq 1280-1408), which the window reads at 17.80 s.
+      // The person reads the result (the card grew below the fold), then scrolls back up to the newest steps, where the
+      // model's attempt runs and the completion check arrives. The first scroll runs while rows arrive above the view.
+      scrollEaseToEnd(steps, K.resultScroll[0], K.resultScroll[1], "#details-drawer .details-panel");
+      on(K.stepsScroll[0] - 1, (pg) => pg.evaluate((y) => (window.__film = { ...(window.__film || {}), stepsY: y }), STEPS_Y));
+      followScroll(steps, K.stepsScroll[0], K.stepsScroll[1], "#details-drawer .details-panel", "#drawer-thinking .thinking-steps > li:last-child", "stepsY");
+      // A check on the mock's own rows for the held decision (seq 1280-1536), which the window reads when the run resumes.
       on(K.runTheTests + 20, async (pg) => {
         const rows = await pg.evaluate((id) => window.__pebble.world.live.items(id), run);
-        const seen = Object.fromEntries(rows.filter((i) => i.seq >= 1280 && i.seq <= 1408).map((i) => [i.seq, i.at]));
-        if (seen[1280] !== at(K.runTheTests) || seen[1344] !== at(bindRun) || seen[1408] !== at(bindRun + 1))
+        const seen = Object.fromEntries(rows.filter((i) => i.seq >= 1280 && i.seq <= 1536).map((i) => [i.seq, i.at]));
+        if (seen[1280] !== at(K.runTheTests) || seen[1344] !== at(K.runTheTests) || seen[1408] !== at(bindRun) || seen[1536] !== at(bindRun + 1))
           throw new Error("the held decision's rows are not where the schedule says: " + JSON.stringify(seen));
       });
       TIMELINES["main-live-film-150"].meta = { T0, K, transitions, live: [live1, live2, live3], waits: { dates: waitDates, tests: waitTests, run: waitRun },
-        model: { a1, a2, a3, a4, a5, a6 }, usage: [usage1, usage2, usage3], schedule };
+        model: { a1, a2, a3, a4, a5, a6 }, usage: [usage1, usage2, usage3], schedule, testsRunning: [K.runTests, K.testsEnd] };
       return steps;
     },
   },
