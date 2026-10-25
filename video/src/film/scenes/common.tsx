@@ -10,7 +10,7 @@ import { Camera, KineticText, World, blockHeight, topForBaseline } from "../../c
 import { FONT } from "../../fonts";
 import type { CamPose, Rect } from "../../motion/camera";
 import { useLayout, type AspectId, type Layout, type StageCorners } from "../../motion/layout";
-import { COLOR, EASE, TYPO, blurOut, fxStyle, ramp, type TypoRole } from "../../motion/spec";
+import { COLOR, EASE, SLAM, TYPO, blurOut, fxStyle, ramp, slamPreRoll, type TypoRole } from "../../motion/spec";
 import { FRAME, SYSTEM } from "../../motion/system";
 import type { Hop } from "../../pebble/acting";
 import { PebbleOnFilm } from "../../pebble/PebbleOnFilm";
@@ -90,7 +90,18 @@ export function lineBox(cue: TextCue, L: Layout): { box: Rect; size: number; ali
 }
 
 /**
- * One timeline line. Entrances (A) blur, (B) ink, (C) rise from §3; small print fades in over 9 frames (§6 S9). The ink
+ * The slam's overscale (ENERGY_SPEC §7): 1.10 in 16:9; in the narrow aspects 1.06 for the lists and the centred
+ * end-card line, 1.04 for the window world's band lines (the column's, in 16:9), whose room is smaller.
+ */
+export const slamK = (cue: TextCue, a: AspectId): number => (a === "wide" ? SLAM.k.wide : cue.place === "column" ? SLAM.k.narrowColumn : SLAM.k.narrow);
+
+/** The first frame a line is drawn: a slam from its pre-roll (3 frames before it lands), unless it lands on a cut, where
+ *  its pre-roll would fall in the previous shot, so it appears already landed; the other entrances from in − 1. */
+export const firstDrawnFrame = (cue: TextCue, fps: number): number =>
+  cue.enter === "slam" ? (CUTS.includes(cue.in) ? cue.in : cue.in - slamPreRoll(fps)) : cue.in - 1;
+
+/**
+ * One timeline line. Entrances (A) blur, (B) ink, (C) rise from §3, and (S) the recut's slam; small print fades in over 9 frames (§6 S9). The ink
  * entrance starts from #B0C2AE on paper and from white at 35 % on sage (§3 B). A line is dead still once it has landed
  * and leaves with the 6-frame blur-out, unless a world move takes it (`exit={false}`). A list item (lane G-fix,
  * REVIEW-G2 P1-6) inks whole when `inkTogether`, and from `dimAt` dims to LIST_DIM over 6 frames as the next one
@@ -100,7 +111,7 @@ export const FilmLine: React.FC<{ cue: TextCue; world: LineWorld; exit?: boolean
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const L = useLayout();
-  if (frame < cue.in - 1 || (exit && frame > cue.out + 8)) return null;
+  if (frame < firstDrawnFrame(cue, fps) || (exit && frame > cue.out + 8)) return null;
   // a leaving line never survives a cut (T7 and T13 finish their blur-out a frame after a hard cut on the bar); a line
   // that is still holding when the stage cuts (T8 across f1008) stays, as the column does
   if (exit && CUTS.some((c) => c > cue.in && frame >= c && cue.out < c)) return null;
@@ -109,7 +120,8 @@ export const FilmLine: React.FC<{ cue: TextCue; world: LineWorld; exit?: boolean
   const lines = linesFor(cue, L.aspect);
   const exitAt = exit && cue.out < END ? cue.out : undefined;
   const dim = cue.dimAt === undefined ? 1 : 1 - (1 - LIST_DIM) * ramp(frame, cue.dimAt, 6, EASE.move);
-  const wordStarts = cue.inkTogether ? lines.flatMap((l) => l.split(" ").filter((w) => w.length > 0)).map(() => cue.in) : cue.wordStarts;
+  // a slam lands whole (about the line's anchor) unless it names its words' landings (T7)
+  const wordStarts = cue.enter !== "slam" && cue.inkTogether ? lines.flatMap((l) => l.split(" ").filter((w) => w.length > 0)).map(() => cue.in) : cue.wordStarts;
   if (cue.enter === "fade") {
     // small print: opacity over 9 frames (EASE.enter), the same blur-out if it ever leaves
     const o = ramp(frame, cue.in, 9, EASE.enter);
@@ -146,6 +158,7 @@ export const FilmLine: React.FC<{ cue: TextCue; world: LineWorld; exit?: boolean
       exitAt={exitAt}
       enter={cue.enter}
       wordStarts={wordStarts}
+      slamK={slamK(cue, L.aspect)}
       color={color}
       inkFrom={cue.enter === "ink" ? (world === "sage" ? SYSTEM.inkFromSage : SYSTEM.inkFromPaper) : undefined}
       align={align}
@@ -219,9 +232,9 @@ export const Horizon: React.FC<{ x0: number; x1: number; y: number; stroke?: num
  * The film pebble
  * ============================================================================================================== */
 
-/** Hops of an instance in the aspect's frame px. */
+/** Hops of an instance in the aspect's frame px (with each hop's timing: H2 hangs at its apex). */
 export const hopsFor = (ids: readonly string[], a: AspectId, s: number): Hop[] =>
-  HOPS.filter((h) => ids.includes(h.id)).map((h) => ({ at: h.at, to: { x: h.to[a].x * s, y: h.to[a].y * s }, duration: h.duration }));
+  HOPS.filter((h) => ids.includes(h.id)).map((h) => ({ at: h.at, to: { x: h.to[a].x * s, y: h.to[a].y * s }, duration: h.duration, timing: h.timing }));
 
 /** PebbleOnFilm with the film's merged cue list (timeline cues + pointer-driven looks) for this aspect. */
 export const FilmPebble: React.FC<{

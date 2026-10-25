@@ -65,14 +65,18 @@ export const LIVE_FILM = {
 } as const;
 
 /**
- * `pet-live-error` (record.mjs, 3×, R1: --hide=.pet-avatar): the 384 × 456 companion window, transparent, the avatar
- * laid out but invisible, in video/public/ui-frames/pet-live-error. The quick chat opens on the click frame (0.60 s).
+ * `pet-live-error` (record.mjs, 3×, R1: --hide=.pet-avatar, light theme): the 384 × 456 companion window, transparent,
+ * the avatar laid out but invisible, 270 frames (0–8.97 s) in video/public/ui-frames/pet-live-error-light-hidden. The
+ * quick chat opens on the click frame (0.60 s); the question types itself 1.30–2.93 s; Enter at 3.00 s ("Sending",
+ * "Task: queued"); "Thinking" from 3.30 s; the answer's first word, "Python", at 4.60 s; the feed scrolls up 17 px at
+ * 5.43 s as the answer takes its second line; "Task: completed" at 6.60 s, after the film's dive (ENERGY_SPEC §1, §5).
+ * The energetic recut plays it to 5.97 s. The older 140-frame recording (ui-frames/pet-live-error) stays on disk.
  */
 export const PET_FILM = {
-  dir: "ui-frames/pet-live-error",
+  dir: "ui-frames/pet-live-error-light-hidden",
   width: 384,
   height: 456,
-  frames: 140,
+  frames: 270,
 } as const;
 
 /** Settings stills (settings-*@3x, the 1160 × 800 window with the modal open). */

@@ -23,7 +23,7 @@
 //   framings, so each one's bottom must fall in clear space too (the vertical shows it).
 import type { CamKey, CamPose, Point, Rect } from "../motion/camera";
 import { cameraAt } from "../motion/camera";
-import { EASE, SPRING, cursorPathAt, springAt, type CursorKey } from "../motion/spec";
+import { EASE, SPRING, cursorPathAt, springAt, type CursorKey, type Ease } from "../motion/spec";
 import type { AspectId } from "../motion/layout";
 import { DASHBOARD, LIVE_FILM, QUIZ, SETTINGS, centreOf } from "./ui";
 
@@ -257,12 +257,14 @@ export const CHART_ROWS_VERTICAL = { y0: 500, y1: 815 } as const;
 
 /** A camera pose for a framing at layout scale `s`. */
 export const pose = (f: Framing, s: number): CamPose => ({ x: f.cx, y: f.cy, zoom: f.m * s });
-const key = (at: number, f: Framing, s: number, dur?: number, path: "direct" | "smooth" = "direct"): CamKey => ({ at, x: f.cx, y: f.cy, zoom: f.m * s, dur, path, ease: EASE.camera });
+const key = (at: number, f: Framing, s: number, dur?: number, path: "direct" | "smooth" = "direct", ease: Ease = EASE.camera): CamKey => ({ at, x: f.cx, y: f.cy, zoom: f.m * s, dur, path, ease });
 
 /**
  * The stage camera from f648 to f1655 (S5, S6, S7a). Cuts are one-frame moves (the pose jumps on the cut's frame).
  * Moves: f720–753 into the drawer; f774–797 tilt down to Apply edit; f864 hard cut to the whole held run, f954–977
- * push-in to read it; f1008 hard cut to the tests card (square: tilt f1050–1073); f1188–1211 pull-back; f1224 match cut
+ * push-in to read it; f1008 hard cut to the tests card (square: tilt f1050–1073); f1188–1211 the pull-back, a
+ * speed-ramped move (EASE.ramp, the energetic recut) that lands on the finished reply as the pebble turns happy at
+ * f1204 (nothing moves f1152–1187: Verified is held 36 frames); f1224 match cut
  * to Settings (square: tilt f1338–1361 and back f1408–1431); f1476–1499 pan to the records; f1584 hard cut to the
  * dashboard.
  */
@@ -283,7 +285,7 @@ export function windowKeys(a: AspectId, s: number): CamKey[] {
   // read framing the old 32-frame move travelled 202 px a frame in 16:9 and 214 in the square, 10× R5's blur limit)
   if (a === "wide") {
     keys.push(key(1008, F.s5d!, s, 1), key(1139, F.s5dVerified!, s, 23));
-    keys.push(key(1211, F.s5eOut!, s, 23), key(1224, F.s6a!, s, 1));
+    keys.push(key(1211, F.s5eOut!, s, 23, "direct", EASE.ramp), key(1224, F.s6a!, s, 1));
     keys.push(key(1499, F.s6c!, s, 23));
   } else {
     // the narrow aspects (lane v2-film): the tests card's top, the tilt to Run tests (f1050–1073), and once R2's scroll
@@ -294,7 +296,7 @@ export function windowKeys(a: AspectId, s: number): CamKey[] {
     // Memory click (f1440), f1444–1467 to the six layers, held 1.1 s (an OVERRIDES §10 headline fact: REVIEW-G2 P2-18
     // asked for about 1.2 s), then f1500–1523 out to the records; the pointer comes in from f1500 and reaches the bin by
     // f1525, after the camera has landed
-    keys.push(key(1211, F.s5eOut!, s, 23), key(1224, F.s6aWays!, s, 1), key(1313, F.s6a!, s, 23));
+    keys.push(key(1211, F.s5eOut!, s, 23, "direct", EASE.ramp), key(1224, F.s6aWays!, s, 1), key(1313, F.s6a!, s, 23));
     keys.push(key(1361, F.s6bTilt!, s, 23), key(1431, F.s6a!, s, 23), key(1467, F.s6cLayers!, s, 23), key(1523, F.s6c!, s, 23));
   }
   // S7a: the hard cut lands on the ask; f1602–1625 the camera moves to the canvas on van Wijk's path (it pulls back as

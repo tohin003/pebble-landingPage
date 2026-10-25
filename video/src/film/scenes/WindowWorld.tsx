@@ -22,7 +22,7 @@ import { PEBBLE_LIGHT } from "../../pebble/PebbleSvg";
 import { STAGE, STAGE_CUTS, pointerSpans, stageMotionBlur, stagePoseAt, stageToFrame } from "../framing";
 import { PEBBLE_INSTANCES, SOURCE_MAPS, sourceAt } from "../timeline";
 import { DASHBOARD, LIVE_FILM, SETTINGS, centreOf } from "../ui";
-import { FilmPebble, FilmStage, FlatGround, Horizon, Lines, RecordedUi, hopsFor, recordedFrame } from "./common";
+import { FilmPebble, FilmStage, FlatGround, Horizon, Lines, RecordedUi, hopsFor, recordedFrame, type RecordedFocus } from "./common";
 
 /** Clicks whose press is drawn over the real control, on the frozen frame before the click (FILM_SPEC §7.2, §10). */
 const PRESSES = [
@@ -40,6 +40,34 @@ const PRESS_FRAMES = 4; // 0.12 s at 30 fps (CLICK.uiPressS)
 const UNDO_FOCUS = { from: 826, inDur: 12, outAt: 852, outDur: 6, pad: 8 } as const;
 const undoFocusAmount = (frame: number) =>
   ramp(frame, UNDO_FOCUS.from, UNDO_FOCUS.inDur, EASE.enter) * (1 - ramp(frame, UNDO_FOCUS.outAt, UNDO_FOCUS.outDur, EASE.exit));
+
+/**
+ * The Verified pointing (the energetic recut, ENERGY_SPEC §6): the camera points with the app's own focus veil, not a
+ * magnification (the measured row with its bullet and its +30.0 s timestamp spans x 834–1139.3 CSS, so no tighter
+ * framing keeps it whole 60 px inside the frame: s5dVerified stays, in every aspect).
+ * - f1143–1148, in the breath: the focus comes onto the still-running "Requesting isolated tests" row (EASE.enter);
+ *   the app's own "· 11 s" lands on it at f1146;
+ * - f1152, on the hit: the focus JUMPS to "Verified · pytest 42 passed on current files · 2 s" at full amount, with no
+ *   ramp, and every other row (and "Waiting for the model" when it arrives at 20.70 s) stays receded;
+ * - held to f1187 (no cut and no camera move from f1152), released f1182–1187 with the check (EASE.exit).
+ * Rects in CSS px of the recording, measured on main-live-film after R2's scroll.
+ */
+const VERIFIED_FOCUS = {
+  requesting: { x: 826, y: 377, w: 1147 - 826, h: 404 - 377 },
+  verified: { x: 826, y: 401, w: 1147 - 826, h: 445 - 401 },
+  from: 1143,
+  inDur: 6,
+  jumpAt: 1152,
+  outAt: 1182,
+  outDur: 6,
+  radius: 6,
+} as const;
+const verifiedFocus = (frame: number, zoom: number): RecordedFocus | null => {
+  const f = VERIFIED_FOCUS;
+  if (frame < f.from || frame >= f.outAt + f.outDur) return null;
+  const amount = (frame < f.jumpAt ? ramp(frame, f.from, f.inDur, EASE.enter) : 1) * (1 - ramp(frame, f.outAt, f.outDur, EASE.exit));
+  return { rect: frame < f.jumpAt ? f.requesting : f.verified, amount, zoom, radius: f.radius };
+};
 
 /** The Settings still on screen (each click swaps it on its own frame; f1542 after the dissolve). */
 const settingsStill = (frame: number): UiStillName =>
@@ -60,7 +88,7 @@ const StageContent: React.FC<{ frame: number; zoom: number; aspect: AspectId }> 
             zoom,
             radius: u.radius + UNDO_FOCUS.pad,
           }
-        : null;
+        : verifiedFocus(frame, zoom);
     return <RecordedUi src={recordedFrame(LIVE_FILM.dir, LIVE_FILM.frames, s)} width={LIVE_FILM.width} height={LIVE_FILM.height} press={press} focus={focus} />;
   }
   if (frame < 1584) {

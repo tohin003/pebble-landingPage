@@ -5,12 +5,17 @@
 // timeline's absolute frames directly, as the cue list, the beat map and FILM_SPEC do.
 import type { ComponentType } from "react";
 import { AbsoluteFill, Sequence } from "remotion";
-import { pendingCopy, validateTimeline } from "../timeline";
+import type { CamKey } from "../../motion/camera";
+import { ASPECTS, REFERENCE } from "../../motion/layout";
+import { T, sec } from "../../motion/spec";
+import { windowKeys } from "../framing";
+import { hookKeys, ZOOM_THROUGH } from "../hook";
+import { FPS, pendingCopy, validateTimeline, type CameraMove } from "../timeline";
 import { S1Hook } from "./S1Hook";
 import { S2Questions, S3Build, S8Claims } from "./SageScenes";
 import { S4Reveal, S9EndCard } from "./PaperScenes";
 import { S5S6Window } from "./WindowWorld";
-import { S7Dashboard, S7Quiz } from "./S7Views";
+import { BADGE_DIVE, GROW, S7Dashboard, S7Quiz } from "./S7Views";
 
 /** The film's shots as rendered (FILM_SPEC §6): S7 splits where its world changes (S7a+b in the stage, S7c the quiz). */
 export const FILM_SHOTS: readonly { name: string; from: number; to: number; Scene: ComponentType }[] = [
@@ -25,10 +30,31 @@ export const FILM_SHOTS: readonly { name: string; from: number; to: number; Scen
   { name: "S9 End card", from: 2016, to: 2304, Scene: S9EndCard },
 ];
 
+/** Every camera move of the film, per aspect, as [from, to) spans (a one-frame key is a cut, not a move), for the
+ *  timeline's breath and Verified-hold rules: the hook's keys and dive, the stage camera, the chart's growth and the
+ *  quiz's dive. */
+export function filmCameraMoves(): CameraMove[] {
+  const moves = (keys: readonly CamKey[], aspect: CameraMove["aspect"], what: string): CameraMove[] =>
+    keys.slice(1).flatMap((k) => {
+      const dur = k.dur ?? sec(T.camera, FPS);
+      return dur > 1 ? [{ aspect, from: k.at - dur, to: k.at, what: `${what} into f${k.at}` }] : [];
+    });
+  return ASPECTS.flatMap((a) => {
+    const { width, height } = REFERENCE[a];
+    return [
+      ...moves(hookKeys(a, width, height, 1), a, "the hook camera"),
+      { aspect: a, from: ZOOM_THROUGH.from, to: ZOOM_THROUGH.fill, what: "the hook's dive" },
+      ...moves(windowKeys(a, 1), a, "the stage camera"),
+      { aspect: a, from: GROW.at, to: GROW.at + GROW.dur, what: "the chart's growth" },
+      { aspect: a, from: BADGE_DIVE.from, to: BADGE_DIVE.fill, what: "the quiz's dive" },
+    ];
+  });
+}
+
 let checked = false;
 const assertTimeline = () => {
   if (checked) return;
-  const problems = [...validateTimeline(), ...pendingCopy().map((p) => `copy not yet in src/content/chapters.ts: ${p}`)];
+  const problems = [...validateTimeline(filmCameraMoves()), ...pendingCopy().map((p) => `copy not yet in src/content/chapters.ts: ${p}`)];
   if (problems.length) throw new Error(`film/timeline.ts is invalid:\n  ${problems.join("\n  ")}`);
   checked = true;
 };

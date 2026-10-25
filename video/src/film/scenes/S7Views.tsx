@@ -20,7 +20,7 @@ import { FrameBlur, Solid } from "./common";
 import { WindowWorld } from "./WindowWorld";
 
 /** S7b's growth: f1656 → f1675. */
-const GROW = { at: 1656, dur: 20, fadeDur: 9 } as const;
+export const GROW = { at: 1656, dur: 20, fadeDur: 9 } as const;
 
 /** A frame-centred pose for a framing (full-frame worlds). */
 const framePose = (f: { m: number; cx: number; cy: number }, s: number): CamPose => ({ x: f.cx, y: f.cy, zoom: f.m * s });
