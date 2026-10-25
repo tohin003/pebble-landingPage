@@ -1,6 +1,7 @@
 // The window world (bars 15–25, f1008–1799): the page's paper ground, the text column (16:9) or band (1:1, 9:16), and
 // the stage, a hairline-framed moment of Pebble's real UI that ends above the caption band (film/framing.ts WIN_STAGE).
-// - The montage (bars 15–20), one bar each, each line taken by the next bar's cut: views (the trip budget's chart
+// - The montage (bars 15–20), one bar each, each line taken by the next bar's cut (in 16:9 bar 20 has no line, and its
+//   stage widens over the empty column, framing.ts M6_STAGE): views (the trip budget's chart
 //   fills the stage), your model (the three ways in come forward on beats 1, 2 and 3), memory (a record binned on
 //   f1170 dissolves; the list closes up on f1182), permissions (1.5.0: Auto in project chosen on f1260, then the focus
 //   on its own words), your tests stay yours (the waiting test-file card's reason, v1.5.0), the scope challenge (the refused step,
@@ -18,7 +19,7 @@ import { useLayout } from "../../motion/layout";
 import { CLICK, EASE, ramp } from "../../motion/spec";
 import { SYSTEM } from "../../motion/system";
 import { PEBBLE_LIGHT } from "../../pebble/PebbleSvg";
-import { PRESS_RUN_THE_TESTS, STAGE_CUTS, WIN, WIN_STAGE, pointerSpans, stageMotionBlur, stagePoseAt, stageToFrame } from "../framing";
+import { PRESS_RUN_THE_TESTS, STAGE_CUTS, WIN, pointerSpans, stageAt, stageMotionBlur, stagePoseAt, stageToFrame } from "../framing";
 import { MOMENTS, PEBBLE_INSTANCES, SOURCE_MAPS, at, sourceAt } from "../timeline";
 import { CHALLENGE_150, LIVE_150, PERMS_150, RUN, SETTINGS, centreOf } from "../ui";
 import { FilmPebble, FilmStage, FlatGround, Horizon, Lines, RecordedUi, recFrame, type RecordedFocus } from "./common";
@@ -113,7 +114,7 @@ export const WindowWorld: React.FC = () => {
   const L = useLayout();
   const a = L.aspect;
   const s = L.s;
-  const st = WIN_STAGE[a];
+  const st = stageAt(frame, a);
   const stage = { x: st.x * s, y: st.y * s, w: st.w * s, h: st.h * s };
   const pose = stagePoseAt(frame, a, s, fps);
   const blur = STAGE_CUTS.includes(frame) ? { x: 0, y: 0 } : stageMotionBlur(pose, stagePoseAt(frame - 1, a, s, fps), stage);

@@ -3,7 +3,7 @@
 // quick-chat panel live at their place on it (timeline PET, PET_PANEL).
 import type { CamPose, Point } from "../motion/camera";
 import { poseAt } from "../motion/camera";
-import type { CursorKey } from "../motion/spec";
+import { EASE, type CursorKey } from "../motion/spec";
 import { DESK_CAMERA, PET, PET_PANEL, type Aspect } from "./timeline";
 
 /** The star beat's tilt from the page down to the desktop (bar 11): the pebble's hop H3 takes off on f756 and lands
@@ -20,9 +20,18 @@ export const coldPose = (a: Aspect, s: number, width: number, height: number): C
 /** Bar 11: the light riverbed under the landing pebble (its size the lockup's). */
 export const landPose = (a: Aspect, s: number, width: number, height: number): CamPose =>
   deskPose(DESK_CAMERA.land.m[a], DESK_CAMERA.land.pebbleAt[a], s, width, height);
-/** Bars 12–13: the whole quick-chat panel (the recut's C1). */
-export const chatPose = (a: Aspect, s: number, width: number, height: number): CamPose =>
-  deskPose(DESK_CAMERA.chat.m[a], DESK_CAMERA.chat.pebbleAt[a], s, width, height);
+/** Bars 12–13: the whole quick-chat panel (the recut's C1); in 1:1 its top until the answer arrives (f898), then a
+ *  12-frame tilt down to the whole panel (DESK_CAMERA.chatHead, OVERRIDES §46 P2-3). */
+export const chatPose = (a: Aspect, s: number, width: number, height: number, frame = Infinity): CamPose => {
+  const whole = deskPose(DESK_CAMERA.chat.m[a], DESK_CAMERA.chat.pebbleAt[a], s, width, height);
+  const t = DESK_CAMERA.chatHead;
+  const head = a === "square" ? t.square : null;
+  if (!head || frame >= t.at + t.dur) return whole;
+  const top = deskPose(head.m, head.pebbleAt, s, width, height);
+  if (frame <= t.at) return top;
+  const u = EASE.camera((frame - t.at) / t.dur);
+  return { x: top.x + (whole.x - top.x) * u, y: top.y + (whole.y - top.y) * u, zoom: top.zoom + (whole.zoom - top.zoom) * u };
+};
 /** f918–935: the punch-in on the question and Pebble's answer, the pebble out of frame. */
 export const answerPose = (a: Aspect, s: number): CamPose => {
   const c = DESK_CAMERA.answer;

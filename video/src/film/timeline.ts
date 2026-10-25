@@ -132,26 +132,44 @@ export const DESKTOP_RECT: Rect = { x: 0, y: 0, w: 1600, h: 1000 };
 /**
  * The desktop world's cameras (magnification m = frame px per desktop unit, and where the pebble's centre sits on the
  * frame). The vertical never zooms out below m 1.92 (the wallpaper is 1,000 units tall, the frame 1,920 px).
- * - COLD (bar 1, f0–71): the extreme close-up on the eyes, the pebble low and right of centre on the dark riverbed;
+ * - COLD (bar 1, f0–71): the extreme close-up, "the eyes plus one curve" (OVERRIDES §46 P1-2): the frame crops the
+ *   body, which sits in a corner of the dark riverbed, and the two eyes are in one third of the frame on frame 0 (the
+ *   page's poster and every thumbnail, under a centred play button), so the button's area stays dark. 16:9: the
+ *   bottom-right corner, the eyes in the right third looking up-left toward the button and the pointer's entry; 1:1
+ *   and 9:16: the bottom-left, the eyes in the left third looking up-left (9:16: inside the band, y 250–1670). The eyes'
+ *   swing to the look at the viewer (f54) runs toward the frame's inside, so they stay in frame.
+ *   The zoom is the most the third allows with the eyes legible at 360 px wide (checkColdOpen in film/gaze.ts);
  * - LAND (bar 11, f774–791): the pebble in its corner of the light riverbed, its size the lockup's (210 / 170 px), so
  *   the hop from the lockup lands at the same scale;
- * - CHAT (bars 12–13, f792–917): the whole quick-chat panel (the recut's C1, edge-checked by lane v2-film);
+ * - CHAT (bars 12–13, f792–917): the whole quick-chat panel (the recut's C1, edge-checked by lane v2-film); in 1:1 the
+ *   panel's top first (CHATHEAD), then a tilt to the answer on f898;
  * - ANSWER (f918–935): a punch-in on the question and Pebble's answer, the pebble out of frame.
  */
 export const DESK_CAMERA = {
-  cold: { m: per(7.0, 6.0, 7.5), pebbleAt: per({ x: 1180, y: 640 }, { x: 600, y: 620 }, { x: 560, y: 1000 }) },
+  cold: {
+    m: per(12.4, 9.6, 10),
+    pebbleAt: per({ x: 1630, y: 930 }, { x: 198, y: 955 }, { x: 208, y: 1560 }),
+    /** the third of the frame the eyes sit in on frame 0 */
+    third: per("right", "left", "left") as PerAspect<"left" | "right">,
+  },
   land: { m: per(210 / PET.size, 170 / PET.size, 1.92), pebbleAt: per({ x: 1480, y: 760 }, { x: 790, y: 793 }, { x: 760, y: 1440 }) },
   chat: { m: per(2.35, 2.62, 2.62), pebbleAt: per({ x: 1300, y: 938 }, { x: 900, y: 846 }, { x: 900, y: 1400 }) },
+  /** 1:1 only (OVERRIDES §46 P2-3): at m 2.62 the square can't show the whole panel, so bars 12–13 open on its top, the
+   *  header "pebble." with Pebble's live status (Sending, Thinking ~1s, ~2s, Reasoning it through) and "A little help,
+   *  right here." over the question (panel y −6 to 406; the pebble's head and thought dots at the bottom edge), and on
+   *  f898, as the answer arrives whole, the camera tilts down over 12 frames to CHAT (the answer and the pebble whole).
+   *  A camera move only: Pebble's time stays at 1×. */
+  chatHead: { square: { m: 2.62, pebbleAt: { x: 900, y: 1057 } }, at: 898, dur: 12 },
   /** panel coordinates (the 384 × 456 quick chat): 16:9 the header's subtitle and the composer stay out (y 62–262);
    *  1:1 and 9:16 keep the answer whole (334 px wide) with the pebble below the frame (9:16: the answer's last line
    *  reaches into the caption band, where no caption plays in bars 12–13) */
   answer: { m: per(5.4, 3.0, 3.14), centre: per({ x: 192, y: 162 }, { x: 192, y: 146 }, { x: 192, y: 48 }) },
-  /** where the cold open's pointer drifts in from, rests beside the face (inside the pet window: the attentive pose)
-   *  and slides away to (frame px) */
+  /** where the cold open's pointer drifts in from (above the frame, up-left of the face, where frame 0's eyes look),
+   *  rests beside the face (inside the pet window: the attentive pose) and slides away to, off the left edge (frame px) */
   coldPointer: {
-    from: per({ x: 1990, y: 120 }, { x: 1140, y: 120 }, { x: 1140, y: 640 }),
-    rest: per({ x: 1560, y: 330 }, { x: 870, y: 330 }, { x: 860, y: 720 }),
-    away: per({ x: 2080, y: 1200 }, { x: 1180, y: 1200 }, { x: 1180, y: 2000 }),
+    from: per({ x: 700, y: -60 }, { x: -300, y: -200 }, { x: -300, y: 300 }),
+    rest: per({ x: 1250, y: 520 }, { x: 440, y: 560 }, { x: 440, y: 1180 }),
+    away: per({ x: -150, y: 700 }, { x: -250, y: 360 }, { x: -250, y: 1000 }),
   },
   /** where the star beat's pointer comes from (frame px) */
   landPointerFrom: per({ x: 1990, y: 300 }, { x: 1140, y: 300 }, { x: 1140, y: 900 }),
@@ -685,7 +703,11 @@ export const SFX: readonly SfxCue[] = [
  * - hold: from the frame the app holds the task (the drive muted, the bed −6 dB behind a 1.2 kHz low-pass) to
  *   `toFrame`, released to `releaseFrame`: glimpse 3's from f445 to the cut to the turn (f504), released over the turn
  *   to bar 9 (f576); the held run's from f1453 to the Run the tests click (f1512), released across bar 22 to f1584;
- * - tail: the master fades from f2214 on an equal-power curve, then digital silence from f2250 to the end.
+ * - tail: the master fades from f2214 on an equal-power curve, then digital silence from f2250 to the end;
+ * - ride: the send key's duck (OVERRIDES §46 P2-2): the bed and the drive dip 6 dB under the key (tick_c on f792,
+ *   bar 12's downbeat) and are back by the and of beat 1 (f801), so the key reads and the groove carries on. Nothing
+ *   else holds bars 12–13 down: the score's groove comes back and builds through bar 13 into bar 14's lift (the
+ *   blueprint's "the groove sits back 6 dB" over both bars is withdrawn: after §42 the send is the one UI sound there).
  * The dead stop (f612–638) has no automation: the score is silent there by its own notes.
  */
 export type AutomationRole = "gap" | "hold" | "tail" | "ride";
@@ -694,12 +716,17 @@ export interface AutomationCue {
   frame: number;
   toFrame: number;
   releaseFrame?: number;
+  /** the span's own level and ramps, where they differ from tools/audio/sfx_kit.json's for its role */
+  db?: number;
+  attackMs?: number;
+  releaseMs?: number;
   event: string;
 }
 export const AUTOMATION: readonly AutomationCue[] = [
   { role: "gap", frame: at(1, 4, 9), toFrame: at(2), event: "the breath before the first question's hit" },
   { role: "hold", frame: 445, toFrame: at(8), releaseFrame: at(9), event: "Pebble's hold in glimpse 3: the music stops with it; released over the turn" },
   { role: "gap", frame: at(9, 4, 9), toFrame: at(10), event: "inside the dead stop, before the drop" },
+  { role: "ride", frame: at(12), toFrame: at(12, 1, 9), db: -6, attackMs: 10, releaseMs: 150, event: "the send key reads: the groove ducks under it and is back by the and of beat 1, then builds through bar 13 into bar 14" },
   { role: "hold", frame: 1453, toFrame: at(22), releaseFrame: at(23), event: "the held run: the stopdown; Run the tests releases it and the filter opens across bar 22" },
   { role: "gap", frame: at(23, 4, 9), toFrame: at(24), event: "the breath before the tests pass" },
   { role: "gap", frame: at(30, 4, 9), toFrame: at(31), event: "the breath before the final hit" },
@@ -1075,6 +1102,17 @@ function checkTrailer(camera: readonly CameraMove[]): string[] {
   }
   const tails = AUTOMATION.filter((a) => a.role === "tail");
   if (tails.length !== 1 || tails[0]!.toFrame >= GRID.frames || tails[0]!.toFrame !== at(32, 2)) out.push("there must be one tail, its digital silence from f2250 (1.8 s)");
+  // the one ride: the duck under the send key (OVERRIDES §46 P2-2), on the send, at most a beat long and 6 dB deep, so
+  // the energy never sits back after the reveal
+  const rides = AUTOMATION.filter((a) => a.role === "ride");
+  const send = SFX.find((f) => f.take === "tick_c" && f.frame === at(12));
+  if (!send) out.push("the send key (tick_c) must sound on bar 12's downbeat (f792)");
+  if (rides.length !== 1) out.push(`there must be one ride (the send key's duck), not ${rides.length}`);
+  for (const r of rides) {
+    if (r.frame !== at(12)) out.push(`the ride starts on f${r.frame}, not on the send (f${at(12)})`);
+    if (r.toFrame - r.frame > GRID.framesPerBeat) out.push(`the ride lasts ${r.toFrame - r.frame} frames, more than a beat`);
+    if (r.db === undefined || r.db < -6) out.push(`the ride's duck must be set, and no deeper than 6 dB (${r.db ?? "unset"})`);
+  }
   // inside a breath: no cut, no camera move starting, no pose cue, no line landing, no hop taking off (H2 takes off on
   // the dead stop's first frame; slam pre-rolls may fill a gap's last 3 frames to land on its hit)
   const n = SLAM_PREROLL_FRAMES;

@@ -14,7 +14,7 @@ import type { CamKey, CamPose, Point, Rect } from "../motion/camera";
 import { cameraAt } from "../motion/camera";
 import { EASE, cursorPathAt, type CursorKey, type Ease } from "../motion/spec";
 import { STAR_PAN } from "./desk";
-import { ASPECT_IDS, SOURCE_MAPS, sourceFrameAt, validateTimeline, type Aspect, type CameraMove, type PerAspect } from "./timeline";
+import { ASPECT_IDS, DESK_CAMERA, SOURCE_MAPS, sourceFrameAt, validateTimeline, type Aspect, type CameraMove, type PerAspect } from "./timeline";
 import { CHALLENGE, PERMS_150, RUN, SETTINGS, TOASTS, centreOf, type Rect as UiRect } from "./ui";
 import usage from "./usage-lines.json";
 
@@ -53,6 +53,9 @@ export interface Glimpse {
   framing: PerAspect<Framing>;
   /** a slow push: the framing scales k → kEnd about this point (CSS px) over the glimpse */
   push?: { about: Point; kEnd: number };
+  /** a tilt at the same m: the camera holds `from` (no push) until `at`, then moves over `dur` frames to the framing
+   *  (with the push as it stands then) */
+  tilt?: { from: PerAspect<Framing>; at: number; dur: number };
   /** the card the camera locks on (G2: the applied card, as the drawer's live response moves it) */
   track?: "datesCard";
   /** [ramp in from, ramp in to] and, if it ends early, [ramp out from, to] (6-frame luminance ramps) */
@@ -62,14 +65,20 @@ export interface Glimpse {
 }
 const g = (x: number, y: number, w: number, h: number): Stage => ({ x, y, w, h, corners: "all" });
 export const GLIMPSES: Record<GlimpseId, Glimpse> = {
-  /** Glimpse 1, "the change": the dates.py card's diff (its clamp lines) and Don't allow / Apply edit; the pointer
-   *  presses Apply edit on f198 and the glimpse ramps out with the press (the card leaves on the click frame). */
+  /** Glimpse 1, "the change": first the card's head, "NEEDS YOUR REVIEW", invoice_kit/dates.py with "Needs your
+   *  review" and "Changes this file in your project. You can undo it afterwards." (OVERRIDES §46 P2-5: Act I says the
+   *  edit waits for the person), then a one-beat tilt (f166–184) to the diff (its clamp lines) and Don't allow / Apply
+   *  edit; the pointer presses Apply edit on f198 and the glimpse ramps out with the press (the card leaves on the click
+   *  frame). */
   G1: {
     stage: { wide: g(548, 72, 824, 836), square: g(40, 168, 1000, 744), vertical: g(40, 560, 1000, 860) },
     // the top edge stays between "View diff" (ink 358–367.3) or the blank lines (468.7–517.3) and the next code line
     // through the push, the bottom between the card's edge (721) and the next card (733)
     framing: { wide: fit({ w: 824, h: 836 }, 2.34, 808, 372), square: fit({ w: 1000, h: 744 }, 2.85, 808, 470), vertical: fit({ w: 1000, h: 860 }, 2.85, 808, 428) },
     push: { about: { x: 980, y: 640 }, kEnd: 1.04 },
+    // the head, at the same m: the top edge between "Ask for approval" (ink to 163.3) and "NEEDS YOUR REVIEW" (from
+    // 189), the bottom between code lines (16:9: 529.3–538.3; 1:1: 427.7–436.7; 9:16: the blank lines 468.7–517.3)
+    tilt: { from: { wide: fit({ w: 824, h: 836 }, 2.34, 808, 176), square: fit({ w: 1000, h: 744 }, 2.85, 808, 171), vertical: fit({ w: 1000, h: 860 }, 2.85, 808, 176) }, at: 166, dur: 18 },
     rampIn: [140, 146],
     rampOut: [198, 204],
     map: "g1",
@@ -126,6 +135,12 @@ export function glimpsePose(id: GlimpseId, a: Aspect, s: number, frame: number):
     const P = gl.push.about;
     p = { x: P.x - (P.x - p.x) / k, y: P.y - (P.y - p.y) / k, zoom: p.zoom * k };
   }
+  if (gl.tilt && frame < gl.tilt.at + gl.tilt.dur) {
+    const h = pose(gl.tilt.from[a], s);
+    if (frame <= gl.tilt.at) return h;
+    const u = EASE.camera((frame - gl.tilt.at) / gl.tilt.dur);
+    return { x: h.x + (p.x - h.x) * u, y: h.y + (p.y - h.y) * u, zoom: h.zoom + (p.zoom - h.zoom) * u };
+  }
   return p;
 }
 
@@ -142,6 +157,16 @@ export const WIN_STAGE: PerAspect<Stage> = {
 const W = WIN_STAGE.wide;
 const Q = WIN_STAGE.square;
 const V = WIN_STAGE.vertical;
+/**
+ * Bar 20 in 16:9 (OVERRIDES §46 P2-4): the text column has no line, so the scope challenge's stage widens over it, from
+ * the page grid's left edge (x 96) to the frame's right edge, and the camera punches in on the refused step: its rows and
+ * their times whole, the evidence check at 40 px. The montage cut on f1368 and the cut to the held run on f1440 take the
+ * change of stage. The narrow aspects already fill their band.
+ */
+export const M6_STAGE: PerAspect<Stage | null> = { wide: { x: 96, y: 64, w: 1824, h: 854, corners: "left" }, square: null, vertical: null };
+const M6W = M6_STAGE.wide!;
+/** The window world's stage on `frame`. */
+export const stageAt = (frame: number, a: Aspect): Stage => (frame >= 1368 && frame < 1440 ? M6_STAGE[a] : null) ?? WIN_STAGE[a];
 const per3 = <T,>(wide: T, square: T, vertical: T): PerAspect<T> => ({ wide, square, vertical });
 
 /** The window world's framings, each per aspect (see the module comment; numbers are fit()'s m, left, top). */
@@ -169,10 +194,14 @@ export const WIN: Record<string, PerAspect<Framing>> = {
   m5: per3(fit(W, 2.84, 808, 205), fit(Q, 3.0, 808, 214), fit(V, 3.0, 808, 210)),
   m5Lead: per3(fit(W, 3.1, 815, 214), fit(Q, 3.2, 814, 222), fit(V, 3.2, 814, 220)),
   /** M6 the scope challenge: the refused (red) step and its details, locked on the step through the person's scroll
-   *  (251 px). "AgentGuard — evidence check" and "5 file(s) changed that the task does not reach" (12 px) at the floor;
-   *  every line starts whole, the steps' times and Pause stay wholly past the right edge, the details' longest lines
-   *  run off it */
-  m6: per3(fit(W, 2.33, 650, 425), fit(Q, 2.72, 649, 520), fit(V, 2.72, 649, 520)),
+   *  (251 px). 16:9 on its wide stage (M6_STAGE) at m 3.362: the drawer to the window's edge, every row whole with its
+   *  time; the top edge between the billing and README edits (the rows above the red one are the same before and after
+   *  the scroll), the bottom between rows in both states (collapsed: under EARLIER ACTIONS, above its first card's
+   *  border at 758; open: under "Evidence: invoice_kit/static/invoice.css", above "Either explain"), so "AgentGuard —
+   *  evidence check" and "5 file(s) changed that the task does not reach" read at 40 px and no sentence is split. 1:1
+   *  and 9:16: the two lines (12 px) at the floor; every line starts whole, the steps' times and Pause stay wholly past
+   *  the right edge, the details' longest lines run off it */
+  m6: per3(fit(M6W, 3.362, 617.5, 498), fit(Q, 2.72, 649, 520), fit(V, 2.72, 649, 520)),
   /** C1 the held run: the drawer's held state (from f1440), then the conversation's held block (from f1494) */
   c1Drawer: per3(fit(W, 2.84, 808, 98), fit(Q, 3.0, 808, 104), fit(V, 3.0, 808, 100)),
   c1Held: per3(fit(W, 3.4, 243, 432), fit(Q, 3.6, 244, 440), fit(V, 3.6, 244, 436)),
@@ -181,8 +210,11 @@ export const WIN: Record<string, PerAspect<Framing>> = {
   c2Click: per3(fit(W, 2.84, 808, 260), fit(Q, 3.0, 808, 380), fit(V, 3.0, 808, 340)),
   /** C3 the card reading Running, where the person's scroll puts it (and the Result scrolls into it) */
   c3: per3(fit(W, 2.84, 808, 440), fit(Q, 3.0, 808, 444), fit(V, 3.0, 808, 444)),
-  /** C4 the newest steps, Verified at the bottom, above the drawer's "Done." and its jumping cards */
-  c4: per3(fit(W, 2.81, 804, 136.5), fit(Q, 3.0, 808, 227), fit(V, 3.15, 808, 202.7)),
+  /** C4 the newest steps, Verified at the bottom, above the drawer's "Done." and its jumping cards. The bottom edge sits
+   *  at 414.5, between Verified's ink (to 410.3) and the run panel: Pause's button from 418 and "Pebble is working on
+   *  this." from 429.3 while the tests end (source 666–672, f1716–1722), then "Done." from 446.7 (OVERRIDES §46 P2-6);
+   *  the top between rows (16:9: under the drawer's tabs, 102–115; 1:1: 221.3–234; 9:16: 179.3–187.7) */
+  c4: per3(fit(W, 2.81, 804, 110.6), fit(Q, 3.08, 808, 225.5), fit(V, 3.2, 812, 182)),
   /** C5 the final reply (its last paragraph's ink ends at 492.7; the usage line's starts at 510) */
   c5: per3(fit(W, 1.9, 243, 52), fit(Q, 2.21, 289, 242), fit(V, 2.0, 243, 129)),
 };
@@ -234,7 +266,7 @@ export function challengeRowY(src: number): number {
 
 /** The window world's camera on `frame` (with M6 locked on the refused step through the person's scroll). */
 export function stagePoseAt(frame: number, a: Aspect, s: number, fps: number): CamPose {
-  const st = WIN_STAGE[a];
+  const st = stageAt(frame, a);
   const base = cameraAt(frame, windowKeys(a, s), fps, st.w * s);
   if (frame >= 1368 && frame < 1440) {
     const src = sourceFrameAt(SOURCE_MAPS.m6, frame) ?? 252;
@@ -285,7 +317,7 @@ export function glimpsePointer(a: Aspect, s: number): PointerSpan {
  *  (C2). Each arrives at least 5 frames before its click and hides when it isn't acting. */
 export function pointerSpans(a: Aspect, s: number): PointerSpan[] {
   const st = WIN_STAGE[a];
-  const fp = (p: Point, f: Framing) => framePoint(p, f, st, s);
+  const fp = (p: Point, f: Framing, stage: Stage = st) => framePoint(p, f, stage, s);
   const w = st.w * s;
   const h = st.h * s;
   const from = (fx: number, fy: number): Point => ({ x: w * fx, y: h * fy });
@@ -294,7 +326,7 @@ export function pointerSpans(a: Aspect, s: number): PointerSpan[] {
   out.push({ id: "bin", keys: [{ at: 1153, ...off(pBin, -150, -40, s) }, { at: 1165, ...pBin, travel: 12, seed: "bin" }, { at: 1192, ...off(pBin, -110, 50, s), travel: 16, seed: "bin-off" }], clicks: [1170], visible: [1153, 1196] });
   const pAuto = fp(aim(PERMS_150.autoRadio, 0, 0), WIN.m4![a]);
   out.push({ id: "auto", keys: [{ at: 1232, ...from(0.92, 1.08) }, { at: 1254, ...pAuto, travel: 22, seed: "auto" }, { at: 1270, ...off(pAuto, 80, 60, s), travel: 12, seed: "auto-off" }], clicks: [1260], visible: [1232, 1272] });
-  const pDetails = fp(aim(centreOf(CHALLENGE.details), -6, 1), WIN.m6![a]);
+  const pDetails = fp(aim(centreOf(CHALLENGE.details), -6, 1), WIN.m6![a], stageAt(1386, a));
   out.push({ id: "details", keys: [{ at: 1368, ...off(pDetails, 120, 90, s) }, { at: 1380, ...pDetails, travel: 12, seed: "details" }, { at: 1398, ...off(pDetails, 140, 80, s), travel: 12, seed: "details-off" }], clicks: [1386], visible: [1368, 1400] });
   const pRun = fp(aim(centreOf(RUN.runTheTests.rect)), WIN.c1Held![a]);
   out.push({ id: "run-the-tests", keys: [{ at: 1494, ...from(0.95, 0.9) }, { at: 1506, ...pRun, travel: 12, seed: "held" }], clicks: [1512], visible: [1494, 1516] });
@@ -380,10 +412,9 @@ export function checkFraming(): string[] {
       }
     }
     // the window world
-    const st = WIN_STAGE[a];
     for (let f = 1008; f < 1800; f++) {
       const p = stagePoseAt(f, a, 1, fps);
-      const r = visibleRect(p, st);
+      const r = visibleRect(p, stageAt(f, a));
       const c = windowContent(f);
       if (r.x < -0.5 || r.y < -0.5 || r.x + r.w > c.width + 0.5 || r.y + r.h > c.height + 0.5) out.push(`${a} f${f}: the view leaves the window (${r.x.toFixed(1)}, ${r.y.toFixed(1)}, ${(r.x + r.w).toFixed(1)}, ${(r.y + r.h).toFixed(1)})`);
       if (c.rec === "light") {
@@ -394,6 +425,7 @@ export function checkFraming(): string[] {
     }
     for (const sp of pointerSpans(a, 1)) {
       for (const cf of sp.clicks) {
+        const st = stageAt(cf, a);
         const pt = cursorPathAt(cf, sp.keys, fps);
         const fx = st.x + pt.x;
         const fy = st.y + pt.y;
@@ -411,8 +443,9 @@ export function checkFraming(): string[] {
  *  push, the star beat's tilt, the whole window's pull-back and the window world's moves. */
 export function filmCameraMoves(): CameraMove[] {
   return ASPECT_IDS.flatMap((a) => [
-    { aspect: a, from: GLIMPSES.G1.rampIn[0], to: GLIMPSES.G1.rampOut![0], what: "glimpse 1's slow push" },
+    { aspect: a, from: GLIMPSES.G1.tilt!.at, to: GLIMPSES.G1.rampOut![0], what: "glimpse 1's tilt from the card's head to its diff, and its slow push" },
     { aspect: a, from: STAR_PAN.from, to: STAR_PAN.from + STAR_PAN.dur, what: "the star beat's tilt to the desktop" },
+    ...(a === "square" ? [{ aspect: a, from: DESK_CAMERA.chatHead.at, to: DESK_CAMERA.chatHead.at + DESK_CAMERA.chatHead.dur, what: "the quick chat's tilt from its header to the answer" }] : []),
     { aspect: a, from: 936, to: 1008, what: "the whole window's pull-back" },
     ...windowKeys(a, 1)
       .slice(1)

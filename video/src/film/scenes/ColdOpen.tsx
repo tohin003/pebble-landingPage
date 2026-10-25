@@ -1,8 +1,12 @@
-// Bar 1 (f0–71), the cold open, "the look": an extreme close-up of the pebble's eyes and the curve of its body in the
-// corner of the dark riverbed desktop (frame 0 is the thumbnail, the eyes already turned to where the pointer will
-// enter). Over f4–16 the film's pointer drifts in and the eyes follow it (Pebble's own gaze); it rests in the pet
-// window (the app's attentive pose), a natural blink comes near f20, the pointer slides away from f36 and the eyes
-// follow it, and on f54 the pebble looks at the viewer. Pebble's own character code on the dark plate; no UI.
+// Bar 1 (f0–71), the cold open, "the look": an extreme close-up of the pebble's two eyes and one curve of its body in
+// a corner of the dark riverbed desktop, the frame cropping the rest (OVERRIDES §46 P1-2: "parts before the whole").
+// Frame 0 is the page's poster and every thumbnail, under a centred play button, so the eyes sit in one third (16:9:
+// the right, looking up-left toward the button; 1:1 and 9:16: the left) and the button's area is dark; the eyes are
+// already turned to where the pointer will enter (above the frame, up-left). Over f4–16 the film's pointer drifts in
+// and the eyes follow it (Pebble's own gaze); it rests beside the face, in the pet window (the app's attentive pose), a
+// natural blink comes near f20, the pointer slides away off the left edge from f36 and the eyes follow it, and on f54
+// the pebble looks at the viewer, its eyes swinging toward the frame's inside. checkColdOpen (film/gaze.ts) holds
+// these rules. Pebble's own character code on the dark plate; no UI.
 //
 // The palette is the app's dark theme's (tokens.css@v1.5.0: body #b4cda6, eyes #23351f): the desktop is dark, as is
 // every window the tension shows. The engine's clock runs 22 frames ahead (PEBBLE_INSTANCES.open.offset), so its

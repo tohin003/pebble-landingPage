@@ -6,6 +6,7 @@
 import type { ComponentType } from "react";
 import { AbsoluteFill, Sequence } from "remotion";
 import { checkAll } from "../framing";
+import { checkColdOpen } from "../gaze";
 import { ColdOpen } from "./ColdOpen";
 import { Questions, TurnAndBuild } from "./Night";
 import { Reveal } from "./Reveal";
@@ -31,7 +32,8 @@ export const FILM_SHOTS: readonly { name: string; from: number; to: number; Scen
 let checked = false;
 const assertTimeline = () => {
   if (checked) return;
-  const problems = checkAll();
+  // the timeline and framing rules, and the cold open's poster rules (OVERRIDES §46 P1-2)
+  const problems = [...checkAll(), ...checkColdOpen()];
   if (problems.length) throw new Error(`film/timeline.ts is invalid:\n  ${problems.join("\n  ")}`);
   checked = true;
 };

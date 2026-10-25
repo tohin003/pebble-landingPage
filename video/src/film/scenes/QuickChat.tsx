@@ -1,7 +1,9 @@
 // Bars 12–13 (f792–935), the small form: Pebble's real quick chat (pet-live-150-light-hidden, v1.5.0, avatar hidden,
 // the film's engine-drawn pebble in its place) on the light riverbed, at 1× (OVERRIDES §42):
 // - f792 (bar 12's downbeat): a punch-in cut to the whole panel as the question is sent (Enter, 3.00 s), with the
-//   send-key sound; the person's click and typing before it are elided by the cut (they are the person's, not Pebble's);
+//   send-key sound; the person's click and typing before it are elided by the cut (they are the person's, not Pebble's).
+//   In 1:1 the cut lands on the panel's top, the header with Pebble's live status over the question, and on f898 the
+//   camera tilts down to the answer and the pebble (OVERRIDES §46 P2-3; desk.ts chatPose);
 // - "Thinking", "~1s", "~2s", "Reasoning it through" at 1×; the answer whole on f898 (6.533 s; v1.5.0 shows it whole);
 //   "Task: completed" on f900;
 // - f918 (beat 4): a punch-in on the question and the answer, the pebble out of frame: the host's idle on that frame
@@ -34,7 +36,7 @@ export const QuickChat: React.FC = () => {
   const L = useLayout();
   const a = L.aspect;
   const answer = frame >= at(13, 4);
-  const cam = answer ? answerPose(a, L.s) : chatPose(a, L.s, width, height);
+  const cam = answer ? answerPose(a, L.s) : chatPose(a, L.s, width, height, frame);
   const src = (sourceAt(SOURCE_MAPS.chat, frame) ?? 3) * 30;
   const desk = PEBBLE_INSTANCES.desk;
   return (
