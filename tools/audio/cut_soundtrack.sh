@@ -13,9 +13,10 @@
 #             cut frame of the film's f2160 (each checked as validate_bed's "reveal", +-1 frame);
 #           - each bar's loudness against the same bar of the film bed (a report, not a gate).
 #   mix     export-cues.ts --check and tools/audio/cut_cues.py --check (tools/audio/cues.json must match the film's
-#           timeline, and tools/audio/cues.<name>.json must be current against it), then mix_master.py
-#           -> soundtrack_<name>_social.wav: -14 LUFS, limiter ceiling -1.5 dBTP so the AAC stays <= -1.0 dBTP;
-#           exactly frames / fps long.
+#           timeline, and tools/audio/cues.<name>.json must be current against it); tools/audio/drive.py --cut renders
+#           the cut's drive stem (its score bars, in order) -> drive_<name>.wav; then mix_master.py --drive (the cut's
+#           effects and automation) -> soundtrack_<name>_social.wav: -14 LUFS, limiter ceiling -1.5 dBTP so the AAC
+#           stays <= -1.0 dBTP; exactly frames / fps long.
 #   checks  mix_checks.py --target social --cut: length, loudness, true peak, AAC, SoundAnalysis (both window grids, the
 #           opening after silence, the end card), mono, small speakers, cue audibility, spectrograms
 #           -> .work/audio/analysis/<name>/ (look at the PNGs, then delete them).
@@ -41,6 +42,7 @@ import json, sys
 c = json.load(open(sys.argv[1]))
 print(c['name'], c['music']['form'], c['frames'], c.get('fps', 30))" "$CUT")
 BED="$R/music_bed_$NAME.wav"
+DRIVE="$R/drive_$NAME.wav"
 MASTER="$R/soundtrack_${NAME}_social.wav"
 CUES="tools/audio/cues.$NAME.json"
 AN=".work/audio/analysis/$NAME"
@@ -129,7 +131,9 @@ if [ "$STEP" = mix ] || [ "$STEP" = all ]; then
   bun video/scripts/export-cues.ts --check                      # the film's cue list matches the timeline ...
   "$PY" -I tools/audio/cut_cues.py "$CUT" --check               # ... and the cut's list matches the film's
   echo "cut_soundtrack: bed sha256 $(shasum -a 256 "$BED" | cut -d ' ' -f 1)"
-  "$PY" -I tools/audio/mix_master.py "$BED" "$CUES" "$MASTER" --lufs -14 --tp -1.5
+  "$PY" -I tools/audio/drive.py --cut "$CUT" --out "$DRIVE"     # the cut's drive: its score bars, in order
+  echo "cut_soundtrack: drive sha256 $(shasum -a 256 "$DRIVE" | cut -d ' ' -f 1)"
+  "$PY" -I tools/audio/mix_master.py "$BED" "$CUES" "$MASTER" --drive "$DRIVE" --lufs -14 --tp -1.5
   "$PY" -I -c "
 import sys, soundfile as sf
 i = sf.info(sys.argv[1])
