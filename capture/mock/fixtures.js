@@ -26,12 +26,15 @@
 // guard.py refusal()) is unchanged since v1.0.4. record.mjs main-live-film-150 and main-challenge-live run on the host's
 // own clock (clock(), origin(), publish()) and play the approved tests out before the approval answers
 // (deferApproval(), finishApproval()); every other scene is as before.
-// main-live-film-150's approved tests follow v1.5.0's Ask-mode path (OVERRIDES §40): the held decision stages the
-// recipe as the run's own host call (controller.py _held_tests(): its "Requesting isolated tests" tool row, staged),
-// the approve route writes its summary into the conversation (app.py _approve(): store.message(action_summary());
-// hostMessage()), the reply saved again at the run's end moves after it (store.py message() is INSERT OR REPLACE with
-// a new `created`, get_chat lists by it; resave()), and the resumed model attempt streams into the run's stream
-// journal (stream_journal.py; streamEvent(), stream_read), which the Details drawer shows (AttemptStream.vue).
+// main-live-film-150, main-challenge-live and pet-live-150 follow v1.5.0's host at the 4,096-token window
+// (OVERRIDES §40-§41, fidelity round 2): every approval answers once its effect is committed (deferApproval(),
+// finishApproval()) and writes its summary into the conversation (app.py _approve(): store.message(action_summary());
+// hostMessage(): "Applied the edit to …", "The isolated test run finished …"); a reply saved again (app.py finish())
+// moves after anything written since (store.py message() is INSERT OR REPLACE with a new `created`, get_chat lists by
+// it; resave()); each model attempt streams into the run's stream journal (stream_journal.py; streamEvent(),
+// stream_read), which the Details drawer shows (AttemptStream.vue), while the conversation gets the attempt's text in
+// one token event; the held decision stages the recipe as the run's own host call (controller.py _held_tests(): its
+// "Requesting isolated tests" tool row, staged); and the held run's repair turns are shown (REPAIR_HELD_1, _2).
 //
 // buildWorld({scene, theme, surface, drawer, stealth, version}) returns { storage, has(method), rpc(method, params), live, ... }.
 // `stealth` starts the world with Stealth Lockdown already on (the host keeps it across a restart); `version` is the
@@ -103,8 +106,15 @@ const CONTINUE_HELD = "\n" + `Both edits are in:
 
 The CSV export should work again for invoices issued on the 29th, 30th and 31st.`;
 const CONTINUE_VERIFIED = "\n\nThe tests ran in an isolated copy of your project: **42 passed**. Both edits are verified, and the CSV export works again for invoices issued on the 29th, 30th and 31st.";
-// app.py action_summary() for an applied tests action: the approve route writes it into the conversation (_approve()).
+// At the sample model's 4,096-token window a turn's end is never held (runner.py: `checked` needs a window above 4K),
+// so each repair turn the completion check asks for is shown as it ends: the model's two replies to "HOST COMPLETION
+// CHECK", still without running the tests, before the hold (record.mjs main-live-film-150, fidelity round 2).
+const REPAIR_HELD_1 = "\n" + "The fix is complete: `add_months()` clamps the day to the month's last day, and the new regression test covers month ends.";
+const REPAIR_HELD_2 = "\n" + "Both edits are applied, so the export works again.";
+// app.py action_summary(): what the approve route writes into the conversation once an approved effect is committed
+// (_approve(): store.message()). An edit's `applied` is its path (policy.Workspace.apply).
 const testsSummary = (exitCode) => "The isolated test run finished with exit code " + exitCode + ". Review the output in Activity & review.";
+const editSummary = (path) => "Applied the edit to `" + path + "`. You can undo it in Activity & review.";
 
 const REPLY_DONE = `Done, and verified:
 
@@ -757,9 +767,11 @@ export function buildWorld({ scene, theme, surface, drawer: drawerWidth = null, 
       journal.push({ sequence: journal.length + 1, created: Date.now() / 1000, ...event });
     },
     reply: { pet: PET_REPLY, proposed: REPLY_PROPOSED, done: REPLY_DONE, held: REPLY_HELD, proposedHeld: REPLY_PROPOSED_HELD,
-      continueHeld: CONTINUE_HELD, heldNotice: "\n\n> Verification remains incomplete: " + HELD_NOTICE, continueVerified: CONTINUE_VERIFIED },
+      continueHeld: CONTINUE_HELD, heldNotice: "\n\n> Verification remains incomplete: " + HELD_NOTICE, continueVerified: CONTINUE_VERIFIED,
+      repairHeld: [REPAIR_HELD_1, REPAIR_HELD_2] },
     text: { request: REQUEST, petQuestion: PET_QUESTION, challengeRequest: CHALLENGE_REQUEST, challenge: CHALLENGE, heldIssue: HELD_ISSUE,
-      testsSummary: testsSummary(0) },
+      testsSummary: testsSummary(0), appliedDates: editSummary("invoice_kit/dates.py"), appliedTests: editSummary("tests/test_dates.py"),
+      heldNoticeText: "> Verification remains incomplete: " + HELD_NOTICE },
     diffs: { dates: DIFF_DATES, tests: DIFF_TESTS },
     testScope: TEST_SCOPE, // 1.2.0: what the host adds to the tests/test_dates.py edit's payload (above)
     forget: { subject: FORGET_SUBJECT, ids: ["mem-pref-5", "mem-temp-1"] },

@@ -1,0 +1,189 @@
+{
+ "recording": "video/public/ui-frames/pet-live-150-light-hidden",
+ "made_by": "capture/record.mjs pet-live-150 --theme=light --scale=3 --hide=.pet-avatar",
+ "release": "Pebble v1.5.0's frontend, frozen with capture/freeze-release.py and verified (tag commit 16dd425)",
+ "method": "Pebble 1.5.0's companion (the frozen v1.5.0 tree) driven by scripted host events in v1.5.0's own event order (fidelity round 2): a re-enactment with sample data.",
+ "theme": "light",
+ "fps": 30,
+ "scale": 3,
+ "frames_saved": 270,
+ "from_seconds": null,
+ "file_of_frame": "frame f is %05d.png with f+1",
+ "fidelity_round": 2,
+ "viewport_css": [
+  384,
+  456
+ ],
+ "transparent": true,
+ "moments": {
+  "click": {
+   "frame": 18,
+   "what": "the pebble is clicked: the quick chat opens ('pebble.', 'A little help, right here.')",
+   "seconds": 0.6
+  },
+  "typing": {
+   "frame": 39,
+   "until": 89,
+   "what": "the question types itself, one character every 34 ms (the person's part; the film may play it at up to 2x)",
+   "seconds": 1.3
+  },
+  "send": {
+   "frame": 90,
+   "what": "Enter: the question is sent; the status line says Sending, the task line 'Task: queued'",
+   "seconds": 3.0
+  },
+  "thinking": {
+   "frame": 97,
+   "what": "the status line says Thinking (the pose's status after the send; the run starts at 99, 'Task: running')",
+   "seconds": 3.2333
+  },
+  "answer_token": {
+   "frame": 195,
+   "what": "the model's turn ends: its text arrives in one token event; the status line says Writing and the answer's article is added (its text renders on the next frame)",
+   "seconds": 6.5
+  },
+  "answer_visible": {
+   "frame": 196,
+   "what": "the whole answer shows at once: 'Python is being asked for a date that doesn't exist, like 31 February. If it's from your invoice export, open invoice-kit and I'll look.'",
+   "seconds": 6.5333
+  },
+  "usage_line": {
+   "frame": 197,
+   "what": "the reply is saved: its usage line '1,180 in · 52 out · 3.3 s' shows under the answer",
+   "seconds": 6.5667
+  },
+  "completed": {
+   "frame": 198,
+   "what": "the task completes ('Task: completed' for a moment); the header shows 'A little help, right here.' again",
+   "seconds": 6.6
+  },
+  "status_cleared": {
+   "frame": 202,
+   "what": "the status line clears",
+   "seconds": 6.7333
+  },
+  "idle": {
+   "frame": 216,
+   "what": "the host's idle after its upkeep",
+   "seconds": 7.2
+  }
+ },
+ "status_line": [
+  {
+   "frame": 18,
+   "seconds": 0.6,
+   "text": ""
+  },
+  {
+   "frame": 90,
+   "seconds": 3.0,
+   "text": "Sending"
+  },
+  {
+   "frame": 97,
+   "seconds": 3.2333,
+   "text": "Thinking"
+  },
+  {
+   "frame": 129,
+   "seconds": 4.3,
+   "text": "Thinking ~1s"
+  },
+  {
+   "frame": 159,
+   "seconds": 5.3,
+   "text": "Thinking ~2s"
+  },
+  {
+   "frame": 187,
+   "seconds": 6.2333,
+   "text": "Reasoning it through ~2s"
+  },
+  {
+   "frame": 195,
+   "seconds": 6.5,
+   "text": "Writing ~3s"
+  },
+  {
+   "frame": 198,
+   "seconds": 6.6,
+   "text": "Writing"
+  },
+  {
+   "frame": 202,
+   "seconds": 6.7333,
+   "text": ""
+  }
+ ],
+ "geometry_css_px": {
+  "answer_article": {
+   "frame": 196,
+   "box": [
+    25,
+    155.3,
+    334,
+    73.5
+   ]
+  },
+  "answer_article_with_usage": {
+   "frame": 197,
+   "box": [
+    25,
+    155.3,
+    334,
+    93.6
+   ]
+  },
+  "answer_article_settled": {
+   "frame": 216,
+   "box": [
+    25,
+    158.3,
+    334,
+    93.6
+   ]
+  },
+  "question": {
+   "frame": 90,
+   "box": [
+    53,
+    100,
+    306,
+    56.3
+   ]
+  }
+ },
+ "clocks": {
+  "model_attempts": {
+   "a1": 3.1
+  },
+  "usage": [
+   {
+    "f": 195,
+    "input_tokens": 1180,
+    "output_tokens": 52,
+    "cached_tokens": 0,
+    "calls": 1,
+    "generation_seconds": 2.48,
+    "tokens_per_second": 21,
+    "route": "model"
+   },
+   {
+    "f": 197,
+    "input_tokens": 1180,
+    "output_tokens": 52,
+    "cached_tokens": 0,
+    "calls": 1,
+    "generation_seconds": 2.48,
+    "tokens_per_second": 21,
+    "route": "model",
+    "seconds": 3.3,
+    "finish": true
+   }
+  ]
+ },
+ "check": {
+  "status_checked": 69,
+  "failures": []
+ }
+}

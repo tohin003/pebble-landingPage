@@ -5,6 +5,10 @@ sampled frames is also looked up in the release's own source and the fixtures, a
 A schedule with K.testsEnd follows v1.5.0's Ask-mode approval (OVERRIDES §40), and is also checked for that: no running
 "Requesting isolated tests" row and no "Testing" status anywhere, the review status and no live time while the approve
 route runs the tests, the tests card reading Running on exactly those 72 frames, and Verified after the resumed turn.
+A round-2 schedule (meta fidelity_round 2, OVERRIDES §41) also has its receipts counted from its own rows at each settle,
+its usage lines matched to its own usage records, and the window's fallback rows (from progress events, before a run's
+first host row) checked against its progress log. A quick chat recording (pet-live-150) gets its own checks: the answer
+whole on its turn's end, the status line's time, the usage line and the completion.
 
   python3 -I capture/check_live_film.py <frames-dir> [--corpus=FILE,FILE,…] [--held=408,480] [--json=OUT]
 
@@ -18,7 +22,7 @@ folder = args[0]
 timeline = json.load(open(os.path.join(folder, "timeline.json")))
 probes = json.load(open(os.path.join(folder, "probes.json")))
 meta = timeline["meta"]
-K, T0, fps = meta["K"], meta["T0"], timeline["fps"]
+K, T0, fps = meta["K"], meta.get("T0", meta["K"].get("send")), timeline["fps"]
 failures, notes = [], []
 
 
@@ -41,6 +45,122 @@ def fmt_offset(at):  # activity.ts formatOffset (< 60 s here)
     return f"+{at:.1f} s"
 
 
+def usage_text(u):
+    seconds = u["seconds"] if u.get("seconds") is not None else u.get("generation_seconds")
+    out = [f"{u['input_tokens']:,} in"]
+    if u.get("cached_tokens"):
+        out.append(f"{u['cached_tokens']:,} cached")
+    out.append(f"{u['output_tokens']:,} out")
+    if seconds is not None and seconds >= 0.1:
+        out.append(f"{seconds:.1f} s")
+    rate = u.get("tokens_per_second")
+    if rate and u["output_tokens"] >= 64 and seconds is not None and seconds >= 1:
+        out.append(f"{math.floor(rate + 0.5):,} tok/s")
+    return " ".join(out)
+
+def strings_not_in_corpus():
+    """6. Every visible string, looked up in the release's source and the fixtures (--corpus)."""
+    corpus = ""
+    for path in opts["corpus"].split(","):
+        for root, _, files in (os.walk(path) if os.path.isdir(path) else [(os.path.dirname(path), None, [os.path.basename(path)])]):
+            for name in files:
+                if name.endswith((".vue", ".ts", ".js", ".mjs", ".py", ".md", ".json")):
+                    try:
+                        corpus += "\n" + open(os.path.join(root, name), encoding="utf-8", errors="replace").read()
+                    except OSError:
+                        pass
+    flat = re.sub(r"\s+", " ", corpus)
+    dynamic = [r"\+\d+\.\d s", r"[\d,]+ (in|out|cached)", r"\d+\.\d s", r"\d+ s", r"Worked( for \d+ s)? · \d+ steps?( · waited \d+ s for you)?",
+               r"[\d,]+", r"·", r"\d+"]
+    missing = {}
+    for f, lines in probes["texts"].items():
+        for top, left, text in lines:
+            s = re.sub(r"\s+", " ", text).strip()
+            if s in flat or any(re.fullmatch(d, s) for d in dynamic):
+                continue
+            missing.setdefault(s, int(f))
+    return missing
+
+
+def report(result):
+    if opts.get("corpus"):
+        result["strings_not_in_corpus"] = strings_not_in_corpus()
+    print(json.dumps(result, indent=1, ensure_ascii=False))
+    if opts.get("json"):
+        json.dump(result, open(opts["json"], "w"), indent=1, ensure_ascii=False)
+    print("CHECK", "FAILED" if failures else "OK", f"({result.get('stamps_checked', 0)} stamps, {result.get('durations_checked', 0)} durations, {result.get('status_checked', 0)} status times)")
+    sys.exit(1 if failures else 0)
+
+
+# The quick chat (pet-live-150, Pet.vue): no steps or receipts; its answer, status line, usage line and completion.
+if timeline["name"].startswith("pet-live"):
+    states, st, by = {}, {}, {p["f"]: p for p in probes["probes"]}
+    rec_last = round((timeline.get("from") or 0) * fps) + timeline["frames"] - 1
+    for f in range(rec_last + 1):
+        if f in by:
+            st = {**st, **{k: v for k, v in by[f].items() if k != "f"}}
+        states[f] = st
+    feed = lambda f: (states[f].get("pet") or {}).get("feed") or []
+    answers = [f for f in range(rec_last + 1) if any(a[0] == "assistant" for a in feed(f))]
+    if not answers or answers[0] != K["respond"]:
+        fail(f"the answer appears on frame {answers[0] if answers else None}, not on its turn's end {K['respond']}")
+    # whole on arrival: the answer's text (without the article's screen-reader heading) shows complete on the first
+    # sampled frame it shows at all, at most two frames after the token (Markdown renders on the next frame), and on
+    # every sampled frame after; none of it shows before
+    texts = {int(f): v for f, v in probes["texts"].items()}
+    USAGE_PART = r"[\d,]+ (in|out|cached)|[\d.]+ s|[\d,]+ tok/s"
+    def answer_lines(f):  # the visible text inside the answer's article (its box from the probe), without the usage line
+        art = next((a for a in feed(f) if a[0] == "assistant"), None)
+        if not art or not art[2] or art[2][3] <= 0:
+            return []
+        left, top, width, height = art[2]
+        return [t for y, x, t in texts[f] if top - 1 <= y <= top + height + 1 and left - 1 <= x <= left + width + 1
+                and not re.fullmatch(USAGE_PART, t)]
+    final = answer_lines(max(texts)) if texts else []
+    if not final:
+        fail("no answer text on the last sampled frame")
+    shown = [f for f in sorted(texts) if answer_lines(f)]
+    if shown and not (answers and answers[0] <= shown[0] <= answers[0] + 2):
+        fail(f"the answer's text first shows on frame {shown[0]}, not within two frames of the token ({answers[0] if answers else None})")
+    sampled = [f for f in sorted(texts) if shown and f >= shown[0]]
+    for f in sampled:
+        if answer_lines(f) != final:
+            fail(f"frame {f}: the answer reads {answer_lines(f)!r}, not the whole answer {final!r}")
+    # the status line's time counts from the first running event (the pose's startedAt), shown as whole seconds
+    status_checks, statuses = 0, {}
+    for f in range(rec_last + 1):
+        text = (states[f].get("pet") or {}).get("status")
+        statuses.setdefault(text, f)
+        m = re.search(r"(\d+)\s?s$", text or "")
+        if m:
+            t_shown = (f + 1) / fps
+            now = math.floor(t_shown - K["running"] / fps + 1e-9)
+            lag = math.floor(t_shown - 0.25 - K["running"] / fps + 1e-9)
+            if int(m.group(1)) not in (now, lag):
+                fail(f"frame {f}: status {text!r} but the run has been running {t_shown - K['running'] / fps:.3f} s")
+            status_checks += 1
+    # the usage line under the answer: the finish record (the segment's wall seconds), from the frame it is saved
+    finish = [u for u in meta.get("usage") or [] if u.get("finish")]
+    want = usage_text(finish[-1]) if finish else None
+    usage_seen = {}
+    for f in sorted(texts):
+        lines = texts[f]
+        tops = [top for top, _, t in lines if re.fullmatch(r"[\d,]+ in", t)]
+        if tops:
+            row = " ".join(t for top, _, t in sorted(lines, key=lambda l: l[1]) if top == tops[0])
+            usage_seen.setdefault(row, f)
+            if row != want:
+                fail(f"frame {f}: usage {row!r}, not {want!r}")
+            if finish and f < finish[-1]["f"]:
+                fail(f"frame {f}: a usage line before the reply is saved (frame {finish[-1]['f']})")
+    # the task completes with the run
+    done_at = next((f for f in range(rec_last + 1) if ((states[f].get("pet") or {}).get("task") or "").endswith("completed")), None)
+    if done_at is None or not K["complete"] <= done_at <= K["complete"] + round(0.25 * fps):
+        fail(f"'completed' shows from frame {done_at}, not with the run's completion ({K['complete']})")
+    report({"answer_frame": answers[0] if answers else None, "answer_text_from": shown[0] if shown else None, "answer": final,
+            "answer_sampled_frames": len(sampled), "status_checked": status_checks,
+            "status_first_frames": statuses, "usage": usage_seen, "completed_frame": done_at, "failures": failures})
+
 # 1. The schedule is built from frames: each row's `at` is its own frame's offset from the send, each span its frames.
 schedule = meta["schedule"]
 for e in schedule:
@@ -48,6 +168,8 @@ for e in schedule:
         fail(f"schedule: {e['label']} at {e['at']} is not frame {e['made']}'s offset {r3((e['made'] - T0) / fps)}")
 spans = {}
 for e in schedule:
+    if e.get("by") == "record":  # a later change to a row's record (its span was checked where the row finished)
+        continue
     if e["status"] == "done" and e["duration"] is not None and e["label"].startswith(("The model responded", "Searching", "Reading", "Preparing", "Requesting")):
         if abs(e["duration"] - r3((e["f"] - e["made"]) / fps)) > 0.0005:
             fail(f"schedule: {e['label']} lasts {e['duration']} s but runs frames {e['made']}-{e['f']}")
@@ -56,8 +178,12 @@ held_run = "runTests" in K  # main-live-film-150's own checks: the approvals' wa
 # v1.5.0's Ask-mode model (OVERRIDES §40): the approved tests run inside the approve route (K has testsEnd); recordings
 # made with the earlier schedule (a running test step that ends with Verified) keep its checks.
 ask_model = held_run and "testsEnd" in K
-for label, key, made, click in (() if not held_run else (("invoice_kit/dates.py", "dates", 168, K["p1"]), ("tests/test_dates.py", "tests", 174, K["p2"]),
-                                ("Requesting isolated tests", "run", K["runTheTests"] + 1, K["runTests"]))):
+# Fidelity round 2 (OVERRIDES §41): the run in v1.5.0's own order throughout; its meta names the approvals' bindings,
+# the settles and every usage record.
+round2 = meta.get("fidelity_round") == 2
+bind = meta.get("bind") or {"dates": 168, "tests": 174, "run": K.get("runTheTests", 0) + 1}
+for label, key, made, click in (() if not held_run else (("invoice_kit/dates.py", "dates", bind["dates"], K["p1"]), ("tests/test_dates.py", "tests", bind["tests"], K["p2"]),
+                                ("Requesting isolated tests", "run", bind["run"], K["runTests"]))):
     if abs(waits[key] - r3((click - made) / fps)) > 0.0005:
         fail(f"schedule: the wait on {label} is {waits[key]} s, not frames {made}-{click}")
 
@@ -124,6 +250,12 @@ for f in range(0, last + 1):
         else:
             rows = expected.get(base, [])
         if not rows:
+            # Before the run's first host row the window shows its own fallback rows, from progress events (activity.ts
+            # `local`), each stamped at its event's arrival.
+            fallback = [p for p in meta.get("progress") or [] if p["label"] == base and p["f"] <= f and stamp == fmt_offset(r3((p["f"] - T0) / fps))]
+            if fallback:
+                stamp_checks += 1
+                continue
             fail(f"frame {f}: a step not in the schedule: {text!r}")
             continue
         ok = [e for e in rows if stamp == fmt_offset(e["at"]) and e["f"] <= f]
@@ -167,29 +299,59 @@ for f in range(0, last + 1):
     if toast and float(toast[2]) > 0.01:
         toast_frames.append(f)
 
-# The tests card reads Running exactly while the approve route runs the tests (frames runTests .. testsEnd - 1).
-if ask_model and card_running != list(range(K["runTests"], K["testsEnd"])):
+# The tests card reads Running exactly while the approve route runs the tests (frames runTests .. testsEnd - 1), when
+# the recording reaches them (the dark twin, --frames=499, ends at 16.6 s).
+rec_last = round((timeline.get("from") or 0) * fps) + timeline["frames"] - 1
+if ask_model and rec_last < K["testsEnd"]:
+    notes.append(f"the recording ends at frame {rec_last}, before the tests run ({K['runTests']}-{K['testsEnd'] - 1}): their gate is not applied")
+elif ask_model and card_running != list(range(K["runTests"], K["testsEnd"])):
     spans_r = f"{card_running[0]}-{card_running[-1]} ({len(card_running)} frames)" if card_running else "never"
     fail(f"the tests card reads Running on frames {spans_r}, not exactly frames {K['runTests']}-{K['testsEnd'] - 1}")
 
-# 3. Receipts: the live "Worked · N steps", or the host's live seconds and waits once settled.
+# 3. Receipts: the live "Worked · N steps", or the host's live seconds and waits once settled. Round 2 counts the steps
+# from the schedule's own rows at each settle (activity.ts tally(): tool, check and child rows; approvals' waits).
 L = meta.get("live") or [0, 0, 0]
-allowed = set() if not held_run else {f"Worked for {fmt_duration(L[0])} · 4 steps",
-           f"Worked for {fmt_duration(L[1])} · 7 steps · waited {fmt_duration(waits['dates'] + waits['tests'])} for you",
-           f"Worked for {fmt_duration(L[2])} · 9 steps · waited {fmt_duration(waits['dates'] + waits['tests'] + waits['run'])} for you"}
+if round2 and held_run:
+    def tally_at(f):
+        latest = {}
+        for e in schedule:
+            if e["f"] <= f or e.get("by") == "mock" and e["made"] <= f:
+                latest[e["seq"]] = e
+        steps_n = sum(1 for e in latest.values() if e.get("kind") in ("tool", "check", "child"))
+        waited = sum(e["duration"] or 0 for e in latest.values() if e.get("kind") == "approval")
+        return steps_n, waited
+
+    def receipt_text(seconds, steps_n, waited):
+        parts = [f"Worked for {fmt_duration(seconds)}", f"{steps_n} step{'s' if steps_n != 1 else ''}"]
+        if waited >= 1:
+            parts.append(f"waited {fmt_duration(waited)} for you")
+        return " · ".join(parts)
+    allowed = {receipt_text(L[i], *tally_at(f)) for i, f in enumerate(meta["settles"])}
+else:
+    allowed = set() if not held_run else {f"Worked for {fmt_duration(L[0])} · 4 steps",
+               f"Worked for {fmt_duration(L[1])} · 7 steps · waited {fmt_duration(waits['dates'] + waits['tests'])} for you",
+               f"Worked for {fmt_duration(L[2])} · 9 steps · waited {fmt_duration(waits['dates'] + waits['tests'] + waits['run'])} for you"}
 for text, fs in seen_receipts.items():
     if held_run and text not in allowed and not re.fullmatch(r"Worked · \d+ steps?", text) and text != "What Pebble did":
         fail(f"receipt {text!r} on frames {fs[0]}-{fs[-1]} is not the host's live seconds")
 
-# 4. Usage lines: under the 4,096-token window, and the time is the model attempts' own.
+
+# 4. Usage lines: under the 4,096-token window. Round 2: each line is one of the run's own usage records as TokenStats
+# shows it (the segment's wall seconds once finish() saved them, else the generation seconds; tok/s only with at least
+# 64 output tokens over at least 1 s). Earlier schedules: no rate, and the time is the model attempts' sum.
+usage_allowed = {usage_text(u) for u in meta.get("usage") or []} if round2 else set()
 for text, fs in seen_usage.items():
     # TokenStats separates its fields with CSS ("·" in ::before), so the text has spaces between them
-    m = re.match(r"^([\d,]+) in(?:(?: · | )([\d,]+) cached)?(?: · | )([\d,]+) out(?:(?: · | )([\d.]+) s)?(?:(?: · | )(\d+) tok/s)?$", text)
+    m = re.match(r"^([\d,]+) in(?:(?: · | )([\d,]+) cached)?(?: · | )([\d,]+) out(?:(?: · | )([\d.]+) s)?(?:(?: · | )([\d,]+) tok/s)?$", text)
     if not m:
         fail(f"usage {text!r}: unexpected form")
         continue
     if int(m.group(1).replace(",", "")) > 4096:
         fail(f"usage {text!r}: more input than the 4,096-token window")
+    if round2:
+        if text not in usage_allowed:
+            fail(f"usage {text!r}: not one of the run's own usage records {sorted(usage_allowed)}")
+        continue
     if m.group(5):
         fail(f"usage {text!r}: shows a rate")
     if m.group(4) and m.group(4) not in {f"{u['seconds']:.1f}" for u in meta.get("usage") or []}:
@@ -211,32 +373,6 @@ result = {"stamps_checked": stamp_checks, "durations_checked": dur_checks, "stat
           **({"tests_card": {str(k): [v[0], v[-1], len(v)] for k, v in card_states.items()}} if ask_model else {}),
           "receipts": {k: [v[0], v[-1]] for k, v in seen_receipts.items()},
           "usage": {k: [v[0], v[-1]] for k, v in seen_usage.items()},
-          "toast_frames": spans_t, "status_first_frames": status_seen, "failures": failures}
+          "toast_frames": spans_t, "status_first_frames": status_seen, "failures": failures, **({"notes": notes} if notes else {})}
 
-# 6. Every visible string, looked up in the release's source and the fixtures.
-if opts.get("corpus"):
-    corpus = ""
-    for path in opts["corpus"].split(","):
-        for root, _, files in (os.walk(path) if os.path.isdir(path) else [(os.path.dirname(path), None, [os.path.basename(path)])]):
-            for name in files:
-                if name.endswith((".vue", ".ts", ".js", ".mjs", ".py", ".md", ".json")):
-                    try:
-                        corpus += "\n" + open(os.path.join(root, name), encoding="utf-8", errors="replace").read()
-                    except OSError:
-                        pass
-    flat = re.sub(r"\s+", " ", corpus)
-    dynamic = [r"\+\d+\.\d s", r"[\d,]+ (in|out|cached)", r"\d+\.\d s", r"\d+ s", r"Worked( for \d+ s)? · \d+ steps?( · waited \d+ s for you)?",
-               r"[\d,]+", r"·", r"\d+"]
-    missing = {}
-    for f, lines in probes["texts"].items():
-        for top, left, text in lines:
-            s = re.sub(r"\s+", " ", text).strip()
-            if s in flat or any(re.fullmatch(d, s) for d in dynamic):
-                continue
-            missing.setdefault(s, int(f))
-    result["strings_not_in_corpus"] = missing
-print(json.dumps(result, indent=1, ensure_ascii=False))
-if opts.get("json"):
-    json.dump(result, open(opts["json"], "w"), indent=1, ensure_ascii=False)
-print("CHECK", "FAILED" if failures else "OK", f"({stamp_checks} stamps, {dur_checks} durations, {status_checks} status times)")
-sys.exit(1 if failures else 0)
+report(result)

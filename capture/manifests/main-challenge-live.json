@@ -1,27 +1,39 @@
 {
  "recording": "video/public/ui-frames/main-challenge-live",
- "made_by": "capture/record.mjs main-challenge-live --theme=light --scale=3 --from=5.0",
+ "made_by": "capture/record.mjs main-challenge-live --theme=light --scale=3 --from=5",
  "release": "Pebble v1.5.0's frontend, frozen with capture/freeze-release.py and verified (tag commit 16dd425)",
- "method": "Pebble 1.5.0's frontend (the frozen v1.5.0 tree) driven by scripted host events and fixture timings: a re-enactment with sample data. Every clock the window prints is the recording's own.",
+ "method": "Pebble 1.5.0's frontend (the frozen v1.5.0 tree) driven by scripted host events and fixture timings in v1.5.0's own event order (fidelity round 2): a re-enactment with sample data. Every clock the window prints is the recording's own.",
+ "theme": "light",
  "fps": 30,
  "scale": 3,
+ "frames_saved": 225,
+ "from_seconds": 5,
+ "file_of_frame": "frame f is %05d.png with f+1",
+ "fidelity_round": 2,
  "viewport_css": [
   1160,
   800
  ],
- "frames_saved": 225,
- "from_seconds": 5,
- "file_of_frame": "frame f is %05d.png with f+1",
  "moments": {
   "refused_step_arrives": {
    "frame": 232,
-   "seconds": 7.7333,
-   "what": "the refused write's step turns red ('Preparing an edit to invoice_kit/templates/statement.html', +6.6 s) with a collapsed Details"
+   "what": "the refused write's step turns red ('Preparing an edit to invoice_kit/templates/statement.html') with a collapsed Details",
+   "seconds": 7.7333
+  },
+  "next_turn": {
+   "frame": 234,
+   "what": "the model's next turn starts at once ('Waiting for the model'); the drawer's live response opens below the steps (empty: no text yet)",
+   "seconds": 7.8
+  },
+  "live_attempt_shown": {
+   "frame": 238,
+   "what": "'Receiving model response' shows under the steps (AttemptStream.vue)",
+   "seconds": 7.9333
   },
   "details_opened": {
    "frame": 270,
-   "seconds": 9.0,
-   "what": "the person opens Details: 'AgentGuard: AgentGuard — evidence check', '5 file(s) changed that the task does not reach', the request, the evidence, the suggestion and the closing line"
+   "what": "the person opens Details: 'AgentGuard: AgentGuard — evidence check', '5 file(s) changed that the task does not reach', the request, the evidence, the suggestion and the closing line",
+   "seconds": 9.0
   },
   "scroll": {
    "frames": [
@@ -32,8 +44,8 @@
   },
   "still_from": {
    "frame": 297,
-   "seconds": 9.9,
-   "what": "nothing in the drawer moves from here to the last frame"
+   "what": "nothing in the drawer moves from here to the last frame",
+   "seconds": 9.9
   },
   "last_frame": {
    "frame": 374,
@@ -48,7 +60,7 @@
     "+6.6 s",
     [
      671,
-     506.1,
+     521.2,
      469,
      41.6
     ]
@@ -60,7 +72,7 @@
     "+6.6 s",
     [
      671,
-     506.1,
+     521.2,
      469,
      320.4
     ]
@@ -72,13 +84,32 @@
     "+6.6 s",
     [
      671,
-     270.1,
+     270.2,
      469,
      320.4
     ]
    ]
   },
-  "drawer_scroll_top_after": 236
+  "drawer_scroll_top_after": 251,
+  "live_attempt_after_scroll": {
+   "frame": 297,
+   "section": [
+    "Receiving model response",
+    [
+     657,
+     687.2,
+     487,
+     62
+    ],
+    ""
+   ]
+  }
  },
- "wording": "the vendored AgentGuard engine at v1.5.0 (validate/checks.py scope_creep(), challenge/renderer.py render(), guard.py refusal()), unchanged since v1.0.4; five files outside the task's reach (OVERRIDES §9)"
+ "wording": "the vendored AgentGuard engine at v1.5.0 (validate/checks.py scope_creep(), challenge/renderer.py render(), guard.py refusal()), unchanged since v1.0.4; five files outside the task's reach (OVERRIDES §9)",
+ "check": {
+  "stamps_checked": 2602,
+  "durations_checked": 408,
+  "status_checked": 301,
+  "failures": []
+ }
 }

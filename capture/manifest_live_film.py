@@ -1,6 +1,8 @@
 """Write the picture lane's manifest for a main-live-film-150 recording: the source frame and second of every moment the
 trailer uses, the boxes of the controls the film aims at (CSS px of the 1160 x 800 window, from the probes, at the frames
-named), how long each waiting state holds still, and the clock check's result.
+named), how long each waiting state holds still, and the clock check's result. A main-challenge-live or pet-live-150
+recording gets its own moments and boxes; a round-2 recording (meta fidelity_round 2) is marked "fidelity_round": 2, and
+main-live-film-150's carries the Undo's per-frame track (undo_track).
 
   python3 -I capture/manifest_live_film.py <frames-dir> <out.json> [--check=check.json] [--tree=<frozen-dir>]
 
@@ -16,9 +18,9 @@ probes = json.load(open(os.path.join(folder, "probes.json")))
 meta, fps = timeline["meta"], timeline["fps"]
 K = meta["K"]
 
-# The probe state on every frame (the deltas folded forward).
+# The probe state on every frame (the deltas folded forward), to the recording's last frame.
 states, state, by_frame = {}, {}, {p["f"]: p for p in probes["probes"]}
-last = max(by_frame)
+last = max(max(by_frame), round((timeline.get("from") or 0) * fps) + timeline["frames"] - 1)
 for f in range(last + 1):
     if f in by_frame:
         state = {**state, **{k: v for k, v in by_frame[f].items() if k != "f"}}
@@ -58,6 +60,111 @@ def first_frame(pred, start=0):
     return None
 
 
+def common(name, made_by):
+    return {"recording": os.path.relpath(folder, os.getcwd()), "made_by": made_by,
+            "release": "Pebble v1.5.0's frontend, frozen with capture/freeze-release.py and verified (tag commit 16dd425)",
+            "method": timeline.get("note"), "theme": timeline["theme"], "fps": fps, "scale": timeline["scale"],
+            "frames_saved": timeline["frames"], "from_seconds": timeline.get("from"), "file_of_frame": "frame f is %05d.png with f+1",
+            **({"fidelity_round": 2} if meta.get("fidelity_round") == 2 else {})}
+
+
+def finish_manifest(manifest):
+    for m in manifest["moments"].values():
+        if isinstance(m, dict) and "frame" in m and m["frame"] is not None and "seconds" not in m:
+            m["seconds"] = sec(m["frame"])
+    if opts.get("check") and os.path.exists(opts["check"]):
+        c = json.load(open(opts["check"]))
+        manifest["check"] = {k: c[k] for k in ("stamps_checked", "durations_checked", "status_checked", "failures") if k in c}
+    json.dump(manifest, open(out, "w"), indent=1, ensure_ascii=False)
+    print(json.dumps(manifest["moments"], indent=1, ensure_ascii=False))
+    sys.exit(0)
+
+
+if "refused" in K:  # main-challenge-live: the refused write's step, its Details, the scroll
+    def refused_row(f):
+        for s in at(f, "steps") or []:
+            if (s[0] or "").startswith("Preparing an edit to invoice_kit/templates/statement.html"):
+                return [s[1], s[2]]
+        return None
+    moves = sorted({f for f in range(K["scroll"][1] + 1, last + 1) if json.dumps(at(f, "steps")) != json.dumps(at(f - 1, "steps"))
+                    or at(f, "drawerTop") != at(f - 1, "drawerTop")})
+    live_from = first_frame(lambda s: bool(s.get("liveAttempt")), K["refused"][1])
+    finish_manifest({**common("main-challenge-live", "capture/record.mjs main-challenge-live --theme=%s --scale=%s --from=%s" % (timeline["theme"], timeline["scale"], timeline.get("from"))),
+        "viewport_css": [1160, 800],
+        "moments": {
+            "refused_step_arrives": {"frame": K["refused"][1], "what": "the refused write's step turns red ('Preparing an edit to invoice_kit/templates/statement.html') with a collapsed Details"},
+            "next_turn": {"frame": K["refused"][1] + 2, "what": "the model's next turn starts at once ('Waiting for the model'); the drawer's live response opens below the steps (empty: no text yet)"},
+            "live_attempt_shown": {"frame": live_from, "what": "'Receiving model response' shows under the steps (AttemptStream.vue)"},
+            "details_opened": {"frame": K["details"], "what": "the person opens Details: 'AgentGuard: AgentGuard — evidence check', '5 file(s) changed that the task does not reach', the request, the evidence, the suggestion and the closing line"},
+            "scroll": {"frames": K["scroll"], "what": "the person scrolls the drawer so the whole challenge is in view"},
+            "still_from": {"frame": K["scroll"][1], "what": "nothing in the drawer moves from here to the last frame" if not moves else "the drawer settles here; see moves_after_still_from"},
+            "last_frame": {"frame": last},
+        },
+        "moves_after_still_from": moves,
+        "geometry_css_px": {
+            "refused_row_collapsed": {"frame": K["refused"][1], "row": refused_row(K["refused"][1])},
+            "refused_row_open": {"frame": K["details"], "row": refused_row(K["details"])},
+            "refused_row_open_after_scroll": {"frame": K["scroll"][1], "row": refused_row(K["scroll"][1])},
+            "drawer_scroll_top_after": at(K["scroll"][1], "drawerTop"),
+            "live_attempt_after_scroll": {"frame": K["scroll"][1], "section": at(K["scroll"][1], "liveAttempt")},
+        },
+        "wording": "the vendored AgentGuard engine at v1.5.0 (validate/checks.py scope_creep(), challenge/renderer.py render(), guard.py refusal()), unchanged since v1.0.4; five files outside the task's reach (OVERRIDES §9)",
+    })
+
+if "click" in K and "hold" not in K:  # pet-live-150: the quick chat
+    # .pet-status's text also holds StatusLine's screen-reader sentence (statusWords.ts STATUS_LABELS, "Reply
+    # finished"), which is visually hidden: the status line below is the visible word and time only.
+    SR = ("Pebble is thinking", "Pebble is writing a reply", "Pebble is reading", "Pebble is searching", "Pebble is editing",
+          "Pebble is testing", "Pebble is running a command", "Pebble is working", "Sending your message", "Reply finished")
+
+    def pet(f, key):
+        p = at(f, "pet") or {}
+        return p.get(key)
+
+    def visible_status(text):
+        t = (text or "").strip()
+        for sentence in SR:
+            if t.startswith(sentence):
+                return t[len(sentence):].strip()
+        return t
+
+    def article(f):
+        return next((a for a in pet(f, "feed") or [] if a[0] == "assistant"), None)
+    answer_at = first_frame(lambda s: any(a[0] == "assistant" for a in (s.get("pet") or {}).get("feed") or []), K["send"])
+    answer_text_at = first_frame(lambda s: any(a[0] == "assistant" and a[2] and a[2][3] > 0 for a in (s.get("pet") or {}).get("feed") or []), K["send"])
+    completed_at = first_frame(lambda s: ((s.get("pet") or {}).get("task") or "").endswith("completed"), K["send"])
+    finish = [u for u in meta.get("usage") or [] if u.get("finish")]
+    statuses = []
+    for f in range(K["click"], last + 1):
+        st = visible_status(pet(f, "status"))
+        if not statuses or statuses[-1][1] != st:
+            statuses.append([f, st])
+    first_word = lambda word: next((f for f, t in statuses if t.startswith(word)), None)
+    cleared = next((f for f, t in statuses if f > K["send"] and t == ""), None)
+    finish_manifest({**common("pet-live-150", "capture/record.mjs pet-live-150 --theme=%s --scale=%s%s" % (timeline["theme"], timeline["scale"], " --hide=" + timeline["hide"] if timeline.get("hide") else "")),
+        "viewport_css": [384, 456],
+        "transparent": True,
+        "moments": {
+            "click": {"frame": K["click"], "what": "the pebble is clicked: the quick chat opens ('pebble.', 'A little help, right here.')"},
+            "typing": {"frame": K["type"], "until": K["send"] - 1, "what": "the question types itself, one character every 34 ms (the person's part; the film may play it at up to 2x)"},
+            "send": {"frame": K["send"], "what": "Enter: the question is sent; the status line says Sending, the task line 'Task: queued'"},
+            "thinking": {"frame": first_word("Thinking"), "what": "the status line says Thinking (the pose's status after the send; the run starts at %d, 'Task: running')" % K["running"]},
+            "answer_token": {"frame": answer_at, "what": "the model's turn ends: its text arrives in one token event; the status line says Writing and the answer's article is added (its text renders on the next frame)"},
+            "answer_visible": {"frame": answer_text_at, "what": "the whole answer shows at once: 'Python is being asked for a date that doesn't exist, like 31 February. If it's from your invoice export, open invoice-kit and I'll look.'"},
+            "usage_line": {"frame": finish[-1]["f"] if finish else None, "what": "the reply is saved: its usage line '1,180 in · 52 out · 3.3 s' shows under the answer"},
+            "completed": {"frame": completed_at, "what": "the task completes ('Task: completed' for a moment); the header shows 'A little help, right here.' again"},
+            "status_cleared": {"frame": cleared, "what": "the status line clears"},
+            "idle": {"frame": K["idle"], "what": "the host's idle after its upkeep"},
+        },
+        "status_line": [{"frame": f, "seconds": sec(f), "text": t} for f, t in statuses],
+        "geometry_css_px": {"answer_article": {"frame": answer_text_at, "box": (article(answer_text_at) or [None, None, None])[2]},
+                            "answer_article_with_usage": {"frame": finish[-1]["f"] if finish else None, "box": (article(finish[-1]["f"]) or [None, None, None])[2] if finish else None},
+                            "answer_article_settled": {"frame": K["idle"], "box": (article(K["idle"]) or [None, None, None])[2]},
+                            "question": {"frame": K["send"], "box": next((a[2] for a in pet(K["send"], "feed") or [] if a[0] == "user"), None)}},
+        "clocks": {"model_attempts": meta.get("model"), "usage": meta.get("usage")},
+    })
+
+
 toast_on = [f for f in range(last + 1) if at(f, "toast") and float(at(f, "toast")[2]) > 0.01]
 spans = []
 for f in toast_on:
@@ -70,13 +177,13 @@ card_in_view = first_frame(lambda s: any((c[0] or "").startswith("Run isolated t
 undo_still_to = still("undo", K["scroll"][1])
 moments = {
     "send": {"frame": K["send"], "what": "the request is sent; the run starts (every +N s counts from here)"},
-    "cards": {"frame": K["cards"], "what": "the two edit cards arrive and the Details drawer opens on them"},
+    "cards": {"frame": K.get("cards", K.get("card1")), "what": "the two edit cards arrive and the Details drawer opens on them" if "cards" in K else "the first edit card arrives as its edit is staged, and the Details drawer opens on it"},
     "apply1_last_before": {"frame": K["p1"] - 1, "what": "the invoice_kit/dates.py card waiting, the last frame before the click"},
     "apply1_click": {"frame": K["p1"], "what": "Apply edit (dates.py); the app re-renders on this frame (the card moves to Earlier actions)"},
     "apply2_click": {"frame": K["p2"], "what": "Apply edit (tests/test_dates.py), under the second question card"},
     "done_in_place": {"frame": K["scroll"][1], "what": "the drawer scroll settles: the dates.py card marked Done, Undo this edit where Apply edit was"},
     "done_still_until": {"frame": undo_still_to, "what": "the last frame on which Undo this edit and the drawer have not moved"},
-    "notice": {"frame": 411, "what": "the reply ends with the host's 'Verification remains incomplete: …' notice"},
+    "notice": {"frame": K.get("notice", 411), "what": "the reply ends with the host's 'Verification remains incomplete: …' notice"},
     "hold": {"frame": K["hold"], "what": "verification_required: the drawer shows 'Pebble's change isn't verified yet.' with Run the tests, Ask Pebble to finish, Accept as unverified; the status line says Blocked"},
     "held_block_in_view": {"frame": blocked_in_view, "what": "the person's scroll brings the conversation's held run (Blocked, the sentence, the three buttons) into view"},
     "held_settled": {"frame": K["convScroll"][1], "what": "the scroll ends; the held run is static to the click"},
@@ -128,10 +235,32 @@ if ask_model:
     for m in moments.values():
         if "until" in m:
             m["until_seconds"] = sec(m["until"])
+round2 = meta.get("fidelity_round") == 2  # OVERRIDES §41: v1.5.0's own event order throughout
+if round2:
+    def bubble_from(start, f0):
+        return first_frame(lambda s: any(t.startswith(start) for _, t, _ in s.get("bubbles") or []), f0)
+    applied1 = bubble_from("Applied the edit to invoice_kit/dates.py", K["p1"])
+    applied2 = bubble_from("Applied the edit to tests/test_dates.py", K["p2"])
+    turn_ends = [u["f"] for u in meta["usage"] if not u.get("finish")]  # each model turn's end (its usage event)
+    moments.pop("cards", None)
+    moments.update({
+        "card1": {"frame": K["card1"], "what": "the invoice_kit/dates.py card arrives as its edit is staged (mid-run), and the Details drawer opens on it"},
+        "card2": {"frame": K["card2"], "what": "the tests/test_dates.py card arrives as its edit is staged"},
+        "proposal": {"frame": K["proposal"], "what": "the model's proposal arrives in the conversation in one piece (its turn ended)"},
+        "settle1": {"frame": K["settle1"], "what": "'Checked the reply', then the run waits for the approvals (Waiting for your approval)"},
+        "applied1_message": {"frame": applied1, "what": "the conversation shows the host's 'Applied the edit to invoice_kit/dates.py. You can undo it in Activity & review.'"},
+        "applied2_message": {"frame": applied2, "what": "the conversation shows 'Applied the edit to tests/test_dates.py. …'; the run is queued again"},
+        "resume": {"frame": K["running2"], "what": "the run resumes: 'Recalled 3 memories' (+8.9 s), then the model's first turn"},
+        "summary_text": {"frame": K["respond2"], "what": "the model's summary ('Both edits are in: …') arrives in one piece; 'Not verified · 2 changed files, no tests run' follows on the next frame"},
+        "repair_replies": {"frame": turn_ends[4], "until": turn_ends[5], "what": "the model's two replies to the completion check's repair requests arrive in the reply (below the conversation's view) at %d and %d, each followed by 'Not verified …' on the next frame; the drawer's live response shows each as it streams" % (turn_ends[4], turn_ends[5])},
+        "hold_reorder": {"frame": K["hold"], "what": "the hold: the conversation re-reads, and the reply (saved again) moves after the two 'Applied …' messages"},
+        "model_responded": {"frame": K["respond"], "what": "the model responded: the reply's last paragraph arrives in the conversation in one piece; the drawer's live response keeps the finished text until the run completes"},
+    })
+    moments["repair_replies"]["until_seconds"] = sec(turn_ends[5])
 first_saved = round((timeline.get("from") or 0) * fps)
 for m in moments.values():
     m["seconds"] = sec(m["frame"]) if m["frame"] is not None else None
-    if m["frame"] is not None and not first_saved <= m["frame"] <= last:
+    if m["frame"] is not None and not first_saved <= m["frame"] <= last or m["frame"] is None and last < K["complete"]:
         m["not_in_this_recording"] = True  # a partial recording (--from, --frames) has no file for this frame
 
 geometry = {
@@ -165,17 +294,39 @@ if ask_model:
         "drawer_run_done": {"frame": K["complete"], "box": at(K["complete"], "drawerRun")},
         "reply_after_completion": {"frame": K["complete"] + 2, "bubbles": at(K["complete"] + 2, "bubbles")},
     })
+if round2:
+    geometry.update({
+        "cards_on_arrival": {"frame": K["card2"], "cards": at(K["card2"], "cards")},
+        "applied1_bubble": {"frame": applied1, "bubble": bubble(applied1, "Applied the edit to invoice_kit/dates.py") if applied1 is not None else None},
+        "applied2_bubble": {"frame": applied2, "bubble": bubble(applied2, "Applied the edit to tests/test_dates.py") if applied2 is not None else None},
+        "conversation_at_hold": {"frame": K["hold"] + 1, "bubbles": at(K["hold"] + 1, "bubbles")},
+        "conversation_held_settled": {"frame": K["convScroll"][1], "bubbles": at(K["convScroll"][1], "bubbles")},
+        "steps_at_hold": {"frame": K["hold"], "steps": at(K["hold"], "steps")},
+    })
+    # Undo this edit after the scroll (bar 5): the drawer's live response sits above Earlier actions, so the card moves
+    # as each model turn's text grows there and jumps back when the next turn's empty response replaces it. Every frame
+    # on which its box changes, to the Run the tests click (the window is 800 CSS px tall).
+    undo_track, prev = [], None
+    for f in range(K["scroll"][1], K["runTheTests"] + 1):
+        r = at(f, "undo")
+        if r != prev:
+            undo_track.append({"frame": f, "seconds": sec(f), "rect": r,
+                               "whole_in_window": bool(r) and r[1] >= 0 and r[1] + r[3] <= 800})
+            prev = r
 manifest = {
     "recording": os.path.relpath(folder, os.getcwd()),
-    "made_by": "capture/record.mjs main-live-film-150 --theme=%s --scale=%s" % (timeline["theme"], timeline["scale"]),
+    "made_by": "capture/record.mjs main-live-film-150 --theme=%s --scale=%s%s" % (timeline["theme"], timeline["scale"],
+               " --from=%s --frames=%d" % (timeline["from"], last + 1) if timeline.get("from") else ""),
     "release": "Pebble v1.5.0's frontend, frozen with capture/freeze-release.py and verified (tag commit 16dd425)",
     "method": timeline.get("note"),
     "theme": timeline["theme"], "fps": fps, "scale": timeline["scale"], "viewport_css": [1160, 800],
     "frames_saved": timeline["frames"], "from_seconds": timeline.get("from"), "file_of_frame": "frame f is %05d.png with f+1",
     **({"spliced": timeline["spliced"]} if timeline.get("spliced") else {}),
-    **({"fidelity": "From the Run tests click the climax follows v1.5.0's Ask-mode event model (OVERRIDES §40): the approved tests run inside the approve route, and Verified is the completion check on the resumed run's finished turn"} if ask_model else {}),
+    **({"fidelity": "From the Run tests click the climax follows v1.5.0's Ask-mode event model (OVERRIDES §40): the approved tests run inside the approve route, and Verified is the completion check on the resumed run's finished turn"} if ask_model and not round2 else {}),
+    **({"fidelity_round": 2, "fidelity": "The whole run follows v1.5.0's own event order at the 4,096-token window (OVERRIDES §40-§41): text arrives in one piece when its turn ends (the drawer shows the live response), approvals answer once committed and write their summaries into the conversation, the resumed run recalls context again, host rows carry no activity class (no 'Explored' fold), model rows carry no timing detail (a local GGUF model), no turn-end is held at 4K (no 'Draft withdrawn'), and the approved tests run inside the approve route"} if round2 else {}),
     "moments": moments,
     "toast_on_screen": [{"frames": s, "seconds": [sec(s[0]), sec(s[1])]} for s in spans],
+    **({"undo_track": undo_track} if round2 else {}),
     "geometry_css_px": geometry,
     "clocks": {"run_start_frame": meta["T0"], "live_seconds_at_settles": meta["live"], "approval_waits": meta["waits"],
                "model_attempts": meta["model"], "usage": meta["usage"]},

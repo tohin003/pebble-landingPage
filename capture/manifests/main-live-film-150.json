@@ -2,7 +2,7 @@
  "recording": "video/public/ui-frames/main-live-film-150",
  "made_by": "capture/record.mjs main-live-film-150 --theme=light --scale=3",
  "release": "Pebble v1.5.0's frontend, frozen with capture/freeze-release.py and verified (tag commit 16dd425)",
- "method": "Pebble 1.5.0's frontend (the frozen v1.5.0 tree) driven by scripted host events and fixture timings: a re-enactment with sample data. Every clock the window prints is the recording's own.",
+ "method": "Pebble 1.5.0's frontend (the frozen v1.5.0 tree) driven by scripted host events and fixture timings in v1.5.0's own event order (fidelity round 2): a re-enactment with sample data. Every clock the window prints is the recording's own.",
  "theme": "light",
  "fps": 30,
  "scale": 3,
@@ -13,28 +13,13 @@
  "frames_saved": 825,
  "from_seconds": null,
  "file_of_frame": "frame f is %05d.png with f+1",
- "spliced": {
-  "frames_from_this_take": [
-   534,
-   824
-  ],
-  "frames_kept": [
-   0,
-   533
-  ],
-  "why": "the climax re-record (OVERRIDES §40): frames before the Run tests click stay the earlier take's"
- },
- "fidelity": "From the Run tests click the climax follows v1.5.0's Ask-mode event model (OVERRIDES §40): the approved tests run inside the approve route, and Verified is the completion check on the resumed run's finished turn",
+ "fidelity_round": 2,
+ "fidelity": "The whole run follows v1.5.0's own event order at the 4,096-token window (OVERRIDES §40-§41): text arrives in one piece when its turn ends (the drawer shows the live response), approvals answer once committed and write their summaries into the conversation, the resumed run recalls context again, host rows carry no activity class (no 'Explored' fold), model rows carry no timing detail (a local GGUF model), no turn-end is held at 4K (no 'Draft withdrawn'), and the approved tests run inside the approve route",
  "moments": {
   "send": {
    "frame": 30,
    "what": "the request is sent; the run starts (every +N s counts from here)",
    "seconds": 1.0
-  },
-  "cards": {
-   "frame": 180,
-   "what": "the two edit cards arrive and the Details drawer opens on them",
-   "seconds": 6.0
   },
   "apply1_last_before": {
    "frame": 275,
@@ -57,14 +42,14 @@
    "seconds": 10.8
   },
   "done_still_until": {
-   "frame": 407,
+   "frame": 327,
    "what": "the last frame on which Undo this edit and the drawer have not moved",
-   "seconds": 13.5667
+   "seconds": 10.9
   },
   "notice": {
-   "frame": 411,
+   "frame": 418,
    "what": "the reply ends with the host's 'Verification remains incomplete: …' notice",
-   "seconds": 13.7
+   "seconds": 13.9333
   },
   "hold": {
    "frame": 421,
@@ -72,9 +57,9 @@
    "seconds": 14.0333
   },
   "held_block_in_view": {
-   "frame": 445,
+   "frame": 448,
    "what": "the person's scroll brings the conversation's held run (Blocked, the sentence, the three buttons) into view",
-   "seconds": 14.8333
+   "seconds": 14.9333
   },
   "held_settled": {
    "frame": 453,
@@ -175,13 +160,65 @@
   },
   "model_responded": {
    "frame": 672,
-   "what": "the model responded: the live response closes, and the reply's last paragraph arrives in the conversation in one piece",
+   "what": "the model responded: the reply's last paragraph arrives in the conversation in one piece; the drawer's live response keeps the finished text until the run completes",
    "seconds": 22.4
   },
   "verified": {
    "frame": 673,
    "what": "'Verified · pytest 42 passed on current files': the completion check on the finished turn",
    "seconds": 22.4333
+  },
+  "card1": {
+   "frame": 129,
+   "what": "the invoice_kit/dates.py card arrives as its edit is staged (mid-run), and the Details drawer opens on it",
+   "seconds": 4.3
+  },
+  "card2": {
+   "frame": 134,
+   "what": "the tests/test_dates.py card arrives as its edit is staged",
+   "seconds": 4.4667
+  },
+  "proposal": {
+   "frame": 174,
+   "what": "the model's proposal arrives in the conversation in one piece (its turn ended)",
+   "seconds": 5.8
+  },
+  "settle1": {
+   "frame": 178,
+   "what": "'Checked the reply', then the run waits for the approvals (Waiting for your approval)",
+   "seconds": 5.9333
+  },
+  "applied1_message": {
+   "frame": 276,
+   "what": "the conversation shows the host's 'Applied the edit to invoice_kit/dates.py. You can undo it in Activity & review.'",
+   "seconds": 9.2
+  },
+  "applied2_message": {
+   "frame": 291,
+   "what": "the conversation shows 'Applied the edit to tests/test_dates.py. …'; the run is queued again",
+   "seconds": 9.7
+  },
+  "resume": {
+   "frame": 294,
+   "what": "the run resumes: 'Recalled 3 memories' (+8.9 s), then the model's first turn",
+   "seconds": 9.8
+  },
+  "summary_text": {
+   "frame": 360,
+   "what": "the model's summary ('Both edits are in: …') arrives in one piece; 'Not verified · 2 changed files, no tests run' follows on the next frame",
+   "seconds": 12.0
+  },
+  "repair_replies": {
+   "frame": 383,
+   "until": 417,
+   "what": "the model's two replies to the completion check's repair requests arrive in the reply (below the conversation's view) at 383 and 417, each followed by 'Not verified …' on the next frame; the drawer's live response shows each as it streams",
+   "until_seconds": 13.9,
+   "seconds": 12.7667
+  },
+  "hold_reorder": {
+   "frame": 421,
+   "what": "the hold: the conversation re-reads, and the reply (saved again) moves after the two 'Applied …' messages",
+   "seconds": 14.0333
   }
  },
  "toast_on_screen": [
@@ -206,6 +243,228 @@
    ]
   }
  ],
+ "undo_track": [
+  {
+   "frame": 324,
+   "seconds": 10.8,
+   "rect": [
+    832,
+    677.5,
+    109.3,
+    28
+   ],
+   "whole_in_window": true
+  },
+  {
+   "frame": 328,
+   "seconds": 10.9333,
+   "rect": [
+    832,
+    692.5,
+    109.3,
+    28
+   ],
+   "whole_in_window": true
+  },
+  {
+   "frame": 333,
+   "seconds": 11.1,
+   "rect": [
+    832,
+    722.5,
+    109.3,
+    28
+   ],
+   "whole_in_window": true
+  },
+  {
+   "frame": 343,
+   "seconds": 11.4333,
+   "rect": [
+    832,
+    767.5,
+    109.3,
+    28
+   ],
+   "whole_in_window": true
+  },
+  {
+   "frame": 353,
+   "seconds": 11.7667,
+   "rect": [
+    832,
+    782.5,
+    109.3,
+    28
+   ],
+   "whole_in_window": false
+  },
+  {
+   "frame": 358,
+   "seconds": 11.9333,
+   "rect": [
+    832,
+    797.5,
+    109.3,
+    28
+   ],
+   "whole_in_window": false
+  },
+  {
+   "frame": 361,
+   "seconds": 12.0333,
+   "rect": [
+    832,
+    839.1,
+    109.3,
+    28
+   ],
+   "whole_in_window": false
+  },
+  {
+   "frame": 363,
+   "seconds": 12.1,
+   "rect": [
+    832,
+    863.7,
+    109.3,
+    28
+   ],
+   "whole_in_window": false
+  },
+  {
+   "frame": 364,
+   "seconds": 12.1333,
+   "rect": [
+    832,
+    640.7,
+    109.3,
+    28
+   ],
+   "whole_in_window": true
+  },
+  {
+   "frame": 371,
+   "seconds": 12.3667,
+   "rect": [
+    832,
+    698.7,
+    109.3,
+    28
+   ],
+   "whole_in_window": true
+  },
+  {
+   "frame": 376,
+   "seconds": 12.5333,
+   "rect": [
+    832,
+    713.7,
+    109.3,
+    28
+   ],
+   "whole_in_window": true
+  },
+  {
+   "frame": 381,
+   "seconds": 12.7,
+   "rect": [
+    832,
+    728.7,
+    109.3,
+    28
+   ],
+   "whole_in_window": true
+  },
+  {
+   "frame": 384,
+   "seconds": 12.8,
+   "rect": [
+    832,
+    770.3,
+    109.3,
+    28
+   ],
+   "whole_in_window": true
+  },
+  {
+   "frame": 386,
+   "seconds": 12.8667,
+   "rect": [
+    832,
+    794.9,
+    109.3,
+    28
+   ],
+   "whole_in_window": false
+  },
+  {
+   "frame": 387,
+   "seconds": 12.9,
+   "rect": [
+    832,
+    706.9,
+    109.3,
+    28
+   ],
+   "whole_in_window": true
+  },
+  {
+   "frame": 394,
+   "seconds": 13.1333,
+   "rect": [
+    832,
+    749.9,
+    109.3,
+    28
+   ],
+   "whole_in_window": true
+  },
+  {
+   "frame": 413,
+   "seconds": 13.7667,
+   "rect": [
+    832,
+    764.9,
+    109.3,
+    28
+   ],
+   "whole_in_window": true
+  },
+  {
+   "frame": 418,
+   "seconds": 13.9333,
+   "rect": [
+    832,
+    806.6,
+    109.3,
+    28
+   ],
+   "whole_in_window": false
+  },
+  {
+   "frame": 421,
+   "seconds": 14.0333,
+   "rect": [
+    832,
+    802.2,
+    109.3,
+    28
+   ],
+   "whole_in_window": false
+  },
+  {
+   "frame": 480,
+   "seconds": 16.0,
+   "rect": [
+    832,
+    698.2,
+    109.3,
+    28
+   ],
+   "whole_in_window": true
+  }
+ ],
  "geometry_css_px": {
   "apply_edit_dates": {
    "frame": 275,
@@ -220,7 +479,7 @@
    "frame": 324,
    "rect": [
     832,
-    678.2,
+    677.5,
     109.3,
     28
    ]
@@ -232,7 +491,7 @@
      "Run the tests",
      [
       295,
-      545.3,
+      544.8,
       97.4,
       33
      ]
@@ -241,7 +500,7 @@
      "Ask Pebble to finish",
      [
       400.4,
-      545.3,
+      544.8,
       132.8,
       33
      ]
@@ -250,7 +509,7 @@
      "Accept as unverified",
      [
       541.2,
-      562.3,
+      561.8,
       107,
       13
      ]
@@ -263,7 +522,7 @@
     "Pebble's change isn't verified yet. · 2 file(s) changed and no tests were run, but 1 test file(s) cover this code: [\"tests/test_dates.py\"]. Run them (RunTests) before finishing and report what they said. Details",
     [
      295,
-     492.3,
+     491.8,
      470,
      45
     ]
@@ -276,7 +535,7 @@
      "Pebble's change isn't verified yet.",
      [
       817,
-      508.6,
+      445.3,
       327,
       16
      ]
@@ -307,7 +566,7 @@
     "Run isolated tests Running",
     [
      817,
-     449.8,
+     449.5,
      327,
      295.2
     ],
@@ -320,7 +579,7 @@
     "Run isolated tests Running",
     [
      817,
-     449.8,
+     449.5,
      327,
      295.2
     ],
@@ -333,7 +592,7 @@
     "Run isolated tests Done",
     [
      817,
-     450.1,
+     449.8,
      327,
      530.3
     ],
@@ -346,7 +605,7 @@
     "Run isolated tests Done",
     [
      817,
-     214.4,
+     215.1,
      327,
      530.3
     ],
@@ -360,7 +619,7 @@
     "text": "The isolated test run finished with exit code 0. Review the outp",
     "rect": [
      253,
-     472,
+     471.5,
      512,
      49
     ]
@@ -381,7 +640,7 @@
     "Receiving model response",
     [
      817,
-     464.2,
+     463.9,
      327,
      165
     ],
@@ -395,7 +654,7 @@
     "stamp": "+19.3 s",
     "rect": [
      831,
-     367.6,
+     367.3,
      309,
      24.6
     ],
@@ -409,9 +668,9 @@
     "stamp": "+19.3 s",
     "rect": [
      831,
-     367.6,
+     367.3,
      309,
-     41.6
+     24.6
     ],
     "phase": "done"
    }
@@ -423,7 +682,7 @@
     "stamp": "+21.4 s",
     "rect": [
      831,
-     409.2,
+     391.9,
      309,
      24.6
     ],
@@ -437,7 +696,7 @@
      "Done.",
      [
       817,
-      459.8,
+      442.5,
       327,
       16
      ]
@@ -449,13 +708,237 @@
    "bubbles": [
     [
      "assistant",
-     "Worked for 12 s · 9 steps · waited 9 s for you Verified · pytest",
+     "Worked for 12 s · 10 steps · waited 12 s for you Verified · pyte",
      [
       253,
-      -151.5,
+      -252.5,
       512,
-      678.3
+      779.8
      ]
+    ]
+   ]
+  },
+  "cards_on_arrival": {
+   "frame": 134,
+   "cards": [
+    [
+     "invoice_kit/dates.py Needs your review",
+     [
+      817,
+      211,
+      327,
+      509.9
+     ]
+    ],
+    [
+     "tests/test_dates.py Needs your review",
+     [
+      817,
+      732.9,
+      327,
+      512.2
+     ]
+    ]
+   ]
+  },
+  "applied1_bubble": {
+   "frame": 276,
+   "bubble": {
+    "role": "assistant",
+    "text": "Applied the edit to invoice_kit/dates.py. You can undo it in Act",
+    "rect": [
+     253,
+     493.5,
+     512,
+     81
+    ]
+   }
+  },
+  "applied2_bubble": {
+   "frame": 291,
+   "bubble": {
+    "role": "assistant",
+    "text": "Applied the edit to tests/test_dates.py. You can undo it in Acti",
+    "rect": [
+     253,
+     568.5,
+     512,
+     49
+    ]
+   }
+  },
+  "conversation_at_hold": {
+   "frame": 422,
+   "bubbles": [
+    [
+     "user",
+     "The CSV export crashes for invoices issued on the 31st: ValueErr",
+     [
+      253,
+      23,
+      512,
+      127.5
+     ]
+    ],
+    [
+     "assistant",
+     "Applied the edit to invoice_kit/dates.py. You can undo it in Act",
+     [
+      253,
+      177.5,
+      512,
+      81
+     ]
+    ],
+    [
+     "assistant",
+     "Applied the edit to tests/test_dates.py. You can undo it in Acti",
+     [
+      253,
+      285.5,
+      512,
+      81
+     ]
+    ],
+    [
+     "assistant",
+     "Worked for 9 s · 8 steps · waited 10 s for you Not verified · 2 ",
+     [
+      253,
+      393.5,
+      512,
+      702.3
+     ]
+    ]
+   ]
+  },
+  "conversation_held_settled": {
+   "frame": 453,
+   "bubbles": [
+    [
+     "assistant",
+     "Worked for 9 s · 8 steps · waited 10 s for you Not verified · 2 ",
+     [
+      253,
+      -279.5,
+      512,
+      702.3
+     ]
+    ]
+   ]
+  },
+  "steps_at_hold": {
+   "frame": 421,
+   "steps": [
+    [
+     "Checked the reply",
+     "+4.8 s",
+     [
+      831,
+      105.2,
+      309,
+      24.6
+     ],
+     "done"
+    ],
+    [
+     "Waiting for your approval",
+     "+4.9 s",
+     [
+      831,
+      129.8,
+      309,
+      24.6
+     ],
+     "done"
+    ],
+    [
+     "Recalled 3 memories",
+     "+8.9 s",
+     [
+      831,
+      154.4,
+      309,
+      41.6
+     ],
+     "done"
+    ],
+    [
+     "The model responded · 2 s",
+     "+9.0 s",
+     [
+      831,
+      196,
+      309,
+      24.6
+     ],
+     "done"
+    ],
+    [
+     "Not verified · 2 changed files, no tests run",
+     "+11.0 s",
+     [
+      831,
+      220.6,
+      309,
+      41.6
+     ],
+     "done"
+    ],
+    [
+     "The model responded",
+     "+11.1 s",
+     [
+      831,
+      262.2,
+      309,
+      24.6
+     ],
+     "done"
+    ],
+    [
+     "Not verified · 2 changed files, no tests run",
+     "+11.8 s",
+     [
+      831,
+      286.8,
+      309,
+      41.6
+     ],
+     "done"
+    ],
+    [
+     "The model responded · 1 s",
+     "+11.9 s",
+     [
+      831,
+      328.5,
+      309,
+      24.6
+     ],
+     "done"
+    ],
+    [
+     "Not verified · 2 changed files, no tests run",
+     "+12.9 s",
+     [
+      831,
+      353.1,
+      309,
+      41.6
+     ],
+     "done"
+    ],
+    [
+     "Verification remains incomplete",
+     "+13.0 s",
+     [
+      831,
+      394.7,
+      309,
+      24.6
+     ],
+     "done"
     ]
    ]
   }
@@ -464,53 +947,136 @@
   "run_start_frame": 30,
   "live_seconds_at_settles": [
    4.933,
-   9.233,
-   11.533
+   9.266,
+   11.566
   ],
   "approval_waits": {
-   "dates": 3.6,
-   "tests": 3.9,
+   "dates": 4.9,
+   "tests": 5.233,
    "run": 1.767
   },
   "model_attempts": {
    "a1": 0.6,
-   "a2": 2.2,
-   "a3": 0.3,
-   "a4": 0.3,
-   "a5": 2.967,
-   "a6": 2.1
+   "a2": 0.933,
+   "a3": 1.267,
+   "a4": 2.033,
+   "a5": 0.667,
+   "a6": 1.033,
+   "a7": 2.1
   },
   "usage": [
    {
+    "f": 60,
+    "input_tokens": 380,
+    "output_tokens": 30,
+    "cached_tokens": 0,
+    "calls": 1,
+    "generation_seconds": 0.48,
+    "tokens_per_second": 62.5,
+    "route": "model"
+   },
+   {
+    "f": 124,
+    "input_tokens": 780,
+    "output_tokens": 122,
+    "cached_tokens": 256,
+    "calls": 2,
+    "generation_seconds": 1.226,
+    "tokens_per_second": 99.5,
+    "route": "model"
+   },
+   {
+    "f": 174,
     "input_tokens": 1200,
     "output_tokens": 242,
     "cached_tokens": 512,
-    "route": "model",
-    "calls": 2,
-    "seconds": 2.8
+    "calls": 3,
+    "generation_seconds": 2.24,
+    "tokens_per_second": 108,
+    "route": "model"
    },
    {
+    "f": 176,
+    "input_tokens": 1200,
+    "output_tokens": 242,
+    "cached_tokens": 512,
+    "calls": 3,
+    "generation_seconds": 2.24,
+    "tokens_per_second": 108,
+    "route": "model",
+    "seconds": 4.8,
+    "finish": true
+   },
+   {
+    "f": 360,
+    "input_tokens": 1880,
+    "output_tokens": 312,
+    "cached_tokens": 1024,
+    "calls": 4,
+    "generation_seconds": 3.866,
+    "tokens_per_second": 80.7,
+    "route": "model"
+   },
+   {
+    "f": 383,
+    "input_tokens": 2540,
+    "output_tokens": 330,
+    "cached_tokens": 1536,
+    "calls": 5,
+    "generation_seconds": 4.4,
+    "tokens_per_second": 75,
+    "route": "model"
+   },
+   {
+    "f": 417,
     "input_tokens": 3200,
     "output_tokens": 352,
     "cached_tokens": 2048,
-    "route": "model",
-    "calls": 5,
-    "seconds": 6.367
+    "calls": 6,
+    "generation_seconds": 5.226,
+    "tokens_per_second": 67.4,
+    "route": "model"
    },
    {
+    "f": 419,
+    "input_tokens": 3200,
+    "output_tokens": 352,
+    "cached_tokens": 2048,
+    "calls": 6,
+    "generation_seconds": 5.226,
+    "tokens_per_second": 67.4,
+    "route": "model",
+    "seconds": 4.2,
+    "finish": true
+   },
+   {
+    "f": 672,
     "input_tokens": 3920,
     "output_tokens": 400,
     "cached_tokens": 2688,
+    "calls": 7,
+    "generation_seconds": 6.906,
+    "tokens_per_second": 57.9,
+    "route": "model"
+   },
+   {
+    "f": 674,
+    "input_tokens": 3920,
+    "output_tokens": 400,
+    "cached_tokens": 2688,
+    "calls": 7,
+    "generation_seconds": 6.906,
+    "tokens_per_second": 57.9,
     "route": "model",
-    "calls": 6,
-    "seconds": 8.467
+    "seconds": 2.3,
+    "finish": true
    }
   ]
  },
  "check": {
-  "stamps_checked": 2836,
-  "durations_checked": 438,
-  "status_checked": 314,
+  "stamps_checked": 2809,
+  "durations_checked": 533,
+  "status_checked": 317,
   "failures": []
  }
 }

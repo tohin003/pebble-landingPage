@@ -10,8 +10,8 @@
 //                              --hide=.pet-avatar records the companion without its pebble, which the films draw
 //                              themselves (FILM_SPEC §17 R1; lane G2b)
 //          [--text-every=10] [--text-at=F1,F2]  with a timeline's probes on: also save the visible text on these frames
-// Timelines: pet-live-error (alias pet-live), main-live-film, main-live-film-150, main-challenge-live, pet-gaze,
-// pet-veil. Output: numbered PNGs 00001.png... plus timeline.json (for pet-gaze also the cursor position of every frame,
+// Timelines: pet-live-error (alias pet-live), pet-live-150, main-live-film, main-live-film-150, main-challenge-live,
+// pet-gaze, pet-veil. Output: numbered PNGs 00001.png... plus timeline.json (for pet-gaze also the cursor position of every frame,
 // for compositing; for a timeline with a schedule its `meta`) and, with probes, probes.json. Encode later, e.g.
 // ffmpeg -framerate 30 -i %05d.png -c:v prores_ks -pix_fmt yuva444p10le out.mov
 import fs from "node:fs";
@@ -168,6 +168,12 @@ async function probeFrame(page) {
       })(),
       // The conversation's messages in view: role, the first 64 characters, box.
       bubbles: inConv(".messages > .message").map((el) => [el.classList.contains("user") ? "user" : "assistant", (text(el.querySelector(".message-content, .user-text")) || "").slice(0, 64), rect(el)]),
+      // The companion's quick chat (Pet.vue): its status line, the task summary line and the feed's messages.
+      pet: (() => {
+        if (!q(".quick-feed")) return null;
+        return { status: text(q(".pet-status")), task: text(q(".pet-summary-task")),
+          feed: qa(".quick-feed > article").map((a) => [a.classList.contains("user") ? "user" : "assistant", (text(a) || "").slice(0, 80), rect(a)]) };
+      })(),
     };
   });
 }
@@ -221,6 +227,134 @@ function cursorAt(t) {
   return { dx: GAZE.orbit.x * Math.cos(a), dy: GAZE.orbit.y * Math.sin(a) }; // pt from the avatar's centre
 }
 
+// v1.5.0's host at the sample model's 4,096-token window (OVERRIDES §40-§41, fidelity round 2): what the service sends
+// the window during a run, in the runner's own order, for the 1.5.0 timelines (main-live-film-150, main-challenge-live,
+// pet-live-150). Every helper schedules steps on frames (30 fps) of the recording; T0 is the send's frame, from which
+// every "+N s" counts (run_activity.py `at`). `schedule` collects every published or recorded row for the clock check.
+//   progress()  runner.py progress(): one `progress` event with the host's class (activity_kinds.classify: only a
+//               working event has one; without a tool it is the model's own turn, "thinking").
+//   pub()       a row the runner publishes (run_activity.py publish: an `activity` event), kept in the host's record.
+//   record()    a change to the host's record that nobody publishes yet: the window reads it later (run_activity).
+//   turn()      one model turn: "Working with your model", the stream's begin (stream_journal.py; the drawer's live
+//               response, AttemptStream.vue) and "Waiting for the model"; the text streams into the journal only; at its
+//               end the row settles with its own duration (a local GGUF model reports no timings: no detail), the
+//               retry helper's commit, `run` running, the cumulative usage (save_usage), the journal settled with the
+//               response and "committed", then the turn's text in ONE token event (runner.py V1-081).
+//   tool()      a tool call: progress, the row running, then done (or failed with its error) and progress again.
+//   staged()    an Ask-mode edit: the tool row, propose()'s action and `actions` event (the card), the approval row
+//               bound to it, the tool row done "Staged for your approval.".
+//   finish()    app.py finish(): the reply saved (created, or saved again: it moves after anything written since), its
+//               usage with the segment's own seconds, and `complete`.
+//   settle()    runner.py settle_run(): the run's state (the host's record first), its `run` event and its state note.
+function host150({ chat, run, reply, T0, steps, schedule, attemptBase = "a3f0" }) {
+  const F = (f) => f / 30, r3 = (x) => Math.round(x * 1000) / 1000;
+  const at = (f) => r3((f - T0) / 30), span = (a, b) => r3((b - a) / 30);
+  const on = (f, fn) => steps.push([F(f), fn]);
+  const ids = { chat_id: chat, run_id: run, id: reply };
+  const A = (item) => emit("activity", { chat_id: chat, run_id: run, item });
+  const CLASS = { Grep: "searching", Read: "reading", Edit: "editing", RunTests: "testing" };
+  // Every progress event, for the checker: while a run has no host activity row yet, the window's own fallback rows
+  // (activity.ts, from progress events) are the steps it shows.
+  const progressLog = [];
+  const progress = (f, label, kind = "working", tool = null, extra = {}) => {
+    progressLog.push({ f, label, kind });
+    on(f, emit("progress", { chat_id: chat, run_id: run, label, kind, ...(tool ? { tool } : {}), ...extra,
+      activity: kind === "working" ? (tool ? CLASS[tool] || "working" : "thinking") : null }));
+  };
+  const note = (f, item, made, by) => schedule.push({ f, made, seq: item.seq, kind: item.kind, label: item.label, status: item.status,
+    at: item.at, duration: item.duration, ...(by ? { by } : {}) });
+  const pub = (f, item, made = f) => {
+    note(f, item, made);
+    on(f, async (pg) => { await live("publish", run, item)(pg); await A(item)(pg); });
+  };
+  const record = (f, item, made) => {
+    note(f, item, made, "record");
+    on(f, live("publish", run, item));
+  };
+  const resend = (f, items) => on(f, async (pg) => { for (const item of items) await A(item)(pg); });
+  const sendActions = (f, list) => on(f, async (pg) => { await live("actions", chat, list)(pg); await emit("actions", { chat_id: chat, actions: list })(pg); });
+  // The runner's usage (runner.py): counts summed over the run's model calls; generation seconds from the provider's
+  // rate (stats.usage_metrics), here 0.8 of each attempt; tokens per second over the whole; finish() adds the segment's
+  // own wall seconds (app.py finish()), which TokenStats shows instead of the generation seconds.
+  const usage = { input_tokens: 0, output_tokens: 0, cached_tokens: 0, calls: 0, generation_seconds: 0, tokens_per_second: null };
+  const usageLog = [];
+  const attempts = {};
+  let attemptCount = 0, separate = false, messageSaved = false;
+  // runner.py token(): a turn's text after earlier text starts on its own line (`separate`).
+  const tokenText = (text) => {
+    const out = separate && text ? "\n" + text : text;
+    separate = !out.endsWith("\n");
+    return out;
+  };
+  const turn = ({ seq, f0, f1, text = "", from = f0 + 4, to = f1 - 3, use }) => {
+    const n = ++attemptCount, id = attemptBase + String(n).padStart(28, "0");
+    const journal = (event) => live("streamEvent", run, { attempt_id: id, step: n, attempt: 1, ...event });
+    const stream = (type) => emit("stream", { chat_id: chat, run_id: run, attempt_id: id, type, authorization: "none" });
+    progress(f0, "Working with your model");
+    on(f0, async (pg) => { await journal({ kind: "begin", state: "open" })(pg); await stream("begin")(pg); });
+    pub(f0, row(seq, at(f0), "model", "Waiting for the model", "running"));
+    if (f1 === null || f1 === undefined) {
+      attempts["a" + n] = null; // a turn still running when the recording ends
+      return null;
+    }
+    if (text) {
+      const words = text.split(/(?<=\s)/);
+      words.forEach((w, i) => on(from + Math.floor(((to - from) * i) / words.length), async (pg) => { await journal({ kind: "delta", text: w })(pg); await stream("delta")(pg); }));
+    }
+    const seconds = span(f0, f1);
+    pub(f1, row(seq, at(f0), "model", "The model responded", "done", null, seconds), f0);
+    on(f1, stream("commit"));
+    on(f1, emit("run", { chat_id: chat, run_id: run, state: "running" }));
+    const [inTok, cachedTok, outTok] = use;
+    usage.input_tokens += inTok; usage.cached_tokens += cachedTok; usage.output_tokens += outTok; usage.calls += 1;
+    usage.generation_seconds = r3(usage.generation_seconds + seconds * 0.8);
+    usage.tokens_per_second = Math.round((usage.output_tokens / usage.generation_seconds) * 10) / 10;
+    const snapshot = { ...usage, route: "model" };
+    usageLog.push({ f: f1, ...snapshot });
+    on(f1, emit("usage", { chat_id: chat, id: reply, usage: snapshot }));
+    if (messageSaved) on(f1, live("message", chat, { id: reply, usage: snapshot })); // save_usage: the metrics row
+    on(f1, async (pg) => { await journal({ kind: "settle", state: "committed", origin: "host" })(pg); await stream("committed")(pg); });
+    if (text) {
+      const part = tokenText(text);
+      on(f1, emit("token", { ...ids, text: part }));
+    }
+    attempts["a" + n] = seconds;
+    return seconds;
+  };
+  const tool = (seq, f0, f1, name, label, { status = "done", detail = null, blocked = null } = {}) => {
+    progress(f0, label, "working", name);
+    pub(f0, row(seq, at(f0), "tool", label, "running"));
+    pub(f1, row(seq, at(f0), "tool", label, status, null, span(f0, f1), detail), f0);
+    if (status === "failed") progress(f1, blocked || detail, "blocked", name);
+    else progress(f1, label, "done", name);
+  };
+  const staged = (toolSeq, approvalSeq, f0, f1, file, actionsAfter) => {
+    const label = "Preparing an edit to " + file;
+    progress(f0, label, "working", "Edit");
+    pub(f0, row(toolSeq, at(f0), "tool", label, "running"));
+    sendActions(f1, actionsAfter);
+    progress(f1, label, "done", "Edit");
+    pub(f1, row(approvalSeq, at(f1), "approval", "Waiting for your approval: " + label, "running"));
+    pub(f1, row(toolSeq, at(f0), "tool", label, "done", null, span(f0, f1), "Staged for your approval."), f0);
+    return { label, tool: row(toolSeq, at(f0), "tool", label, "done", null, span(f0, f1)), bound: f1 };
+  };
+  const finish = (f, content, wallFrom) => {
+    const saved = { ...usage, route: "model", seconds: Math.round(span(wallFrom, f) * 10) / 10 };
+    usageLog.push({ f, ...saved, finish: true });
+    on(f, live(messageSaved ? "resave" : "message", chat, { id: reply, role: "assistant", content, run_id: run, usage: saved }));
+    on(f, emit("usage", { chat_id: chat, id: reply, usage: saved }));
+    on(f, emit("complete", { chat_id: chat, id: reply, seconds: saved.seconds }));
+    messageSaved = true;
+    return saved;
+  };
+  const settle = (f, state, extra = {}) => {
+    on(f, live("run", chat, { id: run, state, created_t: F(T0), updated_t: F(f), ...extra }));
+    on(f, emit("run", { chat_id: chat, run_id: run, state }));
+  };
+  return { F, r3, at, span, on, ids, progress, pub, record, resend, sendActions, turn, tool, staged, finish, settle, tokenText,
+    usageLog, attempts, usage, progressLog };
+}
+
 const TIMELINES = {
   // L1 / the film's hook (D22): the companion opens, the question is typed and sent, Thinking, the model's reply
   // streams (Writing), the task completes and the pebble celebrates.
@@ -250,6 +384,44 @@ const TIMELINES = {
         [6.6, emit("run", { chat_id: chat, run_id: run, state: "completed" })],
         [7.2, emit("idle", { chat_id: chat, run_id: run })],
       );
+      return steps;
+    },
+  },
+
+  // The quick chat on Pebble 1.5.0 in v1.5.0's own event order (OVERRIDES §41, fidelity round 2; the trailer's bars
+  // 12-13): the companion opens, the question is typed and sent exactly as in pet-live-error (the person's part), and
+  // the model's turn runs at the 4,096-token window. Pet.vue shows a reply only from `token` events and has no live
+  // stream view, and the runner sends a turn's text in one token event when the turn ends (runner.py V1-081): so the
+  // pet says "Thinking" until the answer arrives whole, "Writing" for a moment, then the task completes.
+  "pet-live-150": {
+    url: "?pet&scene=pet-live&version=1.5.0",
+    viewport: { width: 384, height: 456 },
+    transparent: true,
+    seconds: 9,
+    probe: true,
+    note: "Pebble 1.5.0's companion (the frozen v1.5.0 tree) driven by scripted host events in v1.5.0's own event order (fidelity round 2): a re-enactment with sample data.",
+    async build(page) {
+      const chat = "chat-live-pet", run = "run-live-1", reply = "msg-live-pet-reply";
+      // click: the pebble opens the quick chat; type: the question, one character every 34 ms; send: Enter; respond: the
+      // model's turn ends and its answer arrives; complete: the run completes; idle: the host's idle after its upkeep.
+      const K = { click: 18, type: 39, send: 90, queued: 95, running: 99, turn: 102, respond: 195, complete: 198, idle: 216 };
+      const question = await fixture(page, "text.petQuestion");
+      const answer = await fixture(page, "reply.pet");
+      const steps = [], schedule = [];
+      const h = host150({ chat, run, reply, T0: K.send, steps, schedule, attemptBase: "d2b4" });
+      const { F, span, on, progress, turn, finish, settle } = h;
+      on(K.click, (pg) => pg.click(".pet-avatar"));
+      typeChars(steps, F(K.type), 0.034, question);
+      on(K.send, (pg) => pg.keyboard.press("Enter"));
+      on(K.queued, emit("run", { chat_id: chat, run_id: run, state: "queued" }));
+      settle(K.running, "running", { elapsed: 0 });
+      progress(K.running + 1, "Preparing your local workspace");
+      turn({ seq: 128, f0: K.turn, f1: K.respond, text: answer, from: K.turn + 8, to: K.respond - 5, use: [1180, 0, 52] });
+      finish(K.respond + 2, answer, K.running);
+      on(K.complete - 1, live("active", null, null));
+      settle(K.complete, "completed", { elapsed: span(K.running, K.complete), counts: { steps: 1, retries: 0, waited: 0 } });
+      on(K.idle, emit("idle", { chat_id: chat, run_id: run }));
+      TIMELINES["pet-live-150"].meta = { fidelity_round: 2, K, model: h.attempts, usage: h.usageLog, progress: h.progressLog };
       return steps;
     },
   },
@@ -406,292 +578,259 @@ const TIMELINES = {
     },
   },
 
-  // The trailer's P0 (TRAILER_RESEARCH §6.5 and §9, OVERRIDES §39): the same invoice-kit run as main-live-film, played on
-  // Pebble 1.5.0's frontend (capture/freeze-release.py v1.5.0), with every clock the window prints taken from the
-  // recording itself. Every event sits on a frame (30 fps, the key frames in K), and every number the window prints is
-  // computed from those frames: a row's "+N s" is its own frame's offset from the run's start (the send, frame 30;
-  // run_activity.py `at`); a step's "· N s" is its own span (tool_started to tool_finished, an attempt's start to its
-  // end, an approval's binding to the person's click); the status line's exact time is the host's live seconds
-  // (fixtures.js clock(), as run_activity.py read() reports them); a receipt's time is those live seconds and its
-  // "waited" the approvals' spans; the usage line's time is the sum of the model attempts. The edits are applied at
-  // 9.20 s and 9.70 s, so the 3.5-s "Action completed" toast (App.vue notify; a 0.2-s leave) has gone by 13.45 s, before
-  // the held run's shots from 13.6 s. The cumulative usage stays under the sample model's 4,096-token window and reports
-  // no rate (TokenStats then shows none). The host's idle follows each settle in the same frame, so a receipt never
-  // shows the window's own wall-clock count first. Frames carry probes (probes.json): per-frame positions and the
-  // visible text, for the film's measurements and for capture/check_live_film.py; timeline.json carries the schedule
-  // (meta).
-  // The climax follows v1.5.0's Ask-mode event model (OVERRIDES §40), read at the tag: the approved tests run inside
-  // the approve route (app.py approve() -> _approve(): the action 'running', perform_action(), commit_action()), so for
-  // exactly 2.4 s (frames 534-606) the card reads Running and nothing else changes: the run stays waiting_approval
-  // (runtime.py begin_approval() changes no state), and only the runner sends progress or publishes activity (runner.py
-  // progress(), publish()), so there is no "Testing" status and no running "Requesting isolated tests" row. When the
-  // tests end, the route commits the receipt, writes its summary into the conversation, sends actions and idle,
-  // dispatches the run's continuation (controller.py dispatch_now(): run queued, then the runner's run running) and
-  // answers, so "Action completed" comes with the test result. The resumed run recalls context (a new context row),
-  // and its model attempt streams into the run's stream journal, which the drawer shows ("Receiving model response",
-  // AttemptStream.vue), while the conversation gets the attempt's text in one token event when it commits (runner.py:
-  // V1-081). Only then does the completion check run (runner.py completion() after a turn with no tool calls):
-  // "Verified · pytest 42 passed on current files" comes one frame after the model responded, and the run completes
-  // at 22.50 s. The reply, saved again at the end (app.py finish()), moves after the tests' summary (get_chat lists by
-  // `created`).
+  // The trailer's P0 (TRAILER_RESEARCH §6.5 and §9, OVERRIDES §39-§41): the invoice-kit run on Pebble 1.5.0's frontend
+  // (capture/freeze-release.py v1.5.0), in v1.5.0's own event order at the sample model's 4,096-token window (fidelity
+  // round 2, host150()), with every clock the window prints taken from the recording itself: a row's "+N s" is its own
+  // frame's offset from the send (frame 30); a step's "· N s" its own span; the status line's exact time the host's live
+  // seconds (fixtures.js clock()); a receipt's time those live seconds and its "waited" the approvals' spans.
+  // What v1.5.0 does here, and so what the recording shows:
+  //   - Segment 1 (the request): each model turn opens the drawer's live response and ends with its text in one piece;
+  //     the model searches and reads, stages the two edits (each card arrives as its edit is staged, and the first opens
+  //     the drawer), then writes its proposal; the completion check finds pending approvals ("Checked the reply") and
+  //     the run waits for them. Host rows carry no activity class, so the window folds no "Explored" row.
+  //   - The edits (9.20 s, 9.70 s): each approve route applies its edit, writes "Applied the edit to …" into the
+  //     conversation and answers ("Action completed"); the second also dispatches the run's continuation.
+  //   - Segment 2: the resumed run recalls context again ("Recalled 3 memories"), and the model's three turns are each
+  //     shown as they end (no turn-end is held at 4K): its summary, then two replies to the completion check's repair
+  //     requests, each followed by "Not verified · 2 changed files, no tests run"; the third check holds the run
+  //     (14.033 s) with the host's notice, and the reply, saved again, moves after the "Applied …" messages.
+  //   - The climax (round 1, OVERRIDES §40): Run tests (17.80 s); the approve route runs the tests for 2.4 s while the
+  //     card reads Running; then the result, the summary, "Action completed"; the resumed turn; Verified (22.433 s);
+  //     completion (22.50 s).
+  // The edits are applied at 9.20 s and 9.70 s, so the 3.5-s "Action completed" toast (App.vue notify; a 0.2-s leave)
+  // has gone by 13.45 s, before the held run's shots from 13.6 s. The usage stays under the 4,096-token window. The
+  // host's idle follows each settle in the same frame. Frames carry probes (probes.json); timeline.json carries the
+  // schedule (meta).
   "main-live-film-150": {
     url: "?scene=live-film&version=1.5.0",
     viewport: { width: 1160, height: 800 },
     transparent: false,
     seconds: 27.5,
     probe: true,
-    note: "Pebble 1.5.0's frontend (the frozen v1.5.0 tree) driven by scripted host events and fixture timings: a re-enactment with sample data. Every clock the window prints is the recording's own.",
+    note: "Pebble 1.5.0's frontend (the frozen v1.5.0 tree) driven by scripted host events and fixture timings in v1.5.0's own event order (fidelity round 2): a re-enactment with sample data. Every clock the window prints is the recording's own.",
     async build(page) {
-      const chat = "chat-live-fix", run = "run-live-1", reply = "msg-live-reply", ids = { chat_id: chat, run_id: run, id: reply };
-      const F = (f) => f / 30, r3 = (x) => Math.round(x * 1000) / 1000;
-      // Key frames (30 fps). send: app.py send() creates the run (queued); p1/p2: Apply edit; hold: verification_required;
-      // runTheTests: the held run's button; runTests: the "Run isolated tests" card's button, and the tests start inside
-      // the approve route; cardScroll: the person scrolls the drawer to the card, now the last in Earlier actions;
-      // testsEnd: the tests end and the route answers; context: the resumed run's context row and its model attempt;
-      // stepsScroll: the person scrolls back up to the newest steps; respond: the attempt ends; verified: the
-      // completion check; complete: the run completes.
-      const K = { send: 30, queued1: 31, running1: 33, settle1: 178, cards: 180, p1: 276, p2: 291, queued2: 292, running2: 294,
-        scroll: [306, 324], hold: 421, convScroll: [435, 453], runTheTests: 480, card: 484, runTests: 534, cardScroll: [537, 555],
-        testsEnd: 606, context: 609, resultScroll: [612, 630], stepsScroll: [648, 666], respond: 672, verified: 673, complete: 675 };
+      const chat = "chat-live-fix", run = "run-live-1", reply = "msg-live-reply";
+      // Key frames (30 fps). Segment 1: send, the run (queued, running), the two cards (as each edit is staged), the
+      // settle. The edits: p1/p2 (Apply edit), the second also queues the run (queued2) and the runner starts (running2).
+      // Segment 2: the drawer scroll to Undo (scroll), the model's text (respond2), the hold. The climax as in round 1:
+      // runTheTests, card, runTests, cardScroll, testsEnd, context, resultScroll, stepsScroll, respond, verified, complete.
+      const K = { send: 30, queued1: 31, running1: 33, card1: 129, card2: 134, proposal: 174, settle1: 178,
+        p1: 276, p2: 291, queued2: 291, running2: 294, scroll: [306, 324], respond2: 360, notice: 418, hold: 421,
+        convScroll: [435, 453], runTheTests: 480, card: 484, runTests: 534, cardScroll: [537, 555], testsEnd: 606, context: 609,
+        resultScroll: [612, 630], stepsScroll: [648, 666], respond: 672, verified: 673, complete: 675 };
       const STEPS_Y = 380; // where the person brings the newest step (its centre, CSS px of the window)
       const T0 = K.send;
-      const at = (f) => r3((f - T0) / 30), span = (a, b) => r3((b - a) / 30);
       const request = await fixture(page, "text.request");
       const r = await fixture(page, "reply");
       const diffs = await fixture(page, "diffs");
-      const heldIssue = await fixture(page, "text.heldIssue");
-      const testsSummary = await fixture(page, "text.testsSummary"); // app.py action_summary() for the applied tests
+      const text = await fixture(page, "text");
       const testScope = await fixture(page, "testScope"); // 1.2.0+: the host's reason on the tests/test_dates.py edit
       const steps = [], schedule = [];
-      const on = (f, fn) => steps.push([F(f), fn]);
+      const h = host150({ chat, run, reply, T0, steps, schedule });
       const A = (item) => emit("activity", { chat_id: chat, run_id: run, item });
-      const P = (tool, activity, label, kind = "working") => emit("progress", { chat_id: chat, run_id: run, kind, tool, activity, label });
-      // pub(): the host publishes a row (run_activity.py publish); `made` is the frame the host created it (its `at`).
-      const pub = (f, item, made = f) => {
-        schedule.push({ f, made, seq: item.seq, label: item.label, status: item.status, at: item.at, duration: item.duration });
-        on(f, async (pg) => { await live("publish", run, item)(pg); await A(item)(pg); });
-      };
-      // A model attempt: "Waiting for the model" while it runs, then "The model responded" with its own duration.
-      const attempt = (seq, f0, f1, headers, first) => {
-        pub(f0, row(seq, at(f0), "model", "Waiting for the model", "running"));
-        pub(f1, row(seq, at(f0), "model", "The model responded", "done", null, span(f0, f1), `Headers after ${headers.toFixed(1)} s; first text after ${first.toFixed(1)} s.`), f0);
-        return span(f0, f1);
-      };
-      const tool = (seq, f0, f1, name, activity, label, detail = null) => {
-        on(f0, P(name, activity, label));
-        pub(f0, row(seq, at(f0), "tool", label, "running", activity));
-        pub(f1, row(seq, at(f0), "tool", label, "done", activity, span(f0, f1), detail), f0);
-        on(f1, P(name, activity, label, "done"));
-      };
-      // run_activity.py verdict() for the gate's no_test_run hold, then its repair notes (WITHHELD completion_check).
-      const verdict = (seq, f, last) => row(seq, at(f), "check", "Not verified · 2 changed files, no tests run", "done", null, 0.02, last ? "1 item unresolved" : "1 item to resolve");
-      const withdrawn = (seq, f) => row(seq, at(f), "note", "Draft withdrawn: a check asked for a fix; the reply follows it");
+      const { F, r3, at, span, on, ids, progress, pub, record, resend, sendActions, turn, tool, staged, finish, settle, tokenText } = h;
       const edit = (id, file, baseline, diff, status, extra = {}) => ({ id, chat_id: chat, kind: "edit", status, payload: { path: file, baseline, diff, ...extra } });
       const dates = (status) => edit("act-film-dates", "invoice_kit/dates.py", "9f2c41d07ab3", diffs.dates, status);
       const testsEdit = (status) => edit("act-film-tests", "tests/test_dates.py", "51ab9e2c3d70", diffs.tests, status, testScope);
       const tests = (status, result) => ({ id: "act-tests-1", chat_id: chat, kind: "tests", status,
         payload: { recipe: "pytest", plan: { recipe: "pytest", kind: "python", cwd: "snapshot", timeout: 120, output_limit: 1048576, network: false, argv: ["python", "-m", "pytest", "-q"],
           executable: { realpath: "/Users/maya/Projects/invoice-kit/.venv/bin/python3.12", sha256: "4be1f0e7c2a95d3378e0b2f6c1d9a8e74b3c5d6e7f8091a2b3c4d5e6f7081920" } }, ...(result ? { result } : {}) } });
-      // pytest's own "in 1.84s" sits inside the 2.4-s step (the copy and the interpreter's start take the rest).
+      // pytest's own "in 1.84s" sits inside the 2.4-s test run (the copy and the interpreter's start take the rest).
       const passed = { outcome: "passed", exit_code: 0, tests: { passed: 42, failed: 0, skipped: 0, errors: 0, total: 42 },
         snapshot_digest: "c0ffee5a1b2c3d4e5f60718293a4b5c6d7e8f9012a3b4c5d6e7f8091a2b3c4d5", drafts_included: [], output: "..........................................  [100%]\n42 passed in 1.84s" };
-      // The host's actions event (and the mock's record, so get_chat agrees with it).
-      const sendActions = (f, list) => on(f, async (pg) => { await live("actions", chat, list)(pg); await emit("actions", { chat_id: chat, actions: list })(pg); });
-      // A state change: the host's run record (get_chat) first, then its run event.
-      const state = (f, value, extra = {}) => {
-        on(f, live("run", chat, { id: run, state: value, created_t: F(T0), updated_t: F(f), ...extra }));
-        on(f, emit("run", { chat_id: chat, run_id: run, state: value }));
-      };
-      // The run's state changes on the recording's clock (fixtures.js clock(): run_activity's started and elapsed).
-      // The approved tests run while the run waits for the approval (no live time); it is queued again when they end.
+      // The run's state changes on the recording's clock (fixtures.js clock(): run_activity's started and elapsed); the
+      // run accrues live seconds only while queued or running (the waits for approvals and the approved tests don't).
       const transitions = [[F(T0), "queued"], [F(K.running1), "running"], [F(K.settle1), "waiting_approval"], [F(K.queued2), "queued"],
         [F(K.running2), "running"], [F(K.hold), "verification_required"], [F(K.runTheTests + 2), "waiting_approval"],
         [F(K.testsEnd), "queued"], [F(K.testsEnd), "running"], [F(K.complete), "completed"]];
       const live1 = span(T0, K.settle1), live2 = r3(live1 + span(K.queued2, K.hold)), live3 = r3(live2 + span(K.testsEnd, K.complete));
-      // The person's waits on each approval (its binding to the click), which the receipt adds up as "waited … for you".
-      const bindDates = 168, bindTests = 174, bindRun = K.runTheTests + 1;
+      // The person's waits on each approval: from its binding (the staged card) to the click.
+      const bindDates = K.card1, bindTests = K.card2, bindRun = K.runTheTests + 1;
       const waitDates = span(bindDates, K.p1), waitTests = span(bindTests, K.p2), waitRun = span(bindRun, K.runTests);
-      const counts = (steps, waited) => ({ steps, retries: 0, waited: r3(waited) });
+      const counts = (n, waited) => ({ steps: n, retries: 0, waited: r3(waited) });
+      // Row identities (run_activity.py seq): in the order of the run events that anchor them.
+      const S = { context1: 64, a1: 128, grep: 192, read: 256, a2: 320, editDates: 384, okDates: 448, editTests: 512, okTests: 576,
+        a3: 640, checked: 704, waiting: 768, context2: 832, a4: 896, check1: 960, a5: 1024, check2: 1088, a6: 1152, check3: 1216,
+        incomplete: 1280, heldNote: 1344, heldCall: 1408, heldOk: 1472, heldWaiting: 1600, context3: 1664, a7: 1728, verified: 1856 };
 
       on(0, live("origin"));
       on(0, live("clock", run, { t0: F(T0), transitions }));
-      on(0, live("deferApproval", "act-tests-1"));
+      for (const id of ["act-film-dates", "act-film-tests", "act-tests-1"]) on(0, live("deferApproval", id));
       // The person's request, typed at once (the film shows the typing itself only in the quick chat) and sent.
       on(9, (pg) => pg.type("textarea[aria-label='Message Pebble']", request, { delay: 0 }));
       on(T0, (pg) => pg.keyboard.press("Enter"));
+      // ---- Segment 1: app.py send() creates the run and launches it (`run` queued); the runner starts it.
       on(K.queued1, emit("run", { chat_id: chat, run_id: run, state: "queued" }));
-      state(K.running1, "running", { elapsed: 0 });
-      pub(40, row(64, at(40), "context", "Recalled 3 memories", "done", null, 0.18, "Context ready in 180 ms"));
-      const a1 = attempt(128, 42, 60, 0.3, 0.5);
-      tool(192, 62, 80, "Grep", "searching", "Searching project source");
-      tool(256, 82, 94, "Read", "reading", "Reading invoice_kit/dates.py");
-      const a2 = attempt(320, 96, 162, 0.2, 0.4); // its text streams from 0.4 s in, then it asks for the two edits
-      streamWords(steps, F(108), F(156), ids, r.proposedHeld);
-      tool(384, 165, bindDates, "Edit", "editing", "Preparing an edit to invoice_kit/dates.py", "Staged for your approval.");
-      pub(bindDates, row(448, at(bindDates), "approval", "Waiting for your approval: Preparing an edit to invoice_kit/dates.py", "running"));
-      tool(512, 171, bindTests, "Edit", "editing", "Preparing an edit to tests/test_dates.py", "Staged for your approval.");
-      pub(bindTests, row(576, at(bindTests), "approval", "Waiting for your approval: Preparing an edit to tests/test_dates.py", "running"));
-      const usage1 = { input_tokens: 1200, output_tokens: 242, cached_tokens: 512, route: "model", calls: 2, seconds: r3(a1 + a2) };
-      on(176, emit("usage", { chat_id: chat, id: reply, usage: usage1 }));
-      on(176, live("message", chat, { id: reply, role: "assistant", content: r.proposedHeld, run_id: run, usage: usage1 }));
-      on(177, live("active", null, null));
-      state(K.settle1, "waiting_approval", { elapsed: live1, counts: counts(4, 0) });
-      pub(K.settle1, row(640, at(K.settle1), "note", "Waiting for your approval"));
-      sendActions(K.cards, [dates("pending"), testsEdit("pending")]);
-      on(K.cards, emit("idle", { chat_id: chat, run_id: run }));
-      // The person reads both cards (from 6.00 s), then applies both edits (App.vue decide(): approve, then get_chat;
-      // the host's actions event follows each approval). Where Apply edit sits before the first click is kept for the
-      // scroll below (the film's match cut).
+      settle(K.running1, "running", { elapsed: 0 });
+      progress(34, "Preparing your local workspace");
+      progress(36, "Recalled relevant context", "done", null, { memory_count: 3 });
+      pub(40, row(S.context1, at(40), "context", "Recalled 3 memories", "done", null, span(K.running1, 40), `Context ready in ${Math.round(span(K.running1, 40) * 1000)} ms`));
+      turn({ seq: S.a1, f0: 42, f1: 60, use: [380, 0, 30] }); // its two tool calls, no text
+      tool(S.grep, 62, 80, "Grep", "Searching project source");
+      tool(S.read, 82, 94, "Read", "Reading invoice_kit/dates.py");
+      turn({ seq: S.a2, f0: 96, f1: 124, use: [400, 256, 92] }); // the two edits, no text
+      const stagedDates = staged(S.editDates, S.okDates, 126, K.card1, "invoice_kit/dates.py", [dates("pending")]);
+      const stagedTests = staged(S.editTests, S.okTests, 131, K.card2, "tests/test_dates.py", [dates("pending"), testsEdit("pending")]);
+      turn({ seq: S.a3, f0: 136, f1: K.proposal, text: r.proposedHeld, use: [420, 256, 120] });
+      // controller.py completion(): approvals are pending, so the check finds nothing to do (no AgentGuard summary).
+      pub(K.proposal + 1, row(S.checked, at(K.proposal + 1), "check", "Checked the reply", "done", null, 0.01));
+      finish(K.proposal + 2, r.proposedHeld, K.running1);
+      on(K.settle1 - 1, live("active", null, null));
+      settle(K.settle1, "waiting_approval", { elapsed: live1, counts: counts(5, 0) });
+      pub(K.settle1, row(S.waiting, at(K.settle1), "note", "Waiting for your approval"));
+      on(K.settle1, emit("idle", { chat_id: chat, run_id: run }));
+      // ---- The edits. The person reads both cards (from 6.00 s), then applies both (App.vue decide(): approve, then
+      // get_chat). Each approve route (app.py _approve()) marks its action running, applies it, commits the receipt,
+      // writes its summary into the conversation, sends actions and idle and answers; the run's records change with
+      // it (the approval "Approved: …" with its wait, the staging call's receipt now the applied one, without "Staged").
+      // The second leaves nothing pending, so it also dispatches the continuation before it answers. Where Apply edit
+      // sits before the first click is kept for the scroll below (the film's match cut).
       on(K.p1 - 1, (pg) => pg.evaluate(() => {
         const b = document.querySelector("#details-drawer .action-card.pending .primary-button")?.getBoundingClientRect();
         window.__film = { ...(window.__film || {}), applyY: b ? (b.top + b.bottom) / 2 : 692 };
       }));
-      on(K.p1, (pg) => pg.click("#details-drawer .action-card.pending .primary-button"));
-      sendActions(K.p1 + 1, [dates("applied"), testsEdit("pending")]);
-      on(K.p2, (pg) => pg.click("#details-drawer .action-card.pending .primary-button"));
-      sendActions(K.queued2, [dates("applied"), testsEdit("applied")]);
-      // The run continues (controller.py dispatch_now), finishes without test evidence, and the gate holds it after two
-      // repairs (runner.py gate_repairs < 2): two short withdrawn drafts, then the last attempt and the hold.
-      on(K.queued2, live("active", chat, run));
-      state(K.queued2, "queued", { elapsed: live1 });
-      state(K.running2, "running", { elapsed: live1 });
-      pub(295, row(448, at(bindDates), "approval", "Approved: Preparing an edit to invoice_kit/dates.py", "done", null, waitDates), bindDates);
-      pub(295, row(576, at(bindTests), "approval", "Approved: Preparing an edit to tests/test_dates.py", "done", null, waitTests), bindTests);
-      const a3 = attempt(704, 295, 304, 0.1, 0.2);
-      pub(305, verdict(768, 305, false));
-      pub(306, withdrawn(832, 306));
-      const a4 = attempt(896, 307, 316, 0.1, 0.2);
-      pub(317, verdict(960, 317, false));
-      pub(318, withdrawn(1024, 318));
-      const a5 = attempt(1088, 319, 408, 0.2, 1.0);
+      const approveEdit = (f, id, label, toolRow, okSeq, bound, wait, running, applied, summary, dispatch) => {
+        on(f, (pg) => pg.click("#details-drawer .action-card.pending .primary-button"));
+        sendActions(f, running);
+        on(f, async (pg) => {
+          await live("actions", chat, applied)(pg);
+          await live("hostMessage", chat, { id: "msg-live-" + id, role: "assistant", content: summary })(pg);
+        });
+        record(f, row(okSeq, at(bound), "approval", "Approved: " + label, "done", null, wait), bound);
+        record(f, toolRow, Math.round(toolRow.at * 30) + T0);
+        on(f, emit("actions", { chat_id: chat, actions: applied }));
+        on(f, live("active", null, null));
+        on(f, emit("idle", { chat_id: chat, run_id: run }));
+        if (dispatch) dispatch();
+        on(f, live("finishApproval", chat, id, applied.find((a) => a.id === id)));
+      };
+      approveEdit(K.p1, "act-film-dates", stagedDates.label, stagedDates.tool, S.okDates, bindDates, waitDates,
+        [dates("running"), testsEdit("pending")], [dates("applied"), testsEdit("pending")], text.appliedDates, null);
+      approveEdit(K.p2, "act-film-tests", stagedTests.label, stagedTests.tool, S.okTests, bindTests, waitTests,
+        [dates("applied"), testsEdit("running")], [dates("applied"), testsEdit("applied")], text.appliedTests, () => {
+          on(K.p2, live("active", chat, run));
+          settle(K.queued2, "queued", { elapsed: live1 });
+        });
+      // ---- Segment 2: the runner resumes the run; its first progress publishes the rows the window hasn't had.
+      settle(K.running2, "running", { elapsed: live1 });
+      progress(295, "Preparing your local workspace");
+      on(295, async (pg) => {
+        const rows = await pg.evaluate((id) => window.__pebble.world.live.items(id), run);
+        for (const item of rows.filter((i) => [S.editDates, S.okDates, S.editTests, S.okTests].includes(i.seq))) await A(item)(pg);
+      });
+      progress(296, "Recalled relevant context", "done", null, { memory_count: 3 });
+      progress(297, "Resumed committed context", "done");
+      pub(297, row(S.context2, at(297), "context", "Recalled 3 memories", "done", null, span(K.running2, 297), `Context ready in ${Math.round(span(K.running2, 297) * 1000)} ms`));
       // The person scrolls the drawer to the applied card, so its "Undo this edit" sits where Apply edit was; the end
-      // follows the card while the last rows arrive, and nothing in the drawer moves from 10.80 s to 13.60 s.
+      // follows the card while rows arrive.
       followScroll(steps, K.scroll[0], K.scroll[1], "#details-drawer .details-panel", "#details-drawer .undo-button", "applyY");
-      streamWords(steps, F(349), F(405), ids, "\n" + r.continueHeld);
-      pub(410, verdict(1152, 410, true));
-      on(411, emit("token", { ...ids, text: r.heldNotice }));
-      const heldText = r.proposedHeld + "\n" + r.continueHeld + r.heldNotice;
-      const usage2 = { input_tokens: 3200, output_tokens: 352, cached_tokens: 2048, route: "model", calls: 5, seconds: r3(usage1.seconds + a3 + a4 + a5) };
-      on(412, emit("usage", { chat_id: chat, id: reply, usage: usage2 }));
-      on(412, live("message", chat, { id: reply, role: "assistant", content: heldText, run_id: run, usage: usage2 }));
-      on(420, live("active", null, null));
-      state(K.hold, "verification_required", { error: heldIssue, elapsed: live2, counts: counts(7, waitDates + waitTests) });
-      pub(K.hold, row(1216, at(K.hold), "note", "Verification remains incomplete"));
+      const check = (seq, f) => {
+        // controller.py completion(): AgentGuard's summary (completion_gate), then the check row with its verdict
+        pub(f, row(seq, at(f), "check", "Not verified · 2 changed files, no tests run", "done", null, 0.02, "1 item to resolve"));
+      };
+      turn({ seq: S.a4, f0: 299, f1: K.respond2, text: r.continueHeld, use: [680, 512, 70] });
+      check(S.check1, K.respond2 + 1);
+      progress(K.respond2 + 1, "Collecting missing completion evidence", "review", null, { repair: 1 });
+      turn({ seq: S.a5, f0: 363, f1: 383, text: r.repairHeld[0], use: [660, 512, 18] });
+      check(S.check2, 384);
+      progress(384, "Collecting missing completion evidence", "review", null, { repair: 2 });
+      turn({ seq: S.a6, f0: 386, f1: K.notice - 1, text: r.repairHeld[1], use: [660, 512, 22] });
+      check(S.check3, K.notice);
+      on(K.notice, emit("token", { ...ids, text: tokenText("\n\n" + text.heldNoticeText) }));
+      const heldText = r.proposedHeld + "\n" + r.continueHeld + "\n" + r.repairHeld[0] + "\n" + r.repairHeld[1] + "\n\n\n" + text.heldNoticeText;
+      finish(K.notice + 1, heldText, K.running2);
+      on(K.hold - 1, live("active", null, null));
+      settle(K.hold, "verification_required", { error: text.heldIssue, elapsed: live2, counts: counts(8, waitDates + waitTests) });
+      pub(K.hold, row(S.incomplete, at(K.hold), "note", "Verification remains incomplete"));
       on(K.hold, emit("idle", { chat_id: chat, run_id: run }));
-      // The held row (RunPanel) sits under the reply: the person scrolls it into view, as in main-live-film.
+      // The held row (RunPanel) sits under the reply: the person scrolls it into view.
       scrollToEnd(steps, F(K.convScroll[0]), F(K.convScroll[1]), ".conversation-scroll", 30);
-      // Run the tests (controller.py held() 'tests'): the mock adds the decision note, the host's own RunTests call that
-      // stages the recipe (done one frame later, "Staged for your approval."), the approval bound to it and the state
+      // ---- Run the tests (controller.py held() 'tests'): the mock adds the decision note, the host's own RunTests call
+      // that stages the recipe (done one frame later, "Staged for your approval."), the approval bound to it and the state
       // note, each at its own time; the "Run isolated tests" card arrives through the normal approval. Nothing publishes
       // these rows: the window reads them when the run resumes (20.20 s).
       on(K.runTheTests, (pg) => pg.click(".run-held button:first-child"));
-      schedule.push({ f: K.runTheTests, made: K.runTheTests, seq: 1280, label: "You asked Pebble to run the tests", status: "done", at: at(K.runTheTests), duration: null, by: "mock" },
-        { f: bindRun, made: K.runTheTests, seq: 1344, label: "Requesting isolated tests", status: "done", at: at(K.runTheTests), duration: span(K.runTheTests, bindRun), by: "mock" },
-        { f: K.runTheTests, made: bindRun, seq: 1408, label: "Waiting for your approval: Requesting isolated tests", status: "running", at: at(bindRun), duration: null, by: "mock" },
-        { f: K.runTheTests, made: bindRun + 1, seq: 1536, label: "Waiting for your approval", status: "done", at: at(bindRun + 1), duration: null, by: "mock" });
+      schedule.push({ f: K.runTheTests, made: K.runTheTests, seq: S.heldNote, kind: "note", label: "You asked Pebble to run the tests", status: "done", at: at(K.runTheTests), duration: null, by: "mock" },
+        { f: bindRun, made: K.runTheTests, seq: S.heldCall, kind: "tool", label: "Requesting isolated tests", status: "done", at: at(K.runTheTests), duration: span(K.runTheTests, bindRun), by: "mock" },
+        { f: K.runTheTests, made: bindRun, seq: S.heldOk, kind: "approval", label: "Waiting for your approval: Requesting isolated tests", status: "running", at: at(bindRun), duration: null, by: "mock" },
+        { f: K.runTheTests, made: bindRun + 1, seq: S.heldWaiting, kind: "note", label: "Waiting for your approval", status: "done", at: at(bindRun + 1), duration: null, by: "mock" });
       on(K.runTheTests + 3, emit("run", { chat_id: chat, run_id: run, state: "waiting_approval" }));
       sendActions(K.card, [dates("applied"), testsEdit("applied"), tests("pending")]);
       // The announced card takes keyboard focus (App.vue announceApprovals); the pointer moves on, so no focus ring.
       on(K.card, (pg) => pg.evaluate(() => document.activeElement?.blur()));
-      // Run tests (17.80 s): App.vue decide() calls approve, and the approve route runs the tests (app.py _approve():
-      // the action 'running' and an actions event, perform_action(), then commit_action()). The card leaves "Needs your
-      // review" and reads Running in Earlier actions (App.vue ACTION_STATES, actionGroups) for exactly 2.4 s. The run
-      // stays waiting_approval and no progress, activity or run event is sent while the tests run: the host's lane is
-      // claimed (app.active, read by no window before it ends) and nothing else moves.
+      // ---- Run tests (17.80 s): the approve route runs the tests (app.py _approve(): the action 'running' and an
+      // actions event, perform_action(), then commit_action()). The card reads Running in Earlier actions for exactly
+      // 2.4 s; the run stays waiting_approval and no progress, activity or run event is sent while the tests run.
       on(K.runTests, (pg) => pg.click("#details-drawer .action-card.pending .primary-button"));
       sendActions(K.runTests, [dates("applied"), testsEdit("applied"), tests("running")]);
       on(K.runTests, live("active", chat, run));
       // The card is now the drawer's last: the person scrolls down to it.
       scrollToEnd(steps, F(K.cardScroll[0]), F(K.cardScroll[1]), "#details-drawer .details-panel", 30);
-      // The tests end (20.20 s), exactly 2.4 s after the click. In the approve route's own order: commit_action() applies
-      // the action with its result; the route writes its summary into the conversation (store.message(action_summary()))
-      // and the run's records change with it (the approval now "Approved: …" with its wait; the staging call's receipt is
-      // the applied one, so its row has no "Staged" detail any more); it releases the lane and sends actions and idle;
-      // approve() then dispatches the continuation (app.py run_resume() queues the run, controller.py launch() sends run
-      // queued, the runner sends run running) and answers, so decide() reads the conversation and says "Action
-      // completed".
-      const approvedRun = row(1408, at(bindRun), "approval", "Approved: Requesting isolated tests", "done", null, waitRun);
-      const stagedCall = row(1344, at(K.runTheTests), "tool", "Requesting isolated tests", "done", null, span(K.runTheTests, bindRun));
-      schedule.push({ f: K.testsEnd, made: bindRun, seq: 1408, label: approvedRun.label, status: "done", at: approvedRun.at, duration: waitRun, by: "mock" });
+      // The tests end (20.20 s): the receipt, the summary in the conversation, the run's records (the approval now
+      // "Approved: …" with its wait; the staging call's receipt the applied one), actions and idle; the continuation is
+      // dispatched (run queued, the runner's run running) and the route answers ("Action completed").
+      const approvedRun = row(S.heldOk, at(bindRun), "approval", "Approved: Requesting isolated tests", "done", null, waitRun);
+      const stagedCall = row(S.heldCall, at(K.runTheTests), "tool", "Requesting isolated tests", "done", null, span(K.runTheTests, bindRun));
+      record(K.testsEnd, approvedRun, bindRun);
       on(K.testsEnd, async (pg) => {
         await live("actions", chat, [dates("applied"), testsEdit("applied"), tests("applied", passed)])(pg);
-        await live("hostMessage", chat, { id: "msg-live-tests-summary", role: "assistant", content: testsSummary })(pg);
+        await live("hostMessage", chat, { id: "msg-live-tests-summary", role: "assistant", content: text.testsSummary })(pg);
         await live("publish", run, stagedCall)(pg);
-        await live("publish", run, approvedRun)(pg);
       });
       on(K.testsEnd, emit("actions", { chat_id: chat, actions: [dates("applied"), testsEdit("applied"), tests("applied", passed)] }));
       on(K.testsEnd, live("active", null, null));
       on(K.testsEnd, emit("idle", { chat_id: chat, run_id: run }));
       on(K.testsEnd, live("active", chat, run));
-      state(K.testsEnd, "queued", { elapsed: live2 });
-      state(K.testsEnd, "running", { elapsed: live2 });
+      settle(K.testsEnd, "queued", { elapsed: live2 });
+      settle(K.testsEnd, "running", { elapsed: live2 });
       on(K.testsEnd, live("finishApproval", chat, "act-tests-1", tests("applied", passed)));
-      // The resumed run (runner.py run()): its first progress publishes the rows the window hasn't had; it recalls
-      // context again (a new "Recalled 3 memories" row, context_ready) and resumes the reply; then one model attempt,
-      // which streams into the run's stream journal (the drawer's "Receiving model response") and commits its text to
-      // the conversation in one token event.
-      on(K.testsEnd + 1, P(null, "thinking", "Preparing your local workspace"));
+      // ---- The resumed run: its first progress publishes the rows the window hasn't had; it recalls context again;
+      // then one model turn, and the completion check on it.
+      progress(K.testsEnd + 1, "Preparing your local workspace");
       on(K.testsEnd + 1, async (pg) => {
         const rows = await pg.evaluate((id) => window.__pebble.world.live.items(id), run);
-        for (const item of rows.filter((i) => i.seq >= 1280)) await A(item)(pg);
+        for (const item of rows.filter((i) => i.seq >= S.heldNote)) await A(item)(pg);
       });
-      on(K.testsEnd + 2, P(null, null, "Recalled relevant context", "done"));
-      on(K.context, P(null, null, "Resumed committed context", "done"));
-      const contextMs = Math.round(span(K.testsEnd, K.context) * 1000);
-      pub(K.context, row(1600, at(K.context), "context", "Recalled 3 memories", "done", null, span(K.testsEnd, K.context), `Context ready in ${contextMs} ms`));
-      const attemptId = "f3a9c27e5b8d41c6a0e2d7b9c4f61a83";
-      const journal = (event) => live("streamEvent", run, { attempt_id: attemptId, step: 10, attempt: 1, ...event });
-      const streamed = (type) => emit("stream", { chat_id: chat, run_id: run, attempt_id: attemptId, type, authorization: "none" });
-      on(K.context, async (pg) => { await journal({ kind: "begin", state: "open" })(pg); await streamed("begin")(pg); });
-      pub(K.context, row(1664, at(K.context), "model", "Waiting for the model", "running"));
-      // headers after 0.2 s, first text after 0.3 s; the attempt ends at 22.40 s
-      const words = r.continueVerified.split(/(?<=\s)/), first = K.context + 9, lastWord = K.respond - 3;
-      words.forEach((w, i) => on(first + Math.floor(((lastWord - first) * i) / words.length), async (pg) => {
-        await journal({ kind: "delta", text: w })(pg);
-        await streamed("delta")(pg);
-      }));
-      const a6 = span(K.context, K.respond);
-      // In the runner's order: the attempt's record (record_attempt), the retry helper's commit event, run running,
-      // the usage (save_usage), the journal settled with the response (runs.response()) and "committed", then the text.
-      pub(K.respond, row(1664, at(K.context), "model", "The model responded", "done", null, a6, "Headers after 0.2 s; first text after 0.3 s."), K.context);
-      on(K.respond, streamed("commit"));
-      on(K.respond, emit("run", { chat_id: chat, run_id: run, state: "running" }));
-      const finalText = heldText + "\n" + r.continueVerified;
-      const usage3 = { input_tokens: 3920, output_tokens: 400, cached_tokens: 2688, route: "model", calls: 6, seconds: r3(usage2.seconds + a6) };
-      on(K.respond, emit("usage", { chat_id: chat, id: reply, usage: usage3 }));
-      on(K.respond, async (pg) => { await journal({ kind: "settle", state: "committed", origin: "host" })(pg); await streamed("committed")(pg); });
-      on(K.respond, emit("token", { ...ids, text: "\n" + r.continueVerified }));
+      progress(K.testsEnd + 2, "Recalled relevant context", "done", null, { memory_count: 3 });
+      progress(K.context, "Resumed committed context", "done");
+      pub(K.context, row(S.context3, at(K.context), "context", "Recalled 3 memories", "done", null, span(K.testsEnd, K.context), `Context ready in ${Math.round(span(K.testsEnd, K.context) * 1000)} ms`));
+      turn({ seq: S.a7, f0: K.context, f1: K.respond, text: r.continueVerified, from: K.context + 9, to: K.respond - 3, use: [720, 640, 48] });
       // The completion check runs on the finished turn (runner.py: controller.completion(), record_check()).
-      pub(K.verified, row(1792, at(K.verified), "check", "Verified · pytest 42 passed on current files", "done", null, 0.01));
-      // app.py finish(): the reply saved again (after the tests' summary, by `created`); then the run settles.
-      on(K.complete - 1, live("resave", chat, { id: reply, role: "assistant", content: finalText, run_id: run, usage: usage3 }));
-      on(K.complete - 1, emit("complete", { chat_id: chat, id: reply, seconds: Math.round(span(K.testsEnd, K.complete - 1) * 10) / 10 }));
+      pub(K.verified, row(S.verified, at(K.verified), "check", "Verified · pytest 42 passed on current files", "done", null, 0.01));
+      const finalText = heldText + "\n" + r.continueVerified;
+      finish(K.complete - 1, finalText, K.testsEnd);
       on(K.complete - 1, live("active", null, null));
-      state(K.complete, "completed", { elapsed: live3, counts: counts(9, waitDates + waitTests + waitRun) });
+      settle(K.complete, "completed", { elapsed: live3, counts: counts(10, waitDates + waitTests + waitRun) });
       on(K.complete, emit("idle", { chat_id: chat, run_id: run }));
       // The person reads the result (the card grew below the fold), then scrolls back up to the newest steps, where the
-      // model's attempt runs and the completion check arrives. The first scroll runs while rows arrive above the view.
+      // model's turn runs and the completion check arrives. The first scroll runs while rows arrive above the view.
       scrollEaseToEnd(steps, K.resultScroll[0], K.resultScroll[1], "#details-drawer .details-panel");
       on(K.stepsScroll[0] - 1, (pg) => pg.evaluate((y) => (window.__film = { ...(window.__film || {}), stepsY: y }), STEPS_Y));
       followScroll(steps, K.stepsScroll[0], K.stepsScroll[1], "#details-drawer .details-panel", "#drawer-thinking .thinking-steps > li:last-child", "stepsY");
-      // A check on the mock's own rows for the held decision (seq 1280-1536), which the window reads when the run resumes.
+      // A check on the mock's own rows for the held decision, which the window reads when the run resumes.
       on(K.runTheTests + 20, async (pg) => {
         const rows = await pg.evaluate((id) => window.__pebble.world.live.items(id), run);
-        const seen = Object.fromEntries(rows.filter((i) => i.seq >= 1280 && i.seq <= 1536).map((i) => [i.seq, i.at]));
-        if (seen[1280] !== at(K.runTheTests) || seen[1344] !== at(K.runTheTests) || seen[1408] !== at(bindRun) || seen[1536] !== at(bindRun + 1))
+        const seen = Object.fromEntries(rows.filter((i) => i.seq >= S.heldNote && i.seq <= S.heldWaiting).map((i) => [i.seq, i.at]));
+        if (seen[S.heldNote] !== at(K.runTheTests) || seen[S.heldCall] !== at(K.runTheTests) || seen[S.heldOk] !== at(bindRun) || seen[S.heldWaiting] !== at(bindRun + 1))
           throw new Error("the held decision's rows are not where the schedule says: " + JSON.stringify(seen));
       });
-      TIMELINES["main-live-film-150"].meta = { T0, K, transitions, live: [live1, live2, live3], waits: { dates: waitDates, tests: waitTests, run: waitRun },
-        model: { a1, a2, a3, a4, a5, a6 }, usage: [usage1, usage2, usage3], schedule, testsRunning: [K.runTests, K.testsEnd] };
+      TIMELINES["main-live-film-150"].meta = { fidelity_round: 2, T0, K, transitions, live: [live1, live2, live3],
+        settles: [K.settle1, K.hold, K.complete], waits: { dates: waitDates, tests: waitTests, run: waitRun },
+        bind: { dates: bindDates, tests: bindTests, run: bindRun }, model: h.attempts, usage: h.usageLog, schedule,
+        testsRunning: [K.runTests, K.testsEnd], progress: h.progressLog };
       return steps;
     },
   },
 
   // The trailer's P2 (TRAILER_RESEARCH §9, bar 20): AgentGuard's scope challenge in motion, on Pebble 1.5.0's frontend.
   // The run of capture.mjs playChallenge (Auto in project: reads, the in-scope edit, five edits outside the task's
-  // reach), played on the clock: the next write is refused, and the refused step arrives in Details › Activity with the
-  // engine's own words as its error (vendored validate/checks.py scope_creep(), challenge/renderer.py render(),
-  // guard.py refusal(); OVERRIDES §9: five files, the fixture's CHALLENGE). The person then opens the step's Details.
+  // reach), played on the clock in v1.5.0's own event order at the 4,096-token window (fidelity round 2, host150()):
+  // each model turn opens the drawer's live response (tool calls only, so its text stays empty), host rows carry no
+  // activity class (no "Explored" fold), the edits apply without cards (Auto in project: app.py propose() runs them and
+  // sends one actions event each, and writes no conversation message), and the next write is refused: its step fails
+  // with the engine's own words as its error (app.py execute(): a completed {'error'} receipt; vendored
+  // validate/checks.py scope_creep(), challenge/renderer.py render(), guard.py refusal(); OVERRIDES §9: five files, the
+  // fixture's CHALLENGE). The model's next turn starts at once. The person then opens the step's Details.
   // As in main-live-film-150, every "+N s" and "· N s" is the recording's own (the send is frame 30).
   "main-challenge-live": {
     url: "?scene=challenge&drawer=520&version=1.5.0",
@@ -699,65 +838,50 @@ const TIMELINES = {
     transparent: false,
     seconds: 12.5,
     probe: true,
-    note: "Pebble 1.5.0's frontend (the frozen v1.5.0 tree) driven by scripted host events and fixture timings: a re-enactment with sample data. Every clock the window prints is the recording's own.",
+    note: "Pebble 1.5.0's frontend (the frozen v1.5.0 tree) driven by scripted host events and fixture timings in v1.5.0's own event order (fidelity round 2): a re-enactment with sample data. Every clock the window prints is the recording's own.",
     async build(page) {
-      const chat = "chat-pdf-dates", run = "run-live-1";
-      const F = (f) => f / 30, r3 = (x) => Math.round(x * 1000) / 1000;
+      const chat = "chat-pdf-dates", run = "run-live-1", reply = "msg-live-challenge";
       // refused: the write's tool step (it fails on its own frame f1); details: the person opens them; scroll: the person
       // brings the whole challenge into view, which then holds still to the end (12.5 s)
       const K = { send: 30, running: 33, refused: [229, 232], details: 270, scroll: [282, 297] };
-      const T0 = K.send, at = (f) => r3((f - T0) / 30), span = (a, b) => r3((b - a) / 30);
+      const T0 = K.send;
       const request = await fixture(page, "text.challengeRequest");
       const challenge = await fixture(page, "text.challenge");
       const steps = [], schedule = [];
-      const on = (f, fn) => steps.push([F(f), fn]);
-      const A = (item) => emit("activity", { chat_id: chat, run_id: run, item });
-      const P = (tool, activity, label, kind = "working") => emit("progress", { chat_id: chat, run_id: run, kind, tool, activity, label });
-      const pub = (f, item, made = f) => {
-        schedule.push({ f, made, seq: item.seq, label: item.label, status: item.status, at: item.at, duration: item.duration });
-        on(f, async (pg) => { await live("publish", run, item)(pg); await A(item)(pg); });
-      };
-      const attempt = (seq, f0, f1, headers, first) => {
-        pub(f0, row(seq, at(f0), "model", "Waiting for the model", "running"));
-        if (f1 !== null) pub(f1, row(seq, at(f0), "model", "The model responded", "done", null, span(f0, f1), `Headers after ${headers.toFixed(1)} s; first text after ${first.toFixed(1)} s.`), f0);
-      };
-      const tool = (seq, f0, f1, name, activity, label, status = "done", detail = null) => {
-        on(f0, P(name, activity, label));
-        pub(f0, row(seq, at(f0), "tool", label, "running", activity));
-        pub(f1, row(seq, at(f0), "tool", label, status, activity, span(f0, f1), detail), f0);
-        // runner.py: progress(label, "done") after a tool, or progress(message, "blocked") when the host refused it
-        on(f1, status === "failed" ? P(name, activity, detail, "blocked") : P(name, activity, label, "done"));
-      };
+      const h = host150({ chat, run, reply, T0, steps, schedule, attemptBase: "c7e1" });
+      const { F, at, span, on, progress, pub, turn, tool, settle } = h;
       on(0, live("origin"));
       const transitions = [[F(T0), "queued"], [F(K.running), "running"]];
       on(0, live("clock", run, { t0: F(T0), transitions }));
       on(9, (pg) => pg.type("textarea[aria-label='Message Pebble']", request, { delay: 0 }));
       on(T0, (pg) => pg.keyboard.press("Enter"));
       on(31, emit("run", { chat_id: chat, run_id: run, state: "queued" }));
-      on(K.running, live("run", chat, { id: run, state: "running", elapsed: 0, created_t: F(T0), updated_t: F(K.running) }));
-      on(K.running, emit("run", { chat_id: chat, run_id: run, state: "running" }));
-      pub(40, row(64, at(40), "context", "Recalled 3 memories", "done", null, 0.21, "Context ready in 210 ms"));
-      attempt(128, 42, 78, 0.3, 0.8);
-      tool(192, 80, 95, "Grep", "searching", "Searching project source");
-      tool(256, 97, 103, "Read", "reading", "Reading invoice_kit/pdf.py");
-      tool(320, 105, 111, "Read", "reading", "Reading invoice_kit/dates.py");
-      attempt(384, 113, 167, 0.2, 0.6);
-      // Auto in project: each edit applies without a card (the actions list gains it, applied).
+      settle(K.running, "running", { elapsed: 0 });
+      progress(34, "Preparing your local workspace");
+      progress(36, "Recalled relevant context", "done", null, { memory_count: 3 });
+      pub(40, row(64, at(40), "context", "Recalled 3 memories", "done", null, span(K.running, 40), `Context ready in ${Math.round(span(K.running, 40) * 1000)} ms`));
+      turn({ seq: 128, f0: 42, f1: 78, use: [410, 0, 41] }); // its three tool calls, no text
+      tool(192, 80, 95, "Grep", "Searching project source");
+      tool(256, 97, 103, "Read", "Reading invoice_kit/pdf.py");
+      tool(320, 105, 111, "Read", "Reading invoice_kit/dates.py");
+      turn({ seq: 384, f0: 113, f1: 167, use: [560, 256, 180] }); // its seven edits, no text
+      // Auto in project: each edit applies without a card (app.py propose(): automatic, one actions event once applied).
       const files = ["invoice_kit/pdf.py", "invoice_kit/templates/invoice.html", "invoice_kit/templates/receipt.html", "invoice_kit/static/invoice.css", "docs/billing.md", "README.md"];
       const actions = [];
       files.forEach((file, i) => {
         const f0 = 169 + i * 10, f1 = f0 + 9;
-        tool(448 + i * 64, f0, f1, "Edit", "editing", "Preparing an edit to " + file);
         const action = { id: "act-pdf-" + i, chat_id: chat, kind: "edit", status: "applied", payload: { path: file, baseline: (0x5a1e00 + i * 7919).toString(16) + "c0de12", diff: "@@ -1 +1 @@\n-…\n+…" } };
         on(f1, async (pg) => { actions.push(action); await live("actions", chat, [...actions])(pg); await emit("actions", { chat_id: chat, actions: [...actions] })(pg); });
+        tool(448 + i * 64, f0, f1, "Edit", "Preparing an edit to " + file);
       });
       // The next write, outside the task's reach, is refused before it runs; the step's error is AgentGuard's challenge.
-      tool(832, K.refused[0], K.refused[1], "Edit", "editing", "Preparing an edit to invoice_kit/templates/statement.html", "failed", challenge);
-      attempt(896, K.refused[1] + 2, null);
+      tool(832, K.refused[0], K.refused[1], "Edit", "Preparing an edit to invoice_kit/templates/statement.html", { status: "failed", detail: challenge });
+      // The model's next turn starts at once (the run continues; this recording ends before it does).
+      turn({ seq: 896, f0: K.refused[1] + 2, f1: null });
       // The person opens the refused step's Details, then scrolls the drawer a little so all of it is in view.
       on(K.details, (pg) => pg.click("#details-drawer .thinking-step.failed .thinking-detail summary"));
       scrollPanel(steps, F(K.scroll[0]), F(K.scroll[1]), "#details-drawer .details-panel", "#details-drawer .thinking-step.failed", { pick: "first", y: 430 }, 30);
-      TIMELINES["main-challenge-live"].meta = { T0, K, transitions, schedule };
+      TIMELINES["main-challenge-live"].meta = { fidelity_round: 2, T0, K, transitions, schedule, model: h.attempts, usage: h.usageLog, progress: h.progressLog };
       return steps;
     },
   },

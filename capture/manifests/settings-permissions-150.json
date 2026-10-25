@@ -89,5 +89,7 @@
   ]
  },
  "same_in_both_states": true,
- "differs_from_the_film_settings_constants": "video/src/film/ui.ts SETTINGS was measured on 1.0.4 stills: permissionsTab 510.7,131.4 (now 500.2,131.5: 1.5.0 adds a second tab row), autoTitle 430,363.4, autoRadio 361.5,408.5, modal 321,41-839,759"
+ "differs_from_the_film_settings_constants": "video/src/film/ui.ts SETTINGS was measured on 1.0.4 stills: permissionsTab 510.7,131.4 (now 500.2,131.5: 1.5.0 adds a second tab row), autoTitle 430,363.4, autoRadio 361.5,408.5, modal 321,41-839,759",
+ "fidelity_round": 2,
+ "fidelity": "Checked in fidelity round 2 (OVERRIDES §41): Settings › Permissions with no run on screen, so none of the round's event-order divergences can show; the window is v1.5.0's own frozen frontend, the modes' words permissionModes.ts at v1.5.0, the Auto choice a real click; nothing needed re-capturing"
 }

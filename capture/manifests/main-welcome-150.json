@@ -62,5 +62,7 @@
   "source": "tools/assets/wallpaper/wallpaper-dark.svg (the page's night-green wallpaper, public/media/v1/wallpaper-dark-*) without its baked vignette rect, as riverbed-light.svg drops the light one's",
   "renderer_check": "the same script re-renders the light plate within 0.1 levels mean (4 of 255 at most) of video/public/desktop/riverbed-light@3x.png",
   "colour": "night green (mean 41, 49, 43), no blue"
- }
+ },
+ "fidelity_round": 2,
+ "fidelity": "Checked in fidelity round 2 (OVERRIDES §41): a still of the Companion home with no run on screen, so none of the round's event-order divergences (text in one piece, the 'Applied …' messages, the resume's 'Recalled 3 memories', the 'Explored' fold) can show; the window is v1.5.0's own frozen frontend, its words App.vue@v1.5.0 1898-1907, and nothing needed re-capturing"
 }
