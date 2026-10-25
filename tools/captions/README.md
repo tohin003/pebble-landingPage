@@ -7,7 +7,8 @@ dependencies (`src/content/chapters.ts` is imported with Node's built-in type st
 |---|---|
 | `docs/film-captions.json` (lane E: sound descriptions and the on-screen lines, frame-timed) | `public/media/v2/film.en.vtt`, and the social `.srt` |
 | `src/content/chapters.ts` `startSeconds` and `title` | `public/media/v2/film.chapters.vtt` |
-| `docs/film-captions.json` `"descriptions"` if it ever has them; otherwise each chapter's `description` in `chapters.ts` (FILM_SPEC §18), one cue a chapter | `public/media/v2/film.descriptions.en.vtt`, read aloud by the film player's audio-description toggle |
+| `docs/film-captions.json` `"descriptions"` (the trailer's 21 time-coded descriptions); without that list, each chapter's `description` in `chapters.ts` (FILM_SPEC §18), one cue a chapter | `public/media/v2/film.descriptions.en.vtt`, read aloud by the film player's audio-description toggle |
+| `docs/film-narration.json` (the narrated twin's voice cues, from `tools/audio/narration.py`) with the captions above | the narrated twin's `.srt` (`--narrated-srt`): the film's captions, each line the narrator speaks marked `Narrator: …` |
 
 The tracks live beside the film in `public/media/v2/` since the energetic recut (`src/lib/media.ts` `FILM_MEDIA`).
 `--out-dir`'s default is still `public/media/v1`, so pass `--out-dir public/media/v2`; `verify.mjs` reports tracks in
@@ -17,6 +18,7 @@ The tracks live beside the film in `public/media/v2/` since the energetic recut 
 node tools/captions/build.mjs --check                                            # validate only
 node tools/captions/build.mjs --out-dir public/media/v2                          # the three VTTs into public/media/v2
 node tools/captions/build.mjs --out-dir public/media/v2 --srt "$HOME/Desktop/Pebble launch film/Pebble-launch-film.srt"   # ... and the SRT
+node tools/captions/build.mjs --out-dir public/media/v2 --srt <film.srt> --narrated-srt <film-narrated.srt>             # ... and the narrated twin's SRT
 node tools/captions/build.mjs --cut <cut.json> --srt <file.srt> [--vtt <file.vtt>]               # a cut's captions
 ```
 
@@ -27,7 +29,15 @@ node tools/captions/build.mjs --cut <cut.json> --srt <file.srt> [--vtt <file.vtt
   own 3 is a warning), no exclamation mark; a word is a token with a letter or a digit. Every caption starts inside its
   chapter; `chapters.ts` `FILM_DURATION_SECONDS` must equal `total_frames / fps`. Any error: nothing is written.
 - **Descriptions**: a warning says when a description needs more speech (at 150 words a minute) than its cue lasts.
-  Today 7 of 9 do: the player reads each cue as the film reaches it and moves on at the next one.
+  Today 16 of the trailer's 21 do: the player holds the film on the cue's last frame until the voice is done
+  (extended description).
+- **The narrated twin** (OVERRIDES §38): `cues.mjs` `narratedCaptions` puts each of `docs/film-narration.json`'s lines
+  in the caption on screen when the voice starts (the voice must end inside it). The on-screen line with the same words
+  becomes `Narrator: <the spoken text>`; a spoken line with no on-screen twin would be added as the caption's last
+  line. Every other caption, time and line is the film's, and the same rules apply. `--check` checks it too whenever
+  the narration file exists. The twin's voice is disclosed as an AI voice in its description, not in the captions
+  (`docs/film-narration.json` `disclosure`).
 - **Cuts**: see "Cut files" in `tools/encode/README.md`. `node tools/captions/cues.mjs cut-inputs <cut.json> <frames>`
   prints the frame-exact input seeks `encode.sh social --cut` uses.
-- `tools/encode/verify.mjs` rebuilds these texts in memory and fails a `film.*.vtt` (or a full-film `.srt`) that differs.
+- `tools/encode/verify.mjs` rebuilds these texts in memory and fails a `film.*.vtt`, a full-film `.srt` or a
+  `*-narrated.srt` that differs.

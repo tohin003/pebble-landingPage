@@ -31,7 +31,9 @@
 //   the median capped at 45 dB: in an encode, static holds give identical frames (infinite PSNR) and the seam's two
 //   frames carry different coding noise, so an uncapped rule would fail every loop with a still tail.
 // - Text tracks: WebVTT/SRT syntax, then the caption rules (tools/captions/cues.mjs: order, no overlaps, <= 2 lines of
-//   <= 42 characters, >= 1.2 s, <= 3.5 words/s); film.*.vtt must equal what tools/captions/build.mjs makes now.
+//   <= 42 characters, >= 1.2 s, <= 3.5 words/s); film.*.vtt must equal what tools/captions/build.mjs makes now, and so
+//   must a full-film .srt and the narrated twin's *-narrated.srt (build.mjs --narrated-srt, from
+//   docs/film-narration.json).
 // - Posters: AVIF/WebP size and pixel size, the same aspect as their video, both formats present.
 //
 // The loudness and seam passes decode every film and loop, so they run as ONE scripts/heavy.sh job: started outside a
@@ -44,7 +46,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { fitsPage, imageInfo, mp4Info, pageCodecs } from "./mp4.mjs";
 import { filmTracks, formatTime, parseSrt, parseVtt, validateCues } from "../captions/cues.mjs";
-import { filmTrackTexts } from "../captions/build.mjs";
+import { filmNarration, filmTrackTexts } from "../captions/build.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "../..");
@@ -137,6 +139,7 @@ function classify(file) {
   if (name === "film.chapters.vtt") return { kind: "vtt", track: "chapters", film: true };
   if (name === "film.descriptions.en.vtt") return { kind: "vtt", track: "descriptions", film: true };
   if (/\.vtt$/i.test(name)) return { kind: "vtt", track: "captions", film: false };
+  if (/-narrated\.srt$/i.test(name)) return { kind: "srt", track: "captions", narrated: true };
   if (/\.srt$/i.test(name)) return { kind: "srt", track: "captions" };
   if (/\.mp4$/i.test(name)) return { kind: "social" };
   if (/\.(avif|webp|png|jpe?g|gif|svg)$/i.test(name)) return { kind: "image" };
@@ -527,7 +530,10 @@ function checkTrack(rec, cls, ctx) {
   const texts = ctx.texts;
   const name = path.basename(rec.file);
   if (cls.film && texts[name] !== undefined && texts[name] !== text) rec.fail("stale: differs from what tools/captions/build.mjs makes from docs/film-captions.json and chapters.ts; rebuild it");
-  if (cls.kind === "srt" && parsed.cues.length === ctx.tracks.captions.length && text.replace(/\r\n?/g, "\n") !== texts.srt) {
+  if (cls.narrated) {
+    if (texts.srtNarrated === undefined) rec.warn("not compared: no narrated captions to compare it with (docs/film-narration.json is missing or does not fit the captions)");
+    else if (text.replace(/\r\n?/g, "\n") !== texts.srtNarrated) rec.fail("stale: the narrated twin's SRT differs from what tools/captions/build.mjs --narrated-srt makes now; rebuild it");
+  } else if (cls.kind === "srt" && parsed.cues.length === ctx.tracks.captions.length && text.replace(/\r\n?/g, "\n") !== texts.srt) {
     rec.fail("stale: the full-film SRT differs from what tools/captions/build.mjs makes now; rebuild it");
   }
 }
@@ -610,7 +616,15 @@ async function main() {
   let texts = {};
   try {
     tracks = await filmTracks();
-    texts = filmTrackTexts(tracks);
+    let narrated = null;
+    try {
+      narrated = filmNarration(tracks);
+      if (narrated?.errors.length) throw new Error(narrated.errors.join("; "));
+    } catch (error) {
+      narrated = null;
+      console.error(`verify.mjs: cannot build the narrated twin's captions (${error.message}); a *-narrated.srt is checked for syntax and rules only`);
+    }
+    texts = filmTrackTexts(tracks, narrated);
   } catch (error) {
     console.error(`verify.mjs: cannot build the reference tracks (${error.message}); text tracks are checked for syntax and rules only`);
   }

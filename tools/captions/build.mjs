@@ -3,14 +3,20 @@
 //   docs/film-captions.json  ->  film.en.vtt (captions: sound descriptions and on-screen lines) and the social .srt
 //   src/content/chapters.ts  ->  film.chapters.vtt, and film.descriptions.en.vtt (from the chapters' `description`,
 //                                one cue a chapter, unless the JSON carries its own "descriptions" list)
+//   docs/film-narration.json ->  the narrated twin's .srt (--narrated-srt): the film's captions, with each line the
+//                                narrator speaks marked "Narrator: ..." (cues.mjs narratedCaptions)
 //
 // Usage (repo root, after `source scripts/env.sh`):
-//   node tools/captions/build.mjs [--srt <file.srt>] [--out-dir <dir>]      the three VTTs (and the SRT if asked)
+//   node tools/captions/build.mjs [--srt <file.srt>] [--narrated-srt <file.srt>] [--out-dir <dir>]
+//                                                                         the three VTTs (and the SRTs if asked)
 //   node tools/captions/build.mjs --cut <cut.json> --srt <file.srt> [--vtt <file.vtt>]
 //                                                                         a cut's captions on the cut's own timeline
-//   node tools/captions/build.mjs --check [--cut <cut.json>]                validate only, write nothing
+//   node tools/captions/build.mjs --check [--cut <cut.json>]                validate only, write nothing (without --cut,
+//                                                                         the narrated twin's captions too, when
+//                                                                         docs/film-narration.json exists)
 // Options: --captions <json> (default docs/film-captions.json), --chapters <ts> (default src/content/chapters.ts),
-//          --max-wps <n> (reading-rate gate, default 3.5), --out-dir <dir> (default public/media/v1).
+//          --narration <json> (default docs/film-narration.json), --max-wps <n> (reading-rate gate, default 3.5),
+//          --out-dir <dir> (default public/media/v1).
 //
 // Every cue is validated before anything is written (tools/captions/cues.mjs): time order, no overlaps, one or two lines
 // of at most 42 characters, at least 1.2 s on screen, at most 3.5 words a second, no "!". Any error: exit 1, no file
@@ -18,7 +24,22 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { DEFAULT_CAPTIONS, DEFAULT_CHAPTERS, REPO, RULES, countWords, filmTracks, mapCuesToCut, readCut, toSrt, toVtt, validateCues } from "./cues.mjs";
+import {
+  DEFAULT_CAPTIONS,
+  DEFAULT_CHAPTERS,
+  DEFAULT_NARRATION,
+  REPO,
+  RULES,
+  countWords,
+  filmTracks,
+  mapCuesToCut,
+  narratedCaptions,
+  readCut,
+  readNarration,
+  toSrt,
+  toVtt,
+  validateCues,
+} from "./cues.mjs";
 
 export const NOTES = {
   captions: "Pebble launch film: captions (sound descriptions and the on-screen lines).\nGenerated from docs/film-captions.json by tools/captions/build.mjs; edit the JSON, not this file.",
@@ -27,18 +48,36 @@ export const NOTES = {
   cut: (name) => `Pebble launch film, cut "${name}": captions.\nGenerated from docs/film-captions.json and the cut file by tools/captions/build.mjs.`,
 };
 
-/** The file texts build.mjs writes for the full film, keyed by file name (verify.mjs compares against these). */
-export function filmTrackTexts(tracks) {
-  return {
+/**
+ * The file texts build.mjs writes for the full film, keyed by file name (verify.mjs compares against these). With the
+ * narrated twin's captions (filmNarration), also `srtNarrated`, the twin's SRT.
+ */
+export function filmTrackTexts(tracks, narrated = null) {
+  const texts = {
     "film.en.vtt": toVtt(tracks.captions, NOTES.captions),
     "film.chapters.vtt": toVtt(tracks.chapters, NOTES.chapters),
     "film.descriptions.en.vtt": toVtt(tracks.descriptions, NOTES.descriptions(tracks.descriptionsFrom)),
     srt: toSrt(tracks.captions),
   };
+  if (narrated) texts.srtNarrated = toSrt(narrated.cues);
+  return texts;
+}
+
+/**
+ * The narrated twin's captions, from the film's tracks and docs/film-narration.json: {narration, cues, notes, errors}
+ * (cues.mjs narratedCaptions), or null when the file doesn't exist and isn't required.
+ */
+export function filmNarration(tracks, narrationPath = DEFAULT_NARRATION, { required = false } = {}) {
+  if (!fs.existsSync(narrationPath)) {
+    if (required) throw new Error(`no narration file at ${path.relative(REPO, narrationPath)}`);
+    return null;
+  }
+  const narration = readNarration(JSON.parse(fs.readFileSync(narrationPath, "utf8")), { fps: tracks.fps, totalFrames: tracks.totalFrames });
+  return { narration, ...narratedCaptions(tracks.captions, narration) };
 }
 
 function parseArgs(argv) {
-  const opts = { outDir: path.join(REPO, "public/media/v1"), captions: DEFAULT_CAPTIONS, chapters: DEFAULT_CHAPTERS, check: false, maxWps: RULES.maxWordsPerSecond };
+  const opts = { outDir: path.join(REPO, "public/media/v1"), captions: DEFAULT_CAPTIONS, chapters: DEFAULT_CHAPTERS, narration: DEFAULT_NARRATION, check: false, maxWps: RULES.maxWordsPerSecond };
   const value = (i, name) => {
     const v = argv[i + 1];
     if (v === undefined || v.startsWith("--")) throw new Error(`${name} needs a value`);
@@ -48,6 +87,8 @@ function parseArgs(argv) {
     const a = argv[i];
     if (a === "--check") opts.check = true;
     else if (a === "--srt") opts.srt = path.resolve(value(i++, a));
+    else if (a === "--narrated-srt") opts.narratedSrt = path.resolve(value(i++, a));
+    else if (a === "--narration") opts.narration = path.resolve(value(i++, a));
     else if (a === "--vtt") opts.vtt = path.resolve(value(i++, a));
     else if (a === "--cut") opts.cut = path.resolve(value(i++, a));
     else if (a === "--out-dir") opts.outDir = path.resolve(value(i++, a));
@@ -90,6 +131,7 @@ async function main() {
   let errors = 0;
 
   if (opts.cut) {
+    if (opts.narratedSrt) throw new Error("--narrated-srt is the full film's: the narrated twin has no cut");
     if (!opts.check && !opts.srt && !opts.vtt) throw new Error("--cut writes only what you name: add --srt <file> and/or --vtt <file>");
     const cut = readCut(JSON.parse(fs.readFileSync(opts.cut, "utf8")), { totalFrames: tracks.totalFrames, fps: tracks.fps });
     const mapped = mapCuesToCut(tracks.captions, cut);
@@ -119,14 +161,24 @@ async function main() {
       `(fastest ${maxRate(tracks.captions).toFixed(2)} words/s), ${tracks.chapters.length} chapters, ${tracks.descriptions.length} descriptions ` +
       `from ${tracks.descriptionsFrom}`,
   );
+  // The narrated twin's captions: built when its SRT is asked for, and checked by --check whenever the file exists.
+  const narrated = opts.narratedSrt || opts.check ? filmNarration(tracks, opts.narration, { required: Boolean(opts.narratedSrt) }) : null;
+  if (narrated) {
+    for (const e of narrated.errors) console.error(`  ERROR narration: ${e}`);
+    errors += narrated.errors.length;
+    errors += report("narrated captions", validateCues(narrated.cues, { kind: "captions", durationMs: tracks.durationMs, rules }));
+    console.log(`narrated twin: ${narrated.narration.length} narrator's lines from ${rel(opts.narration)} in ${narrated.cues.length} captions (fastest ${maxRate(narrated.cues).toFixed(2)} words/s)`);
+    for (const note of narrated.notes) console.log(`  ${note}`);
+  }
   if (errors) {
     console.error(`build.mjs: ${errors} error(s); nothing written.`);
     return 1;
   }
   if (opts.check) return 0;
-  const texts = filmTrackTexts(tracks);
+  const texts = filmTrackTexts(tracks, narrated);
   for (const name of ["film.en.vtt", "film.chapters.vtt", "film.descriptions.en.vtt"]) console.log(`wrote ${rel(writeAtomic(path.join(opts.outDir, name), texts[name]))}`);
   if (opts.srt) console.log(`wrote ${rel(writeAtomic(opts.srt, texts.srt))}`);
+  if (opts.narratedSrt) console.log(`wrote ${rel(writeAtomic(opts.narratedSrt, texts.srtNarrated))}`);
   return 0;
 }
 

@@ -9,6 +9,8 @@
 //   the caption file's own convention is 3, reported as a warning above it).
 // - Cuts: a cut file lists the film's source frame ranges in the order they play (see readCut). mapCuesToCut moves
 //   the film's cues onto the cut's timeline; cutInputs gives encode.sh the frame-exact input seeks.
+// - The narrated twin: readNarration reads docs/film-narration.json, and narratedCaptions marks each narrator's line
+//   in the film's captions ("Narrator: ..."), for the twin's SRT.
 //
 // CLI (for encode.sh): node tools/captions/cues.mjs cut-inputs <cut.json> <source_frames> [fps]
 //   prints the cut's frame count, then one "<seek seconds> <frames>" line per range.
@@ -171,6 +173,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const REPO = path.resolve(HERE, "../..");
 export const DEFAULT_CAPTIONS = path.join(REPO, "docs/film-captions.json");
 export const DEFAULT_CHAPTERS = path.join(REPO, "src/content/chapters.ts");
+export const DEFAULT_NARRATION = path.join(REPO, "docs/film-narration.json");
 
 /** Imports chapters.ts with Node's built-in type stripping, without its "typeless package.json" warning. */
 async function importChapters(file) {
@@ -249,6 +252,66 @@ export async function filmTracks({ captionsPath = DEFAULT_CAPTIONS, chaptersPath
     descriptions = chapters.filter((c) => c.description).map((c) => ({ id: `d-${c.id}`, startMs: c.startMs, endMs: c.endMs, lines: [c.description.replace(/\s+/g, " ").trim()] }));
   }
   return { fps, totalFrames, durationMs, captions, chapters: chapters.map(({ description, ...c }) => c), descriptions, descriptionsFrom, problems };
+}
+
+// ---- the narrated twin ------------------------------------------------------------------------------------------
+
+/** How the narrated twin's captions mark a spoken line (sentence case, like the rest of the captions). */
+export const NARRATOR_LABEL = "Narrator: ";
+
+/**
+ * Reads docs/film-narration.json (written by tools/audio/narration.py build --doc): the narrated twin's voice cues as
+ * [{id, start, end, text}], in film frames, end exclusive. The film's fps and length must match the captions'.
+ */
+export function readNarration(raw, { fps, totalFrames }) {
+  const where = "film-narration.json";
+  if (Number(raw?.fps) !== fps) throw new Error(`${where}: fps ${raw?.fps}, the film runs at ${fps}`);
+  if (Number(raw?.total_frames) !== totalFrames) throw new Error(`${where}: total_frames ${raw?.total_frames}, the film has ${totalFrames}`);
+  if (!Array.isArray(raw?.cues) || !raw.cues.length) throw new Error(`${where}: "cues" lists no narrator's line`);
+  return raw.cues.map((c, i) => {
+    const id = c?.id ?? `n${i + 1}`;
+    if (!Number.isInteger(c?.start) || !Number.isInteger(c?.end) || c.end <= c.start) throw new Error(`${where}: cue ${id} needs whole frames with start < end`);
+    if (typeof c.text !== "string" || !c.text.trim()) throw new Error(`${where}: cue ${id} has no text`);
+    return { id, start: c.start, end: c.end, text: c.text.trim() };
+  });
+}
+
+/** The words of a line, for matching a spoken line with its on-screen twin: lower case, punctuation dropped. */
+const wordsOf = (text) =>
+  text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}'’]+/gu, " ")
+    .trim();
+
+/**
+ * The narrated twin's captions: the film's caption cues with each narrator's line marked as speech. A line is
+ * captioned in the cue on screen when the voice starts, and the voice must end inside that cue (narration.py places
+ * every line inside its card). The cue's on-screen line with the same words becomes "Narrator: <the spoken text>"; a
+ * spoken line with no on-screen twin is added as the cue's last line. Every other cue, time and line is the film's.
+ * Returns {cues, notes, errors}; validate the cues with validateCues before writing them.
+ */
+export function narratedCaptions(captions, narration) {
+  const cues = captions.map((c) => ({ ...c, lines: [...c.lines] }));
+  const notes = [];
+  const errors = [];
+  for (const n of narration) {
+    const cue = cues.find((c) => c.start <= n.start && n.start < c.end);
+    if (!cue) {
+      errors.push(`narration ${n.id} starts on f${n.start}, where no caption is shown`);
+      continue;
+    }
+    if (n.end > cue.end) errors.push(`narration ${n.id} runs to f${n.end}, past the end of caption ${cue.id} (f${cue.end})`);
+    const line = `${NARRATOR_LABEL}${n.text}`;
+    const at = cue.lines.findIndex((l) => wordsOf(l) === wordsOf(n.text));
+    if (at >= 0) {
+      cue.lines[at] = line;
+      notes.push(`${n.id} (f${n.start}-${n.end}) in ${cue.id}: "${line}", the on-screen line it speaks`);
+    } else if (cue.lines.length < RULES.maxLines) {
+      cue.lines.push(line);
+      notes.push(`${n.id} (f${n.start}-${n.end}) in ${cue.id}: "${line}", added`);
+    } else errors.push(`narration ${n.id}: caption ${cue.id} has no line with its words and no room for another`);
+  }
+  return { cues, notes, errors };
 }
 
 // ---- cuts -------------------------------------------------------------------------------------------------------

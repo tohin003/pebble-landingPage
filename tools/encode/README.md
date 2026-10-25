@@ -46,14 +46,18 @@ tools/encode/encode.sh poster video/out/stills/film.poster.png public/media/v1/f
 tools/encode/encode.sh poster video/out/stills/film.poster.png public/media/v1/teaser.poster 1280 720
 tools/encode/encode.sh poster video/out/stills/loop-approve-undo.poster.png public/media/v1/loop-approve-undo.poster 1080 1080
 
-# 5. Text tracks for the page (beside the film in public/media/v2), and the full film's SRT for the social folder.
-node tools/captions/build.mjs --out-dir public/media/v2 --srt "$HOME/Desktop/Pebble launch film/Pebble-launch-film.srt"
+# 5. Text tracks for the page (beside the film in public/media/v2), and the full film's SRT for the social folder,
+#    with the narrated twin's (its captions with each spoken line marked "Narrator: ...", from docs/film-narration.json).
+node tools/captions/build.mjs --out-dir public/media/v2 --srt "$HOME/Desktop/Pebble launch film/Pebble-launch-film.srt" \
+  --narrated-srt "$HOME/Desktop/Pebble launch film/Pebble-launch-film-narrated.srt"
 
 # 6. Social masters (-14 LUFS; never committed): 16:9, 1:1 and 9:16, each from its own composition.
 D="$HOME/Desktop/Pebble launch film"
 tools/encode/encode.sh social video/out/masters/film.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1920x1080.mp4"
 tools/encode/encode.sh social video/out/masters/film-square.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1080x1080.mp4"
 tools/encode/encode.sh social video/out/masters/film-vertical.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1080x1920.mp4"
+#    The narrated twin (OVERRIDES §38; at least the 16:9): the same picture with the narrated social soundtrack.
+tools/encode/encode.sh social video/out/masters/film.mp4 .work/audio/render/soundtrack_social_narrated.wav "$D/Pebble-launch-film-narrated-1920x1080.mp4"
 
 # 7. Everything at once: public/media (v1 and v2) plus the social folder.
 node tools/encode/verify.mjs "$D"
@@ -144,7 +148,8 @@ node tools/encode/verify.mjs --json                              # machine-reada
   test loop (a frozen `testsrc2` frame) at HEVC CRF 27–33 and H.264 CRF 23–29: clean seams read 58.6–66.9 dB and a
   24x36 px cursor left at the end 35.7 dB, against the 42 dB threshold.
 - **Text tracks**: WebVTT/SRT syntax and the caption rules (`tools/captions/cues.mjs`); `film.*.vtt` must equal what
-  `tools/captions/build.mjs` makes from today's sources (a stale track fails), and so must a full-film `.srt`.
+  `tools/captions/build.mjs` makes from today's sources (a stale track fails), and so must a full-film `.srt` and the
+  narrated twin's `*-narrated.srt` (built with `docs/film-narration.json`).
 - **Posters**: format, budget, an AVIF and a WebP twin, the aspect of their video and of the size `src/lib/media.ts`
   gives them (a different size with the same aspect is a warning: the page's srcset would describe it wrongly).
 - **Strays**: a file in a versioned media folder (`public/media/v1`, `v2`, …) that `src/lib/media.ts` would never
