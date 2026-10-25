@@ -5,12 +5,14 @@ blueprint's music section and its frames (the research lane's TRAILER_RESEARCH �
 §34-§39), on the synthesis engine in tools/audio/synth (its README.md): no samples, no downloads, no vocals.
 
 The angle: cinematic and modern, a frontier-lab keynote sizzle. A pulsing eighth-note reese ostinato builds under the
-tension, dark trailer hits land the three questions, a low braam turns the act, big drums with toms drive the build,
-the four-note motif comes back at the drop on a saw lead over supersaw stabs, and a driving groove carries the montage.
+tension, dark trailer hits land the three questions, a low braam turns the act, toms and an accelerating roll drive a
+build that stays well under the drop, the four-note motif comes back at the drop on a saw lead over supersaw stabs,
+and big drums and a driving groove carry the montage and the climax.
 
 Form. Bar n starts on film frame 72(n-1); beat b of a bar falls 18(b-1) frames later.
-  1      the look       an airy Bm(add9) pad (detuned triangles, octave 4-5, open) under noise air, a two-thump sub
-                        heartbeat on 1 and 3, the motif D5 A5 G#5 A5 on a soft pluck over beats 2-4; the breath f63-71
+  1      the look       an airy pad on detuned triangles (B4 F#5 C#6, an open fifth and ninth: the motif's D5 makes
+                        it B minor), a two-thump sub heartbeat on 1 and 3, the motif D5 A5 G#5 A5 on a soft pluck over
+                        beats 2-4; the breath f63-71
   2 4 6  the questions  a trailer hit on each downbeat (f72, f216, f360): a sub falling an octave onto B1, G1, A1 in
                         25 ms and gone in 0.45 s, an unpitched thwack and a small room (wet 0.10, above 600 Hz); then
                         near silence: noise ticks in quarters, 8ths, then 16ths, and the heartbeat. Q3 is the biggest
@@ -19,8 +21,9 @@ Form. Bar n starts on film frame 72(n-1); beat b of a bar falls 18(b-1) frames l
                         noise swell sucks back into it (the hit then clears the 0.6 s before it by 10 dB or more)
   7      the hold       the skeleton to f444; on f445, Pebble's own hold, the drive stops dead and the Asus4 pad swells
                         on (the mix's hold automation darkens it)
-  8      the turn       a braam on G1, the motif's first two notes left hanging on a pad, the heartbeat back and in 8ths
-                        from f558; a noise riser and a supersaw cluster (D4 A4 E5, open) rise from f504 to f611
+  8      the turn       a braam on G1, the motif's first two notes left hanging on a pad, noise air, the heartbeat back
+                        and in 8ths from f558; a noise riser and a supersaw cluster (D4 A4 E5, open, rising a minor
+                        third) swell from f504 to f611
   9      the build      kicks on every beat, an accelerating roll (8ths to 32nds), a tom fill, the ostinato in 16ths;
                         then the dead stop f612-647: both stems are exact zeros
   10     the drop       crash, a big kick and a short sub on D1; the full groove (kick on 1 and 2.5, claps on 2 and 4,
@@ -50,8 +53,8 @@ Harmony: Bm(add9) | G | Asus4 for the questions, G -> Asus4 for the build, the d
 holds on Asus4, Verified on D, D(add9) at the end. Every sustained chord is voiced from octave 4 up, open (a close saw
 chord in octave 3 reads as brass and foghorn under low hits: synth/README.md).
 
-Levels, measured on the preview masters (four rounds; numbers in the comments by each setting): the drive sits about
-1.5 LU under the bed, and the bed near -18 LUFS, where tools/audio/sfx_kit.json's effect gains assume it. Everything
+Levels, measured on the preview masters over six rounds (numbers in the comments by each setting): the bed sits near
+-18 LUFS, where tools/audio/sfx_kit.json's effect gains assume it, and the drive about 3.5 LU under it. Everything
 before the drop but the hold's pad plays TENSION_TRIM_DB under its written velocity, so bars 1-9 stay 6 LU under
 every master's integrated level (the x30's too). Both stems pass a 5 ms lookahead limiter (BED_PEAK_DB, DRIVE_PEAK_DB)
 so the -14 LUFS masters lose less to their own limiter.
@@ -299,7 +302,9 @@ V = {  # the instruments: presets with this score's settings, and the voices abo
                       room=0.12),
     "braam": S.get("braam"),
     "riser": S.get("riser", chop=(3.0, 16.0), chop_depth=0.45, f0=300.0, f1=9000.0),
-    "cluster": S.get("riser_pitch", noise=0.0, octave=0.0, semitones=12.0, detune=40.0, f_lo=600.0, f_hi=7000.0),
+    # the cluster rises a minor third: gliding an octave, the build read 'civil_defense_siren' 0.29-0.30 in the
+    # masters (0.33-0.63 in the bed alone); at +3 semitones (or static, or with no cluster) no siren label at all
+    "cluster": S.get("riser_pitch", noise=0.0, octave=0.0, semitones=3.0, detune=40.0, f_lo=600.0, f_hi=7000.0),
     "swell": S.get("reverse_swell", source="noise"),
     "cswell": S.get("reverse_swell", source="chord"),
     "downlifter": S.get("downlifter"),
@@ -502,12 +507,12 @@ def compose(A):
     P = A.put
 
     # ---- bars 1-9: tension, sound design first ----
-    # the opening after silence, measured (bars 1-2 at the web master's gain): triangles alone under the pluck read
-    # ringtone 0.31-0.36 in the masters; with the air at 0.3 the phone labels fall under 0.05 and the horns to 0.22
-    P("pad", 1, [ev(g, (1, 1), g.bars(3) - 0.05, 0.26, CH["Bm9"])])
-    # the air covers the opening's first 1.5 s and is gone by f66, so the near silence after the first hit holds only
-    # the ticks and the heartbeat
-    P("air", 1, [ev(g, (1, 1), 1.75, 0.3, release=0.45)])
+    # The opening after silence (Apple's classifier, the first 0.75 s and 1.5 s at each master's own level, on renders
+    # that reproduce these events exactly): the Bm(add9) chord on triangles read 'ringtone' 0.31-0.36, with noise air
+    # 'train_horn' 0.63, and on saws with air 0.72. As an open fifth and ninth (the third is the motif's own D5),
+    # with no air, every horn, phone and beep label stays under 0.17. With no pad at all, the heartbeat and the
+    # pluck read 'beep' 0.6
+    P("pad", 1, [ev(g, (1, 1), g.bars(3) - 0.05, 0.26, ("B4", "F#5", "C#6"))])
     P("heart", 1, [ev(g, (1, 1), 0, 0.52, "F#1"), ev(g, (1, 3), 0, 0.48, "F#1")])
     P("pluck", 1, phrase(g, 1, MOTIF, vel=0.36, shift=1.0))
 
