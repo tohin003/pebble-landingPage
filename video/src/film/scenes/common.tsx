@@ -16,10 +16,10 @@ import type { Hop } from "../../pebble/acting";
 import { PebbleOnFilm } from "../../pebble/PebbleOnFilm";
 import type { PebbleColors } from "../../pebble/PebbleSvg";
 import { filmCues } from "../gaze";
-import { END, HOPS, LIST_DIM, SEAMS, TEXT, textById, type PerAspect, type TextCue } from "../timeline";
+import { CUT_FRAMES, END, HOPS, LIST_DIM, TEXT, textById, type PerAspect, type TextCue } from "../timeline";
 
-/** The film's cuts (every seam that is not a camera move, FILM_SPEC §12). */
-const CUTS: readonly number[] = SEAMS.filter((s) => s.kind !== "camera").map((s) => s.frame);
+/** The film's cuts (every seam that is not a camera move). */
+const CUTS: readonly number[] = CUT_FRAMES;
 
 /* ================================================================================================================
  * On-screen lines (FILM_SPEC §3, §8)
@@ -59,13 +59,14 @@ function columnPlacement(cue: TextCue, L: Layout): { top: number; size: number }
   return { top: L.win.text.y + anchorH + gap, size: L.type[cue.role] };
 }
 
-export type LineWorld = "sage" | "paper" | "window";
+export type LineWorld = "sage" | "paper" | "window" | "night";
 
 /** Colours by role and ground (motion/system.ts): white on sage (support and data at 80 %); on paper, ink for the lines
  *  and the URL, muted ink for support, the CTA's words and the small print. */
 export const lineColour = (cue: TextCue, world: LineWorld) => {
   const strong = cue.role === "headline" || cue.role === "side" || cue.role === "tagline" || cue.role === "mono" || cue.role === "hero";
   if (world === "sage") return strong ? SYSTEM.onSage : SYSTEM.onSageMuted;
+  if (world === "night") return strong ? SYSTEM.onNight : SYSTEM.onNightMuted;
   return strong ? SYSTEM.ink : SYSTEM.ink2;
 };
 
@@ -115,10 +116,12 @@ export const FilmLine: React.FC<{ cue: TextCue; world: LineWorld; exit?: boolean
   // a leaving line never survives a cut (T7 and T13 finish their blur-out a frame after a hard cut on the bar); a line
   // that is still holding when the stage cuts (T8 across f1008) stays, as the column does
   if (exit && CUTS.some((c) => c > cue.in && frame >= c && cue.out < c)) return null;
+  // a line whose exit frame is a cut is taken by that cut (the montage's lines, one a bar)
+  if (exit && CUTS.includes(cue.out) && frame >= cue.out) return null;
   const { box, size, align } = lineBox(cue, L);
   const color = lineColour(cue, world);
   const lines = linesFor(cue, L.aspect);
-  const exitAt = exit && cue.out < END ? cue.out : undefined;
+  const exitAt = exit && cue.out < END && !CUTS.includes(cue.out) ? cue.out : undefined;
   const dim = cue.dimAt === undefined ? 1 : 1 - (1 - LIST_DIM) * ramp(frame, cue.dimAt, 6, EASE.move);
   // a slam lands whole (about the line's anchor) unless it names its words' landings (T7)
   const wordStarts = cue.enter !== "slam" && cue.inkTogether ? lines.flatMap((l) => l.split(" ").filter((w) => w.length > 0)).map(() => cue.in) : cue.wordStarts;
@@ -233,8 +236,8 @@ export const Horizon: React.FC<{ x0: number; x1: number; y: number; stroke?: num
  * ============================================================================================================== */
 
 /** Hops of an instance in the aspect's frame px (with each hop's timing: H2 hangs at its apex). */
-export const hopsFor = (ids: readonly string[], a: AspectId, s: number): Hop[] =>
-  HOPS.filter((h) => ids.includes(h.id)).map((h) => ({ at: h.at, to: { x: h.to[a].x * s, y: h.to[a].y * s }, duration: h.duration, timing: h.timing }));
+export const hopsFor = (ids: readonly string[], a: AspectId, s: number, offsetS = 0): Hop[] =>
+  HOPS.filter((h) => ids.includes(h.id)).map((h) => ({ at: h.at + offsetS, to: { x: h.to[a].x * s, y: h.to[a].y * s }, duration: h.duration, timing: h.timing, height: h.height }));
 
 /** PebbleOnFilm with the film's merged cue list (timeline cues + pointer-driven looks) for this aspect. */
 export const FilmPebble: React.FC<{
@@ -245,9 +248,11 @@ export const FilmPebble: React.FC<{
   colors?: PebbleColors;
   shadow?: boolean;
   cues?: readonly PebbleCue[];
-}> = ({ x, y, size, hops, colors, shadow, cues }) => {
+  /** the instance's engine clock offset (its cues must be moved with it: gaze.ts shiftCues) */
+  offsetFrames?: number;
+}> = ({ x, y, size, hops, colors, shadow, cues, offsetFrames }) => {
   const L = useLayout();
-  return <PebbleOnFilm cues={cues ?? filmCues(L.aspect)} size={size} x={x} y={y} hops={hops} colors={colors} shadow={shadow} />;
+  return <PebbleOnFilm cues={cues ?? filmCues(L.aspect)} size={size} x={x} y={y} hops={hops} colors={colors} shadow={shadow} offsetFrames={offsetFrames} />;
 };
 
 /* ================================================================================================================
@@ -264,7 +269,7 @@ const pad5 = (n: number) => String(n).padStart(5, "0");
  * the accent ring that stood 15 px off "Undo this edit" still read as that text button's own outline (REVIEW-G2
  * P2-12), and pointing is not one of the accent's three jobs (PHILOSOPHY).
  */
-export const FOCUS = { veil: 0.45, blur: 2.5, color: "#F7F8F5" } as const;
+export const FOCUS = { veil: 0.45, blur: 2.5, color: "#F7F8F5", dark: "#1C211E" } as const;
 export interface RecordedFocus {
   /** the sharp region, CSS px of the recording */
   rect: Rect;
@@ -273,6 +278,8 @@ export interface RecordedFocus {
   /** the camera's zoom (the blur is given on screen) */
   zoom: number;
   radius?: number;
+  /** the veil's colour: the window's own (light by default) */
+  veil?: string;
 }
 /** The PNG of a recorded sequence showing source second `s` (index = round(s × 30)). */
 export const recordedFrame = (dir: string, frames: number, s: number) =>
@@ -304,7 +311,7 @@ export const RecordedUi: React.FC<{
       {focus && a > 0.001 ? (
         <>
           <div style={{ ...box, filter: `blur(${((FOCUS.blur * a) / Math.max(0.01, focus.zoom)).toFixed(3)}px)` }}>{img}</div>
-          <div style={{ ...box, background: FOCUS.color, opacity: FOCUS.veil * a }} />
+          <div style={{ ...box, background: focus.veil ?? FOCUS.color, opacity: FOCUS.veil * a }} />
           <div
             style={{
               ...box,
@@ -356,6 +363,9 @@ export const RecordedUi: React.FC<{
 /** CSS border-radius for the stage's rounded corners (the others bleed off the frame). */
 export const stageRadii = (corners: StageCorners, r: number) =>
   corners === "left" ? `${r}px 0 0 ${r}px` : corners === "top" ? `${r}px ${r}px 0 0` : corners === "topLeft" ? `${r}px 0 0 0` : `${r}px`;
+/** The PNG of a recorded frame (record.mjs: frame f is the file f + 1), clamped to the frames on disk. */
+export const recFrame = (rec: { dir: string; first: number; last: number }, src: number) =>
+  staticFile(`${rec.dir}/${pad5(Math.max(rec.first, Math.min(rec.last, Math.round(src))) + 1)}.png`);
 
 /**
  * The window world's stage (FILM_SPEC §4; PHILOSOPHY "Imagery": a moment sits in a hairline frame): a rounded viewport
@@ -375,12 +385,19 @@ export const FilmStage: React.FC<{
   children: ReactNode;
   overlay?: ReactNode;
   clipOverlay?: boolean;
-}> = ({ rect, pose, blur, background = "#F7F8F5", children, overlay, clipOverlay = false }) => {
+  /** which corners are rounded (default: the layout's window-world stage) */
+  corners?: StageCorners;
+  /** the hairline's colour (default: the page's rule) */
+  ring?: string;
+  /** the stage's opacity (the glimpses' luminance ramps) */
+  opacity?: number;
+  id?: string;
+}> = ({ rect, pose, blur, background = "#F7F8F5", children, overlay, clipOverlay = false, corners, ring: ringColour = SYSTEM.line, opacity = 1, id: idProp }) => {
   const L = useLayout();
   const viewport = { width: rect.w, height: rect.h };
   const on = !!blur && (blur.x > 0.15 || blur.y > 0.15);
-  const id = "film-stage-motion-blur";
-  const radius = stageRadii(L.win.stageCorners, L.win.stageRadius);
+  const id = idProp ?? "film-stage-motion-blur";
+  const radius = stageRadii(corners ?? L.win.stageCorners, L.win.stageRadius);
   const ring = Math.max(1, FRAME.ring * L.s);
   return (
     <>
@@ -394,6 +411,7 @@ export const FilmStage: React.FC<{
           borderRadius: radius,
           overflow: "hidden",
           background,
+          opacity,
         }}
       >
         {on ? (
@@ -411,7 +429,7 @@ export const FilmStage: React.FC<{
           </Camera>
         </div>
         {/* the hairline, over the picture's edge */}
-        <div style={{ position: "absolute", inset: 0, borderRadius: radius, boxShadow: `inset 0 0 0 ${ring}px ${SYSTEM.line}`, pointerEvents: "none" }} />
+        <div style={{ position: "absolute", inset: 0, borderRadius: radius, boxShadow: `inset 0 0 0 ${ring}px ${ringColour}`, pointerEvents: "none" }} />
       </div>
       {overlay ? (
         <div
@@ -424,6 +442,7 @@ export const FilmStage: React.FC<{
             pointerEvents: "none",
             overflow: clipOverlay ? "hidden" : undefined,
             borderRadius: clipOverlay ? radius : undefined,
+            opacity,
           }}
         >
           <Camera pose={pose} viewport={viewport} background="transparent" clip={false}>

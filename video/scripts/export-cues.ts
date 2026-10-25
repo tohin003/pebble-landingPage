@@ -1,4 +1,4 @@
-// The film's sound-effect cue list (FILM_SPEC §11, critic C4), lane G2a. Run with bun from the repo root:
+// The film's sound-effect cue list (FILM_SPEC §11 and §24, the trailer's), lane G2a. Run with bun from the repo root:
 //   bun video/scripts/export-cues.ts            writes tools/audio/cues.json
 //   bun video/scripts/export-cues.ts --check    verifies the file on disk is current (exit 1 if not)
 // It reads ONLY the pure-data timeline (video/src/film/timeline.ts: SFX, the picture frames and takes) and the kit
@@ -7,8 +7,9 @@
 // event, plus frame / peak_frame / role / take for people reading it.
 //
 // Rules (sfx_kit.json, R5 §10): every effect PEAKS one frame after its picture event (t = (frame + 1) / fps, align
-// "peak"); the one riser ENDS on the reveal (t = reveal frame / fps, align "end"); takes rotate as the timeline names
-// them; pans are the timeline's (§11's formula at the pointer's 16:9 x), else the role's. When the kit's WAVs are on
+// "peak"); an end-aligned take (the trailer's suck-backs) ENDS on its frame, the hit it rises into (t = frame / fps,
+// align "end"); the score carries the riser into the dead stop, so the timeline has none (validateTimeline checks
+// both); takes rotate as the timeline names them; pans are the timeline's, else the role's. When the kit's WAVs are on
 // disk (.work/audio/sfx), it also checks that no more than three effects sound at once.
 //
 // The energetic recut (ENERGY_SPEC §8.3): after the effects come the mix's automation spans (timeline AUTOMATION: the
@@ -18,7 +19,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { AUTOMATION, FPS, REVEAL_FRAME, SFX, validateTimeline } from "../src/film/timeline";
+import { AUTOMATION, FPS, SFX, validateTimeline } from "../src/film/timeline";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, "..", "..");
@@ -47,7 +48,6 @@ const cues = SFX.map((c) => {
   const file = `${c.take}.wav`;
   if (!role.takes.includes(file)) problems.push(`f${c.frame} ${c.role}: take ${file} is not one of the kit's ${role.takes.join(", ")}`);
   const end = role.align === "end";
-  if (end && c.frame !== REVEAL_FRAME) problems.push(`the riser must end on the reveal (f${REVEAL_FRAME}), not f${c.frame}`);
   const peakFrame = end ? c.frame : c.frame + 1;
   return {
     file: `${kit.dir}${file}`,
@@ -63,7 +63,6 @@ const cues = SFX.map((c) => {
     take: c.take,
   };
 });
-if (cues.filter((c) => c.role === "riser").length !== 1) problems.push("there must be exactly one riser");
 
 // the automation spans, each with its role's params from the kit (its prose "when" stays in the kit)
 const spans = AUTOMATION.map((a) => {

@@ -40,6 +40,15 @@ export const SYSTEM = {
   inkFromSage: "rgba(255, 255, 255, 0.35)",
   /** the colour a word inks from on paper (entrance B): #B0C2AE, the accent's soft tint */
   inkFromPaper: "#B0C2AE",
+  /**
+   * The trailer's night field (bars 2–8, the tension): the page's own dark ground, #191E1B, flat. Its lines are Fraunces
+   * 350 in #E8EEE6 (14.6:1), support at 80 %. A glimpse of Pebble's dark-theme window sits on it in a hairline frame
+   * of the dark theme's rule, #2B342C.
+   */
+  night: "#191E1B",
+  onNight: "#E8EEE6",
+  onNightMuted: "rgba(232, 238, 230, 0.8)",
+  nightLine: "#2B342C",
 } as const;
 
 /**

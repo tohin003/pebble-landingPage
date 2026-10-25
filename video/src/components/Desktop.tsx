@@ -17,6 +17,9 @@ export const MENUBAR_HEIGHT = 26;
 export const RIVERBED = {
   svg: "desktop/riverbed-light.svg",
   raster: "desktop/riverbed-light@3x.png",
+  /** the dark plate (capture/riverbed-plate.mjs: the page's night-green wallpaper without its vignette; gitignored) */
+  darkRaster: "desktop/riverbed-dark@3x.png",
+  darkGround: "#29312B",
   /** the ground colours of the wallpaper's own gradient (comp 2 wallpaper.py), lit top-left to lower-right */
   ground: { g0: "#E7ECE2", g1: "#D3DDCD", g2: "#C6D3C0" },
 } as const;
@@ -36,24 +39,23 @@ export interface DesktopProps {
   menubar?: boolean;
   /** the menu bar's clock text, if any */
   clock?: string;
+  /** the dark riverbed (the trailer's cold open) */
+  dark?: boolean;
   style?: CSSProperties;
 }
 
-export const Desktop: React.FC<DesktopProps> = ({ rect = DESKTOP, menubar = false, clock, style }) => {
-  const src = hasStatic(RIVERBED.raster) ? RIVERBED.raster : RIVERBED.svg;
+export const Desktop: React.FC<DesktopProps> = ({ rect = DESKTOP, menubar = false, clock, dark = false, style }) => {
+  const src = dark ? (hasStatic(RIVERBED.darkRaster) ? RIVERBED.darkRaster : null) : hasStatic(RIVERBED.raster) ? RIVERBED.raster : RIVERBED.svg;
   return (
     <div style={{ position: "absolute", left: rect.x, top: rect.y, width: rect.w, height: rect.h, ...style }}>
       <div
         style={{
           position: "absolute",
           inset: 0,
-          background: `linear-gradient(135deg, ${RIVERBED.ground.g0} 0%, ${RIVERBED.ground.g1} 55%, ${RIVERBED.ground.g2} 100%)`,
+          background: dark ? RIVERBED.darkGround : `linear-gradient(135deg, ${RIVERBED.ground.g0} 0%, ${RIVERBED.ground.g1} 55%, ${RIVERBED.ground.g2} 100%)`,
         }}
       />
-      <Img
-        src={staticFile(src)}
-        style={{ position: "absolute", left: 0, top: 0, width: rect.w, height: rect.h, objectFit: "cover" }}
-      />
+      {src ? <Img src={staticFile(src)} style={{ position: "absolute", left: 0, top: 0, width: rect.w, height: rect.h, objectFit: "cover" }} /> : null}
       {menubar ? <MenuBar width={rect.w} clock={clock} /> : null}
     </div>
   );

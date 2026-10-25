@@ -1,14 +1,24 @@
-// The launch film's timeline as DATA (critic C4), re-derived from docs/FILM_SPEC.md (lane E, 2026-10-23 03:55): every
-// shot and sub-beat, framing, on-screen line, pebble instance, hop and cue, click, sound-effect intent, seam, review
-// frame and source-time map. No React, no Remotion, no path aliases: the scenes, the style frames, the cue exporter
-// (bun) and the checks all read this one module. Section numbers (§) below are FILM_SPEC's.
+// The launch trailer's timeline as DATA (critic C4): every shot and beat, on-screen line, pebble instance, hop and cue,
+// click, sound-effect intent, mix-automation span, seam, source-time map and review frame. No React, no Remotion, no
+// path aliases: the scenes, the style frames, the cue exporter (bun) and the checks all read this one module.
 //
-// Rules validateTimeline() enforces:
-// - every frame comes from the beat map by INDEX (bar, beat, offset), never by accumulating (§1, R5 §10.1);
-// - shots tile the film on bar lines; cuts and clicks sit on beat frames; the reveal lands on beatmap.reveal.frame;
-// - every on-screen line is a copy line: in src/content/chapters.ts (or, until FILM_SPEC §18's deltas land there, in
-//   docs/film-captions.json, reported by pendingCopy()); ≤ 6 words; holds per holdFor (§8);
-// - pebble cues pass shared/pebble's checks (Pebble's own poses only, D6); exactly one riser, ending on the reveal.
+// The film is a trailer (OVERRIDES §38–§42; the blueprint is scratchpad/research/TRAILER_RESEARCH.md §6 and its .json):
+// 76.8 s, 32 bars at 100 BPM, 2,304 frames at 30 fps, in four movements: Tension (bars 1–9), Reveal (10–14), Proof
+// (15–25) and Title (26–32). docs/FILM_SPEC.md §24 records it; the sections before §24 record the recut it replaces.
+//
+// Rules validateTimeline() enforces (each one is the blueprint's or the binding overrides', none looser than the
+// recut's):
+// - every frame comes from the beat map by INDEX (bar, beat, offset), never by accumulating;
+// - shots tile the film on bar lines, beats start on beat frames, the reveal lands on beatmap.reveal.frame (f648);
+// - every on-screen line is a copy line (src/content/chapters.ts), at most 6 words a line and 3 words a second, held
+//   0.5 s + 0.3 s a word and at least 1.2 s (the last line of a shot at least 2 s; the end card's key lines twice);
+// - Pebble's own poses only (D6), pose changes at least 14 frames apart (18 into or out of the "!"), and exactly one
+//   celebration, from the app's own completion of the held run (f1725);
+// - Pebble's own time at 1× inside a shot: only the person's spans may run faster (at most 2×), only waiting states may
+//   run slower or freeze, a jump happens only on a cut, and across the cuts of one recording the film never shows two
+//   moments closer than they were (TIME HONESTY below);
+// - the breaths (the gaps f63, f639, f1647, f2151 and the dead stop f612–638), the two holds (the app's own hold to the
+//   cut or to Run the tests), the tail, at most ten slams, Verified held 36 frames with no cut or camera move.
 import beatmap from "../../../tools/audio/beatmap.json";
 import captions from "../../../docs/film-captions.json";
 import { chapters } from "../../../src/content/chapters";
@@ -18,7 +28,7 @@ import { checkCues, type PebbleCue } from "../../../shared/pebble/cues";
 import { gazeToward, type Gaze } from "../../../shared/pebble/gaze";
 
 /* ================================================================================================================
- * §1 The grid (tools/audio/beatmap.json: 100 BPM, 18 frames per beat, 72 per bar, 32 bars = 2,304 frames at 30 fps)
+ * The grid (tools/audio/beatmap.json: 100 BPM, 18 frames per beat, 72 per bar, 32 bars = 2,304 frames at 30 fps)
  * ============================================================================================================== */
 
 export const FPS: number = beatmap.fps;
@@ -40,13 +50,18 @@ export const sec = (s: number): number => Math.round(s * FPS);
 /** Frames → seconds of composition time (pebble cues are in seconds). */
 export const time = (frame: number): number => frame / FPS;
 const isBeat = (f: number) => (f - GRID.firstDownbeat) % GRID.framesPerBeat === 0;
+const isEighth = (f: number) => (f - GRID.firstDownbeat) % (GRID.framesPerBeat / 2) === 0;
+const isBar = (f: number) => (f - GRID.firstDownbeat) % GRID.barFrames === 0;
 
 export const DURATION_FRAMES: number = GRID.frames;
+/** The drop (bar 10, f648): the pebble lands as the full stop of `pebble`. */
 export const REVEAL_FRAME: number = beatmap.reveal.frame;
-export const BREATH_FRAME: number = beatmap.cues.breath_frame;
 export const FINAL_CHORD_FRAME: number = beatmap.cues.final_chord_frame;
+/** The dead stop (bar 9 beat 3, f612–638): the drive digitally silent, the bed at most −50 dBFS by the score's own
+ *  notes, while the pebble hangs; the gap f639–647 follows, with the suck-back rising into the drop. */
+export const DEAD_STOP = { from: at(9, 3), to: at(10, 1, -9) } as const;
 
-export type SectionName = "hook" | "tension" | "build" | "reveal" | "proof" | "payoff" | "breakdown" | "endcard" | "final";
+export type SectionName = "hook" | "tension" | "reveal" | "proof" | "climax" | "breakdown" | "endcard" | "final";
 export const SECTIONS = Object.fromEntries(
   beatmap.sections.map((s) => [s.name, { from: s.start_frame, to: s.end_frame, bars: [s.first_bar, s.last_bar] as const }]),
 ) as Record<SectionName, { from: number; to: number; bars: readonly [number, number] }>;
@@ -59,17 +74,12 @@ export type ChapterId = "desktop" | "project" | "tested" | "model" | "pace" | "m
 
 const problems: string[] = [];
 const pending: string[] = [];
-/** Lines of the caption source (lane E), flattened. */
 const captionLines = new Set(
   (captions.cues as { kind: string; lines: string[] }[]).filter((c) => c.kind !== "sound").flatMap((c) => c.lines.filter((l) => !l.startsWith("["))),
 );
 
-/**
- * A line of on-screen text. It must be one of the chapter's `onScreen` lines in src/content/chapters.ts; until
- * FILM_SPEC §18's copy deltas land there, a line found in docs/film-captions.json (lane E) is accepted and listed by
- * pendingCopy(). Anything else is a problem (validateTimeline). Never throws at import, so a copy change upstream
- * fails the film's check loudly without breaking the project's other compositions.
- */
+/** A line of on-screen text: one of the chapter's `onScreen` lines in src/content/chapters.ts (or the bloub credit).
+ *  Anything else is a problem (validateTimeline); it never throws at import. */
 export function line(chapter: ChapterId, text: string): string {
   const c = chapters.find((ch) => ch.id === chapter);
   if (c && c.onScreen.includes(text)) return text;
@@ -78,12 +88,12 @@ export function line(chapter: ChapterId, text: string): string {
   else problems.push(`"${text}" (chapter ${chapter}) is in neither src/content/chapters.ts nor docs/film-captions.json`);
   return text;
 }
-/** On-screen lines still waiting for FILM_SPEC §18's chapters.ts deltas. */
+/** On-screen lines found only in the captions (they must reach chapters.ts too; LaunchFilm treats them as errors). */
 export const pendingCopy = (): readonly string[] => pending;
 
 /* ================================================================================================================
- * Geometry (§4). Frame positions are px; UI regions are CSS px of the captured window; desktop units are the
- * riverbed's 1600 × 1000 points.
+ * Geometry. Frame positions are px at each aspect's reference size; UI regions are CSS px of the captured window;
+ * desktop units are the riverbed's 1600 × 1000 points.
  * ============================================================================================================== */
 
 export interface Rect {
@@ -96,80 +106,63 @@ export interface Point {
   x: number;
   y: number;
 }
-/** The film's three compositions (FILM_SPEC §2, §22): 16:9, 1:1 and 9:16. */
+/** The film's three compositions: 16:9, 1:1 and 9:16. */
 export type Aspect = "wide" | "square" | "vertical";
+export const ASPECT_IDS: readonly Aspect[] = ["wide", "square", "vertical"];
 export interface PerAspect<T> {
   wide: T;
   square: T;
   vertical: T;
 }
-const per = <T,>(wide: T, square: T, vertical: T): PerAspect<T> => ({ wide, square, vertical });
+export const per = <T,>(wide: T, square: T, vertical: T): PerAspect<T> => ({ wide, square, vertical });
 
-/** The pet in the desktop world (S1). The desktop placement is ours (FILM_SPEC gives frame positions only): its
- *  centre sits where every S1 framing stays inside the wallpaper and frame 0 has the riverbed's lower stones in view. */
+/** The pet in the desktop world: its centre on the riverbed, the pebble's centre inside the expanded 384 × 456 chat
+ *  panel (pet-live-150's hidden avatar), the collapsed pet window's centre-to-foot, and its size at the desktop's scale
+ *  (148 desktop units). The loops read PET and PET_PANEL too. */
 export const PET = {
   centre: { x: 1080, y: 750 },
-  /** the pebble's centre inside the expanded 384 × 456 chat panel (§7.1; measured on the captures) */
   inPanel: { x: 326.7, y: 397.3 },
-  /** the collapsed pet window's pebble: body centre (55.3, 56.8), foot at 95 (pet-collapsed@3x) */
   centreToFoot: 38.2,
-  /** PebbleOnFilm size at the desktop's scale (§4: 148 desktop units) */
   size: 148,
 } as const;
 export const PET_FOOT: Point = { x: PET.centre.x, y: PET.centre.y + PET.centreToFoot };
-/** The expanded chat panel's top-left in desktop units. */
 export const PET_PANEL: Rect = { x: PET.centre.x - PET.inPanel.x, y: PET.centre.y - PET.inPanel.y, w: 384, h: 456 };
 export const DESKTOP_RECT: Rect = { x: 0, y: 0, w: 1600, h: 1000 };
 
 /**
- * S1's camera states: magnification and where the pebble's centre sits in the frame (§6 S1, §22). The stage framings
- * of the window world are film/framing.ts's (edge-checked on the real frames); G1's board-o-matic framings that lived
- * here went with the board (lane v2-film).
- *
- * The energetic recut (ENERGY_SPEC §5, measured on pet-live-error-light-hidden: the panel's header at CSS y 25–61, the
- * greeting 126–204, the composer 263–317, the toolbar 328–351, the pebble's centre at 397.3 and its foot at 435.5; the
- * answer's lines x 26–350.3): C0 stays the thumbnail; the click opens the chat on f18 and a 12-frame ramped move
- * (f19–30) makes room for it (C1, the whole panel, so the question types itself legibly); f72 is a punch-in cut to the
- * conversation, from the bubble to the pebble (C2), held to the dive.
- * The vertical (§22): the wallpaper is 1,000 desktop points tall and the frame 1,920 px, so no 9:16 view may zoom out
- * below m 1.92 and every view's centre sits where the riverbed still fills the frame (frame 0: m 3.4 with the pebble
- * at (540, 1080), the wallpaper's bottom edge 3 px under the frame's); its C1 keeps the whole panel inside the band.
+ * The desktop world's cameras (magnification m = frame px per desktop unit, and where the pebble's centre sits on the
+ * frame). The vertical never zooms out below m 1.92 (the wallpaper is 1,000 units tall, the frame 1,920 px).
+ * - COLD (bar 1, f0–71): the extreme close-up on the eyes, the pebble low and right of centre on the dark riverbed;
+ * - LAND (bar 11, f774–791): the pebble in its corner of the light riverbed, its size the lockup's (210 / 170 px), so
+ *   the hop from the lockup lands at the same scale;
+ * - CHAT (bars 12–13, f792–917): the whole quick-chat panel (the recut's C1, edge-checked by lane v2-film);
+ * - ANSWER (f918–935): a punch-in on the question and Pebble's answer, the pebble out of frame.
  */
-export const S1_CAMERA = {
-  /** C0, f0–18: frame 0, the thumbnail (unchanged) */
-  c0: { m: per(2.6, 2.6, 3.4), pebbleAt: per({ x: 1300, y: 640 }, { x: 640, y: 620 }, { x: 540, y: 1080 }) },
-  /** C1, f30 → hold to f71: the whole panel, header to toolbar in 16:9 ("pebble." at y 63; UI text 30.6 px) and 9:16
-   *  (the header at y 425, inside the band); the square centres the text, its header above the frame. The narrow m is
-   *  2.62, not the spec's 2.6, so the app's 13 px text reads at 34.1 px (the narrow floor, 34); the square's pebble
-   *  sits at y 846, not 840, so the posted question (CSS y 97.3 from 3.30 s) stays 60 px under the frame's top */
-  c1: { m: per(2.35, 2.62, 2.62), pebbleAt: per({ x: 1300, y: 938 }, { x: 900, y: 846 }, { x: 900, y: 1400 }) },
-  /**
-   * C2, f72 (hard cut, punch-in): the bubble to the pebble, held to the dive. Measured on the recording: at 5.43 s
-   * (f127) the feed scrolls up 17 CSS px as the answer takes its second line, so the question's first line moves to
-   * CSS y 80.3 (its box to 71). The spec's 16:9 m 2.9 at y 935 and square m 2.95 at y 951 put that line 16 px under
-   * the frame's top for f127–134, its box sliced. Here: 16:9 m 2.8 (+19 % on C1, text 36.4 px) and the square m 2.8
-   * (+7 %, the most the bubble-to-pebble height allows at 1,080 px; the answer's lines 83 px inside both sides), the
-   * pebble at y 945, its foot 28 px above the bottom. The header's status line ("Thinking", "Writing"; its ink ends
-   * at CSS y 59) sits wholly above the frame's top (at y 950 its descender showed as a sliver for f72–134), and the
-   * question's first line 105 px under the top to f126, 57 px for f127–134 after the app's scroll: 3 px inside the
-   * 60 px rule, because the two are 21 CSS px apart and m 2.82 or more would push the pebble's foot off the frame.
-   * The vertical keeps the spec's m 2.95: its band starts at y 250, and the line sits at 281 (the answer's lines 62 px
-   * inside both sides; its header shows whole in the phone UI's top zone).
-   */
-  c2: { m: per(2.8, 2.8, 2.95), pebbleAt: per({ x: 1300, y: 945 }, { x: 928, y: 945 }, { x: 949, y: 1216 }) },
-  /** where the pointer enters, frame px at C0 (above the frame and a little left of the pebble in 16:9 and 1:1; from
-   *  the left inside the band in 9:16) */
-  pointerFrom: per({ x: 1150, y: -60 }, { x: 500, y: -60 }, { x: -70, y: 700 }),
-  /** f135–143: the zoom through the pebble (the breath's nine frames, at(2, 4, 9)); hook.ts aims and scales it */
-  zoomThrough: { from: at(2, 4, 9), to: at(3), aim: { x: -20, y: 25 }, scale: 22 },
+export const DESK_CAMERA = {
+  cold: { m: per(7.0, 6.0, 7.5), pebbleAt: per({ x: 1180, y: 640 }, { x: 600, y: 620 }, { x: 560, y: 1000 }) },
+  land: { m: per(210 / PET.size, 170 / PET.size, 1.92), pebbleAt: per({ x: 1480, y: 760 }, { x: 790, y: 793 }, { x: 760, y: 1440 }) },
+  chat: { m: per(2.35, 2.62, 2.62), pebbleAt: per({ x: 1300, y: 938 }, { x: 900, y: 846 }, { x: 900, y: 1400 }) },
+  /** panel coordinates (the 384 × 456 quick chat): 16:9 the header's subtitle and the composer stay out (y 62–262);
+   *  1:1 and 9:16 keep the answer whole (334 px wide) with the pebble below the frame (9:16: the answer's last line
+   *  reaches into the caption band, where no caption plays in bars 12–13) */
+  answer: { m: per(5.4, 3.0, 3.14), centre: per({ x: 192, y: 162 }, { x: 192, y: 146 }, { x: 192, y: 48 }) },
+  /** where the cold open's pointer drifts in from, rests beside the face (inside the pet window: the attentive pose)
+   *  and slides away to (frame px) */
+  coldPointer: {
+    from: per({ x: 1990, y: 120 }, { x: 1140, y: 120 }, { x: 1140, y: 640 }),
+    rest: per({ x: 1560, y: 330 }, { x: 870, y: 330 }, { x: 860, y: 720 }),
+    away: per({ x: 2080, y: 1200 }, { x: 1180, y: 1200 }, { x: 1180, y: 2000 }),
+  },
+  /** where the star beat's pointer comes from (frame px) */
+  landPointerFrom: per({ x: 1990, y: 300 }, { x: 1140, y: 300 }, { x: 1140, y: 900 }),
 } as const;
 
 /* ================================================================================================================
- * §6 Shots
+ * Shots and beats (the blueprint's beat sheet)
  * ============================================================================================================== */
 
-export type World = "desktop" | "window" | "sage" | "paper";
-export type Transition = "cut" | "hard-cut" | "match-cut" | "carry" | "flood" | "zoom-through" | "object-world" | "camera";
+export type World = "desktop" | "night" | "window" | "sage" | "paper";
+export type Transition = "cut" | "hard-cut" | "match-cut" | "carry" | "flood" | "zoom-through" | "object-world" | "camera" | "ramp" | "dawn" | "slide";
 
 export interface Beat {
   id: string;
@@ -185,94 +178,115 @@ export interface Shot {
   to: number;
   world: World;
   transitionIn: Transition;
-  /** captured UI it uses */
   ui?: readonly string[];
   beats: readonly Beat[];
 }
 
 export const SHOTS: readonly Shot[] = [
   {
-    id: "S1",
+    id: "A1",
     chapter: "desktop",
     from: at(1),
-    to: at(3),
+    to: at(2),
     world: "desktop",
     transitionIn: "cut",
-    ui: ["pet-live-error (record.mjs, 3×, avatar hidden: R1)", "pet-live-01-greeting", "pet-live-02-thinking"],
+    beats: [{ id: "LOOK", from: at(1), to: at(2), note: "cold open: the eyes on the dark riverbed follow the pointer, blink near f20, look at the viewer at f54" }],
+  },
+  {
+    id: "A2",
+    chapter: "desktop",
+    from: at(2),
+    to: at(8),
+    world: "night",
+    transitionIn: "cut",
+    ui: ["main-live-film-150-dark (v1.5.0, retake 2b)"],
     beats: [
-      { id: "S1a", from: 0, to: 72, note: "the pebble on its desktop (m 2.6); the pointer from the upper left; click f36; the chat opens; C0 → C1 f40–63" },
-      { id: "S1b", from: 72, to: 144, note: "hard cut punch-in C2 (m 2.2): the sent question, Thinking; f126–143 zoom through the pebble" },
+      { id: "Q1", from: at(2), to: at(3), note: "\"What did it change?\" slammed (landed on the cut)" },
+      { id: "G1", from: at(3), to: at(4), note: "glimpse 1: the dates.py diff; Apply edit pressed on f198, the glimpse ends with the press" },
+      { id: "Q2", from: at(4), to: at(5), note: "\"Can I undo it?\"" },
+      { id: "G2", from: at(5), to: at(6), note: "glimpse 2: Done, the focus on Undo this edit (the card tracked as the drawer moves)" },
+      { id: "Q3", from: at(6), to: at(7), note: "\"Did it run the tests?\"" },
+      { id: "G3", from: at(7), to: at(8), note: "glimpse 3: the drawer's held state arrives on f445 (Pebble's change isn't verified yet.)" },
     ],
   },
   {
-    id: "S2",
-    chapter: "desktop",
-    from: at(3),
-    to: at(6),
-    world: "sage",
-    transitionIn: "zoom-through",
-    beats: [{ id: "S2", from: 144, to: 360, note: "three neutral questions, one per bar, (B) ink, centred" }],
-  },
-  {
-    id: "S3",
-    chapter: "desktop",
-    from: at(6),
-    to: at(8),
-    world: "sage",
-    transitionIn: "cut",
-    beats: [{ id: "S3", from: 360, to: 504, note: "T4 the intent line (C); the pebble rises in (H1, dark palette), looks up, leaps (H2)" }],
-  },
-  {
-    id: "S4",
+    id: "A3",
     chapter: "desktop",
     from: at(8),
     to: at(10),
+    world: "night",
+    transitionIn: "cut",
+    beats: [
+      { id: "TURN", from: at(8), to: at(9), note: "\"An agent shouldn't / grade its own work\" rises, calm" },
+      { id: "BUILD", from: at(9), to: at(10), note: "night steps to sage f576–600; the pebble peeks up, looks up, leaps on f612 and hangs through the dead stop" },
+    ],
+  },
+  {
+    id: "R1",
+    chapter: "desktop",
+    from: at(10),
+    to: at(12),
     world: "paper",
     transitionIn: "flood",
-    beats: [{ id: "S4", from: 504, to: 648, note: "lands as the full stop; paper floods out f504–517; (W) unroll + tracking settle; T5; roll back f614–628; H3 f634" }],
-  },
-  {
-    id: "S5",
-    chapter: "project",
-    from: at(10),
-    to: at(18),
-    world: "window",
-    transitionIn: "carry",
-    ui: ["main-live-film (record.mjs, 3×: R2)", "held-unverified", "main-done-timeline"],
     beats: [
-      { id: "S5a", from: 648, to: 720, note: "reads: the carry lands f652; Reading invoice_kit/dates.py; T6" },
-      { id: "S5b", from: 720, to: 864, note: "the approval card; T7 with its verbs; Apply edit f810; match cut f814 to Done + Undo this edit; ring" },
-      { id: "S5c", from: 864, to: 1008, note: "hard cut (chapter tested) on the whole run: the reply; AgentGuard holds f890; scrolled in by f914; push-in f954–977; T8 f936; Run the tests f990" },
-      { id: "S5d", from: 1008, to: 1152, note: "the Run isolated tests card; T9; Run tests f1080; Requesting isolated tests · 11 s" },
-      { id: "S5e", from: 1152, to: 1224, note: "Verified f1152; happy; T10; the check (16:9); pull back f1188–1211; to the gear" },
+      { id: "DROP", from: at(10), to: at(11), note: "the drop: the pebble lands as the full stop of `pebble`; paper floods out; \"A small companion for your Mac\"" },
+      { id: "STAR", from: at(11), to: at(12), note: "the star beat: the wordmark rolls back, the pebble hops down onto the light desktop (f774) as it slides in" },
     ],
   },
   {
-    id: "S6",
-    chapter: "model",
-    from: at(18),
-    to: at(23),
-    world: "window",
-    transitionIn: "match-cut",
-    ui: ["settings-models", "settings-permissions", "settings-permissions-auto", "settings-memory", "settings-memory-forgotten"],
+    id: "R2",
+    chapter: "desktop",
+    from: at(12),
+    to: at(14),
+    world: "desktop",
+    transitionIn: "cut",
+    ui: ["pet-live-150-light-hidden (v1.5.0)"],
     beats: [
-      { id: "S6a", from: 1224, to: 1332, note: "Settings › Models; T11 + T11s; Permissions tab f1332" },
-      { id: "S6b", from: 1332, to: 1440, note: "Permissions; T12 (C); Auto in project f1404 (match cut); Memory tab f1440" },
-      { id: "S6c", from: 1440, to: 1584, note: "the six layers; T13; pan to the records; forget f1530; swap f1542" },
+      { id: "CHAT", from: at(12), to: at(13, 4), note: "the quick chat at 1×: sent on f792, thinking, the answer whole on f898" },
+      { id: "ANSWER", from: at(13, 4), to: at(14), note: "punch-in on the question and the answer" },
     ],
   },
   {
-    id: "S7",
+    id: "R3",
+    chapter: "desktop",
+    from: at(14),
+    to: at(15),
+    world: "window",
+    transitionIn: "cut",
+    ui: ["main-welcome (v1.5.0, its own pebble hidden)"],
+    beats: [{ id: "WHOLE", from: at(14), to: at(15), note: "the whole workspace, \"Good to see you.\", the pebble in its home place" }],
+  },
+  {
+    id: "P1",
     chapter: "views",
-    from: at(23),
+    from: at(15),
+    to: at(21),
+    world: "window",
+    transitionIn: "hard-cut",
+    ui: ["main-dashboard", "settings-models", "settings-memory", "settings-memory-forgotten", "v150/settings-permissions(-auto)", "main-live-film-150 (the test-file card)", "main-challenge-live"],
+    beats: [
+      { id: "M1", from: at(15), to: at(16), note: "views: the chart grows to fill the stage" },
+      { id: "M2", from: at(16), to: at(17), note: "your model: the three ways in come forward on beats 1, 2 and 3" },
+      { id: "M3", from: at(17), to: at(18), note: "memory: a record is binned on f1170 and dissolves" },
+      { id: "M4", from: at(18), to: at(19), note: "permissions: from Ask for approval to Auto in project, chosen on f1260" },
+      { id: "M5", from: at(19), to: at(20), note: "your tests stay yours: the waiting test-file card's own reason" },
+      { id: "M6", from: at(20), to: at(21), note: "the scope challenge: Details opened on f1386, AgentGuard's evidence check" },
+    ],
+  },
+  {
+    id: "P2",
+    chapter: "tested",
+    from: at(21),
     to: at(26),
     world: "window",
     transitionIn: "hard-cut",
-    ui: ["main-dashboard", "main-quiz"],
+    ui: ["main-live-film-150 (v1.5.0, retake 2b)"],
     beats: [
-      { id: "S7a", from: 1584, to: 1656, note: "the Lisbon trip budget dashboard (m 1.25); T14" },
-      { id: "S7b", from: 1656, to: 1728, note: "object becomes the world: the chart panel to full bleed f1656–1675; hold" },
-      { id: "S7c", from: 1728, to: 1800, note: "hard cut to the quiz; f1782–1799 zoom through the A badge" },
+      { id: "C1", from: at(21), to: at(22), note: "the held run: the hold on f1453 in the drawer; f1494 the conversation's Blocked block" },
+      { id: "C2", from: at(22), to: at(23), note: "Run the tests (f1512); the Run isolated tests card; the person reads at 0.74×" },
+      { id: "C3", from: at(23), to: at(24), note: "Run tests (f1584); the card reads Running for exactly 2.4 s" },
+      { id: "C4", from: at(24), to: at(25), note: "the tests pass (f1656), the Result; Verified (f1723), Evidence before done" },
+      { id: "C5", from: at(25), to: at(26), note: "the run completes (f1725): the one celebration; the pull-back to the final reply" },
     ],
   },
   {
@@ -281,8 +295,8 @@ export const SHOTS: readonly Shot[] = [
     from: at(26),
     to: at(29),
     world: "sage",
-    transitionIn: "zoom-through",
-    beats: [{ id: "S8", from: 1800, to: 2016, note: "T15 + T15s, T16, T17; (B) ink, centred" }],
+    transitionIn: "hard-cut",
+    beats: [{ id: "S8", from: at(26), to: at(29), note: "Free and open source + Apache-2.0, No telemetry, Your keys stay in your Keychain (the recut's)" }],
   },
   {
     id: "S9",
@@ -291,121 +305,99 @@ export const SHOTS: readonly Shot[] = [
     to: GRID.frames,
     world: "paper",
     transitionIn: "flood",
-    beats: [{ id: "S9", from: 2016, to: 2304, note: "P-end lands f2016; flood; (W); T18; T19 + T20 on the final chord; T21 + T22" }],
+    beats: [{ id: "S9", from: at(29), to: GRID.frames, note: "the title, the final hit with Not notarized beside it, the URL, the small print (the recut's end card)" }],
   },
 ];
 
 /* ================================================================================================================
- * §8 On-screen text
+ * On-screen text
  * ============================================================================================================== */
 
-/** Roles (§3; PHILOSOPHY's three voices): Fraunces 350 for hero/headline/side/tagline lines, Inter for support, cta
- *  and small, Geist Mono with tabular numerals for anything carrying a number ("data": "Apache-2.0"; "mono": the URL). */
+/** Roles: Fraunces 350 for hero/headline/side/tagline lines, Inter for support, cta and small, Geist Mono for anything
+ *  carrying a number ("data": "Apache-2.0"; "mono": the URL). */
 export type TextRole = "hero" | "headline" | "side" | "tagline" | "support" | "data" | "cta" | "mono" | "small";
-/** (A) blur, (B) ink, (C) rise, fade; and (S) slam, the energetic recut's: the line lands ON its `in` frame, its 3-frame
- *  pre-roll falling before it (in the previous shot when `in` is a cut, so a seam line appears already landed). */
+/** (A) blur, (B) ink, (C) rise, fade; and (S) slam: the line lands ON its `in` frame, its 3-frame pre-roll before it (in
+ *  the previous shot when `in` is a cut, so a seam line appears already landed). */
 export type Entrance = "blur" | "ink" | "rise" | "fade" | "slam";
 
 export interface TextCue {
   id: string;
   chapter: ChapterId;
-  /** the lines as they break on screen (16:9; `squareLines` when the narrow compositions, 1:1 and 9:16, both 1,080 px
-   *  wide, break differently) */
+  /** the lines as they break on screen (16:9; `squareLines` when the narrow compositions break differently) */
   lines: readonly string[];
   squareLines?: readonly string[];
   role: TextRole;
   enter: Entrance;
   /** the first word's frame; for a slam, its landing frame (at rest from here) */
   in: number;
-  /** the frame the exit starts (gone 6 frames later); END = held to the end */
+  /** the frame the exit starts (gone 6 frames later); a frame on a cut means the cut takes it; END = held to the end */
   out: number;
-  /** explicit word frames (T7 builds with its verbs; for a slam, each word's landing frame) */
   wordStarts?: readonly number[];
-  /** where it sits: "centre" (y = the line block's centre), "baseline" (y = the first line's baseline), "column" */
+  /** "centre" (y = the block's centre), "baseline" (y = the first line's baseline), "column" (the window world's) */
   place: "centre" | "baseline" | "column";
   y?: PerAspect<number>;
-  /** a key line (the end card's), readable twice */
   key?: boolean;
-  /** column lines that sit under another cue (T11s under T11), by id */
+  /** column lines that sit under another cue, by id (none in the trailer) */
   under?: string;
-  /**
-   * A list item (lane G-fix, REVIEW-G2 P1-6): the questions (S2) and the facts (S8) build a left-aligned list. `x` is
-   * the list's left edge (px at the aspect's reference size; the block is centred on the frame by its widest line);
-   * from `dimAt` the line dims to LIST_DIM over 6 frames, as the next item inks in, and it stays until the list leaves.
-   */
+  /** list items (the claims): the list's left edge, and the frame it dims from */
   x?: PerAspect<number>;
   dimAt?: number;
-  /** ink every word of the line together (the list items' (B) ink lands whole on its beat) */
   inkTogether?: boolean;
 }
 
-/** The slam's pre-roll, frames at 30 fps (motion/spec.ts SLAM.preRollS, 0.1 s): the frames before a slam lands. */
 export const SLAM_PREROLL_FRAMES = 3;
-/** The hook's Enter (ENERGY_SPEC §5): the question is sent on beat 4 of bar 1; Pebble's own time runs at 1× from here. */
-export const HOOK_ENTER_FRAME = at(1, 4);
-
-/** A list's earlier items dim to 45 % (REVIEW-G2 P1-6); the current one stays at full contrast (lead addendum). */
 export const LIST_DIM = 0.45;
-/** Each list's left edge (px at the reference size), so that its widest line sits centred on the frame (measured on the
- *  renders: "What did it change?" 809 / 673 px wide, "Your keys stay in your Keychain" 1,297 px, "Free and open source"
- *  719 px in the square; the vertical is 1,080 px wide with the square's type, so its edges are the square's). */
-export const LIST_X = { questions: per(554, 202, 202), facts: per(310, 178, 178) } as const;
-
+/** The claims list's left edge (the recut's, measured on its renders). */
+export const LIST_X = { facts: per(310, 178, 178) } as const;
 export const END = GRID.frames + 6;
 
-/** A text cue, its words checked as one copy line. */
 const t = (c: TextCue): TextCue => {
   line(c.chapter, c.lines.join(" "));
   return c;
 };
 
+/** The night cards (bars 2, 4, 6): centred in each aspect's band (9:16's y 250–1670), dead still once landed. */
+const CARD_Y = per(540, 540, 960);
+
 export const TEXT: readonly TextCue[] = [
-  // S2, lane G-fix (REVIEW-G2 P1-6 and the lead's addendum): the three questions build a list, the checklist the film
-  // goes on to answer; the one before dims to 45 % as the next arrives; all three leave together f348–354.
-  // The energetic recut (ENERGY_SPEC §6, §7): each SLAMS onto its downbeat (in = the landing frame; its pre-roll is the
-  // 3 frames before, so the dims at f213 and f285 still start with it). T1 lands on the seam frame f144 already at
-  // rest: its pre-roll falls in the hook. T3 holds exactly 2.0 s, the last line of S2.
-  // The vertical (§22) centres each type world in the central band (y 250–1670): the questions on y 960, T4 above the
-  // pebble's rise, the lockup's baseline on y 830 with its lines under it, all above the caption band (y 1460).
-  t({ id: "T1", chapter: "desktop", lines: ["What did it change?"], role: "headline", enter: "slam", in: 144, out: 348, dimAt: 213, place: "centre", y: per(325, 350, 840), x: LIST_X.questions }),
-  t({ id: "T2", chapter: "desktop", lines: ["Can I undo it?"], role: "headline", enter: "slam", in: 216, out: 348, dimAt: 285, place: "centre", y: per(470, 470, 960), x: LIST_X.questions }),
-  t({ id: "T3", chapter: "desktop", lines: ["Did it run the tests?"], role: "headline", enter: "slam", in: 288, out: 348, place: "centre", y: per(615, 590, 1080), x: LIST_X.questions }),
-  t({ id: "T4", chapter: "desktop", lines: ["An agent shouldn't", "grade its own work"], role: "headline", enter: "rise", in: 360, out: 462, place: "centre", y: per(420, 420, 820) }),
-  t({ id: "T5", chapter: "desktop", lines: ["A small companion for your Mac"], role: "support", enter: "blur", in: 522, out: 612, place: "baseline", y: per(560, 530, 960) }),
-  t({ id: "T6", chapter: "project", lines: ["It reads", "your project"], role: "side", enter: "blur", in: 666, out: 718, place: "column" }),
-  // the energetic recut: T7 slams word by word with its verbs: "Review," with the review pose on the still frame after
-  // the camera move (f756), "apply," on the Apply edit click (f810), "undo" on the beat (f828, was f830)
-  t({ id: "T7", chapter: "project", lines: ["Review, apply,", "undo"], role: "side", enter: "slam", in: 756, out: 858, wordStarts: [756, 810, 828], place: "column" }),
-  // lane G-fix (REVIEW-G2 P0-1): T8 lands on the bar-14 downbeat (f936), after the held run is in view, not mid-scroll
-  t({ id: "T8", chapter: "tested", lines: ["AgentGuard checks", "the evidence"], role: "side", enter: "blur", in: 936, out: 1038, place: "column" }),
-  t({ id: "T9", chapter: "tested", lines: ["Tests run in", "an isolated copy"], role: "side", enter: "blur", in: 1044, out: 1140, place: "column" }),
-  // lane v2-film: in 16:9 T10 breaks after "Evidence", as the column's other statements do, so the check beside the
-  // Verified step (frame x 860, at the step's y, which the tilt puts level with the column's first line) stands clear
-  // of the words: on one line, "done" ended 6 px from the check and read as "done✓". The narrow aspects keep one line.
-  // the energetic recut: T10 slams onto Verified (f1152; its pre-roll f1149–1151 in the breath's last three frames)
-  t({ id: "T10", chapter: "tested", lines: ["Evidence", "before done"], squareLines: ["Evidence before done"], role: "side", enter: "slam", in: 1152, out: 1212, place: "column" }),
-  t({ id: "T11", chapter: "model", lines: ["Your model,", "your choice"], role: "side", enter: "blur", in: 1242, out: 1320, place: "column" }),
-  t({ id: "T11s", chapter: "model", lines: ["Even one on your Mac"], role: "support", enter: "blur", in: 1260, out: 1320, place: "column", under: "T11" }),
-  t({ id: "T12", chapter: "pace", lines: ["You set what", "it may do"], role: "side", enter: "rise", in: 1350, out: 1428, place: "column" }),
-  t({ id: "T13", chapter: "memory", lines: ["Memory you can", "read and forget"], role: "side", enter: "blur", in: 1458, out: 1578, place: "column" }),
-  // the energetic recut: T14 appears already landed on the second lift's hard cut (a slam on the cut frame)
-  t({ id: "T14", chapter: "views", lines: ["Views,", "not just text"], role: "side", enter: "slam", in: 1584, out: 1656, place: "column" }),
-  // S8, lane G-fix (REVIEW-G2 P1-6, P1-3): the facts build a list the same way; T16 lands on bar 27 (f1872), T17 on
-  // beat 107 (f1926); the list leaves together f1998–2004, before the end card's pebble enters the frame (≈ f2005).
-  // The energetic recut: T15 (already landed on the seam), T16 and T17 slam; "Apache-2.0" keeps its calm ink.
-  // T17 holds 2.4 s, the last line of S8.
-  // "Apache-2.0" keeps G2a's clearance under "open" (its capitals touched the "p" at §8's distance). Lane v2-film: it is
-  // set in Geist Mono (role "data"), the system's voice for anything that carries a number (PHILOSOPHY, "Type").
+  // The three questions (C-CH-1, word for word): each slams onto its bar's downbeat, appearing already landed on the
+  // cut, stays dead still and blurs out over its last 6 frames (the blueprint: "blurs out over its last 6 frames").
+  t({ id: "Q1", chapter: "desktop", lines: ["What did it change?"], role: "headline", enter: "slam", in: at(2), out: at(3, 1, -6), place: "centre", y: CARD_Y }),
+  t({ id: "Q2", chapter: "desktop", lines: ["Can I undo it?"], role: "headline", enter: "slam", in: at(4), out: at(5, 1, -6), place: "centre", y: CARD_Y }),
+  t({ id: "Q3", chapter: "desktop", lines: ["Did it run the tests?"], role: "headline", enter: "slam", in: at(6), out: at(7, 1, -6), place: "centre", y: CARD_Y }),
+  // The turn (C-CH-16, the one allowed intent framing): calm, mask rise, lines 4 frames apart; it stays while the
+  // pebble peeks up and looks at it, and leaves before the leap (7 words: 2.6 s needed, 3.2 s given).
+  t({ id: "T4", chapter: "desktop", lines: ["An agent shouldn't", "grade its own work"], role: "headline", enter: "rise", in: at(8), out: at(9, 2, 6), place: "centre", y: per(420, 420, 820) }),
+  // The drop's line (C-CH-2), calm: the pebble is the loud thing. It blurs in word by word as the wordmark unrolls
+  // (f650) and leaves on bar 11's downbeat, so the 30-s cut, whose range ends there, shows it whole (2.33 s, 6 words).
+  t({ id: "T5", chapter: "desktop", lines: ["A small companion for your Mac"], role: "support", enter: "blur", in: at(10, 1, 2), out: at(11), place: "baseline", y: per(560, 530, 960) }),
+  // The montage (bars 15–19): one line a bar in the window world's column, each taken by the next bar's cut.
+  t({ id: "MV", chapter: "views", lines: ["Views,", "not just text"], role: "side", enter: "slam", in: at(15), out: at(16), place: "column" }),
+  t({ id: "MM", chapter: "model", lines: ["Your model,", "your choice"], role: "side", enter: "blur", in: at(16), out: at(16, 4, 12), place: "column" }),
+  t({ id: "MMEM", chapter: "memory", lines: ["Memory you can", "read and forget"], role: "side", enter: "blur", in: at(17), out: at(18), place: "column" }),
+  t({ id: "MP", chapter: "pace", lines: ["You set what", "it may do"], role: "side", enter: "rise", in: at(18), out: at(19), place: "column" }),
+  t({ id: "MT", chapter: "project", lines: ["Your tests", "stay yours"], role: "side", enter: "slam", in: at(19), out: at(20), place: "column" }),
+  // The climax (C-CH-17, C-CH-5, C-AG-5). "Evidence before done" lands with Verified on f1723 (OVERRIDES §41: the 16th
+  // push into bar 25), not on an eighth; it holds through the pull-back.
+  // "AgentGuard checks the evidence" comes with the cut to the held run (the stopdown follows on f1453) and leaves before
+  // Run the tests, so the 30-s cut, which joins there, never shows it in part.
+  t({ id: "AG", chapter: "tested", lines: ["AgentGuard checks", "the evidence"], role: "side", enter: "blur", in: at(21), out: at(21, 4, 6), place: "column" }),
+  t({ id: "ISO", chapter: "tested", lines: ["Tests run in", "an isolated copy"], role: "side", enter: "blur", in: at(22, 3), out: at(23, 3, 6), place: "column" }),
+  t({ id: "EVD", chapter: "tested", lines: ["Evidence", "before done"], squareLines: ["Evidence before done"], role: "side", enter: "slam", in: 1723, out: at(25, 4, 6), place: "column" }),
+  // The breakdown and the end card: the recut's, frame for frame (lane v2-film, the energetic recut).
   t({ id: "T15", chapter: "open-source", lines: ["Free and open source"], role: "headline", enter: "slam", in: 1800, out: 1998, dimAt: 1869, place: "centre", y: per(290, 285, 735), x: LIST_X.facts }),
   t({ id: "T15s", chapter: "open-source", lines: ["Apache-2.0"], role: "data", enter: "ink", in: 1806, out: 1998, dimAt: 1869, inkTogether: true, place: "baseline", y: per(425, 400, 850), x: LIST_X.facts }),
   t({ id: "T16", chapter: "open-source", lines: ["No telemetry"], role: "headline", enter: "slam", in: 1872, out: 1998, dimAt: 1923, place: "centre", y: per(530, 505, 955), x: LIST_X.facts }),
   t({ id: "T17", chapter: "open-source", lines: ["Your keys stay in your Keychain"], squareLines: ["Your keys stay", "in your Keychain"], role: "headline", enter: "slam", in: 1926, out: 1998, place: "centre", y: per(690, 690, 1140), x: LIST_X.facts }),
   t({ id: "T18", chapter: "get", lines: ["A little help, right here."], role: "tagline", enter: "blur", in: 2088, out: END, place: "baseline", y: per(560, 520, 950), key: true }),
-  // the energetic recut: T19 slams onto the final hit (centred; its pre-roll fills the last breath's last three frames)
-  t({ id: "T19", chapter: "get", lines: ["Free for Macs with Apple silicon"], role: "cta", enter: "slam", in: 2160, out: END, place: "baseline", y: per(690, 630, 1060), key: true }),
-  t({ id: "T20", chapter: "get", lines: ["github.com/tohin003/Pebble"], role: "mono", enter: "rise", in: 2164, out: END, place: "baseline", y: per(770, 700, 1130), key: true }),
-  t({ id: "T21", chapter: "get", lines: ["Shown with sample data"], role: "small", enter: "fade", in: 2196, out: END, place: "baseline", y: per(852, 820, 1250) }),
-  t({ id: "T22", chapter: "get", lines: [bloubCredit], role: "small", enter: "fade", in: 2196, out: END, place: "baseline", y: per(892, 860, 1290) }),
+  // The final hit: "Free for Macs with Apple silicon" slams, and its limit sits right under it in the same voice and
+  // size (OVERRIDES §39: "Not notarized" beside the price line; C-F1-3, C-LIM-2). The URL and the small print move
+  // down to make room, still above every caption band.
+  t({ id: "T19", chapter: "get", lines: ["Free for Macs with Apple silicon"], role: "cta", enter: "slam", in: 2160, out: END, place: "baseline", y: per(676, 618, 1050), key: true }),
+  t({ id: "NN", chapter: "get", lines: ["Not notarized"], role: "cta", enter: "blur", in: 2160, out: END, place: "baseline", y: per(740, 676, 1110), key: true }),
+  t({ id: "T20", chapter: "get", lines: ["github.com/tohin003/Pebble"], role: "mono", enter: "rise", in: 2164, out: END, place: "baseline", y: per(814, 746, 1186), key: true }),
+  t({ id: "T21", chapter: "get", lines: ["Shown with sample data"], role: "small", enter: "fade", in: 2196, out: END, place: "baseline", y: per(866, 826, 1266) }),
+  t({ id: "T22", chapter: "get", lines: [bloubCredit], role: "small", enter: "fade", in: 2196, out: END, place: "baseline", y: per(902, 866, 1306) }),
 ];
 
 export const textById = (id: string): TextCue => {
@@ -414,14 +406,14 @@ export const textById = (id: string): TextCue => {
   return c;
 };
 
-/** The wordmark (W1, W2): the unroll and, on the reveal, the tracking settle (§3, §6 S4, S9). */
+/** The wordmark: the drop's unroll (with the tracking settle) and roll-back, and the title's unroll. */
 export const WORDMARK = {
-  w1: { unroll: { at: 506, dur: 15 }, settle: { at: 506, to: 529, from: "0.04em", toTracking: "-0.035em" }, rollBack: { at: 614, dur: 15 } },
+  w1: { unroll: { at: 650, dur: 15 }, settle: { at: 650, to: 673, from: "0.04em", toTracking: "-0.035em" }, rollBack: { at: 738, dur: 15 } },
   w2: { unroll: { at: 2018, dur: 15 } },
 } as const;
 
 /* ================================================================================================================
- * §9 The pebble: instances, hops, cues
+ * The pebble: instances, hops, cues
  * ============================================================================================================== */
 
 export interface HopSpec {
@@ -431,12 +423,13 @@ export interface HopSpec {
   duration: number;
   from: PerAspect<Point>;
   to: PerAspect<Point>;
-  /** the flight's timing (pebble/acting.ts Hop.timing): linear progress → the progress the flight uses; identity if unset */
+  /** the flight's timing (pebble/acting.ts Hop.timing): linear progress → the progress the flight uses */
   timing?: (u: number) => number;
+  /** apex height above the straight line between the feet, px (default 0.45 × the body's height) */
+  height?: number;
 }
 
-/** A CSS cubic-bezier(x1, y1, x2, y2) easing as pure arithmetic (this module stays free of Remotion): Newton steps on
- *  x(t) from t = x, bisection when they stall. */
+/** A CSS cubic-bezier(x1, y1, x2, y2) easing as pure arithmetic (this module stays free of Remotion). */
 function cubicBezier(x1: number, y1: number, x2: number, y2: number): (x: number) => number {
   const poly = (t: number, a1: number, a2: number) => ((1 - 3 * a2 + 3 * a1) * t + (3 * a2 - 6 * a1)) * t * t + 3 * a1 * t;
   const slope = (t: number, a1: number, a2: number) => 3 * (1 - 3 * a2 + 3 * a1) * t * t + 2 * (3 * a2 - 6 * a1) * t + 3 * a1;
@@ -464,17 +457,16 @@ function cubicBezier(x1: number, y1: number, x2: number, y2: number): (x: number
     return poly(t, y1, y2);
   };
 }
-/** EASE.enter (motion/spec.ts, bezier(0.16, 1, 0.3, 1)) as pure arithmetic. */
 const EASE_ENTER = cubicBezier(0.16, 1, 0.3, 1);
 
 /**
- * H2's hang (ENERGY_SPEC §6): the leap's 18 frames, re-timed. It covers 45 % of its path by frame 8 (EASE.enter, the
- * take-off's burst), hangs at the apex through frames 8–14 covering only 10 % (linear), then darts the last 45 % in
- * frames 14–18 on t², landing on the drop at full speed. Take-off and landing keep their frames (0 → 0, 1 → 1).
+ * The leap's hang through the dead stop (bar 9): 36 frames from take-off (f612) to the drop (f648). It covers 45 % of
+ * its path by f618 (EASE.enter, the take-off's burst), hangs at the apex over f618–642 covering only 10 % (linear),
+ * then darts the last 45 % in f642–648 on t², landing on the drop at full speed (0 → 0 and 1 → 1 keep the frames).
  */
 export const HANG = (u: number): number => {
-  const a = 8 / 18;
-  const b = 14 / 18;
+  const a = 6 / 36;
+  const b = 30 / 36;
   if (u <= 0) return 0;
   if (u >= 1) return 1;
   if (u < a) return 0.45 * EASE_ENTER(u / a);
@@ -482,81 +474,113 @@ export const HANG = (u: number): number => {
   const w = (u - b) / (1 - b);
   return 0.55 + 0.45 * w * w;
 };
-/** G2a: H1 starts at y 1200, not §9.2's 1150: at 1150 the 210 px pebble's top (y 1041) showed at the frame's bottom
- *  edge through S3's first bar; at 1200 it is fully below the frame until it rises. The vertical's (§22) rise starts
- *  under the frame (y 2050) and lands at y 1300, above the caption band; its lockup foot is (806, 832) and its spot in
- *  the window world (930, 660), on its line at the text band's right end. */
+
+/** The lockup's foot (the reveal and the end card) and the pebble's size in the type worlds. */
+export const LOCKUP_FOOT = per({ x: 1295, y: 422 }, { x: 806, y: 402 }, { x: 806, y: 832 });
+export const TYPE_PEBBLE = per(210, 170, 170);
+/** The pebble's body height in frame px at a viewBox box of `size` px. */
+export const bodyPx = (size: number) => (BODY.height * size) / VIEWBOX_SIZE;
+/** Bar 9's peek: the foot below the frame's bottom edge so that the eyes just clear it (the body's lower 40 %). */
+export const PEEK_FOOT = per(
+  { x: 960, y: 1080 + 0.4 * bodyPx(210) },
+  { x: 540, y: 1080 + 0.4 * bodyPx(170) },
+  { x: 540, y: 1670 + 0.4 * bodyPx(170) },
+);
+/** Where the star beat's hop lands: the desktop pet's foot under the LAND camera (frame px). */
+export const landFoot = (a: Aspect): Point => {
+  const c = DESK_CAMERA.land;
+  return { x: c.pebbleAt[a].x, y: c.pebbleAt[a].y + PET.centreToFoot * c.m[a] };
+};
+
 export const HOPS: readonly HopSpec[] = [
-  { id: "H1", at: 14.4, duration: 0.5, from: per({ x: 960, y: 1200 }, { x: 540, y: 1200 }, { x: 540, y: 2050 }), to: per({ x: 960, y: 880 }, { x: 540, y: 880 }, { x: 540, y: 1300 }) },
-  // the energetic recut: H2 takes off on f486 for 0.6 s (was f490 for 0.467 s) and hangs through the composed breath,
-  // landing on the drop (f504; validateTimeline's rule)
-  { id: "H2", at: time(486), duration: 0.6, timing: HANG, from: per({ x: 960, y: 880 }, { x: 540, y: 880 }, { x: 540, y: 1300 }), to: per({ x: 1295, y: 422 }, { x: 806, y: 402 }, { x: 806, y: 832 }) },
-  { id: "H3", at: time(634), duration: 0.6, from: per({ x: 1295, y: 422 }, { x: 806, y: 402 }, { x: 806, y: 832 }), to: per({ x: 330, y: 900 }, { x: 940, y: 300 }, { x: 930, y: 660 }) },
-  { id: "H4", at: time(2002), duration: 0.467, from: per({ x: 2050, y: 1180 }, { x: 1180, y: 1180 }, { x: 1180, y: 2010 }), to: per({ x: 1295, y: 422 }, { x: 806, y: 402 }, { x: 806, y: 832 }) },
+  // H1, the peek (bar 9): the crown rises out of the frame's bottom edge from f576; the eyes clear it by f582
+  { id: "H1", at: time(576), duration: 0.2, height: 10, from: per({ x: 960, y: 1240 }, { x: 540, y: 1200 }, { x: 540, y: 1790 }), to: PEEK_FOOT },
+  // H2, the leap: take-off on the dead stop's first frame (f612), the hang, the landing on the drop (f648)
+  { id: "H2", at: time(at(9, 3)), duration: 1.2, timing: HANG, from: PEEK_FOOT, to: LOCKUP_FOOT },
+  // H3, the star beat: from the lockup down onto the light desktop as it slides in (take-off f756, lands f774)
+  { id: "H3", at: time(756), duration: 0.6, from: LOCKUP_FOOT, to: per(landFoot("wide"), landFoot("square"), landFoot("vertical")) },
+  // H4, into the end card (the recut's): lands on bar 29 as the full stop of `pebble.`
+  { id: "H4", at: time(2002), duration: 0.467, from: per({ x: 2050, y: 1180 }, { x: 1180, y: 1180 }, { x: 1180, y: 2010 }), to: LOCKUP_FOOT },
 ];
 
+/**
+ * The pebble instances. `offset` shifts an instance's engine clock (and its cues with it), so its natural blink
+ * schedule falls where the beat wants one: the cold open's near f20, the star beat's near f785. Poses and looks keep
+ * their film frames.
+ */
 export const PEBBLE_INSTANCES = {
-  /** inside the desktop world at the pet's place, scaled by the camera, light palette */
-  desk: { from: 0, to: 144 },
-  /** off-frame below, rises in (H1), leaps (H2), carries (H3); dark until the reveal flood (f504), then light */
-  main: { from: 432, to: 1666, start: per({ x: 960, y: 1200 }, { x: 540, y: 1200 }, { x: 540, y: 2050 }), hops: ["H1", "H2", "H3"], lightFrom: 504 },
-  /** the end card's: off-frame lower right, H4; dark until f2016, then light */
-  end: { from: 1999, to: GRID.frames, start: per({ x: 2050, y: 1180 }, { x: 1180, y: 1180 }, { x: 1180, y: 2010 }), hops: ["H4"], lightFrom: 2016 },
+  /** bar 1: in the dark desktop world at the pet's place, the dark theme's colours (tokens.css@v1.5.0: #b4cda6, #23351f) */
+  open: { from: 0, to: 72, offset: 22 },
+  /** bars 9–11: peeks up (H1), leaps (H2) to the lockup, hops down onto the desktop (H3); dark until the flood reaches it */
+  main: { from: 576, to: at(12), start: per({ x: 960, y: 1240 }, { x: 540, y: 1200 }, { x: 540, y: 1790 }), hops: ["H1", "H2", "H3"], lightFrom: REVEAL_FRAME, offset: 36 },
+  /** bars 12–13: in the light desktop world at the pet's place (the same engine clock as `main`) */
+  desk: { from: at(12), to: at(13, 4), offset: 36 },
+  /** bar 14: in the home pebble's place of the whole window */
+  whole: { from: 936, to: 1008, offset: 0 },
+  /** bars 21–25: on its line at the window world's spot */
+  climax: { from: 1440, to: 1800, offset: 0 },
+  /** the end card's: off frame lower right, H4; dark until f2016, then light */
+  end: { from: 1999, to: GRID.frames, start: per({ x: 2050, y: 1180 }, { x: 1180, y: 1180 }, { x: 1180, y: 2010 }), hops: ["H4"], lightFrom: 2016, offset: 0 },
 } as const;
 
-/** §9.3, the static cues (the pointer-driven look cues of f8–30, 780–826, 960–1000, 1050–1090 and 1196–1555 are computed
- *  by the scenes from the cursor with gazeToward and merged in). The square and the vertical differ only in looks,
- *  each pointing where its own frame puts the target (quantised to 1/8). */
 const cue = (frame: number, c: Omit<PebbleCue, "at">): PebbleCue => ({ at: time(frame), ...c });
 type Look = { x: number; y: number };
 const look = (a: Aspect, wide: Look, square: Look, vertical: Look): Look => per(wide, square, vertical)[a];
-/**
- * Where the eyes look before frame 0 (the f−15 cue): toward the pointer's entry point, as the app's gaze rule computes
- * it (gazeToward from the pebble's box at C0, reach 200 desktop points × m; film/gaze.ts does the same for the pointer
- * on screen), so the thumbnail looks somewhere and the eyes are already turned where the pointer comes from.
- */
+
+/** The cold open's first look (before frame 0): toward the pointer's entry point, as the app's gaze rule computes it
+ *  (gazeToward from the pebble's box under COLD, reach 200 desktop units × m). */
 export function entryLook(a: Aspect): Gaze {
-  const m = S1_CAMERA.c0.m[a];
-  const centre = S1_CAMERA.c0.pebbleAt[a];
+  const m = DESK_CAMERA.cold.m[a];
+  const centre = DESK_CAMERA.cold.pebbleAt[a];
   const unit = (PET.size * m) / VIEWBOX_SIZE;
   const foot = { x: centre.x, y: centre.y + PET.centreToFoot * m };
   const w = BODY.width * unit;
   const h = BODY.height * unit;
   const box = { left: foot.x - w / 2, top: foot.y - BODY.bottom * unit - h / 2, width: w, height: h };
-  const from = S1_CAMERA.pointerFrom[a];
+  const from = DESK_CAMERA.coldPointer.from[a];
   return gazeToward(from.x, from.y, box, 200 * m) ?? { x: 0, y: 0 };
 }
+
+/**
+ * The static cues, as the app's reducer (companionState.ts@v1.5.0) poses each moment the film shows (the pointer-driven
+ * looks are computed by film/gaze.ts and merged in):
+ * - bar 1: idle; hover (the "attentive" pose) while the pointer is in the pet window; the look at the viewer on f54;
+ * - bars 9–11: idle while it peeks and looks up; tap as it lands as the full stop (the recut's reveal); idle;
+ * - bars 12–13 (pet-live-150, 1×): sending on the send (f792); thinking (the app from f799; 14 frames later so the
+ *   engine's 0.45 s morph shows it); the 3-frame writing before the run completes is left out (the app's own morph
+ *   never reaches it); idle when the task completes (f900). The app turns happy at the host's idle (f918, 7.20 s):
+ *   the film punches in on the answer on that beat, with the pebble out of frame, so the trailer keeps one celebration;
+ * - bar 14: idle (the home pebble the capture shows);
+ * - bars 21–25: writing while the repair reply streams (from before the cut), blocked at the hold (f1453), the "!" of
+ *   review while the tests card waits and while its tests run (the run stays waiting_approval), thinking when the run
+ *   resumes (f1656), happy from the app's own completion and idle (f1725): the film's one celebration;
+ * - the end card: the recut's.
+ */
 function cuesFor(a: Aspect): PebbleCue[] {
   return [
-    // the hook (ENERGY_SPEC §5), as the app's reducer poses it: tap on the click, then sending, thinking, writing. No
-    // hover: the pointer is in the pet window under 14 frames before the tap (the engine's 0.45 s morph), so the
-    // app's tap supersedes it. The pointer-driven looks of f1–27 come from film/gaze.ts.
     cue(-15, { look: entryLook(a), note: "before frame 0 the eyes turn to where the pointer will enter, so the thumbnail looks somewhere" }),
-    cue(18, { pose: "tap", note: "the click opens the quick chat (tap lasts 1.2 s, to f54)" }),
-    cue(30, { look: null, note: "the pointer has faded" }),
-    cue(54, { pose: "sending", note: "Enter: the message is sent (3.00 s)" }),
-    cue(72, { pose: "thinking", note: "queued at 3.15 s, Thinking from 3.30 s; on the cut" }),
-    cue(102, { pose: "writing", note: "the answer's first word (4.60 s)" }),
-    cue(144, { pose: "idle", note: "not drawn until f432" }),
-    cue(440, { look: { x: 0, y: -0.75 }, note: "looks up at T4" }),
-    // the energetic recut: H2 takes off on f486 (was f490), so the eyes lead it from f477 (was f481)
-    cue(477, { look: look(a, { x: 0.625, y: -0.75 }, { x: 0.5, y: -0.875 }, { x: 0.5, y: -0.875 }), note: "eyes lead the leap" }),
-    cue(504, { pose: "tap", note: "lands: the reveal" }),
-    cue(520, { look: null }),
-    cue(540, { pose: "idle", note: "tap ends (1.2 s)" }),
-    cue(624, { look: look(a, { x: -0.875, y: 0.5 }, { x: 0.75, y: -0.625 }, { x: 0.625, y: -0.75 }), note: "eyes lead the carry" }),
-    cue(652, { pose: "reading", note: "lands in the window world" }),
-    cue(660, { look: look(a, { x: 0.875, y: -0.375 }, { x: -0.875, y: 0.5 }, { x: -0.625, y: 0.75 }), note: "toward the status line" }),
-    cue(711, { pose: "editing", note: "inside the f708–714 blink" }),
-    cue(756, { pose: "review", note: "the edit card waits (\"!\"); on f756, with \"Review,\", after the f720–753 camera move, so the morph plays on a still frame (REVIEW-G2 P1-4)" }),
-    cue(864, { pose: "thinking" }),
-    cue(890, { pose: "blocked", note: "verification required (the hold lands at f890 on the re-keyed S5c, REVIEW-G2 P0-1)" }),
-    cue(995, { pose: "review", note: "the Run isolated tests card waits" }),
-    cue(1094, { pose: "testing" }),
-    cue(1161, { pose: "writing", note: "after Verified, Pebble writes its final reply" }),
-    cue(1204, { pose: "happy", note: "the verified run completes (the one celebration)" }),
-    cue(1339, { pose: "idle", note: "happy ends after 4.5 s, as in the app" }),
-    cue(1584, { look: look(a, { x: 0.875, y: -0.375 }, { x: -0.875, y: 0.5 }, { x: -0.75, y: 0.625 }), note: "the dashboard" }),
+    cue(0, { pose: "idle" }),
+    cue(14, { pose: "hover", note: "the pointer is in the pet window (the app's attentive pose)" }),
+    cue(40, { pose: "idle", note: "the pointer has left the pet window" }),
+    cue(54, { look: { x: 0, y: 0 }, note: "looks straight at the viewer" }),
+    cue(72, { look: null }),
+    cue(594, { look: { x: 0, y: -0.875 }, note: "the peek: looks up at the line" }),
+    cue(603, { look: look(a, { x: 0.375, y: -1 }, { x: 0.375, y: -1 }, { x: 0.375, y: -1 }), note: "eyes lead the leap toward the lockup" }),
+    cue(REVEAL_FRAME, { pose: "tap", note: "lands as the full stop: the drop" }),
+    cue(REVEAL_FRAME + 12, { look: null }),
+    cue(684, { pose: "idle", note: "tap ends (1.2 s)" }),
+    cue(744, { look: look(a, { x: 0.25, y: 0.875 }, { x: 0, y: 0.875 }, { x: 0, y: 0.875 }), note: "eyes lead the hop down" }),
+    cue(780, { look: null }),
+    cue(at(12), { pose: "sending", note: "the question is sent (Enter, 3.00 s)" }),
+    cue(806, { pose: "thinking", note: "Thinking (3.233 s on f799)" }),
+    cue(900, { pose: "idle", note: "the task completes (6.60 s)" }),
+    cue(at(14), { pose: "idle", note: "the home pebble (main-welcome@v1.5.0)" }),
+    cue(1436, { pose: "writing", note: "the repair reply streams into the drawer (13.47–13.90 s)" }),
+    cue(1453, { pose: "blocked", note: "verification required (14.033 s): AgentGuard holds the task" }),
+    cue(1517, { pose: "review", note: "the Run isolated tests card waits (16.133 s); its tests run inside the approval" }),
+    cue(1656, { pose: "thinking", note: "the tests end (20.20 s); the run is queued and running again" }),
+    cue(1725, { pose: "happy", note: "the run completes (22.50 s), the host's idle on the same frame: the one celebration" }),
+    cue(1800, { pose: "idle", note: "not drawn until the end card" }),
     cue(1999, { look: look(a, { x: -0.75, y: -0.75 }, { x: -0.375, y: -0.875 }, { x: -0.25, y: -0.875 }), note: "P-end: eyes lead the landing" }),
     cue(2016, { pose: "tap", note: "lands in the end-card lockup" }),
     cue(2030, { look: null }),
@@ -566,35 +590,34 @@ function cuesFor(a: Aspect): PebbleCue[] {
   ];
 }
 export const FILM_PEBBLE_CUES: PerAspect<readonly PebbleCue[]> = per(cuesFor("wide"), cuesFor("square"), cuesFor("vertical"));
+/** The one celebration: the app's own completion of the held run (source 22.50 s on f1725). */
+export const CELEBRATION_FRAME = 1725;
 
 /* ================================================================================================================
- * §10 Clicks, §11 sound effects, §12 seams
+ * Clicks, sound effects, mix automation, seams
  * ============================================================================================================== */
 
 export interface Click {
   frame: number;
   target: string;
   shot: string;
+  /** the recording's own click time (seconds) and which map shows it, when the click is the app's real one */
+  source?: { map: SourceMapId; s: number };
 }
-/** The energetic recut (ENERGY_SPEC §3, §5): the hook's click moves from f36 to f18 (beat 2) by design, and the
- *  recording's click time (0.60 s) is still drawn on the click frame; every other click frame stays. */
 export const CLICKS: readonly Click[] = [
-  { frame: 18, target: "the pebble", shot: "S1a" },
-  { frame: 810, target: "Apply edit", shot: "S5b" },
-  { frame: 990, target: "Run the tests", shot: "S5c" },
-  { frame: 1080, target: "Run tests", shot: "S5d" },
-  { frame: 1224, target: "Settings (the gear)", shot: "S5e" },
-  { frame: 1332, target: "Permissions tab", shot: "S6a" },
-  { frame: 1404, target: "Auto in project", shot: "S6b" },
-  { frame: 1440, target: "Memory tab", shot: "S6b" },
-  { frame: 1530, target: "the bin (Forget this memory)", shot: "S6c" },
+  { frame: at(3, 4), target: "Apply edit (invoice_kit/dates.py)", shot: "G1", source: { map: "g1", s: 276 / 30 } },
+  { frame: at(17, 2), target: "the bin (Forget this memory)", shot: "M3" },
+  { frame: at(18, 3), target: "Auto in project", shot: "M4" },
+  { frame: at(20, 2), target: "Details (the refused step)", shot: "M6", source: { map: "m6", s: 270 / 30 } },
+  { frame: at(22), target: "Run the tests", shot: "C1", source: { map: "climax", s: 480 / 30 } },
+  { frame: at(23), target: "Run tests", shot: "C2", source: { map: "climax", s: 534 / 30 } },
 ];
 
-/** Roles of tools/audio/sfx_kit.json. The energetic recut adds impact, ui, rim, key and thump; pop, hit and shimmer
- *  stay in the kit, unused (the pitched pops, the reveal's soft hit and the shimmer left the film). */
-export type SfxRole = "click" | "pop" | "tick" | "thud" | "whoosh" | "riser" | "hit" | "shimmer" | "impact" | "ui" | "rim" | "key" | "thump";
+/** Roles of tools/audio/sfx_kit.json. `suck`: the reverse swell that ends on a hit inside a breath gap (the trailer's;
+ *  the score's own stems carry the other suck-backs, which a gap would swallow). */
+export type SfxRole = "click" | "pop" | "tick" | "thud" | "whoosh" | "riser" | "hit" | "shimmer" | "impact" | "ui" | "rim" | "key" | "thump" | "suck";
 export interface SfxCue {
-  /** the PICTURE frame; the exporter puts the peak one frame later (the riser's END on the reveal, sfx_kit.json) */
+  /** the PICTURE frame; the exporter puts the peak one frame later (a suck-back's END sits on its frame) */
   frame: number;
   role: SfxRole;
   take: string;
@@ -603,95 +626,85 @@ export interface SfxCue {
   duckDb?: number;
 }
 /**
- * The energetic recut's effects (ENERGY_SPEC §8.4): designed UI sounds on real events, impacts on the hits, the one
- * riser. G2a: every click's pan is §11's 0.4 × (x − W/2)/(W/2) at the pointer's 16:9 frame x on its click-down frame,
- * as the animated film places it (film/framing.ts pointerSpans, film/hook.ts). Each effect peaks at picture + 1 (the
- * exporter's job), except the riser, whose end sits on the reveal. At most three sound at once (export-cues.ts).
- * - Unpitched only: ui_done replaces the tuned pop_a (f814), ui_forget the pop_c plip (it sat on f1542, it now runs
- *   under the dissolve from the click), impact_a the reveal's soft_hit_b, ui_verified the shimmer.
- * - The hold's clock (OVERRIDES §35 decision 3, §36): a rim tick on every beat, f900–972, alternating a and b, as
- *   §8.4 has it. The ladder started on beats 1 and 3 only and went to every beat because the classifier stayed clean
- *   (the score lane, part 2, on the final masters: the hold window 29–34 s reads phone 0.166 web / 0.171 social /
- *   0.164 x30, against 0.109 / 0.109 / 0.0 on beats 1 and 3; no voice or alarm label). 36 effects.
- * - Lane fin-audio (OVERRIDES §19): no pop on the end-card landing; its thud keeps the weight, now with impact_b.
+ * The trailer's effects (the blueprint's music §11 and beat sheet, OVERRIDES §41): designed UI sounds on the real
+ * events, the kit's impacts on the hits the score doesn't carry alone, the suck-backs that live inside the breath gaps,
+ * the rim ticks that keep the beat in both holds, and a whoosh on each montage cut. Pebble 1.5.0 makes no sounds: these
+ * are the film's sound design (the description says so). The score carries the question hits, the riser into the dead
+ * stop, the crashes and the downlifter. Each effect peaks at picture + 1 (the exporter's job); at most three at once.
  */
 export const SFX: readonly SfxCue[] = [
-  { frame: 18, role: "click", take: "click_a", event: "the pebble is clicked", pan: 0.13 },
-  { frame: 54, role: "key", take: "tick_c", event: "the message is sent (Enter)" },
-  // lane G-fix (REVIEW-G2 P1-2): the dives fill the frame on f143 / f1799, so each whoosh peaks on the world change
-  { frame: 143, role: "whoosh", take: "whoosh_b", event: "into the sage field (zoom through the pebble)" },
-  { frame: 504, role: "riser", take: "riser", event: "bars 6–7, its end on the reveal" },
-  { frame: 504, role: "impact", take: "impact_a", event: "the drop: the pebble lands as the full stop", duckDb: 2.5 },
-  { frame: 504, role: "thud", take: "thud_a", event: "texture under the drop" },
-  { frame: 648, role: "whoosh", take: "whoosh_a", event: "the carry into the window world" },
-  { frame: 722, role: "ui", take: "ui_card", event: "the Details drawer opens with the edit card" },
-  { frame: 810, role: "click", take: "click_b", event: "Apply edit", pan: 0.3 },
-  { frame: 814, role: "ui", take: "ui_done", event: "Done" },
-  { frame: 890, role: "ui", take: "ui_lock", event: "AgentGuard holds the task" },
-  { frame: 900, role: "rim", take: "rim_a", event: "the hold's clock (bar 13, beat 3)" },
-  { frame: 918, role: "rim", take: "rim_b", event: "the hold's clock (bar 13, beat 4)" },
-  { frame: 936, role: "rim", take: "rim_a", event: "the hold's clock (bar 14, beat 1)" },
-  { frame: 936, role: "thump", take: "soft_hit_a", event: "T8 lands in the hold" },
-  { frame: 954, role: "rim", take: "rim_b", event: "the hold's clock (bar 14, beat 2)" },
-  { frame: 972, role: "rim", take: "rim_a", event: "the hold's clock (bar 14, beat 3)" },
-  { frame: 990, role: "click", take: "click_c", event: "Run the tests", pan: 0.09 },
-  { frame: 1080, role: "click", take: "click_a", event: "Run tests", pan: 0.3 },
-  { frame: 1094, role: "tick", take: "tick_a", event: "\"Requesting isolated tests\" row" },
-  { frame: 1146, role: "tick", take: "tick_b", event: "the app's own \"· 11 s\", alone in the breath" },
-  { frame: 1152, role: "impact", take: "impact_b", event: "Verified", duckDb: 1.5 },
-  { frame: 1152, role: "ui", take: "ui_verified", event: "Verified" },
-  { frame: 1224, role: "click", take: "click_b", event: "Settings", pan: 0.37 },
-  { frame: 1332, role: "click", take: "click_c", event: "Permissions tab", pan: 0.12 },
-  { frame: 1404, role: "click", take: "click_a", event: "Auto in project", pan: 0.06 },
-  { frame: 1440, role: "click", take: "click_b", event: "Memory tab", pan: 0.21 },
-  { frame: 1530, role: "click", take: "click_c", event: "the bin", pan: 0.37 },
-  { frame: 1530, role: "ui", take: "ui_forget", event: "the record dissolves" },
-  { frame: 1584, role: "impact", take: "impact_a", event: "the second lift", duckDb: 1.5 },
-  { frame: 1665, role: "whoosh", take: "whoosh_c", event: "the chart becomes the world (its fastest frame)" },
-  { frame: 1799, role: "whoosh", take: "whoosh_a", event: "into the sage field (zoom through the badge)" },
-  { frame: 1800, role: "impact", take: "impact_b", event: "the breakdown's one hit" },
-  { frame: 2016, role: "thud", take: "thud_b", event: "the end-card landing", duckDb: 1.5 },
-  { frame: 2016, role: "impact", take: "impact_b", event: "the end-card landing" },
-  { frame: 2160, role: "impact", take: "impact_a", event: "the final hit", duckDb: 2 },
+  { frame: at(2), role: "suck", take: "suck_a", event: "the suck-back into the first question (inside the f63 gap)" },
+  { frame: at(3, 4), role: "click", take: "click_b", event: "Apply edit (glimpse 1)", pan: 0.18 },
+  { frame: at(5), role: "ui", take: "ui_done", event: "Done, with Undo this edit, on the cut" },
+  { frame: 445, role: "ui", take: "ui_lock", event: "AgentGuard holds the task (glimpse 3): the music stops with it" },
+  { frame: at(7, 2), role: "rim", take: "rim_a", event: "the hold's clock (bar 7, beat 2)" },
+  { frame: at(7, 3), role: "rim", take: "rim_b", event: "the hold's clock (bar 7, beat 3)" },
+  { frame: at(7, 4), role: "rim", take: "rim_a", event: "the hold's clock (bar 7, beat 4)" },
+  { frame: REVEAL_FRAME, role: "suck", take: "suck_a", event: "the suck-back into the drop (inside the f639 gap)" },
+  { frame: REVEAL_FRAME, role: "impact", take: "impact_a", event: "the drop: the pebble lands as the full stop", duckDb: 2.5 },
+  { frame: REVEAL_FRAME, role: "thud", take: "thud_a", event: "texture under the drop" },
+  { frame: 774, role: "whoosh", take: "whoosh_a", event: "the pebble lands on the desktop as it slides in" },
+  { frame: at(12), role: "key", take: "tick_c", event: "the question is sent (Enter)" },
+  { frame: at(14, 1, -1), role: "whoosh", take: "whoosh_b", event: "the cut to the whole workspace" },
+  { frame: at(14), role: "impact", take: "impact_b", event: "the whole workspace (bar 14)" },
+  { frame: at(15), role: "impact", take: "impact_a", event: "the montage lift", duckDb: 1.5 },
+  { frame: at(15, 3, 2), role: "whoosh", take: "whoosh_c", event: "the chart grows to fill the stage (its fastest frame)" },
+  { frame: at(16, 1, -1), role: "whoosh", take: "whoosh_a", event: "the montage cut to Models" },
+  { frame: at(17, 1, -1), role: "whoosh", take: "whoosh_b", event: "the montage cut to Memory" },
+  { frame: at(17, 2), role: "click", take: "click_c", event: "the bin (Forget this memory)", pan: 0.3 },
+  { frame: at(17, 2), role: "ui", take: "ui_forget", event: "the record dissolves" },
+  { frame: at(18, 1, -1), role: "whoosh", take: "whoosh_c", event: "the montage cut to Permissions" },
+  { frame: at(18, 3), role: "click", take: "click_a", event: "Auto in project", pan: 0.1 },
+  { frame: at(19, 1, -1), role: "whoosh", take: "whoosh_a", event: "the montage cut to the test-file card" },
+  { frame: at(19), role: "ui", take: "ui_card", event: "the test-file card waiting for you" },
+  { frame: at(20, 1, -1), role: "whoosh", take: "whoosh_b", event: "the montage cut to the scope challenge" },
+  { frame: at(20, 2), role: "click", take: "click_b", event: "Details (the refused step)", pan: 0.3 },
+  { frame: 1453, role: "ui", take: "ui_lock", event: "AgentGuard holds the task (the held run): the stopdown" },
+  { frame: at(21, 2), role: "rim", take: "rim_b", event: "the hold's clock (bar 21, beat 2)" },
+  { frame: at(21, 3), role: "rim", take: "rim_a", event: "the hold's clock (bar 21, beat 3)" },
+  { frame: at(21, 4), role: "rim", take: "rim_b", event: "the hold's clock (bar 21, beat 4)" },
+  { frame: at(22), role: "click", take: "click_c", event: "Run the tests: it releases the hold", pan: -0.25 },
+  { frame: at(23), role: "click", take: "click_a", event: "Run tests: the groove returns", pan: 0.3 },
+  { frame: at(24, 1, -5), role: "tick", take: "tick_b", event: "a soft tick alone in the breath before the tests pass" },
+  { frame: at(24), role: "impact", take: "impact_b", event: "the tests pass: the card reads Done (the score's first big hit)", duckDb: 1.5 },
+  { frame: at(24), role: "ui", take: "ui_done", event: "the tests card reads Done" },
+  { frame: 1723, role: "impact", take: "impact_a", event: "Verified: the climax's peak, the 16th push into bar 25", duckDb: 1.5 },
+  { frame: 1723, role: "ui", take: "ui_verified", event: "Verified · pytest 42 passed on current files" },
+  { frame: at(26), role: "impact", take: "impact_b", event: "the breakdown's one hit" },
+  { frame: at(29), role: "thud", take: "thud_b", event: "the title: the end-card landing", duckDb: 1.5 },
+  { frame: at(29), role: "impact", take: "impact_b", event: "the title: the end-card landing" },
+  { frame: FINAL_CHORD_FRAME, role: "impact", take: "impact_a", event: "the final hit", duckDb: 2 },
 ];
 
 /**
- * Mix automation (ENERGY_SPEC §8.3; tools/audio/sfx_kit.json "automation"): spans, not effects. The exporter writes
- * each into tools/audio/cues.json as an entry with no file; tools/audio/mix_master.py applies it, cut_cues.py clips it
- * to a cut's ranges, and it never counts toward the three-effects limit. Effects are never gapped.
- * - gap: the bed and the drive −24 dB from `frame` to `toFrame`, the hit frame (each 9 frames, the last eighth before a
- *   bar line); the bed's own pickup on the "and" of 4 is swallowed: that is the breath;
- * - hold: from f891 (the "and" of beat 2, one frame after the app holds the task at f890) the drive is muted and the
- *   bed sinks behind a low-pass; the Run the tests click (`toFrame`, f990) releases it, back by `releaseFrame` (f1008);
- * - tail: the master fades from `frame` and is digital silence from `toFrame` (f2250) to the end;
- * - ride: the hook's level (OVERRIDES §36: at most 2 dB on the bed and the drive over bars 1–2, the bed file
- *   unchanged): from f0 the bed and the drive sit the kit's ride level down, and come back on the first slam's hit
- *   (`toFrame`, f144) with the hook's gap, so bars 1–2 sit 4–8 LU under the master (ENERGY_SPEC §8.5). A level, not a
- *   breath: the gap rules don't apply to it.
- * The composed breath f486–503 has no automation: the bed and the drive are silent there by their own notes.
+ * Mix automation (tools/audio/sfx_kit.json "automation"): spans, not effects; the exporter writes each into
+ * tools/audio/cues.json with no file, mix_master.py applies it, cut_cues.py clips it to a cut's ranges.
+ * - gap: the bed and the drive −24 dB from `frame` to `toFrame`, the hit frame (9 frames each, ending the frame before
+ *   a bar line): f63 (into the first question), f639 (inside the dead stop, into the drop), f1647 (into the tests
+ *   passing) and f2151 (into the final hit);
+ * - hold: from the frame the app holds the task (the drive muted, the bed −6 dB behind a 1.2 kHz low-pass) to
+ *   `toFrame`, released to `releaseFrame`: glimpse 3's from f445 to the cut to the turn (f504), released over the turn
+ *   to bar 9 (f576); the held run's from f1453 to the Run the tests click (f1512), released across bar 22 to f1584;
+ * - tail: the master fades from f2214 on an equal-power curve, then digital silence from f2250 to the end.
+ * The dead stop (f612–638) has no automation: the score is silent there by its own notes.
  */
 export type AutomationRole = "gap" | "hold" | "tail" | "ride";
 export interface AutomationCue {
   role: AutomationRole;
-  /** the span's first frame */
   frame: number;
-  /** the frame it ends on: a gap's or the ride's hit, the hold's releasing click, the tail's first silent frame */
   toFrame: number;
-  /** the hold only: the bar line its release ends on */
   releaseFrame?: number;
   event: string;
 }
 export const AUTOMATION: readonly AutomationCue[] = [
-  { role: "ride", frame: at(1), toFrame: at(3), event: "the hook's ride: the quiet open, back on the first slam" },
-  { role: "gap", frame: at(2, 4, 9), toFrame: at(3), event: "the breath before the first slam; the dive into the pebble" },
-  { role: "hold", frame: at(13, 2, 9), toFrame: at(14, 4), releaseFrame: at(15), event: "AgentGuard holds the task; Run the tests releases it" },
-  { role: "gap", frame: at(16, 4, 9), toFrame: at(17), event: "the breath before Verified; the app's own \"· 11 s\" lands in it" },
-  { role: "gap", frame: at(22, 4, 9), toFrame: at(23), event: "the breath before the second lift" },
-  { role: "gap", frame: at(30, 4, 9), toFrame: at(31), event: "the last breath before the final hit" },
+  { role: "gap", frame: at(1, 4, 9), toFrame: at(2), event: "the breath before the first question's hit" },
+  { role: "hold", frame: 445, toFrame: at(8), releaseFrame: at(9), event: "Pebble's hold in glimpse 3: the music stops with it; released over the turn" },
+  { role: "gap", frame: at(9, 4, 9), toFrame: at(10), event: "inside the dead stop, before the drop" },
+  { role: "hold", frame: 1453, toFrame: at(22), releaseFrame: at(23), event: "the held run: the stopdown; Run the tests releases it and the filter opens across bar 22" },
+  { role: "gap", frame: at(23, 4, 9), toFrame: at(24), event: "the breath before the tests pass" },
+  { role: "gap", frame: at(30, 4, 9), toFrame: at(31), event: "the breath before the final hit" },
   { role: "tail", frame: at(31, 4), toFrame: at(32, 2), event: "the master fades, then digital silence to the end" },
 ];
-/** The composed breath before the drop (ENERGY_SPEC §6): an empty beat by composition, H2 hanging through it. */
-export const COMPOSED_BREATH = { from: at(7, 4), to: at(8) } as const;
 
 export interface Seam {
   frame: number;
@@ -699,106 +712,147 @@ export interface Seam {
   cause: string;
 }
 export const SEAMS: readonly Seam[] = [
-  { frame: 144, kind: "zoom-through", cause: "the camera passes into the thinking pebble's sage body" },
-  { frame: 504, kind: "flood", cause: "the pebble's landing pushes paper out from where it lands" },
-  { frame: 648, kind: "carry", cause: "the pebble's leap continues across the cut at u = 0.78" },
-  { frame: 720, kind: "camera", cause: "the drawer opens; the camera follows Preparing an edit" },
-  { frame: 864, kind: "hard-cut", cause: "chapter change on the bar" },
-  // lane G-fix (REVIEW-G2 P2-1): a hard cut on the bar, not a whip pan (the move from the read framing ran 202 px/frame)
-  { frame: 1008, kind: "hard-cut", cause: "the Run the tests click puts the Run isolated tests card in the drawer; cut to it on the bar" },
-  { frame: 1152, kind: "camera", cause: "the Verified row appears (R2) / punch-in cut (fallback)" },
-  { frame: 1224, kind: "match-cut", cause: "the Settings button" },
-  { frame: 1332, kind: "match-cut", cause: "the Permissions tab" },
-  { frame: 1440, kind: "match-cut", cause: "the Memory tab" },
-  { frame: 1584, kind: "hard-cut", cause: "the payoff, on the motif downbeat" },
-  { frame: 1656, kind: "object-world", cause: "the chart panel grows past the frame" },
-  { frame: 1728, kind: "hard-cut", cause: "the next view, on the bar" },
-  { frame: 1800, kind: "zoom-through", cause: "the camera passes into the chosen answer's badge" },
-  { frame: 2016, kind: "flood", cause: "the pebble lands; paper spreads from it" },
+  { frame: at(2), kind: "hard-cut", cause: "the first question, on the hit" },
+  { frame: at(3), kind: "ramp", cause: "glimpse 1 rises out of the night over f140–146" },
+  { frame: at(4), kind: "hard-cut", cause: "the second question, on the hit" },
+  { frame: at(5), kind: "ramp", cause: "glimpse 2 rises over f284–290; Done arrives on the cut" },
+  { frame: at(6), kind: "hard-cut", cause: "the third question, on the biggest of the three hits" },
+  { frame: at(7), kind: "ramp", cause: "glimpse 3 rises over f428–434" },
+  { frame: at(8), kind: "hard-cut", cause: "the turn: the hold gives way to the intent line" },
+  { frame: at(9), kind: "dawn", cause: "the field steps from night to sage as the pebble peeks up" },
+  { frame: REVEAL_FRAME, kind: "flood", cause: "the pebble's landing pushes paper out from where it lands" },
+  { frame: 756, kind: "slide", cause: "the pebble hops down; the light desktop slides in under it" },
+  { frame: at(12), kind: "hard-cut", cause: "a punch-in cut to the quick chat as the question is sent" },
+  { frame: at(13, 4), kind: "hard-cut", cause: "a punch-in on the answer (the pebble out of frame)" },
+  { frame: at(14), kind: "hard-cut", cause: "the whole workspace, on the bar" },
+  { frame: at(15), kind: "hard-cut", cause: "the montage lift" },
+  { frame: at(16), kind: "hard-cut", cause: "montage: your model" },
+  { frame: at(17), kind: "hard-cut", cause: "montage: memory" },
+  { frame: at(18), kind: "hard-cut", cause: "montage: permissions" },
+  { frame: at(19), kind: "hard-cut", cause: "montage: your tests stay yours" },
+  { frame: at(20), kind: "hard-cut", cause: "montage: the scope challenge" },
+  { frame: at(21), kind: "hard-cut", cause: "the held run, whole: the callback to glimpse 3" },
+  { frame: at(21, 4), kind: "hard-cut", cause: "the conversation's held run, after the person's scroll" },
+  { frame: at(22, 1, 4), kind: "match-cut", cause: "on the Run the tests click's rebound: the Run isolated tests card it put in the drawer" },
+  { frame: at(26), kind: "hard-cut", cause: "the breakdown, on the downbeat" },
+  { frame: at(29), kind: "flood", cause: "the pebble lands; paper spreads from it" },
 ];
 
 /* ================================================================================================================
- * §7 Source-time maps (film frame → source seconds of the vclock recordings; linear between keys)
+ * Source-time maps (film frame → source seconds of the recordings; linear between keys) and TIME HONESTY
  * ============================================================================================================== */
 
+/**
+ * A key: the source time shown on film frame `frame`. The segment from a key to the next is linear, and `kind` says
+ * whose time it is: "pebble" (Pebble's own: exactly 1×), "person" (the person's span: faster, at most 2×), "waiting"
+ * (the app waits for the person: slower than 1×, or a freeze). `cut: true` starts a new segment (a jump), allowed only
+ * on a seam.
+ */
 export interface SourceKey {
   frame: number;
   s: number;
-  /** a jump (allowed only on a cut) or a freeze starts here */
-  hold?: boolean;
+  kind?: "pebble" | "person" | "waiting";
+  cut?: boolean;
 }
-export const SOURCE_MAPS = {
-  /**
-   * The energetic recut (ENERGY_SPEC §5, OVERRIDES §35 decision 2): no jump and no skip of Pebble's time. The person's
-   * part, click to Enter, plays at 2× (0.60 → 3.00 s over f18–54: the question types itself f29–53); from Enter on,
-   * Pebble's part plays at 1× (3.00 s on f54, exactly 1/30 s a frame, to 5.9667 s on f143): "Sending", "Thinking"
-   * from 3.30 s (f63), the answer's first word at 4.60 s (f102). "Task: completed" (6.60 s) comes after the dive.
-   */
-  "pet-live-error": [
-    { frame: 18, s: 0.6 },
-    { frame: 54, s: 3.0 },
-    { frame: 143, s: 3.0 + (143 - 54) / 30 },
+export type SourceMapId = "g1" | "g2" | "g3" | "chat" | "m5" | "m6" | "climax";
+/** Which recording each map plays. */
+export const MAP_RECORDING: Record<SourceMapId, "dark" | "light" | "pet" | "challenge" | "still"> = {
+  g1: "dark",
+  g2: "dark",
+  g3: "dark",
+  chat: "pet",
+  // bar 19 shows one frame of the run (the test-file card waiting) as a montage moment, a freeze on a waiting state
+  // like the montage's other stills: it is not a shot of the run's continuity, so the across-cuts rule leaves it out
+  m5: "still",
+  m6: "challenge",
+  climax: "light",
+};
+const s30 = (f: number) => f / 30;
+export const SOURCE_MAPS: Record<SourceMapId, readonly SourceKey[]> = {
+  /** glimpse 1 (bar 3, f = source − 78): the dates.py card waiting at 1×; on f198 the press is drawn over the last
+   *  frame before the click (9.167 s, the card still waiting), and the glimpse ramps out with it (f198–203) */
+  g1: [
+    { frame: 140, s: s30(218), kind: "pebble" },
+    { frame: 197, s: s30(275), kind: "waiting" },
+    { frame: 203, s: s30(275) },
+  ],
+  /** glimpse 2 (bar 5, f = source − 36): Done in place on the cut (10.80 s on f288), to 13.167 s at 1× */
+  g2: [
+    { frame: 284, s: s30(320), kind: "pebble" },
+    { frame: 359, s: s30(395) },
+  ],
+  /** glimpse 3 (bar 7, f = source + 24): 13.47–16.0 s at 1×; the hold on f445 (14.033 s) */
+  g3: [
+    { frame: 428, s: s30(404), kind: "pebble" },
+    { frame: 503, s: s30(479) },
+  ],
+  /** the quick chat (bars 12–13, f = source + 702): the send on f792 (3.00 s), the answer whole on f898 (6.533 s),
+   *  "Task: completed" on f900, held to f935 (7.767 s), all at 1× */
+  chat: [
+    { frame: at(12), s: s30(90), kind: "pebble" },
+    { frame: at(14, 1, -1), s: s30(233) },
+  ],
+  /** your tests stay yours (bar 19): the tests/test_dates.py card waiting for the person (9.50 s), a freeze on a
+   *  waiting state: it waits for Apply edit until 9.70 s */
+  m5: [
+    { frame: at(19), s: s30(285), kind: "waiting" },
+    { frame: at(20, 1, -1), s: s30(285) },
+  ],
+  /** the scope challenge (bar 20, f = source + 1116): the red refused step (since 7.733 s), the person opens Details on
+   *  f1386 (9.00 s), their scroll f1398–1413, still to f1439 (10.767 s), all at 1× */
+  m6: [
+    { frame: at(20), s: s30(252), kind: "pebble" },
+    { frame: at(21, 1, -1), s: s30(323) },
   ],
   /**
-   * Re-keyed by G2a on the R2 recording (3×, 690 frames; source frame index = round(s × 30)), within §7's ± 3 frames
-   * except where §7 assumed timings the app does not have:
-   * - the status line coalesces "Reading invoice_kit/dates.py" to source 4.50–4.67 s (idx 135–140), so S5a crawls
-   *   over those six frames for 1.2 s (f664–700) instead of §7's 0.5× from 3.85 s;
-   * - every click re-renders on its own frame (idx 282 at 9.40 s, 480 at 16.00 s, 534 at 17.80 s already show the
-   *   change), so each press (f810–813, f990–993, f1080–1083) is drawn over the frame BEFORE the click, and the next
-   *   segment catches up at > 1× (no jump without a cut);
-   * - f1094 ↔ 18.35 s ("Requesting isolated tests", pose testing) and f1146 ↔ 20.40 s ("· 11 s") are pinned.
-   * S5c re-keyed by lane G-fix (REVIEW-G2 P0-1) so the held run is on screen and still long enough to read: 2.5×
-   * through the streaming reply (11.80 → 14.50 s: the notice lands at f888, the hold at f890), the app's own scroll at
-   * 1× (14.50 → 15.10 s, f896–914), then 0.35× over the settled run (15.10 → 15.97 s, f914–989: only the run's small
-   * avatar animates there). The click frames do not move.
+   * The climax (light): bar 21 at 1× (f = source + 1032: 13.60–15.967 s; the hold on f1453); Run the tests on f1512
+   * (16.00 s) and Pebble's answer at 1× to the card's arrival (f1516, 16.133 s); the person reads the card at 0.74×
+   * (a waiting state) to Run tests on f1584 (17.80 s); then 1× (f = source + 1050): Running to f1655, Done on f1656
+   * (20.20 s), the Result in view by f1680, Verified on f1723 (22.433 s), completion on f1725 (22.50 s), to f1799.
    */
-  "main-live-film": [
-    { frame: 648, s: 3.85 },
-    { frame: 664, s: 4.5 },
-    { frame: 700, s: 4.6667 },
-    { frame: 701, s: 4.7 },
-    { frame: 719, s: 5.93 },
-    { frame: 791, s: 8.3 },
-    { frame: 809, s: 9.3667 },
-    { frame: 813, s: 9.3667 },
-    { frame: 814, s: 11.05, hold: true },
-    { frame: 863, s: 11.05 },
-    { frame: 864, s: 11.8, hold: true },
-    { frame: 896, s: 14.5 },
-    { frame: 914, s: 15.1 },
-    { frame: 989, s: 15.9667 },
-    { frame: 993, s: 15.9667 },
-    { frame: 994, s: 16.0 },
-    { frame: 1008, s: 16.5667 },
-    { frame: 1031, s: 17.3333 },
-    { frame: 1079, s: 17.7667 },
-    { frame: 1083, s: 17.7667 },
-    { frame: 1084, s: 17.8 },
-    { frame: 1094, s: 18.35 },
-    { frame: 1146, s: 20.4 },
-    { frame: 1151, s: 20.5667 },
-    { frame: 1152, s: 20.6 },
-    { frame: 1223, s: 22.9667 },
+  climax: [
+    { frame: at(21), s: s30(408), kind: "pebble" },
+    { frame: at(22), s: s30(480), kind: "pebble" },
+    { frame: at(22, 1, 4), s: s30(484), kind: "waiting" },
+    { frame: at(23), s: s30(534), kind: "pebble" },
+    { frame: at(26, 1, -1), s: s30(749) },
   ],
-} as const satisfies Record<string, readonly SourceKey[]>;
+};
 
-/** Source seconds shown on film frame `frame` (linear between keys; a `hold` key starts a new segment). */
+/** Source seconds shown on film frame `frame` (linear between keys; a `cut` key starts a new segment), or null. */
 export function sourceAt(map: readonly SourceKey[], frame: number): number | null {
-  if (!map.length || frame < map[0]!.frame) return null;
+  if (!map.length || frame < map[0]!.frame || frame > map[map.length - 1]!.frame) return null;
   for (let i = map.length - 1; i >= 0; i--) {
     const a = map[i]!;
     if (frame >= a.frame) {
       const b = map[i + 1];
-      if (!b || b.hold) return a.s;
+      if (!b || b.cut) return a.s;
       return a.s + ((b.s - a.s) * (frame - a.frame)) / (b.frame - a.frame);
     }
   }
   return null;
 }
+/** The recorded frame index shown on film frame `frame` (round(s × 30)). */
+export const sourceFrameAt = (map: readonly SourceKey[], frame: number): number | null => {
+  const s = sourceAt(map, frame);
+  return s === null ? null : Math.round(s * 30 + 1e-6);
+};
+
+/** The trailer's anchor moments, from the maps (OVERRIDES §41): checked against the manifests' source times. */
+export const MOMENTS = {
+  /** glimpse 3's and the held run's hold (14.033 s) */
+  hold: { g3: 445, climax: 1453, s: 421 / 30 },
+  /** the tests end: the card reads Done (20.20 s) */
+  testsPass: { frame: at(24), s: 606 / 30 },
+  /** Verified (22.433 s) and completion (22.50 s) */
+  verified: { frame: 1723, s: 673 / 30 },
+  completion: { frame: CELEBRATION_FRAME, s: 675 / 30 },
+  /** the quick chat's answer whole (6.533 s) and "Task: completed" (6.60 s) */
+  answer: { frame: 898, s: 196 / 30 },
+} as const;
 
 /* ================================================================================================================
- * §14 Review frames
+ * Review frames
  * ============================================================================================================== */
 
 export interface ReviewFrame {
@@ -807,17 +861,45 @@ export interface ReviewFrame {
   frame: number;
   note: string;
 }
-/** Gate G1.5's style frames (critic H11), both aspects, full resolution. */
+/** Style frames: every beat's key frame (rendered in all three aspects through StyleFrames*). */
 export const STYLE_FRAMES: readonly ReviewFrame[] = [
-  { id: "SF1", shot: "S1", frame: 0, note: "the thumbnail: the pebble on its desktop, eyes open" },
-  { id: "SF0b", shot: "S1", frame: 60, note: "the 2 s muted check: the posted question legible in the open quick chat (ENERGY_SPEC §5)" },
-  { id: "SF2", shot: "S4", frame: 540, note: "the reveal lockup with T5 (flat paper, the pebble as the full stop on its line)" },
-  { id: "SF3", shot: "S5", frame: 985, note: "a punch-in: the held run, the pointer on Run the tests, T8 in the column" },
-  { id: "SF4", shot: "S5", frame: 1170, note: "the climax: the focus on the Verified row (the rest receded), the check, T10, the pebble writing" },
-  { id: "SF5", shot: "S9", frame: 2280, note: "the end card, everything landed" },
-  { id: "SF6", shot: "S7", frame: 1700, note: "(extra) the chart as the world" },
+  { id: "SF01", shot: "A1", frame: 0, note: "the thumbnail: the eyes on the dark riverbed, turned toward the pointer's entry" },
+  { id: "SF02", shot: "A1", frame: 28, note: "the pointer beside the face, the eyes on it (attentive)" },
+  { id: "SF03", shot: "A2", frame: 100, note: "Q1 on the night field" },
+  { id: "SF04", shot: "A2", frame: 190, note: "glimpse 1: the diff and Apply edit, the pointer arriving" },
+  { id: "SF05", shot: "A2", frame: 198, note: "glimpse 1: the press" },
+  { id: "SF06", shot: "A2", frame: 250, note: "Q2" },
+  { id: "SF07", shot: "A2", frame: 330, note: "glimpse 2: Done, the focus on Undo this edit" },
+  { id: "SF08", shot: "A2", frame: 400, note: "Q3" },
+  { id: "SF09", shot: "A2", frame: 470, note: "glimpse 3: Pebble's change isn't verified yet." },
+  { id: "SF10", shot: "A3", frame: 540, note: "the turn" },
+  { id: "SF11", shot: "A3", frame: 596, note: "the peek: the pebble looks up at the line, sage" },
+  { id: "SF12", shot: "A3", frame: 630, note: "the hang through the dead stop" },
+  { id: "SF13", shot: "R1", frame: 690, note: "the drop's lockup with A small companion for your Mac" },
+  { id: "SF14", shot: "R1", frame: 764, note: "the star beat: the hop down, the desktop sliding in" },
+  { id: "SF15", shot: "R1", frame: 788, note: "the pebble on the light desktop, the pointer arriving" },
+  { id: "SF16", shot: "R2", frame: 850, note: "the quick chat: thinking" },
+  { id: "SF17", shot: "R2", frame: 910, note: "the answer whole, Task: completed" },
+  { id: "SF18", shot: "R2", frame: 926, note: "the punch-in on the answer" },
+  { id: "SF19", shot: "R3", frame: 980, note: "the whole workspace, the pebble in its home place" },
+  { id: "SF20", shot: "P1", frame: 1060, note: "views: the chart fills the stage" },
+  { id: "SF21", shot: "P1", frame: 1124, note: "your model: Continue with ChatGPT comes forward" },
+  { id: "SF22", shot: "P1", frame: 1200, note: "memory: the record forgotten" },
+  { id: "SF23", shot: "P1", frame: 1280, note: "permissions: Auto in project chosen" },
+  { id: "SF24", shot: "P1", frame: 1350, note: "your tests stay yours" },
+  { id: "SF25", shot: "P1", frame: 1425, note: "the scope challenge's evidence check" },
+  { id: "SF26", shot: "P2", frame: 1470, note: "the held run: the drawer's held state, AgentGuard checks the evidence" },
+  { id: "SF27", shot: "P2", frame: 1508, note: "the conversation's Blocked block, the pointer on Run the tests" },
+  { id: "SF28", shot: "P2", frame: 1566, note: "the Run isolated tests card, Tests run in an isolated copy" },
+  { id: "SF29", shot: "P2", frame: 1640, note: "the card reads Running" },
+  { id: "SF30", shot: "P2", frame: 1690, note: "the Result: 42 passed" },
+  { id: "SF31", shot: "P2", frame: 1740, note: "Verified in focus, Evidence before done, the pebble happy" },
+  { id: "SF32", shot: "P2", frame: 1795, note: "the final reply after the pull-back, the celebration" },
+  { id: "SF33", shot: "S8", frame: 1960, note: "the claims list" },
+  { id: "SF34", shot: "S9", frame: 2120, note: "the title with A little help, right here." },
+  { id: "SF35", shot: "S9", frame: 2280, note: "the end card, everything landed" },
 ];
-/** Every downbeat, for contact sheets (one frame per bar, each checked at 360 px wide). */
+/** Every downbeat, for contact sheets (one frame per bar). */
 export const BAR_FRAMES: readonly number[] = Array.from({ length: GRID.bars }, (_, i) => at(i + 1));
 
 export const shotAt = (frame: number): Shot | undefined => SHOTS.find((s) => frame >= s.from && frame < s.to);
@@ -827,21 +909,23 @@ export const shotById = (id: string): Shot => {
   if (!s) throw new Error(`timeline: no shot "${id}"`);
   return s;
 };
+/** Every frame something is cut (seams that are not camera moves, plus every beat boundary inside a shot). */
+export const CUT_FRAMES: readonly number[] = SEAMS.filter((s) => s.kind !== "camera").map((s) => s.frame);
 
 /* ================================================================================================================
  * Checks
  * ============================================================================================================== */
 
 const wordsIn = (s: string) => s.trim().split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
-/** §8: 0.5 s + 0.3 s per word, ≥ 1.2 s (the last line of a shot ≥ 2 s); the end card's key lines readable twice. */
+/** 0.5 s + 0.3 s per word, at least 1.2 s (the last line of a shot at least 2 s); the end card's key lines readable
+ *  twice (at least 2 s and 0.6 s a word). */
 export const minHoldFrames = (c: TextCue, last = false): number => {
   const n = wordsIn(c.lines.join(" "));
   const read = Math.max(last ? 2 : 1.2, 0.5 + 0.3 * n);
   return sec(c.key ? Math.max(read, 2, 0.6 * n) : read);
 };
 
-/** A camera move's span on one aspect's frames ([from, to): it starts moving after `from`, arrives on `to`). The
- *  scenes' camera keys live outside this pure module (film/hook.ts, film/framing.ts); LaunchFilm passes them in. */
+/** A camera move's span on one aspect's frames ([from, to): it starts moving after `from`, arrives on `to`). */
 export interface CameraMove {
   aspect: Aspect;
   from: number;
@@ -849,28 +933,29 @@ export interface CameraMove {
   what: string;
 }
 
-/** The breaths (ENERGY_SPEC §2, §8.3): the four gaps and the composed breath before the drop, [from, to) with the hit
- *  on `to`. */
+/** The breaths: the four gaps and the dead stop, [from, to) with the hit on `to`. */
 export const breaths = (): { from: number; to: number; what: string }[] => [
   ...AUTOMATION.filter((a) => a.role === "gap").map((g) => ({ from: g.frame, to: g.toFrame, what: `the gap f${g.frame}–${g.toFrame - 1}` })),
-  { from: COMPOSED_BREATH.from, to: COMPOSED_BREATH.to, what: `the composed breath f${COMPOSED_BREATH.from}–${COMPOSED_BREATH.to - 1}` },
+  { from: DEAD_STOP.from, to: DEAD_STOP.to, what: `the dead stop f${DEAD_STOP.from}–${DEAD_STOP.to - 1}` },
 ];
-/** Verified is held 36 frames (ENERGY_SPEC §6, Avoid 5): no cut and no camera move from its frame to the pull-back. */
-export const VERIFIED_HOLD = { from: 1152, to: 1188 } as const;
-/** At most ten lines slam (ENERGY_SPEC §2 rule 4, §7). */
+/** The blueprint's breath gaps (and nothing else). */
+export const GAP_FRAMES = [63, 639, 1647, 2151] as const;
+/** Verified is held 36 frames (1.2 s): no cut and no camera move from its frame. */
+export const VERIFIED_HOLD = { from: MOMENTS.verified.frame, to: MOMENTS.verified.frame + 36 } as const;
 export const MAX_SLAMS = 10;
 
-/** Every problem in the timeline (an empty list means it is valid). Copy still waiting for chapters.ts is not a
- *  problem: see pendingCopy(). `camera`: the scenes' camera moves, when the caller has them (LaunchFilm does; the cue
- *  exporter, which stays free of Remotion, checks everything else). */
+/** Every problem in the timeline (an empty list means it is valid). `camera`: the scenes' camera moves, when the
+ *  caller has them (LaunchFilm does; the cue exporter, free of Remotion, checks everything else). */
 export function validateTimeline(camera: readonly CameraMove[] = []): string[] {
-  const out: string[] = [...problems];
+  const out: string[] = [...problems, ...pending.map((p) => `copy only in the captions, not in chapters.ts: ${p}`)];
   if (GRID.framesPerBeat * GRID.beatsPerBar !== GRID.barFrames) out.push("beat map: frames per bar ≠ beats × frames per beat");
   if (at(GRID.bars + 1) !== GRID.frames) out.push(`beat map: ${GRID.bars} bars end on frame ${at(GRID.bars + 1)}, not ${GRID.frames}`);
+  if (REVEAL_FRAME !== at(10)) out.push(`the reveal is bar 10's downbeat (f${at(10)}), not f${REVEAL_FRAME}`);
+  // shots tile the film on bar lines; beats on beat frames
   let cursor = 0;
   for (const s of SHOTS) {
     if (s.from !== cursor) out.push(`shot ${s.id}: starts on ${s.from}, expected ${cursor} (shots tile the film)`);
-    if ((s.from - GRID.firstDownbeat) % GRID.barFrames !== 0) out.push(`shot ${s.id}: not on a bar line (${s.from})`);
+    if (!isBar(s.from)) out.push(`shot ${s.id}: not on a bar line (${s.from})`);
     let b0 = s.from;
     for (const b of s.beats) {
       if (b.from !== b0) out.push(`beat ${b.id}: starts on ${b.from}, expected ${b0}`);
@@ -881,8 +966,8 @@ export function validateTimeline(camera: readonly CameraMove[] = []): string[] {
     cursor = s.to;
   }
   if (cursor !== GRID.frames) out.push(`shots end on ${cursor}; the film is ${GRID.frames} frames`);
-  if (shotById("S4").from !== REVEAL_FRAME) out.push(`S4 must start on the reveal, frame ${REVEAL_FRAME}`);
-  // text: ≤ 6 words a line, holds, inside the film
+  if (shotById("R1").from !== REVEAL_FRAME) out.push(`the reveal shot must start on the reveal, frame ${REVEAL_FRAME}`);
+  // text: ≤ 6 words a line, ≤ 3 words a second, holds, inside the film
   const byShot = new Map<string, TextCue[]>();
   for (const c of TEXT) {
     const sh = shotAt(c.in);
@@ -891,7 +976,6 @@ export function validateTimeline(camera: readonly CameraMove[] = []): string[] {
       continue;
     }
     byShot.set(sh.id, [...(byShot.get(sh.id) ?? []), c]);
-    // small print (T21, T22) is not a read-aloud line (§8 notes)
     if (c.role !== "small") for (const l of [...c.lines, ...(c.squareLines ?? [])]) if (wordsIn(l) > 6) out.push(`${c.id}: "${l}" has more than 6 words`);
   }
   for (const [, cs] of byShot) {
@@ -899,77 +983,110 @@ export function validateTimeline(camera: readonly CameraMove[] = []): string[] {
     solo.forEach((c, i) => {
       const last = i === solo.length - 1;
       const need = minHoldFrames(c, last);
-      if (c.out < END && c.out - c.in < need) out.push(`${c.id}: holds ${c.out - c.in} frames, needs ${need}`);
+      const shown = (c.out < END ? c.out : GRID.frames) - c.in;
+      if (shown < need) out.push(`${c.id}: holds ${shown} frames, needs ${need}`);
+      const rate = wordsIn(c.lines.join(" ")) / (shown / FPS);
+      if (rate > 3 + 1e-9) out.push(`${c.id}: ${rate.toFixed(2)} words a second (at most 3)`);
     });
   }
-  // the character
-  for (const a of ["wide", "square", "vertical"] as const) out.push(...checkCues(FILM_PEBBLE_CUES[a], `FILM_PEBBLE_CUES.${a}`));
+  // the character: Pebble's own poses only, spaced, one celebration at the app's completion
+  for (const a of ASPECT_IDS) out.push(...checkCues(FILM_PEBBLE_CUES[a], `FILM_PEBBLE_CUES.${a}`));
+  for (const a of ASPECT_IDS) {
+    let prev: { f: number; pose: string } | null = null;
+    const happy: number[] = [];
+    for (const c of FILM_PEBBLE_CUES[a]) {
+      if (!c.pose) continue;
+      const f = Math.round(c.at * FPS);
+      if (c.pose === "happy") happy.push(f);
+      if (prev && prev.pose !== c.pose) {
+        const need = prev.pose === "review" || c.pose === "review" ? 18 : 14;
+        if (f - prev.f < need) out.push(`FILM_PEBBLE_CUES.${a}: ${prev.pose} → ${c.pose} at f${f} is ${f - prev.f} frames after the last change (needs ${need})`);
+      }
+      prev = { f, pose: c.pose };
+    }
+    if (happy.length !== 1 || happy[0] !== MOMENTS.completion.frame) out.push(`FILM_PEBBLE_CUES.${a}: exactly one celebration, on the held run's completion (f${MOMENTS.completion.frame}); found ${happy.join(", ") || "none"}`);
+  }
+  const climaxMap = SOURCE_MAPS.climax;
+  for (const [name, m] of [["completion", MOMENTS.completion], ["verified", MOMENTS.verified], ["testsPass", MOMENTS.testsPass]] as const) {
+    const s = sourceAt(climaxMap, m.frame);
+    if (s === null || Math.abs(s - m.s) > 0.5 / 30) out.push(`the ${name} frame f${m.frame} shows source ${s?.toFixed(3)} s, not ${m.s.toFixed(3)} s`);
+  }
+  if (Math.abs((sourceAt(SOURCE_MAPS.g3, MOMENTS.hold.g3) ?? 0) - MOMENTS.hold.s) > 0.5 / 30) out.push(`glimpse 3's hold frame f${MOMENTS.hold.g3} does not show 14.033 s`);
+  if (Math.abs((sourceAt(climaxMap, MOMENTS.hold.climax) ?? 0) - MOMENTS.hold.s) > 0.5 / 30) out.push(`the held run's hold frame f${MOMENTS.hold.climax} does not show 14.033 s`);
+  // hops
   for (const h of HOPS) {
+    const takeOff = sec(h.at);
     const landing = sec(h.at + h.duration);
-    if (h.id === "H2" && landing !== REVEAL_FRAME) out.push(`H2 lands on ${landing}, not the reveal ${REVEAL_FRAME}`);
+    if (h.id === "H2" && (landing !== REVEAL_FRAME || takeOff !== DEAD_STOP.from)) out.push(`H2 takes off on f${takeOff} and lands on f${landing}: it must leap on the dead stop (f${DEAD_STOP.from}) and land on the drop (f${REVEAL_FRAME})`);
     if (h.id === "H4" && landing !== at(29)) out.push(`H4 lands on ${landing}, not bar 29 (${at(29)})`);
   }
-  // clicks on beats
-  for (const c of CLICKS) if (!isBeat(c.frame)) out.push(`click on ${c.target} (f${c.frame}) is not on a beat`);
-  // one riser, ending on the reveal
-  const risers = SFX.filter((f) => f.role === "riser");
-  if (risers.length !== 1 || risers[0]!.frame !== REVEAL_FRAME) out.push("there must be exactly one riser, ending on the reveal frame");
+  // clicks on beats, each on the recording's own click when it is one
+  for (const c of CLICKS) {
+    if (!isBeat(c.frame)) out.push(`click on ${c.target} (f${c.frame}) is not on a beat`);
+    if (c.source) {
+      const map = SOURCE_MAPS[c.source.map];
+      const shown = sourceFrameAt(map, c.frame);
+      const want = Math.round(c.source.s * 30);
+      if (shown === null || (shown !== want && shown !== want - 1)) out.push(`click on ${c.target} (f${c.frame}) shows source frame ${shown}, not the recording's click (${want}) or the frame before it`);
+    }
+  }
+  // sound: no kit riser (the score's riser ends on the dead stop); two suck-backs, ending on the first question and
+  // on the drop; the effects named in OVERRIDES §41 on Verified
+  if (SFX.some((f) => f.role === "riser")) out.push("the score carries the riser into the dead stop: no kit riser in the timeline");
+  if (beatmap.cues.riser_end_frame !== DEAD_STOP.from) out.push(`beatmap.json: the riser must end on the dead stop (f${DEAD_STOP.from}), not f${beatmap.cues.riser_end_frame}`);
+  const sucks = SFX.filter((f) => f.role === "suck").map((f) => f.frame);
+  if (sucks.join() !== [at(2), REVEAL_FRAME].join()) out.push(`two suck-backs, ending on the first question (f${at(2)}) and on the drop (f${REVEAL_FRAME}); found ${sucks.join(", ")}`);
+  for (const take of ["ui_verified", "impact_a"]) if (!SFX.some((f) => f.frame === MOMENTS.verified.frame && f.take === take)) out.push(`OVERRIDES §41: ${take} on Verified (f${MOMENTS.verified.frame})`);
   for (const r of STYLE_FRAMES) {
     const s = shotById(r.shot);
     if (r.frame < s.from || r.frame >= s.to) out.push(`style frame ${r.id}: frame ${r.frame} is outside shot ${s.id}`);
   }
-  out.push(...checkRecut(camera));
+  out.push(...checkTrailer(camera));
+  out.push(...checkTimeHonesty());
   return out;
 }
 
-/** The energetic recut's rules (ENERGY_SPEC §2, §5–§8; tasks.json visual task 11). */
-function checkRecut(camera: readonly CameraMove[]): string[] {
+/** The trailer's breath, hold, slam and Verified rules. */
+function checkTrailer(camera: readonly CameraMove[]): string[] {
   const out: string[] = [];
-  const isEighth = (f: number) => (f - GRID.firstDownbeat) % (GRID.framesPerBeat / 2) === 0;
-  const isBar = (f: number) => (f - GRID.firstDownbeat) % GRID.barFrames === 0;
-  // the gaps: nine frames each, ending the frame before a bar line
   const gaps = AUTOMATION.filter((a) => a.role === "gap");
+  if (gaps.map((g) => g.frame).join() !== GAP_FRAMES.join()) out.push(`the breath gaps are f${GAP_FRAMES.join(", f")}; found f${gaps.map((g) => g.frame).join(", f")}`);
   for (const g of gaps) {
     if (g.toFrame - g.frame !== 9) out.push(`gap f${g.frame}: ${g.toFrame - g.frame} frames, not 9`);
     if (!isBar(g.toFrame)) out.push(`gap f${g.frame}: ends on f${g.toFrame}, not a bar line`);
   }
-  // the hits after the breaths (the gaps' and the composed breath's) are at least 4 bars apart
-  const landings = breaths()
-    .map((b) => b.to)
-    .sort((x, y) => x - y);
-  for (let i = 1; i < landings.length; i++) {
-    if (landings[i]! - landings[i - 1]! < 4 * GRID.barFrames) out.push(`breath landings f${landings[i - 1]} and f${landings[i]} are under 4 bars apart`);
-  }
-  if (COMPOSED_BREATH.to !== REVEAL_FRAME) out.push(`the composed breath must land on the reveal (f${REVEAL_FRAME})`);
-  // the hold: from an eighth to the Run the tests click, released to a bar line
+  const landings = gaps.map((g) => g.toFrame).sort((x, y) => x - y);
+  for (let i = 1; i < landings.length; i++) if (landings[i]! - landings[i - 1]! < 4 * GRID.barFrames) out.push(`gap hits f${landings[i - 1]} and f${landings[i]} are under 4 bars apart`);
+  // the holds: from the app's own hold frame; glimpse 3's to the cut to the turn, the held run's to the Run the tests
+  // click; each released to a bar line
   const holds = AUTOMATION.filter((a) => a.role === "hold");
-  if (holds.length !== 1) out.push(`there must be exactly one hold, not ${holds.length}`);
-  for (const h of holds) {
-    if (!isEighth(h.frame)) out.push(`the hold starts on f${h.frame}, not an eighth`);
-    const click = CLICKS.find((c) => c.frame === h.toFrame);
-    if (!click || click.target !== "Run the tests") out.push(`the hold must end on the Run the tests click, not f${h.toFrame}`);
-    if (h.releaseFrame === undefined || !isBar(h.releaseFrame) || h.releaseFrame <= h.toFrame) out.push(`the hold's release must end on a bar line after f${h.toFrame}`);
+  if (holds.length !== 2) out.push(`there must be exactly two holds (glimpse 3 and the held run), not ${holds.length}`);
+  const [h1, h2] = holds;
+  if (h1) {
+    if (h1.frame !== MOMENTS.hold.g3) out.push(`the first hold starts on f${h1.frame}, not on glimpse 3's hold (f${MOMENTS.hold.g3})`);
+    if (h1.toFrame !== at(8)) out.push(`the first hold must last to the cut to the turn (f${at(8)}), not f${h1.toFrame}`);
+    if (h1.releaseFrame === undefined || !isBar(h1.releaseFrame) || h1.releaseFrame <= h1.toFrame) out.push("the first hold's release must end on a bar line after the cut");
+  }
+  if (h2) {
+    if (h2.frame !== MOMENTS.hold.climax) out.push(`the second hold starts on f${h2.frame}, not on the held run's hold (f${MOMENTS.hold.climax})`);
+    const click = CLICKS.find((c) => c.frame === h2.toFrame);
+    if (!click || click.target !== "Run the tests") out.push(`the second hold must end on the Run the tests click, not f${h2.toFrame}`);
+    if (h2.releaseFrame === undefined || !isBar(h2.releaseFrame) || h2.releaseFrame <= h2.toFrame) out.push("the second hold's release must end on a bar line after the click");
   }
   const tails = AUTOMATION.filter((a) => a.role === "tail");
-  if (tails.length !== 1 || tails[0]!.toFrame >= GRID.frames) out.push("there must be one tail, its silence starting inside the film");
-  // inside a breath: no cut, no camera move starting, no pose cue, no line landing, no hop taking off. Exceptions: the
-  // hook's dive (from f135), H2's take-off (f486), slam pre-rolls in a gap's last 3 frames (the line lands on the hit)
+  if (tails.length !== 1 || tails[0]!.toFrame >= GRID.frames || tails[0]!.toFrame !== at(32, 2)) out.push("there must be one tail, its digital silence from f2250 (1.8 s)");
+  // inside a breath: no cut, no camera move starting, no pose cue, no line landing, no hop taking off (H2 takes off on
+  // the dead stop's first frame; slam pre-rolls may fill a gap's last 3 frames to land on its hit)
   const n = SLAM_PREROLL_FRAMES;
   for (const b of breaths()) {
     const inside = (f: number) => f >= b.from && f < b.to;
     for (const sm of SEAMS) if (inside(sm.frame)) out.push(`${b.what}: the ${sm.kind} at f${sm.frame} falls inside it`);
-    for (const sh of SHOTS) if (inside(sh.from)) out.push(`${b.what}: shot ${sh.id} starts inside it`);
-    for (const m of camera) {
-      if (!inside(m.from + 1)) continue;
-      if (m.from === S1_CAMERA.zoomThrough.from && m.what.includes("dive")) continue; // the hook's dive, from f135
-      out.push(`${b.what}: ${m.aspect} ${m.what} starts moving on f${m.from + 1}`);
-    }
-    for (const a of ["wide", "square", "vertical"] as const) {
-      for (const c of FILM_PEBBLE_CUES[a]) if (c.pose && inside(Math.round(c.at * FPS))) out.push(`${b.what}: pose ${c.pose} (${a}) on f${Math.round(c.at * FPS)}`);
-    }
+    for (const sh of SHOTS) for (const bt of sh.beats) if (inside(bt.from)) out.push(`${b.what}: beat ${bt.id} starts inside it`);
+    for (const m of camera) if (inside(m.from + 1)) out.push(`${b.what}: ${m.aspect} ${m.what} starts moving on f${m.from + 1}`);
+    for (const a of ASPECT_IDS) for (const c of FILM_PEBBLE_CUES[a]) if (c.pose && inside(Math.round(c.at * FPS))) out.push(`${b.what}: pose ${c.pose} (${a}) on f${Math.round(c.at * FPS)}`);
     for (const h of HOPS) {
       const f = sec(h.at);
-      if (inside(f) && !(h.id === "H2" && f === COMPOSED_BREATH.from)) out.push(`${b.what}: hop ${h.id} takes off on f${f}`);
+      if (inside(f) && !(h.id === "H2" && f === DEAD_STOP.from)) out.push(`${b.what}: hop ${h.id} takes off on f${f}`);
     }
     for (const c of TEXT) {
       for (const land of c.enter === "slam" && c.wordStarts ? c.wordStarts : [c.in]) {
@@ -978,40 +1095,64 @@ function checkRecut(camera: readonly CameraMove[]): string[] {
       }
     }
   }
-  // slams: at most ten; each lands on an eighth unless on its shot's first frame
+  // slams: at most ten; each lands on an eighth, on its shot's first frame, or (Evidence before done) on Verified
   const slams = TEXT.filter((c) => c.enter === "slam");
   if (slams.length > MAX_SLAMS) out.push(`${slams.length} slam cues; at most ${MAX_SLAMS}`);
   for (const c of slams) {
     const first = shotAt(c.in)?.from;
-    for (const land of c.wordStarts ?? [c.in]) if (!isEighth(land) && land !== first) out.push(`${c.id}: its slam lands on f${land}, not an eighth`);
-    if (c.wordStarts && c.wordStarts[0] !== c.in) out.push(`${c.id}: its first word must land on its in (f${c.in})`);
-  }
-  // the hook's honest time: the person's part at 2×, Pebble's part at exactly 1× from Enter (f54), no jump
-  const hook = SOURCE_MAPS["pet-live-error"] as readonly SourceKey[];
-  for (let i = 1; i < hook.length; i++) {
-    const a = hook[i - 1]!;
-    const b = hook[i]!;
-    if (b.hold) out.push(`pet-live-error: a jump at f${b.frame}; the hook plays without one`);
-    const slope = (b.s - a.s) / (b.frame - a.frame);
-    if (a.frame >= HOOK_ENTER_FRAME && Math.abs(slope - 1 / FPS) > 1e-9) out.push(`pet-live-error: f${a.frame}–${b.frame} plays at ${(slope * FPS).toFixed(4)}×, not 1× (Pebble's own time)`);
-    if (b.frame <= HOOK_ENTER_FRAME && Math.abs(slope - 2 / FPS) > 1e-9) out.push(`pet-live-error: f${a.frame}–${b.frame} plays at ${(slope * FPS).toFixed(4)}×, not 2× (the person's part)`);
-  }
-  if (hook[0]?.frame !== CLICKS[0]!.frame) out.push(`pet-live-error: the chat must open on the click frame (f${CLICKS[0]!.frame})`);
-  // pose spacing (FILM_SPEC §9.3): ≥ 14 frames between pose changes, ≥ 18 into or out of review
-  for (const a of ["wide", "square", "vertical"] as const) {
-    let prev: { f: number; pose: string } | null = null;
-    for (const c of FILM_PEBBLE_CUES[a]) {
-      if (!c.pose) continue;
-      const f = Math.round(c.at * FPS);
-      if (prev && prev.pose !== c.pose) {
-        const need = prev.pose === "review" || c.pose === "review" ? 18 : 14;
-        if (f - prev.f < need) out.push(`FILM_PEBBLE_CUES.${a}: ${prev.pose} → ${c.pose} at f${f} is ${f - prev.f} frames after the last change (needs ${need})`);
-      }
-      prev = { f, pose: c.pose };
+    for (const land of c.wordStarts ?? [c.in]) {
+      if (!isEighth(land) && land !== first && !(c.id === "EVD" && land === MOMENTS.verified.frame)) out.push(`${c.id}: its slam lands on f${land}, not an eighth`);
     }
   }
-  // Verified is held: no cut and no camera move inside it
-  for (const sm of SEAMS) if (sm.frame > VERIFIED_HOLD.from && sm.frame < VERIFIED_HOLD.to) out.push(`the Verified hold: the ${sm.kind} at f${sm.frame} falls inside it`);
+  // every seam on a beat, except a match cut on a click's rebound (4 frames after it, the recut's f814 rule)
+  for (const sm of SEAMS) {
+    const rebound = sm.kind === "match-cut" && CLICKS.some((c) => c.frame === sm.frame - 4);
+    if (!isBeat(sm.frame) && !rebound) out.push(`the ${sm.kind} at f${sm.frame} is not on a beat`);
+  }
+  // Verified is held: no cut and no camera move inside its first 36 frames
+  for (const f of CUT_FRAMES) if (f > VERIFIED_HOLD.from && f < VERIFIED_HOLD.to) out.push(`the Verified hold: a cut at f${f} falls inside it`);
   for (const m of camera) if (m.to > VERIFIED_HOLD.from && m.from + 1 < VERIFIED_HOLD.to) out.push(`the Verified hold: ${m.aspect} ${m.what} moves f${m.from + 1}–${m.to}`);
+  return out;
+}
+
+/**
+ * TIME HONESTY (the blueprint's source map): inside a shot Pebble's time runs at exactly 1×; only the person's spans
+ * run faster (at most 2×); only waiting states run slower or freeze; a jump (a `cut` key) only on a seam; and across
+ * the cuts of one recording, film time between two shown moments is never shorter than their source time.
+ */
+export function checkTimeHonesty(): string[] {
+  const out: string[] = [];
+  const cuts = new Set(CUT_FRAMES);
+  const shown: { rec: string; f0: number; f1: number; s0: number; s1: number; map: string }[] = [];
+  for (const [id, map] of Object.entries(SOURCE_MAPS) as [SourceMapId, readonly SourceKey[]][]) {
+    for (let i = 1; i < map.length; i++) {
+      const a = map[i - 1]!;
+      const b = map[i]!;
+      if (b.frame <= a.frame) out.push(`${id}: keys out of order at f${b.frame}`);
+      if (b.cut) {
+        if (!cuts.has(b.frame)) out.push(`${id}: a jump at f${b.frame}, which is not a cut`);
+        continue;
+      }
+      const speed = ((b.s - a.s) * FPS) / (b.frame - a.frame);
+      const kind = a.kind ?? "pebble";
+      if (speed < -1e-9) out.push(`${id}: plays backwards over f${a.frame}–${b.frame}`);
+      if (kind === "pebble" && Math.abs(speed - 1) > 1e-6) out.push(`${id}: Pebble's time over f${a.frame}–${b.frame} plays at ${speed.toFixed(4)}×, not 1×`);
+      if (kind === "person" && (speed < 1 - 1e-6 || speed > 2 + 1e-6)) out.push(`${id}: the person's span over f${a.frame}–${b.frame} plays at ${speed.toFixed(4)}× (1× to 2×)`);
+      if (kind === "waiting" && speed > 1 + 1e-6) out.push(`${id}: a waiting state over f${a.frame}–${b.frame} plays at ${speed.toFixed(4)}× (at most 1×)`);
+    }
+    shown.push({ rec: MAP_RECORDING[id], f0: map[0]!.frame, f1: map[map.length - 1]!.frame, s0: map[0]!.s, s1: map[map.length - 1]!.s, map: id });
+  }
+  // the dark twin and the light take are the same run (the same clocks), so they count as one recording here
+  const run = (r: string) => (r === "dark" || r === "light" ? "run" : r);
+  const spans = [...shown].sort((x, y) => x.f0 - y.f0);
+  for (let i = 0; i < spans.length; i++) {
+    for (let j = i + 1; j < spans.length; j++) {
+      const a = spans[i]!;
+      const b = spans[j]!;
+      if (a.rec === "still" || b.rec === "still") continue; // a montage still is not part of the run's continuity
+      if (run(a.rec) !== run(b.rec) || b.s0 < a.s1) continue; // a repeat (bar 21 replays glimpse 3's span) is allowed
+      if ((b.f0 - a.f1) / FPS + 1e-9 < b.s0 - a.s1) out.push(`${a.map} → ${b.map}: ${(b.f0 - a.f1) / FPS} s of film between source ${a.s1.toFixed(3)} and ${b.s0.toFixed(3)} s (shorter than the source)`);
+    }
+  }
   return out;
 }

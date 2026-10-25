@@ -53,6 +53,11 @@ export const UI_STILLS = {
   "settings-models": { w: 1160, h: 800, dprs: [2, 3], alpha: false },
   "settings-permissions-auto": { w: 1160, h: 800, dprs: [2, 3], alpha: false },
   "settings-permissions": { w: 1160, h: 800, dprs: [2, 3], alpha: false },
+  // Pebble 1.5.0 (capture/manifests/settings-permissions-150.json, main-welcome-150.json; fidelity round 2)
+  "v150/settings-permissions": { w: 1160, h: 800, dprs: [2, 3], alpha: false },
+  "v150/settings-permissions-auto": { w: 1160, h: 800, dprs: [2, 3], alpha: false },
+  "v150/main-welcome": { w: 1160, h: 800, dprs: [2, 3], alpha: false },
+  "v150/avatar-hidden/main-welcome": { w: 1160, h: 800, dprs: [2, 3], alpha: false },
 } as const satisfies Record<string, { w: number; h: number; dprs: readonly (2 | 3)[]; alpha: boolean }>;
 
 export type UiStillName = keyof typeof UI_STILLS;
