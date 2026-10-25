@@ -266,8 +266,8 @@ y 162 (x 26–350.3).
   sits at 281; the answer's lines 62 px inside both sides; the header whole in the phone UI's top zone).
 - **f102 (source 4.60 s): the answer starts** under the question ("Python…"); pose `writing`. By f135 the frame reads
   "Python is being asked for a date that doesn't exist, like 31 February. If it's" under the question: what the person
-  asked and what Pebble answered, in one frame. (For f126–127 the app's stream shows "like **31" before its Markdown
-  renders: real UI.)
+  asked and what Pebble answered, in one frame. (For f127–128 the app's stream shows "like **31" before its Markdown
+  renders: real UI, two frames.)
 - **f135–143: the breath and the dive** into the pebble (ZOOM_THROUGH from f135; zoom blur f141–143). The body's
   `#536B54` fills the frame on f143; the world changes on f144 with the whoosh's peak. It is one light-to-dark change
   that must take ≥ 3 frames from 20 % to 80 % of its swing (ENERGY_SPEC §11), with no reversal until f504. Measured on
