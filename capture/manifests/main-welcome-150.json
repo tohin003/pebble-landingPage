@@ -1,0 +1,66 @@
+{
+ "stills": {
+  "avatar_visible": {
+   "light": "video/public/ui/v150/main-welcome@2x.png, @3x.png",
+   "dark": "video/public/ui/v150-dark/main-welcome@2x.png, @3x.png"
+  },
+  "avatar_hidden": {
+   "light": "video/public/ui/v150/avatar-hidden/main-welcome@2x.png, @3x.png",
+   "dark": "video/public/ui/v150-dark/avatar-hidden/main-welcome@2x.png, @3x.png"
+  }
+ },
+ "made_by": "capture/capture.mjs main-welcome --exact --themes=<theme> --scale=2,3 --naming=video --version=1.5.0 [--hide='.welcome .avatar-stage']",
+ "release": "Pebble v1.5.0's frontend, frozen with capture/freeze-release.py and verified (tag commit 16dd425)",
+ "what": "the Companion home ('Good to see you.', App.vue@v1.5.0 1898-1907), with the app's own home pebble (the welcome Avatar, idle) visible as the pose reference, and hidden (opacity 0, still laid out) for the film's match landing; the stills are the same in every other pixel",
+ "geometry_css_px": {
+  "window": [
+   1160,
+   800
+  ],
+  "home_pebble": [
+   624,
+   107,
+   130,
+   130
+  ],
+  "home_pebble_centre": [
+   689,
+   172
+  ],
+  "avatar_stage": [
+   374,
+   107,
+   630,
+   130
+  ],
+  "heading": [
+   374,
+   246,
+   630,
+   40.8
+  ],
+  "description": [
+   374,
+   301.8,
+   630,
+   45.5
+  ],
+  "welcome": [
+   349,
+   65,
+   680,
+   520.3
+  ]
+ },
+ "dark_riverbed_plate": {
+  "file": "video/public/desktop/riverbed-dark@3x.png (gitignored, derived)",
+  "size": [
+   4800,
+   3000
+  ],
+  "made_by": "scripts/heavy.sh plate node capture/riverbed-plate.mjs dark",
+  "source": "tools/assets/wallpaper/wallpaper-dark.svg (the page's night-green wallpaper, public/media/v1/wallpaper-dark-*) without its baked vignette rect, as riverbed-light.svg drops the light one's",
+  "renderer_check": "the same script re-renders the light plate within 0.1 levels mean (4 of 255 at most) of video/public/desktop/riverbed-light@3x.png",
+  "colour": "night green (mean 41, 49, 43), no blue"
+ }
+}
