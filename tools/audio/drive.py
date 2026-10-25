@@ -45,14 +45,46 @@ matters (the whole drive 6 dB down still read 0.59). Measured one change at a ti
     snap and clap 4 dB down, softer hat and burst attacks, half the kick's click, and a gentler bias on the sub's
     tanh (2nd and 3rd harmonics at -21 and -22 dB instead of -14 and -19.5).
 Darker snaps (400-1500 Hz) read worse in the build (0.57). The tension bars' slams, the drop, the lift, the final hit,
-grooves B and C, the fills and the bar 16 build keep the spec's shape. On scratch masters with the film's cues.json
-(2026-10-25) every gate passed: phone max 0.279 web, 0.282 social, 0.167 x30, with warnings (0.25-0.28) at 21-25.5 s
-and 67.5-70.5 s; the drive alone reads phone 0.082, voice 0.042, alarm 0.142. Note: 'foghorn' (not gated) reads
-0.52-0.65 over the final hit's 2.5 s sub.
+grooves B and C, the fills and the bar 16 build keep the spec's shape. On part 1's scratch masters every gate passed,
+with phone readings of 0.25-0.28 (warnings) at 21-25.5 s and 67.5-70.5 s; FINAL MIXES (below) brings every window under
+0.25. The final stem alone reads phone 0.082, voice 0.042, alarm 0.142 ('beep', in the 0.75 s opening pass, not in a
+top 3).
 
 Level: one bus gain (BUS_DB), calibrated so the drive alone over bars 3-30 sits 4 LU under the bed alone over the same
 bars (ENERGY_SPEC §8.2: 3-5 LU, start at 4). With the bed on disk the script measures and prints that difference.
 Tune it here (final_mix.sh re-renders the drive when this file is newer than drive.wav), or with --bus-db.
+
+FINAL MIXES (the score lane, part 2, 2026-10-25; scratch masters through mix_master.py and mix_checks.py, both grids):
+  - BUS_DB stays at -9.9. A louder bus helps the hook's dynamics check but not enough: at 3.0 LU under the bed (-8.8,
+    the hook's drive held at its level) bars 1-2 sit 3.74 LU under the web master (want 4-8), 3.98 with no drive in
+    bars 1-2 at all, because the kept bed's own bars 1-2 sit only 2.74 LU under its integrated level. It also took
+    the social master's phone reading to 0.297 (gate 0.30) and the AAC true peak up.
+  - The hits (each hit's effects and this stem against the bed, K-weighted over the impact's peak +- 100 ms; ENERGY_SPEC
+    §8.5 wants 3-6 dB): the breakdown's hit (bar 26) and the end-card landing (bar 29) were 1.2 and 3.0 dB over the
+    bed, so their kick and sub rise (bar 26 0.7 and 0.6 -> 1.0 and 0.85; bar 29 0.8 -> 0.9), and Verified (bar 17)
+    was 6.6, so its slam plays at 0.85 (its crash unchanged: a crash 0.9 -> 0.6 moved it 0.1 dB). With the kit's
+    impacts at -4 dB the hits read: the first slam 4.9, the reveal 3.6, Verified 5.6, the lift 3.4, the breakdown 3.9,
+    the end-card landing 3.7, the final hit 6.0. Raising the whole of bar 29 instead read 'ringtone' 0.30 at
+    67.5-70.5 s on the social master: only the downbeat's hit rises.
+  - Bar 7 (the build) plays 1 dB under the levels written below, and the kit's riser 1 dB down, so the drop sits 3 LU
+    or more over the build on the -14 LUFS x30 too (3.10; web 3.36; social 2.86, under its 3, from the heavier
+    limiting at -14 LUFS).
+  - Phone windows (OVERRIDES §36: every window under 0.25 before delivery). Ablations on the web master, one change per
+    window, found the cause of each reading over 0.25, and these changes bring them all under it:
+      21-24 s (telephone 0.279; bed alone < 0.1) and 22.5-25.5 s (ringtone 0.253): bars 10-11's hats at half
+      velocity and no sub on 3 in bars 10 and 12 (both windows < 0.2). Hats off read 0.20, the sub off alone 0.24;
+      the toms on f630-642 and the f666 snap help: without the toms 0.39, without the snap (and the sub) 0.33;
+      55.5-58.5 s (0.245 web, 0.252 social; bed alone < 0.1): no claps in bars 24-25 and their snaps 3 dB down
+      (< 0.2; the claps off alone 0.21; the open hats off changed nothing). Bar 23, the lift, keeps its claps;
+      67.5-70.5 s (telephone 0.266, ringtone 0.26; bed alone 0.15 and 0.13): no soft snap on beat 4 of bar 29 (0.18;
+      bar 29's sub on 3 off 0.25, its hats off 0.22, bar 30's kick off changed nothing).
+  - 'foghorn' over the final hit (OVERRIDES §36: under 0.30): 0.46 web, 0.52 social, 0.59 x30. Shortening or lowering
+    the sub did not lower it (1.5 s 0.46, 1.0 s 0.49, at 0.7 0.50), and neither did leaving out the sub (0.43), the
+    crash (0.71) or the impact (0.79): the same mix with no fade at all reads 0.12. The cause is the tail's fade,
+    linear in dB, which takes the final chord 30 dB down in its first 0.6 s. With the kit's equal-power tail (tail
+    curve 'sine'), the sub at 1.5 s, the kick at 0.6 and the crash at 1.4 the hit reads 0.25 web, 0.25 social, 0.28
+    x30 (all its windows), and sits 5.6 dB over the bed.
+  - Final (web, social, x30): phone max 0.219, 0.194 and 0.178; the hits 3.4-5.6 dB over the bed.
 
 Usage: python -I drive.py [--form film|x30|<bar,bar,...>] [--cut docs/film-cuts/x30.json] [--out OUT.wav] [--seed 7]
                           [--bus-db DB] [--bed .work/audio/render/music_bed.wav] [--stems DIR]
@@ -194,8 +226,9 @@ def hats(bar, beats, vel, open_at=(), sixteenths=False, ramp=None):
         ev(bar, o, "ohat", vel)
 
 
-def groove(bar, kind, start=1.0, end=5.0, sub_on_3=False, hat_vel=0.5, vel=1.0):
-    """Grooves A, A', B and C (ENERGY_SPEC §8.2) over beats [start, end); vel scales the subs, kicks and snaps."""
+def groove(bar, kind, start=1.0, end=5.0, sub_on_3=False, hat_vel=0.5, vel=1.0, clap=True, backbeat=1.0):
+    """Grooves A, A', B and C (ENERGY_SPEC §8.2) over beats [start, end); vel scales the subs, kicks and snaps. Groove C
+    only: clap=False leaves out its claps, and backbeat scales its snaps on 2 and 4 (FINAL MIXES, above)."""
     inside = lambda t: start <= t < end  # noqa: E731
     if kind in ("A", "A'"):
         if inside(1.0):
@@ -219,8 +252,9 @@ def groove(bar, kind, start=1.0, end=5.0, sub_on_3=False, hat_vel=0.5, vel=1.0):
                 sub(bar, t, ln, 0.6 * vel)
         for t in (2.0, 4.0):
             if inside(t):
-                ev(bar, t, "snap", 0.75 * vel)
-                ev(bar, t, "clap", 0.75 * vel)
+                ev(bar, t, "snap", 0.75 * vel * backbeat)
+                if clap:
+                    ev(bar, t, "clap", 0.75 * vel)
         hats(bar, (start, end), hat_vel, open_at=[t for t in (1.5, 2.5, 3.5, 4.5) if inside(t)], sixteenths=True)
 
 
@@ -278,6 +312,8 @@ hats(7, (1.0, 4.0), 0.36, sixteenths=True)
 sub(7, 1.0, 0.6, 0.34)
 sub(7, 3.0, 0.5, 0.34)
 GATES[7] = 4.0
+for e in EV[7]:                                   # 1 dB under the levels above (FINAL MIXES: the drop over the build)
+    e["vel"] *= 10 ** (-1.0 / 20)
 # bar 8: THE DROP (crash, kick, a 1.5 s sub D2 from the octave above), then groove B from beat 2
 slam(8, sub_len=1.5, snap=False, crash=1.0)
 groove(8, "B", start=2.0, vel=1.15, hat_vel=0.55)
@@ -285,9 +321,10 @@ groove(8, "B", start=2.0, vel=1.15, hat_vel=0.55)
 groove(9, "A", end=4.0)
 for i, (t, tom) in enumerate(((4.0, "A2"), (4.0 + 1 / 3, "D3"), (4.0 + 2 / 3, "E3"))):
     ev(9, t, "tom", 0.6 + 0.1 * i, note=tom)
-# bars 10-12: groove A (the sub also on 3 in bars 10 and 12); an accent kick and snap on f666; the snap fill f846-859.5
+# bars 10-12: groove A; an accent kick and snap on f666; the snap fill f846-859.5. Not §8.2's sub on 3 in bars 10 and 12,
+# and the hats at half velocity in bars 10-11 (FINAL MIXES: the phone readings at 21-25.5 s)
 for b in (10, 11, 12):
-    groove(b, "A", sub_on_3=b in (10, 12), end=4.0 if b == 12 else 5.0)
+    groove(b, "A", end=4.0 if b == 12 else 5.0, hat_vel=0.25 if b in (10, 11) else 0.5)
 ev(10, 2.0, "kick", 0.75)
 ev(10, 2.0, "snap", 0.85)
 hats(12, (4.0, 5.0), 0.5)
@@ -312,8 +349,9 @@ hats(16, (1.0, 4.5), 0.5, sixteenths=True)
 for t in np.arange(1.0, 4.5, 0.5):
     sub(16, float(t), 0.26, 0.5)
 GATES[16] = 4.5
-# bar 17: Verified: crash, kick and a 1.5 s sub E2 on 1; groove B from beat 2; a ghost snap on 4.75
-slam(17, sub_len=1.5, snap=False, crash=0.9)
+# bar 17: Verified: crash, kick and a 1.5 s sub E2 on 1; groove B from beat 2; a ghost snap on 4.75. The slam's kick and
+# sub at 0.85, so the hit sits 6 dB or less over the bed (FINAL MIXES)
+slam(17, vel=0.85, sub_len=1.5, snap=False, crash=0.9)
 groove(17, "B", start=2.0)
 ev(17, 4.75, "snap", 0.3)
 # bars 18-21: groove A' (sub on 1 only)
@@ -327,15 +365,16 @@ GATES[22] = 4.5
 # bars 23-25: THE LIFT (crash, kick, a 1 s sub D2); groove C; accents (kick and snap) on f1656 and f1728; silent from
 # f1782 (the badge dive's whoosh carries the seam)
 slam(23, sub_len=1.0, snap=False, crash=1.0)
-for b in (23, 24, 25):
-    groove(b, "C", end=4.0 if b == 25 else 5.0, vel=1.2, hat_vel=0.6)        # the fullest groove
+for b in (23, 24, 25):                            # the fullest groove; bars 24-25 without claps, their snaps 3 dB down
+    groove(b, "C", end=4.0 if b == 25 else 5.0, vel=1.2, hat_vel=0.6, clap=b == 23, backbeat=1.0 if b == 23 else 0.708)
 for b in (24, 25):
     ev(b, 1.0, "kick", 0.85)
     ev(b, 1.0, "snap", 0.85)
 GATES[25] = 4.0
-# bar 26: the breakdown's one hit (kick, a 1 s sub B1), then no drums
-sub(26, 1.0, 1.0, 0.6, hit=True)
-ev(26, 1.0, "kick", 0.7)
+# bar 26: the breakdown's one hit (kick, a 1 s sub B1), then no drums; at a slam's kick, so the hit sits 3 dB or more
+# over the bed (FINAL MIXES)
+sub(26, 1.0, 1.0, 0.85, hit=True)
+ev(26, 1.0, "kick", 1.0)
 # bar 27: a soft tom A2 and a rim tick on f1872 and f1926
 for t in (1.0, 4.0):
     ev(27, t, "tom", SOFT, note="A2")
@@ -343,19 +382,22 @@ for t in (1.0, 4.0):
 # bar 28: the hats return and swell f1944-2006 (0.1 -> 0.6), an open hat on f2007
 hats(28, (1.0, 4.5), 0.6, ramp=(0.1, 0.6))
 ev(28, 4.5, "ohat", 0.5)
-# bars 29-30: the end card: a hit, then a soft groove (sub on 3, a soft snap on 4, 8th hats); silent from f2151
-sub(29, 1.0, 1.0, 0.8, hit=True)
-ev(29, 1.0, "kick", 0.8)
+# bars 29-30: the end card: a hit, then a soft groove (sub on 3, 8th hats; not §8.2's soft snap on 4); silent from
+# f2151. The hit's kick and sub at 0.9 (FINAL MIXES)
+sub(29, 1.0, 1.0, 0.9, hit=True)
+ev(29, 1.0, "kick", 0.9)
 sub(29, 3.0, 0.5, 0.45)
-ev(29, 4.0, "snap", 0.4)
 hats(29, (1.0, 5.0), 0.34)
 sub(30, 1.0, 0.6, 0.6)                            # not a hit: no octave drop, ducked under its kick
 ev(30, 1.0, "kick", 0.6)
 sub(30, 3.0, 0.5, 0.45)
 hats(30, (1.0, 4.5), 0.34)
 GATES[30] = 4.5
-# bar 31: THE FINAL HIT (crash, kick, a 2.5 s sub D2), then nothing; bar 32: nothing
-slam(31, sub_len=2.5, snap=False, crash=1.0)
+# bar 31: THE FINAL HIT (crash, kick, a sub D2 from the octave above), then nothing; bar 32: nothing. The sub 1.5 s, not
+# §8.2's 2.5 s, the kick at 0.6 and the crash at 1.4, with the kit's equal-power tail (FINAL MIXES: 'foghorn')
+sub(31, 1.0, 1.5, 1.0, hit=True)
+ev(31, 1.0, "kick", 0.6)
+ev(31, 1.0, "crash", 1.4)
 
 # the hats skip the click and key frames; a groove sub never starts under a hit's sub that is still sounding
 for b in EV:
