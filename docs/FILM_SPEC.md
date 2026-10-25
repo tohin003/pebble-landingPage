@@ -1345,9 +1345,9 @@ A framing is the CSS rect of the window a stage shows (16:9 · 1:1 · 9:16; m is
 
 | Framing | 16:9 | 1:1 | 9:16 |
 |---|---|---|---|
-| G1 the diff | m 2.34 · x 808–1160, y 354–711 | m 2.85 · x 808–1159, y 452–713 | m 2.85 · x 808–1159, y 410–712 |
+| G1 the diff (before its ×1.04 push) | m 2.34 · x 808–1160, y 372–729 | m 2.85 · x 808–1159, y 470–731 | m 2.85 · x 808–1159, y 428–730 |
 | G2 the Done card (tracked) | m 3.05 · x 811–1157, 245 tall | m 2.85 · x 808–1159, 245 tall | the same |
-| G3 the drawer's top | m 3.18 · x 812–1144, y 98–336 | m 2.85 · x 808–1159, y 98–336 | the same |
+| G3 the drawer's top | m 3.18 · x 812–1144, y 115–353 | m 2.85 · x 808–1159, y 115–353 | the same |
 | m1Canvas, m1Chart | m 1.255, the canvas; m 2.0 · x 670–1170, y 408–835 | m 1.325; m 1.85 · x 670–1241, y 420–735 | m 1.325; m 1.72 · x 670–1284, y 404–837 |
 | m2 models | m 2.083 · x 339–819, y 190–600 | m 2.7 · x 340–731, y 197–413 | m 2.7 · x 340–731, y 145–421 |
 | m3 memory | m 2.025 · x 342–836, y 330–752 | m 2.12 · x 330–828, y 468–743 | m 2.05 · x 323–838, y 378–741 |
@@ -1367,10 +1367,11 @@ The rules (`checkFraming()` enforces the first four on every frame of every aspe
 - the "Action completed" toast never; and across source 675–677 (f1725–1727), where the drawer's cards jump, the
   frame stays above the drawer's lower half;
 - every click sits at least 60 px inside the frame and above the caption band;
-- by measurement of each capture's ink rows and columns: the top and bottom edges fall between lines; a side edge
-  never cuts into a line's start and never slices a control; a line runs off the right edge only where §2's floor
-  (≥ 28 px / ≥ 34 px) leaves no room for it, as v2's held block did. In 16:9, where a moment fits whole at about v2's
-  m 2.0, it is shown whole (models, permissions, memory).
+- by measurement of each capture's ink rows and columns: the top and bottom edges fall between lines on every settled
+  frame (while the drawer's live response streams, before glimpse 3's hold, a row may pass under the bottom edge); a
+  side edge never cuts into a line's start and never slices a control; a line runs off the right edge only where §2's
+  floor (≥ 28 px / ≥ 34 px) leaves no room for it, as v2's held block did. In 16:9, where a moment fits whole at about
+  v2's m 2.0, it is shown whole (models, permissions, memory).
 - Where the held block's explanation runs past the right edge (c1Held, f1494–1515), it stays under the focus veil:
   only Run the tests is sharp.
 
