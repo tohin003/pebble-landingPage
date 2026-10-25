@@ -106,6 +106,7 @@
   }
  },
  "wording": "the vendored AgentGuard engine at v1.5.0 (validate/checks.py scope_creep(), challenge/renderer.py render(), guard.py refusal()), unchanged since v1.0.4; five files outside the task's reach (OVERRIDES §9)",
+ "usage_lines": [],
  "check": {
   "stamps_checked": 2602,
   "durations_checked": 408,

@@ -60,12 +60,49 @@ def first_frame(pred, start=0):
     return None
 
 
+first_saved = round((timeline.get("from") or 0) * fps)
+# The Details drawer's scrolling panel shows from this y down to the window's bottom (800). Probed as drawerBox from
+# retake 2b on ([801, 115, 359, 685] in the dark twin); earlier probes lack it, so that measured top stands in for them.
+PANEL_TOP_MEASURED = 115
+
+
+def panel_top(f):
+    box = at(f, "drawerBox")
+    return box[1] if box else PANEL_TOP_MEASURED
+
+
+def usage_spans(lines_at):
+    """Every span of frames on which a usage line (TokenStats) is visible, per line text: its first and last frames and
+    seconds, its box then, and the union of its boxes over the span (CSS px), within this recording's saved frames."""
+    done, open_ = [], {}
+    for f in range(first_saved, last + 1):
+        seen = {text: rect for text, rect in (lines_at(f) or []) if rect}
+        for text in [t for t in open_ if t not in seen]:
+            done.append(open_.pop(text))
+        for text, rect in seen.items():
+            span = open_.get(text)
+            if span is None:
+                open_[text] = {"text": text, "frames": [f, f], "first_box": rect, "last_box": rect, "union_box": list(rect)}
+                continue
+            span["frames"][1], span["last_box"] = f, rect
+            u = span["union_box"]
+            x0, y0 = min(u[0], rect[0]), min(u[1], rect[1])
+            x1, y1 = max(u[0] + u[2], rect[0] + rect[2]), max(u[1] + u[3], rect[1] + rect[3])
+            span["union_box"] = [x0, y0, round(x1 - x0, 1), round(y1 - y0, 1)]
+    done += open_.values()
+    for span in done:
+        span["seconds"] = [sec(span["frames"][0]), sec(span["frames"][1])]
+        span["shows_rate_or_cached"] = bool(" tok/s" in span["text"] or " cached" in span["text"])
+    return sorted(done, key=lambda span: span["frames"][0])
+
+
 def common(name, made_by):
     return {"recording": os.path.relpath(folder, os.getcwd()), "made_by": made_by,
             "release": "Pebble v1.5.0's frontend, frozen with capture/freeze-release.py and verified (tag commit 16dd425)",
             "method": timeline.get("note"), "theme": timeline["theme"], "fps": fps, "scale": timeline["scale"],
             "frames_saved": timeline["frames"], "from_seconds": timeline.get("from"), "file_of_frame": "frame f is %05d.png with f+1",
-            **({"fidelity_round": 2} if meta.get("fidelity_round") == 2 else {})}
+            **({"fidelity_round": 2} if meta.get("fidelity_round") == 2 else {}),
+            **({"retake": meta["retake"]} if meta.get("retake") else {})}
 
 
 def finish_manifest(manifest):
@@ -109,6 +146,7 @@ if "refused" in K:  # main-challenge-live: the refused write's step, its Details
             "live_attempt_after_scroll": {"frame": K["scroll"][1], "section": at(K["scroll"][1], "liveAttempt")},
         },
         "wording": "the vendored AgentGuard engine at v1.5.0 (validate/checks.py scope_creep(), challenge/renderer.py render(), guard.py refusal()), unchanged since v1.0.4; five files outside the task's reach (OVERRIDES §9)",
+        "usage_lines": usage_spans(lambda f: at(f, "usage")),
     })
 
 if "click" in K and "hold" not in K:  # pet-live-150: the quick chat
@@ -141,6 +179,22 @@ if "click" in K and "hold" not in K:  # pet-live-150: the quick chat
             statuses.append([f, st])
     first_word = lambda word: next((f for f, t in statuses if t.startswith(word)), None)
     cleared = next((f for f, t in statuses if f > K["send"] and t == ""), None)
+    # the composer: the first frame on which it holds the whole question (probed from retake 2b on), and its Send button
+    question = pet(K["send"] - 1, "typed")
+    typed_at = first_frame(lambda st: question and (st.get("pet") or {}).get("typed") == question, K["click"]) if question else None
+    send_at_typed = pet(typed_at, "send") or [None, None, None] if typed_at is not None else None
+    # what changes once the whole answer shows: each frame where a probed part of the quick chat differs from the frame before
+    changes = []
+    if answer_text_at is not None:
+        parts = ("feed", "usage", "status", "task", "send", "feedBox")
+        for f in range(answer_text_at + 1, last + 1):
+            what = {k: pet(f, k) for k in parts if json.dumps(pet(f, k)) != json.dumps(pet(f - 1, k))}
+            if what:
+                if "status" in what:
+                    what["status"] = visible_status(what["status"])
+                if "feed" in what:
+                    what["feed"] = [[a[0], a[2]] for a in what["feed"]]
+                changes.append({"frame": f, "seconds": sec(f), **what})
     finish_manifest({**common("pet-live-150", "capture/record.mjs pet-live-150 --theme=%s --scale=%s%s" % (timeline["theme"], timeline["scale"], " --hide=" + timeline["hide"] if timeline.get("hide") else "")),
         "viewport_css": [384, 456],
         "transparent": True,
@@ -157,6 +211,14 @@ if "click" in K and "hold" not in K:  # pet-live-150: the quick chat
             "idle": {"frame": K["idle"], "what": "the host's idle after its upkeep"},
         },
         "status_line": [{"frame": f, "seconds": sec(f), "text": t} for f, t in statuses],
+        **({"typed": {"complete_from": typed_at, "complete_seconds": sec(typed_at), "until": K["send"] - 1, "text": question,
+                      "send_button": {"frame": typed_at, "label": send_at_typed[0], "box": send_at_typed[1], "disabled": send_at_typed[2]},
+                      "what": "the question is fully typed in the composer and Send message is enabled from this frame to the Enter on %d (the recording sends with Enter: no pointer, no hover or pressed state on the button)" % K["send"]}}
+           if typed_at is not None else {}),
+        **({"after_answer": {"from": answer_text_at, "to": last, "changes": changes,
+                             "what": "every frame from the whole answer on where the quick chat's probed state changes (the feed's articles, the usage line, the status line, the task line, the composer's last button)"}}
+           if answer_text_at is not None else {}),
+        "usage_lines": usage_spans(lambda f: pet(f, "usage")),
         "geometry_css_px": {"answer_article": {"frame": answer_text_at, "box": (article(answer_text_at) or [None, None, None])[2]},
                             "answer_article_with_usage": {"frame": finish[-1]["f"] if finish else None, "box": (article(finish[-1]["f"]) or [None, None, None])[2] if finish else None},
                             "answer_article_settled": {"frame": K["idle"], "box": (article(K["idle"]) or [None, None, None])[2]},
@@ -181,7 +243,7 @@ moments = {
     "apply1_last_before": {"frame": K["p1"] - 1, "what": "the invoice_kit/dates.py card waiting, the last frame before the click"},
     "apply1_click": {"frame": K["p1"], "what": "Apply edit (dates.py); the app re-renders on this frame (the card moves to Earlier actions)"},
     "apply2_click": {"frame": K["p2"], "what": "Apply edit (tests/test_dates.py), under the second question card"},
-    "done_in_place": {"frame": K["scroll"][1], "what": "the drawer scroll settles: the dates.py card marked Done, Undo this edit where Apply edit was"},
+    "done_in_place": {"frame": K["scroll"][1], "what": ("the drawer scroll settles: the dates.py card marked Done, Undo this edit centred at y %s (retake %s), the whole card in the window" % (meta["undoY"], meta.get("retake"))) if meta.get("undoY") else "the drawer scroll settles: the dates.py card marked Done, Undo this edit where Apply edit was"},
     "done_still_until": {"frame": undo_still_to, "what": "the last frame on which Undo this edit and the drawer have not moved"},
     "notice": {"frame": K.get("notice", 411), "what": "the reply ends with the host's 'Verification remains incomplete: …' notice"},
     "hold": {"frame": K["hold"], "what": "verification_required: the drawer shows 'Pebble's change isn't verified yet.' with Run the tests, Ask Pebble to finish, Accept as unverified; the status line says Blocked"},
@@ -257,7 +319,6 @@ if round2:
         "model_responded": {"frame": K["respond"], "what": "the model responded: the reply's last paragraph arrives in the conversation in one piece; the drawer's live response keeps the finished text until the run completes"},
     })
     moments["repair_replies"]["until_seconds"] = sec(turn_ends[5])
-first_saved = round((timeline.get("from") or 0) * fps)
 for m in moments.values():
     m["seconds"] = sec(m["frame"]) if m["frame"] is not None else None
     if m["frame"] is not None and not first_saved <= m["frame"] <= last or m["frame"] is None and last < K["complete"]:
@@ -311,7 +372,16 @@ if round2:
         r = at(f, "undo")
         if r != prev:
             undo_track.append({"frame": f, "seconds": sec(f), "rect": r,
-                               "whole_in_window": bool(r) and r[1] >= 0 and r[1] + r[3] <= 800})
+                               "whole_in_window": bool(r) and r[1] >= panel_top(f) and r[1] + r[3] <= 800})
+            prev = r
+    # the whole invoice_kit/dates.py card (Done) over the same frames: its box on every change, and whether all of it is
+    # inside the drawer's visible panel (from the panel's top to the window's bottom)
+    card_track, prev = [], None
+    for f in range(K["scroll"][1], K["runTheTests"] + 1):
+        r = next((c[1] for c in at(f, "cards") or [] if (c[0] or "").startswith("invoice_kit/dates.py")), None)
+        if r != prev:
+            card_track.append({"frame": f, "seconds": sec(f), "rect": r, "panel_top": panel_top(f),
+                               "whole_in_window": bool(r) and r[1] >= panel_top(f) and r[1] + r[3] <= 800})
             prev = r
 manifest = {
     "recording": os.path.relpath(folder, os.getcwd()),
@@ -326,7 +396,9 @@ manifest = {
     **({"fidelity_round": 2, "fidelity": "The whole run follows v1.5.0's own event order at the 4,096-token window (OVERRIDES §40-§41): text arrives in one piece when its turn ends (the drawer shows the live response), approvals answer once committed and write their summaries into the conversation, the resumed run recalls context again, host rows carry no activity class (no 'Explored' fold), model rows carry no timing detail (a local GGUF model), no turn-end is held at 4K (no 'Draft withdrawn'), and the approved tests run inside the approve route"} if round2 else {}),
     "moments": moments,
     "toast_on_screen": [{"frames": s, "seconds": [sec(s[0]), sec(s[1])]} for s in spans],
-    **({"undo_track": undo_track} if round2 else {}),
+    **({"retake": meta["retake"], "undo_y": meta.get("undoY")} if meta.get("retake") else {}),
+    **({"undo_track": undo_track, "dates_card_track": card_track} if round2 else {}),
+    "usage_lines": usage_spans(lambda f: at(f, "usage")),
     "geometry_css_px": geometry,
     "clocks": {"run_start_frame": meta["T0"], "live_seconds_at_settles": meta["live"], "approval_waits": meta["waits"],
                "model_attempts": meta["model"], "usage": meta["usage"]},

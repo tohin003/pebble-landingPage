@@ -142,6 +142,7 @@ async function probeFrame(page) {
     const inConv = (sel) => (cbox ? qa(sel).filter((el) => seen(el, cbox)) : []);
     return {
       drawerTop: panel ? round(panel.scrollTop) : null,
+      drawerBox: rect(panel), // the Details drawer's scrolling panel: what of it the window shows
       convTop: conv ? round(conv.scrollTop) : null,
       toast: toast ? [text(toast), rect(toast), getComputedStyle(toast).opacity] : null,
       status,
@@ -171,8 +172,15 @@ async function probeFrame(page) {
       // The companion's quick chat (Pet.vue): its status line, the task summary line and the feed's messages.
       pet: (() => {
         if (!q(".quick-feed")) return null;
+        const box = q(".quick-feed").getBoundingClientRect(), composer = q(".pet-composer textarea[aria-label='Message Pebble']");
         return { status: text(q(".pet-status")), task: text(q(".pet-summary-task")),
-          feed: qa(".quick-feed > article").map((a) => [a.classList.contains("user") ? "user" : "assistant", (text(a) || "").slice(0, 80), rect(a)]) };
+          feed: qa(".quick-feed > article").map((a) => [a.classList.contains("user") ? "user" : "assistant", (text(a) || "").slice(0, 80), rect(a)]),
+          // the usage lines in the feed that a viewer can see (TokenStats), the feed's own box, the composer's text and
+          // its last button: Send message (.pet-send), or Stop task while a run is working with an empty composer
+          usage: qa(".quick-feed .token-stats").filter((el) => seen(el, box)).map((el) => [text(el), rect(el)]),
+          feedBox: rect(q(".quick-feed")), typed: composer ? composer.value : null,
+          send: (() => { const b = q(".pet-composer .pet-send") || q(".pet-composer button[aria-label='Stop task']");
+            return b ? [b.getAttribute("aria-label"), rect(b), b.disabled] : null; })() };
       })(),
     };
   });
@@ -619,6 +627,10 @@ const TIMELINES = {
         convScroll: [435, 453], runTheTests: 480, card: 484, runTests: 534, cardScroll: [537, 555], testsEnd: 606, context: 609,
         resultScroll: [612, 630], stepsScroll: [648, 666], respond: 672, verified: 673, complete: 675 };
       const STEPS_Y = 380; // where the person brings the newest step (its centre, CSS px of the window)
+      // Retake 2b (the lead, after round 2): the person's scroll to the applied card brings its "Undo this edit" to this
+      // centre y, so the whole card stays in the window while the drawer's live response grows above it (10.80-14.03 s).
+      // Round 2 brought it to where Apply edit had been (y 692), and the card dipped below the window.
+      const UNDO_Y = 560;
       const T0 = K.send;
       const request = await fixture(page, "text.request");
       const r = await fixture(page, "reply");
@@ -683,12 +695,7 @@ const TIMELINES = {
       // get_chat). Each approve route (app.py _approve()) marks its action running, applies it, commits the receipt,
       // writes its summary into the conversation, sends actions and idle and answers; the run's records change with
       // it (the approval "Approved: …" with its wait, the staging call's receipt now the applied one, without "Staged").
-      // The second leaves nothing pending, so it also dispatches the continuation before it answers. Where Apply edit
-      // sits before the first click is kept for the scroll below (the film's match cut).
-      on(K.p1 - 1, (pg) => pg.evaluate(() => {
-        const b = document.querySelector("#details-drawer .action-card.pending .primary-button")?.getBoundingClientRect();
-        window.__film = { ...(window.__film || {}), applyY: b ? (b.top + b.bottom) / 2 : 692 };
-      }));
+      // The second leaves nothing pending, so it also dispatches the continuation before it answers.
       const approveEdit = (f, id, label, toolRow, okSeq, bound, wait, running, applied, summary, dispatch) => {
         on(f, (pg) => pg.click("#details-drawer .action-card.pending .primary-button"));
         sendActions(f, running);
@@ -721,9 +728,10 @@ const TIMELINES = {
       progress(296, "Recalled relevant context", "done", null, { memory_count: 3 });
       progress(297, "Resumed committed context", "done");
       pub(297, row(S.context2, at(297), "context", "Recalled 3 memories", "done", null, span(K.running2, 297), `Context ready in ${Math.round(span(K.running2, 297) * 1000)} ms`));
-      // The person scrolls the drawer to the applied card, so its "Undo this edit" sits where Apply edit was; the end
-      // follows the card while rows arrive.
-      followScroll(steps, K.scroll[0], K.scroll[1], "#details-drawer .details-panel", "#details-drawer .undo-button", "applyY");
+      // The person scrolls the drawer to the applied card, so its "Undo this edit" sits at UNDO_Y; the end follows the
+      // card while rows arrive.
+      on(K.scroll[0] - 1, (pg) => pg.evaluate((y) => (window.__film = { ...(window.__film || {}), undoY: y }), UNDO_Y));
+      followScroll(steps, K.scroll[0], K.scroll[1], "#details-drawer .details-panel", "#details-drawer .undo-button", "undoY");
       const check = (seq, f) => {
         // controller.py completion(): AgentGuard's summary (completion_gate), then the check row with its verdict
         pub(f, row(seq, at(f), "check", "Not verified · 2 changed files, no tests run", "done", null, 0.02, "1 item to resolve"));
@@ -814,7 +822,7 @@ const TIMELINES = {
         if (seen[S.heldNote] !== at(K.runTheTests) || seen[S.heldCall] !== at(K.runTheTests) || seen[S.heldOk] !== at(bindRun) || seen[S.heldWaiting] !== at(bindRun + 1))
           throw new Error("the held decision's rows are not where the schedule says: " + JSON.stringify(seen));
       });
-      TIMELINES["main-live-film-150"].meta = { fidelity_round: 2, T0, K, transitions, live: [live1, live2, live3],
+      TIMELINES["main-live-film-150"].meta = { fidelity_round: 2, retake: "2b", undoY: UNDO_Y, T0, K, transitions, live: [live1, live2, live3],
         settles: [K.settle1, K.hold, K.complete], waits: { dates: waitDates, tests: waitTests, run: waitRun },
         bind: { dates: bindDates, tests: bindTests, run: bindRun }, model: h.attempts, usage: h.usageLog, schedule,
         testsRunning: [K.runTests, K.testsEnd], progress: h.progressLog };
