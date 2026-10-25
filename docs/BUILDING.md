@@ -222,26 +222,24 @@ poster, the teaser, the loops and the wallpaper stay in `v1/`.
 
 ## 3. The score, the sound effects and the mix
 
-The film's music is an original score, composed in code (`tools/audio/compose_score.py`) and played on recorded CC0
-instrument samples by our own sampler (`tools/audio/render_sampled.py`). It is cut music-first: the film's timeline
-reads the score's beat map (`tools/audio/beatmap.json`: 100 BPM, 18 frames a beat at 30 fps). Raw audio never enters
-git: `.gitignore` lists `*.wav`, `*.mp3`, `*.flac`, `*.aiff`, `*.m4a` and `*.mov`, and everything audible lives in
-`.work/audio/`.
+The trailer's music is an original score synthesised in code: `tools/audio/scores/trailer_b.py`, a bright electro-pop
+launch cue on the engine in `tools/audio/synth` (its README), picked by a judge from two candidates written to the
+trailer blueprint (`trailer_a.py`, a hybrid trailer cue, is the other). It follows the film's grid
+(`tools/audio/beatmap.json`: 100 BPM, 18 frames a beat at 30 fps). Raw audio never enters git: `.gitignore` lists
+`*.wav`, `*.mp3`, `*.flac`, `*.aiff`, `*.m4a` and `*.mov`, and everything audible lives in `.work/audio/`.
 
-**The music bed.** One command fetches and verifies the sample kit (`tools/audio/sample_kit.py` checks every file
-against its pinned commit and its SHA-256; about 113 MB), renders the bed, validates it against the beat map and copies
-the beat map into place:
+**The score's stems.** `final_mix.sh` (below) renders them when one is missing or older than the score file: the bed
+(chords, pads, the hook and leads, and the score's own hits and risers, which carry on through Pebble's holds) and the
+drive (drums and bass, which stop in them), for the film and for the 30 s cut (its own bars, in its order), into
+`.work/audio/render/score/`:
 
 ```bash
-scripts/heavy.sh bed tools/audio/use_music.sh original-sampled   # the default: the score on recorded CC0 instruments
-scripts/heavy.sh bed tools/audio/use_music.sh original           # the same score, synthesised in code
+scripts/heavy.sh score /usr/sbin/taskpolicy -c utility .work/audio/.venv/bin/python -I tools/audio/scores/trailer_b.py render --out .work/audio/render/score
 ```
 
-The bed's first bar is voiced on the upright piano, an octave lower than the score's marimba, with the strings' chord
-under it (`render_sampled.py --opening warm`, the default): heard straight after silence, the marimba's first notes
-read as a telephone or a ringtone to Apple's sound classifier. `tools/audio/music_options.json` lists every option,
-including the stock tracks that were auditioned and not used. After any switch, the film must re-snap to the new beat
-map and the cue list must be exported again.
+The render is deterministic: its samples come out identical every time. A float WAV's PEAK chunk records when it was
+written, so compare the samples, not the file's hash. The retired scores (the sampled cue, `tools/audio/use_music.sh`,
+and the recut's drive, `tools/audio/drive.py`) stay in `tools/audio/` for the record.
 
 **The sound effects** (`.work/audio/sfx/`). The whooshes, the riser, the soft hits, the shimmer, the downlifter and
 the energetic recut's impacts, UI sounds and rim clicks are synthesised:
@@ -260,45 +258,49 @@ Download the two zips from the URLs in the header of `tools/audio/sfx_foley.py`,
 ```
 
 **The cue list.** The film's timeline places every effect and the mix's automation; the exporter turns them into
-`tools/audio/cues.json` (36 effects, and 7 automation spans: the hook's ride, four gaps, the hold and the tail):
+`tools/audio/cues.json` (41 effects, and 7 automation spans: four breath gaps, Pebble's two holds and the tail):
 
 ```bash
 bun video/scripts/export-cues.ts           # write tools/audio/cues.json from video/src/film/timeline.ts
 bun video/scripts/export-cues.ts --check   # exit 1 if the file on disk is out of date
 ```
 
-**The masters and their checks.** `final_mix.sh` refuses to mix with a stale cue list, renders the drum-and-sub drive
-(`tools/audio/drive.py` → `.work/audio/render/drive.wav`) when it is missing or older than `drive.py`, and prints the
-bed's and the drive's SHA-256. It writes a web master at −16 LUFS (limiter ceiling −1.7 dBTP) and a social master at
-−14 LUFS (−1.5 dBTP), both in `.work/audio/render/`. Each is then encoded as `encode.sh` encodes it (AAC 160 kb/s for
-the film, 192 kb/s for the social films), and the ceiling comes down in 0.1 dB steps until that encode's true peak
-stays under `verify.mjs`'s gate (−1.5 and −1.0 dBTP), because the recut's drums make the codec overshoot the ceiling:
+**The masters and their checks.** `final_mix.sh` refuses to mix with a stale cue list (the film's or the 30 s cut's),
+renders the score's stems when needed and prints their SHA-256, then writes four masters into `.work/audio/render/`:
+`soundtrack_web.wav` at −16 LUFS (limiter ceiling −1.7 dBTP), `soundtrack_social.wav` at −14 LUFS (−1.5 dBTP),
+`soundtrack_x30_social.wav` at −14 LUFS from the cut's own stems and cue list, and `soundtrack_social_narrated.wav`,
+the narrated twin: the social master with the voice stem from `tools/audio/narration.py`, the music and effects ducked
+4.5 dB under each line (`mix_master.py --voice`), plus its music and effects alone (`…_narrated_me.wav`) for the
+classifier. Each is encoded as `encode.sh` encodes it (AAC 160 kb/s for the film, 192 kb/s for the social films), and
+the ceiling comes down in 0.1 dB steps until that encode's true peak stays under `verify.mjs`'s gate (−1.5 and −1.0
+dBTP). The 30 s cut is dense in loud bars, so its limiter costs it about 0.5 LU; 0.3 dB of make-up brings it back
+inside the −14 ± 0.5 gate (`mix_master.py --settle`):
 
 ```bash
-scripts/heavy.sh final-mix tools/audio/final_mix.sh
-scripts/heavy.sh mix-checks tools/audio/mix_checks.sh     # exit 1 when a gate fails
+scripts/heavy.sh final-mix /usr/sbin/taskpolicy -c utility tools/audio/final_mix.sh
+scripts/heavy.sh mix-checks /usr/sbin/taskpolicy -c utility tools/audio/mix_checks.sh     # exit 1 when a gate fails
 ```
 
 The checks measure loudness, true peak and loudness range with FFmpeg, the mono fold-down and the share of energy a
 small speaker can play, and run Apple's SoundAnalysis over the mix to catch anything that reads as a voice, an alarm,
-a siren or a ringtone, including the opening heard straight after silence and the end card. Results go to
-`.work/audio/analysis/m1/`; look at the spectrogram PNGs, then delete them. The checks also gate the AAC encodes' true
-peak and the last 54 frames' digital silence, and report the loudness curve (the dynamics report). The energetic
-recut's masters measure −16.1 LUFS and −1.8 dBTP (web; its AAC 160 kb/s encode −1.62 dBTP) and −14.3 LUFS and −1.5 dBTP
-(social; AAC 192 kb/s −1.05); their hashes are in `docs/media-provenance.json`.
+a siren, a ringtone or a foghorn: in 3 s windows on two grids; at the opening and at the drop, the climax's release and
+the tests passing, each heard straight after silence; and in Pebble's two holds and on the end card. On the narrated
+twin, speech is expected over the narrator's lines only, and its music and effects alone pass every gate. Results go
+to `.work/audio/analysis/trailer/`; look at the spectrogram PNGs, then delete them. The checks also gate the AAC
+encodes' true peak and the last 54 frames' digital silence, and report the trailer's loudness curve (the dynamics
+report: the question hits, the dead stop and the drop, the holds, the push on Verified against the tests passing, the
+breakdown). The masters' hashes and measurements are in `docs/media-provenance.json` (`music.trailer_score`).
 
-**The 30 s cut's soundtrack.** The cut for X (`docs/film-cuts/x30.json`, section 5) has its own music: a 12-bar
-arrangement of the same score, not a splice of the bed, with the film's effects mapped onto the cut. One command
-builds the bed, the mix and the checks (the film's bed must be current, and the sample kit on disk for the bed step):
+**The 30 s cut's soundtrack.** The cut for X (`docs/film-cuts/x30.json`, section 5) has its own music: the score's own
+bars in the cut's order (`music.score_bars`), not a splice of the film's mix, with the film's effects mapped onto the
+cut. `final_mix.sh` makes it with the film's masters. After a new cue export, re-map the cut's cues first:
 
 ```bash
-scripts/heavy.sh cut-x30 tools/audio/cut_soundtrack.sh docs/film-cuts/x30.json   # soundtrack_x30_social.wav, -14 LUFS
+.work/audio/.venv/bin/python -I tools/audio/cut_cues.py docs/film-cuts/x30.json           # writes tools/audio/cues.x30.json
 .work/audio/.venv/bin/python -I tools/audio/cut_cues.py docs/film-cuts/x30.json --check   # the cut's cue list is current
 ```
 
-The energetic recut keeps the x30 bed as rendered: after a new cue export, run `cut_cues.py docs/film-cuts/x30.json`
-(without `--check`) to re-map the cut's cues, then only the `mix` and `checks` steps (`cut_soundtrack.sh
-docs/film-cuts/x30.json mix`, then `… checks`). The mix renders the cut's drive (`drive.py --cut`) every time.
+`tools/audio/cut_soundtrack.sh` made the retired sampled score's cut and is not used for the trailer.
 
 ## 4. The films, the loops and the stills in Remotion
 
@@ -467,8 +469,8 @@ node tools/encode/verify.mjs "$D"             # public/media and the social fold
 ```
 
 `node tools/captions/cues.mjs cut-inputs docs/film-cuts/x30.json 2304 30` prints the seeks the cut uses. If the
-film's timing changes, pick the ranges again by the same rule, then re-run the caption check, `cut_cues.py --check`
-and `cut_soundtrack.sh`.
+film's timing changes, pick the ranges again by the same rule, then re-run the caption check, `cut_cues.py` and
+`final_mix.sh` (the score renders the cut's bars from `music.score_bars`).
 
 ## 6. Captions and chapters
 
