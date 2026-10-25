@@ -18,19 +18,23 @@ Every command runs from the repo root after `source scripts/env.sh`. Masters are
 fit this disk). Render them one at a time, and delete each master once its encodes have passed `verify.mjs`.
 
 ```bash
-# 1. Masters (MASTER_PLAN §5.4), one heavy job each, all with the same flags (no audio: the mix is muxed later).
+# 1. Masters (MASTER_PLAN §5.4), one heavy job each, all with the same flags (no audio: the mix is muxed later):
+#    one browser tab and PNG frames (OVERRIDES §20; docs/BUILDING.md §4), the Mac's own Chrome.
 cd video
 ../scripts/heavy.sh master-film npx remotion render src/index.ts LaunchFilm out/masters/film.mp4 \
-  --codec=h264 --crf=12 --x264-preset=medium --pixel-format=yuv420p --color-space=bt709 --muted --concurrency=2
+  --codec=h264 --crf=12 --x264-preset=medium --pixel-format=yuv420p --color-space=bt709 --muted \
+  --concurrency=1 --image-format=png --browser-executable="$CHROME_PATH" --chrome-mode=chrome-for-testing
 ../scripts/heavy.sh master-l3 npx remotion render src/index.ts LoopApproveUndo out/masters/loop-approve-undo.mp4 \
-  --codec=h264 --crf=12 --x264-preset=medium --pixel-format=yuv420p --color-space=bt709 --muted --concurrency=2
+  --codec=h264 --crf=12 --x264-preset=medium --pixel-format=yuv420p --color-space=bt709 --muted \
+  --concurrency=1 --image-format=png --browser-executable="$CHROME_PATH" --chrome-mode=chrome-for-testing
 #    The same for LaunchFilmSquare, LaunchFilmVertical, FilmTeaser and every Loop* / Loop*Phone composition in
 #    video/src/Root.tsx. Posters are stills of frame 0; the film's is FilmPoster at --scale=2 (2560 x 1440):
 ../scripts/heavy.sh still-film npx remotion still src/index.ts FilmPoster out/stills/film.poster.png --frame=0 --scale=2
 cd ..
 
-# 2. The website film: four files with the web soundtrack (-16 LUFS), each fitted to its budget.
-tools/encode/encode.sh film video/out/masters/film.mp4 .work/audio/render/soundtrack_web.wav
+# 2. The website film: four files with the web soundtrack (-16 LUFS), each fitted to its budget, into public/media/v2
+#    (src/lib/media.ts FILM_MEDIA, since the energetic recut; --out-dir's default is public/media/v1).
+tools/encode/encode.sh film video/out/masters/film.mp4 .work/audio/render/soundtrack_web.wav --out-dir public/media/v2
 
 # 3. The teaser and the loops (silent). A loop's 4:5 phone master is the optional third argument.
 tools/encode/encode.sh teaser video/out/masters/teaser.mp4
@@ -42,8 +46,8 @@ tools/encode/encode.sh poster video/out/stills/film.poster.png public/media/v1/f
 tools/encode/encode.sh poster video/out/stills/film.poster.png public/media/v1/teaser.poster 1280 720
 tools/encode/encode.sh poster video/out/stills/loop-approve-undo.poster.png public/media/v1/loop-approve-undo.poster 1080 1080
 
-# 5. Text tracks for the page, and the full film's SRT for the social folder.
-node tools/captions/build.mjs --srt "$HOME/Desktop/Pebble launch film/Pebble-launch-film.srt"
+# 5. Text tracks for the page (beside the film in public/media/v2), and the full film's SRT for the social folder.
+node tools/captions/build.mjs --out-dir public/media/v2 --srt "$HOME/Desktop/Pebble launch film/Pebble-launch-film.srt"
 
 # 6. Social masters (-14 LUFS; never committed): 16:9, 1:1 and 9:16, each from its own composition.
 D="$HOME/Desktop/Pebble launch film"
@@ -51,7 +55,7 @@ tools/encode/encode.sh social video/out/masters/film.mp4 .work/audio/render/soun
 tools/encode/encode.sh social video/out/masters/film-square.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1080x1080.mp4"
 tools/encode/encode.sh social video/out/masters/film-vertical.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1080x1920.mp4"
 
-# 7. Everything at once: public/media/v1 plus the social folder.
+# 7. Everything at once: public/media (v1 and v2) plus the social folder.
 node tools/encode/verify.mjs "$D"
 ```
 
@@ -108,7 +112,7 @@ that, the command fails and the last try is kept in `.work/tmp/encode-rejected/`
 ## What `verify.mjs` checks
 
 ```bash
-node tools/encode/verify.mjs                                     # public/media/v1, plus public/ totals
+node tools/encode/verify.mjs                                     # public/media/v1 and v2, plus public/ totals
 node tools/encode/verify.mjs "$HOME/Desktop/Pebble launch film"  # ... plus the social folder
 node tools/encode/verify.mjs --no-public <files or folders>      # only these
 node tools/encode/verify.mjs --no-analysis                       # probe-only: no loudness or seam pass, no heavy job
@@ -143,7 +147,9 @@ node tools/encode/verify.mjs --json                              # machine-reada
   `tools/captions/build.mjs` makes from today's sources (a stale track fails), and so must a full-film `.srt`.
 - **Posters**: format, budget, an AVIF and a WebP twin, the aspect of their video and of the size `src/lib/media.ts`
   gives them (a different size with the same aspect is a warning: the page's srcset would describe it wrongly).
-- **Strays**: a file in `public/media/v1` that `src/lib/media.ts` would never request is a warning.
+- **Strays**: a file in a versioned media folder (`public/media/v1`, `v2`, …) that `src/lib/media.ts` would never
+  request from that folder is a warning: the film's videos and text tracks belong in its `FILM_MEDIA` (`v2`), the rest
+  in its `MEDIA` (`v1`).
 
 ## Cut files
 

@@ -3,8 +3,10 @@
 // usage (repo root, after `source scripts/env.sh`):
 //   node tools/encode/verify.mjs [<file or folder> ...] [--json] [--no-public] [--no-analysis] [--no-loudness] [--no-seams]
 //
-// What it reads: every file under public/media/v1 (unless --no-public), plus the paths given (for example the social
-// masters in "~/Desktop/Pebble launch film/"). A file's role comes from its name:
+// What it reads: every file under the versioned media folders public/media/v1, v2, ... (unless --no-public), plus the
+// paths given (for example the social masters in "~/Desktop/Pebble launch film/"). Since the energetic recut the film's
+// videos and text tracks are in v2 and everything else is in v1 (src/lib/media.ts MEDIA and FILM_MEDIA); a file in a
+// folder the page doesn't read it from is a stray (a warning). A file's role comes from its name:
 //   film-{1080,720}.{hevc,h264}.mp4   the website film       teaser-720.{hevc,h264}.mp4   the teaser
 //   loop-<id>[-phone].{hevc,h264}.mp4 a feature loop         <name>.poster.{avif,webp}    a poster
 //   film.en.vtt, film.chapters.vtt, film.descriptions.en.vtt, *.vtt, *.srt                text tracks
@@ -141,8 +143,49 @@ function classify(file) {
   return { kind: "other" };
 }
 
-/** Names the page can use (src/lib/media.ts), so a stray file in public/media/v1 is reported. */
-function pageKnows(name, loopIds) {
+/** The film's own files: the ones src/lib/media.ts reads from FILM_MEDIA (public/media/v2 since the energetic recut). */
+const FILM_FILE = /^(film-(1080|720)\.(hevc|h264)\.mp4|film\.(en|chapters|descriptions\.en)\.vtt)$/;
+
+/**
+ * The folders src/lib/media.ts reads from, as public paths: MEDIA for most files, FILM_MEDIA for the film's videos and
+ * text tracks. An older media.ts without FILM_MEDIA reads the film from MEDIA too.
+ */
+export function mediaBases(text) {
+  const media = /const MEDIA\s*=\s*"([^"]+)"/.exec(text)?.[1] ?? "/media/v1";
+  const film = /const FILM_MEDIA\s*=\s*"([^"]+)"/.exec(text)?.[1] ?? media;
+  return { media, film };
+}
+
+function mediaBasesFromMedia() {
+  try {
+    return mediaBases(fs.readFileSync(path.join(REPO, "src/lib/media.ts"), "utf8"));
+  } catch {
+    return { media: "/media/v1", film: "/media/v1" };
+  }
+}
+
+/** The versioned folders under public/media ("v1", "v2", ...), oldest first. */
+function mediaVersions(publicDir) {
+  const root = path.join(publicDir, "media");
+  if (!fs.existsSync(root)) return [];
+  return fs
+    .readdirSync(root)
+    .filter((name) => /^v\d+$/.test(name) && fs.statSync(path.join(root, name)).isDirectory())
+    .sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)));
+}
+
+/** "/media/v2" for a file under public/media/v2/, or null outside the versioned media folders. */
+function mediaFolderOf(file) {
+  const m = /^(v\d+)[\\/]/.exec(path.relative(path.join(REPO, "public", "media"), file));
+  return m ? `/media/${m[1]}` : null;
+}
+
+/**
+ * Names the page can use from the folder a file is in (src/lib/media.ts: the film's videos and tracks from FILM_MEDIA,
+ * the rest from MEDIA), so a stray file in a versioned media folder is reported.
+ */
+function pageKnows(name, loopIds, folder, bases) {
+  if (folder !== (FILM_FILE.test(name) ? bases.film : bases.media)) return false;
   const loop = /^loop-([a-z0-9-]+?)(-phone)?\.(hevc\.mp4|h264\.mp4|poster\.avif|poster\.webp)$/.exec(name);
   if (loop) return loopIds.size === 0 || loopIds.has(loop[1]);
   return (
@@ -494,15 +537,16 @@ function checkTrack(rec, cls, ctx) {
 function displayPath(file) {
   if (file.startsWith(REPO + path.sep)) {
     const rel = path.relative(REPO, file);
-    return rel.startsWith("public/media/v1/") ? rel.slice("public/media/v1/".length) : rel;
+    if (rel.startsWith("public/media/v1/")) return rel.slice("public/media/v1/".length);
+    return rel.startsWith("public/media/") ? rel.slice("public/media/".length) : rel; // "v2/film-1080.hevc.mp4"
   }
   const home = os.homedir();
   return file.startsWith(home + path.sep) ? `~/${path.relative(home, file)}` : file;
 }
 
-/** The deepest folder holding every file outside public/media/v1 (shown once, so the table keeps short names). */
+/** The deepest folder holding every file outside public/media (shown once, so the table keeps short names). */
 function commonFolder(records) {
-  const outside = records.map((r) => r.file).filter((f) => !f.startsWith(path.join(REPO, "public/media/v1") + path.sep));
+  const outside = records.map((r) => r.file).filter((f) => !f.startsWith(path.join(REPO, "public/media") + path.sep));
   if (outside.length < 2) return null;
   let dir = path.dirname(outside[0]);
   while (!outside.every((f) => f.startsWith(dir + path.sep))) dir = path.dirname(dir);
@@ -512,7 +556,7 @@ function commonFolder(records) {
 function printTable(records, totals) {
   const base = commonFolder(records);
   const shown = (file) => (base && file.startsWith(base + path.sep) ? path.relative(base, file) : displayPath(file));
-  if (base) console.log(`(files outside public/media/v1 are shown relative to ${displayPath(base)}/)\n`);
+  if (base) console.log(`(files outside public/media are shown relative to ${displayPath(base)}/; in public/media, v1's by name and the others as v2/<name>)\n`);
   const cols = [
     ["", (r) => (r.fails.length ? "FAIL" : r.warns.length ? "warn" : "ok")],
     ["file", (r) => shown(r.file)],
@@ -552,9 +596,8 @@ async function main() {
   }
 
   const publicDir = path.join(REPO, "public");
-  const mediaDir = path.join(publicDir, "media/v1");
   const files = new Set();
-  if (opts.includePublic && fs.existsSync(mediaDir)) for (const f of walk(mediaDir)) files.add(f);
+  if (opts.includePublic) for (const v of mediaVersions(publicDir)) for (const f of walk(path.join(publicDir, "media", v))) files.add(f);
   for (const p of opts.paths) {
     if (!fs.existsSync(p)) throw new Error(`no such file or folder: ${p}`);
     if (fs.statSync(p).isDirectory()) for (const f of walk(p)) files.add(f);
@@ -562,6 +605,7 @@ async function main() {
   }
 
   const loopIds = loopIdsFromMedia();
+  const bases = mediaBasesFromMedia();
   let tracks = null;
   let texts = {};
   try {
@@ -596,7 +640,8 @@ async function main() {
       rec.fail(`could not be checked: ${error.message}`);
     }
     if ((cls.web || rec.inPublic) && rec.size > LIMITS.file) rec.fail(`${fmtSize(rec.size)}, over the ${fmtSize(LIMITS.file)} per-file limit (D16)`);
-    if (rec.inPublic && rec.file.startsWith(mediaDir + path.sep) && !pageKnows(path.basename(rec.file), loopIds)) rec.warn("src/lib/media.ts does not use a file of this name");
+    const folder = rec.inPublic ? mediaFolderOf(rec.file) : null;
+    if (folder && !pageKnows(path.basename(rec.file), loopIds, folder, bases)) rec.warn(`src/lib/media.ts does not read a file of this name from ${folder}`);
   }
   for (const rec of records) {
     const cls = classify(rec.file);
