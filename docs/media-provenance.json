@@ -2454,7 +2454,7 @@
     },
     "final_masters": {
      "made": "2026-10-25, the score lane part 2: tools/audio/final_mix.sh (mix_master.py --drive with the automation, and --aac) and tools/audio/cut_soundtrack.sh docs/film-cuts/x30.json mix; gates tools/audio/mix_checks.sh and cut_soundtrack.sh ... checks",
-     "supersedes": "lane fin-audio's masters (opening.final_masters: c81de730..., 3f4c7cb8..., b8e34c32...), which the v1 film files in public/media/v1 still carry",
+     "supersedes": "lane fin-audio's masters (opening.final_masters: c81de730..., 3f4c7cb8..., b8e34c32...), which the pre-recut film files carried: public/media/v1/film-*, removed from the tree on 2026-10-25 when the recut's encodes went to public/media/v2 (still in git history), and the Desktop films they replaced",
      "measured": "tools/audio/mix_checks.py (JSON in .work/audio/analysis/m1/ and x30/, not committed): FFmpeg ebur128 on the WAV and on AAC 160 kb/s and 192 kb/s encodes (true peak read as tools/encode/verify.mjs reads it); Apple SoundAnalysis over 3 s windows on the main and the 1.5 s-shifted grids, the opening after silence (0.75 s and 1.5 s), the end card and the hold window (29-34 s); the dynamics report. Each master's AAC, muxed with a synthetic picture as encode.sh muxes it, read the same true peak and loudness",
      "soundtrack_web.wav": {
       "format": "PCM 24-bit, 48 kHz, stereo, in .work/audio/render/ (not committed)",
@@ -3158,17 +3158,43 @@
  },
  "assets": [
   {
-   "file": "public/media/v1/film-1080.hevc.mp4, film-1080.h264.mp4, film-720.hevc.mp4, film-720.h264.mp4",
-   "status": "encoded 2026-10-24 by tools/encode/encode.sh film (lane fin-deliver, HANDOFF-fin-deliver): 2,304 frames at 30 fps each; 23.15 MB for the set (C6 allows 45 MB)",
-   "music": "original-sampled (tools/audio/beatmap.json): soundtrack_web.wav (c81de730...), see music.sampled_score.opening.final_masters",
-   "sfx": "tools/audio/cues.json (21 cues), mixed into the soundtrack",
-   "loudness": "measured on the final AAC: -16.0 LUFS, -1.7 dBTP in all four files"
+   "file": "public/media/v2/film-1080.hevc.mp4, film-1080.h264.mp4, film-720.hevc.mp4, film-720.h264.mp4 (the energetic recut; src/lib/media.ts FILM_MEDIA)",
+   "status": "encoded 2026-10-25 by tools/encode/encode.sh film --out-dir public/media/v2 (lane energy-deliver, HANDOFF-energy-deliver) from the LaunchFilm master rendered at 2e37b26: 2,304 frames at 30 fps each, every file at its starting CRF (HEVC 25 and 26, H.264 20 and 21); 22.90 MB for the set (C6 allows 45 MB). The pre-recut files in public/media/v1 (lane fin-deliver, 2026-10-24) left the working tree",
+   "sha256": {
+    "film-1080.hevc.mp4": "df33ceed47fb15d24d81ff1c112049aafc2140c78119422df4c5467737bf176d",
+    "film-1080.h264.mp4": "80533f094fd2fef503e8fe29f30e438ef6c3343a6fdc069e5b5827433709ba39",
+    "film-720.hevc.mp4": "cd921058578a4e08e6241c54e6d6167391f11a0bb421ac3eaf64ebdf076cc1b1",
+    "film-720.h264.mp4": "dc28393a8ec545a0a440c45f2eb90c7254e7bd7da340b8dfc3635bb002215758"
+   },
+   "music": "the energetic recut's score: soundtrack_web.wav (2ffcba9c...), see music.sampled_score.energetic_recut.final_masters",
+   "sfx": "tools/audio/cues.json (36 effects and 7 automation spans), mixed into the soundtrack",
+   "loudness": "measured on the final AAC by tools/encode/verify.mjs: -16.11 LUFS, -1.618 dBTP in all four files"
+  },
+  {
+   "file": "public/media/v2/film.en.vtt, film.chapters.vtt, film.descriptions.en.vtt",
+   "status": "built 2026-10-25 by tools/captions/build.mjs --out-dir public/media/v2 (lane energy-deliver) from docs/film-captions.json (27 captions) and src/content/chapters.ts (9 chapters, 9 descriptions); verify.mjs checks they equal what build.mjs makes now",
+   "sha256": {
+    "film.en.vtt": "4f36a89cc2ae025b6c791bf3b3c8acfe4cd71bd9040896e6c0d5374dbc5e70c4",
+    "film.chapters.vtt": "87f97b416311af182ae52e03a3a4f3ca48ae95aae2c749a3a0e2a64b67d96407",
+    "film.descriptions.en.vtt": "f0387f9ecf2b0ead760b857fb0a17730176cacdfdcc8842d3ad00550495a2ded"
+   },
+   "music": null
   },
   {
    "file": "Desktop deliverables (not committed, OVERRIDES 4): the full film as Pebble-launch-film-1920x1080.mp4, Pebble-launch-film-1080x1080.mp4 and Pebble-launch-film-1080x1920.mp4 (LinkedIn); the 30 s cut x30 as Pebble-launch-film-30s-1920x1080.mp4, -30s-1080x1080.mp4 and -30s-1080x1920.mp4 (X)",
-   "status": "encoded 2026-10-24 by tools/encode/encode.sh social (lane fin-deliver); the 30 s files with --cut docs/film-cuts/x30.json, from the full film's masters",
-   "music": "original-sampled: soundtrack_social.wav (3f4c7cb8...) for the full film, soundtrack_x30_social.wav (b8e34c32...) for the cut",
-   "loudness": "-14 LUFS, <= -1.0 dBTP after encoding (OVERRIDES 4); measured -14.1 LUFS, -1.4 dBTP (full film) and -14.1 LUFS, -1.5 dBTP (30 s cut)"
+   "status": "encoded 2026-10-25 by tools/encode/encode.sh social (lane energy-deliver), the energetic recut; the 30 s files with --cut docs/film-cuts/x30.json, from the full film's masters (rendered at 2e37b26); the SRTs by tools/captions/build.mjs (27 and 12 cues). They replaced lane fin-deliver's files of 2026-10-24",
+   "sha256": {
+    "Pebble-launch-film-1920x1080.mp4": "c9001151da34b759fe4e9fc59ad795c7eb8ce6065beaecc582012443c0cf09dc",
+    "Pebble-launch-film-1080x1080.mp4": "5ddaaeea6d24241c6196d1f6ab7a57128f16cf8474b8fc6e378c8fc1dda8b195",
+    "Pebble-launch-film-1080x1920.mp4": "59310613092d50cdf67124d3f1b021a32ecb2fd993575bd88bd54fc3723e5e78",
+    "Pebble-launch-film-30s-1920x1080.mp4": "99a0708bd27f24fdf1e9886e254745f0a8cee0615a3008f28a53cf47ebed8044",
+    "Pebble-launch-film-30s-1080x1080.mp4": "8d5455e7426669368400d5a86411788527bb441372fda416e102a05b9843bd42",
+    "Pebble-launch-film-30s-1080x1920.mp4": "55de4ab5c96bc5f6aeb6991035ec67f0d7334ff570f1288751943f09c5c5a6ea",
+    "Pebble-launch-film.srt": "f55b38cfa172d16f0f6bee2e81828630b61b6c91a985804775dc7c3ac2720592",
+    "Pebble-launch-film-30s.srt": "50361ff8711508154334cb16a6cb206bd37ec23960a66c24eed03762ced0675a"
+   },
+   "music": "the energetic recut's score: soundtrack_social.wav (7dc992fe...) for the full film, soundtrack_x30_social.wav (435f33f9...) for the cut",
+   "loudness": "-14 LUFS, <= -1.0 dBTP after encoding (OVERRIDES 4); measured by tools/encode/verify.mjs: -14.29 LUFS, -1.051 dBTP (full film) and -14.43 LUFS, -1.330 dBTP (30 s cut)"
   },
   {
    "file": "public/media/v1/teaser-*.mp4, loop-*.mp4",
