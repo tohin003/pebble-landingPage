@@ -1,4 +1,5 @@
-"""Gate checks for the film's final soundtrack masters (lane M1; critic H9/H12, OVERRIDES §4, FILM_SPEC §11 and §20).
+"""Gate checks for the film's final soundtrack masters (lane M1; critic H9/H12, OVERRIDES §4, §37 and §41, FILM_SPEC §11
+and §20; since 2026-10-26 the trailer's, TRAILER_RESEARCH report.music).
 
 For one master (--name web|social sets the targets; any other name, e.g. a cut's, takes them from --target):
   length    exactly the film's frames (tools/audio/beatmap.json), or the cut's (--cut docs/film-cuts/<name>.json), at
@@ -12,37 +13,50 @@ For one master (--name web|social sets the targets; any other name, e.g. a cut's
             and cuts, the 192 kb/s encode <= -1.0 dBTP. The encodes are deleted.
   tags      Apple SoundAnalysis through the sound_tags helper (3 s windows, no overlap).
             Gate (the helper's own windows): no voice-like label (speech, singing, shouting, laughter ...) and no
-            siren/alarm/beep/buzzer label reaches 0.3 in any window or enters a window's top 3; every 'telephone' and
-            'ringtone' label stays below 0.3 in every window.
+            siren/alarm/beep/buzzer label reaches 0.3 in any window or enters a window's top 3; every 'telephone',
+            'ringtone' and 'foghorn' label (OVERRIDES §37) stays below 0.3 in every window.
             Boundary pass: the same labels on a copy delayed by 1.5 s, so an effect that straddles a window boundary is
             heard whole. To tell the effects from the music, the bed alone, level-matched to the master, is tagged the
             same way: a reading of 0.3 or more fails only where the bed alone stays below 0.3 (the effects push it
             over); where the bed alone is already there, it is a warning for the music, with both numbers.
             Opening pass (lane M2): the film's first 0.75 s and first 1.5 s heard after silence (a 3 s clip, silence
-            first), master and bed alone. A feed starts the film from silence, so a phone label of 0.3 or more fails
-            here whatever its source, and so does a voice or alarm label at 0.3 or in the top 3.
-            Every phone reading from 0.25 (lane M2's target) up to the gate is a warning, in every pass.
+            first), master and bed alone. A feed starts the film from silence, so a phone or foghorn label of 0.3 or
+            more fails here whatever its source, and so does a voice or alarm label at 0.3 or in the top 3.
+            After-silence passes (the trailer, report.music): the same gate on the first 0.75 s and 1.5 s from the drop
+            after the dead stop (f648), the climax's release (f1512) and the tests passing after their breath (f1656),
+            wherever this timeline plays them (AFTER_SILENCE).
+            Every phone or foghorn reading from 0.25 (lane M2's target) up to the gate is a warning, in every pass.
             Other watch labels (bell, horn, whistle ...) at 0.3 or more are notes; instruments (vibraphone ...) are not.
-            End card (lane fin-audio): a report; the passes above hold its gates. It lists every 'telephone' and
-            'ringtone' reading, master and bed alone, in each window of either grid that overlaps the end card. The end
-            card starts at the beat map's "endcard" section (f2016), or in a cut where it first plays a frame from there.
-            Hold window (the energetic recut, ENERGY_SPEC §11): the same kind of report for film 29-34 s (f870-1020,
-            AgentGuard's hold and its release; in a cut, where it plays those frames), with the phone, voice-like and
-            alarm readings. The bed alone is always the original bed (--bed: music_bed.wav, or a cut's
-            music_bed_<name>.wav), never the bed with the drive, so a label the drive stem causes counts against the
-            gates as an effect's does.
+            The narrated twin (--voice, its voice stem): speech is expected where the narrator speaks, so a voice-like
+            label in a window that overlaps one of the stem's lines is a note, never a fail; outside them every gate
+            holds. Gate the music and effects themselves on mix_master.py's --me-out file, with no --voice.
+            End card (lane fin-audio): a report; the passes above hold its gates. It lists every 'telephone', 'ringtone'
+            and 'foghorn' reading, master and bed alone, in each window of either grid that overlaps the end card. The
+            end card starts at the beat map's "endcard" section (f2016), or in a cut where it first plays a frame from
+            there.
+            Hold windows: the same kind of report for each hold of the film's cue list (--film-cues), from Pebble's
+            hold to the click that releases it (the trailer's f445-504 and f1453-1512; in a cut, where it plays those
+            frames), with the phone, voice-like, alarm and foghorn readings. The bed alone is always the score's bed
+            (--bed), never the bed with the drive, so a label the drive stem causes counts against the gates as an
+            effect's does.
   mono      loudness lost when the mix folds down to mono, (L+R)/2 on both channels (gate <= 3 dB), L/R correlation.
   speaker   share of signal power above 150 Hz (H9 small-speaker translation, >= 0.30).
   silence   the last 54 frames (1.8 s) at or below -70 dBFS, sample peak (ENERGY_SPEC §8.5: the tail ends in digital
             silence). Gate.
-  dynamics  the loudness curve (ENERGY_SPEC §8.5), a report: each check is a warning when it misses, with its numbers.
-            BS.1770 (pyloudnorm, gated) per bar and per span of bars, against the master's integrated loudness:
-            bars 1-2 4-8 LU under it; each gap's middle 200 ms at least 12 dB (K-weighted power) under the 300 ms from
-            its hit (the hook gap 6 dB); the hold's 3 s short-term loudness, centred on the film hold's middle (f940),
-            5-9 LU under it; bar 8 at least 3 LU over bar 7; bars 23-25 the loudest 3-bar span and at least 1.5 LU over
-            the mean of bars 9-22; bars 26-28 at least 6 LU under bars 23-25. A cut maps the checks onto its bars by
-            music.score_bars (a check whose bars the cut leaves out is skipped), its gaps from its own cue list and
-            the hold's middle through its ranges.
+  dynamics  the trailer's loudness curve (TRAILER_RESEARCH report.music 'LOUDNESS AND DYNAMICS GATES', and
+            OVERRIDES §41's climax), a report: each check is a warning when it misses, with its numbers. BS.1770
+            (pyloudnorm, gated) per bar and per span of bars, and K-weighted (ungated) over short windows: bars 1-9 at
+            least 6 LU under the integrated level; each question hit (f72, f216, f360) 10 dB or more over the 0.6 s
+            before it; the dead stop (f612-638) 20 dB or more under the drop's first 300 ms; the drop's 3 s 6 LU or more
+            over bar 9's first half; each hold's first 2 s 5-9 LU under the integrated level and under the montage
+            (bars 15-20); Verified (the push on f1723) in the loudest 3 s window and 1.5 LU or more over the montage;
+            the push at least as big as the tests passing (f1656): its momentary maximum (400 ms) within 0.6 s, and
+            its first 0.3, 0.4 and 1.0 s; the breakdown (bars 26-28) 6 LU or more under the climax (bars 21-25); each
+            gap's middle 200 ms at least 12 dB (K-weighted power) under the 300 ms from its hit (a gap in the hook's
+            bar, 6 dB); bars 23-25 at least 1.5 LU over the mean of bars 9-22 and the loudest 3-bar span; bars 26-28
+            at least 6 LU under bars 23-25; the last 54 frames exact zeros. LRA is reported against its 8-10 LU target.
+            A cut maps the checks onto its bars by music.score_bars and its frames through its ranges (a check whose
+            bars or frames the cut leaves out is skipped), its gaps from its own cue list.
   cues      for every effect in cues.json (automation entries, with no "file", are left out), placed exactly as
             mix_master.py places it, around the effect's peak (30 ms for clicks, pops, ticks and thuds; 200 ms for the
             rest), both K-weighted (BS.1770): the effect's level over the bed as the mix plays it (ducked, gapped, ridden
@@ -50,16 +64,17 @@ For one master (--name web|social sets the targets; any other name, e.g. a cut's
             margin in its own loudest third-octave band (its body); and its best margin among the bands where it has
             energy (within 20 dB of its loudest), which is where it can be heard. FILM_SPEC §11 aims hits 3-6 dB over
             the bed. Not a gate: read it with the spectrograms.
-  png       spectrograms (FFmpeg showspectrumpic): the full master, plus zooms on the reveal, the proof's hits and the end
-            card (web; and a cut, with the film's zoom windows mapped onto the cut's timeline). Look at them, then
+  png       spectrograms (FFmpeg showspectrumpic): the full master, plus zooms on the turn, the stop and the drop, the
+            climax, and the end (web; and a cut, with the film's zoom windows mapped onto the cut's timeline). Look at them, then
             delete them: mix_checks.sh (the film) and cut_soundtrack.sh (a cut) re-create them.
 Usage: python -I mix_checks.py MASTER.wav OUT_DIR --name NAME [--target web|social] [--cut CUT.json] [--bed BED.wav]
        [--cues cues.json] [--film-cues tools/audio/cues.json] [--sound-tags .work/audio/sound_tags]
-       [--ffmpeg /opt/homebrew/bin/ffmpeg] [--no-png]
-Writes OUT_DIR/<name>.checks.json and the raw tag JSONs <name>.{tags,tags-shift,tags-open0.75,tags-open1.5}.json and
-<name>.bed-*.json, the same for the bed alone (+ PNGs). Exit 1 when a gate fails.
-For a cut (tools/audio/cut_soundtrack.sh runs this): --name x30 --target social --cut docs/film-cuts/x30.json, with the
-cut's own bed (--bed .work/audio/render/music_bed_x30.wav) and cue list (--cues tools/audio/cues.x30.json).
+       [--ffmpeg /opt/homebrew/bin/ffmpeg] [--no-png] [--voice VOICE.wav]
+Writes OUT_DIR/<name>.checks.json and the raw tag JSONs <name>.{tags,tags-shift,tags-open0.75,tags-open1.5}.json,
+<name>.tags-after-f<frame>-<s>.json and <name>.bed-*.json, the same for the bed alone (+ PNGs). Exit 1 when a gate fails.
+tools/audio/mix_checks.sh runs it on the trailer's four masters and the narrated twin's music and effects; for a cut:
+--name x30 --target social --cut docs/film-cuts/x30.json, with the cut's own bed (--bed .work/audio/render/score/
+bed_x30.wav) and cue list (--cues tools/audio/cues.x30.json).
 """
 import argparse
 import json
@@ -87,8 +102,17 @@ INSTRUMENTS = {"vibraphone", "singing_bowl", "french_horn", "cowbell"}  # in the
 LIMIT = 0.3
 PHONE_TARGET = 0.25  # lane M2: phone readings at or above this (and under LIMIT) are warnings
 SHIFT_S = 1.5
-OPENING_XS = (0.75, 1.5)  # s of the film's start heard after silence
-ZOOMS = {"reveal": (14.0, 6.0), "proof-hits": (26.5, 13.0), "endcard": (66.0, 10.8)}
+OPENING_XS = (0.75, 1.5)  # s of the film's start heard after silence (and of each moment in AFTER_SILENCE)
+# The trailer (TRAILER_RESEARCH §6-§7, report.music; OVERRIDES §39-§41), in film frames (a cut maps them through its
+# ranges and skips what it leaves out). The other moments heard after silence: the drop after the dead stop, the
+# climax's release, and the tests passing after their breath (the blueprint's "Verified after its gap"; §41 moved
+# Verified to the push on f1723, and f1656 kept the gap and the first big hit)
+AFTER_SILENCE = ((648, "the drop, after the dead stop"), (1512, "the climax's release (Run the tests)"),
+                 (1656, "the tests pass, after their breath"))
+QUESTIONS = (72, 216, 360)          # the three question cards' hits (bars 2, 4 and 6)
+DEAD_STOP = (612, 639)              # the dead stop, up to the suck-back's gap (f639-647) into the drop on f648
+PASSED, PUSH = 1656, 1723.5         # §41: the tests pass on bar 24's downbeat; Verified (f1723) is the 16th push
+ZOOMS = {"drop": (16.8, 9.6), "climax": (47.4, 12.6), "endcard": (66.0, 10.8)}
 
 
 def label_kind(lab):
@@ -100,6 +124,8 @@ def label_kind(lab):
         return "voice"
     if has(ALARM):
         return "alarm"
+    if lab == "foghorn":       # OVERRIDES §37: gated like the phone labels (under 0.30, a warning from 0.25), as
+        return "foghorn"       # tools/audio/synth/tagcheck.py gates it
     return "other_watch"
 
 
@@ -118,6 +144,8 @@ ap.add_argument("--film-cues", default=os.path.join(here, "cues.json"), help="th
 ap.add_argument("--sound-tags", default=os.path.join(repo, ".work", "audio", "sound_tags"))
 ap.add_argument("--ffmpeg", default="/opt/homebrew/bin/ffmpeg")
 ap.add_argument("--no-png", action="store_true")
+ap.add_argument("--voice", help="the narrated twin's voice stem: speech is expected only in the windows that overlap its "
+                                "lines, so a voice-like label there is a note; everywhere else every gate holds")
 a = ap.parse_args()
 target = a.target or a.name
 if target not in TARGETS:
@@ -152,7 +180,25 @@ def film_to_cut_s(f0, f1):
 
 # where the end card starts on this timeline: the first frame played from the film's end card on
 END_CARD_S = next(((at + max(0, END_CARD_FRAME - first)) / FPS for first, end, at in RANGES if end > END_CARD_FRAME), None)
-HOLD_WINDOW_FRAMES = (870, 1020)  # film 29-34 s: AgentGuard's hold (f891) and its release (to f1008), ENERGY_SPEC §11
+# The hold windows: each hold of the film's cue list, from Pebble's hold to the click that releases it (the trailer's
+# f445-504 and f1453-1512: 14.8-16.8 s and 48.4-50.4 s, report.music)
+FILM_HOLDS = [(c["frame"], c["to_frame"]) for c in json.load(open(a.film_cues))
+              if "file" not in c and c.get("role") == "hold"]
+# The narrated twin's lines (seconds on this timeline): the voice stem's non-zero runs, merged across gaps under 0.25 s
+VOICE_SPANS = []
+if a.voice:
+    _v, _vsr = sf.read(a.voice, always_2d=True, dtype="float32")
+    _nz = np.flatnonzero(np.abs(_v).max(axis=1) > 0)
+    if len(_nz):
+        _cut = np.flatnonzero(np.diff(_nz) > int(0.25 * _vsr))
+        VOICE_SPANS = [(s0 / _vsr, (s1 + 1) / _vsr) for s0, s1 in
+                       zip(np.concatenate([[_nz[0]], _nz[_cut + 1]]), np.concatenate([_nz[_cut], [_nz[-1]]]))]
+    del _v
+
+
+def voiced(s0, s1):
+    """True when [s0, s1) s overlaps one of the narrated twin's lines."""
+    return any(s0 < v1 and s1 > v0 for v0, v1 in VOICE_SPANS)
 
 
 def film_to_cut_frame(f):
@@ -266,6 +312,25 @@ with tempfile.TemporaryDirectory(dir=a.out_dir) as tmp:
                 f.write(out)
             tags[(src, f"open{x}")] = json.loads(out)
 
+    # ---- the trailer's other moments heard after silence: (3 - X) s of silence, then the first X s from each ----
+    AS_POINTS = [(film_to_cut_frame(fr), fr, label) for fr, label in AFTER_SILENCE]
+    AS_POINTS = [(cf, fr, label) for cf, fr, label in AS_POINTS if cf is not None]
+    for cf, fr, label in AS_POINTS:
+        i0 = int(round(cf / FPS * SR))
+        for x in OPENING_XS:
+            k = int(round(x * SR))
+            for src, sig in (("master", y.T), ("bed", bed * 10 ** (bed_gain_db / 20))):
+                seg = sig[:, i0:i0 + k]
+                clip = np.zeros((2, n3))
+                clip[:, n3 - seg.shape[1]:] = seg
+                path = os.path.join(tmp, f"after-{src}.wav")
+                sf.write(path, clip.T.astype(np.float32), SR, subtype="FLOAT")
+                out = subprocess.run([a.sound_tags, path], capture_output=True, text=True, check=True).stdout
+                with open(os.path.join(a.out_dir, f"{a.name}.{'bed-' if src == 'bed' else ''}tags-after-f{fr}-{x}.json"),
+                          "w") as f:
+                    f.write(out)
+                tags[(src, f"after{fr}-{x}")] = json.loads(out)
+
 
 def readings(tg, lab):
     """{window start s: confidence} where the label reached 0.1 (the helper records watch labels from 0.1)."""
@@ -281,16 +346,26 @@ for view in ("main", "shift"):
     tg, bg = tags[("master", view)], tags[("bed", view)]
     off = SHIFT_S if view == "shift" else 0.0
     t3m, t3b = top3(tg), top3(bg)
-    cls = {"voice": [], "alarm": [], "phone": [], "other_watch": []}
+    cls = {"voice": [], "alarm": [], "phone": [], "foghorn": [], "other_watch": []}
     for w in tg["watch"]:
         lab = w["label"]
         kind = label_kind(lab)
         rm, rb = readings(tg, lab), readings(bg, lab)
-        over = sorted(s for s, p in rm.items() if p >= LIMIT)
         top_at = sorted(s for s, labs in t3m.items() if lab in labs)
-        row = {"label": lab, "max": w["max"], "mean": w["mean"], "windows_over_0_3": w["windows_over_0_3"],
+        # the narrated twin: speech is expected in the windows that overlap its lines (a note there, never a fail)
+        spoken = sorted(s for s in set(rm) | set(top_at) if kind == "voice" and voiced(s - off, s - off + 3.0))
+        for s in spoken:
+            if rm.get(s, 0.0) >= LIMIT or s in top_at:
+                notes.append(f"{view}: voice '{lab}' {rm.get(s, '<0.1')} at {s - off:.1f}-{s - off + 3:.1f} s"
+                             f"{' (top 3)' if s in top_at else ''}: the narration, expected over its line")
+        over = sorted(s for s, p in rm.items() if p >= LIMIT and s not in spoken)
+        top_at = [s for s in top_at if s not in spoken]
+        row = {"label": lab, "max": max([p for s, p in rm.items() if s not in spoken], default=0.0) if spoken else w["max"],
+               "mean": w["mean"], "windows_over_0_3": w["windows_over_0_3"],
                "in_top3_at_s": [round(s - off, 1) for s in top_at],
                "windows_over_0_1": [[round(s - off, 1), p, rb.get(s, 0.0)] for s, p in sorted(rm.items())]}
+        if spoken:
+            row["over_its_lines_max"] = max(rm.get(s, 0.0) for s in spoken)
         cls[kind].append(row)
         where = lambda s: f"{s - off:.1f}-{s - off + 3:.1f} s"  # noqa: E731
         if kind == "other_watch":
@@ -304,10 +379,10 @@ for view in ("main", "shift"):
                 fails.append(msg + ("" if view == "main" else ": the effects push it over"))
             else:
                 warnings.append(msg + ": from the music")
-        if kind == "phone":
+        if kind in ("phone", "foghorn"):
             for s, p in sorted(rm.items()):
                 if PHONE_TARGET <= p < LIMIT:
-                    warnings.append(f"{view}: phone '{lab}' {p} at {where(s)} is over the {PHONE_TARGET} target; "
+                    warnings.append(f"{view}: {kind} '{lab}' {p} at {where(s)} is over the {PHONE_TARGET} target; "
                                     f"the bed alone reads {rb.get(s, '<0.1')}")
         if kind in ("voice", "alarm"):
             for s in top_at:
@@ -321,6 +396,10 @@ for view in ("main", "shift"):
 res["tags"] = {"windows_note": "windows_over_0_1 rows: [start s in film time, master, bed alone (0.0 = below 0.1)]",
                **tag_res}
 res["tags"]["phone_max"] = {v: max([r["max"] for r in tag_res[v]["phone"]], default=0.0) for v in tag_res}
+for k_ in ("foghorn", "voice", "alarm"):   # voice: outside the narrated twin's lines
+    res["tags"][f"{k_}_max"] = {v: max([r["max"] for r in tag_res[v][k_]], default=0.0) for v in tag_res}
+if VOICE_SPANS:
+    res["tags"]["voice_spans_s"] = [[round(v0, 3), round(v1, 3)] for v0, v1 in VOICE_SPANS]
 
 # the opening heard after silence: one 3 s window each; the gate holds whatever the source (a feed starts in silence)
 opening = {}
@@ -335,9 +414,9 @@ for x in OPENING_XS:
     for lab, p in wm.items():
         kind = label_kind(lab)
         msg = f"opening (the first {x} s after silence): {kind} '{lab}' {p}; the bed alone reads {wb.get(lab, 0.0)}"
-        if kind == "phone" and p >= LIMIT:
+        if kind in ("phone", "foghorn") and p >= LIMIT:
             fails.append(msg)
-        elif kind == "phone" and p >= PHONE_TARGET:
+        elif kind in ("phone", "foghorn") and p >= PHONE_TARGET:
             warnings.append(msg + f" (over the {PHONE_TARGET} target)")
         elif kind in ("voice", "alarm"):
             if p >= LIMIT:
@@ -349,6 +428,40 @@ res["tags"]["phone_max"]["opening"] = max(
     (p for x in OPENING_XS for lab, p in ((w["label"], w["max"]) for w in tags[("master", f"open{x}")]["watch"])
      if label_kind(lab) == "phone"), default=0.0)
 
+# the trailer's other moments heard after silence (the drop, the climax's release, the tests passing): the opening's
+# gate, at each moment this timeline plays; over a narrated line, speech is a note
+after = {}
+for cf, fr, label in AS_POINTS:
+    for x in OPENING_XS:
+        tg, bg = tags[("master", f"after{fr}-{x}")], tags[("bed", f"after{fr}-{x}")]
+        wm = {w["label"]: w["max"] for w in tg["watch"]}
+        wb = {w["label"]: w["max"] for w in bg["watch"]}
+        top = [t["label"] for t in tg["timeline"][0]["top"]] if tg["timeline"] else []
+        ranked = lambda d, k: sorted(([lab, p] for lab, p in d.items() if label_kind(lab) == k), key=lambda r: -r[1])  # noqa: E731
+        after[f"f{fr}-{x}"] = {"what": label, "film_frame": fr, "frame": cf, "first_s": x, "top3": top,
+                               **{k: {"master": ranked(wm, k)[:3], "bed": ranked(wb, k)[:3]}
+                                  for k in ("phone", "voice", "alarm", "foghorn")}}
+        at = f"{label} (f{fr}: the first {x} s after silence)"
+        spoken = voiced(cf / FPS, cf / FPS + x)
+        for lab, p in wm.items():
+            kind = label_kind(lab)
+            msg = f"{at}: {kind} '{lab}' {p}; the bed alone reads {wb.get(lab, 0.0)}"
+            if kind in ("phone", "foghorn") and p >= LIMIT:
+                fails.append(msg)
+            elif kind in ("phone", "foghorn") and p >= PHONE_TARGET:
+                warnings.append(msg + f" (over the {PHONE_TARGET} target)")
+            elif kind == "voice" and spoken:
+                if p >= LIMIT or lab in top:
+                    notes.append(msg + ": the narration, expected over its line")
+            elif kind in ("voice", "alarm"):
+                if p >= LIMIT:
+                    fails.append(msg)
+                if lab in top:
+                    fails.append(f"{at}: {kind} '{lab}' in the top 3")
+res["tags"]["after_silence"] = after
+res["tags"]["phone_max"]["after_silence"] = max(
+    (p for r in after.values() for _, p in r["phone"]["master"]), default=0.0)
+
 # the end card (a report; the passes above gate it): every phone reading, master and bed alone, in each window of
 # either grid that overlaps it
 if END_CARD_S is not None:
@@ -356,7 +469,8 @@ if END_CARD_S is not None:
     for view in ("main", "shift"):
         tg, bg = tags[("master", view)], tags[("bed", view)]
         off = SHIFT_S if view == "shift" else 0.0
-        labs = sorted({lab for t_ in (tg, bg) for lab in t_.get("watch_windows", {}) if label_kind(lab) == "phone"})
+        labs = sorted({lab for t_ in (tg, bg) for lab in t_.get("watch_windows", {})
+                       if label_kind(lab) in ("phone", "foghorn")})
         for w in tg["timeline"]:
             s = w["t"] - off
             if s + 3.0 <= END_CARD_S + 1e-9:
@@ -365,36 +479,42 @@ if END_CARD_S is not None:
                             **{lab: [readings(tg, lab).get(w["t"], 0.0), readings(bg, lab).get(w["t"], 0.0)]
                                for lab in labs}})
     res["tags"]["end_card"] = {
-        "from_s": round(END_CARD_S, 3), "note": "per window and phone label: [master, bed alone]; 0.0 = below 0.1",
-        "windows": ec_rows,
-        "phone_max": max((v[0] for r in ec_rows for k, v in r.items() if k not in ("view", "window_s")), default=0.0)}
+        "from_s": round(END_CARD_S, 3),
+        "note": "per window and phone or foghorn label: [master, bed alone]; 0.0 = below 0.1", "windows": ec_rows,
+        **{f"{k}_max": max((v[0] for r in ec_rows for lab, v in r.items()
+                            if lab not in ("view", "window_s") and label_kind(lab) == k), default=0.0)
+           for k in ("phone", "foghorn")}}
     res["tags"]["phone_max"]["end_card"] = res["tags"]["end_card"]["phone_max"]
 
-# the hold window (a report; the passes above gate it): film 29-34 s, the hold and its release, wherever this timeline
-# plays those frames; every phone, voice-like and alarm reading, master and bed alone, in each window of either grid
-# that overlaps it
-HOLD_SPAN = film_to_cut_s(*HOLD_WINDOW_FRAMES)
-if HOLD_SPAN is not None:
+# the hold windows (a report; the passes above gate them): each of the film's holds, from Pebble's hold to the click
+# that releases it (the trailer's f445-504 and f1453-1512), wherever this timeline plays those frames; every phone,
+# voice-like, alarm and foghorn reading, master and bed alone, in each window of either grid that overlaps it
+kinds = lambda r, k: [v[0] for lab, v in r.items() if lab not in ("view", "window_s", "top3") and label_kind(lab) == k]  # noqa: E731
+res["tags"]["hold_windows"] = []
+for h0, h1 in FILM_HOLDS:
+    span = film_to_cut_s(h0, h1)
+    if span is None:
+        continue
     hw_rows = []
     for view in ("main", "shift"):
         tg, bg = tags[("master", view)], tags[("bed", view)]
         off = SHIFT_S if view == "shift" else 0.0
         labs = sorted({lab for t_ in (tg, bg) for lab in t_.get("watch_windows", {})
-                       if label_kind(lab) in ("phone", "voice", "alarm")})
+                       if label_kind(lab) in ("phone", "voice", "alarm", "foghorn")})
         for w in tg["timeline"]:
             s = w["t"] - off
-            if s + 3.0 <= HOLD_SPAN[0] + 1e-9 or s >= HOLD_SPAN[1] - 1e-9:
+            if s + 3.0 <= span[0] + 1e-9 or s >= span[1] - 1e-9:
                 continue
             hw_rows.append({"view": view, "window_s": [round(s, 1), round(s + 3.0, 1)],
                             "top3": [t_["label"] for t_ in w["top"]],
                             **{lab: [readings(tg, lab).get(w["t"], 0.0), readings(bg, lab).get(w["t"], 0.0)]
                                for lab in labs}})
-    kinds = lambda r, k: [v[0] for lab, v in r.items() if lab not in ("view", "window_s", "top3") and label_kind(lab) == k]  # noqa: E731
-    res["tags"]["hold_window"] = {
-        "span_s": [round(HOLD_SPAN[0], 3), round(HOLD_SPAN[1], 3)],
+    res["tags"]["hold_windows"].append({
+        "film_frames": [h0, h1], "span_s": [round(span[0], 3), round(span[1], 3)],
         "note": "per window and watch label: [master, bed alone]; 0.0 = below 0.1", "windows": hw_rows,
-        **{f"{k}_max": max((v for r in hw_rows for v in kinds(r, k)), default=0.0) for k in ("phone", "voice", "alarm")}}
-    res["tags"]["phone_max"]["hold_window"] = res["tags"]["hold_window"]["phone_max"]
+        **{f"{k}_max": max((v for r in hw_rows for v in kinds(r, k)), default=0.0)
+           for k in ("phone", "voice", "alarm", "foghorn")}})
+res["tags"]["phone_max"]["hold_windows"] = max((h["phone_max"] for h in res["tags"]["hold_windows"]), default=0.0)
 
 # ---- mono fold-down and small-speaker share ----
 m2 = np.stack([y.mean(axis=1)] * 2, axis=1)
@@ -436,7 +556,7 @@ auto = [c for c in cues if "file" not in c]                            # the mix
 z = kweight(y.T)                                                       # the K-weighted master, channels x samples
 BAR_F = BM["bar_frames"]
 SCORE_BARS = cut["music"]["score_bars"] if a.cut else list(range(1, FRAMES // BAR_F + 1))
-HOOK_END = next(s["end_frame"] for s in BM["sections"] if s["name"] == "hook")                 # f144
+HOOK_END = next(s["end_frame"] for s in BM["sections"] if s["name"] == "hook")  # f72: the trailer's hook is bar 1
 
 
 def kpow(s0, s1):
@@ -476,10 +596,78 @@ def check(name, value, ok, want, **extra):
         warnings.append(f"dynamics: {name} is {value} (want {want})")
 
 
-ob = bars_of({1, 2})
-if ob and lufs_bars(ob) is not None:
-    v = round(full - lufs_bars(ob), 2)
-    check("bars 1-2 under the integrated level (LU)", v, 4.0 <= v <= 8.0, "4-8", bars=ob)
+def at_s(fr):
+    """Seconds on this timeline where film frame fr (fractional allowed) plays, or None."""
+    cf = film_to_cut_frame(int(fr))
+    return None if cf is None else (cf + (fr - int(fr))) / FPS
+
+
+def lu(t0, t1):
+    """Ungated K-weighted loudness (LUFS) over [t0, t1) s."""
+    v = kpow(int(round(t0 * SR)), int(round(t1 * SR)))
+    return None if v is None else round(v - 0.691, 2)
+
+
+# The trailer's dynamics report (TRAILER_RESEARCH report.music 'LOUDNESS AND DYNAMICS GATES', with OVERRIDES §41's
+# climax): each check where this timeline plays its frames
+tension = bars_of(set(range(1, 10)))
+if tension and lufs_bars(tension) is not None:
+    v = round(full - lufs_bars(tension), 2)
+    check("bars 1-9 under the integrated level (LU)", v, v >= 6.0, ">= 6", bars=tension)
+for fr in QUESTIONS:
+    t = at_s(fr)
+    if t is not None:
+        h, before = lu(t, t + 0.3), lu(t - 0.6, t)
+        check(f"the question hit on f{fr}: its 300 ms over the 600 ms before (dB)", round(h - before, 1),
+              h - before >= 10.0, ">= 10", hit=h, before=before)
+t0, t1, td = at_s(DEAD_STOP[0]), at_s(DEAD_STOP[1]), at_s(BM["reveal"]["frame"])
+if None not in (t0, t1, td):
+    stop, drop = lu(t0, t1), lu(td, td + 0.3)
+    check(f"the dead stop f{DEAD_STOP[0]}-{DEAD_STOP[1] - 1} under the drop's first 300 ms (dB)", round(drop - stop, 1),
+          drop - stop >= 20.0, ">= 20", stop=stop, drop_300ms=drop)
+    t9 = at_s(BM["reveal"]["frame"] - BAR_F)
+    if t9 is not None:
+        drop3, first = lu(td, td + 3.0), lu(t9, t9 + BAR_F / FPS / 2)
+        check("the drop's 3 s over bar 9's first half (LU)", round(drop3 - first, 2), drop3 - first >= 6.0, ">= 6",
+              drop_3s=drop3, bar9_first_half=first)
+montage = bars_of(set(range(15, 21)))
+mont = lufs_bars(montage) if len(montage) == 6 else None
+for h0, _ in FILM_HOLDS:
+    t = at_s(h0)
+    if t is not None:
+        hl = lu(t, t + 2.0)
+        check(f"the hold on f{h0}: its 2 s under the integrated level (LU)", round(full - hl, 2), 5.0 <= full - hl <= 9.0,
+              "5-9", hold=hl)
+        if mont is not None:
+            check(f"the hold on f{h0}: its 2 s under the montage, bars 15-20 (LU)", round(mont - hl, 2),
+                  5.0 <= mont - hl <= 9.0, "5-9", montage=mont)
+tv, tp = at_s(PUSH), at_s(PASSED)
+if tv is not None:
+    st = [(k / 10, lu(k / 10, k / 10 + 3.0)) for k in range(int((y.shape[0] / SR - 3.0) * 10) + 1)]
+    st = [(t, v) for t, v in st if v is not None]
+    best = max(st, key=lambda q: q[1])
+    holding = [v for t, v in st if tv - 2.7 - 1e-9 <= t <= tv + 1e-9]
+    ver = max(holding) if holding else None
+    check("Verified (the push on f1723) is in the loudest 3 s window",
+          f"the loudest from {best[0]:.1f} s at {best[1]} LUFS; the best holding the push and its next 300 ms {ver}",
+          ver is not None and ver >= best[1] - 0.05, "the loudest window holds the push")
+    if mont is not None and ver is not None:
+        check("Verified's loudest 3 s over the montage (LU)", round(ver - mont, 2), ver - mont >= 1.5, ">= 1.5")
+    if tp is not None:
+        mmax = lambda t: max(lu(t + k * 0.01, t + k * 0.01 + 0.4) for k in range(21))  # noqa: E731
+        mv, mp = mmax(tv), mmax(tp)
+        check("the push at least as big as the tests passing (f1656): momentary maximum (400 ms) within 0.6 s (LU)",
+              round(mv - mp, 2), mv >= mp, ">= 0", push=mv, passed=mp)
+        for win in (0.3, 0.4, 1.0):
+            a_, b_ = lu(tv, tv + win), lu(tp, tp + win)
+            check(f"the push at least as big as the tests passing (f1656): its first {win} s (LU)", round(a_ - b_, 2),
+                  a_ >= b_, ">= 0", push=a_, passed=b_)
+clim, brk = bars_of(set(range(21, 26))), bars_of({26, 27, 28})
+if len(clim) == 5 and len(brk) == 3 and None not in (lufs_bars(clim), lufs_bars(brk)):
+    v = round(lufs_bars(clim) - lufs_bars(brk), 2)
+    check("the breakdown (bars 26-28) under the climax (bars 21-25) (LU)", v, v >= 6.0, ">= 6")
+dyn["lra_lu"] = L["lra_lu"]
+dyn["lra_target"] = "8-10 LU (report.music: a target, not a gate)"
 for c in (c for c in auto if c.get("role") == "gap"):
     g0, g1 = smp(c, "frame", "t"), smp(c, "to_frame", "t_end")
     hook = c.get("source_frame", c.get("frame", HOOK_END)) < HOOK_END
@@ -490,20 +678,6 @@ for c in (c for c in auto if c.get("role") == "gap"):
         want = 6.0 if hook else 12.0
         check(f"gap f{c.get('frame')}-{c.get('to_frame')}: the 300 ms from its hit over its middle 200 ms (dB)", v,
               v >= want, f">= {want:g}", source_frame=c.get("source_frame", c.get("frame")), hook=hook)
-film_hold = next((c for c in json.load(open(a.film_cues)) if "file" not in c and c.get("role") == "hold"), None)
-if film_hold is not None:
-    centre = film_to_cut_frame((film_hold["frame"] + film_hold["to_frame"]) // 2)                  # f940 in the film
-    if centre is not None:
-        c0 = int(round(centre * SPF))
-        st = kpow(c0 - int(1.5 * SR), c0 + int(1.5 * SR))
-        if st is not None:
-            v = round(full - (st - 0.691), 2)
-            check(f"the hold's 3 s short-term loudness (centred on f{centre}) under the integrated level (LU)", v,
-                  5.0 <= v <= 9.0, "5-9", short_term_lufs=round(st - 0.691, 2))
-b7, b8 = bars_of({7}), bars_of({8})
-if b7 and b8 and lufs_bars(b7) is not None and lufs_bars(b8) is not None:
-    v = round(lufs_bars(b8) - lufs_bars(b7), 2)
-    check("bar 8 over bar 7 (LU)", v, v >= 3.0, ">= 3", bar7=lufs_bars(b7), bar8=lufs_bars(b8))
 p = bars_of({23, 24, 25})
 if len(p) == 3 and lufs_bars(p) is not None:
     lp = lufs_bars(p)
@@ -520,6 +694,9 @@ if len(p) == 3 and lufs_bars(p) is not None:
     if len(q) == 3 and lufs_bars(q) is not None:
         v = round(lp - lufs_bars(q), 2)
         check("bars 26-28 under bars 23-25 (LU)", v, v >= 6.0, ">= 6", bars_26_28=lufs_bars(q))
+k_last = int(round((FRAMES - 54) * SPF))
+check("the last 54 frames are digital silence", "exact zeros" if not np.any(y[k_last:]) else "not zero",
+      not np.any(y[k_last:]), "exact zeros")
 dyn["pass"] = all(c["ok"] for c in dyn["checks"])
 res["dynamics"] = dyn
 
