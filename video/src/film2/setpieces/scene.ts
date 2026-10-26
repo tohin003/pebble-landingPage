@@ -55,6 +55,8 @@ export interface PlaneSpec {
   read?: { from: number; to: number; words: number; receipt?: boolean; textPx?: number; rect?: Rect };
   shadow?: boolean;
   radius?: number;
+  /** carries no text (the Dock's icons): film type may pass over it */
+  textless?: boolean;
 }
 
 /* ---------------------------------------------------------------- type --------------------------------------- */

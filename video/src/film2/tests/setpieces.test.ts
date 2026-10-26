@@ -228,7 +228,7 @@ describe("the Dusk passage", () => {
         expect((honest.exitAt! - honest.at) / FPS).toBeGreaterThanOrEqual(12);
         // it spans every seam of the passage
         for (const s of p.seams) {
-          expect(honest.at).toBeLessThan(s.at);
+          expect(honest.at).toBeLessThanOrEqual(s.at);
           expect(honest.exitAt!).toBeGreaterThan(s.at + s.frames);
         }
         // the label sits beside the render on every frame it shows (from the rack's cross to the cut)

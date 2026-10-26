@@ -223,6 +223,35 @@ export function cues(p: ScenePlan): Finding[] {
   return p.shots.flatMap((s) => (s.stone ? checkCues(s.stone.cues, `${p.id}/${s.id}`).map((m) => ({ check: "cues", level: "error" as const, message: m })) : []));
 }
 
+/**
+ * Film type over any other UI plane while the line is read (sampled every 6 frames): a warning for the edit lane, since
+ * type must never sit over the UI's own text (§5.2) and only the 2.0.0 capture shows where its text is. Over a published
+ * still it is a warning; over a slot (no capture yet) it is noted.
+ */
+export function typeOverPlanes(p: ScenePlan): Finding[] {
+  const out: Finding[] = [];
+  const q = planQa(p);
+  const seen = new Set<string>();
+  for (const t of q.texts) {
+    if (!t.rect || typeof t.rect === "function") continue;
+    for (let fr = t.from + (t.enterFrames ?? 0); fr < t.to; fr += 6) {
+      const s = p.shots.find((x) => fr >= x.from && fr < x.to);
+      if (!s) continue;
+      for (const pl of s.planes) {
+        if (pl.textless || fr < (pl.from ?? -Infinity) || fr >= (pl.to ?? Infinity) || (pl.content.kind === "take" && fr < pl.content.use.at)) continue;
+        const r = planeRectAt(p, s, pl, fr);
+        const x = rectsIntersect(t.rect, r);
+        if (!x || seen.has(`${t.id}:${pl.id}`)) continue;
+        seen.add(`${t.id}:${pl.id}`);
+        const c = pl.content;
+        const slot = (c.kind === "standIn" && c.standIn.kind === "slot") || (c.kind === "take" && !c.use.manifest.pattern && !!c.use.manifest.views[c.view]?.slot);
+        out.push({ check: "typeOverPlanes", level: slot ? "info" : "warn", message: `"${t.text.replace(/\n/g, " ").slice(0, 40)}" sits over ${pl.id}${slot ? " (a slot: check the 2.0.0 capture has no text there)" : ""} (frame ${fr})`, frame: fr });
+      }
+    }
+  }
+  return out;
+}
+
 /** UI the viewer must read is wholly in frame while it is read (checked every 3 frames). */
 export function readInFrame(p: ScenePlan): Finding[] {
   const out: Finding[] = [];
@@ -268,7 +297,7 @@ export function smallPrint(p: ScenePlan): Finding[] {
 /** Every check: the foundation's, then the set pieces'. */
 export function checkPlan(p: ScenePlan, grid?: MusicGrid, extraMoves: readonly QaMove[] = []): Report {
   const r = checkAll(planQa(p), [...p.moves, ...extraMoves]);
-  const more = [...bandContrast(p), ...takes(p), ...typeSafe(p), ...typeOverUi(p), ...uiReadSize(p), ...music(p, grid), ...cues(p), ...wallCheck(p), ...smallPrint(p), ...readInFrame(p)];
+  const more = [...bandContrast(p), ...takes(p), ...typeSafe(p), ...typeOverUi(p), ...uiReadSize(p), ...music(p, grid), ...cues(p), ...wallCheck(p), ...smallPrint(p), ...readInFrame(p), ...typeOverPlanes(p)];
   const errors = [...r.errors, ...more.filter((x) => x.level === "error")];
   return {
     ...r,

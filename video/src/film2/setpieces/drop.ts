@@ -94,8 +94,9 @@ const LAYOUT: Record<FrameBox["aspect"], DropLayout> = {
   "1:1": {
     subject: (f, ap) => ({ x: f.w * 0.3, y: ap.y, w: f.w * 0.64, h: ap.h }),
     fill: 0.9,
-    pair: (f) => ({ left: f.safe * 1.2, top: f.safe * 1.1, maxW: f.w - f.safe * 2.4 }),
-    sizeT: 0.2,
+    // one line each at the tier's smallest size, so the pair stays in the top band, clear of the companion
+    pair: (f) => ({ left: f.safe * 1.2, top: f.safe, maxW: f.w - f.safe * 2.2 }),
+    sizeT: 0,
   },
   // the aperture is 4:5; the companion in its upper part, the type below it
   "9:16": {

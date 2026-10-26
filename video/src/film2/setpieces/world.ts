@@ -59,10 +59,10 @@ export const WORLD: Record<Aspect, WorldLayout> = {
   "9:16": {
     browser: { x: 0, y: -520, w: 1440, h: 900 },
     ...companionAt(1050, 100),
-    calculator: { x: 200, y: 700, w: 232, h: 372 },
-    finder: { x: 500, y: -1180, w: 820, h: 500 },
-    project: projectAt(-60, -2100),
-    toolbox: { x: 140, y: 1180, w: 1160, h: 800 },
+    calculator: { x: 120, y: 700, w: 232, h: 372 },
+    finder: { x: 460, y: 680, w: 820, h: 500 },
+    project: projectAt(-60, -1700),
+    toolbox: { x: 140, y: 1300, w: 1160, h: 800 },
   },
 };
 

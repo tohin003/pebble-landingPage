@@ -112,7 +112,8 @@ export function planDusk(o: DuskOptions): ScenePlan {
   const hLines = honest.split("\n").length;
   const hSize = typeSizePx("functional", f.w, f.h, 0.15);
   const honestBox: TypeBox = { left: hb.left, top: hb.bottom - hLines * hSize * lineHeightOf("functional"), align: hb.align };
-  const honestAt = enter + f60(18, fps);
+  // it enters as the rack begins, so it never sits over the palette's sharp rows (the palette defocuses under it)
+  const honestAt = enter + f60(48, fps);
 
   /* ------------------------------------------------ S21: the Veil, rendered ------------------------------------- */
   const veilShotAt = rackAt;
@@ -136,9 +137,10 @@ export function planDusk(o: DuskOptions): ScenePlan {
   const desk: Rect = { x: 0, y: 0, w: 1440, h: 900 };
   const menuBar: Rect = { x: 0, y: 0, w: TAKE_RS13.views.menuBar!.w, h: TAKE_RS13.views.menuBar!.h };
   const dock: Rect = { x: (desk.w - TAKE_RS13.views.dock!.w) / 2, y: desk.h - TAKE_RS13.views.dock!.h - 8, w: TAKE_RS13.views.dock!.w, h: TAKE_RS13.views.dock!.h };
-  const full: Rect = { x: f.safe, y: f.safe, w: f.w - 2 * f.safe, h: f.h - 2 * f.safe };
-  const dockPose = fitPose({ ...dock, y: dock.y - 260, h: dock.h + 300 }, full, f, 0.9);
-  const menuPose = fitPose({ x: menuBar.x + menuBar.w * 0.45, y: 0, w: menuBar.w * 0.55, h: 300 }, full, f, 0.9);
+  // the Dock and the menu bar are framed in the frame's upper part, above the honest line's band
+  const upper: Rect = { x: f.safe, y: f.safe, w: f.w - 2 * f.safe, h: honestBox.top - f.safe * 1.6 };
+  const dockPose = fitPose({ ...dock, y: dock.y - 160, h: dock.h + 200 }, upper, f, 0.9);
+  const menuPose = fitPose({ x: menuBar.x + menuBar.w * 0.45, y: 0, w: menuBar.w * 0.55, h: 240 }, upper, f, 0.9);
   camB.glide(cut - veilShotAt - 1 - f60(18, fps), f60(60, fps), orbitDrift);
   const seam = momentumCut({ out: camB, cutFrame: cut - veilShotAt, dir: { x: 0, y: 1 }, dPx: 120 * f.unit, leaveFrames: f60(18, fps), target: dockPose, inFrames: f60(40, fps), frameW: f.w, frameH: f.h, fps });
   const camC = seam.inCam;
@@ -179,7 +181,7 @@ export function planDusk(o: DuskOptions): ScenePlan {
   ];
   const planesC: PlaneSpec[] = [
     { id: "menu-bar", kind: "apple", rect: menuBar, content: { kind: "take", use: rsUse, view: "menuBar" }, shadow: false, radius: 0 },
-    { id: "dock", kind: "apple", rect: dock, content: { kind: "take", use: rsUse, view: "dock" }, shadow: false, radius: 18 },
+    { id: "dock", kind: "apple", rect: dock, content: { kind: "take", use: rsUse, view: "dock" }, shadow: false, radius: 18, textless: true },
   ];
   const veilSwitchS = castAt / fps;
   // the light cools continuously through S20 into the Veil: day to dusk is about 0.3 of luminance, and the film allows

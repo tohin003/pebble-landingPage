@@ -309,7 +309,7 @@ plan the music in local frames (`shiftGrid(grid, −start)`). Every piece is fra
 | `drop.ts`, `ringBlock.ts` + `rings.ts`, `wall.ts`, `dusk.ts`, `climax.ts`, `finale.ts` | the six plans |
 | `sweep.ts` | the title's sage sweep and its 15 % cap (L3a) |
 | `pieces.cues.ts` | the stone's cue templates (checked by the engine tests, D6) |
-| `qa.ts` | `planQa()` (a plan as the foundation's `FilmTimelineQa`) and `checkPlan()` (every foundation check, plus the set pieces': band contrast, takes, type in the safe area, type over UI, UI read size, UI read wholly in frame, music placement, cues, the wall, small print) |
+| `qa.ts` | `planQa()` (a plan as the foundation's `FilmTimelineQa`) and `checkPlan()` (every foundation check, plus the set pieces': band contrast, takes, type in the safe area, type over UI being read (an error), type over any other UI plane (a warning; over a slot, a note to check the 2.0.0 capture), UI read size, UI read wholly in frame, music placement, cues, the wall, small print) |
 | `align.ts` | one timeline for all three aspects: `alignAspects()` and `timelineDiffs()` |
 | `views/` | `PieceView`, `ShotView`, `TypeView`, `StandInViews` (stills, slots with a ticking source time, take views), `VeilCast`, `SageSweep`, `WallView` |
 | `demo/` | the demo reels and the measured stretches they are fitted to (`grids.ts`) |
@@ -381,8 +381,9 @@ light cooling to dusk over 6.1 s (day to dusk is 0.33 of luminance and the film 
 focus into the Veil rendered with Pebble's own code (`views/VeilCast.tsx`: `stealthVeil.ts` and `veilDraw()`, the
 1.25-s cast), with "A render, not a screen recording." beside it from the rack's cross to the cut; a momentum cut on a bar
 line into a crane over RS-13 (the Dock icon leaves on a beat; the crane arrives on the menu-bar icon's new state). The
-honest line, word for word from `STEALTH_HONEST`, holds from just after the Enter to the passage's end (≥ 12 s, across the
-rack and the cut; it needs 9). No leak, sweep or rim in the passage; L23 (the focus line) only with
+honest line, word for word from `STEALTH_HONEST`, holds from the rack's first frame (just after the Enter, as the palette
+defocuses under it) to the passage's end (≥ 12 s, across the rack and the cut; it needs 9). The crane frames the Dock and
+the menu bar above the line's band; the Dock is marked `textless` (icons), so the line may pass over it. No leak, sweep or rim in the passage; L23 (the focus line) only with
 `focusLine: { text, releaseNotesConfirmed: true }`, default out. **To fit it:** start it on the quiet section's first
 downbeat; it ends on a bar line.
 
