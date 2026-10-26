@@ -28,6 +28,7 @@ comment beside it says.
 | `qa/` | `timeline.ts` (the model the checks read), `checks.ts`, `luma.ts` + `luma-scan.ts` (pixel checks on a render), `check-demo.ts` |
 | `demo/` | the demo reel and its timeline, the ports lab, the grades sheet, the type specimens, the placeholder registry |
 | `render/` | `render-segments.sh` (segmented renders with the disk preflight), `sheets.sh` (contact sheets and seam strips) |
+| `setpieces/` | the set pieces (the Drop, the ring block, the wall, the Dusk passage, the climax shell, the convergence with the title and end card), their placeholders, music fitting and checks: see "The set pieces" below |
 | `tests/` | Bun tests: `bun test video/src/film2` |
 
 **File names differ by more than case.** This Mac's disk is case-insensitive: `ring.ts` beside `Ring.tsx` made Bun
@@ -290,10 +291,167 @@ foreground world, with the camera blur on the foreground only, at the cut, for 1
 7. **The convergence** (S25): one spec with `appear` → `return`, `echoes` and `echoMode: "all"`.
 8. **Render** in segments at half size for review, look at the sheets and seam strips, run `luma-scan`; then masters.
 
-## Open, for the lead
+## The set pieces (`setpieces/`)
 
-- **L2, the frame rate:** everything is written at 60 fps and converts with `f60()`; the checks convert their limits.
-- **L3a, motivated light:** `LightSweep`, `TextSweep`, `RimLight` and the ripple's crest highlight wait for the ruling.
-- **Grain:** off by default (`FilmGrain on={false}`); the LUT is the only finish in the recipe.
+The lane's six set pieces, each a **plan** (pure data: `setpieces/scene.ts` `ScenePlan`) that one component draws
+(`setpieces/views/PieceView.tsx`) and the checks read (`setpieces/qa.ts`), so the picture and the validators never
+disagree. Every frame in a plan is the piece's LOCAL frame; put the piece in a `<Sequence from={start}>` and give its
+plan the music in local frames (`shiftGrid(grid, −start)`). Every piece is framed on its own in 16:9, 1:1 and 9:16
+(§3.12): pass `w`, `h` and the plan lays itself out for that aspect.
+
+| File | What |
+|---|---|
+| `music.ts` | the music grid: `steadyGrid()`, `gridFromMap()` (a `map.json` stretch), `shiftGrid()`, `place()`, `nextPoint()`, `prevPoint()`, `halfBars()`, `leadFrames()` |
+| `take.ts` | takes at 1×: `TakeManifest` (events, views), `solveInPoint()`, `eventFrame()`, `checkTakeUse()`; the placeholder manifests RS-9, HS-F, RS-W, HS-B3, RS-13 |
+| `standins.ts` | the PLACEHOLDERS: published stills (`STILL`), labelled slots (`SLOT`), the wall's 28 cells (`CELL_SOURCES`) |
+| `world.ts` | the composed world per aspect (browser, companion, Calculator, Finder, the project, the Toolbox; the stone) |
+| `scene.ts`, `kit.ts`, `frame.ts` | the plan model; type events, anchored cues, ring-clear frames; framing, line breaking, type timing |
+| `drop.ts`, `ringBlock.ts` + `rings.ts`, `wall.ts`, `dusk.ts`, `climax.ts`, `finale.ts` | the six plans |
+| `sweep.ts` | the title's sage sweep and its 15 % cap (L3a) |
+| `pieces.cues.ts` | the stone's cue templates (checked by the engine tests, D6) |
+| `qa.ts` | `planQa()` (a plan as the foundation's `FilmTimelineQa`) and `checkPlan()` (every foundation check, plus the set pieces': band contrast, takes, type in the safe area, type over UI, UI read size, music placement, cues, the wall, small print) |
+| `views/` | `PieceView`, `ShotView`, `TypeView`, `StandInViews` (stills, slots with a ticking source time, take views), `VeilCast`, `SageSweep`, `WallView` |
+| `demo/` | the demo reels and the measured stretches they are fitted to (`grids.ts`) |
+| `tools/make-cells.ts` | makes the wall's cell thumbnails into `video/public/ui/f2-cells` (gitignored) |
+
+**The music rule (lead ruling L3d) is in every plan.** An event is placed with `place(earliest, grid, { level, frames,
+lead })`: its first readable frame lands on the first point of `level` (beat, half bar, bar, phrase) at or after the
+earliest frame its reading allows, and a transition completes `lead` frames (2–3 at 60 fps) before it. Nothing is ever
+placed earlier: a hold is never shortened to land a cut; the music is edited at bar lines instead. Each plan reports
+where its events landed (`plan.music`: event, frame, point, level, frames waited), and `checkPlan(plan, grid)` checks
+every point. Only marked hits snap (the Drop's burst; the title's downbeat is where the wordmark lands).
+
+**Takes never speed up.** A take's in-point is solved so its event lands on its beat (`solveInPoint`); the take then
+plays at 1× from its first shown frame. One recording may feed several planes (a view each: RS-9 is the companion's card
+and the browser), all on one clock. Until the 2.0.0 takes exist the views are published stills or labelled slots, and a
+slot shows the take's source time ticking at 1× (`src 0:09.40 · 1×`), so the in-points can be seen on the reel.
+
+### 1. The Drop — `planDrop({ w, h, fps, hit, grid?, take?, lines?, apertureCenterY?, band? })`
+
+`hit` is the track's entrance (a local frame): the person's Allow lands on it (RS-9's in-point is solved), a ring bursts
+from the stone (E-arrive: the Drop's one snap), the frame opens with it from the narrow aperture (16:9 from 2.39:1, 1:1
+from 16:9, 9:16 from 4:5) over 34 frames from the frame the ring reaches its edge, the light warms over 60 frames, one
+code light leak plays (one of the film's two). "Now it works across your Mac." and "Where you allow it." each land on a
+beat once the burst has left their rect, and are held together (3.6 s and ≥ 3.0 s: the reference's 4.8 and 4.3 s would
+still be on screen when the reveal ring passes them). At hit + 4 s the camera pulls back in log space to the whole Mac
+(160 frames) and glides toward the browser; a second ring travels out through the world and each dimmed place lifts into
+light as it passes. The piece ends on the next phrase line at least 7.5 s after the hit (up to 4 s later), else a bar
+line. The frames before `hit` are the pre-roll: the companion's card waiting in the aperture, and S05's lead-in line
+(L04) in a band on the night green, gone before the burst could reach it (`lines.leadIn: null` drops it; it needs about
+150 frames of pre-roll). **To fit it:** start the piece `hit` frames before the entrance's downbeat; its `exit` (pose and
+velocity) continues into Ring 1 in the same world without a cut.
+
+### 2. A ring block — `planRingBlock({ w, h, fps, content, grid?, entry? })` with `RingContent` (`rings.ts`)
+
+`content` names the place: the stone, the context planes, the **ask** the ring frames (a still or slot, its must-read
+words and text size), the **act** (a take, its view and rect, its start event), the **receipt** (the take's event that
+lands on a beat, where it shows, its words) and up to three lines (`lines.chapter` and its `limit`), then the
+**cascade** (`fixed` line and 2–6 items of four words or fewer, each with its UI card). Local frame 0 is the ring's
+start: put it on a phrase downbeat. The ring leaves the stone and frames the ask; the camera follows 24 frames behind and
+arrives with momentum (a long zoom change takes longer, so the frame's corners never outrun 30 px a frame); the lines land
+on beats once no ring crosses them and leave before the camera moves in (the held ring grows with the zoom); the camera
+dollies in to reading size (≥ 28 px at 1080, ≤ 2.4×); the take's receipt event lands on a beat after the ask and the act
+have been read, and the ring returns to the stone on that beat; the camera glides to the receipt (no freeze, no mark, no
+hit) and holds it for its reading time; a momentum cut on a bar line takes it to the cascade's stage, whose swaps land
+2–3 frames before beats; the block ends on the bar line after the last item's hold. `entry` continues a previous piece's
+camera (the same world); without it the block starts as if cut in, already moving toward the place. **To fit it:** start
+it on a phrase downbeat, pass the grid; if its length (`plan.duration`) is longer than the phrase you have, lengthen the
+music at a bar line or move the block (§3.2: never a hold).
+
+### 3. The wall — `planWall({ w, h, fps, grid?, centre?, entry?, minS? })`
+
+The 28 cells (inner 8, middle 8, outer 12; no Stealth cell, checked) on three concentric rings around the stone, orbiting
+slowly in alternate directions (≤ 1.6° a second), each at 1× or still (the placeholders are still). The camera pulls back
+in log space from the inner ring to the whole wall (150 frames) and drifts on; in 9:16 the rings are cropped by the frame
+on purpose. Every cell's text stays under 16 px at 1080 on every frame (checked): seen, not read. It ends on a bar line.
+**To fit it:** start it on a bar line; its `exit` hands the camera to the convergence.
+
+### 4. The Dusk passage — `planDusk({ w, h, fps, grid?, focusLine? })`
+
+⌘K (HS-B3: its Enter is solved onto a beat; the typed word and the lit row read at ≥ 28 px), a slow push-in and the
+light cooling to dusk over 6.1 s (day to dusk is 0.33 of luminance and the film allows one large change a second); a rack
+focus into the Veil rendered with Pebble's own code (`views/VeilCast.tsx`: `stealthVeil.ts` and `veilDraw()`, the
+1.25-s cast), with "A render, not a screen recording." beside it from the rack's cross to the cut; a momentum cut on a bar
+line into a crane over RS-13 (the Dock icon leaves on a beat; the crane arrives on the menu-bar icon's new state). The
+honest line, word for word from `STEALTH_HONEST`, holds from just after the Enter to the passage's end (≥ 12 s, across the
+rack and the cut; it needs 9). No leak, sweep or rim in the passage; L23 (the focus line) only with
+`focusLine: { text, releaseNotesConfirmed: true }`, default out. **To fit it:** start it on the quiet section's first
+downbeat; it ends on a bar line.
+
+### 5. The climax shell — `planClimax({ w, h, fps, peak, grid?, take?, entry? })`
+
+S23 ("Glaze"): the ask card arrives (the shared entrance, a placeholder of the recording's own), readable from its first
+frame, a carried push-in, "Its own tools." on a beat. A momentum cut on the last beat at least 0.75 s before `peak` (so
+the card lands 0.75–1.25 s into the take, §3.6 chain 11) into S24 ("Kiln"): RS-W's in-point is solved so the kept card
+lands exactly on `peak`; the avatar turns happy on the take's own event; the camera glides through the landing (never
+still, tested) and then pushes in until the whole card, Remove included, reads at ≥ 28 px; "Kept on its own only after an
+independent check." lands on a beat beside it and holds 6.5 s. The take's frames fill the slot from a frame sequence
+(`TakeManifest.pattern`, views cropped from it) as soon as RS-W is recorded. **To fit it:** `peak` is the peak's first
+strong downbeat in local frames; the piece needs about 3.5 s before it.
+
+### 6. The convergence, the title and the end card — `planFinale({ w, h, fps, hit, grid?, lastNote?, decayS?, roomToneS?, musicCredit?, centre?, entry? })`
+
+The wall's cells travel inward along their rings and shrink into the stone (E-leave, accelerating) while rings return to
+the stone in a train and the camera pushes in; the light goes from evening to the page; a ring iris on E-move (30 frames,
+the lead's ruling) opens the sage-white page from the stone; "Pebble" and "2.0" rise to land ON `hit` (the final strong
+downbeat), the stone at rest beside them; one sage sweep crosses the wordmark 1 frame after it (`SageTextSweep`: inside
+the glyphs only, its alpha capped so their L* rises by at most 15, tested); the README's line rises beneath. Page 1: the
+facts rise from masks 8 frames apart at one size, each limit beside its promise, landing on `lastNote` (the track's last
+strong note); page 2: "Shown with sample data.", the method line (L4: "Real Pebble 2.0 screens, composed in one space.
+Nothing Pebble does is sped up.") and the small print, with the music credit. The piece ends after the ending's decay and
+0.5–1 s of room tone. **To fit it:** start it where the wall ends; `hit` at least ~4 s in; time the track's real ending
+back so its last strong note lands on `lastNote` (a splice at a real stop, never a fade).
+
+### The demo and the checks
+
+`F2-SetPieces-Demo` (16:9), `F2-SetPieces-Demo-1x1` and `-9x16` play the six pieces in the film's order, each fitted to
+a real measured stretch of an audition track (`demo/grids.ts`, from the score lane's maps: no audio is used), with a slate
+on every frame saying the UI is a placeholder. `F2-SP-<piece>-<aspect>` renders one piece. `bun test video/src/film2`
+runs `checkPlan()` on every piece in every aspect, for the demo's stretches and for random tempos and hit times.
+
+```
+bun test video/src/film2
+bun video/src/film2/setpieces/tools/check-setpieces.ts [16:9|1:1|9:16] [--verbose]   # every check, and the music report
+bun video/src/film2/setpieces/tools/reel-marks.ts 16:9                               # cuts and still holds, for the sheets
+/usr/sbin/taskpolicy -c utility bun video/src/film2/setpieces/tools/make-cells.ts    # once: the wall's thumbnails
+scripts/heavy.sh f2-sp-demo16 /usr/sbin/taskpolicy -c utility \
+  bash video/src/film2/render/render-segments.sh F2-SetPieces-Demo .work/film2/sp/demo16 5692 480 0.5
+```
+
+**Placeholders.** Every picture of Pebble in the set pieces is a real capture of a published release (1.0.x–1.5.0,
+cropped, never stretched, never showing a usage or timing line) or a labelled slot for what has no published capture
+(the browser take, Apple's apps, the Workshop's cards, ⌘K, the menu bar, the agents panel). Nothing is drawn Pebble UI,
+and nothing may be presented as 2.0.0. The 2.0.0 captures replace them through the manifests (`take.ts`) and
+`standins.ts`; the plans do not change.
+
+## The lead's rulings (OVERRIDES §52), as decided and as built
+
+- **L2, the frame rate: 60 fps.** Every master and cut renders natively at 60 fps in all three aspects; review proxies
+  render natively at 30 fps at quarter size; a 60 fps master is never decimated. Everything is written at 60 fps and
+  converts with `f60()` (the set pieces' tests run at 60; their timings convert).
+- **L3a, motivated light, narrowly.** `RimLight` and `LightSweep` only on Pebble's own windows while they travel or turn,
+  at most an 8 % luminance lift with a soft falloff, never on receipts, third-party or Apple windows, reading holds or the
+  honest line (the set pieces use neither). `TextSweep` once, at the title, as the converging rings arrive: in sage,
+  inside the glyphs, at most 15 % (built as `setpieces/views/SageSweep.tsx`; the foundation's white `TextSweep` is not
+  used). The ripple's crest highlight as built. Light leaks at most twice in the hero film, where the light changes (the
+  Drop's warming is one).
+- **L3b:** the composed whole Mac at the Drop (one moving task, the other places as dimmed stills lifting into light) and
+  the wall are the two departures from one moment per frame; the wall's cells play at 1× or hold still.
+- **L3c:** the ground is the page's riverbed under still water, through every grade.
+- **L3d:** every cut has a musical cause (above: `place()`); reading holds are never shortened; only hits snap.
+- **L4, the method line**, after "Shown with sample data.": "Real Pebble 2.0 screens, composed in one space. Nothing
+  Pebble does is sped up." (`setpieces/finale.ts`). It holds only while §3.6's time rules hold (`checkTakeUse`).
+- **The ring iris between places:** E-move over 24–36 frames with the outgoing shot still drifting (`ringIris({ ease:
+  "move" })`, added for the ruling); E-arrive's burst only on the Drop and on hits the cue marks.
+- **Act I's aperture bands:** opaque night green (`COLOR.nightPage`), never black; the set pieces' check measures
+  11.8:1 against the riverbed's edge under the morning grade (at least 3:1), and the Drop's demo sheet shows the
+  2.39:1 frame at 320 px.
+- **Grain** stays off.
+- **The 3D pebble reveal: not built** (the set-piece lane's call). The stone is Pebble's own 2D character engine (bloub)
+  everywhere, so a 3D pebble would be a look Pebble does not have; @remotion/three is not added and the GPU test is not
+  needed.
+- **Never wrap the whole world in CameraMotionBlur.** The set pieces use it only on the foreground at a momentum cut's
+  first 16–20 frames.
 - **The card entrance** (§5.1's shared ask entrance) is the film's framing of the card arriving; on the 2.0.0 captures it
-  is used only where the recording shows Pebble's card arriving the same way.
+  is used only where the recording shows Pebble's card arriving the same way (every use in the set pieces is a
+  placeholder of the recording's own arrival).

@@ -444,7 +444,8 @@ const NEVER = [
   /\binvisible\b/i,
   /\bbeats?\b/i,
   /\bfirst\b/i,
-  /\bonly\b/i,
+  // "only" as a uniqueness claim (R-FIRST); a condition ("kept on its own only after an independent check", L25) is not one
+  /\bonly\b(?!\s+(?:after|when|if|until|once|while)\b)/i,
   /\bunique\b/i,
   /\bcontext warping\b/i,
   /\bnever takes focus\b/i,
