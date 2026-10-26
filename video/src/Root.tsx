@@ -22,6 +22,8 @@ import { LoopModels } from "./loops/LoopModels";
 import { LoopViews } from "./loops/LoopViews";
 import { L1, L2, L3, L4, L6, L7, L8, T0 } from "./loops/plans";
 import { FilmTeaser } from "./teaser/FilmTeaser";
+// film-2.0 (the new film, on the local branch film-2.0 only): its compositions carry an F2 prefix (src/film2/Root.tsx)
+import { Film2Compositions } from "./film2/Root";
 
 // Compositions (MASTER_PLAN §5.4, OVERRIDES §4 and §14). The film is aspect-aware: LaunchFilm (16:9), LaunchFilmSquare
 // (1:1) and LaunchFilmVertical (9:16, X and LinkedIn on phones) render the same timeline (film/timeline.ts, 2,304 frames
@@ -71,6 +73,7 @@ export const RemotionRoot: React.FC = () => {
         <Composition id="Placeholder" component={Placeholder} durationInFrames={90} fps={FPS.film} width={1920} height={1080} />
         <Composition id="PebbleDemo" component={PebbleDemo} durationInFrames={PEBBLE_DEMO_FRAMES} fps={FPS.film} width={1920} height={1080} />
       </Folder>
+      <Film2Compositions />
     </>
   );
 };
