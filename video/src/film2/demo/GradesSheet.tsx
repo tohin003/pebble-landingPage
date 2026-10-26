@@ -5,7 +5,7 @@ import { AbsoluteFill, Img, staticFile, useCurrentFrame } from "remotion";
 import { COLOR, FAMILY, SHADOW_WINDOW } from "../tokens";
 import { GRADES, type GradeName } from "../light/grades";
 import { GradeLayer } from "../light/Grade";
-import { UiImage } from "./parts";
+import { RIVERBED_SRC, UiImage } from "./parts";
 import { PLACEHOLDER, takeFramePath } from "./placeholders";
 
 export const GRADE_ORDER: GradeName[] = ["morning", "warm", "day", "dusk", "evening", "page", "night"];
@@ -13,7 +13,7 @@ export const GRADES_SHEET = { durationInFrames: GRADE_ORDER.length, fps: 60, wid
 
 const Frame: React.FC = () => (
   <AbsoluteFill>
-    <Img src={staticFile("desktop/riverbed-light@3x.png")} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+    <Img src={staticFile(RIVERBED_SRC)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
     <div style={{ position: "absolute", left: 210, top: 150, width: 1160 * 0.78, height: 800 * 0.78, borderRadius: 8, overflow: "hidden", boxShadow: SHADOW_WINDOW }}>
       <div style={{ width: 1160, height: 800, transform: "scale(0.78)", transformOrigin: "0 0", position: "relative" }}>
         <UiImage ph={PLACEHOLDER.main} />

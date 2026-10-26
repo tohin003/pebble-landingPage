@@ -49,7 +49,7 @@ export const PLACE = {
   companion: { x: 2300, y: 1350, w: PLACEHOLDER.companionTake.w, h: PLACEHOLDER.companionTake.h },
   ask: { x: 2860, y: 1250, w: PLACEHOLDER.ask.w, h: PLACEHOLDER.ask.h },
   receipt: { x: 2860, y: 1640, w: 684, h: 248 },
-  main: { x: 980, y: 520, w: PLACEHOLDER.main.w, h: PLACEHOLDER.main.h },
+  main: { x: 700, y: 300, w: PLACEHOLDER.main.w, h: PLACEHOLDER.main.h }, // withheld from Act I: the pull-back reveals it
   // S3's stage, east of everything; its far window sits behind it on a deeper plane
   stage: { x: 5300, y: 1000, w: 640, h: 520 },
   far: { x: 5350, y: 300, w: PLACEHOLDER.main.w, h: PLACEHOLDER.main.h },

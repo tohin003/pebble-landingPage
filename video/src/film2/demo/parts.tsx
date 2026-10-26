@@ -8,12 +8,21 @@ import { PebbleOnFilm } from "../../pebble/PebbleOnFilm";
 import { F2_DEMO_CUES } from "./f2demo.cues";
 import { TAKE, type Placeholder } from "./placeholders";
 
-/** The riverbed (the page's own picture, rendered by RiverbedPlate) as the ground, centred on a world point. */
+/**
+ * The ground's picture: the page's riverbed (rendered by the RiverbedPlate still) at 2400 × 1500, a light JPEG derived
+ * from riverbed-light@3x.png (gitignored, like every riverbed raster). The ground is always defocused, so this size holds
+ * for masters too, and it decodes to a quarter of the 3× PNG's memory (the 3× PNG in eight CameraMotionBlur samples
+ * pushed this Mac into swap). Regenerate it with:
+ *   sips -s format jpeg -s formatOptions 88 -Z 2400 video/public/desktop/riverbed-light@3x.png --out video/public/desktop/riverbed-light-2400.jpg
+ */
+export const RIVERBED_SRC = "desktop/riverbed-light-2400.jpg";
+
+/** The riverbed as the ground, centred on a world point. */
 export const Riverbed: React.FC<{ center: Point; width?: number }> = ({ center, width = 3400 }) => {
   const h = width / 1.6;
   return (
     <Img
-      src={staticFile("desktop/riverbed-light@3x.png")}
+      src={staticFile(RIVERBED_SRC)}
       style={{ position: "absolute", left: center.x - width / 2, top: center.y - h / 2, width, height: h, maxWidth: "none" }}
     />
   );

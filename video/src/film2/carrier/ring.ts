@@ -59,6 +59,8 @@ export interface RingSpec {
   widthPx?: number;
   /** "ground" (default): behind the windows; "front": an iris edge, checked against readable rects */
   layer?: RingLayer;
+  /** plays every phase (and the echo gap) this many times faster: 1.25 shortens a 60-frame phase to 48 (default 1) */
+  speed?: number;
   /** the emit and the burst refract the ground (default true) */
   ripple?: boolean;
 }
@@ -113,6 +115,9 @@ export interface PhaseWindow {
  * world radius that reaches the frame's farthest corner from the ring's centre on that frame (the caller knows the
  * camera); without it, "edge" bursts to 3000 world units.
  */
+/** A phase's length in frames after the spec's speed. */
+const phaseFrames = (spec: RingSpec, frames: number): number => Math.max(1, Math.round(frames / (spec.speed ?? 1)));
+
 export function phaseWindows(spec: RingSpec, edgeRadius?: (frame: number, c: Point) => number): PhaseWindow[] {
   const out: PhaseWindow[] = [];
   let c = spec.source;
@@ -121,6 +126,7 @@ export function phaseWindows(spec: RingSpec, edgeRadius?: (frame: number, c: Poi
   let f = spec.start;
   spec.phases.forEach((ph, index) => {
     if (!(ph.frames > 0)) throw new Error(`ring ${spec.id}: phase ${index} (${ph.kind}) needs frames > 0`);
+    const n = phaseFrames(spec, ph.frames);
     const from = { c, r, opacity };
     let to = { c, r, opacity: opacity };
     switch (ph.kind) {
@@ -143,7 +149,7 @@ export function phaseWindows(spec: RingSpec, edgeRadius?: (frame: number, c: Poi
         to = { c, r, opacity: 1 };
         break;
       case "burst": {
-        const end = f + ph.frames;
+        const end = f + n;
         const R = ph.radius === "edge" ? (edgeRadius ? edgeRadius(end, c) : 3000) : ph.radius;
         to = { c, r: R, opacity: 1 };
         break;
@@ -155,17 +161,17 @@ export function phaseWindows(spec: RingSpec, edgeRadius?: (frame: number, c: Poi
         to = { c, r, opacity: 0 };
         break;
     }
-    out.push({ index, kind: ph.kind, f0: f, f1: f + ph.frames, from, to });
+    out.push({ index, kind: ph.kind, f0: f, f1: f + n, from, to });
     c = to.c;
     r = to.r;
     opacity = to.opacity;
-    f += ph.frames;
+    f += n;
   });
   return out;
 }
 
 /** The frame after the ring's last phase ends. */
-export const ringEnd = (spec: RingSpec): number => spec.start + spec.phases.reduce((s, p) => s + p.frames, 0);
+export const ringEnd = (spec: RingSpec): number => spec.start + spec.phases.reduce((s, p) => s + phaseFrames(spec, p.frames), 0);
 
 const mainState = (spec: RingSpec, frame: number, fps: number, edgeRadius?: (frame: number, c: Point) => number): RingState | null => {
   if (frame < spec.start || frame >= ringEnd(spec)) return null;
@@ -209,7 +215,7 @@ export function ringStates(spec: RingSpec, frame: number, fps: number, edgeRadiu
   if (m) out.push(m);
   const n = spec.echoes ?? 0;
   if ((spec.echoMode ?? "emit") === "all") {
-    const gap = spec.echoGap ?? f60(RING.echoGapFrames, fps);
+    const gap = Math.round((spec.echoGap ?? f60(RING.echoGapFrames, fps)) / (spec.speed ?? 1));
     for (let k = 1; k <= n; k++) {
       const e = mainState(spec, frame - k * gap, fps, edgeRadius ? (f, c) => edgeRadius(f + k * gap, c) : undefined);
       if (e) out.push({ ...e, echo: k, opacity: e.opacity * (spec.echoFade ?? RING.echoFade) ** k });
@@ -218,16 +224,17 @@ export function ringStates(spec: RingSpec, frame: number, fps: number, edgeRadiu
   }
   const emit = spec.phases[0]?.kind === "emit" ? (spec.phases[0] as Extract<RingPhase, { kind: "emit" }>) : null;
   if (emit && n > 0) {
-    const gap = spec.echoGap ?? f60(RING.echoGapFrames, fps);
+    const gap = Math.round((spec.echoGap ?? f60(RING.echoGapFrames, fps)) / (spec.speed ?? 1));
     const fadeOut = f60(18, fps);
+    const emitFrames = phaseFrames(spec, emit.frames);
     for (let k = 1; k <= n; k++) {
       const f0 = spec.start + k * gap;
       const t = frame - f0;
-      if (t < 0 || t >= emit.frames + fadeOut) continue;
-      const u = Math.min(1, t / emit.frames);
+      if (t < 0 || t >= emitFrames + fadeOut) continue;
+      const u = Math.min(1, t / emitFrames);
       const r = spec.stoneRadius + (emit.radius - spec.stoneRadius) * (emit.ease ? curve(emit.ease) : E_ARRIVE)(u);
       const appear = smoothstep(0, Math.max(1, f60(6, fps)), t);
-      const vanish = 1 - smoothstep(emit.frames, emit.frames + fadeOut, t);
+      const vanish = 1 - smoothstep(emitFrames, emitFrames + fadeOut, t);
       out.push({
         id: spec.id,
         echo: k,
@@ -261,7 +268,7 @@ export function rippleStates(spec: RingSpec, frame: number, fps: number, edgeRad
       const w = wins.find((x) => frame >= x.f0 && frame < x.f1 && (x.kind === "emit" || x.kind === "burst"));
       born = w ? w.f0 : null;
     } else {
-      born = spec.start + ring.echo * (spec.echoGap ?? f60(RING.echoGapFrames, fps));
+      born = spec.start + ring.echo * Math.round((spec.echoGap ?? f60(RING.echoGapFrames, fps)) / (spec.speed ?? 1));
     }
     if (born === null) continue;
     const t = frame - born;

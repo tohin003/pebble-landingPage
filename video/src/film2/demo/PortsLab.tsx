@@ -16,14 +16,14 @@ import { zoomThrough } from "../transitions/presentations";
 import { TextMatchCut } from "../type/TextMatchCut";
 import { FontGate } from "../type/FontGate";
 import { LightLeak } from "../light/LightLeak";
-import { PlaceholderSlate, UiImage } from "./parts";
+import { PlaceholderSlate, RIVERBED_SRC, UiImage } from "./parts";
 import { PLACEHOLDER, type Placeholder } from "./placeholders";
 
 export const PORTS_LAB = { durationInFrames: 600, fps: 60, width: 1920, height: 1080 } as const;
 
 const Ground: React.FC = () => (
   <AbsoluteFill>
-    <Img src={staticFile("desktop/riverbed-light@3x.png")} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+    <Img src={staticFile(RIVERBED_SRC)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
   </AbsoluteFill>
 );
 
