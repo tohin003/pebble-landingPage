@@ -51,10 +51,15 @@ For one master (--name web|social sets the targets; any other name, e.g. a cut's
             over bar 9's first half; each hold's first 2 s 5-9 LU under the integrated level and under the montage
             (bars 15-20); Verified (the push on f1723) in the loudest 3 s window and 1.5 LU or more over the montage;
             the push at least as big as the tests passing (f1656): its momentary maximum (400 ms) within 0.6 s, and
-            its first 0.3, 0.4 and 1.0 s; the breakdown (bars 26-28) 6 LU or more under the climax (bars 21-25); each
+            its first 0.3, 0.4 and 1.0 s, from the push and from Verified's picture frame (f1723, OVERRIDES §46); the
+            push the master's loudest momentary moment (400 ms windows ending 2.5-21.5 frames after it, against
+            every other window); the quick chat (bars 12-13) within 3 LU of bars 10-11 and building into bar 14 (§46
+            P2-2); the breakdown (bars 26-28) 6 LU or more under the climax (bars 21-25); each
             gap's middle 200 ms at least 12 dB (K-weighted power) under the 300 ms from its hit (a gap in the hook's
             bar, 6 dB); bars 23-25 at least 1.5 LU over the mean of bars 9-22 and the loudest 3-bar span; bars 26-28
             at least 6 LU under bars 23-25; the last 54 frames exact zeros. LRA is reported against its 8-10 LU target.
+            The hits' first beats (HIT_REPORT: the momentary maximum of the 400 ms windows ending 3-15 frames after
+            each) are reported in the full band and through a phone's band (PHONE_BAND, §46 P2-1).
             A cut maps the checks onto its bars by music.score_bars and its frames through its ranges (a check whose
             bars or frames the cut leaves out is skipped), its gaps from its own cue list.
   cues      for every effect in cues.json (automation entries, with no "file", are left out), placed exactly as
@@ -87,7 +92,7 @@ import tempfile
 import numpy as np
 import pyloudnorm as pyln
 import soundfile as sf
-from scipy.signal import lfilter, resample_poly, welch
+from scipy.signal import butter, lfilter, resample_poly, sosfilt, welch
 
 TARGETS = {"web": {"lufs": -16.0, "tol": 0.5, "tp_max": -1.5, "aac": ["160k", -1.5]},
            "social": {"lufs": -14.0, "tol": 0.5, "tp_max": -1.0, "aac": ["192k", -1.0]}}
@@ -112,6 +117,14 @@ AFTER_SILENCE = ((648, "the drop, after the dead stop"), (1512, "the climax's re
 QUESTIONS = (72, 216, 360)          # the three question cards' hits (bars 2, 4 and 6)
 DEAD_STOP = (612, 639)              # the dead stop, up to the suck-back's gap (f639-647) into the drop on f648
 PASSED, PUSH = 1656, 1723.5         # §41: the tests pass on bar 24's downbeat; Verified (f1723) is the 16th push
+VERIFIED = 1723                     # Verified's picture frame: §41's checks run from it as well as from the push
+# OVERRIDES §46 P2-1: the hits that carry the trailer's grammar, their first beat's momentary maximum (400 ms windows
+# ending 3-15 frames after the hit, the review's measure) in the full band and in a phone's (PHONE_BAND, a 4th-order
+# band-pass): a report. The push's windows end 2.5-21.5 frames after it (f1726-f1745).
+HIT_REPORT = {"the drop": 648, "the whole workspace": 936, "the montage lift": 1008, "the held run's cut": 1440,
+              "Run tests": 1584, "the tests pass": 1656, "the push (Verified)": 1723.5, "the final hit": 2160}
+PHONE_BAND = (400.0, 10000.0)
+QUICK_CHAT = (12, 13)               # §46 P2-2: the groove carries on under the quick chat and builds into bar 14
 ZOOMS = {"drop": (16.8, 9.6), "climax": (47.4, 12.6), "endcard": (66.0, 10.8)}
 
 
@@ -662,6 +675,57 @@ if tv is not None:
             a_, b_ = lu(tv, tv + win), lu(tp, tp + win)
             check(f"the push at least as big as the tests passing (f1656): its first {win} s (LU)", round(a_ - b_, 2),
                   a_ >= b_, ">= 0", push=a_, passed=b_)
+        tw = at_s(VERIFIED)                                  # §46: the same from Verified's picture frame (the review's)
+        for win in (0.3, 0.4, 1.0):
+            a_, b_ = lu(tw, tw + win), lu(tp, tp + win)
+            check(f"Verified (f{VERIFIED}) at least as big as the tests passing (f1656): its first {win} s (LU)",
+                  round(a_ - b_, 2), a_ >= b_, ">= 0", verified=a_, passed=b_)
+
+# §46 P2-1: momentary loudness (K-weighted 400 ms windows every 10 ms, each labelled by its end), full band and through
+# a phone's band; the push is the master's loudest moment, and each hit's first beat is reported
+MOM_W, MOM_HOP = int(0.4 * SR), SR // 100
+
+
+def momentary(zk):
+    """(window ends in samples, LUFS) over the K-weighted signal zk (channels x samples)."""
+    cz = np.concatenate([[0.0], np.cumsum(np.sum(zk ** 2, axis=0))])
+    ends = np.arange(MOM_W, zk.shape[1] + 1, MOM_HOP)
+    return ends, -0.691 + 10 * np.log10(np.maximum((cz[ends] - cz[ends - MOM_W]) / MOM_W, 1e-20))
+
+
+def mom_max(ends, vals, f0, f1):
+    """The loudest window ending within frames [f0, f1] of this timeline."""
+    sel = (ends >= f0 * SPF - 1e-6) & (ends <= f1 * SPF + 1e-6)
+    return round(float(vals[sel].max()), 2) if sel.any() else None
+
+
+m_ends, m_full = momentary(z)
+_, m_phone = momentary(kweight(sosfilt(butter(4, PHONE_BAND, btype="bandpass", fs=SR, output="sos"), y, axis=0).T))
+if tv is not None:
+    pf = tv * FPS                                        # the push, in this timeline's frames
+    in_push = (m_ends >= (pf + 2.5) * SPF - 1e-6) & (m_ends <= (pf + 21.5) * SPF + 1e-6)
+    p_max, o_i = float(m_full[in_push].max()), int(np.argmax(np.where(in_push, -np.inf, m_full)))
+    check("the push (f1723) is the master's loudest momentary moment (400 ms): its windows over every other (LU)",
+          round(p_max - float(m_full[o_i]), 2), p_max >= float(m_full[o_i]), ">= 0", push=round(p_max, 2),
+          next_loudest=round(float(m_full[o_i]), 2), next_loudest_ends_s=round(m_ends[o_i] / SR, 2))
+hits = {}
+for label, fr in HIT_REPORT.items():
+    t = at_s(fr)
+    if t is not None:
+        f = t * FPS
+        hits[label] = {"film_frame": fr, "momentary_max": mom_max(m_ends, m_full, f + 3, f + 15),
+                       "momentary_max_phone_band": mom_max(m_ends, m_phone, f + 3, f + 15)}
+dyn["hits"] = {"note": f"each hit's momentary maximum (400 ms windows ending 3-15 frames after it), LUFS; the phone band "
+                       f"is {PHONE_BAND[0]:g}-{PHONE_BAND[1]:g} Hz (4th-order band-pass, then K-weighted)", **hits}
+qc = bars_of(set(range(QUICK_CHAT[0] - 2, QUICK_CHAT[1] + 2)))
+if len(qc) == 5 and qc == list(range(qc[0], qc[0] + 5)):    # bars 10-14, in order (the film)
+    lv = {b: lu((b - 1) * BAR_F / FPS, b * BAR_F / FPS) for b in qc}
+    b10, b11, b12, b13, b14 = (lv[b] for b in qc)
+    v = round((b12 + b13) / 2 - (b10 + b11) / 2, 2)
+    check("the quick chat (bars 12-13) against bars 10-11, ungated (LU)", v, v >= -3.0, ">= -3 (§46 P2-2)",
+          bars_10_14=[lv[b] for b in qc])
+    check("bars 12-14 build: bar 13 over bar 12, bar 14 over bar 13, ungated (LU)",
+          [round(b13 - b12, 2), round(b14 - b13, 2)], b13 >= b12 and b14 >= b13, ">= 0 each")
 clim, brk = bars_of(set(range(21, 26))), bars_of({26, 27, 28})
 if len(clim) == 5 and len(brk) == 3 and None not in (lufs_bars(clim), lufs_bars(brk)):
     v = round(lufs_bars(clim) - lufs_bars(brk), 2)
