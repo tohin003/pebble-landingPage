@@ -51,6 +51,18 @@ export interface DropOptions {
   minAfterHitS?: number;
   /** ... and waits for its phrase line by up to this long */
   maxExtendS?: number;
+  /** one timeline for every aspect: the latest frame of each timed event across the aspects (setpieces/align.ts) */
+  align?: Partial<DropTiming>;
+}
+
+/** The frames the Drop's timeline is made of (the same in every aspect once aligned). */
+export interface DropTiming {
+  /** the frames the pair's lines LAND (their entrances start earlier by their own length) */
+  promiseLand: number;
+  limitLand: number;
+  linesExit: number;
+  revealRingAt: number;
+  end: number;
 }
 
 export const DROP_DEFAULTS = {
@@ -185,14 +197,15 @@ export function planDrop(o: DropOptions): ScenePlan {
   const clearL = ringClearFrame([burst], [rectL], fps, poseAt, f, hit, hit + f60(150, fps));
   const enterP = landFrames(specP, fps);
   const enterL = landFrames(specL, fps);
-  const landP = place(Math.max(hit + f60(48, fps) + enterP, clearP), o.grid, { level: "beat", frames: enterP });
+  const al = o.align ?? {};
+  const landP = place(Math.max(hit + f60(48, fps) + enterP, clearP, al.promiseLand ?? -Infinity), o.grid, { level: "beat", frames: enterP });
   specP.at = landP.at;
-  const landL = place(Math.max((landP.point ?? landP.at + enterP) + f60(24, fps), clearL), o.grid, { level: "beat", frames: enterL });
+  const landL = place(Math.max((landP.point ?? landP.at + enterP) + f60(24, fps), clearL, al.limitLand ?? -Infinity), o.grid, { level: "beat", frames: enterL });
   specL.at = landL.at;
   music.push(musicHit("L05 lands", landP), musicHit("L06 lands", landL));
   // held together, L05 3.6 s and L06 at least 3.0 s (they need 2.3 and 2.0, and 2.5 together): the reference timing's
   // 4.8 and 4.3 s would keep them on screen while the reveal ring passes, and a ring never crosses a line being read
-  const exitAt = Math.max(specP.at + sec(3.6, fps), specL.at + sec(3.0, fps));
+  const exitAt = Math.max(specP.at + sec(3.6, fps), specL.at + sec(3.0, fps), al.linesExit ?? 0);
   specP.exitAt = exitAt;
   specL.exitAt = exitAt;
   const linesGone = exitAt + Math.max(exitFramesOf("lineRise", "blur", promise, fps), exitFramesOf("lineRise", "blur", limit, fps));
@@ -229,7 +242,7 @@ export function planDrop(o: DropOptions): ScenePlan {
     { id: "toolbox", rect: W.toolbox },
   ];
   const farR = Math.max(...dimmed.map((d) => farDistToRect(W.stone, d.rect))) + 80;
-  const revealRingAt = Math.max(linesGone + 2, revealStart + f60(30, fps));
+  const revealRingAt = Math.max(linesGone + 2, revealStart + f60(30, fps), al.revealRingAt ?? 0);
   const reveal: RingSpec = {
     id: "drop-reveal",
     start: revealRingAt,
@@ -262,9 +275,10 @@ export function planDrop(o: DropOptions): ScenePlan {
   /* ------------------------------------------------ the end: a phrase line (or a bar line), never earlier ------ */
   const earliestEnd = Math.max(hit + sec(o.minAfterHitS ?? DROP_DEFAULTS.minAfterHitS, fps), ringEnd(reveal) + f60(30, fps) + 6, revealEnd + f60(20, fps));
   const maxWait = sec(o.maxExtendS ?? DROP_DEFAULTS.maxExtendS, fps);
-  let endP = place(earliestEnd, o.grid, { level: "phrase", maxWait });
-  if (endP.point === null && o.grid) endP = place(earliestEnd, o.grid, { level: "bar", maxWait });
-  const end = endP.point ?? earliestEnd;
+  const endEarliest = Math.max(earliestEnd, al.end ?? 0);
+  let endP = place(endEarliest, o.grid, { level: "phrase", maxWait });
+  if (endP.point === null && o.grid) endP = place(endEarliest, o.grid, { level: "bar", maxWait });
+  const end = endP.point ?? endEarliest;
   music.push(musicHit("the Drop ends: Ring 1 starts", endP));
   // the glide after the pull-back, toward the browser, until the end (and past it at the same velocity)
   cam.glide(end, sec(0.4, fps), { lz: meanLz * 0.02, x: drift.x, y: drift.y });
@@ -332,6 +346,20 @@ export function planDrop(o: DropOptions): ScenePlan {
       ...lightCues.map((c) => move("light", c.at, c.frames, "the light warms")),
     ],
     exit: { pose: cam.pose(end), vel: cam.sample(end).vel, shot: "drop", ref: tight },
-    extra: { touch, apertureFrames, band, receiptAt, linesGone, revealRingAt, revealStart, revealEnd, clearP, clearL, tightZoom: tight.zoom, wideZoom: wide.zoom },
+    extra: {
+      timing: { promiseLand: specP.at + enterP, limitLand: specL.at + enterL, linesExit: exitAt, revealRingAt, end } satisfies DropTiming,
+      touch,
+      apertureFrames,
+      band,
+      receiptAt,
+      linesGone,
+      revealRingAt,
+      revealStart,
+      revealEnd,
+      clearP,
+      clearL,
+      tightZoom: tight.zoom,
+      wideZoom: wide.zoom,
+    },
   };
 }

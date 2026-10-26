@@ -223,6 +223,23 @@ export function cues(p: ScenePlan): Finding[] {
   return p.shots.flatMap((s) => (s.stone ? checkCues(s.stone.cues, `${p.id}/${s.id}`).map((m) => ({ check: "cues", level: "error" as const, message: m })) : []));
 }
 
+/** UI the viewer must read is wholly in frame while it is read (checked every 3 frames). */
+export function readInFrame(p: ScenePlan): Finding[] {
+  const out: Finding[] = [];
+  const q = planQa(p);
+  for (const r of q.readables ?? []) {
+    if ((r.words ?? 0) === 0) continue;
+    for (let fr = r.from; fr < r.to; fr += 3) {
+      const rr = typeof r.rect === "function" ? r.rect(fr) : r.rect;
+      if (!insideFrame(rr, p.frame, -0.5)) {
+        out.push({ check: "readInFrame", level: "error", message: `${r.id} is read on frame ${fr} but lies outside the frame (${Math.round(rr.x)}, ${Math.round(rr.y)}, ${Math.round(rr.w)} × ${Math.round(rr.h)})`, frame: fr });
+        break;
+      }
+    }
+  }
+  return out;
+}
+
 /** The wall: no Stealth cell, ever; and the cells are seen, not read (their text far under the 28 px floor). */
 export function wallCheck(p: ScenePlan): Finding[] {
   const out: Finding[] = [];
@@ -251,7 +268,7 @@ export function smallPrint(p: ScenePlan): Finding[] {
 /** Every check: the foundation's, then the set pieces'. */
 export function checkPlan(p: ScenePlan, grid?: MusicGrid, extraMoves: readonly QaMove[] = []): Report {
   const r = checkAll(planQa(p), [...p.moves, ...extraMoves]);
-  const more = [...bandContrast(p), ...takes(p), ...typeSafe(p), ...typeOverUi(p), ...uiReadSize(p), ...music(p, grid), ...cues(p), ...wallCheck(p), ...smallPrint(p)];
+  const more = [...bandContrast(p), ...takes(p), ...typeSafe(p), ...typeOverUi(p), ...uiReadSize(p), ...music(p, grid), ...cues(p), ...wallCheck(p), ...smallPrint(p), ...readInFrame(p)];
   const errors = [...r.errors, ...more.filter((x) => x.level === "error")];
   return {
     ...r,

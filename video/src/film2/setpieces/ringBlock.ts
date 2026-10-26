@@ -42,8 +42,8 @@ export interface RingContent {
   stone: Point;
   /** context planes drawn in the place's world (the place's window, other windows) */
   context?: readonly PlaneSpec[];
-  /** the ask the ring frames: a still (in the conversation's history) or a slot */
-  ask: { rect: Rect; standIn: StandIn; words: number; textPx: number };
+  /** the ask the ring frames: a still (in the conversation's history) or a slot; `readRect` is the part read (world) */
+  ask: { rect: Rect; standIn: StandIn; words: number; textPx: number; readRect?: Rect };
   /** the act: one view of a take, played at 1× */
   act: { take: TakeManifest; view: string; rect: Rect; startEvent: string; words: number; textPx: number; readRect: Rect };
   /** the receipt: the take event that lands on a beat, and where it shows (inside the act's view, view px) */
@@ -60,6 +60,24 @@ export interface RingOptions {
   grid?: MusicGrid;
   /** continue the previous piece's camera in the same world (a continuous hand-off); default: a fresh start */
   entry?: { pose: Pose; vel: CamVel };
+  /**
+   * One timeline for every aspect (§3.12): the latest frame of each timed event across the aspects (setpieces/align.ts
+   * alignAspects); each is a minimum here, so every aspect cuts on the same frames.
+   */
+  align?: Partial<RingTiming>;
+}
+
+/** The frames a ring block's timeline is made of (the same in every aspect once aligned). */
+export interface RingTiming {
+  arriveAt: number;
+  /** the frames the lines LAND (their entrances start earlier by their own length, which differs with line breaks) */
+  chapterLand: number;
+  limitLand: number;
+  linesExit: number;
+  linesGone: number;
+  receiptAt: number;
+  cut: number;
+  end: number;
 }
 
 interface RingLayout {
@@ -128,8 +146,9 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   const zoomFor = (css: number) => (28 * f.unit) / css; // UI text ≥ 28 px at 1080
   // reading magnification: at least the 28 px floor, and no more than 2.4 (the captures are 2×; past that they soften)
   const readZoom = (fit: number, css: number) => Math.max(zoomFor(css) * 1.02, Math.min(fit, 2.4 * f.unit));
+  const askRead = c.ask.readRect ?? c.ask.rect;
   const readAskPose = (() => {
-    const p = fitPose(unionRect(c.ask.rect, c.act.readRect), L.read(f), f, 0.94);
+    const p = fitPose(unionRect(askRead, c.act.readRect), L.read(f), f, 0.94);
     return { ...p, zoom: readZoom(p.zoom, Math.min(c.ask.textPx, c.act.textPx)) };
   })();
   const receiptWorld: Rect = { x: c.act.rect.x + c.receipt.rect.x, y: c.act.rect.y + c.receipt.rect.y, w: c.receipt.rect.w, h: c.receipt.rect.h };
@@ -164,7 +183,8 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   // change so much that its corners would outrun the travel limit (peak log-zoom rate ≤ 0.0135 a frame at 60 fps)
   const followFrom = f60(24, fps);
   const zoomFrames = Math.ceil((111 * Math.abs(Math.log(arrivePose.zoom / start.zoom)) * fps) / 60);
-  const arriveAt = Math.max(framedAt + f60(12, fps), followFrom + zoomFrames);
+  const al = o.align ?? {};
+  const arriveAt = Math.max(framedAt + f60(12, fps), followFrom + zoomFrames, al.arriveAt ?? 0);
   // the arrival settles into a drift that continues its own direction (a reversal would pass through a stop)
   const travelDir = (() => {
     const dx = arrivePose.x - start.x;
@@ -217,7 +237,7 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   const specC: TypeSpec = { id: `${c.id}-chapter`, text: chapter, tier: "expressive", at: 0, sizeT: L.sizeT, box: boxC, kind: "film", key: true, pairWith: limit ? `${c.id}-limit` : undefined };
   const rectC = lineRect(chapter, "expressive", f, boxC, L.sizeT);
   const clearC = ringClearFrame([probeRing], [rectC], fps, poseAt, f, 0, provisionalEnd);
-  const landC = place(Math.max(f60(30, fps) + landFrames(specC, fps), clearC), g, { level: "beat", frames: landFrames(specC, fps) });
+  const landC = place(Math.max(f60(30, fps) + landFrames(specC, fps), clearC, al.chapterLand ?? -Infinity), g, { level: "beat", frames: landFrames(specC, fps) });
   specC.at = landC.at;
   music.push(musicHit("the chapter line lands", landC));
   types.push(specC);
@@ -227,15 +247,16 @@ export function planRingBlock(o: RingOptions): ScenePlan {
     specL = { id: `${c.id}-limit`, text: limit, tier: "functional", at: 0, sizeT: 0.3, box: boxL, kind: "film" };
     const rectL = lineRect(limit, "functional", f, boxL, 0.3);
     const clearL = ringClearFrame([probeRing], [rectL], fps, poseAt, f, 0, provisionalEnd);
-    const landL = place(Math.max((landC.point ?? landC.at + landFrames(specC, fps)) + f60(18, fps), clearL), g, { level: "beat", frames: landFrames(specL, fps) });
+    const landL = place(Math.max((landC.point ?? landC.at + landFrames(specC, fps)) + f60(18, fps), clearL, al.limitLand ?? -Infinity), g, { level: "beat", frames: landFrames(specL, fps) });
     specL.at = landL.at;
     music.push(musicHit("the limit lands", landL));
     exitAt = Math.max(exitAt, specL.at + sec(linesHoldS.limit, fps));
     types.push(specL);
   }
+  exitAt = Math.max(exitAt, al.linesExit ?? 0);
   specC.exitAt = exitAt;
   if (specL) specL.exitAt = exitAt;
-  const linesGone = exitAt + Math.max(exitFramesOf("lineRise", "blur", chapter, fps), limit ? exitFramesOf("lineBlur", "blur", limit, fps) : 0);
+  const linesGone = Math.max(exitAt + Math.max(exitFramesOf("lineRise", "blur", chapter, fps), limit ? exitFramesOf("lineBlur", "blur", limit, fps) : 0), al.linesGone ?? 0);
   if (linesGone > provisionalEnd) throw new Error(`${c.id}: the lines run to ${linesGone}, past the arrival glide (${provisionalEnd})`);
 
   /* ------------------------------------------------ the camera: in to read, the take, the receipt --------------- */
@@ -244,15 +265,18 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   const dollyFrom = Math.max(linesGone + 2, arriveAt + f60(30, fps));
   arrival(cam2, dollyFrom);
   const dollyTo = dollyFrom + f60(72, fps);
-  // the dolly ends still moving in the arrival's direction, and the reading glide keeps it (≈ 0.3 px a frame: slower
-  // drifts read as stills; §5.3 allows up to 1)
-  const readDrift = { x: (travelDir.x * 0.3 * f.unit * 60) / fps / readAskPose.zoom, y: (travelDir.y * 0.3 * f.unit * 60) / fps / readAskPose.zoom, lz: 0.00012 };
-  cam2.hermite(dollyTo, readAskPose, { x: readDrift.x * 1.2, y: readDrift.y * 1.2, lz: 0.0002 });
+  // the reading glide: about 0.25 px a frame on screen in the arrival's direction (slower drifts read as stills; §5.3
+  // allows up to 1) and a slow breath in; the framing starts half the drift back, so the cards drift through the
+  // middle of the frame and never toward its edge
+  const readFramesEst = sec(readS(c.ask.words) + readS(c.act.words), fps);
+  const readDrift = { x: (travelDir.x * 0.25 * f.unit * 60) / fps / readAskPose.zoom, y: (travelDir.y * 0.25 * f.unit * 60) / fps / readAskPose.zoom, lz: 0.00005 };
+  const readFrom: Pose = { x: readAskPose.x - (readDrift.x * readFramesEst) / 2, y: readAskPose.y - (readDrift.y * readFramesEst) / 2, zoom: readAskPose.zoom };
+  cam2.hermite(dollyTo, readFrom, { x: readDrift.x, y: readDrift.y, lz: 0.0001 });
 
   // the receipt lands on a beat once the ask and the act have been read
   const askAndActS = readS(c.ask.words) + readS(c.act.words) - 0.5;
   const earliestReceipt = dollyTo + sec(Math.max(askAndActS - 1.0, 1.0), fps);
-  const landR = place(earliestReceipt, g, { level: "beat" });
+  const landR = place(Math.max(earliestReceipt, al.receiptAt ?? 0), g, { level: "beat" });
   const receiptAt = landR.point ?? landR.at;
   music.push(musicHit("the receipt lands (the ring returns)", landR));
   // the take: its receipt event on that beat; it starts on its start event, or entered later (never cut, never sped up)
@@ -275,12 +299,13 @@ export function planRingBlock(o: RingOptions): ScenePlan {
     const n = Math.hypot(dx, dy) || 1;
     return { x: dx / n, y: dy / n };
   })();
-  const receiptDrift = { x: (toReceipt.x * 0.3 * f.unit * 60) / fps / readReceiptPose.zoom, y: (toReceipt.y * 0.3 * f.unit * 60) / fps / readReceiptPose.zoom, lz: 0.0001 };
-  travelTo(cam2, receiptArrive, readReceiptPose, receiptReadEnd, fps, { arriveSpeedPxPerFrame: 5, tauS: 0.45, drift: receiptDrift });
+  const receiptDrift = { x: (toReceipt.x * 0.25 * f.unit * 60) / fps / readReceiptPose.zoom, y: (toReceipt.y * 0.25 * f.unit * 60) / fps / readReceiptPose.zoom, lz: 0.00005 };
+  const receiptFrom: Pose = { x: readReceiptPose.x - (receiptDrift.x * (receiptReadEnd - receiptArrive)) / 2, y: readReceiptPose.y - (receiptDrift.y * (receiptReadEnd - receiptArrive)) / 2, zoom: readReceiptPose.zoom };
+  travelTo(cam2, receiptArrive, receiptFrom, receiptReadEnd, fps, { arriveSpeedPxPerFrame: 5, tauS: 0.45, drift: receiptDrift });
 
   /* ------------------------------------------------ the cut to the cascade, on a bar line ---------------------- */
   const leaveF = f60(18, fps);
-  const cutP = place(receiptReadEnd + leaveF + 1, g, { level: "bar" });
+  const cutP = place(Math.max(receiptReadEnd + leaveF + 1, al.cut ?? 0), g, { level: "bar" });
   const cut = cutP.point ?? cutP.at;
   music.push(musicHit("the cut to the cascade", cutP));
   const use = solveInPoint(m, c.receipt.event, receiptAt, takeAt, cut, fps);
@@ -309,7 +334,7 @@ export function planRingBlock(o: RingOptions): ScenePlan {
     const sched = cascadeSchedule(itemsStart, items, fps, beats);
     const last = sched[sched.length - 1]!;
     const endEarliest = last.outStart + f60(6, fps);
-    const endP = place(endEarliest, g, { level: "bar" });
+    const endP = place(Math.max(endEarliest, al.end ?? 0), g, { level: "bar" });
     duration = endP.point ?? endEarliest;
     music.push(musicHit("the cascade ends (the next block)", endP));
     for (const w of sched) music.push({ event: `swap "${w.text}" lands`, frame: w.inEnd, point: null, level: null, waited: 0 });
@@ -330,7 +355,7 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   /* ------------------------------------------------ planes of the ring shot ------------------------------------ */
   const planes: PlaneSpec[] = [
     ...(c.context ?? []),
-    { id: `${c.id}-ask`, kind: "pebble", rect: c.ask.rect, content: { kind: "standIn", standIn: c.ask.standIn }, read: { from: dollyTo, to: receiptAt, words: c.ask.words, textPx: c.ask.textPx } },
+    { id: `${c.id}-ask`, kind: "pebble", rect: c.ask.rect, content: { kind: "standIn", standIn: c.ask.standIn }, read: { from: dollyTo, to: receiptAt, words: c.ask.words, textPx: c.ask.textPx, rect: askRead } },
     {
       id: `${c.id}-act`,
       kind: "pebble",
@@ -403,7 +428,21 @@ export function planRingBlock(o: RingOptions): ScenePlan {
       const s = last.camera.sample(duration - last.from);
       return { pose: s.pose, vel: s.vel, shot: last.id, ref: last.ref };
     })(),
-    extra: { arriveAt, linesGone, dollyFrom, dollyTo, receiptAt, takeAt, receiptArrive, receiptReadEnd, cut, receiptFrame: frameOfSource(recSrc, use.at, fps, m, use.inPoint), readZoom: readAskPose.zoom, receiptZoom: readReceiptPose.zoom },
+    extra: {
+      timing: { arriveAt, chapterLand: specC.at + landFrames(specC, fps), limitLand: specL ? specL.at + landFrames(specL, fps) : specC.at + landFrames(specC, fps), linesExit: exitAt, linesGone, receiptAt, cut, end: duration } satisfies RingTiming,
+      arriveAt,
+      linesGone,
+      dollyFrom,
+      dollyTo,
+      receiptAt,
+      takeAt,
+      receiptArrive,
+      receiptReadEnd,
+      cut,
+      receiptFrame: frameOfSource(recSrc, use.at, fps, m, use.inPoint),
+      readZoom: readAskPose.zoom,
+      receiptZoom: readReceiptPose.zoom,
+    },
   };
 }
 

@@ -34,10 +34,11 @@ export const ring4 = (A: Aspect): RingContent => {
     name: `Ring 4 ${A}`,
     stone: W.stone,
     context: worldContext(A),
-    // "Pebble's change isn't verified yet." (5 words to read; the rest of the card is context) and Run the tests
-    ask: { rect: W.project.held, standIn: STILL.held, words: 5, textPx: 13 },
+    // "Pebble's change isn't verified yet." (5 words to read; the rest of the card is context) and Run the tests: the
+    // part read is the card's first sentence and its first button (it fits 9:16 at reading size; the card does not)
+    ask: { rect: W.project.held, standIn: STILL.held, words: 5, textPx: 13, readRect: { x: W.project.held.x + 30, y: W.project.held.y + 36, w: 400, h: 96 } },
     // the test card reading Running: its title and first sentence are read (8 words)
-    act: { take: TAKE_HSF, view: "run", rect: run, startEvent: "running", words: 8, textPx: 15, readRect: { x: run.x, y: run.y, w: 495, h: 150 } },
+    act: { take: TAKE_HSF, view: "run", rect: run, startEvent: "running", words: 8, textPx: 15, readRect: { x: run.x, y: run.y, w: 430, h: 150 } },
     // "Verified · pytest … passed on current files" and "Done, and verified:" (9 words), read from its top-left
     receipt: { event: "verified", rect: { x: 0, y: 380, w: 684, h: 248 }, words: 9, textPx: 13, readRect: { x: 0, y: 0, w: 430, h: 64 } },
     lines: { chapter: "AgentGuard, built in.", limit: "Reliability, not security." },

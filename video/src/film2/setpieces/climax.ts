@@ -47,8 +47,11 @@ const KEPT: Rect = { x: 2600 + 560, y: 150, w: 495, h: 474 };
 const STONE = { x: 2600 + 1160 + 120, y: 720 };
 
 interface ClimaxLayout {
-  /** where the ask sits on screen (the chapter line owns the rest) */
+  /** where the ask sits on screen (the chapter line owns the rest); the part of it read (card px) */
   ask: (f: FrameBox) => Rect;
+  askRead: Rect;
+  /** the part of the kept card read: the whole card where it fits at reading size (1:1 reads its top) */
+  keptRead: Rect;
   chapter: (f: FrameBox) => TypeBox;
   /** the kept card's reading region, and the check line's box beside it */
   kept: (f: FrameBox) => Rect;
@@ -58,18 +61,26 @@ interface ClimaxLayout {
 const LAYOUT: Record<FrameBox["aspect"], ClimaxLayout> = {
   "16:9": {
     ask: (f) => ({ x: f.w * 0.44, y: f.safe, w: f.w * 0.52, h: f.h - 2 * f.safe }),
+    askRead: { x: 0, y: 0, w: 495, h: 482 },
+    keptRead: { x: 0, y: 0, w: 495, h: 474 },
     chapter: (f) => ({ left: f.safe * 2, top: f.h * 0.42, align: "left" }),
     kept: (f) => ({ x: f.w * 0.42, y: f.safe * 0.6, w: f.w * 0.56, h: f.h - f.safe * 1.2 }),
     check: (f) => ({ box: { left: f.safe * 2, top: f.h * 0.4, align: "left" }, maxW: f.w * 0.36 }),
   },
   "1:1": {
     ask: (f) => ({ x: f.safe * 0.6, y: f.h * 0.2, w: f.w - f.safe * 1.2, h: f.h * 0.78 }),
+    // the placeholder cards are taller than the square at reading size: the title and first lines are read, the rest
+    // bleeds off the frame's foot (the 2.0.0 kept card is shorter; its read rect must include Remove)
+    askRead: { x: 0, y: 0, w: 495, h: 150 },
+    keptRead: { x: 0, y: 0, w: 495, h: 320 },
     chapter: (f) => ({ left: f.safe * 1.2, top: f.safe * 1.2, align: "left" }),
     kept: (f) => ({ x: f.safe * 0.6, y: f.h * 0.22, w: f.w - f.safe * 1.2, h: f.h * 0.76 }),
     check: (f) => ({ box: { left: f.safe * 1.2, top: f.safe * 1.1, align: "left" }, maxW: f.w - f.safe * 2.4 }),
   },
   "9:16": {
     ask: (f) => ({ x: f.safe * 0.5, y: f.h * 0.28, w: f.w - f.safe, h: f.h * 0.5 }),
+    askRead: { x: 0, y: 0, w: 495, h: 482 },
+    keptRead: { x: 0, y: 0, w: 495, h: 474 },
     chapter: (f) => ({ left: 0, top: f.h * 0.14, width: f.w, align: "center" }),
     kept: (f) => ({ x: f.safe * 0.5, y: f.h * 0.3, w: f.w - f.safe, h: f.h * 0.5 }),
     check: (f) => ({ box: { left: f.safe * 1.2, top: f.h * 0.82, align: "left" }, maxW: f.w - f.safe * 2.4 }),
@@ -91,8 +102,9 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
 
   /* ------------------------------------------------ S23: Glaze ------------------------------------------------- */
   const askAt = f60(12, fps);
-  const askFit = fitPose(ASK, L.ask(f), f, 0.94);
-  const askPose: Pose = { ...askFit, zoom: Math.max(askFit.zoom, readZoom(STILL.approvalCard.readPx!)) };
+  const askReadWorld: Rect = { x: ASK.x + L.askRead.x, y: ASK.y + L.askRead.y, w: L.askRead.w, h: L.askRead.h };
+  const askFit = fitPose(askReadWorld, L.ask(f), f, 0.9);
+  const askPose: Pose = { ...askFit, zoom: Math.max(askFit.zoom / 1.06, readZoom(STILL.approvalCard.readPx!)) };
   // the card is readable from its first frame; the push-in brings it closer (1.00 → 1.06)
   const camA = new VelocityCamera(askPose, o.entry?.vel ?? { lz: 0.0003 });
   const chapterText = breakLines(CLIMAX_TEXT.chapter, "expressive", f, f.w - 2 * f.safe, 0.3);
@@ -117,7 +129,8 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
   if (pushEnd < leaveStart) camA.glide(leaveStart, f60(30, fps), { lz: 0.0001 });
 
   /* ------------------------------------------------ S24: Kiln, the take at 1× ------------------------------------ */
-  const keptFit = fitPose(KEPT, L.kept(f), f, 0.96);
+  const keptReadWorld: Rect = { x: KEPT.x + L.keptRead.x, y: KEPT.y + L.keptRead.y, w: L.keptRead.w, h: L.keptRead.h };
+  const keptFit = fitPose(keptReadWorld, L.kept(f), f, 0.9);
   const keptRead: Pose = { ...keptFit, zoom: Math.max(keptFit.zoom, readZoom(STILL.commandCard.readPx!)) };
   // the landing framing: the card a little wide, so the push-in that follows reads as the climax's breath
   const landPose: Pose = { ...keptRead, zoom: keptRead.zoom / 1.1 };
@@ -127,7 +140,7 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
   const pushFrom = peak - cut + f60(30, fps);
   camB.glide(pushFrom, f60(24, fps), { x: (0.2 * f.unit * 60) / fps / landPose.zoom, lz: 0.00006 });
   const pushTo = pushFrom + f60(200, fps);
-  camB.hermite(pushTo, keptRead, { x: (0.18 * f.unit * 60) / fps / keptRead.zoom, lz: 0.00008 });
+  camB.hermite(pushTo, keptRead, { lz: 0.00006 });
 
   // the check line lands on a beat after the card, beside it
   const ck = L.check(f, 0);
@@ -143,7 +156,7 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
   music.push(musicHit("the climax ends (the convergence)", endP));
   check.exitAt = end - f60(14, fps);
   types.push(chapter, check);
-  camB.glide(end - cut, f60(40, fps), { x: (0.16 * f.unit * 60) / fps / keptRead.zoom, lz: 0.0001 });
+  camB.glide(end - cut, f60(40, fps), { lz: 0.00005 });
 
   const use = solveInPoint(take, "cardLands", peak, cut, end, fps);
   const happyAt = eventFrame(use, "happy", fps);
@@ -151,11 +164,11 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
   /* ------------------------------------------------ planes ----------------------------------------------------- */
   const planesA: PlaneSpec[] = [
     { id: "glaze", kind: "pebble", rect: GLAZE, content: { kind: "standIn", standIn: { kind: "slot", id: "glaze", captureId: "HS-G", label: "the conversation \"Glaze\"", w: GLAZE.w, h: GLAZE.h, window: "pebble", standsFor: "G4's conversation" } } },
-    { id: "ask", kind: "pebble", rect: ASK, content: { kind: "standIn", standIn: STILL.approvalCard }, enterAt: askAt, read: { from: askAt + f60(24, fps), to: cut, words: 7 } },
+    { id: "ask", kind: "pebble", rect: ASK, content: { kind: "standIn", standIn: STILL.approvalCard }, enterAt: askAt, read: { from: askAt + f60(24, fps), to: leaveStart, words: 7, rect: askReadWorld } },
   ];
   const planesB: PlaneSpec[] = [
     { id: "kiln", kind: "pebble", rect: KILN, content: { kind: "take", use, view: "conversation" } },
-    { id: "kept", kind: "pebble", rect: KEPT, content: { kind: "take", use, view: "keptCard" }, shadow: true, read: { from: cut + pushTo - f60(40, fps), to: end, words: 12, receipt: true, textPx: STILL.commandCard.readPx } },
+    { id: "kept", kind: "pebble", rect: KEPT, content: { kind: "take", use, view: "keptCard" }, shadow: true, read: { from: cut + pushTo - f60(40, fps), to: end, words: 12, receipt: true, textPx: STILL.commandCard.readPx, rect: keptReadWorld } },
   ];
   // evening light: dusk (0.39) to evening (0.63) is 0.24 of luminance, so on E-move it takes at least 4.4 s
   const lightCues: LightCue[] = [{ at: 0, to: "evening", frames: sec(4.6, fps) }];

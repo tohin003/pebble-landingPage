@@ -66,6 +66,15 @@ export interface FinaleOptions {
   entry?: { pose: Pose; vel: CamVel; ref?: Pose };
   /** frames the wall has already orbited (the wall piece's duration), so the rings never jump at the join */
   wallElapsed?: number;
+  /** one timeline for every aspect (setpieces/align.ts) */
+  align?: Partial<FinaleTiming>;
+}
+
+/** The frames the finale's timeline is made of (the same in every aspect once aligned). */
+export interface FinaleTiming {
+  factsLand: number;
+  page2: number;
+  end: number;
 }
 
 interface FinaleLayout {
@@ -182,7 +191,8 @@ export function planFinale(o: FinaleOptions): ScenePlan {
   if (FINALE_TEXT.facts.flat().some((x) => !said.includes(x)) || said.length !== FINALE_TEXT.facts.flat().length) throw new Error(`the ${A} end card does not carry every fact of L28 once`);
   rows.push(FINALE_TEXT.url);
   const riseF = enterFramesOf("lineRise", "x", fps);
-  const landFacts = place(Math.max(lastNote, lineAt + sec(1.2, fps)), o.grid, { level: "beat" });
+  const al = o.align ?? {};
+  const landFacts = place(Math.max(lastNote, lineAt + sec(1.2, fps), al.factsLand ?? 0), o.grid, { level: "beat" });
   const factsLand = landFacts.point ?? landFacts.at;
   music.push(musicHit("the facts land with the last strong note", landFacts));
   const factsHoldEnd = factsLand + sec(5.7, fps);
@@ -208,7 +218,9 @@ export function planFinale(o: FinaleOptions): ScenePlan {
   types.push({ id: "L27", text: lineText, tier: "expressive", at: lineAt, sizeT: 0, box: lineBox, kind: "film", key: true, exitAt: factsHoldEnd, exit: "lift" });
 
   /* ------------------------------------------------ page 2: the small print ------------------------------------- */
-  const page2 = factsHoldEnd + Math.max(...types.map((t) => exitFramesOf(t.entrance ?? "lineRise", "lift", t.text, fps))) + f60(6, fps);
+  // page 2 starts once every line of page 1 has lifted out (an allowance that covers every aspect's line breaks)
+  const lifted = Math.max(...types.map((t) => exitFramesOf(t.entrance ?? "lineRise", "lift", t.text, fps)));
+  const page2 = Math.max(factsHoldEnd + Math.max(lifted, f60(30, fps)) + f60(6, fps), al.page2 ?? 0);
   const sSize = typeSizePx("functional", f.w, f.h, 0);
   const sampleBox: TypeBox = { left: 0, top: f.h * (A === "9:16" ? 0.3 : 0.24), width: f.w, align: "center" };
   types.push({ id: "L29a", text: FINALE_TEXT.sample, tier: "functional", at: page2, sizeT: 0, box: sampleBox, kind: "end" });
@@ -220,7 +232,7 @@ export function planFinale(o: FinaleOptions): ScenePlan {
   const smallTop = methodBox.top + method.split("\n").length * sSize * lineHeightOf("functional") + 56 * unit;
   types.push({ id: "L30", text: small.join("\n"), tier: "small", at: page2 + f60(24, fps), sizeT: 0.3, box: { left: 0, top: smallTop, width: f.w, align: "center" }, kind: "small", color: COLOR.ink2 });
   const decayEnd = lastNote + sec(o.decayS ?? 6.6, fps);
-  const end = Math.max(page2 + sec(6.5, fps), decayEnd + sec(o.roomToneS ?? 0.75, fps));
+  const end = Math.max(page2 + sec(6.5, fps), decayEnd + sec(o.roomToneS ?? 0.75, fps), al.end ?? 0);
 
   /* ------------------------------------------------ cameras, light ---------------------------------------------- */
   // the page: world units are frame px under a near-identity camera that breathes in; still type is the wait
@@ -267,6 +279,6 @@ export function planFinale(o: FinaleOptions): ScenePlan {
       move("ring", convergeAt, convergeFrames > f60(90, fps) ? f60(90, fps) : convergeFrames, "the convergence: the rings return to the stone"),
       move("light", lightCues[0]!.at, lightCues[0]!.frames, "evening to the page"),
     ],
-    extra: { convergeAt, convergeFrames, irisAt, irisEnd, factsLand, page2, end, sweep: sweepT.sweep, sweepFrames: SAGE_SWEEP.frames, lastNote, decayEnd },
+    extra: { timing: { factsLand, page2, end } satisfies FinaleTiming, convergeAt, convergeFrames, irisAt, irisEnd, factsLand, page2, end, sweep: sweepT.sweep, sweepFrames: SAGE_SWEEP.frames, lastNote, decayEnd },
   };
 }

@@ -20,6 +20,11 @@ import { FINALE_TEXT, planFinale } from "../setpieces/finale";
 import { SAGE_SWEEP, sweepAlphaMax, sweepLift } from "../setpieces/sweep";
 import { CELL_SOURCES, STEALTH_FEATURES } from "../setpieces/standins";
 import { demoPlans } from "../setpieces/demo/plans";
+import { alignAspects, timelineDiffs } from "../setpieces/align";
+import type { RingTiming } from "../setpieces/ringBlock";
+import type { DropTiming } from "../setpieces/drop";
+
+const SIZE = { "16:9": { w: 1920, h: 1080 }, "1:1": { w: 1080, h: 1080 }, "9:16": { w: 1080, h: 1920 } } as const;
 import { cascadeSchedule } from "../type/Cascade";
 import { wordCount } from "../type/reading";
 import * as PIECE_CUES from "../setpieces/pieces.cues";
@@ -291,6 +296,28 @@ describe("the convergence, the title and the end card", () => {
     expect(sweepLift(a)).toBeLessThanOrEqual(15 + 1e-6);
     expect(sweepLift(a)).toBeGreaterThan(14.5);
     expect(a).toBeGreaterThan(0.2);
+  });
+});
+
+describe("one timeline for all three aspects (§3.12)", () => {
+  test("every demo piece has the same duration, seams, takes, music events and timing in 16:9, 1:1 and 9:16", () => {
+    const by = (a: "16:9" | "1:1" | "9:16") => demoPlans(a);
+    for (let i = 0; i < by("16:9").length; i++) {
+      const plans = { "16:9": by("16:9")[i]!.plan, "1:1": by("1:1")[i]!.plan, "9:16": by("9:16")[i]!.plan };
+      expect(timelineDiffs(plans)).toEqual([]);
+    }
+  });
+  test("aligning random grids gives one timeline too", () => {
+    const r = rng(11);
+    for (let i = 0; i < 2; i++) {
+      const bpm = 90 + Math.round(r() * 40);
+      const grid = steadyGrid({ bpm, fps: FPS, firstDownbeat: 0, from: 0, to: 4000 });
+      const plans = alignAspects<RingTiming>((a, align) => planRingBlock({ ...SIZE[a], fps: FPS, content: ring4(a), grid, align }));
+      expect(timelineDiffs(plans)).toEqual([]);
+      const hit = 170 + Math.round(r() * 150);
+      const g2 = steadyGrid({ bpm, fps: FPS, firstDownbeat: hit, from: 0, to: 4000 });
+      expect(timelineDiffs(alignAspects<DropTiming>((a, align) => planDrop({ ...SIZE[a], fps: FPS, hit, grid: g2, align })))).toEqual([]);
+    }
   });
 });
 
