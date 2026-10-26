@@ -142,7 +142,7 @@ export const DESKTOP_RECT: Rect = { x: 0, y: 0, w: 1600, h: 1000 };
  * - LAND (bar 11, f774–791): the pebble in its corner of the light riverbed, its size the lockup's (210 / 170 px), so
  *   the hop from the lockup lands at the same scale;
  * - CHAT (bars 12–13, f792–917): the whole quick-chat panel (the recut's C1, edge-checked by lane v2-film); in 1:1 the
- *   panel's top first (CHATHEAD), then a tilt to the answer on f898;
+ *   panel's top first (`chatHead`), then a tilt to the answer on f898;
  * - ANSWER (f918–935): a punch-in on the question and Pebble's answer, the pebble out of frame.
  */
 export const DESK_CAMERA = {
@@ -890,9 +890,10 @@ export interface ReviewFrame {
 }
 /** Style frames: every beat's key frame (rendered in all three aspects through StyleFrames*). */
 export const STYLE_FRAMES: readonly ReviewFrame[] = [
-  { id: "SF01", shot: "A1", frame: 0, note: "the thumbnail: the eyes on the dark riverbed, turned toward the pointer's entry" },
+  { id: "SF01", shot: "A1", frame: 0, note: "the thumbnail and the page's poster: the eyes plus one curve in a corner, the eyes in a third, the centre dark" },
   { id: "SF02", shot: "A1", frame: 28, note: "the pointer beside the face, the eyes on it (attentive)" },
   { id: "SF03", shot: "A2", frame: 100, note: "Q1 on the night field" },
+  { id: "SF36", shot: "A2", frame: 156, note: "glimpse 1: the card's head, NEEDS YOUR REVIEW and Needs your review (OVERRIDES §46 P2-5)" },
   { id: "SF04", shot: "A2", frame: 190, note: "glimpse 1: the diff and Apply edit, the pointer arriving" },
   { id: "SF05", shot: "A2", frame: 198, note: "glimpse 1: the press" },
   { id: "SF06", shot: "A2", frame: 250, note: "Q2" },
@@ -905,7 +906,7 @@ export const STYLE_FRAMES: readonly ReviewFrame[] = [
   { id: "SF13", shot: "R1", frame: 690, note: "the drop's lockup with A small companion for your Mac" },
   { id: "SF14", shot: "R1", frame: 764, note: "the star beat: the hop down, the desktop sliding in" },
   { id: "SF15", shot: "R1", frame: 788, note: "the pebble on the light desktop, the pointer arriving" },
-  { id: "SF16", shot: "R2", frame: 850, note: "the quick chat: thinking" },
+  { id: "SF16", shot: "R2", frame: 850, note: "the quick chat: thinking (1:1: the panel's header with the live status)" },
   { id: "SF17", shot: "R2", frame: 910, note: "the answer whole, Task: completed" },
   { id: "SF18", shot: "R2", frame: 926, note: "the punch-in on the answer" },
   { id: "SF19", shot: "R3", frame: 980, note: "the whole workspace, the pebble in its home place" },
@@ -914,7 +915,7 @@ export const STYLE_FRAMES: readonly ReviewFrame[] = [
   { id: "SF22", shot: "P1", frame: 1200, note: "memory: the record forgotten" },
   { id: "SF23", shot: "P1", frame: 1280, note: "permissions: Auto in project chosen" },
   { id: "SF24", shot: "P1", frame: 1350, note: "your tests stay yours" },
-  { id: "SF25", shot: "P1", frame: 1425, note: "the scope challenge's evidence check" },
+  { id: "SF25", shot: "P1", frame: 1425, note: "the scope challenge's evidence check (16:9: the stage across the frame)" },
   { id: "SF26", shot: "P2", frame: 1470, note: "the held run: the drawer's held state, AgentGuard checks the evidence" },
   { id: "SF27", shot: "P2", frame: 1508, note: "the conversation's Blocked block, the pointer on Run the tests" },
   { id: "SF28", shot: "P2", frame: 1566, note: "the Run isolated tests card, Tests run in an isolated copy" },

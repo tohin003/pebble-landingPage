@@ -19,7 +19,7 @@ import { useLayout } from "../../motion/layout";
 import { CLICK, EASE, ramp } from "../../motion/spec";
 import { SYSTEM } from "../../motion/system";
 import { PEBBLE_LIGHT } from "../../pebble/PebbleSvg";
-import { PRESS_RUN_THE_TESTS, STAGE_CUTS, WIN, pointerSpans, stageAt, stageMotionBlur, stagePoseAt, stageToFrame } from "../framing";
+import { PRESS_RUN_THE_TESTS, STAGE_CUTS, WIN, pointerSpans, stageAt, stageCameraAt, stageMotionBlur, stagePoseAt, stageToFrame } from "../framing";
 import { MOMENTS, PEBBLE_INSTANCES, SOURCE_MAPS, at, sourceAt } from "../timeline";
 import { CHALLENGE_150, LIVE_150, PERMS_150, RUN, SETTINGS, centreOf } from "../ui";
 import { FilmPebble, FilmStage, FlatGround, Horizon, Lines, RecordedUi, recFrame, type RecordedFocus } from "./common";
@@ -117,7 +117,8 @@ export const WindowWorld: React.FC = () => {
   const st = stageAt(frame, a);
   const stage = { x: st.x * s, y: st.y * s, w: st.w * s, h: st.h * s };
   const pose = stagePoseAt(frame, a, s, fps);
-  const blur = STAGE_CUTS.includes(frame) ? { x: 0, y: 0 } : stageMotionBlur(pose, stagePoseAt(frame - 1, a, s, fps), stage);
+  // the blur follows the camera's own moves, never M6's lock on the scrolled step (the content stays still on screen)
+  const blur = STAGE_CUTS.includes(frame) ? { x: 0, y: 0 } : stageMotionBlur(stageCameraAt(frame, a, s, fps), stageCameraAt(frame - 1, a, s, fps), stage);
   const spans = pointerSpans(a, s);
   const climax = PEBBLE_INSTANCES.climax;
   const foot = L.win.pebble.foot;

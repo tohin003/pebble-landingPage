@@ -264,10 +264,15 @@ export function challengeRowY(src: number): number {
   return y;
 }
 
+/** The window world's camera keys alone on `frame`, without M6's lock on the scrolled step: what the motion blur
+ *  reads, since the lock moves with the content and leaves it still on screen. */
+export function stageCameraAt(frame: number, a: Aspect, s: number, fps: number): CamPose {
+  return cameraAt(frame, windowKeys(a, s), fps, stageAt(frame, a).w * s);
+}
+
 /** The window world's camera on `frame` (with M6 locked on the refused step through the person's scroll). */
 export function stagePoseAt(frame: number, a: Aspect, s: number, fps: number): CamPose {
-  const st = stageAt(frame, a);
-  const base = cameraAt(frame, windowKeys(a, s), fps, st.w * s);
+  const base = stageCameraAt(frame, a, s, fps);
   if (frame >= 1368 && frame < 1440) {
     const src = sourceFrameAt(SOURCE_MAPS.m6, frame) ?? 252;
     return { ...base, y: base.y + (challengeRowY(src) - CHALLENGE.row.y) };

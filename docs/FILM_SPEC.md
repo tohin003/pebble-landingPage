@@ -17,8 +17,9 @@ record it where it lives.
 
 **The trailer (25 Oct 2026; OVERRIDES §38–§43).** The launch film is now a trailer: 76.8 s, 32 bars, in four
 movements (Tension, Reveal, Proof, Title), with the drop on bar 10 (f648). §24 records it, and where §1–§23 differ, §24
-is the film; §1–§23 stay as the record of the recut it replaced. §2's safe areas and type floors, §15 (the teaser) and
-§16 (the loops) still hold.
+is the film; §1–§23 stay as the record of the recut it replaced. §2's safe areas and type floors and §16 (the loops)
+still hold; the teaser T0 (§15) and its poster are retired from the page (OVERRIDES §46 P1-1): the page's poster is the
+trailer's own frame 0.
 
 Contents: 1 Grid · 2 Compositions and safe areas · 3 Type · 4 Worlds and layouts · 5 Bar map · 6 Shot list ·
 7 Source-time maps · 8 On-screen text · 9 The pebble · 10 Cursor and clicks · 11 Sound effects · 12 Transitions ·
@@ -1015,6 +1016,11 @@ Plus one frame per bar (the 32 downbeats) for the contact sheets, each checked a
 
 ## 15. Teaser T0 (`FilmTeaser`, 1280×720, 240 frames, 8 s, silent, seamless)
 
+**Retired (OVERRIDES §46 P1-1, 2026-10-26).** T0 and the poster it shared with the first film showed Pebble 1.0.4's
+rows and a usage line with a cached count and a rate, which the trailer was re-recorded and cropped to avoid. The page
+shows the trailer's own frame 0 as the poster (`public/media/v2/film.poster.*`), with no teaser; the composition stays
+in `video/src` as the record.
+
 A recomposed excerpt of the approval → tests → Verified chain. Same worlds and rules as the film; the same vclock
 frames (render T0 right after the film master, before those frames are deleted, or export them first as stills with
 `record.mjs main-live-film --at=8.30,9.40,11.05,16.60,17.80,20.60,22.90 --scale=3`).
@@ -1285,6 +1291,10 @@ the scenes are `video/src/film/scenes/`. `LaunchFilm` refuses to render while `c
   Run the tests click (f1512), released across bar 22 to f1584. The drive is muted and the bed sits −6 dB behind a
   1.2 kHz low-pass; rim ticks keep beats 2–4 of bars 7 and 21.
 - **The tail:** an equal-power fade from f2214, digital silence f2250–2303 (1.8 s).
+- **The send key's duck** (OVERRIDES §46 P2-2): a ride on f792–801, the bed and the drive 6 dB down under the send key
+  (tick_c, bar 12's downbeat; 10 ms in, 150 ms back by the and of beat 1). It is the only thing that holds bars 12–13
+  down: the groove comes back at once and builds through bar 13 into bar 14's lift (the blueprint's 6 dB sit-back over
+  both bars is withdrawn).
 - The beat map's cues: riser_end 612 (the score's riser ends on the dead stop), tests_pass 1656, verified 1723,
   completion 1725, final_chord 2160; the motif on bars 1, 8, 10, 24 and 29.
 
@@ -1292,9 +1302,9 @@ the scenes are `video/src/film/scenes/`. `LaunchFilm` refuses to render while `c
 
 | Bars | Frames | Picture | Line (in → out) | Effects (picture frame) |
 |---|---|---|---|---|
-| 1 | 0–71 | the dark riverbed, the pebble in extreme close-up in the dark theme's colours (#b4cda6, eyes #23351f; tokens.css@v1.5.0); frame 0, the thumbnail, has its eyes on where the pointer will enter; the pointer drifts in (f4–16), rests beside the face (the app's attentive pose, f14–39) and slides away from f36; a natural blink near f20; the look at the viewer on f54 | — | the suck-back ending on f72 |
+| 1 | 0–71 | the dark riverbed, the eyes plus one curve (OVERRIDES §46 P1-2): the frame crops the pebble, which sits in a corner in the dark theme's colours (#b4cda6, eyes #23351f; tokens.css@v1.5.0); frame 0, the page's poster and every thumbnail, has its eyes in one third (16:9 the right, looking up-left toward the centred play button; 1:1 and 9:16 the left) and on where the pointer will enter (above the frame, up-left), the button's area dark; the pointer drifts in (f4–16), rests beside the face (the app's attentive pose, f14–39) and slides away off the left edge from f36; a natural blink near f20; the look at the viewer on f54 | — | the suck-back ending on f72 |
 | 2 | 72–143 | the night field (#191E1B) | "What did it change?" (slam, f72 → 138) | (the score's hit) |
-| 3 | 144–215 | glimpse 1: the dates.py card's diff, Don't allow and Apply edit, a slow push (×1.04); the pointer presses Apply edit on f198, the glimpse ramps out f198–203 | — | click f198 |
+| 3 | 144–215 | glimpse 1: the card's head ("NEEDS YOUR REVIEW", invoice_kit/dates.py with "Needs your review", "Changes this file in your project. You can undo it afterwards."), then a one-beat tilt (f166–184) to its diff, Don't allow and Apply edit, with a slow push (×1.04); the pointer presses Apply edit on f198, the glimpse ramps out f198–203 | — | click f198 |
 | 4 | 216–287 | the night field | "Can I undo it?" (f216 → 282) | |
 | 5 | 288–359 | glimpse 2: the card reads Done, with Undo this edit; the camera stays locked on the card as the drawer's live response moves it; the focus settles on Undo this edit | — | ui_done f288 |
 | 6 | 360–431 | the night field | "Did it run the tests?" (f360 → 426) | |
@@ -1303,14 +1313,14 @@ the scenes are `video/src/film/scenes/`. `LaunchFilm` refuses to render while `c
 | 9 | 576–647 | the field steps to sage (#232C25, #2E3A2F, #384839, sage, 8 frames each from f576); the pebble peeks up (f576), looks up at the line (f594) and to the lockup (f603), leaps on f612 and hangs through the dead stop | — | the suck-back ending on f648 |
 | 10 | 648–719 | **the drop:** the pebble lands as the full stop of `pebble` (tap); paper floods out from it (20 frames); the wordmark unrolls f650–664 | "A small companion for your Mac" (blur, f650 → 720) | impact and thud f648 |
 | 11 | 720–791 | the star beat: the wordmark rolls back (f738–752); the pebble hops down (f756 → 774) as the light desktop slides in under it (the camera tilts down, with motion blur on its fastest frames); its eyes find the pointer; a natural blink near f784 | — | whoosh f774 |
-| 12–13 | 792–935 | the quick chat (pet-live-150, v1.5.0) at 1×: a cut to the whole panel as the question is sent (Enter, f792); Thinking, ~1s, ~2s, Reasoning it through; the answer whole on f898, "Task: completed" on f900; on f918 a punch-in on the question and the answer, the pebble out of frame | — | send key f792; whoosh f935 |
+| 12–13 | 792–935 | the quick chat (pet-live-150, v1.5.0) at 1×: a cut to the whole panel as the question is sent (Enter, f792); Thinking, ~1s, ~2s, Reasoning it through; the answer whole on f898, "Task: completed" on f900; on f918 a punch-in on the question and the answer, the pebble out of frame. In 1:1 the cut lands on the panel's top (its header, "pebble." with the live status and "A little help, right here.", over the question) and the camera tilts down to the answer and the pebble on f898–910 | — | send key f792 (the groove ducks under it, back by f801); whoosh f935 |
 | 14 | 936–1007 | the whole workspace (main-welcome, v1.5.0, its own pebble hidden): "Good to see you.", the pebble in the home pebble's place, a pull-back ×1.04 → 1 | — | impact f936 |
 | 15 | 1008–1079 | views: the Lisbon trip budget canvas, then a push into its chart (f1034–1058) | "Views, / not just text" (slam, f1008 → 1080) | impact f1008; whoosh f1046 |
 | 16 | 1080–1151 | your model: the three ways in come forward on beats 1, 2 and 3 | "Your model, / your choice" (f1080 → 1146) | whoosh f1079 |
 | 17 | 1152–1223 | memory: the bin clicked on f1170, the record dissolves (f1170–1181), the list closes up (f1182) | "Memory you can / read and forget" (f1152 → 1224) | whoosh f1151; click and ui_forget f1170 |
 | 18 | 1224–1295 | permissions (v1.5.0): Auto in project chosen on f1260; from f1266 the focus settles on its card (1:1 and 9:16 punch in, f1266–1290) | "You set what / it may do" (rise, f1224 → 1296) | whoosh f1223; click f1260 |
 | 19 | 1296–1367 | your tests stay yours: the waiting tests/test_dates.py card, a slow push on its lead (f1300–1366) | "Your tests / stay yours" (slam, f1296 → 1368) | whoosh f1295; ui_card f1296 |
-| 20 | 1368–1439 | the scope challenge: the red refused step; the person opens Details on f1386 ("AgentGuard — evidence check", "5 file(s) changed that the task does not reach"); the camera stays locked on the step through their scroll | — | whoosh f1367; click f1386 |
+| 20 | 1368–1439 | the scope challenge: the red refused step; the person opens Details on f1386 ("AgentGuard — evidence check", "5 file(s) changed that the task does not reach"); the camera stays locked on the step through their scroll. In 16:9 the stage widens over the empty text column (x 96 to the frame's edge) and punches in on the step (m 3.36) | — | whoosh f1367; click f1386 |
 | 21 | 1440–1511 | the held run: the drawer, the hold on f1453; f1494 a cut to the conversation's "Blocked" block, the focus on Run the tests | "AgentGuard checks / the evidence" (f1440 → 1500) | ui_lock f1453 (the stopdown); rims f1458, 1476, 1494 |
 | 22 | 1512–1583 | Run the tests on f1512 (the press drawn over the frame before the click); a match cut on its rebound (f1516) to the Run isolated tests card it put in the drawer; the person reads it; the tilt to Run tests (f1554–1577) | "Tests run in / an isolated copy" (f1548 → 1626) | click f1512 (it releases the hold) |
 | 23 | 1584–1655 | Run tests on f1584; the camera settles on the card (f1586–1606), which reads Running for exactly 2.4 s, the focus on it from f1620 | — | click f1584; tick f1651 in the gap |
@@ -1335,9 +1345,14 @@ and 1.2 s (2 s for a shot's last line), and stays above each aspect's caption ba
 - **The window world** (bars 14–25): the page's paper ground, the text column (16:9, x 96–860) or band (1:1, 9:16),
   and the stage, which ends above its aspect's caption band: 16:9 x 920, y 64, 1000 × 854; 1:1 x 24, y 336,
   1056 × 582; 9:16 x 24, y 700, 1056 × 744. From f1440 the pebble stands on its line at the window world's spot.
-- The desktop's cameras (`DESK_CAMERA`): bar 1 m 7.0 / 6.0 / 7.5; the star beat's landing at the lockup's size
-  (16:9 m 1.42, 1:1 m 1.15, 9:16 m 1.92, the wallpaper's least); the quick chat's whole panel m 2.35 / 2.62 / 2.62;
-  the answer's punch-in m 5.4 / 3.0 / 3.14.
+- The desktop's cameras (`DESK_CAMERA`): bar 1 m 12.4 / 9.6 / 10 (OVERRIDES §46 P1-2; the pebble's centre at frame
+  (1630, 930), (198, 955) and (208, 1560)); the star beat's landing at the lockup's size (16:9 m 1.42, 1:1 m 1.15,
+  9:16 m 1.92, the wallpaper's least); the quick chat's whole panel m 2.35 / 2.62 / 2.62, in 1:1 its top first
+  (`chatHead`: the pebble's centre at (900, 1057), panel y −6 to 406) with the tilt down on f898–910; the answer's
+  punch-in m 5.4 / 3.0 / 3.14.
+- **Bar 20 in 16:9** (OVERRIDES §46 P2-4): the text column has no line, so the stage widens over it (`M6_STAGE`: x 96,
+  y 64, 1824 × 854, its left corners rounded) for the bar; the montage cut on f1368 and the cut on f1440 take the
+  change.
 
 ### 24.4 Framings and the edge rules
 
@@ -1345,6 +1360,7 @@ A framing is the CSS rect of the window a stage shows (16:9 · 1:1 · 9:16; m is
 
 | Framing | 16:9 | 1:1 | 9:16 |
 |---|---|---|---|
+| G1 the card's head (f140–166, held; then the tilt, f166–184) | m 2.34 · x 808–1160, y 176–533 | m 2.85 · x 808–1159, y 171–432 | m 2.85 · x 808–1159, y 176–478 |
 | G1 the diff (before its ×1.04 push) | m 2.34 · x 808–1160, y 372–729 | m 2.85 · x 808–1159, y 470–731 | m 2.85 · x 808–1159, y 428–730 |
 | G2 the Done card (tracked) | m 3.05 · x 811–1157, 245 tall | m 2.85 · x 808–1159, 245 tall | the same |
 | G3 the drawer's top | m 3.18 · x 812–1144, y 115–353 | m 2.85 · x 808–1159, y 115–353 | the same |
@@ -1353,9 +1369,10 @@ A framing is the CSS rect of the window a stage shows (16:9 · 1:1 · 9:16; m is
 | m3 memory | m 2.025 · x 342–836, y 330–752 | m 2.12 · x 330–828, y 468–743 | m 2.05 · x 323–838, y 378–741 |
 | m4, m4Auto permissions | m 1.96 · x 324–834, y 196–632 (both) | m 2.8 · x 340–717, y 221–429; m 3.0 · x 354–706, y 326–520 | m 2.8 · x 340–717, y 221–487; m 3.0 · x 354–706, y 332–580 |
 | m5, m5Lead the test-file card | m 2.84 → 3.1 | m 3.0 → 3.2 | m 3.0 → 3.2 |
-| m6 the scope challenge (before the scroll) | m 2.33 · x 650–1079, y 425–792 | m 2.72 · x 649–1037, y 520–734 | m 2.72 · x 649–1037, y 520–794 |
+| m6 the scope challenge (before the scroll) | the wide stage: m 3.362 · x 617.5–1160, y 498–752 | m 2.72 · x 649–1037, y 520–734 | m 2.72 · x 649–1037, y 520–794 |
 | c1Drawer, c1Held | m 2.84 on the drawer; m 3.4 · x 243–537, y 432–683 | m 3.0; m 3.6 · x 244–537, y 440–602 | m 3.0; m 3.6 · x 244–537, y 436–643 |
-| c2Top, c2Click, c3, c4 | the drawer, m 2.81–2.84 | the drawer, m 3.0 | the drawer, m 3.0–3.15 |
+| c2Top, c2Click, c3 | the drawer, m 2.84 | the drawer, m 3.0 | the drawer, m 3.0 |
+| c4 the newest steps, Verified at the bottom | m 2.81 · x 804–1160, y 110.6–414.5 | m 3.08 · x 808–1151, y 225.5–414.5 | m 3.2 · x 812–1142, y 182–414.5 |
 | c5 the final reply | m 1.9 · x 243–769, y 52–502 | m 2.21 · x 289–767, y 242–505 | m 2.0 · x 243–771, y 129–501 |
 
 The rules (`checkFraming()` enforces the first four on every frame of every aspect):
@@ -1374,6 +1391,18 @@ The rules (`checkFraming()` enforces the first four on every frame of every aspe
   v2's m 2.0, it is shown whole (models, permissions, memory).
 - Where the held block's explanation runs past the right edge (c1Held, f1494–1515), it stays under the focus veil:
   only Run the tests is sharp.
+- The stage's motion blur follows the camera's own moves (`stageCameraAt`), never M6's lock on the scrolled step: the
+  lock moves with the content, which stays still on screen. Until 2026-10-26 the lock's offset blurred the evidence
+  check through the person's scroll (f1398–1413, up to 9 px in 16:9 at the new m 3.36).
+- c4's bottom edge (OVERRIDES §46 P2-6) sits at 414.5 in all three aspects: under Verified's ink (to 410.3) and above
+  the run panel, whose Pause button starts at 418 and "Pebble is working on this." at 429.3 while the tests end (source
+  666–672, f1716–1722), then "Done." at 446.7. Before, 9:16 cut through the sentence and the button, and 16:9 (bottom
+  440.4) and 1:1 (421) sliced the button too.
+- Bar 1 (`checkColdOpen`, film/gaze.ts; LaunchFilm runs it with `checkAll()`): on frame 0 both eyes sit inside their
+  third (8 px in) and the centred play button's area (16:9: the page's 116 × 102 CSS px galet at the poster's 1,280 px,
+  174 × 153; 1:1 and 9:16: 150 × 150) has no point of the body; the frame crops the body at two edges (9:16: one);
+  through f0–71 the eyes stay 24 px inside the frame, and in 9:16 inside the band (y 250–1670). The caption band may
+  take the pebble (§2: it is not kinetic type or a click target).
 
 ### 24.5 Time honesty: the source maps
 
@@ -1427,13 +1456,19 @@ timeline's 41 effects (`SFX`) are the film's sound design on the real events, th
 doesn't carry alone, the suck-backs inside the gaps (role `suck`, `suck_a.wav`, end-aligned), the rim ticks of both
 holds and a whoosh on each montage cut. Pebble 1.5.0 makes no sounds. Each effect peaks one frame after its picture
 (a suck-back ends on its frame), at most three at once. The mix automation (`AUTOMATION`) is the four gaps, the two
-holds and the tail. `bun video/scripts/export-cues.ts` writes `tools/audio/cues.json` (41 effects, 7 spans), and
+holds, the tail and the send key's duck (a ride, f792–801). `bun video/scripts/export-cues.ts` writes
+`tools/audio/cues.json` (41 effects, 8 spans; a span's own `db`, `attack_ms` and `release_ms` win over its role's), and
 `tools/audio/cut_cues.py docs/film-cuts/x30.json` the cut's.
 
 ### 24.9 Captions, descriptions, chapters
 
 `docs/film-captions.json` (and `src/content/filmCaptions.ts`, the same cues): 25 cues, c01–c25, each at least 1.2 s
 and at most 3 words a second (the fastest 3.00), the sounds in square brackets; 21 time-coded descriptions, d01–d21.
+OVERRIDES §45 and §46 P2-7: c01 is "[A soft melody and a heartbeat]" (score B's bar 1); c15's "[The music stops]"
+starts with the stop on f1453 (with "AgentGuard checks the evidence", to f1523, so 7 words keep 3 a second); c24
+captions the price with its limit, "[Hit] Free for Macs with Apple silicon" / "Not notarized" (f2160–2250: "[Final
+hit]" would make the line 44 characters, over the 42 the rules allow), and c25, the last cue, the address with the
+small print, "github.com/tohin003/Pebble" / "Shown with sample data" (f2250–2304).
 The chapters (`src/content/chapters.ts`, the same nine ids) start at 0 (desktop), 33.6 (views), 36 (model), 38.4
 (memory), 40.8 (pace), 43.2 (project), 48 (tested), 60 (open-source) and 67.2 s (get). CLAIMS adds C-CH-18 ("Your
 tests stay yours") and C-CH-19 ("Not notarized"); the trailer no longer shows C-CH-3, C-CH-4 or C-CH-8. The narrated
@@ -1446,14 +1481,16 @@ twin's SRT (`build.mjs --narrated-srt`, OVERRIDES §38) is these 25 cues with th
 the same beat in the film and in the cut; the score bars 1, 6, 7, 8, 9, 10, 22, 23, 24, 25, 31, 32. The look; "Did it
 run the tests?" and the hold; the turn, the build, the dead stop and **the drop at 12.0 s**; Run the tests, the run at
 1×, Verified at 21.4 s with "Evidence before done" whole and the celebration; **the final hit at 24.0 s** and the
-title's small print; the silence. Its captions: 11 (`build.mjs --check --cut`); its effects are the film's, mapped.
+title's small print; the silence. Its captions: 11 (`build.mjs --check --cut`), c15 left out (the cut joins at the
+release, film f1512, where the music returns: 11 frames of it would reach the cut); its effects are the film's,
+mapped.
 
 ### 24.11 Checks
 
 - `checkAll()` (timeline and framing): 0 problems. `bun video/scripts/export-cues.ts` (it runs `validateTimeline()`
   first), `node tools/captions/build.mjs --check` and `--check --cut docs/film-cuts/x30.json`, and
   `tools/audio/cut_cues.py docs/film-cuts/x30.json --check`.
-- The review: the 35 style frames (`STYLE_FRAMES`, every beat's key frame) in all three aspects, and stage views of
+- The review: the 36 style frames (`STYLE_FRAMES`, every beat's key frame; SF36 is glimpse 1's head) in all three aspects, and stage views of
   every framing on its capture; the half-scale animatics and the masters through a copy of `.work/film/v2/analyze.py`
   with the trailer's flood windows (the flash counter, the floods, flat frames, glitches, the largest changes).
 - The picture masters (`video/out/masters/`, not tracked): `LaunchFilm.mp4` 1920 × 1080, `LaunchFilmSquare.mp4`
@@ -1479,14 +1516,23 @@ title's small print; the silence. Its captions: 11 (`build.mjs --check --cut`); 
 
 ### 24.12 Departures from the blueprint
 
-- **Bar 1** is the dark theme's own pebble (#b4cda6, eyes #23351f): the app's colours on the dark desktop.
+- **Bar 1** is the dark theme's own pebble (#b4cda6, eyes #23351f): the app's colours on the dark desktop. Its close-up
+  (OVERRIDES §46 P1-2) is 1.8× (16:9), 1.6× (1:1) and 1.3× (9:16) the first trailer's, not the review's 2.5–3×: the eye
+  pair is about 0.75 of the body's radius wide, so frame 0's third (640 px in 16:9, 360 px in the narrow aspects) caps
+  the zoom, and the eyes' swing to the look at the viewer on f54 must stay in frame. The frame crops the body at the
+  right and bottom (16:9: 23 % and 34 % of it) or the left and bottom (1:1: 27 % and 33 %); in 9:16 mostly at the left
+  edge (27 %; the bottom edge takes only 25 px), because the eyes stay inside the band (y 250–1670). The eyes look up-left
+  on frame 0 (toward the pointer's entry; in 16:9 toward the play button).
 - **Glimpse 1** ends with the press: the press is drawn over source 275 and the glimpse ramps out over f198–203, so
-  the click's result and the second card never show out of order.
+  the click's result and the second card never show out of order. It opens on the card's head and tilts to the diff on
+  f166–184 (OVERRIDES §46 P2-5), so the blueprint's 1.04 push runs from the tilt, not from f140.
 - **Glimpse 3 and bar 21** frame the drawer's held state, and bar 21 reaches the conversation's "Blocked" block by a
   cut on f1494 (source 462): the conversation's usage line, with its rate, is in view from source 446 (OVERRIDES §43).
   So "Blocked" itself first shows in bar 21.
 - **Bars 12–13** follow OVERRIDES §42, not the blueprint's streamed answer; the f918 punch-in keeps the quick chat's
-  celebration out, so the film has one.
+  celebration out, so the film has one. The groove ducks only under the send key (f792–801), not 6 dB over both bars
+  (OVERRIDES §46 P2-2). In 1:1 the panel's top and its bottom with the pebble don't fit together at m 2.62, so the
+  shot opens on the top and tilts down when the answer arrives (P2-3).
 - **Bar 15** pushes into the chart on the stage (m 1.255 → 2.0 in 16:9) instead of growing it into a world of its
   own: the montage keeps one stage, so each of its six cuts is a clean cut on a bar line.
 - **Bar 18** shows v1.5.0's permissions (the blueprint named 1.2.0's stills); **bar 19** shows the test-file card from
@@ -1504,4 +1550,7 @@ title's small print; the silence. Its captions: 11 (`build.mjs --check --cut`); 
   and permissions stills as needing no change. They show no run. By source, what they frame is v1.5.0's: between the
   v1.0.4 and v1.5.0 tags, `AdvancedSettings.vue` (the Models and Memory tabs), `MemoryArchive.vue`,
   `NotificationSettings.vue` and the canvas's components are unchanged, and `tokens.css` and `style.css` only gained
-  rules for new classes (Stealth Lockdown's row, which sits below the framed sections). The lead should confirm them.
+  rules for new classes (Stealth Lockdown's row, which sits below the framed sections). The lead accepted them
+  (OVERRIDES §44).
+- **Bar 20 in 16:9** widens the stage over the text column for one bar (OVERRIDES §46 P2-4): the column has no line
+  there, and the stage alone left x 0–920 as empty paper for 2.4 s.
