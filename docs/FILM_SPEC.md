@@ -1487,26 +1487,33 @@ mapped.
 
 ### 24.11 Checks
 
-- `checkAll()` (timeline and framing): 0 problems. `bun video/scripts/export-cues.ts` (it runs `validateTimeline()`
-  first), `node tools/captions/build.mjs --check` and `--check --cut docs/film-cuts/x30.json`, and
-  `tools/audio/cut_cues.py docs/film-cuts/x30.json --check`.
+- `checkAll()` (timeline and framing) and `checkColdOpen()` (bar 1's poster rules, film/gaze.ts; LaunchFilm runs
+  both): 0 problems. `bun video/scripts/export-cues.ts` (it runs `validateTimeline()` first), `node
+  tools/captions/build.mjs --check` and `--check --cut docs/film-cuts/x30.json`, and `tools/audio/cut_cues.py
+  docs/film-cuts/x30.json --check`.
 - The review: the 36 style frames (`STYLE_FRAMES`, every beat's key frame; SF36 is glimpse 1's head) in all three aspects, and stage views of
   every framing on its capture; the half-scale animatics and the masters through a copy of `.work/film/v2/analyze.py`
   with the trailer's flood windows (the flash counter, the floods, flat frames, glitches, the largest changes).
 - The picture masters (`video/out/masters/`, not tracked): `LaunchFilm.mp4` 1920 × 1080, `LaunchFilmSquare.mp4`
   1080 × 1080 and `LaunchFilmVertical.mp4` 1080 × 1920, each 2,304 frames at 30 fps, H.264 High, CRF 12, yuv420p,
-  BT.709, muted (the mix lane muxes the sound). Their scans (2026-10-26):
+  BT.709, muted (the mix lane muxes the sound). Re-rendered after the fixes of OVERRIDES §45–§46 (2026-10-26 06:01,
+  06:09 and 06:26; 10,691,315, 8,350,480 and 10,009,457 bytes; SHA-256 `057ba89c…`, `41d01153…`, `cdde5b1a…`). Their
+  scans:
 
   | | 16:9 | 1:1 | 9:16 |
   |---|---|---|---|
-  | Flash counter (≤ 3 flashes in any 1 s) | frame 0, regions 2: pass | frame 0, regions 1: pass | frame 0, regions 1: pass |
+  | Flash counter (≤ 3 flashes in any 1 s) | frame 0, regions 1: pass | frame 0, regions 1: pass | frame 0, regions 1: pass |
   | The drop's flood, 20 → 80 % (frames) | 7.02 | 6.96 | 6.83 |
   | The title's flood | 7.00 | 6.92 | 6.81 |
   | Glitches (isolated outlier frames) | none | none | none |
   | Flat frames | f203–215 (the dark after glimpse 1's press, before the second question), f504 (the turn's first frame, before its line rises) | the same | the same |
 
-  The largest changes all sit on beats, except the floods' own frames and the dawn's 8-frame steps.
-- The encodes (2026-10-26): the website's four files in `public/media/v2/` (22.50 MB; −16.23 LUFS and −1.587 dBTP on
+  The largest changes all sit on beats, except the floods' own frames, the dawn's 8-frame steps and, in 1:1, the
+  quick chat's tilt to the answer (f902–905). The first masters (2026-10-26, before §46) scanned the same but for the
+  16:9 regions' 2.
+- The first delivery's encodes (2026-10-26, from the masters before OVERRIDES §46; the re-delivery makes new ones from
+  the masters above, with the 1:1 film for phones and the poster in `public/media/v2/`): the website's four files in
+  `public/media/v2/` (22.50 MB; −16.23 LUFS and −1.587 dBTP on
   the AAC) and the seven social films (−14.44 LUFS and −1.270 dBTP at full length, −14.39 and −1.250 for the 30 s cut,
   −14.40 and −1.320 for the narrated twin, whose video is the 16:9 film's packet for packet) pass `verify.mjs`. Every
   sampled frame matches its master frame at shift 0 (both sides of every 30 s joint included), each AAC decodes to its
