@@ -480,7 +480,8 @@ shared with the view (`setpieces/ground.ts`), and the finale says it ends the fi
 
 **Running them.** The plan checks are part of `checkPlan()`: `check-setpieces.ts` runs them in every aspect, holds the
 Drop's hit to one timeline across the aspects, and `--summary` prints one line per piece and check. The render checks
-need the plans' marks, then one decode through heavy.sh per reel:
+need the plans' marks, then one decode through heavy.sh per reel (without `--marks`, `luma-scan.ts` lists tile pops but
+does not judge them: telling a pop from a move needs the full frames and the plan's transitions):
 
 ```
 bun video/src/film2/setpieces/tools/reel-marks.ts 16:9 --out .work/film2/sp/demo16/marks.json
@@ -512,8 +513,8 @@ stoneCount 3), where the review saw it:
 | CR-11 a still of the held card above a live, verified run | `askActClock`: Ring 4 303–929; also the Drop's 1.0.x panel around RS-9's card |
 | CR-21 `ringIris()` defaults to E-arrive | `irisEase`: the foundation demo's iris at 1358 |
 
-**On the current reels (27 Oct, `luma-scan.ts --marks`, 8–12 s a reel through heavy.sh), every reel fails**, where the
-review saw it, and on nothing it did not except the abrupt events listed:
+**On the current reels (27 Oct, `luma-scan.ts --marks`, 8–12 s a reel through heavy.sh), every reel fails** where the
+review saw its defects; the only other things they report are the abrupt events after the table:
 
 | Review | Caught on the render |
 |---|---|
