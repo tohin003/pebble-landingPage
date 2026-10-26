@@ -177,7 +177,7 @@ export function planDusk(o: DuskOptions): ScenePlan {
   /* ------------------------------------------------ planes ----------------------------------------------------- */
   const paletteUse = solveInPoint(palette, "enter", enter, paletteAt, rackAt + rackF, fps);
   const planesA: PlaneSpec[] = [
-    { id: "palette", kind: "pebble", rect: paletteWorld, content: { kind: "take", use: paletteUse, view: "palette" }, shadow: true, from: paletteAt, enterAt: paletteAt, read: { from: paletteAt + f60(84, fps), to: enter + f60(30, fps), words: 5, textPx: paletteTextPx, rect: paletteRead } },
+    { id: "palette", kind: "pebble", rect: paletteWorld, content: { kind: "take", use: paletteUse, view: "palette" }, shadow: true, from: paletteAt, enterAt: paletteAt, enterKind: "fade", read: { from: paletteAt + f60(84, fps), to: enter + f60(30, fps), words: 5, textPx: paletteTextPx, rect: paletteRead } },
   ];
   const planesC: PlaneSpec[] = [
     { id: "menu-bar", kind: "apple", rect: menuBar, content: { kind: "take", use: rsUse, view: "menuBar" }, shadow: false, radius: 0 },

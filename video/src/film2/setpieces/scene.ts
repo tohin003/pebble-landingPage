@@ -42,6 +42,8 @@ export interface PlaneSpec {
   to?: number;
   /** the shared card entrance at this frame (a PLACEHOLDER of the recording's own arrival, §5.1) */
   enterAt?: number;
+  /** "card" (default): the ask entrance; "fade": E-move over 20 frames (a large panel: the card's fast start reads as a pop) */
+  enterKind?: "card" | "fade";
   /** a blur swap out over 8 frames from this frame (kind 5) */
   swapOutAt?: number;
   /** a blur swap in over 8 frames from this frame (kind 5) */

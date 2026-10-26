@@ -40,6 +40,8 @@ export interface RingContent {
   name: string;
   /** the stone the ring leaves (the companion's avatar centre) */
   stone: Point;
+  /** what a fresh block opens on (default: the companion around the stone) */
+  startRect?: Rect;
   /** context planes drawn in the place's world (the place's window, other windows) */
   context?: readonly PlaneSpec[];
   /** the ask the ring frames: a still (in the conversation's history) or a slot; `readRect` is the part read (world) */
@@ -164,37 +166,38 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   const framedAt = emitF + frameF;
 
   /* ------------------------------------------------ the camera: arrival ---------------------------------------- */
-  // A fresh block starts as if cut in: already moving toward the place, about 900 px (at 1080) short of it. A
-  // continuous hand-off (`entry`) starts from the previous piece's camera instead.
-  const along = (() => {
-    const dx = arrivePose.x - c.stone.x;
-    const dy = arrivePose.y - c.stone.y;
-    const n = Math.hypot(dx, dy) || 1;
-    return { x: dx / n, y: dy / n };
-  })();
-  const startVelDefault: CamVel = { x: (along.x * 10 * f.unit) / (arrivePose.zoom * 0.85), y: (along.y * 10 * f.unit) / (arrivePose.zoom * 0.85), lz: 0.0004 };
-  const start: Pose = o.entry?.pose ?? {
-    x: arrivePose.x - (along.x * 900 * f.unit) / (arrivePose.zoom * 0.85),
-    y: arrivePose.y - (along.y * 900 * f.unit) / (arrivePose.zoom * 0.85),
-    zoom: arrivePose.zoom * 0.85,
-  };
-  const startVel: CamVel = o.entry?.vel ?? startVelDefault;
-  // the camera follows the ring 24 frames behind; a ring-led move takes 0.7–1.4 s, longer only when the zoom must
-  // change so much that its corners would outrun the travel limit (peak log-zoom rate ≤ 0.0135 a frame at 60 fps)
+  // A fresh block opens on the stone, so the ring is seen to leave it, and the camera follows the ring 24 frames behind
+  // (a continuous hand-off, `entry`, starts from the previous piece's camera instead). A long journey bows out in zoom
+  // halfway, so the picture never moves faster than about 22 px a frame on the way (§5.3 travel ≤ 30), and lands on the
+  // place with momentum (a ring-led move of 0.7–1.4 s, longer only when the distance or the zoom change needs it).
+  const startRect: Rect = c.startRect ?? { x: c.stone.x - 420, y: c.stone.y - 520, w: 560, h: 640 };
+  const start: Pose = o.entry?.pose ?? fitPose(startRect, { x: 0, y: 0, w: f.w, h: f.h }, f, 0.8);
+  const startVel: CamVel = o.entry?.vel ?? { x: 0, y: 0, lz: 0.0002 };
   const followFrom = f60(24, fps);
-  const zoomFrames = Math.ceil((111 * Math.abs(Math.log(arrivePose.zoom / start.zoom)) * fps) / 60);
+  const D = Math.hypot(arrivePose.x - start.x, arrivePose.y - start.y);
+  const travelDir = { x: D > 1e-6 ? (arrivePose.x - start.x) / D : 1, y: D > 1e-6 ? (arrivePose.y - start.y) / D : 0 };
+  const zLow = Math.min(start.zoom, arrivePose.zoom);
+  const T0 = Math.max(f60(84, fps), framedAt + f60(12, fps) - followFrom);
+  // the bow: the zoom halfway that keeps the peak screen speed (≈ 1.5 × D × z ÷ T) at about 22 px a frame
+  const zMid = Math.min(zLow, (22 * f.unit * T0 * 60) / fps / (1.5 * Math.max(D, 1)));
+  const bow = zMid < zLow * 0.97;
+  // with a bow, each half (out, then in) takes half the time, so the larger half sets the pace
+  const lzTravel = bow ? 2 * Math.max(Math.abs(Math.log(zMid / start.zoom)), Math.abs(Math.log(arrivePose.zoom / zMid))) : Math.abs(Math.log(arrivePose.zoom / start.zoom));
+  // the zoom moves the frame's corners at (half-diagonal × log-zoom rate): keep that at ≤ 18 px a frame at 60 fps (a
+  // Hermite peaks at 1.5× its mean), so with the pan the corners stay within the 30 px travel limit
+  const lzMax = (18 * f.unit) / (Math.hypot(f.w, f.h) / 2);
+  const zoomFrames = Math.ceil(((1.5 * lzTravel) / lzMax) * (fps / 60));
   const al = o.align ?? {};
-  const arriveAt = Math.max(framedAt + f60(12, fps), followFrom + zoomFrames, al.arriveAt ?? 0);
-  // the arrival settles into a drift that continues its own direction (a reversal would pass through a stop)
-  const travelDir = (() => {
-    const dx = arrivePose.x - start.x;
-    const dy = arrivePose.y - start.y;
-    const n = Math.hypot(dx, dy) || 1;
-    return { x: dx / n, y: dy / n };
-  })();
+  const arriveAt = Math.max(followFrom + T0, followFrom + zoomFrames, al.arriveAt ?? 0);
   const travelDrift = { x: (travelDir.x * 0.28 * f.unit * 60) / fps / arrivePose.zoom, y: (travelDir.y * 0.28 * f.unit * 60) / fps / arrivePose.zoom, lz: 0.00006 };
   const arrival = (into: VelocityCamera, glideTo: number) => {
     into.glide(followFrom, f60(24, fps), startVel);
+    if (bow) {
+      const midAt = followFrom + Math.round((arriveAt - followFrom) * 0.5);
+      const mid: Pose = { x: (start.x + arrivePose.x) / 2, y: (start.y + arrivePose.y) / 2, zoom: zMid };
+      const v = (D / (arriveAt - followFrom)) * 1.25;
+      into.hermite(midAt, mid, { x: travelDir.x * v, y: travelDir.y * v, lz: 0 });
+    }
     return travelTo(into, arriveAt, arrivePose, glideTo, fps, { arriveSpeedPxPerFrame: 7, tauS: 0.4, drift: travelDrift });
   };
   const cam = new VelocityCamera(start, startVel);
@@ -322,7 +325,7 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   let inCam: VelocityCamera | null = null;
   const stagePose = fitPose(stageWorld, L.stage(f), f, 0.96);
   if (c.cascade) {
-    const seam = momentumCut({ out: cam2, cutFrame: cut, dir: { x: -1, y: 0 }, dPx: 140 * f.unit, leaveFrames: leaveF, target: stagePose, inFrames: f60(50, fps), frameW: f.w, frameH: f.h, fps });
+    const seam = momentumCut({ out: cam2, cutFrame: cut, dir: { x: -1, y: 0 }, dPx: 118 * f.unit, leaveFrames: leaveF, target: stagePose, inFrames: f60(50, fps), frameW: f.w, frameH: f.h, fps });
     inCam = seam.inCam;
     // the fixed line, then the items, each swap landing 2–3 frames before a beat (local frames of the piece)
     const fixedBox = L.fixedBox(f);

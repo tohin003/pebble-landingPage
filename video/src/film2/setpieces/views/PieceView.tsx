@@ -52,9 +52,13 @@ const PlaneView: React.FC<{ shot: ShotSpec; pl: PlaneSpec; frame: number; zoom: 
   const filters: string[] = [];
   if (pl.enterAt !== undefined) {
     if (frame < pl.enterAt) return null;
-    const e = askCardPlaneStyle(frame, pl.enterAt, fps, unit / zoom);
-    opacity *= e.opacity;
-    Object.assign(style, e.style);
+    if (pl.enterKind === "fade") {
+      opacity *= E_MOVE(clamp01((frame - pl.enterAt) / f60(20, fps)));
+    } else {
+      const e = askCardPlaneStyle(frame, pl.enterAt, fps, unit / zoom);
+      opacity *= e.opacity;
+      Object.assign(style, e.style);
+    }
   }
   const swapN = f60(TRANSITION.swap.inFrames, fps);
   const blurOf = (b: number) => `blur(${((b * unit) / zoom).toFixed(2)}px)`;

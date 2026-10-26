@@ -33,6 +33,8 @@ export const ring4 = (A: Aspect): RingContent => {
     id: "ring4",
     name: `Ring 4 ${A}`,
     stone: W.stone,
+    // a fresh block opens on the companion: the ring is seen to leave the stone
+    startRect: { x: W.companion.x - 360, y: W.companion.y - 260, w: W.companion.w + 720, h: W.companion.h + 520 },
     context: worldContext(A),
     // "Pebble's change isn't verified yet." (5 words to read; the rest of the card is context) and Run the tests: the
     // part read is the card's first sentence and its first button (it fits 9:16 at reading size; the card does not)

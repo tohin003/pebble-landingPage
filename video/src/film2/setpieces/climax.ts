@@ -136,7 +136,7 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
   const landPose: Pose = { ...keptRead, zoom: keptRead.zoom / 1.1 };
   // the incoming glide runs 72 frames (τ 24): it is still gliding as the card lands on the peak, and only 5 % of the
   // cut's speed is left to carry past the framing (36 frames left 22 %: a 160 px overshoot toward the type)
-  const seam = momentumCut({ out: camA, cutFrame: cut, dir: { x: -1, y: 0 }, dPx: 130 * f.unit, leaveFrames: f60(18, fps), target: landPose, inFrames: f60(72, fps), mode: "glide", tau: f60(24, fps), frameW: f.w, frameH: f.h, fps });
+  const seam = momentumCut({ out: camA, cutFrame: cut, dir: { x: -1, y: 0 }, dPx: 118 * f.unit, leaveFrames: f60(18, fps), target: landPose, inFrames: f60(72, fps), mode: "glide", tau: f60(24, fps), frameW: f.w, frameH: f.h, fps });
   const camB = seam.inCam;
   // through the landing without a freeze: the glide drifts on, then a slow push-in (E-move) for reading
   const pushFrom = Math.max(peak - cut + f60(30, fps), f60(72, fps) + 1);

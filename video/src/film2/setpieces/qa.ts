@@ -35,7 +35,7 @@ const visible = (pl: PlaneSpec, fr: number) => fr >= (pl.from ?? -Infinity) && f
 const activityOf = (p: ScenePlan, s: ShotSpec) => (fr: number): boolean => {
   for (const pl of s.planes) {
     if (!visible(pl, fr)) continue;
-    if (pl.enterAt !== undefined && fr >= pl.enterAt && fr < pl.enterAt + 24) return true;
+    if (pl.enterAt !== undefined && fr >= pl.enterAt && fr < pl.enterAt + (pl.enterKind === "fade" ? 20 : 24)) return true;
     if (pl.swapInAt !== undefined && fr >= pl.swapInAt && fr < pl.swapInAt + 16) return true;
     if (pl.swapOutAt !== undefined && fr >= pl.swapOutAt && fr < pl.swapOutAt + 16) return true;
     if (pl.dim && pl.dim.some((k, i) => i > 0 && fr >= pl.dim![i - 1]!.at && fr < k.at && k.v !== pl.dim![i - 1]!.v)) return true;

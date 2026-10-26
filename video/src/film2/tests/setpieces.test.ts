@@ -202,6 +202,23 @@ describe("the ring block (Ring 4 and Cascade 4)", () => {
   });
 });
 
+describe("travel speed", () => {
+  test("no camera in any demo piece moves the picture faster than 30 px a frame at 60 fps (centre and corners)", () => {
+    for (const a of ["16:9", "1:1", "9:16"] as const) {
+      for (const e of demoPlans(a)) {
+        const p = e.plan;
+        for (const s of p.shots) {
+          let worst = 0;
+          // a momentum cut's last E-leave frames are the one place a shot may run faster (they carry the cut)
+          const leaveFrom = p.seams.some((x) => x.out === s.id && x.frames === 0) ? s.to - s.from - 19 : Infinity;
+          for (let f = 0; f < Math.min(s.to - s.from, leaveFrom); f++) worst = Math.max(worst, maxScreenSpeed(s.camera.sample(f), p.frame.w, p.frame.h));
+          expect(worst).toBeLessThanOrEqual(30 * p.frame.unit + 1e-6);
+        }
+      }
+    }
+  });
+});
+
 describe("the wall", () => {
   test("28 cells on three rings (8, 8, 12), and never a Stealth cell", () => {
     const cells = wallCells();
