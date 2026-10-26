@@ -2,7 +2,8 @@
 //   cd <repo> && source scripts/env.sh && scripts/heavy.sh f2-luma /usr/sbin/taskpolicy -c utility \
 //     bun video/src/film2/qa/luma-scan.ts <video.mp4> --fps 60 --cuts 120,480 --waits 300-360 --out report.json
 // Without --marks it decodes small frames (--size, default 192 × 108) and runs qa/luma.ts: flashes, dead seconds, pops
-// (whole frame and per tile) and dips; the frames stay in memory (20 KB each, 34 MB for 28 s at 60 fps).
+// and dips; the frames stay in memory (20 KB each, 34 MB for 28 s at 60 fps). Tile pops are listed but not judged
+// there: telling a pop from a move needs the full frames and the plan's transitions, which only --marks has.
 //
 // With --marks <marks.json> (setpieces/tools/reel-marks.ts --out) it decodes the render at its own size, streams it,
 // and runs qa/reel-scan.ts: the luma checks on frames shrunk to about 192 px, plus the checks added after the craft
@@ -71,7 +72,8 @@ proc.on("close", (code) => {
   }
   const rs = scan ? scan.finish(fps) : null;
   const r = rs ? rs.luma : analyseLuma(small, { fps, width: W, height: H, cuts: (opt("cuts") ?? "").split(",").filter(Boolean).map(Number), waits: parseWaits(opt("waits") ?? "") });
-  const problems = rs ? rs.problems : r.problems;
+  // without the marks, tile pops are unconfirmed (no move test, no transitions): listed, not judged
+  const problems = rs ? rs.problems : r.problems.filter((x) => !x.startsWith("tile pops"));
   const summary = {
     file,
     frames: r.frames,
