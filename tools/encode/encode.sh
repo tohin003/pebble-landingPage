@@ -4,12 +4,13 @@
 #
 # Usage, from the repo root after `source scripts/env.sh`:
 #   tools/encode/encode.sh film   <master.mp4> <soundtrack_web.wav> [--only 1080.hevc,1080.h264,720.hevc,720.h264]
+#   tools/encode/encode.sh square <square_master.mp4> <soundtrack_web.wav> <square_social.mp4> [--only hevc,h264]
 #   tools/encode/encode.sh social <master.mp4> <soundtrack_social.wav> <out.mp4> [--cut <cut.json>] [--crf <n>]
 #   tools/encode/encode.sh loop   <id> <master.mp4> [<phone_master.mp4>]
 #   tools/encode/encode.sh teaser <master.mp4>
 #   tools/encode/encode.sh poster <png> <out-base> <width> <height>
-# Common options: --out-dir <dir> (film, loop, teaser; default public/media/v1, or $ENCODE_OUT), --exact (keep the
-# starting CRF even when a file misses its budget), --no-verify (skip the verify.mjs pass at the end).
+# Common options: --out-dir <dir> (film, square, loop, teaser; default public/media/v1, or $ENCODE_OUT), --exact (keep
+# the starting CRF even when a file misses its budget), --no-verify (skip the verify.mjs pass at the end).
 #
 # - One command = ONE scripts/heavy.sh job. Run directly, the script re-runs itself through heavy.sh (which waits for
 #   the lock and refuses when disk or memory is short); started by heavy.sh, it just runs.
@@ -37,6 +38,10 @@
 #   +faststart, no global metadata (Remotion's "Made with Remotion" comment is dropped); x264 at -level:v 4.0.
 #   Film: AAC 160 kb/s 48 kHz from the web soundtrack (one AAC generation). Loops and teaser: -an.
 #   Social: H.264 High CRF 18 (VBV 20 Mb/s inside level 4.0), AAC-LC 192 kb/s 48 kHz stereo.
+# - The 1:1 film for phones (OVERRIDES §46 P2-9; src/lib/media.ts phoneSources): film-square.h264.mp4 is the 1:1 social
+#   film's video, copied (-c:v copy, no second encode), with the film's AAC 160 kb/s from the web soundtrack;
+#   film-square.hevc.mp4 is its HEVC twin, encoded from the 1:1 master as film-1080.hevc is (CRF 25, budget 6 MB, hard
+#   limit 12 MB), kept only while the film set (every film-*.mp4 in the folder) stays within 45 MB.
 # - At the end, tools/encode/verify.mjs checks the new files (codecs, colour, faststart, sizes, loudness, loop seams).
 #
 # Exit: 0 ok; 1 a failed encode or check; 64 usage; heavy.sh's own codes (73 refused: too little disk or memory, or a
@@ -354,6 +359,77 @@ cmd_film() {
   return "$failed"
 }
 
+# The 1:1 film for phones (OVERRIDES §46 P2-9): the H.264 file re-muxes the 1:1 social film's video with the web
+# soundtrack; the HEVC twin is encoded from the 1:1 master, and kept only if the film set stays within FILM_SET bytes.
+FILM_SET=$((45 * MB))
+cmd_square() {
+  parse_common "$@"
+  [ "$(npos)" = 3 ] || usage_die "square <square_master.mp4> <soundtrack_web.wav> <square_social.mp4> [--only hevc,h264]"
+  local master wav social variants v frames expected fixed final tmp setsize failed=0 f
+  master="$(pos 1)" wav="$(pos 2)" social="$(pos 3)"
+  variants="$(printf '%s' "${ONLY:-h264,hevc}" | tr ',' ' ')"
+  for v in $variants; do
+    case "$v" in hevc | h264) ;; *) usage_die "unknown square variant '$v' (hevc, h264)" ;; esac
+  done
+  master "$master" "the 1:1 master"
+  [ "${V_W}x${V_H}" = 1080x1080 ] || die "the 1:1 master is ${V_W}x${V_H}; LaunchFilmSquare renders 1080x1080"
+  frames="$V_FRAMES"
+  soundtrack "$wav" "$frames"
+  expected="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).total_frames)' "$REPO/docs/film-captions.json" 2>/dev/null || echo '?')"
+  [ "$frames" = "$expected" ] || note "warning: the 1:1 master has $frames frames and docs/film-captions.json says $expected: the shared text tracks would drift"
+  case " $variants " in
+  *" h264 "*)
+    vprobe "$social"
+    [ "${V_W}x${V_H}" = 1080x1080 ] || die "the 1:1 social film $social is ${V_W}x${V_H}, not 1080x1080"
+    [ "$V_FRAMES" = "$frames" ] || die "the 1:1 social film $social has $V_FRAMES frames, its master $frames"
+    [ "$("$FP" -v error -select_streams v:0 -show_entries stream=codec_name -of csv=p=0 "$social")" = h264 ] || die "the 1:1 social film $social is not H.264"
+    ;;
+  esac
+  enter_heavy encode-square
+  mkdir -p "$OUT"
+  for v in $variants; do
+    final="$OUT/film-square.$v.mp4"
+    if [ "$v" = h264 ]; then
+      tmp="$WORK/film-square.h264.mp4"
+      note "film-square.h264: the 1:1 social film's video, copied, with AAC 160 kb/s from $(basename "$wav")"
+      "$FF" -hide_banner -nostdin -loglevel warning "$STATS" -y -i "$social" -i "$wav" -map 0:v:0 -map 1:a:0 \
+        -map_metadata -1 -map_chapters -1 -c:v copy -c:a aac -b:a 160k -ar 48000 -movflags +faststart "$tmp" ||
+        die "film-square.h264: the re-mux failed"
+      fits_page "$tmp" || die "film-square.h264: its codecs string does not fit the page's"
+      vprobe "$tmp"
+      [ "$V_FRAMES" = "$frames" ] || die "film-square.h264 has $V_FRAMES frames, its master $frames"
+      mv -f "$tmp" "$final"
+      FIT_CRF="copy" FIT_SIZE="$(fsize "$final")" FIT_NOTE="video copied from $(basename "$social")"
+      report "$final" ok
+      add_output "$final"
+    else
+      fixed="$(awk -v d="$A_DUR" 'BEGIN { printf "%d", 160000 / 8 * d * 1.02 }')"
+      if fit film-square.hevc hevc 25 $((6 * MB)) $((12 * MB)) "$FILM_MAX_RAISE" "$fixed" "$final" "$master" "" "$wav" "$frames"; then
+        setsize=0
+        for f in "$OUT"/film-*.mp4; do
+          if [ -f "$f" ]; then setsize=$((setsize + $(fsize "$f"))); fi
+        done
+        if [ "$setsize" -gt "$FILM_SET" ]; then
+          mkdir -p "$REPO/.work/tmp/encode-rejected"
+          mv -f "$final" "$REPO/.work/tmp/encode-rejected/film-square.hevc.mp4"
+          FIT_NOTE="the film set would be $(human "$setsize"), over $(human "$FILM_SET"): no HEVC twin (moved to .work/tmp/encode-rejected/)"
+          report "$REPO/.work/tmp/encode-rejected/film-square.hevc.mp4" FAIL
+          failed=1
+        else
+          FIT_NOTE="${FIT_NOTE:+$FIT_NOTE; }the film set is $(human "$setsize") of $(human "$FILM_SET")"
+          report "$final" ok
+          add_output "$final"
+        fi
+      else
+        report "$REPO/.work/tmp/encode-rejected/film-square.hevc.mp4" FAIL
+        failed=1
+      fi
+    fi
+  done
+  run_verify || failed=1
+  return "$failed"
+}
+
 cmd_social() {
   parse_common "$@"
   [ "$(npos)" = 3 ] || usage_die "social <master.mp4> <soundtrack_social.wav> <out.mp4> [--cut <cut.json>] [--crf <n>]"
@@ -503,9 +579,10 @@ shift
 case "$command" in
 -h | --help | help) usage ;;
 film) cmd_film "$@" ;;
+square) cmd_square "$@" ;;
 social) cmd_social "$@" ;;
 loop) cmd_loop "$@" ;;
 teaser) cmd_teaser "$@" ;;
 poster) cmd_poster "$@" ;;
-*) usage_die "unknown command '$command' (film, social, loop, teaser, poster)" ;;
+*) usage_die "unknown command '$command' (film, square, social, loop, teaser, poster)" ;;
 esac
