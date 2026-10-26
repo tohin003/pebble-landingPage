@@ -532,11 +532,12 @@ def key_relation(c1, c2):
         return "diagonal neighbour", "workable"
     if l1 == l2 and d == 2:
         return "two steps (a whole tone)", "workable"
-    if l1 != l2 and d == 3:
-        return "parallel major/minor", "workable"
+    mi, ma = (n1, n2) if l1 == "A" else (n2, n1)
+    if l1 != l2 and (ma - mi) % 12 == 3:
+        return "parallel major/minor (same tonic)", "workable"
     if l1 == l2 and d == 7:
-        return "a semitone apart", "clash (or a deliberate lift)"
-    return f"{d} steps apart", "clash"
+        return "a semitone apart", "distant (or a deliberate lift)"
+    return f"{d} steps apart{' with a mode change' if l1 != l2 else ''}", "distant"
 
 
 def tempo_relation(b1, b2):

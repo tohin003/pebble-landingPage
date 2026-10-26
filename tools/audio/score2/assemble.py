@@ -261,13 +261,16 @@ L.append("")
 names = list(tracks)
 lab = {n: tracks[n]["label"] for n in names}
 P = {(p["from"], p["to"]): p for p in pairs}
-L.append("**Tempo ratio (column / row) and the nearest simple ratio:**")
+L.append("**Tempo ratio (to / from) and the simple ratio it sits on (within 0.3 %; 'about' within 1.5 %; else none):**")
 L.append("")
 rows = []
 for a in names:
     row = [f"{lab[a]} {tracks[a]['tempo']['bpm']:.2f}"]
     for b in names:
-        row.append("-" if a == b else f"{P[(a, b)]['tempo_ratio']:.3f} ({P[(a, b)]['nearest_simple']}{'' if abs(P[(a, b)]['ratio_error_pct']) < 0.3 else f' {P[(a, b)]['ratio_error_pct']:+.1f}%'})")
+        if a == b:
+            row.append("-"); continue
+        pr = P[(a, b)]; er = abs(pr["ratio_error_pct"])
+        row.append(f"{pr['tempo_ratio']:.3f} (" + (pr["nearest_simple"] if er < 0.3 else f"about {pr['nearest_simple']}, {pr['ratio_error_pct']:+.1f} %" if er < 1.5 else "none") + ")")
     rows.append(row)
 L.append(md_table(["from \\ to"] + [lab[b] for b in names], rows))
 L.append("")
