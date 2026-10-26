@@ -14,7 +14,7 @@ read the web, keep memory you control and build small interactive views.
   `src/content/releaseFacts.ts`. At build time, and then hourly, it reads the latest release's version and size from
   GitHub.
 
-Live site: the address is added here after the first deployment.
+Live site: https://pebble-landing-page-eta.vercel.app
 
 ## What the site shows
 
@@ -24,7 +24,7 @@ stable.
 | Section | What it shows | Anchor |
 |---|---|---|
 | A little help, right here. | The live pebble, Download with its honest line, the release facts | `#top` |
-| Watch Pebble at work. | The film's poster and a silent teaser; the film plays with sound, captions, chapters and audio description | `#film` |
+| Watch Pebble at work. | The launch trailer behind its own first frame; it plays with sound, captions, chapters and audio description, and phones get its square cut | `#film` |
 | Evidence before "done". | AgentGuard, the evidence layer, as a ledger of real captures | `#agentguard` |
 | On your screen, out of your way. | The companion on your desktop, with a feature loop | `#desktop` |
 | Works in your project, under your review. | A coding task, step by step | `#project` |
@@ -54,10 +54,10 @@ The other pages: `/film` (the film with its transcript), `/credits`, `/privacy`,
 |---|---|
 | `src/` | The site, a Next.js App Router app: routes in `app/`, components, every visible string in `content/`, helpers in `lib/`, self-hosted fonts in `fonts/` |
 | `shared/pebble/` | The pebble's animation engine (bloub, MIT) and Pebble's own poses, shared by the site and the films; and the Veil, Stealth Lockdown's look, from Pebble's own code |
-| `public/` | Stills of Pebble's real interface (`ui/v1/`); the riverbed wallpaper, the teaser, the feature loops and every poster, the film's included (`media/v1/`); the film and its text tracks (`media/v2/`, the energetic recut); the media licence (`media/README.md`) |
-| `video/` | The Remotion project: the launch film in 16:9, 1:1 and 9:16, the teaser, the loops, the posters and the social card. A separate npm project, not part of the site's build |
+| `public/` | Stills of Pebble's real interface (`ui/v1/`); the riverbed wallpaper, the feature loops and their posters (`media/v1/`); the launch trailer, its square phone cut, its text tracks and its poster (`media/v2/`); the media licence (`media/README.md`) |
+| `video/` | The Remotion project: the launch trailer in 16:9, 1:1 and 9:16, the loops, the posters and the social card. A separate npm project, not part of the site's build |
 | `capture/` | The capture harness: Pebble's real interface running in Chrome, with the app's calls mocked and fictional sample data |
-| `tools/` | `audio/` (the score, the sampler, the sound effects and the mix), `assets/` (stills, wallpaper, icons, fonts), `captions/` (the film's caption and chapter files), `encode/` (the web and social encodes, the posters and their checks), `qa/` (the quality gates) |
+| `tools/` | `audio/` (the trailer's synthesised score and its engine, the narrated twin's voice, the sound effects and the mix; the earlier sampled score's tools are kept), `assets/` (stills, wallpaper, icons, fonts), `captions/` (the film's caption and chapter files), `encode/` (the web and social encodes, the posters and their checks), `qa/` (the quality gates) |
 | `docs/` | The design philosophy and system, the claims register, the film spec, captions and cuts, the media provenance, how to build everything and how it was made |
 | `scripts/` | `env.sh`, sourced before every command; `heavy.sh`, which runs one heavy job at a time; `serial.sh`, which runs one type check at a time |
 
@@ -83,7 +83,7 @@ Good to know:
 - The home page and `/film` regenerate at most once an hour, so a new Pebble release reaches the page within about an
   hour without a redeploy.
 - Films and loops appear on the page only if their files are in `public/media/` when the build starts: the film in
-  `v2/`, the loops and the teaser in `v1/` (`next.config.ts` lists both). Without them the page shows a poster or a
+  `v2/` and the loops in `v1/` (`next.config.ts` lists both). Without them the page shows a poster or a
   still in their place.
 - `.vercelignore` leaves `video/`, `capture/`, `tools/`, `docs/` and `scripts/` out of the deployment: the site
   needs none of them to build.
@@ -120,7 +120,7 @@ The code in this repository is licensed under the Apache License 2.0 (`LICENSE`)
 social images are © 2026 Tohin Majumder and are not covered by the code licence (`public/media/README.md`).
 Third-party work keeps its own licence, listed in `CREDITS.md` and on the site's `/credits` page: the pebble's
 character engine, bloub by Jérémy Perret (MIT); the fonts Fraunces, Inter and Geist Mono (SIL Open Font License 1.1);
-the CC0 instrument samples and sound effects heard in the film; and the packages the site ships. Pebble itself is
+the CC0 sound effects heard in the film (its score is synthesised in code, with no samples); and the packages the site ships. Pebble itself is
 Apache-2.0, in its own repository.
 
 ## Privacy

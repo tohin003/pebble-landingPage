@@ -135,7 +135,8 @@ the hero, rail and footer anchors.
 - **Never render** `copy.releasePill` ("New · …") or `hero.requirementsLine` (middle dots). Use `hero.requirements` as a
   list.
 - **Film end card:** keeps the small bloub credit line (FILM_SPEC T22).
-- **Music:** the film uses the original score played on recorded CC0 instruments (VCSL + VSCO 2 CE, lane C2). The
+- **Music:** the trailer uses an original score synthesised in code, with no samples (score B, `tools/audio/synth`; the
+  sampled VCSL + VSCO 2 CE score of lane C2 is retired, OVERRIDES §45). The
   public media README must not mention Mixkit.
 - **Pebble gaze at rest (site):** the engine's default resting gaze glances up and to the right, away from the
   headline and the visitor. On the site, the static frame (server render, no-JS, reduced motion and paused) and the
