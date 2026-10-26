@@ -134,11 +134,16 @@ export const DESKTOP_RECT: Rect = { x: 0, y: 0, w: 1600, h: 1000 };
  * frame). The vertical never zooms out below m 1.92 (the wallpaper is 1,000 units tall, the frame 1,920 px).
  * - COLD (bar 1, f0–71): the extreme close-up, "the eyes plus one curve" (OVERRIDES §46 P1-2): the frame crops the
  *   body, which sits in a corner of the dark riverbed, and the two eyes are in one third of the frame on frame 0 (the
- *   page's poster and every thumbnail, under a centred play button), so the button's area stays dark. 16:9: the
- *   bottom-right corner, the eyes in the right third looking up-left toward the button and the pointer's entry; 1:1
- *   and 9:16: the bottom-left, the eyes in the left third looking up-left (9:16: inside the band, y 250–1670). The eyes'
- *   swing to the look at the viewer (f54) runs toward the frame's inside, so they stay in frame.
- *   The zoom is the most the third allows with the eyes legible at 360 px wide (checkColdOpen in film/gaze.ts);
+ *   page's poster and every thumbnail, under a centred play button), so the button's area stays dark.
+ *   16:9 (OVERRIDES §47 R2-3): the top-right corner. The page shows the poster's top 31.5 % above the fold at
+ *   1440 × 900 (more on taller screens), so on frame 0 both eyes, with body round them, sit inside the frame's top
+ *   30 %, in the right third: the pebble peeks up into the first screen. They look up-left, toward the pointer's entry
+ *   above the frame. The top edge crops the crown and the right edge the body's right side, so the frame shows the eyes
+ *   and one curve, the left and lower; the centre stays dark under the page's play button on desktops and phones. The
+ *   eyes' swing to the look at the viewer (f54) runs toward the right edge, and they keep about 40 px from it.
+ *   1:1 and 9:16: the bottom-left, the eyes in the left third looking up-left (9:16: inside the band, y 250–1670); their
+ *   swing on f54 runs toward the frame's inside.
+ *   The zoom is the most each aspect's rules allow, with the eyes legible at 360 px wide (checkColdOpen in film/gaze.ts);
  * - LAND (bar 11, f774–791): the pebble in its corner of the light riverbed, its size the lockup's (210 / 170 px), so
  *   the hop from the lockup lands at the same scale;
  * - CHAT (bars 12–13, f792–917): the whole quick-chat panel (the recut's C1, edge-checked by lane v2-film); in 1:1 the
@@ -147,8 +152,8 @@ export const DESKTOP_RECT: Rect = { x: 0, y: 0, w: 1600, h: 1000 };
  */
 export const DESK_CAMERA = {
   cold: {
-    m: per(12.4, 9.6, 10),
-    pebbleAt: per({ x: 1630, y: 930 }, { x: 198, y: 955 }, { x: 208, y: 1560 }),
+    m: per(10.5, 9.6, 10),
+    pebbleAt: per({ x: 1665, y: 250 }, { x: 198, y: 955 }, { x: 208, y: 1560 }),
     /** the third of the frame the eyes sit in on frame 0 */
     third: per("right", "left", "left") as PerAspect<"left" | "right">,
   },
@@ -165,10 +170,11 @@ export const DESK_CAMERA = {
    *  reaches into the caption band, where no caption plays in bars 12–13) */
   answer: { m: per(5.4, 3.0, 3.14), centre: per({ x: 192, y: 162 }, { x: 192, y: 146 }, { x: 192, y: 48 }) },
   /** where the cold open's pointer drifts in from (above the frame, up-left of the face, where frame 0's eyes look),
-   *  rests beside the face (inside the pet window: the attentive pose) and slides away to, off the left edge (frame px) */
+   *  rests beside the face (inside the pet window: the attentive pose; 16:9 just off the body's left curve, level with
+   *  the eyes) and slides away to, off the left edge (frame px) */
   coldPointer: {
-    from: per({ x: 700, y: -60 }, { x: -300, y: -200 }, { x: -300, y: 300 }),
-    rest: per({ x: 1250, y: 520 }, { x: 440, y: 560 }, { x: 440, y: 1180 }),
+    from: per({ x: 800, y: -200 }, { x: -300, y: -200 }, { x: -300, y: 300 }),
+    rest: per({ x: 1157, y: 165 }, { x: 440, y: 560 }, { x: 440, y: 1180 }),
     away: per({ x: -150, y: 700 }, { x: -250, y: 360 }, { x: -250, y: 1000 }),
   },
   /** where the star beat's pointer comes from (frame px) */
@@ -890,7 +896,7 @@ export interface ReviewFrame {
 }
 /** Style frames: every beat's key frame (rendered in all three aspects through StyleFrames*). */
 export const STYLE_FRAMES: readonly ReviewFrame[] = [
-  { id: "SF01", shot: "A1", frame: 0, note: "the thumbnail and the page's poster: the eyes plus one curve in a corner, the eyes in a third, the centre dark" },
+  { id: "SF01", shot: "A1", frame: 0, note: "the thumbnail and the page's poster: the eyes plus one curve in a corner, the eyes in a third (16:9: in the frame's top 30 %, the page's first screen), the centre dark" },
   { id: "SF02", shot: "A1", frame: 28, note: "the pointer beside the face, the eyes on it (attentive)" },
   { id: "SF03", shot: "A2", frame: 100, note: "Q1 on the night field" },
   { id: "SF36", shot: "A2", frame: 156, note: "glimpse 1: the card's head, NEEDS YOUR REVIEW and Needs your review (OVERRIDES §46 P2-5)" },
