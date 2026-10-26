@@ -197,6 +197,26 @@ def scene_windows(T):
     entrances = [t for t, (s_, a_, b_, k) in steps.items() if s_ is not None and s_ >= 3.0 and b_ is not None
                  and a_ is not None and a_ > -40 and T.mom_at(t - 2 * bl, t, np.min) is not None and T.mom_at(t - 2 * bl, t, np.min) > -50]
 
+    def arrival(t):
+        """How sharply new material arrives at t: the attack (peak momentary loudness in the half second after against
+        the half second before) plus the low end's jump over one bar. A crescendo that starts a beat or two early has a
+        big 2-bar step but a soft attack; a drop after a breath has a big attack."""
+        att = (T.mom_at(t, t + 0.5, np.max) or 0) - (T.mom_at(t - 0.5, t, np.mean) or 0)
+        msk0 = (T.c["stt"] >= t - bl) & (T.c["stt"] < t); msk1 = (T.c["stt"] >= t) & (T.c["stt"] < t + bl)
+        lo0 = float(np.mean(T.c["lows"][msk0])) if msk0.any() else 0
+        lo1 = float(np.mean(T.c["lows"][msk1])) if msk1.any() else 0
+        return att + 10 * (lo1 - lo0)
+
+    # entrances closer than a bar are one arrival: keep its sharpest point
+    ent_sorted = sorted(entrances)
+    clusters = []
+    for x in ent_sorted:
+        if clusters and x - clusters[-1][-1] <= bl * 1.05:
+            clusters[-1].append(x)
+        else:
+            clusters.append([x])
+    entrances = [max(cl, key=arrival) for cl in clusters]
+
     # intimate open
     for t, kind in cands:
         for nb in range(max(4, int(round(12 / bl))), int(round(24 / bl)) + 1):
