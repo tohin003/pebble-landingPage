@@ -1302,7 +1302,7 @@ the scenes are `video/src/film/scenes/`. `LaunchFilm` refuses to render while `c
 
 | Bars | Frames | Picture | Line (in → out) | Effects (picture frame) |
 |---|---|---|---|---|
-| 1 | 0–71 | the dark riverbed, the eyes plus one curve (OVERRIDES §46 P1-2): the frame crops the pebble, which sits in a corner in the dark theme's colours (#b4cda6, eyes #23351f; tokens.css@v1.5.0); frame 0, the page's poster and every thumbnail, has its eyes in one third (16:9 the right, looking up-left toward the centred play button; 1:1 and 9:16 the left) and on where the pointer will enter (above the frame, up-left), the button's area dark; the pointer drifts in (f4–16), rests beside the face (the app's attentive pose, f14–39) and slides away off the left edge from f36; a natural blink near f20; the look at the viewer on f54 | — | the suck-back ending on f72 |
+| 1 | 0–71 | the dark riverbed, the eyes plus one curve (OVERRIDES §46 P1-2): the frame crops the pebble, which sits in a corner in the dark theme's colours (#b4cda6, eyes #23351f; tokens.css@v1.5.0); frame 0, the page's poster and every thumbnail, has its eyes in one third (16:9 the right, high in the frame's top 30 %, which the page shows above the fold, OVERRIDES §47 R2-3; 1:1 and 9:16 the left) and on where the pointer will enter (above the frame, up-left), the button's area dark; the pointer drifts in (f4–16), rests beside the face (the app's attentive pose, f14–39) and slides away off the left edge from f36; a natural blink near f20; the look at the viewer on f54 | — | the suck-back ending on f72 |
 | 2 | 72–143 | the night field (#191E1B) | "What did it change?" (slam, f72 → 138) | (the score's hit) |
 | 3 | 144–215 | glimpse 1: the card's head ("NEEDS YOUR REVIEW", invoice_kit/dates.py with "Needs your review", "Changes this file in your project. You can undo it afterwards."), then a one-beat tilt (f166–184) to its diff, Don't allow and Apply edit, with a slow push (×1.04); the pointer presses Apply edit on f198, the glimpse ramps out f198–203 | — | click f198 |
 | 4 | 216–287 | the night field | "Can I undo it?" (f216 → 282) | |
@@ -1345,11 +1345,11 @@ and 1.2 s (2 s for a shot's last line), and stays above each aspect's caption ba
 - **The window world** (bars 14–25): the page's paper ground, the text column (16:9, x 96–860) or band (1:1, 9:16),
   and the stage, which ends above its aspect's caption band: 16:9 x 920, y 64, 1000 × 854; 1:1 x 24, y 336,
   1056 × 582; 9:16 x 24, y 700, 1056 × 744. From f1440 the pebble stands on its line at the window world's spot.
-- The desktop's cameras (`DESK_CAMERA`): bar 1 m 12.4 / 9.6 / 10 (OVERRIDES §46 P1-2; the pebble's centre at frame
-  (1630, 930), (198, 955) and (208, 1560)); the star beat's landing at the lockup's size (16:9 m 1.42, 1:1 m 1.15,
-  9:16 m 1.92, the wallpaper's least); the quick chat's whole panel m 2.35 / 2.62 / 2.62, in 1:1 its top first
-  (`chatHead`: the pebble's centre at (900, 1057), panel y −6 to 406) with the tilt down on f898–910; the answer's
-  punch-in m 5.4 / 3.0 / 3.14.
+- The desktop's cameras (`DESK_CAMERA`): bar 1 m 10.5 / 9.6 / 10 (OVERRIDES §46 P1-2, §47 R2-3; the pebble's centre at
+  frame (1665, 250), (198, 955) and (208, 1560): 16:9's top-right corner, the narrow aspects' bottom-left); the star
+  beat's landing at the lockup's size (16:9 m 1.42, 1:1 m 1.15, 9:16 m 1.92, the wallpaper's least); the quick chat's
+  whole panel m 2.35 / 2.62 / 2.62, in 1:1 its top first (`chatHead`: the pebble's centre at (900, 1057), panel y −6 to
+  406) with the tilt down on f898–910; the answer's punch-in m 5.4 / 3.0 / 3.14.
 - **Bar 20 in 16:9** (OVERRIDES §46 P2-4): the text column has no line, so the stage widens over it (`M6_STAGE`: x 96,
   y 64, 1824 × 854, its left corners rounded) for the bar; the montage cut on f1368 and the cut on f1440 take the
   change.
@@ -1399,10 +1399,21 @@ The rules (`checkFraming()` enforces the first four on every frame of every aspe
   666–672, f1716–1722), then "Done." at 446.7. Before, 9:16 cut through the sentence and the button, and 16:9 (bottom
   440.4) and 1:1 (421) sliced the button too.
 - Bar 1 (`checkColdOpen`, film/gaze.ts; LaunchFilm runs it with `checkAll()`): on frame 0 both eyes sit inside their
-  third (8 px in) and the centred play button's area (16:9: the page's 116 × 102 CSS px galet at the poster's 1,280 px,
-  174 × 153; 1:1 and 9:16: 150 × 150) has no point of the body; the frame crops the body at two edges (9:16: one);
-  through f0–71 the eyes stay 24 px inside the frame, and in 9:16 inside the band (y 250–1670). The caption band may
-  take the pebble (§2: it is not kinetic type or a click target).
+  third (8 px in) and the centred play button's area has no point of the body (its outline followed along the curves,
+  each cubic flattened to 12 points). 16:9: the page's galet, 116 × 102 CSS px on the 1,280 px desktop frame (174 × 153)
+  and 72 × 63 CSS px on the narrowest phone's frame, a 320 px screen's 288 × 162 (480 × 420); 1:1 and 9:16: 150 × 150.
+  The frame crops the body at two edges (9:16: one); through f0–71 the eyes stay 24 px inside the frame, and in 9:16
+  inside the band (y 250–1670). The caption band may take the pebble (§2: it is not kinetic type or a click target).
+- Bar 1 in 16:9, the page's first screen (OVERRIDES §47 R2-3; `COLD_FIRST_SCREEN`). The page shows the poster's top
+  227 of 720 CSS px above the fold at 1440 × 900 (31.5 %), 283 at 1470 × 956 (39.3 %), 309 at 1512 × 982 (42.9 %) and
+  444 at 1728 × 1117 (61.7 %), measured on the built page in both themes. So frame 0 also keeps: both eyes inside the
+  frame's top 30 % (y ≤ 324) with body round them (every point within 24 px of the eyes is on the body); each eye at
+  least 15 × 30 px on a 360 px wide thumbnail; one visible run of the outline ("one curve") and at most 75 % of the
+  body in frame; and the look toward the pointer's entry, up-left, held until the pointer appears on f4. Measured: the
+  eyes at x 1447–1783, y 46–277, each about 19 × 34 px at 360 px; the body x 1202–2119, y −156–654, cropped at the top
+  and the right, 71 % of it in frame; the look (−0.375, −0.25) toward (800, −200); the play button's areas 205 px
+  (desktop) and 15 px (a 320 px phone; 51 px on a 360 px one) clear of the body; the eyes' least margins over f0–71,
+  46 px from the top (f0) and 42 px from the right (after the f54 swing).
 
 ### 24.5 Time honesty: the source maps
 
@@ -1510,7 +1521,10 @@ mapped.
 
   The largest changes all sit on beats, except the floods' own frames, the dawn's 8-frame steps and, in 1:1, the
   quick chat's tilt to the answer (f902–905). The first masters (2026-10-26, before §46) scanned the same but for the
-  16:9 regions' 2.
+  16:9 regions' 2. The 16:9 master was rendered once more for OVERRIDES §47 R2-3's cold open (2026-10-26 10:29,
+  10,692,936 bytes, SHA-256 `1754922e…`; only bar 1 changed, every other downbeat looked the same): it scans as the
+  table's 16:9 column (the frame mean 0 flashes, the worst region 1 at f1570; floods 7.02 and 7.00; no glitches; the
+  same flat frames; the largest changes on beats but for the floods and the dawn).
 - The encodes (the re-delivery, 2026-10-26, from the masters above; they replace the first delivery's, made from the
   masters before OVERRIDES §46). In `public/media/v2/`: the website's four files (21.70 MB); the 1:1 film for phones
   (`film-square.h264.mp4`, 6.68 MB, the 1:1 social film's video copied, and `film-square.hevc.mp4`, 5.50 MB; the film
@@ -1524,16 +1538,47 @@ mapped.
   1.8 s is silent (peaks −79 to −81 dBFS) and the flash counter passes on every encode (0 flashes on the frame mean, at
   most 1 in a region). The masters were deleted after that; their sizes and SHA-256 are in the re-delivery's cleanup
   record (`.work/trailer-redeliver/cleanup-2026-10-26.json`, not tracked), and a new encode needs them rendered again.
+- The 16:9 encodes after OVERRIDES §47 R2-3 (2026-10-26, from the 16:9 master of 10:29 above): the website's four
+  films, the poster and the three 16:9 Desktop films (the full film, its 30 s cut and the narrated twin) were made again
+  with the same commands and soundtracks; the 1:1 and 9:16 films, the 1:1 phone film, the text tracks and the SRTs are
+  unchanged. The four web films stay at their starting CRFs, 21.70 MB (the film set 33.88 MB of 45, `public/` 45.98 MB
+  of 90), at −16.20 LUFS and −1.598 dBTP. The poster is `LaunchFilm`'s frame 0 again (the still 50.45 dB PSNR against
+  the master's frame 0): `film.poster.avif` 13.6 KB and `.webp` 18.6 KB, decoded 48.5 and 47.0 dB against
+  `film-1080.hevc.mp4`'s first frame; its centre measures #1c231f, under the galet's #f8f9f6 about 15:1. On the Desktop:
+  the 16:9 film 8.26 MB, its 30 s cut 3.13 MB and the narrated twin 8.27 MB (its video the 16:9 film's packet for
+  packet), at −14.39 / −1.160, −14.31 / −1.351 and −14.35 / −1.351; README.txt's size for the 16:9 film reads 8.3 MB.
+  All 89 files pass `verify.mjs` (the one descriptions warning). Every sampled frame of the seven encodes matches the
+  new master at shift 0 (28 moments, the cold open's f0, f30, f54 and f71 among them, and both sides of every 30 s
+  joint; a neighbour scores higher only on still frames, by at most 0.17 dB; the lowest, 45.1 dB, on the 720p files),
+  each AAC decodes to its soundtrack's exact sample count at lag 0, each file carries the soundtrack it should, the last
+  1.8 s is silent (peaks −79 to −81 dBFS) and the flash counter passes on each (0 flashes on the frame mean, at most 1
+  in a region). The master was deleted after that; its size and SHA-256 are in the lane's cleanup record
+  (`.work/r23-firstscreen/cleanup-2026-10-26.json`, not tracked).
 
 ### 24.12 Departures from the blueprint
 
 - **Bar 1** is the dark theme's own pebble (#b4cda6, eyes #23351f): the app's colours on the dark desktop. Its close-up
-  (OVERRIDES §46 P1-2) is 1.8× (16:9), 1.6× (1:1) and 1.3× (9:16) the first trailer's, not the review's 2.5–3×: the eye
+  (OVERRIDES §46 P1-2) is 1.5× (16:9), 1.6× (1:1) and 1.3× (9:16) the first trailer's, not the review's 2.5–3×: the eye
   pair is about 0.75 of the body's radius wide, so frame 0's third (640 px in 16:9, 360 px in the narrow aspects) caps
-  the zoom, and the eyes' swing to the look at the viewer on f54 must stay in frame. The frame crops the body at the
-  right and bottom (16:9: 23 % and 34 % of it) or the left and bottom (1:1: 27 % and 33 %); in 9:16 mostly at the left
-  edge (27 %; the bottom edge takes only 25 px), because the eyes stay inside the band (y 250–1670). The eyes look up-left
-  on frame 0 (toward the pointer's entry; in 16:9 toward the play button).
+  the zoom, and the eyes' swing to the look at the viewer on f54 must stay in frame. In 16:9 the eyes also sit in the
+  frame's top 30 %, the part of the poster the page shows above the fold (OVERRIDES §47 R2-3), and the centre stays dark
+  under the phone's play button as well as the desktop's, which caps it at m 10.5 (§46 alone gave m 12.4, the eyes in
+  the lower right): the frame crops the crown at the top and the body's right side, and shows the eyes and one curve,
+  from the top edge round the left and the bottom to the right edge, 71 % of the body (§46's framing showed 57 %, cropped
+  at the right and bottom). In 1:1 the frame crops the body at the left and bottom (27 % and 33 %); in 9:16 mostly at the
+  left edge (27 %; the bottom edge takes only 25 px), because the eyes stay inside the band (y 250–1670). The eyes look
+  up-left on frame 0, toward the pointer's entry above the frame.
+- **The 9:16 cold open's partial crop** (OVERRIDES §47 R2-1, accepted as a departure): the frame cuts the body only at
+  its left edge (27 %; the bottom edge takes 25 px), so the top, right and bottom curves show on frame 0 and the whole
+  silhouette reads, where §46 P1-2 asks for the eyes plus one curve. The 360 px third caps the zoom at m 10 (1.33× the
+  first trailer's), and the eyes stay inside the band (y 250–1670). The second review offered the lower third instead;
+  the lead kept this framing.
+- **The hits** (OVERRIDES §47 R2-2, accepted): the push on f1723 is the film's loudest momentary moment in every master,
+  and §41 holds on every measure; through a phone's band (400 Hz–10 kHz) the drop now leads the ordinary hits. In the
+  full band the drop and the tests passing (f1656) still measure under several ordinary hits (the web film's loudest
+  400 ms from each hit: push −10.52, the whole workspace −11.95, drop −12.11, tests pass −12.54 LUFS), and through a
+  phone's band the push stands 4–5 dB above every other hit. The lead took the phone-band lift as meeting §46 P2-1; no
+  further audio change.
 - **Glimpse 1** ends with the press: the press is drawn over source 275 and the glimpse ramps out over f198–203, so
   the click's result and the second card never show out of order. It opens on the card's head and tilts to the diff on
   f166–184 (OVERRIDES §46 P2-5), so the blueprint's 1.04 push runs from the tilt, not from f140.

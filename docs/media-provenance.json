@@ -4723,18 +4723,18 @@
  "assets": [
   {
    "file": "public/media/v2/film-1080.hevc.mp4, film-1080.h264.mp4, film-720.hevc.mp4, film-720.h264.mp4 (the trailer; src/lib/media.ts FILM_MEDIA)",
-   "status": "re-encoded 2026-10-26 by tools/encode/encode.sh film --out-dir public/media/v2 (lane trailer-redeliver, after OVERRIDES §46) from the re-rendered LaunchFilm picture master (video/out/masters/LaunchFilm.mp4, sha256 057ba89c291392a4b0d770c8fdc9aeeee616509234a29776e1eff3a11d16ce41, FILM_SPEC 24.11; deleted after the gate, .work/trailer-redeliver/cleanup-2026-10-26.json): 2,304 frames at 30 fps each, every file at its starting CRF (HEVC 25 and 26, H.264 20 and 21); 21.70 MB for the four, 33.88 MB with the 1:1 film (C6 allows 45 MB). They replaced lane trailer-deliver's files of the same names (the same morning; never committed)",
+   "status": "re-encoded 2026-10-26 by tools/encode/encode.sh film --out-dir public/media/v2 (lane r23-firstscreen, OVERRIDES §47 R2-3: the cold open's eyes moved into the frame's top 30 %, which the page shows above the fold) from the 16:9 picture master re-rendered for the new cold open (video/out/masters/LaunchFilm.mp4, 2026-10-26 10:29, 10,692,936 bytes, sha256 1754922e27fa8f9e490add15a93f82130db6093cb564e0739674789043f65268, FILM_SPEC 24.11; deleted after the gate, .work/r23-firstscreen/cleanup-2026-10-26.json): 2,304 frames at 30 fps each, CRF film-1080.hevc.mp4 25, film-1080.h264.mp4 20, film-720.hevc.mp4 26, film-720.h264.mp4 21; 21.70 MB for the four, 33.88 MB with the 1:1 film (C6 allows 45 MB). Before that, lane trailer-redeliver's files of the same names (after OVERRIDES §46, the same morning; never committed): see replaced",
    "sha256": {
-    "film-1080.hevc.mp4": "831fe52028285caa2df51d63838525bc4f3875dd2acdcbeaf94473cd18224966",
-    "film-1080.h264.mp4": "9cec8a490875340c8024b08512d2b8ea86b9e21003ca1f60309559c7014a0b1a",
-    "film-720.hevc.mp4": "6af91e5084ce75466311730b2e44a27bf9a295268086bf61495ee389522e6369",
-    "film-720.h264.mp4": "56c7d10d13ea658af383b1913c5cae992581e186ef158089c0edb0f6dfeda8a9"
+    "film-1080.hevc.mp4": "064494303c1163435f8b52b11faedc5560343bbf21b71e6274933846d5364390",
+    "film-1080.h264.mp4": "e25bd47a9d0c59581e24f8ac04111cd6aa66d831ae5bacc7a575ec602d8e1843",
+    "film-720.hevc.mp4": "a8cba5e1ed21807fd5eb929bc983932dc567917d4f5c36a520404400b139b218",
+    "film-720.h264.mp4": "5e07ca95f67aee1ed228b2a464a73c471fb8b7b03d8cba8dd5fa1b8d7a0bea6e"
    },
    "bytes": {
-    "film-1080.hevc.mp4": 6212628,
-    "film-1080.h264.mp4": 6898735,
-    "film-720.hevc.mp4": 4028305,
-    "film-720.h264.mp4": 4559863
+    "film-1080.hevc.mp4": 6217692,
+    "film-1080.h264.mp4": 6915636,
+    "film-720.hevc.mp4": 4026967,
+    "film-720.h264.mp4": 4537180
    },
    "codecs": {
     "film-1080.hevc.mp4": "hvc1.1.6.L120.90",
@@ -4746,6 +4746,12 @@
    "sfx": "tools/audio/cues.json (41 effects and 8 automation spans), mixed into the soundtrack",
    "loudness": "measured on the final AAC by tools/encode/verify.mjs: film-1080.hevc.mp4 -16.20 LUFS, -1.598 dBTP; film-1080.h264.mp4 -16.20 LUFS, -1.598 dBTP; film-720.hevc.mp4 -16.20 LUFS, -1.598 dBTP; film-720.h264.mp4 -16.20 LUFS, -1.598 dBTP",
    "replaced": {
+    "film-1080.hevc.mp4": "831fe52028285caa2df51d63838525bc4f3875dd2acdcbeaf94473cd18224966",
+    "film-1080.h264.mp4": "9cec8a490875340c8024b08512d2b8ea86b9e21003ca1f60309559c7014a0b1a",
+    "film-720.hevc.mp4": "6af91e5084ce75466311730b2e44a27bf9a295268086bf61495ee389522e6369",
+    "film-720.h264.mp4": "56c7d10d13ea658af383b1913c5cae992581e186ef158089c0edb0f6dfeda8a9"
+   },
+   "replaced_earlier": {
     "film-1080.hevc.mp4": "7a975acc537fe44e5a796062d38deca1d7315bc08f45988c0e344ace2110c753",
     "film-1080.h264.mp4": "c0075f6229a825d04ad37860bdfe698c4a417e7ef9884e92e3a76decb24a3c94",
     "film-720.hevc.mp4": "b48f6ca8e3524f2dfc50e6a5d6e620ee2088a94d1d00fea43dda768856a72af9",
@@ -4773,17 +4779,21 @@
   },
   {
    "file": "public/media/v2/film.poster.avif, film.poster.webp (the film's poster, OVERRIDES §46 P1-1; src/lib/media.ts filmMedia().poster)",
-   "status": "made 2026-10-26 (lane trailer-redeliver) as the first film's poster was: a Remotion still of the film's frame 0, rendered from the composition itself (LaunchFilm --frame=0, 1920 x 1080, at its own size; video/out/stills/film.poster.png, sha256 84df258787acde0b4d3b98c9a3f228ea4cdf78dca9300039acbfb10a2857420a, PSNR 50.54 dB against the 16:9 master's decoded frame 0; deleted after the gate), encoded by tools/encode/encode.sh poster (poster.mjs): a simple picture, so AVIF q76 and WebP q90 (raised from q50 and q76 to stay under a quarter of the 60 and 90 KB budgets). Decoded, they read 47.1 and 46.4 dB PSNR against film-1080.hevc.mp4's first frame",
+   "status": "made again 2026-10-26 (lane r23-firstscreen, OVERRIDES §47 R2-3) as the first film's poster was: a Remotion still of the film's frame 0, rendered from the composition itself (LaunchFilm --frame=0, 1920 x 1080; video/out/stills/film.poster.png, sha256 b5e872fe0243348e9f311f79cf6003d2a24c4ea1e3ceafc73dadcf2b63f0525c, PSNR 50.45 dB against the new 16:9 master's decoded frame 0; deleted after the gate), encoded by tools/encode/encode.sh poster (poster.mjs): a simple picture, so AVIF q76 and WebP q90 (raised from q50 and q76 to stay under a quarter of the 60 and 90 KB budgets), 13.6 and 18.6 KB. Decoded, they read 48.5 and 47.0 dB PSNR against film-1080.hevc.mp4's first frame. The frame: the pebble's eyes in the upper right, inside the top 30 % (C-ALT-1)",
    "sha256": {
-    "film.poster.avif": "2cb5b0b4aae246fba4097d5c6e87b8cc2e7b258a0238e143cde5669f6200f3ca",
-    "film.poster.webp": "7343b6d922ca18ff99dc36f1a28e89e4eec70b82caad00280ff10f4cb04e2880"
+    "film.poster.avif": "476f6129801bc123b662af9cf5cda1afc330319eebe29a1a4029a8f84ae690b1",
+    "film.poster.webp": "4c483dde21c73e9095231031d25718956c4ffef38385de30e8a306c6b0116215"
    },
    "bytes": {
-    "film.poster.avif": 14655,
-    "film.poster.webp": 20464
+    "film.poster.avif": 13639,
+    "film.poster.webp": 18552
    },
    "music": null,
    "replaced": {
+    "film.poster.avif": "2cb5b0b4aae246fba4097d5c6e87b8cc2e7b258a0238e143cde5669f6200f3ca",
+    "film.poster.webp": "7343b6d922ca18ff99dc36f1a28e89e4eec70b82caad00280ff10f4cb04e2880"
+   },
+   "replaced_earlier": {
     "public/media/v1/film.poster.avif": "1750ffa8ef736685917619c87aea66b3b7fe0dc922da72c3272e265621769362",
     "public/media/v1/film.poster.webp": "79f6cb329988f71524d3662c496a79f600fdca6d4a57ce043e1d4be7bf98e525"
    }
@@ -4805,22 +4815,22 @@
   },
   {
    "file": "Desktop deliverables (not committed, OVERRIDES 4): the full film as Pebble-launch-film-1920x1080.mp4, Pebble-launch-film-1080x1080.mp4 and Pebble-launch-film-1080x1920.mp4 (LinkedIn); the 30 s cut x30 as Pebble-launch-film-30s-1920x1080.mp4, -30s-1080x1080.mp4 and -30s-1080x1920.mp4 (X); and their two SRTs",
-   "status": "re-encoded 2026-10-26 by tools/encode/encode.sh social (lane trailer-redeliver), the trailer after OVERRIDES §46: each aspect from its own re-rendered picture master (LaunchFilm 057ba89c..., LaunchFilmSquare 41d01153..., LaunchFilmVertical cdde5b1a...); the 30 s files with --cut docs/film-cuts/x30.json; the SRTs by tools/captions/build.mjs (25 and 11 cues). They replaced lane trailer-deliver's files of the same names",
+   "status": "re-encoded 2026-10-26 by tools/encode/encode.sh social (lane trailer-redeliver), the trailer after OVERRIDES §46: each aspect from its own re-rendered picture master (LaunchFilm 057ba89c..., LaunchFilmSquare 41d01153..., LaunchFilmVertical cdde5b1a...); the 30 s files with --cut docs/film-cuts/x30.json; the SRTs by tools/captions/build.mjs (25 and 11 cues). They replaced lane trailer-deliver's files of the same names. The 16:9 full film and its 30 s cut were re-encoded again 2026-10-26 the same way (lane r23-firstscreen, OVERRIDES §47 R2-3) from the 16:9 picture master re-rendered for the new cold open (video/out/masters/LaunchFilm.mp4, 2026-10-26 10:29, 10,692,936 bytes, sha256 1754922e27fa8f9e490add15a93f82130db6093cb564e0739674789043f65268, FILM_SPEC 24.11; deleted after the gate, .work/r23-firstscreen/cleanup-2026-10-26.json); their previous hashes are in replaced, lane trailer-deliver's in replaced_earlier. The 1:1 and 9:16 films and the SRTs are unchanged",
    "sha256": {
-    "Pebble-launch-film-1920x1080.mp4": "fa0a0b70d219b929ad6fdff4aa0a22a2e4fa350e2aa06d303c225c451994aa02",
+    "Pebble-launch-film-1920x1080.mp4": "3f1d9671aa23198c81e1e8815896aab34c5708e153d820adc438d1beff88db25",
     "Pebble-launch-film-1080x1080.mp4": "1a36140e191d19b4475c24813902be389303735dc0a9f5abcac89e4a2ad43458",
     "Pebble-launch-film-1080x1920.mp4": "ae1b16c3a328924007a4a2d03a44e3b93fb5fb4e60f870d58bb519ed5840de4d",
-    "Pebble-launch-film-30s-1920x1080.mp4": "9adcd7858b03c1ab8788d53f78b42ebea130ba780ab711c2d0485f660812ed37",
+    "Pebble-launch-film-30s-1920x1080.mp4": "07310c78cb4ac4ba37fd27bc811c43120496cd43b91ca6c2a99e6875c96c6957",
     "Pebble-launch-film-30s-1080x1080.mp4": "439b91f158ee59e0fef3063a5084c1dbfba1e1e1644cfce34b2fe58a0bf08c30",
     "Pebble-launch-film-30s-1080x1920.mp4": "5a08523275c45b8f071716a896b24d0a46372f8fe1498d9b376fd4f6afa5fff1",
     "Pebble-launch-film.srt": "48ecf801760be6ee247b3d28ffbf149b8d8d25db009655c123171412c54a7e61",
     "Pebble-launch-film-30s.srt": "5a16cc208760b41eab0034d516ba0695def84e33af3e96b94784e424531080ee"
    },
    "bytes": {
-    "Pebble-launch-film-1920x1080.mp4": 8249839,
+    "Pebble-launch-film-1920x1080.mp4": 8263056,
     "Pebble-launch-film-1080x1080.mp4": 6974156,
     "Pebble-launch-film-1080x1920.mp4": 7784341,
-    "Pebble-launch-film-30s-1920x1080.mp4": 3128561,
+    "Pebble-launch-film-30s-1920x1080.mp4": 3130995,
     "Pebble-launch-film-30s-1080x1080.mp4": 2533044,
     "Pebble-launch-film-30s-1080x1920.mp4": 2820502,
     "Pebble-launch-film.srt": 1584,
@@ -4829,25 +4839,29 @@
    "music": "the trailer's score B after the review's fixes: soundtrack_social.wav (fbddeb62...) for the full film, soundtrack_x30_social.wav (6a7f5e22...) for the cut, see music.trailer_score.final_masters",
    "loudness": "-14 LUFS, <= -1.0 dBTP after encoding (OVERRIDES 4); measured by tools/encode/verify.mjs: Pebble-launch-film-1920x1080.mp4 -14.39 LUFS, -1.160 dBTP; Pebble-launch-film-1080x1080.mp4 -14.39 LUFS, -1.160 dBTP; Pebble-launch-film-1080x1920.mp4 -14.39 LUFS, -1.160 dBTP; Pebble-launch-film-30s-1920x1080.mp4 -14.31 LUFS, -1.351 dBTP; Pebble-launch-film-30s-1080x1080.mp4 -14.31 LUFS, -1.351 dBTP; Pebble-launch-film-30s-1080x1920.mp4 -14.31 LUFS, -1.351 dBTP",
    "replaced": {
-    "Pebble-launch-film-1920x1080.mp4": "f8681d87b6f25c7efa2725d8290332859170f0469a1c4b6ae9f3b78600e89838",
+    "Pebble-launch-film-1920x1080.mp4": "fa0a0b70d219b929ad6fdff4aa0a22a2e4fa350e2aa06d303c225c451994aa02",
     "Pebble-launch-film-1080x1080.mp4": "25921750a65d6605251e7dd1263c730ad6f1996dcb110036cb1151738e03ca43",
     "Pebble-launch-film-1080x1920.mp4": "b4feef40fd3eff48cc8faeb77bedda61a2e35300654a2f96562e3745d625dc57",
-    "Pebble-launch-film-30s-1920x1080.mp4": "cd01b5b390f40dd99013e88b61d034e493acf92d1ac1f35c13cbe6b122505137",
+    "Pebble-launch-film-30s-1920x1080.mp4": "9adcd7858b03c1ab8788d53f78b42ebea130ba780ab711c2d0485f660812ed37",
     "Pebble-launch-film-30s-1080x1080.mp4": "bafaf1123769df67918f78ceee246cc65c081a0be927c39e3c1537a8e2c47d5d",
     "Pebble-launch-film-30s-1080x1920.mp4": "56585698700e877e5b4bcd3a6f82a55cd6ac6beb1d8d186d10d09cbadb316fe6",
     "Pebble-launch-film.srt": "ed3eeb00cfa4960c29135067bc6a50d387d1fb4fd852003120e690ab718fa96a",
     "Pebble-launch-film-30s.srt": "c48b88689b897f49c32949cabcc9c2e3b367403fc4f8593d4e86c84723fd1d4e"
+   },
+   "replaced_earlier": {
+    "Pebble-launch-film-1920x1080.mp4": "f8681d87b6f25c7efa2725d8290332859170f0469a1c4b6ae9f3b78600e89838",
+    "Pebble-launch-film-30s-1920x1080.mp4": "cd01b5b390f40dd99013e88b61d034e493acf92d1ac1f35c13cbe6b122505137"
    }
   },
   {
    "file": "Desktop deliverable (not committed): the narrated twin, Pebble-launch-film-narrated-1920x1080.mp4, and its captions, Pebble-launch-film-narrated.srt (OVERRIDES 38: at least the 16:9 full film; the master stays wordless)",
-   "status": "re-encoded 2026-10-26 by tools/encode/encode.sh social (lane trailer-redeliver) from the re-rendered LaunchFilm picture master with soundtrack_social_narrated.wav; its video stream is the 16:9 social film's, packet for packet (MD5 f0526fe27239b3bd11afd4c9c86df5d4 for both). The SRT by tools/captions/build.mjs --narrated-srt: the film's 25 captions with the four spoken lines marked 'Narrator: ...' (docs/film-narration.json cues n1-n4)",
+   "status": "re-encoded 2026-10-26 by tools/encode/encode.sh social (lane r23-firstscreen, OVERRIDES §47 R2-3) from the 16:9 picture master re-rendered for the new cold open (video/out/masters/LaunchFilm.mp4, 2026-10-26 10:29, 10,692,936 bytes, sha256 1754922e27fa8f9e490add15a93f82130db6093cb564e0739674789043f65268, FILM_SPEC 24.11; deleted after the gate, .work/r23-firstscreen/cleanup-2026-10-26.json) with soundtrack_social_narrated.wav; its video stream is the 16:9 social film's, packet for packet (MD5 fbca2f9a5ee6c980f502afffd44a777f for both). The SRT is unchanged: tools/captions/build.mjs --narrated-srt, the film's 25 captions with the four spoken lines marked 'Narrator: ...' (docs/film-narration.json cues n1-n4). Before that, lane trailer-redeliver's file (replaced), and lane trailer-deliver's (replaced_earlier)",
    "sha256": {
-    "Pebble-launch-film-narrated-1920x1080.mp4": "a0e11001236a105246cc392d103866b7a33aafbc0390b21f95157d796ccd99bb",
+    "Pebble-launch-film-narrated-1920x1080.mp4": "e824f502d82d8e526c62011213bfaeeda49eebc87bfc2a5ed1c594e4000e750a",
     "Pebble-launch-film-narrated.srt": "5c91cfb78248624faece0ad0c3bf0b7ebb9dfe9be54264e65518ccc1df319c17"
    },
    "bytes": {
-    "Pebble-launch-film-narrated-1920x1080.mp4": 8252379,
+    "Pebble-launch-film-narrated-1920x1080.mp4": 8265596,
     "Pebble-launch-film-narrated.srt": 1625
    },
    "music": "the trailer's score B, ducked about 4.6 dB under each line: soundtrack_social_narrated.wav (b6d06d40...)",
@@ -4855,8 +4869,11 @@
    "disclosure": "Narration: an AI voice by Sarvam AI, Bulbul. (docs/film-narration.json; in the twin's description and post)",
    "loudness": "measured by tools/encode/verify.mjs: -14.35 LUFS, -1.351 dBTP",
    "replaced": {
-    "Pebble-launch-film-narrated-1920x1080.mp4": "ac36278a1a719fb138eea352facf6b4ae3ea26e80fe5f3a692fc2e1fae9388a1",
+    "Pebble-launch-film-narrated-1920x1080.mp4": "a0e11001236a105246cc392d103866b7a33aafbc0390b21f95157d796ccd99bb",
     "Pebble-launch-film-narrated.srt": "d7adf240381add9a54804f69af809c23a13f9a2e4721b572d1b7bb6518bacfeb"
+   },
+   "replaced_earlier": {
+    "Pebble-launch-film-narrated-1920x1080.mp4": "ac36278a1a719fb138eea352facf6b4ae3ea26e80fe5f3a692fc2e1fae9388a1"
    }
   },
   {
