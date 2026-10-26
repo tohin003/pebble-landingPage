@@ -370,7 +370,8 @@ at a time (`tools/qa/all.sh` and the extra browser checks).
   - `/`, desktop: 100 in all four categories, LCP 0.63 s, layout shift 0.
   - `/`, mobile: accessibility, best practices and SEO 100, layout shift 0. Performance 91 and LCP 2.97 s were
     measured while another job compiled Rust on the same 8 GB Mac (load average 11), which inflates Lighthouse's
-    simulated phone. A quiet-machine run replaces these numbers. <!-- final-qa-lcp -->
+    simulated phone. The live site measured the same on 26 October (in the trailer's results below), so the load was
+    not the cause: the phone's simulated LCP is over the 2.5 s target.
   - Plain `next start` speaks HTTP/1.1, and Lighthouse models each of its parallel requests as a new cold connection.
     That gives a higher mobile LCP (3.62 s on `/`, 3.02 s on `/film`), but it isn't how the site is served.
 
@@ -448,6 +449,19 @@ at a time (`tools/qa/all.sh` and the extra browser checks).
   - nothing the classifier hears as a voice, an alarm or a siren outside the narrated lines, and a highest phone
     reading of 0.23, against a gate of 0.30;
   - "Verified" is the film's loudest moment.
+
+**The live site** (Lighthouse 13.5 against https://pebble-landing-page-eta.vercel.app: Vercel's HTTP/2 and Brotli,
+three runs each, medians)
+
+- `/`, desktop: 100 in all four categories, LCP 0.59 s, layout shift 0.
+- `/film`: desktop 100 in all four categories, LCP 0.54 s. Mobile performance 98, the other three 100, LCP 2.37 s.
+- `/`, mobile: accessibility, best practices and SEO 100, layout shift 0, performance 92.
+  - Its simulated LCP is 2.98 s, over the 2.5 s target. Unthrottled, the page paints its largest element (the
+    header's wordmark) at 0.29 s.
+  - Lighthouse's slow 4G and 4× CPU charge it for the 396 KB requested before that moment: fonts 100 KB, scripts
+    172 KB, styles 26 KB, the HTML 59 KB, and the film's poster in both formats.
+  - Two savings are known and not yet made. The hidden player's `poster` attribute fetches the poster's WebP on load
+    (18 KB). The release facts' Geist Mono adds two preloaded files (20 KB).
 
 ## Skills and tools
 
