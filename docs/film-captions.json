@@ -8,7 +8,7 @@
   "conventions": {
     "start": "first frame the caption is shown",
     "end": "first frame after the caption (exclusive); seconds = frame / 30",
-    "lines": "1 or 2 caption lines, shown together; a sound description is in square brackets and comes first",
+    "lines": "1 or 2 caption lines, shown together; a sound description is in square brackets and comes first, on its own line or at the start of the first line where a cue's two lines must stay together (c24: the price and its limit, OVERRIDES §46)",
     "overlap": "no two cues overlap, so the SRT needs no stacking",
     "pace": "every cue is shown for at least 1.2 s and at no more than 3 words per second",
     "position": "bottom (player default); every kinetic line on screen sits above y 918 in 16:9 and 1:1 and above y 1460 in 9:16, so captions never cover it",
@@ -19,7 +19,7 @@
     "descriptions": "time-coded: what the picture shows in each span, read aloud by the film player's audio-description toggle; at 150 words a minute the player waits at most about 3 s for any cue and about 22 s in all (OVERRIDES 27: under 8 s each, about 100 s in all)"
   },
   "cues": [
-    {"id": "c01", "start": 0, "end": 72, "chapter": "desktop", "kind": "sound", "lines": ["[A soft pulse and a heartbeat]"]},
+    {"id": "c01", "start": 0, "end": 72, "chapter": "desktop", "kind": "sound", "lines": ["[A soft melody and a heartbeat]"]},
     {"id": "c02", "start": 72, "end": 144, "chapter": "desktop", "kind": "mixed", "lines": ["[Hit]", "What did it change?"]},
     {"id": "c03", "start": 144, "end": 216, "chapter": "desktop", "kind": "sound", "lines": ["[A low beat begins]"]},
     {"id": "c04", "start": 216, "end": 288, "chapter": "desktop", "kind": "mixed", "lines": ["[Hit]", "Can I undo it?"]},
@@ -33,7 +33,7 @@
     {"id": "c12", "start": 1152, "end": 1224, "chapter": "memory", "kind": "line", "lines": ["Memory you can read and forget"]},
     {"id": "c13", "start": 1224, "end": 1296, "chapter": "pace", "kind": "line", "lines": ["You set what it may do"]},
     {"id": "c14", "start": 1296, "end": 1368, "chapter": "project", "kind": "line", "lines": ["Your tests stay yours"]},
-    {"id": "c15", "start": 1440, "end": 1512, "chapter": "tested", "kind": "mixed", "lines": ["[The music stops]", "AgentGuard checks the evidence"]},
+    {"id": "c15", "start": 1453, "end": 1523, "chapter": "tested", "kind": "mixed", "lines": ["[The music stops]", "AgentGuard checks the evidence"]},
     {"id": "c16", "start": 1548, "end": 1626, "chapter": "tested", "kind": "line", "lines": ["Tests run in an isolated copy"]},
     {"id": "c17", "start": 1656, "end": 1723, "chapter": "tested", "kind": "sound", "lines": ["[A big hit]"]},
     {"id": "c18", "start": 1723, "end": 1788, "chapter": "tested", "kind": "mixed", "lines": ["[The biggest hit]", "Evidence before done"]},
@@ -42,8 +42,8 @@
     {"id": "c21", "start": 1926, "end": 2016, "chapter": "open-source", "kind": "line", "lines": ["Your keys stay in your Keychain"]},
     {"id": "c22", "start": 2016, "end": 2088, "chapter": "get", "kind": "sound", "lines": ["[The beat returns]"]},
     {"id": "c23", "start": 2088, "end": 2160, "chapter": "get", "kind": "line", "lines": ["A little help, right here."]},
-    {"id": "c24", "start": 2160, "end": 2240, "chapter": "get", "kind": "mixed", "lines": ["[Final hit]", "Free for Macs with Apple silicon"]},
-    {"id": "c25", "start": 2240, "end": 2304, "chapter": "get", "kind": "line", "lines": ["Not notarized", "Shown with sample data"]}
+    {"id": "c24", "start": 2160, "end": 2250, "chapter": "get", "kind": "mixed", "lines": ["[Hit] Free for Macs with Apple silicon", "Not notarized"]},
+    {"id": "c25", "start": 2250, "end": 2304, "chapter": "get", "kind": "line", "lines": ["github.com/tohin003/Pebble", "Shown with sample data"]}
   ],
   "descriptions": [
     {"id": "d01", "start": 0, "end": 72, "text": "The pebble's eyes follow the pointer, then look at you."},

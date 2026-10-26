@@ -1,7 +1,7 @@
 {
   "schema": "pebble-film-cut/1",
   "name": "x30",
-  "about": "The 30 s cut of the launch trailer for X (the blueprint's x30, TRAILER_RESEARCH §6.7): ranges are LaunchFilm source frames [first, end), in playing order (30 fps, 18 frames a beat, 72 a bar). Every range starts on a bar line in the film and in the cut, so the film's clicks, cuts and lines stay on their beats and the score's own bars play under them (music.score_bars). The cut: the look; \"Did it run the tests?\"; the hold; the turn; the build and the dead stop; the drop at cut 12.0 s; Run the tests; the tests at 1x; the tests pass at cut 19.2 s and Verified, with Evidence before done, at cut 21.43 s; the celebration (OVERRIDES §41 moved Verified to film f1723, so the climax's range runs through bar 25, which takes the title bar's place: the end card is already whole on the final hit); the final hit at cut 24.0 s; 1.8 s of silence. Read by tools/captions/build.mjs --cut (captions), tools/encode/encode.sh --cut (picture), tools/audio/cut_cues.py (the cut's sound effects and automation) and the score's x30 render.",
+  "about": "The 30 s cut of the launch trailer for X (the blueprint's x30, TRAILER_RESEARCH §6.7): ranges are LaunchFilm source frames [first, end), in playing order (30 fps, 18 frames a beat, 72 a bar). Every range starts on a bar line in the film and in the cut, so the film's clicks, cuts and lines stay on their beats and the score's own bars play under them (music.score_bars). The cut: the look; \"Did it run the tests?\"; the hold; the turn; the build and the dead stop; the drop at cut 12.0 s; Run the tests; the tests at 1x; the tests pass at cut 19.2 s and Verified, with Evidence before done, at cut 21.43 s; the celebration (OVERRIDES §41 moved Verified to film f1723, so the climax's range runs through bar 25, which takes the title bar's place: the end card is already whole on the final hit); the final hit at cut 24.0 s; 1.8 s of silence. The captions leave out c15 (\"[The music stops]\" with \"AgentGuard checks the evidence\", film f1453-1522): the cut joins at the release (film f1512), where the music returns, so only 11 frames of it would reach the cut. Read by tools/captions/build.mjs --cut (captions), tools/encode/encode.sh --cut (picture), tools/audio/cut_cues.py (the cut's sound effects and automation) and the score's x30 render.",
   "fps": 30,
   "ranges": [
     [
@@ -59,6 +59,8 @@
     "replace": [],
     "drop": []
   },
-  "exclude": [],
+  "exclude": [
+    "c15"
+  ],
   "add": []
 }
