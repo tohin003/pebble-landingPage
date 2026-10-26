@@ -1,0 +1,134 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "https://example.com/pebble-landing/tools/audio/sfx2/kit.schema.json",
+ "title": "Sound-effect kit manifest (KIT.json)",
+ "description": "Written by tools/audio/sfx2/build_kit.py from a kit plan. One entry per take: its role, file, source page, licence, attribution, edits, duration, peak and loudness, classifier reading and a starting mix level. The audio itself lives in .work/ and is never committed.",
+ "type": "object",
+ "required": ["kit", "made", "format", "licences", "files"],
+ "properties": {
+  "kit": {"type": "string"},
+  "made": {"type": "string"},
+  "secs": {"type": "number"},
+  "about": {"type": ["string", "null"]},
+  "format": {
+   "type": "object",
+   "required": ["sample_rate", "subtype", "peak_one_shot_dbtp"],
+   "properties": {
+    "sample_rate": {"const": 48000},
+    "subtype": {"const": "PCM_24"},
+    "peak_one_shot_dbtp": {"type": "number", "maximum": 0},
+    "peak_bed_dbtp": {"type": "number", "maximum": 0}
+   }
+  },
+  "licences": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "required": ["name", "commercial_use", "attribution_required", "limits"],
+    "properties": {
+     "name": {"type": "string"},
+     "url": {"type": ["string", "null"]},
+     "commercial_use": {"const": true},
+     "attribution_required": {"type": "boolean"},
+     "attribution": {"type": ["string", "null"]},
+     "limits": {"type": "string"}
+    }
+   }
+  },
+  "roles": {"type": "object", "additionalProperties": {"type": "object"}},
+  "files": {"type": "array", "items": {"$ref": "#/$defs/take"}},
+  "excluded": {"type": "array", "items": {"type": "object", "required": ["source", "why"]}},
+  "sonniss_upgrades": {
+   "type": "object",
+   "required": ["bundle", "licence", "how", "files"],
+   "properties": {
+    "files": {"type": "array", "items": {"type": "object",
+              "required": ["priority", "role", "filename", "library", "supplier", "library_page", "why"]}},
+    "not_recommended": {"type": "array"}
+   }
+  },
+  "measurement_notes": {"type": "object"}
+ },
+ "$defs": {
+  "take": {
+   "type": "object",
+   "required": ["id", "role", "status", "final_allowed", "file", "licence", "attribution", "source", "edit",
+                "measure", "use", "mix"],
+   "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+    "role": {"enum": ["ring_sweep", "whoosh_slide", "whoosh_pickup", "whoosh_whip", "drop_impact", "sub_boom",
+                      "reverse_swell", "riser", "glass_shimmer", "ui_tap", "room_tone", "standin_plunk",
+                      "standin_tap", "stinger"]},
+    "status": {"enum": ["primary", "alternate", "temp", "stand-in", "reserved", "optional"]},
+    "final_allowed": {"type": "boolean", "description": "false when the treatment wants another source for the final mix (e.g. the three big hits: Sonniss or own recordings)"},
+    "file": {"type": "string", "pattern": "^kit/[a-z_]+/[a-z0-9_]+\\.wav$"},
+    "licence": {"type": "string"},
+    "attribution": {"type": ["string", "null"]},
+    "use": {"type": "string"},
+    "cues": {"type": "array", "items": {"type": "string"}},
+    "notes": {"type": "string"},
+    "source": {
+     "type": "object",
+     "required": ["provider"],
+     "properties": {
+      "provider": {"enum": ["mixkit", "kenney", "designed", "derived", "composite"]},
+      "source_page": {"type": "string"},
+      "download_url": {"type": "string"},
+      "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+     },
+     "allOf": [
+      {"if": {"properties": {"provider": {"enum": ["mixkit", "kenney"]}}},
+       "then": {"required": ["source_page", "sha256"]}}
+     ]
+    },
+    "edit": {
+     "type": "object",
+     "required": ["peak_target_dbtp", "gain_db", "fade_in_ms", "fade_out_ms"],
+     "properties": {
+      "peak_target_dbtp": {"type": "number"},
+      "gain_db": {"type": "number"},
+      "fade_in_ms": {"type": "number", "minimum": 0},
+      "fade_out_ms": {"type": "number", "minimum": 0},
+      "trim": {"type": "object"},
+      "excerpt": {"type": "object"},
+      "reversed": {"type": "boolean"},
+      "loop_xfade_s": {"type": "number"}
+     }
+    },
+    "measure": {
+     "type": "object",
+     "required": ["duration_s", "channels", "true_peak_dbtp", "sample_peak_dbfs", "lufs_i", "lufs_m_max",
+                  "peak_time_s"],
+     "properties": {
+      "duration_s": {"type": "number", "exclusiveMinimum": 0},
+      "channels": {"enum": [1, 2]},
+      "true_peak_dbtp": {"type": "number", "maximum": 0},
+      "sample_peak_dbfs": {"type": "number", "maximum": 0},
+      "lufs_i": {"type": ["number", "null"]},
+      "lufs_m_max": {"type": "number"},
+      "lufs_s_max": {"type": ["number", "null"]},
+      "lra_lu": {"type": ["number", "null"]},
+      "pitch_hz": {"type": ["number", "null"]},
+      "note": {"type": ["string", "null"]},
+      "peak_time_s": {"type": "number", "minimum": 0}
+     }
+    },
+    "classifier": {
+     "type": "object",
+     "properties": {"verdict": {"enum": ["ok", "warn", "fail"]}, "flags": {"type": "array"}}
+    },
+    "mix": {
+     "type": "object",
+     "required": ["gain_db_start"],
+     "properties": {
+      "gain_db_start": {"type": "number", "description": "starting gain from the file's level, against a score at about -18 to -20 LUFS short-term"},
+      "lead_frames_60fps": {"type": "number", "description": "how many frames (60 fps) before its picture event the take starts; negative = after"},
+      "align": {"enum": ["start", "peak", "end"]},
+      "duck_music_db": {"type": "number"},
+      "notes": {"type": "string"}
+     }
+    }
+   }
+  }
+ }
+}

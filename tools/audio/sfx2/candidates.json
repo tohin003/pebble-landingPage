@@ -1,0 +1,494 @@
+{
+ "about": "The candidate pool for the new film's sound-effect kit (.work/sfx2). Mixkit items are fetched one at a time by fetch_items.py (Mixkit Sound Effects Free License; never committed). Kenney files are CC0 and already on disk in .work/audio/kenney. survey.py measures every candidate; kit_plan.json picks the takes. Roles: ring_sweep (the carrier's whoosh), whoosh_slide (a recorded lateral slide), whoosh_pickup (the momentum cut's pickup), whoosh_whip (reserved), drop_impact and sub_boom (temp for the three big hits; final from Sonniss or own recordings), reverse_swell and riser (temp), glass_shimmer, ui_tap, room_tone, standin_plunk and standin_tap (stand-ins for the person's two recordings).",
+ "mixkit": [
+  {
+   "id": 2632,
+   "roles": [
+    "ring_sweep"
+   ]
+  },
+  {
+   "id": 2604,
+   "roles": [
+    "ring_sweep"
+   ]
+  },
+  {
+   "id": 1489,
+   "roles": [
+    "ring_sweep"
+   ]
+  },
+  {
+   "id": 2611,
+   "roles": [
+    "ring_sweep",
+    "glass_shimmer"
+   ]
+  },
+  {
+   "id": 1466,
+   "roles": [
+    "ring_sweep"
+   ]
+  },
+  {
+   "id": 167,
+   "roles": [
+    "ring_sweep"
+   ]
+  },
+  {
+   "id": 1530,
+   "roles": [
+    "whoosh_slide"
+   ]
+  },
+  {
+   "id": 1527,
+   "roles": [
+    "whoosh_slide"
+   ]
+  },
+  {
+   "id": 3120,
+   "roles": [
+    "whoosh_slide"
+   ]
+  },
+  {
+   "id": 1462,
+   "roles": [
+    "whoosh_pickup"
+   ]
+  },
+  {
+   "id": 1464,
+   "roles": [
+    "whoosh_pickup"
+   ]
+  },
+  {
+   "id": 2605,
+   "roles": [
+    "whoosh_pickup"
+   ]
+  },
+  {
+   "id": 2627,
+   "roles": [
+    "whoosh_whip"
+   ]
+  },
+  {
+   "id": 788,
+   "roles": [
+    "drop_impact"
+   ]
+  },
+  {
+   "id": 549,
+   "roles": [
+    "drop_impact"
+   ]
+  },
+  {
+   "id": 2902,
+   "roles": [
+    "drop_impact",
+    "sub_boom"
+   ]
+  },
+  {
+   "id": 781,
+   "roles": [
+    "drop_impact"
+   ]
+  },
+  {
+   "id": 2900,
+   "roles": [
+    "drop_impact"
+   ]
+  },
+  {
+   "id": 1306,
+   "roles": [
+    "drop_impact"
+   ]
+  },
+  {
+   "id": 2300,
+   "roles": [
+    "sub_boom"
+   ]
+  },
+  {
+   "id": 3144,
+   "roles": [
+    "sub_boom"
+   ]
+  },
+  {
+   "id": 784,
+   "roles": [
+    "reverse_swell"
+   ]
+  },
+  {
+   "id": 2675,
+   "roles": [
+    "reverse_swell"
+   ]
+  },
+  {
+   "id": 1445,
+   "roles": [
+    "reverse_swell"
+   ]
+  },
+  {
+   "id": 1170,
+   "roles": [
+    "reverse_swell"
+   ]
+  },
+  {
+   "id": 790,
+   "roles": [
+    "riser"
+   ]
+  },
+  {
+   "id": 2586,
+   "roles": [
+    "glass_shimmer"
+   ]
+  },
+  {
+   "id": 2581,
+   "roles": [
+    "glass_shimmer"
+   ]
+  },
+  {
+   "id": 870,
+   "roles": [
+    "glass_shimmer"
+   ]
+  },
+  {
+   "id": 677,
+   "roles": [
+    "glass_shimmer"
+   ]
+  },
+  {
+   "id": 2541,
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "id": 2542,
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "id": 2997,
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "id": 1113,
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "id": 3080,
+   "roles": [
+    "room_tone"
+   ]
+  },
+  {
+   "id": 1191,
+   "roles": [
+    "room_tone"
+   ]
+  },
+  {
+   "id": 3216,
+   "roles": [
+    "standin_plunk"
+   ]
+  },
+  {
+   "id": 1320,
+   "roles": [
+    "standin_plunk"
+   ]
+  },
+  {
+   "id": 1311,
+   "roles": [
+    "standin_plunk"
+   ]
+  },
+  {
+   "id": 3179,
+   "roles": [
+    "standin_plunk"
+   ]
+  },
+  {
+   "id": 1128,
+   "roles": [
+    "standin_tap"
+   ]
+  },
+  {
+   "id": 2182,
+   "roles": [
+    "standin_tap"
+   ]
+  },
+  {
+   "id": 1482,
+   "roles": [
+    "ring_sweep"
+   ]
+  },
+  {
+   "id": 1471,
+   "roles": [
+    "ring_sweep",
+    "whoosh_slide"
+   ]
+  },
+  {
+   "id": 2606,
+   "roles": [
+    "ring_sweep"
+   ]
+  },
+  {
+   "id": 780,
+   "roles": [
+    "drop_impact"
+   ]
+  },
+  {
+   "id": 2908,
+   "roles": [
+    "drop_impact"
+   ]
+  },
+  {
+   "id": 563,
+   "roles": [
+    "drop_impact"
+   ]
+  }
+ ],
+ "kenney": [
+  {
+   "pack": "interface",
+   "file": "click_001.ogg",
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "pack": "interface",
+   "file": "click_002.ogg",
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "pack": "interface",
+   "file": "click_003.ogg",
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "pack": "interface",
+   "file": "click_004.ogg",
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "pack": "interface",
+   "file": "click_005.ogg",
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "pack": "interface",
+   "file": "tick_001.ogg",
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "pack": "interface",
+   "file": "tick_002.ogg",
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "pack": "interface",
+   "file": "tick_004.ogg",
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "pack": "interface",
+   "file": "select_001.ogg",
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "pack": "interface",
+   "file": "select_002.ogg",
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "pack": "interface",
+   "file": "switch_001.ogg",
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "pack": "interface",
+   "file": "switch_002.ogg",
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "pack": "interface",
+   "file": "toggle_001.ogg",
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "pack": "interface",
+   "file": "toggle_002.ogg",
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "pack": "impact",
+   "file": "impactGeneric_light_000.ogg",
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "pack": "impact",
+   "file": "impactGeneric_light_002.ogg",
+   "roles": [
+    "ui_tap"
+   ]
+  },
+  {
+   "pack": "impact",
+   "file": "impactWood_light_000.ogg",
+   "roles": [
+    "standin_tap"
+   ]
+  },
+  {
+   "pack": "impact",
+   "file": "impactWood_light_001.ogg",
+   "roles": [
+    "standin_tap"
+   ]
+  },
+  {
+   "pack": "impact",
+   "file": "impactWood_light_002.ogg",
+   "roles": [
+    "standin_tap"
+   ]
+  },
+  {
+   "pack": "impact",
+   "file": "impactWood_light_003.ogg",
+   "roles": [
+    "standin_tap"
+   ]
+  },
+  {
+   "pack": "impact",
+   "file": "impactWood_light_004.ogg",
+   "roles": [
+    "standin_tap"
+   ]
+  },
+  {
+   "pack": "impact",
+   "file": "impactWood_medium_000.ogg",
+   "roles": [
+    "standin_tap"
+   ]
+  },
+  {
+   "pack": "impact",
+   "file": "impactWood_medium_002.ogg",
+   "roles": [
+    "standin_tap"
+   ]
+  },
+  {
+   "pack": "impact",
+   "file": "impactPlank_medium_000.ogg",
+   "roles": [
+    "standin_tap"
+   ]
+  },
+  {
+   "pack": "impact",
+   "file": "impactPlank_medium_002.ogg",
+   "roles": [
+    "standin_tap"
+   ]
+  },
+  {
+   "pack": "impact",
+   "file": "impactSoft_medium_000.ogg",
+   "roles": [
+    "drop_impact"
+   ]
+  },
+  {
+   "pack": "impact",
+   "file": "impactSoft_heavy_000.ogg",
+   "roles": [
+    "drop_impact"
+   ]
+  },
+  {
+   "pack": "impact",
+   "file": "impactSoft_heavy_002.ogg",
+   "roles": [
+    "drop_impact"
+   ]
+  }
+ ]
+}
