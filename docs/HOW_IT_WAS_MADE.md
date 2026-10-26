@@ -19,7 +19,7 @@ Pebble's source at a published release (its tag, frozen from GitHub, or a read-o
  |
  `-- the Veil (stealthVeil.ts) --> shared/pebble --> the site's pebble in the Stealth Lockdown section
 
-tools/audio   compose_score.py --> render_sampled.py (CC0 samples) --> the music bed and its beat map
+tools/audio   synth/ + scores/trailer_b.py (synthesised, no samples) --> the score's bed and drive stems, on the beat map
                                                                               |
 video/        the film's timeline, snapped to the beat map --> 16:9, 1:1 and 9:16 masters, the loops, the posters
                      |
@@ -144,6 +144,9 @@ The film kept its single story: it has no Stealth beat.
 
 ## The film, cut to the music
 
+This section and the next tell the first film's story. The launch trailer that replaced it on the page is described
+after them, in "The trailer".
+
 The launch film is a Remotion project. Its clock is the score's beat map: 100 BPM in 4/4, 18 frames a beat and 72 a
 bar at 30 fps, 32 bars, 2,304 frames. Every shot starts on a bar line or a beat, and every click lands on a beat. The
 pebble lands as the full stop of the wordmark on the reveal, frame 504. The proof sequence is the real recording: the
@@ -175,7 +178,7 @@ The feature loops follow the same rules. They are silent, and they must loop wit
 last frame back to the first has to look like an ordinary step of the loop (its PSNR within 3 dB of the median step).
 Every key line must read at 12 px or more at the size the page shows it (11 px on a 360 px phone).
 
-## An original score on CC0 samples
+## The first score, on CC0 samples (retired)
 
 The plan was a human-made stock track, chosen without ears. Mixkit's free stock-music catalogue was ranked from its
 tags and waveforms, and five shortlisted tracks were auditioned by measurement: spectrograms (every one looked at),
@@ -208,6 +211,67 @@ exported from the film's timeline, so every effect peaks one frame after its pic
 reveal. The final masters measure −16.0 LUFS and −1.7 dBTP for the web and −14.1 LUFS and −1.5 dBTP for social. Taste
 is the one thing an agent can't measure, so the candidate beds were left as a short audition set for a human listen.
 The scores, the licence checks and every source are in `docs/media-provenance.json`.
+
+## The trailer
+
+The owner watched the energetic recut of the first film, approved its motion and rejected its music: it should sound
+like a frontier lab's launch. Then they asked for more: tension that grabs attention in the opening seconds, the
+product revealed in glimpses, then a full reveal, like a blockbuster trailer. The research came first, and the
+blueprint came from it:
+- about 140 launch films;
+- 13 trailers and 19 product reveals, studied beat by beat;
+- Pebble's 22 features against 24 competitors, to choose what to prove.
+
+The blueprint is 76.8 s at 100 BPM, 32 bars in four movements:
+- **Tension:** three questions on a night field ("What did it change?", "Can I undo it?", "Did it run the tests?"),
+  each answered by a one-bar glimpse of the app. Then "An agent shouldn't / grade its own work", a build and a dead
+  stop.
+- **Reveal:** the drop lands the pebble as the full stop of its name, then the desktop, the quick chat at 1× and the
+  whole workspace.
+- **Proof:** a six-beat montage, then the AgentGuard climax.
+- **Title:** the title, with the limits on the end card.
+
+**The real interface, again, and its real timing.** Every capture was re-recorded from a verified copy of the 1.5.0
+tag. Reading the release's code showed that the earlier sample run's event model was older than the release:
+- In 1.5.0's Ask mode, approved tests run inside the approval. The tests card reads Running, and "Verified" arrives
+  only after the resumed run's next model turn, 2.2 s after the tests pass.
+- Conversation text arrives whole, not word by word.
+So the captures were redone twice until every clock, row and message matched 1.5.0, and the climax follows the app:
+- the first hit lands when the tests pass, on bar 24's downbeat;
+- "Verified" lands 67 frames later as the peak, a sixteenth-note push into bar 25;
+- Pebble's time is never compressed.
+
+1.5.0's usage lines print a speed rate and a cached-token count. The trailer is framed so that neither is ever on
+screen: the page states no speed or savings numbers until a benchmark measures them.
+
+**The score, synthesised.** A new deterministic engine (`tools/audio/synth`) wrote two candidates from the
+blueprint's music section:
+- A: hybrid trailer electronic;
+- B: bright electro-pop.
+They were judged by measurement against the final cue list, because taste is the one thing an agent can't measure.
+B won:
+- its drums and bass sit 4.3 LU over its music in the montage, where A's sit 2.1 LU under;
+- its hook runs through the proof;
+- 25 of the 41 cues land within a frame of one of its accents (A: 16).
+After review, its push on "Verified" became the film's loudest moment, and its groove carries on through the quick
+chat instead of sitting back. The classifier caught three problems on the way:
+- A's opening pad, with noise air, read as a train horn (0.63);
+- a supersaw riser gliding an octave read as a civil-defence siren (0.30);
+- B's thin arp pluck read as a ringtone (0.31).
+Each was re-voiced until it read as music. The score uses no instrument samples, so the CC0 instrument libraries no
+longer play anywhere on the site.
+
+**A narrated twin.** The master is wordless. An optional twin for social adds four of the film's own lines in an AI
+voice (Sarvam AI's Bulbul v4, the voice Simran):
+- the lines play only over frames without the pebble, because the pebble itself never speaks;
+- the music ducks about 4.6 dB under each line;
+- the voice is disclosed as AI wherever the twin is posted.
+
+**On the page.** The poster is the trailer's own first frame, framed so the pebble peeks into the first screen and
+the play button sits on the dark field. Phones get the 1:1 cut, so the proof stays readable at phone width.
+
+Two fresh-eyes reviews judged the trailer against the blueprint, the truth rules and the owner's request. Each
+finding was decided by the lead and recorded, and the fixes were made before anything shipped.
 
 ## Every sentence has a source
 
@@ -266,7 +330,7 @@ Nothing was "done" until it passed its gate. The gates, in the order the work me
 Agents can't judge a 12,000-pixel page shrunk to fit a screen, so the site's screenshots are taken as viewport-sized
 tiles while scrolling, the way a visitor sees the page, and reviewed side by side in both themes.
 
-### Final QA results
+### Final QA results (the first launch, 24 October)
 
 The final pass ran on 24 October 2026 from 22:32 to 23:25 (run `final-2`), on the final source and media, one heavy job
 at a time (`tools/qa/all.sh` and the extra browser checks).
@@ -351,6 +415,39 @@ at a time (`tools/qa/all.sh` and the extra browser checks).
   - at most 1.18 dB lost in mono, and at least 65 % of the energy above 150 Hz;
   - nothing the classifier hears as a voice, an alarm, a siren or a ringtone. The opening, heard straight after
     silence, reads 0.04 as a telephone (0.65 before it was re-voiced).
+
+### The trailer's results (26 October)
+
+**The source**
+
+- The type checks pass for the site and the films. `checkAll()` (the timeline, time honesty, every framing and the
+  cold open's rules) reports no problem in any aspect.
+- The Bun suites pass: 121 site and content tests and 82 engine tests.
+- gitleaks finds no secret in the repository's history (it reads 291 of the 293 commits).
+- No committed file holds a local path, raw audio or a file over 45 MB.
+
+**The media**
+
+- `node tools/encode/verify.mjs`, with the Desktop folder: 89 files, all pass, with one warning. 16 of the trailer's 21
+  audio descriptions need more speech than their cue lasts, so the player holds the film until each is read.
+- The film set is 33.88 MB of its 45 MB budget, and `public/` is 45.98 MB of 90 MB. The set holds the 16:9 film in
+  1080p and 720p, its 1:1 cut for phones, the text tracks and the poster.
+- Codecs: the 1080p and square films are HEVC `hvc1.1.6.L120.90` and the 720p film `hvc1.1.6.L93.90`. Every H.264
+  file is `avc1.640028`.
+- Loudness on the encoded AAC:
+  - the website films: −16.2 LUFS and −1.6 dBTP;
+  - the social films: −14.4 LUFS and −1.2 dBTP at full length;
+  - the 30 s cut: −14.3 LUFS and −1.4 dBTP;
+  - the narrated twin: −14.4 LUFS and −1.4 dBTP.
+- Every AAC decodes to its soundtrack's exact sample count at lag 0. Every sampled frame matches its master, on both
+  sides of every 30 s joint too.
+- The flash counter finds at most one flash in any region in any second, against a limit of three.
+- The mix checks on the masters:
+  - at most 0.42 dB lost in mono;
+  - 33–35 % of the energy above 150 Hz, against a gate of 30 %;
+  - nothing the classifier hears as a voice, an alarm or a siren outside the narrated lines, and a highest phone
+    reading of 0.23, against a gate of 0.30;
+  - "Verified" is the film's loudest moment.
 
 ## Skills and tools
 
