@@ -28,13 +28,15 @@ Form. Bar n starts on film frame 72(n-1); beat b of a bar falls 18(b-1) frames l
                         (D4 A4 E5, rising a minor third) from f504 to the stop
   9      the build      kicks on the beat, the heartbeat between them, an accelerating roll (8ths to 32nds), the
                         pulse in 16ths opening; then the dead stop f612-647: both stems are exact zeros
-  10     the drop       crash, a big kick, an impact and a short sub on D2; the drop groove (kick on 1 and 2.5,
+  10     the drop       crashes, a big kick, a short sub on D2 and an unpumped D(add9) stab with a clap and snare
+                        crack (the timeline's impact_a and thud_a are its low end); the drop groove (kick on 1 and 2.5,
                         irregular claps on 2 and 4, 16th hats led by the offbeat, an open hat on the and of 4, the
                         syncopated pluck bass), supersaw D pumping on every beat, and the hook: the motif at full
                         level on a bright supersaw pluck, with a saw lead an octave under it
   11     the star beat  the same groove on A/C#, the hook's answer (C#5 A5 G#5 A5 C#6 ...)
-  12-13  the quick chat the groove sits back: soft hats and bass, soft chords (Bm, G), ducked under the click (f792),
-                        the send key (f828) and the answer (f876)
+  12-13  the quick chat the groove carries on (OVERRIDES §46 P2-2): ducked only under the send key (f792), the hook
+                        back from beat 1.5 on Bm; bar 13 builds on G into bar 14 (the chords' filter opening, kicks on
+                        every beat from beat 3, a snare roll from 8ths to 16ths, a noise riser into f936)
   14     the workspace  crash and kick on the cut (f936), the groove back at full on A, a rising lead, a tom and snare
                         fill over f990-1007
   15-20  the montage    groove C (kick on 1, 2.5 and 3; snare and clap on 2 and 4; 16th hats; open hats on every
@@ -48,17 +50,18 @@ Form. Bar n starts on film frame 72(n-1); beat b of a bar falls 18(b-1) frames l
                         (with the mix's release), a riser into f1584
   23     the run        a crash on the click (f1584), four on the floor, pumping 8th subs on A1, extra snaps, the hook
                         on A, a short riser; out by f1647 (the breath)
-  24     the tests pass f1656: crash, big kick, impact and a short sub on G1 under Gmaj9 (the card reads Done). Then
+  24     the tests pass f1656: crash, kick and a short sub on G1 under Gmaj9 and its unpumped stab, a clap and snare
+                        crack (the card reads Done; the timeline's impact_b under it). Then
                         the wait (the model's turn) climbs: four on the floor, 8th subs G1 -> A1, Asus4 -> A, a rising
                         arp, a roll (16ths to 32nds) and a riser into the push
   24.4.4 Verified       f1723.5 (OVERRIDES §41: Verified arrives on f1723): bar 25's downbeat hit, chord and crash a
-                        16th early and tied over the line: two crashes, a big kick, clap, snare, snap and an open hat a
-                        few ms apart, a short sub on D2, D(add9) on its own unpumped track, the harmonised hook's first
-                        note; the timeline's impact_a and ui_verified land with it. The climax's peak, louder than
-                        f1656 (its weight is in the mids and highs: the stems' limiter takes every hit's low peaks
-                        alike)
+                        16th early and tied over the line: two crashes, clap, snare and an open hat a few ms apart, a
+                        short sub on D2, D(add9) on its own unpumped track to bar 25's beat 1.75, the harmonised hook's
+                        first note; the timeline's impact_a and ui_verified land with it. The climax's peak and the
+                        film's loudest momentary moment in every master (§46 P2-1: the constants HITS to FILL14_DB)
   25     celebration    the hook harmonised a third below (lead and lead_harm) and on the supersaw pluck, the
-                        four-on-the-floor groove with offbeat open hats, D -> A/C#; a downlifter over f1782-1799
+                        four-on-the-floor groove with offbeat open hats, D -> A/C#, 1 dB down from beat 2;
+                        a downlifter over f1782-1799
   26-28  the breakdown  no drums: an impact and one short sub on B1 (f1800); pads Bm(add9), Gmaj9, Asus4 -> A pumping
                         softly; the motif on a soft pluck; a soft tom and rim on each fact (f1872, f1926); the hats
                         swell over f1944-2006; a reverse chord swell into the title
@@ -99,6 +102,12 @@ The judge's pick (2026-10-26): this score is the film's (tools/audio/final_mix.s
     limiter and the -14 LUFS masters: the push's chord 2 dB up; its low layers down and its impact left to the
     timeline's impact_a; its clap and snap down and a second crash in; its layers a few ms apart (PUSH_FLAM_MS); and
     f1656's kick, impact and sub a little lighter (it keeps the timeline's impact_b and its breath).
+The fresh-eyes review (OVERRIDES §46, 2026-10-26), measured on the delivered masters, then changed:
+  - P2-1, the hits: the drop's and f1656's first beats in upper-mid layers a phone plays, the push the film's loudest
+    momentary moment in every master and at least f1656 on every §41 measure. The masters' own limiter, clamping where
+    the timeline's impact_a peaks, decided most of it, so the stems carve out under the timeline's impacts and their
+    limiter eases on the hits (HITS to FILL14_DB, with their measurements);
+  - P2-2, bars 12-13: the groove carries on under the quick chat, ducked only under the send key, and builds into bar 14.
 
 Preview mixes. The picture lane exports the effects and the automation to tools/audio/cues.json after this score, so the
 previews use the blueprint's automation (gaps f63, f639, f1647, f2151; holds f445-503 and f1453-1511, released to the
@@ -173,20 +182,22 @@ STOP = (612, 648)                                       # the dead stop, then th
 PASSED = 1656                                           # bar 24's downbeat: the tests pass, the card reads Done
 VERIFIED = 1723.5                                       # Verified (f1723): the 16th before bar 25, the climax's peak
 ZEROS = 2250                                            # digital silence from here
-CLICKS = (198, 792, 828, 1170, 1260, 1512, 1584)        # clicks and the send key: the hats leave these frames empty
+CLICKS = (198, 792, 1170, 1260, 1512, 1584)             # clicks and the send key: the hats leave these frames empty
+SEND_KEY = 792                                          # the quick chat's only UI sound since OVERRIDES §42 and §46
 
 STEM_PEAK_DB = -1.0                                     # both stems trimmed together to this sample peak
 # The tension's level, measured on the preview masters (report.music: bars 1-9 at least 6 LU under each master, the drop
 # at least 6 LU over bar 9's first half): at their written velocities bars 1-9 sat 1.9 LU under the web master and the
 # build 0.5 LU under the drop. Everything before the drop plays TENSION_DB under its velocity, and the build (bar 9,
 # its riser and cluster) BUILD_DB, all but the holds' pad, which keeps hold 1 5-9 LU under the montage.
-TENSION_DB = -7.7                                       # -7.3 until the judge's final mix: bars 1-9 sat 5.99 LU under
-BUILD_DB = -9.5                                         # the social master with the final cue list
+TENSION_DB = -8.0                                       # -7.3 until the judge's final mix: bars 1-9 sat 5.99 LU under
+BUILD_DB = -10.5                                        # the social master with the final cue list; then -7.7 and -9.5
+# until OVERRIDES §46: with the climax's trims below, the x30's bars 1-9 sat 5.82 LU under its integrated level
 # The question hits over the timeline's own suck-back into f72 (tools/audio/cues.json: suck_a at -16 dB, inside the
 # breath gap; this score's preview stand-in had sat at -24 dB): in the judge's mix with the final cue list, Q1 cleared
 # the 0.6 s before it by 7.3 dB and Q2 by 10.3 (the gate is 10). The hits rise this much over TENSION_DB; Q3, with its
 # impact, stays the biggest of the three (report.music: "the biggest of the three hits")
-QHIT_DB = {72: 3.9, 216: 3.4, 360: 4.4}                 # +0.4 each with TENSION_DB's -0.4: the hits stay put
+QHIT_DB = {72: 4.2, 216: 3.7, 360: 4.7}                 # each moves against TENSION_DB: the hits stay put
 # The push's layers, a few ms apart so their attacks don't stack into one peak (see the push in compose())
 PUSH_FLAM_MS = {"crash2": 7.0, "clap": 3.0, "snare": 5.0, "hat_open": 9.0, "snap": 11.0, "lead": 4.0, "hook": 8.0,
                 "lead_harm": 12.0}
@@ -196,6 +207,66 @@ SUCK_Q1_DB = -16.0                                      # the f72 suck-back stan
 # off the x30 (both outside -14 +-0.5). A linked lookahead limiter (one gain on both stems, from their sum) holds the
 # sum's sample peak STEM_PLR_DB over its integrated loudness, so the masters' own limiter has almost nothing to do.
 STEM_PLR_DB = 11.5
+
+# OVERRIDES §46 (the fresh-eyes review of the delivered trailer), P2-1: the hits that carry the trailer's grammar.
+# Measured on the delivered masters (fix lane, 2026-10-26): two limiters set these hits' level, not their layers.
+#   - The stems' linked limiter (below) took up to 3.5 dB at f1656 and 4.7-5.7 dB at the push (0.9-3.0 dB on average
+#     over its first 0.4 s): their stacked downbeats peaked over its ceiling.
+#   - The masters' own limiter (mix_master.py, -1.5 to -1.8 dBTP) clamps where the timeline's impact_a lands
+#     (tools/audio/cues.json, -4 dB, peaking a frame after f648, f1008, f1723 and f2160). At -14 LUFS that effect alone
+#     peaks about 3 dB over the ceiling, and with the score's low end under it the drop's sum peaked at +3.8 dBFS and
+#     the x30 push's at +2.4 dBTP: the gain fell 4.9 dB for 100 ms, taking 2.4-3.1 dB off the drop's and the push's
+#     first 0.3 s at -14 LUFS (0.8-1.0 dB off f1656, whose impact_b is shorter).
+# So, at the drop and at f1656:
+#   - the first beat gets layers a phone plays: an unpumped chord stab, the chords' own downbeat unpumped
+#     (UNPUMPED_DOWNBEATS: the pump took it 7 dB down), a clap and snare crack and a crash (HITS);
+#   - the low end is left to the timeline's impacts and thuds, which the score's own impact doubled (no score impact;
+#     the drop's kick and sub 0.7, from 1.0);
+#   - the stems carve 10 dB out under each timeline impact's peak for 30-50 ms (CARVE: a sidechain on the frames the
+#     score knows), so the masters' limiter only clamps the impact's own excess;
+#   - the stems' limiter eases there (EASE_HITS).
+# In the final masters, through a phone's band (400 Hz-10 kHz), the first beats came out 2.3-2.7 dB (the drop) and
+# 1.4-2.1 dB (f1656) louder than delivered; in the full band the masters' limiters held them to +0.2 to +0.8 and +0.2
+# to +0.4 dB, and §41 keeps f1656 under the push.
+# HITS[frame]: the downbeat hit (hit()) and the first beat's layers (first_beat()).
+HITS = {
+    648: dict(crash=1.0, kick=0.7, impact=0.0, sub=0.7, chord="Dadd9", stab=0.85, clap=0.8, snare=0.6, crash2=0.6),
+    1656: dict(crash=0.9, kick=0.5, impact=0.0, sub=0.85, chord="Gmaj9", stab=0.75, clap=0.7, snare=0.5, crash2=0.0),
+}
+UNPUMPED_DOWNBEATS = {10, 24}                           # bars whose chords' downbeat is never pumped
+EASE_HITS = {648: (1.5, 0.45), 1656: (1.5, 0.45)}       # {hit frame: (dB, s)}: the stems' limiter eased there
+# {timeline effect's peak frame: (dB, pre_ms, hold_ms, rel_ms)}: the stems carved under impact_a (f649, f1724) and
+# impact_b (f1657), whose peaks land a frame after their hits (the kit's convention)
+CARVE = {649: (-10.0, 6.0, 50.0, 40.0), 1657: (-10.0, 4.0, 30.0, 30.0), 1724: (-10.0, 6.0, 50.0, 40.0)}
+# The push (Verified, f1723.5) is the film's loudest momentary moment in every master (§46). In the delivered masters
+# bar 25's beats 2-3 were 0.4-1.0 LU over it (the push's unpumped chord still at full under the groove), then the
+# montage lift (f1008, with bar 14's fill before it) and the run-up's last beat. Now:
+#   - the push's transients are lighter and its low end is the timeline's impact_a with the score's sub (no kick):
+#     their peaks set both limiters without adding loudness;
+#   - the stems are carved under impact_a's peak (CARVE) and the stems' limiter eases PUSH_EASE_DB over its first
+#     PUSH_EASE_S;
+#   - what surrounds it gives way: the push's chord lets go at bar 25's beat PUSH_CHORD_UNTIL (the pumped chords take
+#     the D over), bar 25 plays BAR25_DB down from beat 2, the run-up's last beat RUNUP_DB, bar 14's fill FILL14_DB.
+PUSH_LAYERS = (("crash", 1.0), ("crash2", 0.6), ("clap", 0.4), ("snare", 0.6), ("hat_open", 1.0))
+PUSH_LOW = {"kick_big": 0.0, "sub": 0.45}               # the delivered push had kick 0.5 and sub 0.45
+PUSH_EASE_DB = 2.0
+PUSH_EASE_S = 0.45
+PUSH_CHORD_SUSTAIN = 0.85
+PUSH_CHORD_UNTIL = 1.75                                 # bar 25's beat where the push's chord lets go
+BAR25_DB = -1.0
+BAR25_TRACKS = ("kick", "clap", "snare", "hat", "hat_open", "shaker", "bass", "chords", "hook", "lead", "lead_harm")
+RUNUP_DB = -2.5                                         # bar 24's beat 4 up to the push
+RUNUP_TRACKS = ("roll", "sub8", "kick", "clap", "snare", "hat", "hat_open", "shaker", "chords", "hook")
+MONTAGE_LIFT = {"crash": 1.0, "kick": 0.95}             # the montage's first hit (f1008)
+FILL14_DB = -1.5                                        # bar 14's tom fill and roll into the montage (f990-1007)
+# {film bar: dB}, every event starting in that bar: the montage (bars 15-20) 0.4 dB and the breakdown (bars 26-28)
+# 0.5 dB down, so the climax keeps the blueprint's margins with the push on top: its 3 s window 1.5 LU or more over the
+# montage (social 1.55 without), the breakdown 6 LU or more under it (6.08), and the push over the montage's moments
+SECTION_DB = {**{bar: -0.4 for bar in range(15, 21)}, **{bar: -0.5 for bar in (26, 27, 28)}}
+# P2-2, bars 12-13 (the quick chat): the groove no longer sits back. The send key (f792) keeps its duck (the mix's ride,
+# -6 dB over f792-801 in tools/audio/cues.json, and the hats' and bass's own ducks); then the groove comes back and
+# builds through bar 13 into bar 14's lift. QC_VEL: the groove's level in each bar.
+QC_VEL = {12: 0.88, 13: 0.94}
 
 # Sustained voicings: octave 4 up, open where it counts
 CH = {
@@ -361,8 +432,11 @@ V = {  # the instruments: presets with this score's settings, and the voices abo
                    q=1.5, tau=0.11, release=0.03),
     "chords": S.get("supersaw", cutoff=3200.0, env_oct=0.8, attack=0.006, decay=0.5, sustain=0.85, release=0.3,
                     detune=30.0),
-    "push_chord": S.get("supersaw", cutoff=3600.0, env_oct=1.0, attack=0.004, decay=0.5, sustain=0.85, release=0.3,
-                        detune=30.0),
+    "push_chord": S.get("supersaw", cutoff=3600.0, env_oct=1.0, attack=0.004, decay=0.5, sustain=PUSH_CHORD_SUSTAIN,
+                        release=0.3, detune=30.0),
+    # the hits' unpumped chord stab (HITS, §46 P2-1): bright and short, its weight in the first beat
+    "stab": S.get("stab", cutoff=3400.0, env_oct=1.4, detune=30.0, decay=0.4, sustain=0.12, release=0.15, fdecay=0.25,
+                  fsustain=0.3),
     # The hook and the counter-melody are supersaw plucks: detuned saws through a short filter envelope. On the arp
     # preset's thin, bright pluck (3 saws, its attack all but unfiltered) the montage's hook read 'ringtone' 0.31 in
     # round 5's web master (36-39 s; the gate is 0.30); the detuned stack reads as a synthesizer
@@ -565,8 +639,9 @@ def bassline(A, bar, plan, vel=1.0, skip_first=False, until=5.0, gate=1.7):
 
 
 def pump(A, bar, beats=(1, 2, 3, 4), track="ghost"):
-    """Ghost triggers for the sidechain pump (the chords breathe on every beat, kick or no kick)."""
-    A.put(track, bar, [Event(A.g.t((bar, b)), 0.0, 1.0) for b in beats])
+    """Ghost triggers for the sidechain pump (the chords breathe on every beat, kick or no kick; on a bar in
+    UNPUMPED_DOWNBEATS from beat 2, so the chords' downbeat lands whole)."""
+    A.put(track, bar, [Event(A.g.t((bar, b)), 0.0, 1.0) for b in beats if not (b == 1 and bar in UNPUMPED_DOWNBEATS)])
 
 
 def hit(A, bar, crash=0.0, kick=0.0, impact=0.0, snap=0.0, sub=None, sub_vel=1.0, sub_len=0.55):
@@ -578,6 +653,26 @@ def hit(A, bar, crash=0.0, kick=0.0, impact=0.0, snap=0.0, sub=None, sub_vel=1.0
             A.put(name, bar, [E(t0, 0.0, v)])
     if sub:
         A.put("sub", bar, [E(t0, sub_len, sub_vel, sub, glide_from=12.0, glide_s=0.025)])
+
+
+def first_beat(A, bar, spec):
+    """OVERRIDES §46 P2-1: a hit's first beat in layers a phone plays (HITS): an unpumped chord stab on its own track,
+    a clap and snare crack and a second crash, a few ms apart as the push's layers are (PUSH_FLAM_MS)."""
+    t0 = A.g.t((bar, 1))
+    A.put("stab", bar, [E(t0, A.g.beats(1.0), spec["stab"], CH[spec["chord"]])])
+    for name in ("clap", "snare", "crash2"):
+        if spec[name]:
+            A.put(name.rstrip("2"), bar, [E(t0 + PUSH_FLAM_MS.get(name, 0.0) / 1000.0, 0.0, spec[name])])
+
+
+def trim(A, bar, b0, b1, db, tracks):
+    """The events on `tracks` that start in beats [b0, b1) of film bar `bar`, db quieter (wherever the bar plays)."""
+    if bar not in A.pos:
+        return
+    t0, t1 = A.pos[bar] * A.g.bar + A.g.beats(b0 - 1.0), A.pos[bar] * A.g.bar + A.g.beats(b1 - 1.0)
+    k = core.amp(db)
+    for name in tracks:
+        A.ev[name] = [e.but(vel=e.vel * k) if t0 - 1e-6 <= e.t < t1 - 1e-6 else e for e in A.ev.get(name, [])]
 
 
 def _until(g, evs, until):
@@ -693,7 +788,10 @@ def compose(A):
     # f612-647: the dead stop (both stems are cut to exact zeros after the render)
 
     # ---- bars 10-14: the reveal ----
-    hit(A, 10, crash=1.0, kick=1.0, impact=1.0, sub="D2")                        # the drop (f648)
+    h = HITS[STOP[1]]                                                             # the drop (f648): its first beat in
+    hit(A, 10, crash=h["crash"], kick=h["kick"], impact=h["impact"], sub="D2", sub_vel=h["sub"])   # the upper mids
+    # (§46 P2-1, HITS: the timeline's impact_a and thud_a carry its low end; the constants above)
+    first_beat(A, 10, h)
     groove_drop(A, 10, [("D", 4)], skip_first_bass=True)
     chords(A, 10, [("D", 4)], vel=0.95)
     # the motif at full level on the bright supersaw hook, with the saw lead an octave under it for weight (in unison
@@ -706,13 +804,23 @@ def compose(A):
     P("hook", 11, hook(g, 11, [("A/C#", 4)], vel=0.95))
     P("lead", 11, S.transpose(hook(g, 11, [("A/C#", 4)], vel=0.78), -12))
 
-    for bar, ch in ((12, "Bm"), (13, "G")):                                       # the quick chat: sitting back
-        P("hat", bar, hat16(g, bar, vel=0.78))                                    # (about 6 LU under the drop)
-        bassline(A, bar, [(ch, 4)], vel=0.8)
-        chords(A, bar, [(ch, 4)], vel=0.76, cutoff=2400.0)
-        pump(A, bar)
-    P("ui", 12, [E(fr(792)), E(fr(828))])
-    P("ui", 13, [E(fr(876))])
+    # bars 12-13, the quick chat (OVERRIDES §46 P2-2): the groove carries on. The blueprint's 6 dB sit-back was for a
+    # streamed answer, which §42 removed (the answer arrives whole on f898), so only the send key on f792 is ducked: the
+    # mix's ride (-6 dB over f792-801, tools/audio/cues.json) and the hats' and the bass's own ducks (the "ui" times),
+    # and the hook comes back after it, from beat 1.5. Then bar 13 builds into bar 14's lift: the chords' filter opens
+    # across it, kicks on every beat from beat 3, a snare roll from 8ths to 16ths and a noise riser into f936
+    groove_drop(A, 12, [("Bm", 4)], vel=QC_VEL[12], kick_one=True)
+    chords(A, 12, [("Bm", 4)], vel=0.9, cutoff=3200.0)
+    P("hook", 12, hook(g, 12, [("Bm", 4)], vel=0.85, b_from=1.5))
+    P("lead", 12, S.transpose(hook(g, 12, [("Bm", 4)], vel=0.7, b_from=1.5), -12))
+    groove_drop(A, 13, [("G", 4)], vel=QC_VEL[13], kick_one=True)
+    P("kick", 13, steps(g, 13, "........x...x...", vel=0.8))
+    P("chords", 13, [E(b(13, 1), g.beats(2) * 0.98, 0.9, CH["G"], cutoff=3000.0),
+                     E(b(13, 3), g.beats(2) * 0.98, 0.94, CH["G"], cutoff=4400.0)])
+    P("hook", 13, hook(g, 13, [("G", 4)], vel=0.9))
+    P("roll", 13, fills.snare_roll(g, (13, 3), beats=2.0, rates=(0.5, 0.25), vel=(0.3, 0.8)))
+    P("riser_s", 14, [E(b(14), g.beats(4), 0.5)], anchor="end")
+    P("ui", 12, [E(fr(SEND_KEY))])
 
     hit(A, 14, crash=0.85, kick=0.95)                                             # the whole workspace (f936)
     groove_drop(A, 14, [("A", 4)], until=4.0)
@@ -721,13 +829,15 @@ def compose(A):
     P("hook", 14, hook(g, 14, [("A", 4)], vel=0.8, until=4.0))
     P("tom", 14, fills.tom_fill(g, (14, 4), beats=1.0, step=0.25, notes=("E3", "D3", "A2", "A2"), vel=(0.6, 0.9)))
     P("roll", 14, fills.snare_roll(g, (14, 4), beats=1.0, rates=(0.25,), vel=(0.4, 0.85)))
+    trim(A, 14, 4.0, 5.0, FILL14_DB, ("tom", "roll"))                            # §46 P2-1: under the push
 
     # ---- bars 15-20: the montage, groove C ----
     plan = {15: [("D", 4)], 16: [("A/C#", 4)], 17: [("Bm", 4)], 18: [("G", 4)], 19: [("D", 2), ("A/C#", 2)],
             20: [("Bm", 2), ("G", 2)]}
     for bar in range(15, 21):
         lift = bar in (15, 18)
-        hit(A, bar, crash=(1.0 if bar == 15 else 0.9) if lift else 0.0, kick=0.95 if lift else 0.85, snap=0.85)
+        hit(A, bar, crash=(MONTAGE_LIFT["crash"] if bar == 15 else 0.9) if lift else 0.0,
+            kick=(MONTAGE_LIFT["kick"] if bar == 15 else 0.95) if lift else 0.85, snap=0.85)
         groove_c(A, bar, plan[bar])
         chords(A, bar, plan[bar], vel=0.85, cutoff=3000.0 if bar < 18 else 4800.0)
         P("hook", bar, hook(g, bar, plan[bar], vel=0.95 if bar < 18 else 1.0))
@@ -760,8 +870,13 @@ def compose(A):
     pump(A, 23)
 
     # f1656: the tests pass (Done), the first big hit (OVERRIDES §41); its kick 0.85, impact 0.55 and sub 1.0 until the
-    # judge's final mixes, where its first 0.3 s outweighed the push's at -14 LUFS (the timeline adds impact_b and ui_done)
-    hit(A, 24, crash=0.4, kick=0.5, impact=0.4, sub="G1", sub_vel=0.85)
+    # judge's final mixes, where its first 0.3 s outweighed the push's at -14 LUFS (the timeline adds impact_b and
+    # ui_done). Since §46 P2-1 its first beat has upper-mid layers (HITS: the crash up from 0.4, the stab, the crack, the
+    # chords' downbeat unpumped), no score impact under the timeline's impact_b, the stems carved under impact_b's peak
+    # and their limiter eased (CARVE, EASE_HITS)
+    h = HITS[PASSED]
+    hit(A, 24, crash=h["crash"], kick=h["kick"], impact=h["impact"], sub="G1", sub_vel=h["sub"])
+    first_beat(A, 24, h)
     groove_four(A, 24, until=4.75)
     P("sub8", 24, pulses(g, 24, "G1", 1.5, 3.0, step=0.5, gate=0.7, vel=0.8) +
       pulses(g, 24, "A1", 3.0, 4.5, step=0.5, gate=0.7, vel=0.84) +
@@ -771,7 +886,7 @@ def compose(A):
     P("hook", 24, line(g, 24, ((3.0, "A4", 0.25), (3.25, "C#5", 0.25), (3.5, "E5", 0.25), (3.75, "A5", 0.25),
                                (4.0, "C#6", 0.25), (4.25, "E6", 0.25), (4.5, "A5", 0.25)), vel=0.92, legato=0.85))
     P("roll", 24, fills.snare_roll(g, (24, 3), beats=1.75, rates=(0.25, 0.125), vel=(0.35, 1.0)))
-    tp = g.t((24, 4, 4))                                                          # the push: f1723.5
+    tp = fr(VERIFIED)                                                             # the push: f1723.5, bar 24's last 16th
     P("riser", 24, [E(tp, g.beats(2.75), 0.8)], anchor="end")
     pump(A, 24)
     # Verified (OVERRIDES §41): bar 25's downbeat hit, chord and crash a 16th early, tied over the bar line. The
@@ -790,12 +905,18 @@ def compose(A):
     # The layers land a few ms apart (PUSH_FLAM_MS, 0-12 ms, one hit to the ear: a 16th is 150 ms): on one sample the
     # chord, the lead and the hook (both on D5) and the drums stacked into the push's peak, the music bus alone peaking
     # 2.5 dB over the chord, and the stems' limiter then pulled the whole push down with it
+    # Since §46 P2-1 (the push the film's loudest momentary moment in every master; the constants above): lighter
+    # transients (PUSH_LAYERS) and no score kick (PUSH_LOW), the stems carved under impact_a's peak and their limiter
+    # eased over the push (CARVE, PUSH_EASE_DB), its chord letting go at bar 25's beat PUSH_CHORD_UNTIL, and bar 25 from
+    # beat 2 BAR25_DB down
     fl = lambda name: PUSH_FLAM_MS.get(name, 0.0) / 1000.0  # noqa: E731
-    for name, v in (("crash", 1.0), ("crash2", 0.8), ("kick_big", 0.5), ("clap", 0.6), ("snare", 1.0),
-                    ("hat_open", 1.0), ("snap", 0.5)):
+    for name, v in PUSH_LAYERS:
         P(name.rstrip("2"), 24, [E(tp + fl(name), 0.0 if name != "hat_open" else 0.3, v)], tie=True)
-    P("sub", 24, [E(tp, 0.6, 0.45, "D2", glide_from=12.0, glide_s=0.025)], tie=True)
-    P("push_chord", 24, [E(tp, b(25, 3) - tp - 0.02, 1.0, CH["Dadd9"])], tie=True)
+    if PUSH_LOW["kick_big"]:
+        P("kick_big", 24, [E(tp, 0.0, PUSH_LOW["kick_big"])], tie=True)
+    if PUSH_LOW["sub"]:
+        P("sub", 24, [E(tp, 0.6, PUSH_LOW["sub"], "D2", glide_from=12.0, glide_s=0.025)], tie=True)
+    P("push_chord", 24, [E(tp, b(25, PUSH_CHORD_UNTIL) - tp - 0.02, 1.0, CH["Dadd9"])], tie=True)
     first = b(25, 1.5) - tp - 0.02                                                # the harmonised hook's first note
     P("lead", 24, [E(tp + fl("lead"), first - fl("lead"), 1.0, "D5")], tie=True)
     P("lead_harm", 24, [E(tp + fl("lead_harm"), first - fl("lead_harm"), 0.9, THIRD["D5"])], tie=True)
@@ -805,11 +926,16 @@ def compose(A):
     P("hat", 25, [e for e in hat16(g, 25, b0=1.25, b1=2.0)])
     P("hat_open", 25, steps(g, 25, "..o.............", vel=0.8, dur=0.14))
     bassline(A, 25, [("D", 2), ("A/C#", 2)], vel=0.95, skip_first=True, until=4.25)
+    if PUSH_CHORD_UNTIL < 3.0:                                    # the pumped chords take the D over from the push's
+        P("chords", 25, [E(b(25, PUSH_CHORD_UNTIL), g.beats(3.0 - PUSH_CHORD_UNTIL) * 0.9, 1.0, CH["D"])])
     chords(A, 25, [("D", 2), ("A/C#", 2)], vel=1.0, b_from=3.0, legato=0.9)
     for name, v, third in (("hook", 1.0, False), ("lead", 1.0, False), ("lead_harm", 0.92, True)):
         P(name, 25, hook(g, 25, [("D", 2), ("A/C#", 2)], vel=v, b_from=1.25, until=4.25, third=third))
     P("downlifter", 25, [E(fr(1782), 0.6, 0.8)])
     pump(A, 25, (2, 3, 4))
+    # §46 P2-1: what follows the push gives way to it: bar 25 from beat 2, and the run-up's last beat (bar 24 beat 4)
+    trim(A, 25, 2.0, 5.0, BAR25_DB, BAR25_TRACKS)
+    trim(A, 24, 4.0, 4.75, RUNUP_DB, RUNUP_TRACKS)
 
     # ---- bars 26-28: the breakdown, no drums ----
     P("impact", 26, [E(b(26), 0, 0.3)])
@@ -855,6 +981,9 @@ def compose(A):
     P("final", 31, [E(b(31), end - b(31), 0.92, CH["Dadd9"])])
     P("pad", 31, [E(b(31), end - b(31), 0.5, CH["Dadd9"])])
 
+    for bar, db in SECTION_DB.items():                           # §46: whole bars a little down around the climax
+        trim(A, bar, 1.0, 5.0, db, [k for k in A.ev if k not in ("ghost", "ghost_bd", "ui")])
+
     # the tension's level (TENSION_DB, BUILD_DB): risers and clusters carry their end time, so the build's are in bar 9
     if A.has(10):
         drop_t = A.pos[10] * g.bar
@@ -882,7 +1011,7 @@ LEVELS = {  # track: (bus, gain dB)
     # the push's chord 2 dB up after the judge's final mixes (with the timeline's own impact_a and ui_verified on f1723):
     # at -2.5 its first 0.4 s sat 0.32 LU (social) and 0.85 LU (x30) under the tests passing at f1656
     "frag": ("music", -12.0), "pulse": ("music", -9.0), "chords": ("music", -8.0), "push_chord": ("music", -0.5),
-    "hook": ("music", -8.0),
+    "stab": ("music", -5.0), "hook": ("music", -8.0),
     "lead": ("music", -11.0), "lead_harm": ("music", -15.0), "counter": ("music", -11.0), "pluck": ("music", -8.0),
     "final": ("music", -7.0),
     "qhit": ("fx", -2.0), "impact": ("fx", -6.0), "riser": ("fx", -20.0), "riser_s": ("fx", -22.0),
@@ -947,16 +1076,52 @@ def silence(x, i0, i1, out_ms=8.0, in_ms=1.0):
     return x
 
 
-def linked_limit(bed, drive, plr_db=STEM_PLR_DB, la_ms=5.0, rel_ms=90.0):
+def ease_curve(n, t0, t1, in_s=0.010, out_s=0.120):
+    """0 to 1 to 0 over samples: a raised cosine up over in_s before t0, 1 over [t0, t1), down over out_s after t1."""
+    w = np.zeros(n)
+    a, b_, c, d = (int(round(x * SR)) for x in (t0 - in_s, t0, t1, t1 + out_s))
+    k = np.arange(max(0, a), min(n, b_))
+    w[k] = 0.5 - 0.5 * np.cos(np.pi * (k - a) / max(1, b_ - a))
+    w[max(0, b_):min(n, c)] = 1.0
+    k = np.arange(max(0, c), min(n, d))
+    w[k] = 0.5 + 0.5 * np.cos(np.pi * (k - c) / max(1, d - c))
+    return w
+
+
+def carve(bed, drive, spans):
+    """Both stems down under a timeline effect's peak (a sidechain the score knows the frame of): spans are
+    (peak_s, db, pre_ms, hold_ms, rel_ms): down by db over the 5 ms before peak - pre, held to peak + hold, back over
+    rel (raised cosines). In place; returns the spans."""
+    n = bed.shape[1]
+    for t, db, pre, hold, rel in spans:
+        g = np.ones(n)
+        a, b_ = int(round((t - (pre + 5.0) / 1000.0) * SR)), int(round((t - pre / 1000.0) * SR))
+        c, d = int(round((t + hold / 1000.0) * SR)), int(round((t + (hold + rel) / 1000.0) * SR))
+        lo = core.amp(db)
+        k = np.arange(max(0, a), min(n, b_))
+        g[k] = 1.0 + (lo - 1.0) * (0.5 - 0.5 * np.cos(np.pi * (k - a) / max(1, b_ - a)))
+        g[max(0, b_):min(n, c)] = lo
+        k = np.arange(max(0, c), min(n, d))
+        g[k] = lo + (1.0 - lo) * (0.5 - 0.5 * np.cos(np.pi * (k - c) / max(1, d - c)))
+        bed *= g
+        drive *= g
+    return [[round(t, 4), db, pre, hold, rel] for t, db, pre, hold, rel in spans]
+
+
+def linked_limit(bed, drive, plr_db=STEM_PLR_DB, la_ms=5.0, rel_ms=90.0, ease=(), marks=None):
     """A lookahead peak limiter on the stems' sum whose one gain goes on both stems, so their balance holds and the sum
     never passes ceiling = its integrated loudness + plr_db (sample peak). The needed gain's moving minimum over +-la,
     averaged over la, ramps down before each peak and never lets one through; the reduction (in dB) then releases
-    exponentially (time constant rel_ms), as a running maximum in the log domain. In place; returns its report."""
+    exponentially (time constant rel_ms), as a running maximum in the log domain. ease: (t0, t1, db) spans, in seconds,
+    where the ceiling sits db higher (ease_curve's ramps: OVERRIDES §46 P2-1 eases it over the push). marks:
+    {label: seconds}, the reduction reported over the 0.4 s from each. In place; returns its report."""
     s = bed + drive
     lufs = stems.loudness(s)
-    ceiling = core.amp(lufs + plr_db)
+    ceiling = np.full(s.shape[1], core.amp(lufs + plr_db))
+    for t0, t1, db in ease:
+        ceiling *= 10.0 ** (db * ease_curve(s.shape[1], t0, t1) / 20.0)
     need = np.minimum(1.0, ceiling / np.maximum(np.max(np.abs(s), axis=0), 1e-12))
-    del s
+    del s, ceiling
     L = max(1, int(la_ms * SR / 1000))
     g = np.minimum(1.0, uniform_filter1d(minimum_filter1d(need, size=2 * L + 1, mode="nearest"), size=L + 1,
                                          mode="nearest"))
@@ -968,12 +1133,20 @@ def linked_limit(bed, drive, plr_db=STEM_PLR_DB, la_ms=5.0, rel_ms=90.0):
     hold = np.exp(np.maximum.accumulate(q) - k)                     # max over j <= n of r[j] exp(-(n - j) / rel)
     del q, k
     hold[~np.isfinite(hold)] = 0.0
-    gain = 10.0 ** (-np.maximum(hold, r) / 20.0)
+    red = np.maximum(hold, r)
+    del hold
+    gain = 10.0 ** (-red / 20.0)
     bed *= gain
     drive *= gain
-    return {"sum_lufs": round(lufs, 2), "ceiling_dbfs": round(lufs + plr_db, 2),
-            "max_reduction_db": round(float(r.max()), 2),
-            "seconds_reduced_over_1db": round(float(np.count_nonzero(hold > 1.0)) / SR, 2)}
+    rep = {"sum_lufs": round(lufs, 2), "ceiling_dbfs": round(lufs + plr_db, 2),
+           "max_reduction_db": round(float(r.max()), 2),
+           "seconds_reduced_over_1db": round(float(np.count_nonzero(red > 1.0)) / SR, 2),
+           "eased": [[round(t0, 4), round(t1, 4), db] for t0, t1, db in ease]}
+    if marks:
+        rep["reduction_db_over_0.4s_from"] = {
+            k: {"max": round(float(red[int(t * SR):int((t + 0.4) * SR)].max()), 2),
+                "mean": round(float(red[int(t * SR):int((t + 0.4) * SR)].mean()), 2)} for k, t in marks.items()}
+    return rep
 
 
 def render(bars, out_dir, prefix, seed=SEED):
@@ -1007,13 +1180,19 @@ def render(bars, out_dir, prefix, seed=SEED):
             silence(drive, fs(a), fs(c), 10.0, 2.0)
             spans["drive_holds"].append([a, c])
     zf = A.frame(ZEROS)
-    lim = linked_limit(bed, drive)
+    ease = [(A.frame(f) / FPS, A.frame(f) / FPS + sec, db) for f, (db, sec) in
+            ({VERIFIED: (PUSH_EASE_DB, PUSH_EASE_S)} | EASE_HITS).items() if db and A.frame(f) is not None]
+    marks = {f"f{f:g}": A.frame(f) / FPS for f in (STOP[1], 1008, PASSED, VERIFIED, 1746, 1764)
+             if A.frame(f) is not None}
+    lim = linked_limit(bed, drive, ease=ease, marks=marks)
+    carved = carve(bed, drive, [(A.frame(f) / FPS, *p) for f, p in CARVE.items() if A.frame(f) is not None])
     pk = max(core.peak_db(bed), core.peak_db(drive))
     trim = min(0.0, STEM_PEAK_DB - pk)
     k = core.amp(trim)
     rep = {"bars": list(bars), "samples": A.n, "seed": seed, "events": sum(len(v) for n_, v in A.ev.items()
                                                                            if n_ in LEVELS),
            "spans_out_frames": spans, "zeros_from_frame": zf, "trim_db": round(trim, 2), "linked_limiter": lim,
+           "carved_under_effects": carved,
            "bass_bus_under_music_bus_lu": None if None in loud.values() else
            round(loud["music_bus_lufs"] - loud["bass_bus_lufs"], 2)}
     zs = None if zf is None else fs(zf)
