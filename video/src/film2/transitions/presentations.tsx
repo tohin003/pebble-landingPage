@@ -14,7 +14,7 @@
 import type { TransitionPresentation, TransitionPresentationComponentProps } from "@remotion/transitions";
 import { AbsoluteFill, useVideoConfig } from "remotion";
 import { RING, TRANSITION } from "../tokens";
-import { E_ARRIVE, E_LEAVE, E_MOVE, clamp01, smoothstep } from "../motion/ease";
+import { E_ARRIVE, E_MOVE, clamp01, smoothstep } from "../motion/ease";
 import { radiusToCorners } from "../motion/geometry";
 
 /* ---------------------------------------------------------------- the looks, pure (tested) -------------------- */
@@ -22,19 +22,24 @@ import { radiusToCorners } from "../motion/geometry";
 /** The ring iris's radius at progress p (E-arrive from the stone's radius to past the farthest corner). */
 export const irisRadius = (p: number, r0: number, rMax: number): number => r0 + (rMax - r0) * E_ARRIVE(clamp01(p));
 
-/** The swap in place, per side: out over the first half (blur up, opacity down), in over the second. */
+/**
+ * The swap in place, per side: out over the first half (blur up, opacity down), in over the second, each on E-move so
+ * the hand-off between them is the slowest moment, not the fastest (see type/Cascade.tsx swapLook).
+ */
 export const swapPresentationLook = (p: number, dir: "entering" | "exiting", blurPx: number): { opacity: number; blur: number } => {
   if (dir === "exiting") {
-    const u = E_LEAVE(clamp01(p * 2));
+    const u = E_MOVE(clamp01(p * 2));
     return { opacity: 1 - u, blur: blurPx * u };
   }
-  const u = E_ARRIVE(clamp01(p * 2 - 1));
+  const u = E_MOVE(clamp01(p * 2 - 1));
   return { opacity: u, blur: blurPx * (1 - u) };
 };
 
 /**
  * The rack focus, per side: the outgoing shot defocuses over the first half and stays opaque; the incoming one fades
- * in over the middle 12 % (where both are at full defocus, so nothing readable crosses) and focuses over the second half.
+ * in over the middle 28 % (wherever the cross is visible both are at 85 % of full defocus or more, so nothing readable
+ * crosses) and focuses over the second half. A cross over the middle 12 % (4 frames of a 36-frame rack) read as a pop
+ * in the render's pixel check.
  */
 export const rackLook = (p: number, dir: "entering" | "exiting", blurPx: number, breathe = 1.01): { opacity: number; blur: number; scale: number } => {
   if (dir === "exiting") {
@@ -42,7 +47,7 @@ export const rackLook = (p: number, dir: "entering" | "exiting", blurPx: number,
     return { opacity: 1, blur: blurPx * u, scale: 1 + (breathe - 1) * u };
   }
   const u = 1 - E_MOVE(clamp01((p - 0.5) / 0.5));
-  return { opacity: smoothstep(0.44, 0.56, p), blur: blurPx * u, scale: 1 + (breathe - 1) * u };
+  return { opacity: smoothstep(0.36, 0.64, p), blur: blurPx * u, scale: 1 + (breathe - 1) * u };
 };
 
 /* ---------------------------------------------------------------- kind 1: the ring iris ----------------------- */

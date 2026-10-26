@@ -8,7 +8,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLOR, TRANSITION, f60 } from "../tokens";
-import { E_ARRIVE, E_LEAVE } from "../motion/ease";
+import { E_MOVE } from "../motion/ease";
 import { wordCount } from "./reading";
 import { typeStyle } from "./scale";
 
@@ -80,16 +80,20 @@ export function checkCascade(items: readonly CascadeItem[], sched: readonly Casc
   return out;
 }
 
-/** The look of item `i` on `frame`: opacity and blur of the swap in place. */
+/**
+ * The look of item `i` on `frame`: opacity and blur of the swap in place. Both halves ease in and out (E-move), so the
+ * change is slowest where one item hands the stage to the next: with E-leave out and E-arrive in, the two fastest
+ * frames met at the hand-off and the render's pixel check read the swap as a pop (2.1 levels against 0.6 around it).
+ */
 export const swapLook = (w: CascadeWindow, frame: number, last: boolean): { opacity: number; blur: number } | null => {
   if (frame < w.inStart || (!last && frame >= w.outEnd)) return null;
   if (frame < w.inEnd) {
-    const u = (frame - w.inStart) / (w.inEnd - w.inStart);
-    return { opacity: E_ARRIVE(u), blur: TRANSITION.swap.blurPx * (1 - E_ARRIVE(u)) };
+    const e = E_MOVE((frame - w.inStart) / (w.inEnd - w.inStart));
+    return { opacity: e, blur: TRANSITION.swap.blurPx * (1 - e) };
   }
   if (last || frame < w.outStart) return { opacity: 1, blur: 0 };
-  const u = (frame - w.outStart) / (w.outEnd - w.outStart);
-  return { opacity: 1 - E_LEAVE(u), blur: TRANSITION.swap.blurPx * E_LEAVE(u) };
+  const e = E_MOVE((frame - w.outStart) / (w.outEnd - w.outStart));
+  return { opacity: 1 - e, blur: TRANSITION.swap.blurPx * e };
 };
 
 export interface CascadeProps {

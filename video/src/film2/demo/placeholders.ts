@@ -44,6 +44,8 @@ export const PLACEHOLDER = {
     standsFor: "a receipt (Verified, the file receipt, the kept card)",
     version: "1.0.x",
   },
+  /** Settings › Models (Pebble 1.0.x): a second Pebble window in S1's composed world */
+  models: { src: "ui/settings-models@2x.png", w: 1160, h: 800, standsFor: "a Pebble window in the composed world", version: "1.0.x" },
   /** the main window's welcome, Pebble 1.5.0 */
   main: { src: "ui/v150/main-welcome@2x.png", w: 1160, h: 800, standsFor: "a Pebble window in the composed world", version: "1.5.0" },
   /** Settings › Memory's kinds and switch (top of the memory records crop) */

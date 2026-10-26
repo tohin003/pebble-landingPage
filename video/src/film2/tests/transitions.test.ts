@@ -6,6 +6,7 @@ import { KINDS, checkKindFrames } from "../transitions/kinds";
 import { cutTheCurveNumbers, whipNumbers } from "../transitions/ports";
 import { matchCutNumbers } from "../type/TextMatchCut";
 import { phaseWindows, ringEnd, type RingSpec } from "../carrier/ring";
+import { focusPull } from "../camera/moves";
 import { TRANSITION_KINDS } from "../tokens";
 
 describe("kind 1: the ring iris", () => {
@@ -30,9 +31,14 @@ describe("kind 5: the swap in place", () => {
 describe("kind 6: rack focus", () => {
   test("the outgoing stays opaque (no dip) and is fully defocused before the incoming appears", () => {
     for (let p = 0; p <= 1; p += 0.01) expect(rackLook(p, "exiting", 13).opacity).toBe(1);
-    expect(rackLook(0.44, "entering", 13).opacity).toBeCloseTo(0, 6);
-    expect(rackLook(0.44, "exiting", 13).blur).toBeGreaterThan(12);
-    expect(rackLook(0.56, "entering", 13).blur).toBeGreaterThan(12);
+    expect(rackLook(0.36, "entering", 13).opacity).toBeCloseTo(0, 6);
+    // wherever the cross is visible, both shots are at 85 % of full defocus or more: nothing readable crosses
+    for (let p = 0.36; p <= 0.64; p += 0.005) {
+      const o = rackLook(p, "entering", 13).opacity;
+      if (o < 0.05 || o > 0.95) continue;
+      expect(rackLook(p, "exiting", 13).blur).toBeGreaterThanOrEqual(0.85 * 13);
+      expect(rackLook(p, "entering", 13).blur).toBeGreaterThanOrEqual(0.85 * 13);
+    }
     expect(rackLook(1, "entering", 13)).toEqual({ opacity: 1, blur: 0, scale: 1 });
   });
 });
@@ -81,5 +87,14 @@ describe("the ring's speed parameter", () => {
     expect(ringEnd({ ...base, speed: 1.25 })).toBe(80);
     const w = phaseWindows({ ...base, speed: 2 });
     expect(w.map((x) => x.f1 - x.f0)).toEqual([30, 20]);
+  });
+});
+
+describe("kind 6 inside a shot: the focus pull", () => {
+  test("moves the focus in dioptres from one plane to another, holding outside its window", () => {
+    const f = focusPull(1.15, 0.7, 100, 36);
+    expect(f(90)).toBe(1.15);
+    expect(f(118)).toBeCloseTo((1.15 + 0.7) / 2, 6);
+    expect(f(200)).toBeCloseTo(0.7, 6);
   });
 });

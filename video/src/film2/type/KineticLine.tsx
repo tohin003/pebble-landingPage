@@ -1,14 +1,14 @@
 // <KineticLine>: the film's kinetic type (TREATMENT §5.2), GSAP SplitText reveals under masks, driven by the frame.
 //
 // Entrances (frames at 60 fps; converted for the composition's fps):
-//   lineRise  each line rises from its mask (yPercent 105 → 0) over 30 frames on E-arrive, lines 8 frames apart:
+//   lineRise  each line rises from its mask (yPercent 112 → 0) over 30 frames on E-arrive, lines 8 frames apart:
 //             the expressive tier's default (the name, chapter lines, the title, the README line);
 //   wordRise  the same rise per word, words 4 frames apart (for a two- or three-word line);
 //   wordBlur  per word, blur 6 → 0 px and opacity 0 → 1 over 9 frames, words 4 apart, no movement;
 //   lineBlur  the whole line blurs in over 8 frames from opacity 0: the functional and label tiers' default.
 // Exits are 40–50 % shorter than the entrance (TYPE_MOTION.exitRatio):
 //   blur      words blur out (0 → 8 px) and fade, leading with the first word;
-//   lift      lines leave upward through their masks on E-leave;
+//   lift      lines leave upward through their masks on E-leave (to −125 %, fading over the second half);
 //   camera    no exit of its own: the line leaves with the camera or the layer that carries it.
 // A landed line is dead still: nothing moves while it is read (the rule the old film's slams broke).
 //
@@ -69,9 +69,10 @@ export const KineticLine: React.FC<KineticLineProps> = ({ text, tier, at, exitAt
       const split = byLine || byWord || exit === "blur" || exit === "lift" ? new SplitText(el, { type: "lines,words", mask: ent === "lineRise" || exit === "lift" ? "lines" : ent === "wordRise" ? "words" : undefined }) : null;
       const t0 = fs(at, fps);
       if (ent === "lineRise") {
-        tl.fromTo(split!.lines, { yPercent: 105 }, { yPercent: 0, duration: fs(f60(TYPE_MOTION.rise.frames, fps), fps), ease: "E-arrive", stagger: fs(f60(TYPE_MOTION.rise.lineStagger, fps), fps) }, t0);
+        // from 112 %: the glyphs' ascenders and accents clear the mask on the first frame
+        tl.fromTo(split!.lines, { yPercent: 112 }, { yPercent: 0, duration: fs(f60(TYPE_MOTION.rise.frames, fps), fps), ease: "E-arrive", stagger: fs(f60(TYPE_MOTION.rise.lineStagger, fps), fps) }, t0);
       } else if (ent === "wordRise") {
-        tl.fromTo(split!.words, { yPercent: 105 }, { yPercent: 0, duration: fs(f60(TYPE_MOTION.rise.frames, fps), fps), ease: "E-arrive", stagger: fs(f60(4, fps), fps) }, t0);
+        tl.fromTo(split!.words, { yPercent: 112 }, { yPercent: 0, duration: fs(f60(TYPE_MOTION.rise.frames, fps), fps), ease: "E-arrive", stagger: fs(f60(4, fps), fps) }, t0);
       } else if (ent === "wordBlur") {
         tl.fromTo(
           split!.words,
@@ -90,7 +91,11 @@ export const KineticLine: React.FC<KineticLineProps> = ({ text, tier, at, exitAt
         if (exit === "lift") {
           const n = split!.lines.length;
           const each = Math.max(2, Math.round(outFrames / Math.max(1, n * 0.5 + 0.5)));
-          tl.fromTo(split!.lines, { yPercent: 0 }, { yPercent: -105, duration: fs(each, fps), ease: "E-leave", stagger: fs(Math.max(1, Math.round(each * 0.4)), fps), immediateRender: false }, t1);
+          // to −125 % with a fade over its last half: a lift to −105 % left the descenders of "y" showing below the mask
+          // (looked at on the demo's frame 1340)
+          const stg = fs(Math.max(1, Math.round(each * 0.4)), fps);
+          tl.fromTo(split!.lines, { yPercent: 0 }, { yPercent: -125, duration: fs(each, fps), ease: "E-leave", stagger: stg, immediateRender: false }, t1);
+          tl.fromTo(split!.lines, { opacity: 1 }, { opacity: 0, duration: fs(each / 2, fps), ease: "power1.in", stagger: stg, immediateRender: false }, t1 + fs(each / 2, fps));
         } else {
           const words = split!.words;
           const each = Math.max(2, Math.round(outFrames * 0.6));

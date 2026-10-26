@@ -50,8 +50,9 @@ export function momentumCut(p: MomentumCutPlan): MomentumSeam {
   if (p.out.end().frame > leaveStart) {
     throw new Error(`momentumCut: the outgoing camera already runs to frame ${p.out.end().frame}, past the E-leave's start (${leaveStart})`);
   }
-  // drift (a glide that keeps the current velocity's tail) up to the leave, then accelerate out
-  if (p.out.end().frame < leaveStart) p.out.glide(leaveStart, f60(24, p.fps));
+  // coast at the current velocity up to the leave (a shot that already drifts keeps drifting: it never rests), then
+  // accelerate out on E-leave
+  if (p.out.end().frame < leaveStart) p.out.glide(leaveStart, f60(24, p.fps), p.out.end().vel);
   const startPose = toPose(p.out.end().state);
   const n = Math.hypot(p.dir.x, p.dir.y) || 1;
   const wx = (-p.dir.x / n) * (p.dPx / startPose.zoom);

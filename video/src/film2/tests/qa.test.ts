@@ -14,10 +14,12 @@ const H = 1080;
 
 /** A clean two-shot timeline: a push-in, a momentum cut, an arrival; one line; one light change. */
 const clean = (): FilmTimelineQa => {
-  const a = new VelocityCamera({ x: 0, y: 0, zoom: 1 }, { lz: 0.0003 });
-  a.hermite(120, { x: 0, y: 0, zoom: 1.08 }, { lz: 0.0001 });
-  const seam = momentumCut({ out: a, cutFrame: 240, dir: { x: -1, y: 0 }, dPx: 120, leaveFrames: 18, target: { x: 4000, y: 0, zoom: 1 }, inFrames: 50, frameW: W, frameH: H, fps: 60 });
-  seam.inCam.glide(240, 24, { x: 0.3 });
+  // a push-in that keeps drifting (about 20 px a second at the corners), a momentum cut, an arrival that glides into a
+  // drift: alive in every second, as §5.3 asks ("arrive, glide, leave")
+  const a = new VelocityCamera({ x: 0, y: 0, zoom: 1 }, { lz: 0.0004 });
+  a.hermite(120, { x: 0, y: 0, zoom: 1.08 }, { lz: 0.0003 });
+  const seam = momentumCut({ out: a, cutFrame: 240, dir: { x: -1, y: 0 }, dPx: 120, leaveFrames: 18, target: { x: 4000, y: 0, zoom: 1 }, inFrames: 50, frameW: W, frameH: H, fps: 60, mode: "glide", tau: 20 });
+  seam.inCam.glide(240, 24, { x: 0.4 });
   return {
     name: "clean",
     fps: 60,

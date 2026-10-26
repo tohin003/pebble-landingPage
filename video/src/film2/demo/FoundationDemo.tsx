@@ -51,6 +51,7 @@ import {
   S4_CAMERA,
   S4_STONE,
   STONE,
+  STONE2,
   TYPE_POS,
   apertureOpenAt,
 } from "./timeline";
@@ -94,6 +95,9 @@ const S1Foreground: React.FC = () => {
     <World3D cam={{ pose: s.pose, ref: S1_REF, vel: s.vel }} dofScale={10} background="transparent">
       <Plane kind="pebble" rect={PLACE.main} tilt={{ rx: MAIN_TILT_RX.at(f), ry: MAIN_TILT_RY.at(f) }}>
         <UiImage ph={PLACEHOLDER.main} />
+      </Plane>
+      <Plane kind="pebble" rect={PLACE.models} tilt={{ rx: MAIN_TILT_RX.at(f) * 0.8, ry: -MAIN_TILT_RY.at(f) * 0.8 }}>
+        <UiImage ph={PLACEHOLDER.models} />
       </Plane>
       <Plane kind="pebble" rect={PLACE.companion} shadow={false} radius={0}>
         {/* the companion take at 1×, from its frame 22 (the chat already open); it ends before its usage line */}
@@ -152,9 +156,6 @@ const S2Foreground: React.FC = () => {
   const receipt = askCardPlaneStyle(L, S2_BEATS.receiptIn, fps, 1 / s.pose.zoom);
   return (
     <World3D cam={{ pose: s.pose, ref: S2_REF, vel: s.vel }} dofScale={14} background="transparent">
-      <Plane kind="pebble" rect={PLACE.main}>
-        <UiImage ph={PLACEHOLDER.main} />
-      </Plane>
       {ask.opacity > 0 ? (
         <Plane kind="pebble" rect={PLACE.ask} opacity={ask.opacity} style={ask.style}>
           <UiImage ph={PLACEHOLDER.ask} />
@@ -166,7 +167,8 @@ const S2Foreground: React.FC = () => {
         </Plane>
       ) : null}
       <Plane kind="film">
-        <Stone at={STONE} offsetFrames={S2.from} />
+        {/* the companion minimized to its pebble: S2's own place (demo/timeline.ts STONE2) */}
+        <Stone at={STONE2} offsetFrames={S2.from} />
       </Plane>
     </World3D>
   );
@@ -215,7 +217,9 @@ const ShotS3: React.FC = () => {
         <UiImage ph={PLACEHOLDER.main} />
       </Plane>
       {S3_SCHEDULE.map((w, i) => {
-        const look = swapLook(w, M, false);
+        const last = i === S3_SCHEDULE.length - 1;
+        // the first card is already on the stage when the rack lands; the last one holds until the iris covers it
+        const look = i === 0 && M < w.inStart ? { opacity: 1, blur: 0 } : swapLook(w, M, last);
         if (!look) return null;
         return (
           <Plane key={i} kind="pebble" rect={cardRect(i)} opacity={look.opacity} style={{ filter: look.blur > 0.05 ? `blur(${(look.blur / s.pose.zoom).toFixed(2)}px)` : undefined }}>

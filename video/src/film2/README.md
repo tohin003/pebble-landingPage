@@ -120,20 +120,21 @@ phase (`"all"`, the convergence). `layer: "ground"` (default) draws it behind ev
 | 3 The product's own motion | `<RecordedTake frames sourceFps at inPoint>` (1×, no rate parameter); `askCardPlaneStyle()` / `<AskCardEntrance>` for the entrance every ask shares | as recorded |
 | 4 Push-in and pull-back | `camera/moves.ts`: `pushIn`, `pushInCarried`, `pullBack`, `dolly`, `crane`, `travelTo`, `leave` | 90–240; 1.00 → 1.06–1.15 |
 | 5 Swap in place | `type/Cascade.tsx` (`cascadeSchedule`, `<Cascade>`); `swapInPlace()` for a scene | 8 out + 8 in |
-| 6 Rack focus | `rackFocus({ blurPx })` for a seam; `<World3D focus>` with a `ScalarTrack` inside a shot | 24–48; 10–16 px |
+| 6 Rack focus | `rackFocus({ blurPx })` for a seam; `focusPull(from, to, at, frames)` feeding `<World3D focus>` inside a shot | 24–48; 10–16 px |
 | 7 Light change | `light/grades.ts` cues; `<LightChange initial cues>` or `gradeAt()` + `<GradeLayer>` | ≥ 30, continuous |
 
 The presentations are custom `@remotion/transitions` presentations, pure functions of progress, none HTML-in-canvas (so
 they render on the headless shell 145). Use them with `linearTiming()`. They keep the outgoing shot opaque under the
 incoming one (a double fade over a third layer dipped the seam by up to 34 levels in TOOLS_TESTS), swap while the frame
-is covered, and leave grounds out of the fades. `zoomThrough()` and `<WhipPanCut>` are kept but **reserved**, as the
+is covered (the rack crosses over its middle 28 %, both shots at 85 % of full defocus or more wherever the cross shows;
+a 12 % cross read as a pop), and leave grounds out of the fades. `zoomThrough()` and `<WhipPanCut>` are kept but **reserved**, as the
 treatment reserves zoom-throughs and whips.
 
 **Ported from HyperFrames** (Apache-2.0, heygen-com/hyperframes at tag v0.8.202, read as source; the files and their
 git blob hashes are in `.work/film2/hf-registry@v0.8.202/MANIFEST.json`, gitignored): `whip-pan-cut` → `<WhipPanCut>`;
 `cut-the-curve` → `<CutTheCurve>`; `text-match-cut` → `<TextMatchCut>`; `light-leak` → `<LightLeak>`;
-`light-sweep-pass` → `<LightSweep>` and `<TextSweep>`; `rack-focus` and `focus-rack` → the depth-of-field model in
-`World3D.tsx`; `grain-overlay` → `<FilmGrain>`. Each file says what changed and why (blur as travel ÷ 7 instead of
+`light-sweep-pass` → `<LightSweep>` and `<TextSweep>`; `rack-focus` and `focus-rack` → `focusPull()` (focus moves in
+dioptres) and the depth-of-field model in `World3D.tsx`; `grain-overlay` → `<FilmGrain>`. Each file says what changed and why (blur as travel ÷ 7 instead of
 capped; no cyan gradients or neon; fromTo tweens instead of onUpdate callbacks).
 
 ## The camera language (`camera/`, §5.3)
@@ -151,7 +152,7 @@ capped; no cyan gradients or neon; fromTo tweens instead of onUpdate callbacks).
   near). **Tilt:** Pebble's own windows only, while travelling (`tiltForTravel()` gives a lean), flattened before
   reading; a flat plane is a 2D matrix only, so text stays crisp.
 - **Depth of field:** blur ∝ |depth − focus| (the thin-lens circle of confusion is linear in 1/distance); only Pebble's
-  windows and the ground defocus; `reading` forces a plane sharp. A focus pull is a `ScalarTrack` on `focus`.
+  windows and the ground defocus; `reading` forces a plane sharp. A focus pull is `focusPull()` on `focus`.
 - **Motion blur:** each plane carries σ = travel ÷ 7 from its own screen velocity; the ground carries none.
   `<ForegroundMotionBlur windows>` wraps the foreground in CameraMotionBlur (8 samples, 180°) for seams and dives; inside
   it the planes switch to the hybrid's travel ÷ 55. Switch it on and off only where the camera is nearly still (it
@@ -195,8 +196,9 @@ capped; no cyan gradients or neon; fromTo tweens instead of onUpdate callbacks).
   lines 8 apart: the expressive default), `wordRise`, `wordBlur` (6 → 0 px over 9 frames, words 4 apart), `lineBlur`
   (8 frames: the functional default). Exits are 40–50 % shorter: `blur`, `lift`, or `camera` (none of its own). A
   landed line is dead still.
-- `<Cascade items start beats? holdLast? ui?>` and `cascadeSchedule()`: one stage, 8 out and 8 in, each swap landing
-  2–3 frames before a beat; `checkCascade()` refuses items over four words and short holds.
+- `<Cascade items start beats? holdLast? ui?>` and `cascadeSchedule()`: one stage, 8 out and 8 in on E-move (E-leave
+  out and E-arrive in put the two fastest frames at the hand-off, which the pixel check read as a pop), each swap
+  landing 2–3 frames before a beat; `checkCascade()` refuses items over four words and short holds.
 - `<TextMatchCut a b at frames? mode>`: one line becomes another at the speed peak of one curve.
 - `typeSizePx(tier, w, h, t)` / `typeStyle()`: 16:9 / 1:1 / 9:16 sizes at 1080 on the short side (so a half-size proxy is
   right too); `safeMarginPx()` (60 at 1080). `reading.ts`: `wordCount`, `requiredHoldS` (max(50 frames, 0.5 s + 0.3 s a
@@ -216,7 +218,7 @@ pose of their plane, light cues, hits, waiting states, acts. `checkAll(timeline,
 | `velocityContinuity` | ≤ 30 px a frame² between frames (60 fps), outside marked hits |
 | `cutAudit` | at hard cuts: speeds within ±25 %, directions within 30°, no cut between two rests; transitions swap while covered |
 | `blurAudit` | σ ≥ 0.8 × travel ÷ 7 above the reading speed |
-| `deadFrames` | no 1 s without change outside waiting states (model) |
+| `deadFrames` | no 1 s in which the picture moves less than 12 px (at 1080) with nothing else changing, outside waiting states (model) |
 | `flashes` | light changes continuous, ≤ 1 large change a second, ≤ 3 flashes a second |
 | `rings` | one ring chapter in flight; never across a line being read; front rings never across readable UI; never around a receipt |
 | `timing`, `kinds`, `leaks`, `copy` | §5.1's frame ranges; which kinds appear; leaks ≤ 2; the never-list |
@@ -229,14 +231,17 @@ import { checkAll } from "../qa/checks";
 test("the Drop is smooth", () => expect(checkAll(dropTimeline(), dropMoves).errors).toEqual([]));
 ```
 
-On a render, `qa/luma-scan.ts` (FFmpeg: a heavy job) decodes 96 × 54 grey frames and runs `analyseLuma()`: WCAG
-flashes per 2.8 % tile and for the whole frame, dead runs, pops away from cuts, and luma dips at seams.
+On a render, `qa/luma-scan.ts` (FFmpeg: a heavy job) decodes 192 × 108 grey frames and runs `analyseLuma()`: WCAG
+flashes per 2.8 % tile and for the whole frame; dead windows, measured across each whole second (frame-to-frame
+differences cannot see a drift too slow for the eye); pops away from cuts; and luma dips at seams. The model and the
+pixel check agree on the demo: both flagged its first reading holds as stills (a drift of 0.05–0.1 px a frame), and
+both pass since the holds drift about 0.3 px a frame (§5.3 allows up to 1).
 
 ## The compositions (folder "Film2" in Studio)
 
 | Id | What |
 |---|---|
-| `F2-Foundation-Demo` | the demo reel, 28 s, 1920 × 1080, 60 fps: every kind, a ring leading a push-in, type reveals, five grades |
+| `F2-Foundation-Demo` | the demo reel, 28 s, 1920 × 1080, 60 fps: every kind, a ring leading a push-in, type reveals, five grades (S2 is the companion minimized to its pebble at a place east of S1, so the take's later frames, with their usage line, never show) |
 | `F2-Foundation-Ports` | 10 s lab of the ported HyperFrames moves, the reserved zoom-through and a code leak |
 | `F2-Foundation-Grades` | one frame per grade (seven), for a contact sheet |
 | `F2-Type-16x9`, `F2-Type-1x1`, `F2-Type-9x16` | the type scale per aspect, with the safe margin and Act I's aperture drawn |

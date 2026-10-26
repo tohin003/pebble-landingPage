@@ -233,43 +233,83 @@ export function blurAudit(t: FilmTimelineQa): { findings: Finding[]; minRatio: n
   return { findings, minRatio: Number.isFinite(minRatio) ? minRatio : 1 };
 }
 
-/** Does anything change on this frame (the dead-frame model)? */
-export const changesOn = (t: FilmTimelineQa, f: number): boolean => {
+/** Is anything other than the camera changing on this frame (type entering or leaving, a ring moving, the light, the UI)? */
+export const eventsOn = (t: FilmTimelineQa, f: number): boolean => {
   const s = shotAt(t, f);
-  if (s?.camera) {
-    const v = focalVelocity(t, s, f);
-    const samp = sampleOf(s, f)!;
-    if (len(v) > 0.05 || Math.abs(samp.vel.lz) * Math.max(t.width, t.height) > 0.05) return true;
-  }
   if (s?.activity?.(f)) return true;
   if (t.seams.some((x) => f >= x.at && f < x.at + Math.max(1, x.frames))) return true;
   for (const x of t.texts) {
     const enter = x.enterFrames ?? 12;
     if ((f >= x.from && f < x.from + enter) || (f >= x.to - 12 && f < x.to)) return true;
   }
-  if (t.rings && allRingStates(t.rings, f, t.fps).some((r) => r.opacity > 0.01)) return true;
+  if (t.rings) {
+    const a = allRingStates(t.rings, f, t.fps);
+    const b = allRingStates(t.rings, f + 1, t.fps);
+    if (a.length !== b.length) return true;
+    for (let i = 0; i < a.length; i++) if (Math.abs(a[i]!.r - b[i]!.r) > 0.05 || Math.abs(a[i]!.opacity - b[i]!.opacity) > 0.002 || Math.abs(a[i]!.c.x - b[i]!.c.x) > 0.05) return true;
+  }
   if ((t.lightCues ?? []).some((c) => f >= c.at && f < c.at + c.frames)) return true;
   if ((t.leaks ?? []).some((c) => f >= c.at && f < c.at + c.frames)) return true;
   return false;
 };
 
+/** How far (frame px, the largest over the centre and corners) the camera moves the picture between two frames of a shot. */
+const cameraDisplacement = (t: FilmTimelineQa, s: QaShot, a: number, b: number): number => {
+  if (!s.camera) return 0;
+  const pa = s.camera.pose(a - s.from);
+  const pb = s.camera.pose(b - s.from);
+  const probes = [
+    { x: t.width / 2, y: t.height / 2 },
+    { x: 0, y: 0 },
+    { x: t.width, y: 0 },
+    { x: 0, y: t.height },
+    { x: t.width, y: t.height },
+  ];
+  let max = 0;
+  for (const p of probes) {
+    // the world point under p at frame a, and where it lands at frame b
+    const w = { x: pa.x + (p.x - t.width / 2) / pa.zoom, y: pa.y + (p.y - t.height / 2) / pa.zoom };
+    const q = { x: t.width / 2 + (w.x - pb.x) * pb.zoom, y: t.height / 2 + (w.y - pb.y) * pb.zoom };
+    max = Math.max(max, Math.hypot(q.x - p.x, q.y - p.y));
+  }
+  return max;
+};
+
+/** The least the picture must move in a second, frame px at 1080, to count as alive (a still to the eye below it). */
+export const MIN_DRIFT_PER_SECOND_1080 = 12;
+
+/**
+ * Dead frames (§5.5): a window of one second in which the camera moves the picture by less than 12 px (at 1080; the
+ * pixel check on the demo's first render found slower drifts read as stills) and nothing else changes, outside the
+ * waiting states inside takes (and a title card that holds still by design, marked as a wait).
+ */
 export function deadFrames(t: FilmTimelineQa): { findings: Finding[]; longestS: number } {
   const findings: Finding[] = [];
   const win = Math.round(LIMITS.deadWindowS * t.fps);
-  let run = 0;
-  let longest = 0;
-  let start = 0;
-  for (let f = 0; f < t.durationInFrames; f++) {
+  const minMove = (MIN_DRIFT_PER_SECOND_1080 * Math.min(t.width, t.height)) / 1080;
+  const events = new Uint8Array(t.durationInFrames);
+  for (let f = 0; f < t.durationInFrames; f++) events[f] = eventsOn(t, f) ? 1 : 0;
+  const deadStart: boolean[] = [];
+  for (let f = 0; f + win <= t.durationInFrames; f++) {
     const s = shotAt(t, f);
-    const still = !changesOn(t, f) && !inRanges(f, s?.waits);
-    if (still) {
-      if (run === 0) start = f;
-      run++;
-      longest = Math.max(longest, run);
-      if (run === win) findings.push({ check: "deadFrames", level: "error", message: `nothing changes for ${LIMITS.deadWindowS} s from frame ${start} (outside a waiting state)`, frame: start });
-    } else run = 0;
+    const e = shotAt(t, f + win - 1);
+    let still = s === e && !!s;
+    if (still && (inRanges(f, s!.waits) || inRanges(f + win - 1, s!.waits))) still = false;
+    if (still) for (let k = f; k < f + win; k++) if (events[k]) { still = false; break; }
+    if (still && cameraDisplacement(t, s!, f, f + win - 1) >= minMove) still = false;
+    deadStart.push(still);
   }
-  return { findings, longestS: longest / t.fps };
+  let longest = 0;
+  for (let f = 0; f < deadStart.length; f++) {
+    if (!deadStart[f]) continue;
+    let g = f;
+    while (g < deadStart.length && deadStart[g]) g++;
+    const seconds = (g - f + win - 1) / t.fps;
+    longest = Math.max(longest, seconds);
+    findings.push({ check: "deadFrames", level: "error", message: `the picture hardly moves for ${seconds.toFixed(2)} s from frame ${f} (under ${MIN_DRIFT_PER_SECOND_1080} px a second, nothing else changing)`, frame: f });
+    f = g;
+  }
+  return { findings, longestS: longest };
 }
 
 export function flashes(t: FilmTimelineQa): { findings: Finding[]; maxChangesPerSecond: number; maxFlashesPerSecond: number } {
@@ -464,7 +504,7 @@ export function checkAll(t: FilmTimelineQa, moves: readonly QaMove[] = []): Repo
   metrics.minBlurRatio = Math.round(ba.minRatio * 1000) / 1000;
   const df = deadFrames(t);
   all.push(...df.findings);
-  metrics.longestStillS = Math.round(df.longestS * 100) / 100;
+  metrics.longestDeadS = Math.round(df.longestS * 100) / 100;
   const fl = flashes(t);
   all.push(...fl.findings);
   metrics.maxLargeLightChangesPerSecond = fl.maxChangesPerSecond;

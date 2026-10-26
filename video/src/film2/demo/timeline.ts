@@ -21,7 +21,7 @@ import { pullBack, pushInCarried, travelTo } from "../camera/moves";
 import { momentumCut } from "../transitions/momentum";
 import { ringStates, type RingSpec } from "../carrier/ring";
 import { apertureOpenForRing } from "../carrier/apertureMath";
-import { E_ARRIVE, clamp01 } from "../motion/ease";
+import { clamp01, curve } from "../motion/ease";
 import type { LightCue } from "../light/grades";
 import { cascadeSchedule, type CascadeItem } from "../type/Cascade";
 import type { TextEvent } from "../type/reading";
@@ -38,17 +38,20 @@ export const H = 1080;
 export const S1 = { from: 0, to: 350 };
 export const S2 = { from: 350, dur: 680 }; // renders to 1030; the rack overlaps its last 36 frames
 export const RACK = { at: 994, frames: 36 };
-export const S3 = { from: 994, dur: 400 }; // renders to 1394; the iris overlaps its last 30 frames
-export const IRIS = { at: 1364, frames: 30 };
-export const S4 = { from: 1364, dur: 316 };
+export const S3 = { from: 994, dur: 400 }; // renders to 1394; the iris overlaps its last 36 frames
+export const IRIS = { at: 1358, frames: 36 };
+export const S4 = { from: 1358, dur: 322 };
 export const DURATION = S4.from + S4.dur; // 1680 frames, 28 s
 
 /* ---------------------------------------------------------------- the world (CSS px of the captures at 1×) ------ */
 
 export const PLACE = {
   companion: { x: 2300, y: 1350, w: PLACEHOLDER.companionTake.w, h: PLACEHOLDER.companionTake.h },
-  ask: { x: 2860, y: 1250, w: PLACEHOLDER.ask.w, h: PLACEHOLDER.ask.h },
-  receipt: { x: 2860, y: 1640, w: 684, h: 248 },
+  // S2's place, east of S1's reveal (the momentum cut travels east): the ask above right of the stone, the receipt below it
+  ask: { x: 4133, y: 1153, w: PLACEHOLDER.ask.w, h: PLACEHOLDER.ask.h },
+  receipt: { x: 4133, y: 1543, w: 684, h: 248 },
+  // a Pebble window that balances S1's reveal (top right), out of S2's frames
+  models: { x: 3100, y: 100, w: PLACEHOLDER.models.w, h: PLACEHOLDER.models.h },
   main: { x: 700, y: 300, w: PLACEHOLDER.main.w, h: PLACEHOLDER.main.h }, // withheld from Act I: the pull-back reveals it
   // S3's stage, east of everything; its far window sits behind it on a deeper plane
   stage: { x: 5300, y: 1000, w: 640, h: 520 },
@@ -57,6 +60,11 @@ export const PLACE = {
 
 /** The stone: the companion's avatar centre (the take hides the avatar; the film pebble is drawn there by its engine). */
 export const STONE = { x: PLACE.companion.x + TAKE.stone.x, y: PLACE.companion.y + TAKE.stone.y, r: 44 };
+/**
+ * S2's stone: after the cut the companion is minimized to its pebble (a real Pebble state; the take's later frames
+ * would show its usage line, so the chat never appears in S2), at S2's own place east of S1's reveal.
+ */
+export const STONE2 = { x: 3900, y: 1650, r: 44 };
 
 /* ---------------------------------------------------------------- S1: Act I and the Drop ----------------------- */
 
@@ -77,7 +85,7 @@ export const S1_CAMERA = (() => {
 })();
 
 /** The momentum cut S1 → S2: E-leave over 18 frames (the picture leaves left), the incoming lands on E-arrive. */
-const s2Land: Pose = { x: 2950, y: 1560, zoom: 1.0 };
+const s2Land: Pose = { x: STONE2.x + 323, y: STONE2.y - 187, zoom: 1.0 };
 export const CUT_1 = momentumCut({
   out: S1_CAMERA,
   cutFrame: S1.to,
@@ -115,7 +123,8 @@ export const s1EdgeRadius = (f: number, c: { x: number; y: number }): number => 
 
 /**
  * The aperture: the frame opens with the ring. It starts on the first frame the burst's ring reaches one of the
- * aperture's edges and opens over 33 frames (TREATMENT S06: 30–36) on E-arrive, so the ring leads and the frame follows.
+ * aperture's edges and opens over 36 frames (TREATMENT S06: 30–36) on power2.out, so the ring leads and the frame
+ * follows. (E-arrive, the ring's own curve, opened 70 % of it in 6 frames: it read as a snap, looked at on the render.)
  */
 export const APERTURE_TOUCH = (() => {
   for (let f = RING_BURST.start; f < RING_BURST.start + 120; f++) {
@@ -127,8 +136,8 @@ export const APERTURE_TOUCH = (() => {
   }
   return RING_BURST.start;
 })();
-export const APERTURE_FRAMES = 33;
-export const apertureOpenAt = (f: number): number => E_ARRIVE(clamp01((f - APERTURE_TOUCH) / APERTURE_FRAMES));
+export const APERTURE_FRAMES = 36;
+export const apertureOpenAt = (f: number): number => curve("power2.out")(clamp01((f - APERTURE_TOUCH) / APERTURE_FRAMES));
 
 /* ---------------------------------------------------------------- S2: a ring chapter ------------------------- */
 
@@ -155,22 +164,24 @@ export const S2_CAMERA = (() => {
   const cam = CUT_1.inCam; // E-arrive over 50 frames at the outgoing speed, landing on s2Land
   cam.glide(b.travelFrom, f60(24, FPS), { x: 0.05 });
   // the ring leads; the camera follows it 14 frames behind and arrives with momentum, then glides
-  travelTo(cam, b.travelTo, { x: askCentre.x, y: askCentre.y, zoom: 1.15 }, b.dollyFrom, FPS, { arriveSpeedPxPerFrame: 7 });
+  travelTo(cam, b.travelTo, { x: askCentre.x, y: askCentre.y, zoom: 1.15 }, b.dollyFrom, FPS, { arriveSpeedPxPerFrame: 7, drift: { x: 0.12 } });
   // the dolly in to reading magnification (UI text ≥ 28 px at 1080): a move with velocity at both ends
-  cam.hermite(b.dollyTo, { x: askCentre.x, y: askCentre.y + 10, zoom: 2.0 }, { y: 0.02, lz: 0.0003 });
-  cam.glide(b.toReceipt, f60(30, FPS), { lz: 0.00008 });
+  cam.hermite(b.dollyTo, { x: askCentre.x, y: askCentre.y + 10, zoom: 2.0 }, { x: 0.15, y: 0.02, lz: 0.0004 });
+  // reading: a drift the eye can see (about 0.3 px a frame, 1 px a frame at most; the render's pixel check read slower
+  // drifts as a still), while the ask is read
+  cam.glide(b.toReceipt, f60(30, FPS), { x: 0.15, lz: 0.00025 });
   // down to the receipt, which lands below the ask: its first lines read at 28 px or more (zoom 2.15), framed right
   // and bleeding off the frame's edge, so the stone and the type sit at the left
-  travelTo(cam, b.receiptFramed, { x: 2888, y: 1714, zoom: 2.15 }, 560, FPS, { arriveSpeedPxPerFrame: 6 });
-  cam.glide(S2.dur, f60(30, FPS), { x: 0.06, lz: 0.00006 });
+  travelTo(cam, b.receiptFramed, { x: STONE2.x + 261, y: STONE2.y - 33, zoom: 2.15 }, 560, FPS, { arriveSpeedPxPerFrame: 6, drift: { x: 0.2, lz: 0.0001 } });
+  cam.glide(S2.dur, f60(30, FPS), { x: 0.2, lz: 0.0001 });
   return cam;
 })();
 
 export const RING_ASK: RingSpec = {
   id: "ask",
   start: S2.from + S2_BEATS.ringStart,
-  source: { x: STONE.x, y: STONE.y },
-  stoneRadius: STONE.r,
+  source: { x: STONE2.x, y: STONE2.y },
+  stoneRadius: STONE2.r,
   phases: [
     { kind: "emit", frames: 36, radius: 130 },
     { kind: "frame", frames: S2_BEATS.ringFramed - S2_BEATS.ringStart - 36, rect: PLACE.ask, clearance: 40, ease: "E-move" },
@@ -186,10 +197,10 @@ export const RING_ASK: RingSpec = {
 export const S3_ITEMS: CascadeItem[] = [
   { text: "Remember that …", holdS: 1.1 },
   { text: "Six kinds, six switches", holdS: 1.05 },
-  { text: "Forget this memory", holdS: 1.05 },
+  { text: "Forget this memory", holdS: 1.5 },
 ];
-/** local frames of S3 (0 = composition frame 994, the rack's first frame) */
-export const S3_BEATS = { fixedIn: 52, itemsFrom: 84, fixedOut: 330 } as const;
+/** local frames of S3 (0 = composition frame 994, the rack's first frame); the first card is on the stage from 0 */
+export const S3_BEATS = { fixedIn: 52, itemsFrom: 84, fixedOut: 340 } as const;
 export const S3_SCHEDULE = cascadeSchedule(S3_BEATS.itemsFrom, S3_ITEMS, FPS);
 
 /** S3's opening framing: the stage in the right half (the type owns the left), the far window peeking top right. */
@@ -314,12 +325,14 @@ export const SHOTS: QaShot[] = [
   // QaShot cameras run on frames local to their shot, as these do
   { id: "S2", from: S2.from, to: RACK.at, act: "demo", kind: "ui", camera: S2_CAMERA },
   { id: "S3", from: S3.from, to: IRIS.at, act: "demo", kind: "ui", camera: S3_CAMERA },
-  { id: "S4", from: S4.from, to: DURATION, act: "demo", kind: "title", camera: S4_CAMERA },
+  // the title holds still once it has landed and been swept: by design (TREATMENT S26–S28, "the type stays still")
+  { id: "S4", from: S4.from, to: DURATION, act: "demo", kind: "title", camera: S4_CAMERA, waits: [{ from: S4.from + S4_BEATS.sweepAt + 44, to: DURATION }] },
 ];
 
 export const SEAMS: QaSeam[] = [
   { at: S1.to, kind: "momentum", frames: 0, out: "S1", in: "S2" },
-  { at: RACK.at, kind: "rack", frames: RACK.frames, out: "S2", in: "S3", swapAt: RACK.at + RACK.frames / 2, covered: { from: RACK.at + Math.round(RACK.frames * 0.3), to: RACK.at + Math.round(RACK.frames * 0.7) } },
+  // the rack swaps across its middle 28 %; wherever the cross is visible both shots are at 85 % of full defocus or more
+  { at: RACK.at, kind: "rack", frames: RACK.frames, out: "S2", in: "S3", swapAt: RACK.at + RACK.frames / 2, covered: { from: RACK.at + Math.round(RACK.frames * 0.36), to: RACK.at + Math.round(RACK.frames * 0.64) } },
   { at: IRIS.at, kind: "ring", frames: IRIS.frames, out: "S3", in: "S4" },
 ];
 

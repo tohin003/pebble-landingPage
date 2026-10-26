@@ -11,7 +11,7 @@
 //
 // Pure (no React): the demo, the set pieces and the validators build the same cameras.
 import { CAMERA, TRANSITION, f60, sec } from "../tokens";
-import { E_LEAVE, E_MOVE } from "../motion/ease";
+import { E_LEAVE, E_MOVE, curve } from "../motion/ease";
 import { toPose, type CamVel, type Pose, type VelocityCamera } from "../motion/camera";
 
 const endPose = (cam: VelocityCamera): Pose => toPose(cam.end().state);
@@ -72,9 +72,17 @@ export const crane = (cam: VelocityCamera, toFrame: number, dy: number, zoomFact
 /**
  * The ring-led arrival: travel to `to` over 0.7–1.4 s, arriving with momentum (the incoming speed decays in a glide of
  * τ = 0.25–0.5 s that ends on the framing), so reading begins in a slow drift, never after a dead stop. The Hermite
- * lands `coast` short of the framing at the glide's start speed; the glide covers the rest.
+ * lands short of the framing at the glide's start speed; the glide covers the rest. With `drift` (world units per
+ * frame) the glide settles into that drift instead of rest, and still lands on the framing at `glideTo`.
  */
-export const travelTo = (cam: VelocityCamera, toFrame: number, to: Pose, glideTo: number, fps: number, opts: { arriveSpeedPxPerFrame?: number; tauS?: number } = {}): VelocityCamera => {
+export const travelTo = (
+  cam: VelocityCamera,
+  toFrame: number,
+  to: Pose,
+  glideTo: number,
+  fps: number,
+  opts: { arriveSpeedPxPerFrame?: number; tauS?: number; drift?: Partial<CamVel> } = {},
+): VelocityCamera => {
   const start = endPose(cam);
   const tau = sec(opts.tauS ?? 0.35, fps);
   const dx = to.x - start.x;
@@ -85,10 +93,18 @@ export const travelTo = (cam: VelocityCamera, toFrame: number, to: Pose, glideTo
   const v = d > 1e-6 ? Math.min(vScreen / to.zoom, d / Math.max(1, toFrame - cam.end().frame)) : 0;
   const ux = d > 1e-6 ? dx / d : 0;
   const uy = d > 1e-6 ? dy / d : 0;
-  const coast = v * tau * (1 - Math.exp(-(glideTo - toFrame) / tau));
-  const handOff: Pose = { x: to.x - ux * coast, y: to.y - uy * coast, zoom: to.zoom };
+  const vd = { x: opts.drift?.x ?? 0, y: opts.drift?.y ?? 0, lz: opts.drift?.lz ?? 0 };
+  const T = glideTo - toFrame;
+  // where the glide must start so that it ends on `to`: x(T) = x0 + vd·T + (v0 − vd)·τ·(1 − e^(−T/τ))
+  const decay = tau * (1 - Math.exp(-T / tau));
+  const back = (v0: number, vdk: number) => vdk * T + (v0 - vdk) * decay;
+  const handOff: Pose = {
+    x: to.x - back(ux * v, vd.x),
+    y: to.y - back(uy * v, vd.y),
+    zoom: Math.exp(Math.log(to.zoom) - back(0, vd.lz)),
+  };
   cam.hermite(toFrame, handOff, { x: ux * v, y: uy * v, lz: 0 });
-  return cam.glide(glideTo, tau, { x: 0, y: 0, lz: 0 });
+  return cam.glide(glideTo, tau, vd);
 };
 
 /** Accelerate out of the shot into a cut, over 12–24 frames (60 fps) on E-leave, by a screen distance `dPx`. */
@@ -103,6 +119,20 @@ export const leave = (cam: VelocityCamera, toFrame: number, dir: { x: number; y:
 
 /** The screen speed (px per frame) an E-leave of `dPx` over `frames` reaches at the cut: 4.25 × the mean. */
 export const leaveExitSpeed = (dPx: number, frames: number): number => (dPx / frames) * E_LEAVE.v1;
+
+/**
+ * A focus pull inside a shot (kind 6 without a cut): the depth factor in focus, which is linear in dioptres (1 ÷
+ * distance), moves from `from` to `to` over `frames` (24–48 at 60 fps) on a both-ways ease. Ported from HyperFrames'
+ * rack-focus block (Apache-2.0, v0.8.202, registry/blocks/rack-focus, git blob fca7b47941): "a focus ring is roughly
+ * linear in dioptres, not in metres", so interpolating 1/distance makes the pull travel evenly; power2.inOut is its
+ * default ease. Feed the result to <World3D focus={...}>.
+ */
+export const focusPull =
+  (from: number, to: number, at: number, frames: number, ease = "power2.inOut") =>
+  (frame: number): number => {
+    const u = frames > 0 ? (frame - at) / frames : 1;
+    return from + (to - from) * curve(ease)(u);
+  };
 
 /** Frame counts for a 60 fps number at this fps (re-exported for move planning). */
 export const frames60 = f60;

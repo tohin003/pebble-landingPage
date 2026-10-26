@@ -6,8 +6,11 @@
 //   the maximum, where the darker state is below 0.80. Any area of a quarter of a 10° field counts: about 2.8 % of the
 //   screen, so the frame is cut into a 6 × 6 grid of tiles (2.8 % each) and every tile is checked, plus the whole
 //   frame. At most three flashes (six opposing transitions) in any one second.
-// - Dead frames: a run of 1 s or more whose consecutive frames differ by less than `deadMad` levels on average,
-//   outside the waiting states given.
+// - Dead frames: a window of 1 s whose last frame (and middle frame) differ from its first by less than `deadMad`
+//   levels on average, outside the waiting states given. Comparing across the whole second, not frame to frame, is what
+//   catches a frame that is "moving" too slowly to see: a 0.2 px drift a frame is a still to the eye, and frame-to-frame
+//   differences of a slow drift are below any noise threshold even when the second as a whole does change (measured
+//   on the demo's first render: frame-to-frame MAD missed nothing and flagged everything slow).
 // - Pops: a frame-to-frame difference more than 3× the median of its six neighbours and above 2 levels, away from the
 //   cuts given (a hard cut is meant to differ) (TOOLS_TESTS §1's definition).
 // - Dips: a seam whose mean luma falls more than 3 levels below both sides (a crossfade over a third layer).
@@ -20,7 +23,7 @@ export interface LumaOptions {
   cuts?: readonly number[];
   /** waiting states inside takes (still frames allowed) */
   waits?: readonly { from: number; to: number }[];
-  /** mean absolute difference (8-bit levels) below which two frames count as identical */
+  /** mean absolute difference (8-bit levels) between a window's first and last frames below which it counts as dead */
   deadMad?: number;
   grid?: number;
 }
@@ -93,7 +96,7 @@ export function analyseLuma(frames: readonly Uint8Array[], o: LumaOptions): Luma
   const W = o.width;
   const H = o.height;
   const G = o.grid ?? 6;
-  const deadMad = o.deadMad ?? 0.15;
+  const deadMad = o.deadMad ?? 0.3;
   const meanLuma: number[] = [];
   const tileL: number[][] = Array.from({ length: G * G + 1 }, () => []);
   const mad: number[] = [0];
@@ -136,17 +139,28 @@ export function analyseLuma(frames: readonly Uint8Array[], o: LumaOptions): Luma
     if (m.max > 3) flashFrames.push(m.at);
   }
   if (maxF > 3) problems.push(`flashes: ${maxF} in one second in some area (WCAG 2.3.1 allows 3), around frames ${flashFrames.slice(0, 5).join(", ")}`);
-  // dead runs
+  // dead windows: across a whole second (and its middle), the picture must change
+  const between = (a: number, b: number) => {
+    const A = frames[a]!;
+    const B = frames[b]!;
+    let d = 0;
+    for (let i = 0; i < W * H; i++) d += Math.abs(A[i]! - B[i]!);
+    return d / (W * H);
+  };
   const inWait = (f: number) => !!o.waits?.some((w) => f >= w.from && f < w.to);
+  const win = Math.max(2, Math.round(o.fps));
+  const dead = new Uint8Array(n);
+  for (let f = 0; f + win - 1 < n; f++) {
+    if (inWait(f) || inWait(f + win - 1)) continue;
+    if (between(f, f + win - 1) < deadMad && between(f, f + (win >> 1)) < deadMad) for (let k = f; k < f + win; k++) dead[k] = 1;
+  }
   const deadRuns: { from: number; to: number; seconds: number }[] = [];
-  let run = 0;
-  for (let f = 1; f <= n; f++) {
-    const still = f < n && mad[f]! < deadMad && !inWait(f);
-    if (still) run++;
-    else {
-      if (run + 1 >= o.fps) deadRuns.push({ from: f - run - 1, to: f, seconds: (run + 1) / o.fps });
-      run = 0;
-    }
+  for (let f = 0; f < n; f++) {
+    if (!dead[f]) continue;
+    let g = f;
+    while (g < n && dead[g]) g++;
+    deadRuns.push({ from: f, to: g, seconds: (g - f) / o.fps });
+    f = g;
   }
   for (const d of deadRuns) problems.push(`dead frames: ${d.seconds.toFixed(2)} s without change from frame ${d.from}`);
   // pops away from cuts

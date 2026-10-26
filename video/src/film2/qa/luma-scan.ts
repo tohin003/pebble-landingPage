@@ -1,7 +1,7 @@
 // Decodes a render to small grey frames with FFmpeg and runs the pixel checks (qa/luma.ts). FFmpeg is a heavy job:
 //   cd <repo> && source scripts/env.sh && scripts/heavy.sh f2-luma /usr/sbin/taskpolicy -c utility \
 //     bun video/src/film2/qa/luma-scan.ts <video.mp4> --fps 60 --cuts 120,480 --waits 300-360 --out report.json
-// The frames stay in memory (96 × 54 grey = 5 KB each); nothing is written but the report.
+// The frames stay in memory (192 × 108 grey = 20 KB each, 34 MB for 28 s at 60 fps); nothing is written but the report.
 import { spawn } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { analyseLuma } from "./luma";
@@ -9,7 +9,7 @@ import { analyseLuma } from "./luma";
 const args = process.argv.slice(2);
 const file = args[0];
 if (!file) {
-  console.error("usage: bun luma-scan.ts <video> [--fps 60] [--cuts a,b,c] [--waits a-b,c-d] [--out report.json] [--size 96x54]");
+  console.error("usage: bun luma-scan.ts <video> [--fps 60] [--cuts a,b,c] [--waits a-b,c-d] [--out report.json] [--size 192x108]");
   process.exit(64);
 }
 const opt = (name: string) => {
@@ -25,7 +25,7 @@ const waits = (opt("waits") ?? "")
     const [a, b] = r.split("-").map(Number);
     return { from: a!, to: b! };
   });
-const [W, H] = (opt("size") ?? "96x54").split("x").map(Number) as [number, number];
+const [W, H] = (opt("size") ?? "192x108").split("x").map(Number) as [number, number];
 const ff = process.env.FF ?? "/opt/homebrew/bin/ffmpeg";
 
 const proc = spawn(ff, ["-v", "error", "-i", file, "-vf", `scale=${W}:${H}:flags=area,format=gray`, "-f", "rawvideo", "-"], { stdio: ["ignore", "pipe", "inherit"] });
