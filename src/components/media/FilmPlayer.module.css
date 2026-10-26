@@ -50,6 +50,12 @@
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
 }
 
+/* the 1:1 film on phones (FilmPlayer: FILM_PHONE_QUERY): a square screen, as tall as the theatre allows */
+.screen[data-aspect="square"] {
+  width: min(100%, calc(100dvh - 200px), 1080px);
+  aspect-ratio: 1 / 1;
+}
+
 .video {
   width: 100%;
   height: 100%;

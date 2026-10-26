@@ -7,8 +7,9 @@
 // run again inside Vercel's functions on each hourly revalidation, where public/ isn't on disk, and would hide every
 // video.) Media that isn't rendered yet degrades to its poster or a still, never to a broken player. Paths are
 // versioned (/v1/); a re-render goes to v2/, because /media/v1 and /ui/v1 are cached as immutable for a year. The
-// energetic recut's film is one: its videos and text tracks are in /media/v2 (FILM_MEDIA), and everything else, its
-// poster included, stays in /media/v1.
+// launch trailer is one: its videos (with a 1:1 cut for phones), its text tracks and its poster (the 16:9 film's own
+// frame 0) are in /media/v2 (FILM_MEDIA); the loops and the wallpaper stay in /media/v1. The first film's poster and
+// its teaser T0 are retired (OVERRIDES §46: they showed Pebble 1.0.4's rows and a usage line with a rate).
 
 export type MediaFile = Readonly<{ src: string; available: boolean }>;
 
@@ -71,19 +72,21 @@ export const LOOP_PHONE_FRAME = { width: 1080, height: 1350 } as const;
 
 export type FilmQuality = "720" | "1080";
 
+/** The 1:1 film for phones (OVERRIDES §46 P2-9): at phone width the 16:9 film's interface text is about 5 px, and the
+ *  square film keeps it at 11 px or more. Its timing is the 16:9 film's, frame for frame, so the text tracks are shared.
+ *  The theatre picks it below FILM_PHONE_QUERY (src/lib/filmSources.ts). */
+export const FILM_PHONE_FRAME = { width: 1080, height: 1080 } as const;
+
 export type FilmMedia = Readonly<{
   /** per quality, HEVC first, then H.264; only the available ones */
   sources: Readonly<Record<FilmQuality, readonly VideoSource[]>>;
+  /** the 1:1 film for phones (filmSources.ts FILM_PHONE_QUERY), HEVC first, then H.264; only the available ones */
+  phoneSources: readonly VideoSource[];
   captions: MediaFile;
   chapters: MediaFile;
   /** text descriptions for the audio-description toggle (critic H4a) */
   descriptions: MediaFile;
-  poster: ImageSet;
-  available: boolean;
-}>;
-
-export type TeaserMedia = Readonly<{
-  sources: readonly VideoSource[];
+  /** the 16:9 film's frame 0 (the trailer's cold open: the pebble's eyes in the right third, the centre dark) */
   poster: ImageSet;
   available: boolean;
 }>;
@@ -96,9 +99,10 @@ export const VIDEO_TYPES: Readonly<Record<VideoCodec, string>> = {
 
 const MEDIA = "/media/v1";
 /**
- * The film's own files since the energetic recut (OVERRIDES §34, §35 decision 8): film-1080 and film-720 (HEVC and
- * H.264) and the film's three text tracks. Its poster (the teaser T0's frame 0), the teaser, the loops and the
- * wallpaper didn't change, so they stay in MEDIA. tools/encode/verify.mjs reads this name.
+ * The film's own files (OVERRIDES §34, §35 decision 8, §46): film-1080 and film-720 (HEVC and H.264), the 1:1
+ * film-square for phones (H.264, and HEVC when the budget allows), the three text tracks and film.poster (AVIF and
+ * WebP, 1920 × 1080). The loops and the wallpaper didn't change, so they stay in MEDIA. tools/encode/verify.mjs reads
+ * this name.
  */
 const FILM_MEDIA = "/media/v2";
 const UI = "/ui/v1";
@@ -154,17 +158,13 @@ export function filmMedia(): FilmMedia {
   const sources = { "720": videoSources(`${FILM_MEDIA}/film-720`), "1080": videoSources(`${FILM_MEDIA}/film-1080`) };
   return {
     sources,
+    phoneSources: videoSources(`${FILM_MEDIA}/film-square`),
     captions: mediaFile(`${FILM_MEDIA}/film.en.vtt`),
     chapters: mediaFile(`${FILM_MEDIA}/film.chapters.vtt`),
     descriptions: mediaFile(`${FILM_MEDIA}/film.descriptions.en.vtt`),
-    poster: imageSet(`${MEDIA}/film.poster`, 1920, 1080),
+    poster: imageSet(`${FILM_MEDIA}/film.poster`, 1920, 1080),
     available: sources["720"].length > 0 || sources["1080"].length > 0,
   };
-}
-
-export function teaserMedia(): TeaserMedia {
-  const sources = videoSources(`${MEDIA}/teaser-720`);
-  return { sources, poster: imageSet(`${MEDIA}/teaser.poster`, 1280, 720), available: sources.length > 0 };
 }
 
 export type Theme = "light" | "dark";

@@ -1,12 +1,12 @@
 /* The film's play button over the poster: the galet on the page's ground with an ink play mark (DESIGN-LEXINGTON §6
-   Film). Playing the film is not one of the accent's three jobs, and no control casts a shadow (§3.5). The poster puts
-   the stone over Pebble's light window, where a --bg galet alone had no edge (it read as a blank patch erasing the
-   window's text), so a galet 1 px larger in --line behind it is its ring, as on the loops' pause and play buttons.
-   The world snaps: a 3 % swell under the pointer, a press to 0.98.
-   The poster is always light (the film has no dark version), so the stone keeps the light theme's ground, hairline and
-   ink in both themes. In the night ground's colours it was a near-black blob with a mark on a light picture, the look
-   PHILOSOPHY rules out ("a dark blob with eyes is another product's mark"; critic C25). The values are globals.css's
-   light --bg, --line and --ink. */
+   Film). Playing the film is not one of the accent's three jobs, and no control casts a shadow (§3.5). A galet 1 px
+   larger in --line behind it is its ring, as on the loops' pause and play buttons (on the first film's light poster a
+   --bg galet alone had no edge). The world snaps: a 3 % swell under the pointer, a press to 0.98.
+   The poster is the trailer's frame 0, a dark frame in both themes (OVERRIDES §46): the pebble's eyes in its right
+   third, the centre, under this button, the dark riverbed. The stone keeps the light theme's ground, hairline and ink
+   in both themes, so it stands out there as a light stone with an ink mark (#f8f9f6 on the riverbed's #1d2420 is
+   about 15:1), never a dark blob ("a dark blob with eyes is another product's mark", PHILOSOPHY; critic C25). The
+   values are globals.css's light --bg, --line and --ink. */
 .trigger {
   position: relative;
   display: grid;
@@ -43,19 +43,12 @@
   color: #1d2520;
 }
 
-/* Its focus ring sits on that light poster too. The night theme's accent all but vanished there (the loops' buttons
-   measured 1.02:1, QA F-A11Y-1), so in the dark theme the stone keeps the light theme's accent ring as well, with a
-   halo in the light ground that carries it over any frame of the teaser. The light theme's ring is unchanged. */
-:global(:root[data-theme="dark"]) .trigger[data-shape="galet"]:focus-visible {
+/* Its focus ring sits on that dark poster too, in both themes: the light theme's accent ring (#506e54) on a halo in
+   the light ground, which carries it over any frame (the ring on the halo is about 5.4:1; the ring alone on the dark
+   riverbed would be about 2.8:1, and the night theme's accent all but vanished on the old light poster, QA F-A11Y-1). */
+.trigger[data-shape="galet"]:focus-visible {
   outline-color: #506e54;
   box-shadow: 0 0 0 7px var(--on-poster-ground);
-}
-
-@media (prefers-color-scheme: dark) {
-  :global(:root:not([data-theme])) .trigger[data-shape="galet"]:focus-visible {
-    outline-color: #506e54;
-    box-shadow: 0 0 0 7px var(--on-poster-ground);
-  }
 }
 
 .galet {

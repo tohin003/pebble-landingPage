@@ -4,10 +4,12 @@
 // - Mount it once per page, with the film's manifest entry and its timed chapters. Open it with openFilm() from
 //   film-events.ts (FilmTrigger, ChapterChip): the click's handler dispatches the event, and this component sets the
 //   source, opens the dialog and calls video.play() synchronously, inside the same user activation (M5).
-// - The source is chosen at click time: 1080p when screen.width × devicePixelRatio ≥ 1700, otherwise 720p (C6, C9);
-//   HEVC first when the browser can play it, then H.264. A browser can say it plays HEVC and then fail to decode the
-//   file: when the chosen source errors, the next one it can play (the H.264 file first) takes over, from where the
-//   film was, and only when none is left does the theatre show its note (QA F-FILM-1).
+// - The source is chosen at click time: on phones (FILM_PHONE_QUERY, max-width 560px) the 1:1 film first, whose
+//   interface text stays readable at phone width (OVERRIDES §46 P2-9), in a square screen; otherwise 1080p when
+//   screen.width × devicePixelRatio ≥ 1700, else 720p (C6, C9); HEVC first when the browser can play it, then H.264.
+//   A browser can say it plays HEVC and then fail to decode the file: when the chosen source errors, the next one it
+//   can play (the H.264 file first, then the 16:9 films) takes over, from where the film was, and only when none is
+//   left does the theatre show its note (QA F-FILM-1). The 16:9 poster shows only over the 16:9 film.
 // - Captions (not on by default), chapters and text descriptions are <track>s. A chapter seeks after loadedmetadata.
 // - Audio description (critic H4a): when film.descriptions.en.vtt exists and the browser can speak, a toggle reads
 //   each description cue aloud with speechSynthesis as the film reaches it. It is extended description: when the
@@ -20,20 +22,22 @@ import Link from "next/link";
 import { Icon } from "@/components/shell/icons";
 import { filmDialog } from "@/content/copy";
 import { browserClock, browserVoice, describeFilm, trackOf, videoOf, type Describer } from "@/lib/audioDescription";
-import type { FilmMedia, FilmQuality, VideoSource } from "@/lib/media";
+import { FILM_PHONE_QUERY, HD_PIXELS, filmSourceOrder, isPhoneSource } from "@/lib/filmSources";
+import type { FilmMedia, VideoSource } from "@/lib/media";
 import { FILM_OPEN, type FilmOpenDetail } from "./film-events";
 import styles from "./FilmPlayer.module.css";
 
 /** A chapter with a start time; `time` is its label, for example "0:24" (chapters.ts formatTimecode). */
 export type TimedChapter = Readonly<{ id: string; title: string; startSeconds: number; time: string }>;
 
-const HD_PIXELS = 1700;
-
-/** Every source this browser says it can play, best first: the wanted quality's HEVC, then its H.264, then the other's. */
+/** Every source this browser says it can play, best first (filmSources.ts): on phones the 1:1 film, then the wanted
+ *  16:9 quality, then the other; HEVC before H.264 in each. */
 function playableSources(film: FilmMedia, video: HTMLVideoElement): VideoSource[] {
-  const wantHd = window.screen.width * (window.devicePixelRatio || 1) >= HD_PIXELS;
-  const order: FilmQuality[] = wantHd ? ["1080", "720"] : ["720", "1080"];
-  return order.flatMap((quality) => film.sources[quality].filter((source) => video.canPlayType(source.type) !== ""));
+  return filmSourceOrder(film, {
+    phone: typeof window.matchMedia === "function" && window.matchMedia(FILM_PHONE_QUERY).matches,
+    hd: window.screen.width * (window.devicePixelRatio || 1) >= HD_PIXELS,
+    canPlay: (type) => video.canPlayType(type) !== "",
+  });
 }
 
 export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: readonly TimedChapter[] }) {
@@ -45,6 +49,7 @@ export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: read
   const fallbacks = useRef<VideoSource[]>([]);
   const describer = useRef<Describer | null>(null);
   const [failed, setFailed] = useState(false);
+  const [square, setSquare] = useState(false);
   const [canSpeak, setCanSpeak] = useState(false);
   const [describe, setDescribe] = useState(false);
 
@@ -85,6 +90,7 @@ export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: read
       const [source = null, ...rest] = playableSources(film, v);
       fallbacks.current = rest;
       setFailed(!source);
+      setSquare(isPhoneSource(film, source));
       if (source && v.getAttribute("src") !== source.src) v.src = source.src;
       if (!d.open) d.showModal();
       const start = detail.chapter ? chapters.find((c) => c.id === detail.chapter)?.startSeconds : undefined;
@@ -132,14 +138,14 @@ export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: read
           <Icon name="X" className={styles.closeIcon} />
           <span className="sr-only">{filmDialog.close}</span>
         </button>
-        <div className={styles.screen}>
+        <div className={styles.screen} data-aspect={square ? "square" : undefined}>
           <video
             ref={video}
             className={styles.video}
             controls
             playsInline
             preload="none"
-            poster={film.poster.webp.available ? film.poster.webp.src : undefined}
+            poster={!square && film.poster.webp.available ? film.poster.webp.src : undefined}
             onLoadedMetadata={() => {
               const v = video.current;
               if (v && pendingSeek.current !== null) {
@@ -152,6 +158,7 @@ export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: read
               const next = fallbacks.current.shift();
               if (!v || !next) return setFailed(true);
               if (v.currentTime > 0) pendingSeek.current = v.currentTime;
+              setSquare(isPhoneSource(film, next));
               v.src = next.src;
               void v.play().catch(() => {});
             }}

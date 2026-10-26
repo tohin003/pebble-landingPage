@@ -19,20 +19,10 @@
   height: 100%;
 }
 
+/* the film's poster is its own frame 0, a dark frame with the pebble's eyes in its right third (OVERRIDES §46): it
+   sits on the light and the night ground alike, so it isn't dimmed in the dark theme as the light stills are */
 .posterImg {
   object-fit: cover;
-}
-
-/* the film's poster is a light frame (the film has no dark version): dimmed a little on the night ground, like the
-   teaser and the loops (LoopVideo.module.css) */
-:global(:root[data-theme="dark"]) .posterImg {
-  filter: brightness(0.88);
-}
-
-@media (prefers-color-scheme: dark) {
-  :global(:root:not([data-theme])) .posterImg {
-    filter: brightness(0.88);
-  }
 }
 
 .window {
@@ -53,12 +43,6 @@
   height: auto; /* the SVG's own height="100%" would otherwise stretch it to the frame */
   aspect-ratio: 1;
   filter: drop-shadow(0 6px 6px rgba(var(--shade), 0.16));
-}
-
-/* T0 fills the frame; LoopVideo's own pause button sits in its corner */
-.teaser {
-  position: absolute;
-  inset: 0;
 }
 
 .play {
