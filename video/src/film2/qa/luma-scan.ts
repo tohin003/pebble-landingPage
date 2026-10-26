@@ -84,7 +84,7 @@ proc.on("close", (code) => {
     dips: r.dips,
     meanLumaRange: [Math.min(...r.meanLuma), Math.max(...r.meanLuma)].map((v) => Math.round(v * 10) / 10),
     maxMad: Math.round(Math.max(...r.mad) * 100) / 100,
-    ...(rs ? { ink: rs.ink, stones: { framesChecked: rs.stones.framesChecked, twoStoneRuns: rs.stones.twoStoneRuns }, apertures: rs.apertures.map(({ trace: _t, ...a }) => a) } : {}),
+    ...(rs ? { tileSettles: rs.settles, popCauses: rs.popCauses, ink: rs.ink, stones: { framesChecked: rs.stones.framesChecked, twoStoneRuns: rs.stones.twoStoneRuns }, apertures: rs.apertures.map(({ trace: _t, ...a }) => a) } : {}),
     problems,
   };
   const out = opt("out");

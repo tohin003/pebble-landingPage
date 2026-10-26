@@ -129,9 +129,15 @@ describe("tile pops (CR-03)", () => {
     expect(analyseLuma(drift(60, 96, 54, (f) => Math.min(1, Math.max(0, (46 - f) / 16))), { fps: 60, width: 96, height: 54 }).tilePops).toEqual([]);
     expect(analyseLuma(drift(60, 96, 54, (f) => (f < 30 ? 1 : 0)), { fps: 60, width: 96, height: 54, cuts: [30] }).tilePops).toEqual([]);
   });
-  test("the rule is the whole frame's: above 2 levels and 3× the tile's own neighbours", () => {
-    const series = [Array.from({ length: 20 }, (_, f) => (f === 10 ? 2.5 : 0.5)), Array.from({ length: 20 }, (_, f) => (f === 10 ? 1.9 : 0.1))];
+  test("above 3 levels and 3× its own neighbours, past and future alike", () => {
+    const series = [Array.from({ length: 20 }, (_, f) => (f === 10 ? 3.5 : 0.5)), Array.from({ length: 20 }, (_, f) => (f === 10 ? 2.9 : 0.1)), Array.from({ length: 20 }, (_, f) => (f === 10 ? 3.5 : 1.5))];
     expect(findTilePops(series, 2).map((p) => [p.frame, p.tile])).toEqual([[10, 0]]);
+  });
+  test("an entrance's fast first frame (power2.out, a blur-in over 8 frames) is not a pop: the motion goes on", () => {
+    // the per-frame changes of a line fading in on power2.out, after still frames: 23 %, 21 %, 18 % … of 12 levels
+    const ramp = [0.234, 0.205, 0.176, 0.146, 0.117, 0.088, 0.059, 0.029];
+    const series = [Array.from({ length: 30 }, (_, f) => (f >= 10 && f < 18 ? 12 * ramp[f - 10]! : 0.05))];
+    expect(findTilePops(series, 1)).toEqual([]);
   });
 });
 
@@ -219,6 +225,32 @@ describe("the aperture's bands on a render (CR-07)", () => {
 });
 
 describe("the reel scan (qa/reel-scan.ts, what luma-scan.ts runs with --marks)", () => {
+  test("tile pops on a reel: a block that vanishes is one; a line settling a pixel or rising is a move, not a pop", () => {
+    const w = 360;
+    const h = 216;
+    const marks = { aspect: "16:9", fps: 60, width: 720, height: 432, total: 60, cuts: [], waits: [], hits: [], types: [], stones: [], apertures: [] };
+    const run = (draw: (px: Uint8Array, f: number) => void) => {
+      const scan = new ReelScan(w, h, marks);
+      for (let f = 0; f < 60; f++) {
+        const px = new Uint8Array(w * h);
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) px[y * w + x] = 200 + ((x * 7 + y * 3) % 23);
+        draw(px, f);
+        scan.push(px);
+      }
+      return scan.finish();
+    };
+    // glyph-like strokes in one tile (60 × 36 px at this size), drawn at a vertical offset
+    const strokes = (px: Uint8Array, dy: number) => {
+      for (let y = 40; y < 64; y++) for (let x = 70; x < 120; x++) if (x % 6 < 2 || (y + dy) % 8 < 2) px[(y + dy) * w + x] = 35;
+    };
+    const vanish = run((px, f) => f < 30 && strokes(px, 0));
+    expect(vanish.luma.tilePops.map((p) => p.frame)).toEqual([30]);
+    expect(vanish.popCauses[0]!.cause).toMatch(/no line here/);
+    // the same strokes settling 1 px on frame 30 and staying: the tile's mean is kept
+    const settle = run((px, f) => strokes(px, f < 30 ? 0 : 1));
+    expect(settle.luma.tilePops).toEqual([]);
+    expect(settle.settles).toBeGreaterThanOrEqual(0);
+  });
   test("a synthetic reel: the line that vanishes, the second stone and the late bands are all reported", () => {
     const w = 320;
     const h = 180;

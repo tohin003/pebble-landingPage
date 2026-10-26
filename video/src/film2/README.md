@@ -467,9 +467,9 @@ motion, and the plan checks looked only at what a plan declared it read. These c
 | `smallPrintHolds` | `setpieces/qa.ts` | each end-card page (its lines on screen together) held for its reading time; any line with the honest line's text held 9 s | CR-10 |
 | `askActClock` | `setpieces/qa.ts` | a still (or another take) and a take view of the same window never share a frame; views of one take on one clock pass | CR-11 |
 | `typeExits` | `setpieces/qa.ts` | no line vanishes: a "camera" exit draws nothing (type is a screen layer), nor does a line held to a piece's end | CR-03 |
-| tile pops | `qa/luma.ts` | each of the 6 × 6 tiles against its own six neighbours in time (the whole frame's rule, per tile) | CR-03 |
-| ink | `qa/ink.ts` | the ink in each line's rect never falls by more than 50 % of its held ink within 6 frames unless an exit is declared | CR-03 |
-| stones | `qa/stones.ts` | wherever the plan shows the stone, never two stone-sized dark blobs | CR-01 |
+| tile pops | `qa/luma.ts`, `qa/reel-scan.ts` | each of the 6 × 6 tiles above 3 levels and above 3× the larger of the medians of its three frames before and its three after; on a reel, not a move (a 2 px shift does not explain it, and it changes the tile's mean by at least a quarter of its difference) and not a line's own entrance | CR-03 |
+| ink | `qa/ink.ts` | each line's coverage (pixels on its ink's side of the midpoint between its ground and its own colour) never falls by more than 50 % of its held ink within 6 frames, to under half, unless an exit is declared | CR-03 |
+| stones | `qa/stones.ts` | around the plan's stones, outside its type, never two stone-sized dark blobs | CR-01 |
 | bands | `qa/bands.ts` | the Drop's bands start to open within 2 frames of the hit | CR-07 |
 
 **What they read.** Each placeholder still carries its measured body text and every legible word in its crop
@@ -512,10 +512,34 @@ stoneCount 3), where the review saw it:
 | CR-11 a still of the held card above a live, verified run | `askActClock`: Ring 4 303–929; also the Drop's 1.0.x panel around RS-9's card |
 | CR-21 `ringIris()` defaults to E-arrive | `irisEase`: the foundation demo's iris at 1358 |
 
-**Limits.** The ink rects use approximate advance widths; tile pops skip cuts (the ink check covers lines that vanish
-on one); a lift's descender residue inside its declared exit ("gg" at 2050) is not caught; stone blobs are dark pixels at
-grey 140 or under; `planesInFrame` and `legibleWords` use the body text's size, so the Drop's companion panel (about
-20 px) sits on the line.
+**On the current reels (27 Oct, `luma-scan.ts --marks`, 8–12 s a reel through heavy.sh), every reel fails**, where the
+review saw it, and on nothing it did not except the abrupt events listed:
+
+| Review | Caught on the render |
+|---|---|
+| CR-03 "Its own tools." 1,520 ink px to 0 at 3366–3368, at a whole-frame MAD of 3.15 | ink: 1,589 to 0 between 3367 and 3368 (16:9; 1,345 in 1:1, 1,872 in 9:16); tile pop at 3368: 12.9 levels against 1.0–1.4 in its own tiles (15.4 in 1:1, 10.2 in 9:16) |
+| CR-03 the last cascade item gone on the cut at 2054 | ink: 1,030 to 0 between 2053 and 2054 (1,222 in 1:1, 1,721 in 9:16); no other line of the 23–26 per reel falls without an exit |
+| CR-01 two stones at 4632–4637 (1:1 4632–4638, 9:16 4632–4636) | stones: two blobs on 4634–4637 (1:1 4633–4637, 9:16 4634–4637; the title's stone is faint inside the iris's feather for its first frames), one everywhere else |
+| CR-07 9:16 opens about 202, 16:9 about 181 | bands: 9:16 opens on 204, 24 frames after the hit (the band 143 px at half size until then); 16:9 and 1:1 on 182 (within 2) |
+
+They also find, in all three reels: the 4-frame blur exits of L04 (177–178), Ring 4's limit (938–940), the honest line
+(3130–3132) and L25 (4022–4024), each word leaving in 2 frames (5.4–21.8 levels in a tile; CR-03 asks 10–14 frames); and
+cards popping in on the shared entrance (E-arrive: 38 % opacity on its first frame, 92 % by its third): Ring 4's test card at 965 and the
+climax's ask at 3148 (16:9) and kept card at 3436 (9:16). Every one was looked at in crops.
+
+**Calibration** (on these reels, looked at in crops): the encoder's pulses and the pebble's blinks measure 2.0–2.9 levels
+in still tiles, hence 3 for a tile (the whole frame keeps 2); glyphs settling a pixel at the end of a slow rise measure up
+to 8.3 levels in a tile but change its mean by at most 0.11 of that, while every line or card that appeared, vanished or
+faded changed it by 0.44–0.97, hence the move test; a moving plane behind a line halved an ink mass but not its
+coverage; the placeholders carry Pebble's own avatar and dark controls, and Fraunces at 72–96 px makes compact dark
+glyphs, hence blobs only around the plan's stones and outside its type. The marks-mode luma frames are box-filtered from
+the render (FFmpeg's area scaler read 8–42 % lower on small moving type: 1.97 and 1.24 against 2.13), so the whole-frame pop rule there also
+reports 1:1's 3130 and 5279, the honest line's and page 1's fast exits.
+
+**Limits.** The ink rects use approximate advance widths; tile pops skip cuts and transitions (the ink check covers lines
+that vanish on one) and the frame's opening on the hit; a lift's descender residue inside its declared exit ("gg" at
+2050) is not caught; stone blobs are dark pixels at grey 140 or under; `planesInFrame` and `legibleWords` use the body
+text's size, so the Drop's companion panel (about 20 px) sits on the line.
 
 ## The lead's rulings (OVERRIDES §52), as decided and as built
 

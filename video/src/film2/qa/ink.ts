@@ -1,8 +1,13 @@
 // Ink presence per type rect (added after the craft review: CR-03, CR-15). A line on screen is a rect of ink; this
 // tracks how much ink each line's rect holds on every frame of a render, and refuses a fall the plan did not declare:
 //
-//   the ink in a line's rect may not fall by more than 50 % within 6 frames unless an exit is declared over those
-//   frames (a blur or a lift drawn by KineticLine, a cascade's swap out)
+//   the ink in a line's rect may not fall by more than 50 % of its held ink within 6 frames, to under half of it,
+//   unless an exit is declared over those frames (a blur or a lift drawn by KineticLine, a cascade's swap out)
+//
+// The ink is the line's coverage: the pixels of its rect on the ink's side of the midpoint between the rect's ground
+// and the line's own colour (the plan knows it), so a darker plane passing behind the line does not halve it (an ink
+// mass did, on the 9:16 reel). A fall must end under half the held ink: UI text sliding out from under a line takes
+// its own ink away, not the line's (the 1:1 reel).
 //
 // It sees what the whole-frame pixel checks cannot: "Its own tools." vanished in 2 frames (1,520 ink pixels to 0) at
 // a whole-frame difference inside its moving neighbours', and the cascade's last item vanished on the cut, where a
@@ -22,6 +27,8 @@ export interface InkTrack {
   rect: Rect;
   /** dark ink on a lighter ground (the film's ink), or light ink on a dark band (L04 on the night green) */
   polarity: InkPolarity;
+  /** the line's own colour as an 8-bit grey level (coverage is counted against it); default the ink mass measure */
+  inkLuma?: number;
   /** the frame its entrance starts, and the frame it has fully landed */
   from: number;
   landed: number;
@@ -45,10 +52,12 @@ export const INK = {
 } as const;
 
 /**
- * The ink in `rect` of a grey frame, in fully inked pixels: Σ max(0, |ground − px| − noise) ÷ 255 over the pixels on
- * the ink's side of the ground, where the ground is the rect's 85th percentile (dark ink) or 15th (light ink).
+ * The ink in `rect` of a grey frame. With the line's own grey level (`inkLuma`): its coverage, the pixels on the ink's
+ * side of the midpoint between the ground and that level (and at least `noise` from the ground). Without it: the ink
+ * mass in fully inked pixels, Σ max(0, |ground − px| − noise) ÷ 255. The ground is the rect's 85th percentile (dark ink)
+ * or its 15th (light ink).
  */
-export function inkIn(frame: Uint8Array, W: number, H: number, rect: Rect, polarity: InkPolarity, noise: number = INK.noise): number {
+export function inkIn(frame: Uint8Array, W: number, H: number, rect: Rect, polarity: InkPolarity, noise: number = INK.noise, inkLuma?: number): number {
   const x0 = Math.max(0, Math.floor(rect.x));
   const y0 = Math.max(0, Math.floor(rect.y));
   const x1 = Math.min(W, Math.ceil(rect.x + rect.w));
@@ -66,6 +75,16 @@ export function inkIn(frame: Uint8Array, W: number, H: number, rect: Rect, polar
       ground = v;
       break;
     }
+  }
+  if (inkLuma !== undefined) {
+    const mid = (ground + inkLuma) / 2;
+    let n = 0;
+    for (let v = 0; v < 256; v++) {
+      if (!hist[v]) continue;
+      const onInkSide = polarity === "dark" ? v < mid && ground - v > noise : v > mid && v - ground > noise;
+      if (onInkSide) n += hist[v]!;
+    }
+    return n;
   }
   let ink = 0;
   for (let v = 0; v < 256; v++) {
@@ -101,9 +120,9 @@ const medianOf = (xs: number[]): number => {
 /**
  * Judges one line's ink series (`ink[f]` for the render's frames; undefined where not measured): from the frame it lands
  * to `withinFrames` past its last drawn frame, the ink may not fall by more than `fallShare` of its held ink within
- * `withinFrames` frames, unless the fall overlaps one of its declared exits. Its held ink (the median while landed and
- * not leaving) must be measurable. A fall is reported from its last full frame to the frame it settles (10 % or less of
- * where it fell from), so "1,520 at frame 3366 and 0 at 3368" reads 3366–3368.
+ * `withinFrames` frames to under `fallShare` of it, unless the fall overlaps one of its declared exits. Its held ink
+ * (the median while landed and not leaving) must be measurable. A fall is reported from its last full frame to the
+ * frame it settles (10 % or less of where it fell from), so "1,520 at frame 3366 and 0 at 3368" reads 3366–3368.
  */
 export function judgeInk(track: InkTrack, ink: readonly (number | undefined)[], o: { fallShare?: number; withinFrames?: number; minHeld?: number } = {}): InkFinding[] {
   const fallShare = o.fallShare ?? INK.fallShare;
@@ -126,7 +145,7 @@ export function judgeInk(track: InkTrack, ink: readonly (number | undefined)[], 
     let fell = -1;
     for (let k = 1; k <= within; k++) {
       const b = ink[f + k];
-      if (b !== undefined && a - b > drop) {
+      if (b !== undefined && a - b > drop && b < (1 - fallShare) * held) {
         fell = f + k;
         break;
       }

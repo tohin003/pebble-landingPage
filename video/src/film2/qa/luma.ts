@@ -13,10 +13,14 @@
 //   on the demo's first render: frame-to-frame MAD missed nothing and flagged everything slow).
 // - Pops: a frame-to-frame difference more than 3× the median of its six neighbours and above 2 levels, away from the
 //   cuts given (a hard cut is meant to differ) (TOOLS_TESTS §1's definition).
-// - Tile pops (added after the craft review, CR-03/CR-15): the same rule per tile of the 6 × 6 grid, each tile judged
-//   against its own six neighbours in time. A line that vanishes is a few percent of the frame: the whole-frame
-//   difference cannot see it ("Its own tools." left in 2 frames at a whole-frame MAD of 3.15, inside its moving
-//   neighbours' 2.2–2.9), but in its own tile it is most of the change.
+// - Tile pops (added after the craft review, CR-03/CR-15): per tile of the 6 × 6 grid, each tile judged against its own
+//   neighbours in time: a difference above 3 levels and above 3× the larger of the medians of its three frames before
+//   and its three frames after (3, not the whole frame's 2: the encoder's pulses and the pebble's blinks measured
+//   2.0–2.9 in still tiles of the set-piece reels; qa/reel-scan.ts adds a move test with the full frames). A line that vanishes is a few percent of the frame: the whole-frame difference cannot
+//   see it ("Its own tools." left in 2 frames at a whole-frame MAD of 3.15, inside its moving neighbours' 2.2–2.9), but
+//   in its own tile it is most of the change (12.9 levels against 1.0 on the 16:9 reel). Both sides count because a
+//   motion that starts and goes on (an entrance's fast first frame) is not a pop: the median of all six neighbours,
+//   three of them still, flagged 140 such starts on the 16:9 reel.
 // - Dips: a seam whose mean luma falls more than 3 levels below both sides (a crossfade over a third layer).
 
 export interface LumaOptions {
@@ -60,13 +64,14 @@ export interface LumaReport {
   problems: string[];
 }
 
-/** The tile-pop thresholds: the whole-frame rule's (above 2 levels, above 3× the neighbours' median). */
-export const TILE_POP = { minLevels: 2, ratio: 3 } as const;
+/** The tile-pop thresholds: above 3 levels, above 3× the larger of its past and future neighbours' medians. */
+export const TILE_POP = { minLevels: 3, ratio: 3 } as const;
 
 /**
  * Tile pops from per-tile frame differences (`tileMad[tile][frame]`, frame 0 is 0): a tile's difference above
- * `minLevels` and above `ratio` × the median of its own six neighbours (frames f−3…f+3 but f), away from the cuts
- * (±1 frame). Pure: analyseLuma() and qa/luma-scan.ts call it.
+ * `minLevels` and above `ratio` × the larger of the medians of its three frames before and its three frames after,
+ * away from the cuts (±1 frame) and the transitions. A change of one or two frames stands above both sides; the start
+ * of a motion that goes on does not. Pure: analyseLuma() and qa/reel-scan.ts call it.
  */
 export function findTilePops(tileMad: readonly (readonly number[])[], grid: number, cuts: readonly number[] = [], o: { minLevels?: number; ratio?: number } = {}, transitions: readonly { from: number; to: number }[] = []): TilePop[] {
   const minLevels = o.minLevels ?? TILE_POP.minLevels;
@@ -81,7 +86,7 @@ export function findTilePops(tileMad: readonly (readonly number[])[], grid: numb
       if (near.has(f)) continue;
       const v = series[f]!;
       if (v <= minLevels) continue;
-      const m = median([series[f - 3]!, series[f - 2]!, series[f - 1]!, series[f + 1]!, series[f + 2]!, series[f + 3]!]);
+      const m = Math.max(median([series[f - 3]!, series[f - 2]!, series[f - 1]!]), median([series[f + 1]!, series[f + 2]!, series[f + 3]!]));
       if (v > ratio * Math.max(m, 0.05)) out.push({ frame: f, tile, row: Math.floor(tile / grid), col: tile % grid, mad: Math.round(v * 100) / 100, neighbours: Math.round(m * 100) / 100 });
     }
   });
