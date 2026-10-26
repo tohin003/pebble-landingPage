@@ -26,8 +26,11 @@ import type { WallSpec } from "./wall";
 export type PlaneContent =
   | { kind: "standIn"; standIn: StandIn }
   | { kind: "take"; use: TakeUse; view: string }
-  /** a published image at a uniform scale (the companion's panel, a wall cell): never stretched */
-  | { kind: "image"; src: string; w: number; h: number; note: string };
+  /**
+   * a published image at a uniform scale (the companion's panel, a wall cell): never stretched. `textPx` (its body
+   * text, CSS px) and `words` (every legible word in it) let the legibility checks see its text (CR-05)
+   */
+  | { kind: "image"; src: string; w: number; h: number; note: string; textPx?: number; words?: number };
 
 export interface PlaneSpec {
   id: string;
@@ -59,6 +62,11 @@ export interface PlaneSpec {
   radius?: number;
   /** carries no text (the Dock's icons): film type may pass over it */
   textless?: boolean;
+  /**
+   * the real window this plane shows ("companion", "studio-bookings" …; a take view's own `place` by default). A still
+   * and a take view of the same place never share a frame unless both are views of one take on one clock (CR-11)
+   */
+  place?: string;
 }
 
 /* ---------------------------------------------------------------- type --------------------------------------- */
@@ -180,6 +188,8 @@ export interface ScenePlan {
   moves: readonly QaMove[];
   /** what the next piece continues from: the camera's last state (the same world), for a continuous hand-off */
   exit?: { pose: Pose; vel: { x: number; y: number; lz: number }; shot: string; ref: Pose };
+  /** the piece ends the film (the end card): type may stay to its last frame; anywhere else that type vanishes on a cut */
+  endsFilm?: boolean;
   /** anything a piece's own checks need (the Dusk's honest line, the title's sweep) */
   extra?: Record<string, unknown>;
 }

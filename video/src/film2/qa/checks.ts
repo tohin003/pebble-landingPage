@@ -23,6 +23,12 @@
 //   kinds               which of the seven kinds appear (a film uses each more than once)
 //   leaks               code light leaks at most twice
 //   copy                the never-list on film lines (no "!", no middle dots, no hype words, no "first" or "only")
+// Added after the craft review (CR-04, CR-21; OVERRIDES §55):
+//   cameraFloor         the frame's corners move at least 0.25 px a frame (at 1080) on average over every second,
+//                       outside declared waiting states: only the camera counts (a ticking slot or the stone's idle
+//                       animation changes pixels, and that hid two freezes from deadFrames)
+//   irisEase            a ring iris eases on E-arrive only when the seam declares one of the cue's marked hits;
+//                       between places it is E-move (lead ruling §52)
 import { CAMERA, LIMITS, READING, TRANSITION, TRANSITION_KINDS, accel60, f60, speed60, type TransitionKind } from "../tokens";
 import { screenVelocity, worldToFrame, type CamSample } from "../motion/camera";
 import { blurForTravel, blurIsEnough } from "../motion/blur";
@@ -30,7 +36,7 @@ import { angleBetweenDeg, annulusHitsRect, farDistToRect, len, sub, type Rect, t
 import { allRingStates, ringsInFlight } from "../carrier/ring";
 import { checkLightCues, gradeAt, gradeLuminance } from "../light/grades";
 import { readingLoad, requiredHoldFrames, wordCount, type TextEvent } from "../type/reading";
-import { checkKindFrames } from "../transitions/kinds";
+import { IRIS_DEFAULT_EASE, checkKindFrames } from "../transitions/kinds";
 import type { FilmTimelineQa, QaShot } from "./timeline";
 
 export type Level = "error" | "warn" | "info";
@@ -39,6 +45,8 @@ export interface Finding {
   level: Level;
   message: string;
   frame?: number;
+  /** the end (exclusive) of the run of frames a finding covers, when it covers a run (the checks added after the review) */
+  to?: number;
 }
 export interface Report {
   name: string;
@@ -312,6 +320,121 @@ export function deadFrames(t: FilmTimelineQa): { findings: Finding[]; longestS: 
   return { findings, longestS: longest };
 }
 
+/** The camera floor (CR-04, OVERRIDES §55): the corners' speed, px a frame at 1080 (60 fps), averaged over a second. */
+export const CAMERA_FLOOR_PX_PER_FRAME_1080 = 0.25;
+
+/** The fastest of the frame's four corners under a shot's camera on a composition frame (frame px a frame). */
+export const cornerSpeed = (t: FilmTimelineQa, s: QaShot, frame: number): number => {
+  const smp = sampleOf(s, frame);
+  if (!smp) return 0;
+  let max = 0;
+  for (const p of [
+    { x: 0, y: 0 },
+    { x: t.width, y: 0 },
+    { x: 0, y: t.height },
+    { x: t.width, y: t.height },
+  ])
+    max = Math.max(max, len(screenVelocity(smp, p, t.width, t.height, s.depth ?? 1)));
+  return max;
+};
+
+/**
+ * The camera floor (CR-04; TREATMENT §5.3 "never arrive-and-hold", §5.5.1, §5.6 "a 1.2-s freeze on a result"): over
+ * every second outside the declared waiting states, the frame's corners move at least 0.25 px a frame on average (at
+ * 1080, 60 fps). Only the camera counts. deadFrames passes a second in which anything changes (type, a ring, a slot's
+ * ticking source time, the stone's idle animation), which is how the Drop's 3.5 s and the climax's 6.2 s freezes
+ * passed it. Inside a transition both shots render, so the faster counts.
+ */
+export function cameraFloor(t: FilmTimelineQa): {
+  findings: Finding[];
+  minMeanPx1080: number;
+  /** each run of frames covered by a slow second, with its slowest second (the window's first frame and its mean) */
+  slowRuns: { from: number; to: number; slowestAt: number; slowestPx1080: number }[];
+} {
+  const findings: Finding[] = [];
+  const unit = unitOf(t);
+  const to1080 = (v: number) => v / unit / speed60(1, t.fps);
+  const floor = speed60(CAMERA_FLOOR_PX_PER_FRAME_1080, t.fps) * unit;
+  const n = t.durationInFrames;
+  const win = Math.max(2, Math.round(t.fps));
+  const speed = new Float64Array(n);
+  const exempt = new Uint8Array(n);
+  for (let f = 0; f < n; f++) {
+    const s = shotAt(t, f);
+    if (!s) continue;
+    let v = cornerSpeed(t, s, f);
+    for (const seam of t.seams) {
+      if (seam.frames > 0 && f >= seam.at && f < seam.at + seam.frames) {
+        const o = shotById(t, seam.out);
+        if (o) v = Math.max(v, cornerSpeed(t, o, f));
+      }
+    }
+    speed[f] = v;
+    if (inRanges(f, s.waits)) exempt[f] = 1;
+  }
+  const sumV = new Float64Array(n + 1);
+  const sumX = new Int32Array(n + 1);
+  for (let f = 0; f < n; f++) {
+    sumV[f + 1] = sumV[f]! + speed[f]!;
+    sumX[f + 1] = sumX[f]! + exempt[f]!;
+  }
+  // every whole second outside the waits: its mean corner speed
+  const mean = new Float64Array(n).fill(Number.NaN);
+  const slow = new Uint8Array(n);
+  let minMean = Infinity;
+  for (let f = 0; f + win <= n; f++) {
+    if (sumX[f + win]! - sumX[f]! > 0) continue;
+    mean[f] = (sumV[f + win]! - sumV[f]!) / win;
+    minMean = Math.min(minMean, mean[f]!);
+    if (mean[f]! < floor - 1e-12) for (let k = f; k < f + win; k++) slow[k] = 1;
+  }
+  const slowRuns: { from: number; to: number; slowestAt: number; slowestPx1080: number }[] = [];
+  for (let f = 0; f < n; f++) {
+    if (!slow[f]) continue;
+    let g = f;
+    while (g < n && slow[g]) g++;
+    let at = -1;
+    for (let k = f; k + win <= g; k++) if (!Number.isNaN(mean[k]!) && (at < 0 || mean[k]! < mean[at]!)) at = k;
+    const slowest = at >= 0 ? to1080(mean[at]!) : 0;
+    slowRuns.push({ from: f, to: g, slowestAt: at, slowestPx1080: slowest });
+    const where = [...new Set(t.shots.filter((s) => s.from < g && s.to > f).map((s) => s.id))].join(", ");
+    findings.push({
+      check: "cameraFloor",
+      level: "error",
+      message: `the camera barely moves for ${((g - f) / t.fps).toFixed(2)} s, frames ${f}–${g} (${where}): its slowest second (from frame ${at}) moves the frame's corners ${slowest.toFixed(3)} px a frame at 1080, under the ${CAMERA_FLOOR_PX_PER_FRAME_1080} floor, outside any waiting state (a reading hold glides at 0.3–0.6 px a frame, §55; never arrive-and-hold)`,
+      frame: f,
+      to: g,
+    });
+    f = g;
+  }
+  return { findings, minMeanPx1080: Number.isFinite(minMean) ? to1080(minMean) : Infinity, slowRuns };
+}
+
+/**
+ * The iris ease (CR-21; lead ruling §52): a ring iris (a "ring" seam with frames) eases on E-arrive only when the seam
+ * declares one of the cue's marked hits (`seam.hit`, one of `t.hits`, inside the seam); an iris between places is
+ * E-move. A seam that names no ease gets IRIS_DEFAULT_EASE, as ringIris() draws it.
+ */
+export function irisEase(t: FilmTimelineQa): Finding[] {
+  const out: Finding[] = [];
+  for (const s of t.seams) {
+    if (s.kind !== "ring" || s.frames <= 0) continue;
+    const ease = s.ease ?? IRIS_DEFAULT_EASE;
+    if (ease !== "arrive") continue;
+    const marked = s.hit !== undefined && (t.hits ?? []).includes(s.hit) && s.hit >= s.at && s.hit <= s.at + s.frames;
+    if (!marked) {
+      out.push({
+        check: "irisEase",
+        level: "error",
+        message: `the ring iris at ${s.at} (${s.out} → ${s.in}) eases on E-arrive${s.ease ? "" : " (ringIris's default)"} with no marked hit on its seam: an iris between places is E-move (§52); E-arrive only on the Drop and on hits the cue marks`,
+        frame: s.at,
+        to: s.at + s.frames,
+      });
+    }
+  }
+  return out;
+}
+
 export function flashes(t: FilmTimelineQa): { findings: Finding[]; maxChangesPerSecond: number; maxFlashesPerSecond: number } {
   const findings: Finding[] = [];
   if (!t.lightInitial) return { findings, maxChangesPerSecond: 0, maxFlashesPerSecond: 0 };
@@ -506,6 +629,10 @@ export function checkAll(t: FilmTimelineQa, moves: readonly QaMove[] = []): Repo
   const df = deadFrames(t);
   all.push(...df.findings);
   metrics.longestDeadS = Math.round(df.longestS * 100) / 100;
+  const cf = cameraFloor(t);
+  all.push(...cf.findings);
+  metrics.minCornerSpeed1sPx1080 = Number.isFinite(cf.minMeanPx1080) ? Math.round(cf.minMeanPx1080 * 1000) / 1000 : "n/a";
+  all.push(...irisEase(t));
   const fl = flashes(t);
   all.push(...fl.findings);
   metrics.maxLargeLightChangesPerSecond = fl.maxChangesPerSecond;

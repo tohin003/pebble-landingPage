@@ -1,6 +1,25 @@
 // The seven transition kinds (TREATMENT §5.1) as one table: what each is, which component builds it, and its limits
 // in frames at 60 fps. The validators read it (qa/checks.ts transitionTiming), and README.md is written from it.
 import { TRANSITION, f60, type TransitionKind } from "../tokens";
+import { E_ARRIVE, E_MOVE, clamp01 } from "../motion/ease";
+
+/**
+ * The ease ringIris() uses when a seam names none (presentations.tsx reads it, and so does the iris-ease check in
+ * qa/checks.ts, so the picture and the check can never disagree). Lead ruling §52: an iris between places is E-move;
+ * E-arrive only on the Drop and on hits the cue marks (CR-21: the default is still "arrive").
+ */
+export const IRIS_DEFAULT_EASE: "arrive" | "move" = "arrive";
+
+/**
+ * The ring iris's radius at progress p, from the stone's radius to past the farthest corner: E-arrive (a burst, on the
+ * Drop and on hits the cue marks) or E-move (an iris between places, lead ruling L-iris in OVERRIDES §52). Pure, here so
+ * the checks model the iris exactly as presentations.tsx draws it (setpieces/qa.ts stoneCount, CR-01).
+ */
+export const irisRadius = (p: number, r0: number, rMax: number, ease: "arrive" | "move" = "arrive"): number =>
+  r0 + (rMax - r0) * (ease === "move" ? E_MOVE : E_ARRIVE)(clamp01(p));
+
+/** The iris as PieceView draws it, px at 1080: its feather and the radius it starts from. */
+export const IRIS_DRAWN = { featherPx: 36, startRadiusPx: 44 } as const;
 
 export interface KindSpec {
   kind: TransitionKind;

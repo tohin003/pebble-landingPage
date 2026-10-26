@@ -25,7 +25,7 @@ comment beside it says.
 | `camera/` | `World3D.tsx` (windows as planes, tilt, parallax, depth of field, motion blur), `moves.ts` (push-in, pull-back, dolly, crane, travel, leave), `MotionBlur.tsx` |
 | `light/` | `grades.ts` + `Grade.tsx`, `lut.ts` + `write-lut.ts`, `Grain.tsx`, `LightLeak.tsx`, `Sweep.tsx` |
 | `type/` | `gsap.ts`, `FontGate.tsx`, `KineticLine.tsx`, `Cascade.tsx`, `TextMatchCut.tsx`, `scale.ts`, `reading.ts` |
-| `qa/` | `timeline.ts` (the model the checks read), `checks.ts`, `luma.ts` + `luma-scan.ts` (pixel checks on a render), `check-demo.ts` |
+| `qa/` | `timeline.ts` (the model the checks read), `checks.ts`, `luma.ts` + `luma-scan.ts` (pixel checks on a render), `ink.ts`, `stones.ts`, `bands.ts` (render checks added after the craft review), `check-demo.ts` |
 | `demo/` | the demo reel and its timeline, the ports lab, the grades sheet, the type specimens, the placeholder registry |
 | `render/` | `render-segments.sh` (segmented renders with the disk preflight), `sheets.sh` (contact sheets and seam strips) |
 | `setpieces/` | the set pieces (the Drop, the ring block, the wall, the Dusk passage, the climax shell, the convergence with the title and end card), their placeholders, music fitting and checks: see "The set pieces" below |
@@ -309,7 +309,8 @@ plan the music in local frames (`shiftGrid(grid, −start)`). Every piece is fra
 | `drop.ts`, `ringBlock.ts` + `rings.ts`, `wall.ts`, `dusk.ts`, `climax.ts`, `finale.ts` | the six plans |
 | `sweep.ts` | the title's sage sweep and its 15 % cap (L3a) |
 | `pieces.cues.ts` | the stone's cue templates (checked by the engine tests, D6) |
-| `qa.ts` | `planQa()` (a plan as the foundation's `FilmTimelineQa`) and `checkPlan()` (every foundation check, plus the set pieces': band contrast, takes, type in the safe area, type over UI being read (an error), type over any other UI plane (a warning; over a slot, a note to check the 2.0.0 capture), UI read size, UI read wholly in frame, music placement, cues, the wall, small print) |
+| `qa.ts` | `planQa()` (a plan as the foundation's `FilmTimelineQa`) and `checkPlan()` (every foundation check, plus the set pieces': band contrast, takes, type in the safe area, type over UI being read (an error), type over any other UI plane (a warning; over a slot, a note to check the 2.0.0 capture), UI read size, UI read wholly in frame, music placement, cues, the wall, small print; and the checks added after the craft review, below) |
+| `ground.ts`, `review-ledger.ts` | the riverbed's extent and depth, shared by the view and the coverage check; the open findings of the craft review |
 | `align.ts` | one timeline for all three aspects: `alignAspects()` and `timelineDiffs()` |
 | `views/` | `PieceView`, `ShotView`, `TypeView`, `StandInViews` (stills, slots with a ticking source time, take views), `VeilCast`, `SageSweep`, `WallView` |
 | `demo/` | the demo reels and the measured stretches they are fitted to (`grids.ts`) |
@@ -437,13 +438,84 @@ a seam, at most one flash a second. Sheets and seam strips (`look/sheet.jpg`, `l
 they showed a fault: multi-line type running as one line (SplitText), a line outliving its shot, an empty cascade
 stage after the cut, a card popping in at a take's start, two stones at the title's iris, a palette thrown in too fast.
 The model checks (`check-setpieces.ts`) pass in every aspect, with only notes where type crosses a slot, to check on the
-2.0.0 captures.
+2.0.0 captures. (Those passes were before the craft review: the checks added after it fail these plans and reels where the
+review saw its defects; see "Checks added after the craft review" below.)
 
 **Placeholders.** Every picture of Pebble in the set pieces is a real capture of a published release (1.0.x–1.5.0,
 cropped, never stretched, never showing a usage or timing line) or a labelled slot for what has no published capture
 (the browser take, Apple's apps, the Workshop's cards, ⌘K, the menu bar, the agents panel). Nothing is drawn Pebble UI,
 and nothing may be presented as 2.0.0. The 2.0.0 captures replace them through the manifests (`take.ts`) and
 `standins.ts`; the plans do not change.
+
+## Checks added after the craft review
+
+The craft review of 27 Oct (CR-01 to CR-23) found its defects on renders that every check passed: the whole-frame pixel
+rules could not see one line vanish, the dead-frame rule took the stone's idle animation or a slot's ticking clock for
+motion, and the plan checks looked only at what a plan declared it read. These checks were built before any fix
+(OVERRIDES §55, CR-15). Each catches a planted canary and passes the same thing done right
+(`tests/review-checks.test.ts`), and each fails on the current plans and reels where the review saw its defect.
+
+| Check | Where | Enforces | For |
+|---|---|---|---|
+| `cameraFloor` | `qa/checks.ts` | in every second outside declared waits, the frame's corners move ≥ 0.25 px a frame at 1080; only the camera counts | CR-04 |
+| `irisEase` | `qa/checks.ts` | a ring iris eases on E-arrive only with a marked hit on its seam; a seam that names no ease takes the default `ringIris()` draws (`IRIS_DEFAULT_EASE`) | CR-21 |
+| `groundCoverage` | `setpieces/qa.ts` | the frame's four corners stay inside the riverbed on every frame (`setpieces/ground.ts`: the extent and depth PieceView draws) | CR-02 |
+| `stoneCount` | `setpieces/qa.ts` | never two stones at once: stones shown together must be one pose (6 px, 6 %), through irises, racks and swaps | CR-01 |
+| `planesInFrame` | `setpieces/qa.ts` | every plane drawn with body text of 20 px or more at 1080 is wholly in frame (a cut under 0.5 s is a glimpse, not judged) | CR-05 |
+| `legibleWords` | `setpieces/qa.ts` | every legible word counts toward the reading load, which stays ≤ 3.14 words a second; no read is declared with 0 words | CR-05, CR-09 |
+| `hitSync` | `setpieces/qa.ts` | the aperture's opening and each burst start within 2 frames of the hit, in every aspect (`hitSyncAcross` holds the aspects to one timeline); no light leak over the bands | CR-07 |
+| `smallPrintHolds` | `setpieces/qa.ts` | each end-card page (its lines on screen together) held for its reading time; any line with the honest line's text held 9 s | CR-10 |
+| `askActClock` | `setpieces/qa.ts` | a still (or another take) and a take view of the same window never share a frame; views of one take on one clock pass | CR-11 |
+| `typeExits` | `setpieces/qa.ts` | no line vanishes: a "camera" exit draws nothing (type is a screen layer), nor does a line held to a piece's end | CR-03 |
+| tile pops | `qa/luma.ts` | each of the 6 × 6 tiles against its own six neighbours in time (the whole frame's rule, per tile) | CR-03 |
+| ink | `qa/ink.ts` | the ink in each line's rect never falls by more than 50 % of its held ink within 6 frames unless an exit is declared | CR-03 |
+| stones | `qa/stones.ts` | wherever the plan shows the stone, never two stone-sized dark blobs | CR-01 |
+| bands | `qa/bands.ts` | the Drop's bands start to open within 2 frames of the hit | CR-07 |
+
+**What they read.** Each placeholder still carries its measured body text and every legible word in its crop
+(`standins.ts` `textPx`, `words`; measured 27 Oct as cap height ÷ 0.727, and smaller than some `readPx`: the held card's
+body is 11.7 px against 13, the tests card's 13.1 against 15). Each still, image and take view names the window it shows
+(`place`). The iris is modelled as drawn (`transitions/kinds.ts` `irisRadius`, `IRIS_DRAWN`), the riverbed's extent is
+shared with the view (`setpieces/ground.ts`), and the finale says it ends the film (`endsFilm`).
+
+**Running them.** The plan checks are part of `checkPlan()`: `check-setpieces.ts` runs them in every aspect, holds the
+Drop's hit to one timeline across the aspects, and `--summary` prints one line per piece and check. The render checks
+need the plans' marks, then one decode through heavy.sh per reel:
+
+```
+bun video/src/film2/setpieces/tools/reel-marks.ts 16:9 --out .work/film2/sp/demo16/marks.json
+scripts/heavy.sh f2-scan16 /usr/sbin/taskpolicy -c utility \
+  bun video/src/film2/qa/luma-scan.ts .work/film2/sp/demo16/F2-SetPieces-Demo.mp4 --fps 60 \
+  --marks .work/film2/sp/demo16/marks.json --out .work/film2/sp/demo16/scan.json
+```
+
+**The open findings** (`setpieces/review-ledger.ts`). The tests hold every plan to every check except the (piece, check)
+pairs listed there, and each listed finding must still fire, covering the frames the review saw: an entry that stops
+firing fails the tests, so the ledger only shrinks and every fix is a visible edit to it. `check-setpieces.ts` and
+`luma-scan.ts` ignore the ledger and fail while anything is open. A fix counts only when they pass AND the frames look
+right (§55). Entries marked `waitsForMontage` (the wall, the convergence) wait for the montage decision (§54).
+
+**On the current plans (27 Oct), every piece fails in every aspect** (`check-setpieces.ts --summary`: cameraFloor 22,
+legibleWords 31, groundCoverage 12, planesInFrame 12, askActClock 6, typeExits 6, smallPrintHolds 6, hitSync 4,
+stoneCount 3), where the review saw it:
+
+| Review | Caught (local frames; reel frame = piece start + local) |
+|---|---|
+| CR-01 two stones at the iris, reel 4632–4637 | `stoneCount`: finale 238–244 (16:9), 238–245 (1:1), 238–244 (9:16), 148–163 px apart |
+| CR-02 the riverbed's edge, reel 4140–4560 | `groundCoverage`: wall 68–360, finale 0–193 (16:9); also Ring 4's start (0–132, visible in the review's own crop at 700–780) and, in 9:16, the Drop's wide and Dusk's crane |
+| CR-03 "Its own tools." gone in 2 frames at 3368; the last item on the cut at 2054 | `typeExits`: climax L24 on 234, Ring 4's last item on 1394 |
+| CR-04 frozen camera, reel 210–420 and 3664–4034 | `cameraFloor`: Drop 137–428 (0.044 px a frame), climax 499–900 (0.055); also Glaze's push end, the cascade's arrival, Dusk's start, the title |
+| CR-05 cards cut at reading size; about 60 legible words, 9 counted | `planesInFrame`: Ring 4 ask 325–619, test card 326–929, receipt 615–929; `legibleWords`: 162 against 22 (12.3 words a second) |
+| CR-07 9:16 opens 0.35 s after the hit; the leak over the bands | `hitSync`: 9:16 opens on 204 (16:9 and 1:1 on 182, hit 180); the leak over the bands for 30–48 frames |
+| CR-09 the ask card declared as 0 words | `legibleWords`: "declared read with 0 words" |
+| CR-10 page 2, about 100 words in 6 s | `smallPrintHolds`: 102 words in 5.97 s (they need 31.1); the honest line in it 5.97 s (needs 9) |
+| CR-11 a still of the held card above a live, verified run | `askActClock`: Ring 4 303–929; also the Drop's 1.0.x panel around RS-9's card |
+| CR-21 `ringIris()` defaults to E-arrive | `irisEase`: the foundation demo's iris at 1358 |
+
+**Limits.** The ink rects use approximate advance widths; tile pops skip cuts (the ink check covers lines that vanish
+on one); a lift's descender residue inside its declared exit ("gg" at 2050) is not caught; stone blobs are dark pixels at
+grey 140 or under; `planesInFrame` and `legibleWords` use the body text's size, so the Drop's companion panel (about
+20 px) sits on the line.
 
 ## The lead's rulings (OVERRIDES §52), as decided and as built
 

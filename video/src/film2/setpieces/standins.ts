@@ -23,6 +23,20 @@ export interface StillStandIn {
   crop?: Rect;
   /** the size of the smallest text a viewer must read in it, CSS px (for the 28 px reading floor) */
   readPx?: number;
+  /**
+   * every legible word in the part shown (its crop), counted on the capture, and its body text's size in CSS px,
+   * measured on the capture (cap height ÷ Inter's 0.727): the legibility checks (setpieces/qa.ts planesInFrame,
+   * legibleWords; CR-05) count every word the frame shows with body text at 20 px or more at 1080, read or not.
+   * Measured on 27 Oct, the body text is smaller than some `readPx` values (held 11.7 against 13, the tests card 13.1
+   * against 15, the approval card 13.8 against 15, the command card 13.1 against 15)
+   */
+  words?: number;
+  textPx?: number;
+  /**
+   * the real window the capture stands for ("studio-bookings", "companion" …): a still of a window never shares a frame
+   * with a live take of the same window unless it is that take's own frame (setpieces/qa.ts askActClock, CR-11)
+   */
+  place?: string;
   standsFor: string;
   version: string;
   window: WindowKind;
@@ -65,24 +79,29 @@ export const STILL = {
   held: still("held", "ui/crop-held@2x.png", 726, 256, "Ring 4's ask: the held card with Run the tests (F11, F12), from the 2.0.0 run", {
     crop: { x: 0, y: 122, w: 726, h: 134 },
     readPx: 13,
+    words: 43,
+    textPx: 11.7,
+    place: "studio-bookings",
   }),
   /** "Run isolated tests" with Don't allow / Run tests */
-  testsCard: still("testsCard", "ui/crop-tests-card@2x.png", 495, 344, "Ring 4's act: the test card reading Running, then Done (F3)", { readPx: 15 }),
+  testsCard: still("testsCard", "ui/crop-tests-card@2x.png", 495, 344, "Ring 4's act: the test card reading Running, then Done (F3)", { readPx: 15, words: 47, textPx: 13.1, place: "studio-bookings" }),
   /** the done receipt, cropped below its "Worked for …" timing line */
   doneReceipt: still("doneReceipt", "ui/crop-done-receipt@2x.png", 684, 278, "a receipt: Verified (F12), the file receipt (H4)", {
     crop: { x: 0, y: 30, w: 684, h: 248 },
     readPx: 13,
+    words: 72,
+    textPx: 13.8,
   }),
   /** an ask card with two buttons: Don't allow / Apply edit */
-  approvalCard: still("approvalCard", "ui/crop-approval-card@2x.png", 495, 482, "the Workshop's ask: \"Keep this tool in Pebble's Toolbox?\" with Discard and Keep (G4)", { readPx: 15 }),
+  approvalCard: still("approvalCard", "ui/crop-approval-card@2x.png", 495, 482, "the Workshop's ask: \"Keep this tool in Pebble's Toolbox?\" with Discard and Keep (G4)", { readPx: 15, words: 82, textPx: 13.8, place: "glaze" }),
   /** a card with two buttons: Don't allow / Run command (its first button's place is Remove's) */
-  commandCard: still("commandCard", "ui/crop-command-card@2x.png", 495, 474, "the kept card: \"Kept in Pebble's Toolbox · kiln_ramp_time\" with View code and Remove (G3)", { readPx: 15 }),
+  commandCard: still("commandCard", "ui/crop-command-card@2x.png", 495, 474, "the kept card: \"Kept in Pebble's Toolbox · kiln_ramp_time\" with View code and Remove (G3)", { readPx: 15, words: 78, textPx: 13.1, place: "kiln" }),
   /** a site card stand-in: the "Run isolated tests" card again, for the companion's card in the Drop */
-  companionCard: still("companionCard", "ui/crop-tests-card@2x.png", 495, 344, "the companion's card \"Use youtube.com\" with Allow (A9, J3), from RS-9", { readPx: 15 }),
+  companionCard: still("companionCard", "ui/crop-tests-card@2x.png", 495, 344, "the companion's card \"Use youtube.com\" with Allow (A9, J3), from RS-9", { readPx: 15, words: 47, textPx: 13.1, place: "companion" }),
   /** Pebble 1.5.0's main window, welcome: a Pebble window in the composed world */
-  mainWelcome: still("mainWelcome", "ui/v150/main-welcome@2x.png", 1160, 800, "the project conversation \"studio-bookings\" (Ring 4's place)", { version: "1.5.0" }),
+  mainWelcome: still("mainWelcome", "ui/v150/main-welcome@2x.png", 1160, 800, "the project conversation \"studio-bookings\" (Ring 4's place)", { version: "1.5.0", words: 140, textPx: 12.4, place: "studio-bookings" }),
   /** Pebble 1.5.0's Settings */
-  settings: still("settings", "ui/v150/settings-permissions@2x.png", 1160, 800, "Pebble's Toolbox in Settings › Skills & connectors (G5)", { version: "1.5.0" }),
+  settings: still("settings", "ui/v150/settings-permissions@2x.png", 1160, 800, "Pebble's Toolbox in Settings › Skills & connectors (G5)", { version: "1.5.0", words: 205, textPx: 11.0, place: "settings" }),
 } as const satisfies Record<string, StillStandIn>;
 
 /* ---------------------------------------------------------------- slots (not captured yet) ---------------------- */

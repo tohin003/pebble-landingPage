@@ -59,6 +59,13 @@ export interface QaSeam {
   covered?: FrameRange;
   /** a static cut allowed as punctuation (marked in the beat sheet) */
   punctuation?: boolean;
+  /**
+   * a ring iris's ease, exactly as the picture draws it (default transitions/kinds.ts IRIS_DEFAULT_EASE): "move" between
+   * places, "arrive" only on a seam that declares a hit (qa/checks.ts irisEase, CR-21)
+   */
+  ease?: "arrive" | "move";
+  /** the composition frame of the cue's marked hit this seam lands on (it must be one of the timeline's `hits`) */
+  hit?: number;
 }
 
 export interface QaReadable {

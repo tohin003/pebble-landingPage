@@ -14,17 +14,17 @@
 import type { TransitionPresentation, TransitionPresentationComponentProps } from "@remotion/transitions";
 import { AbsoluteFill, useVideoConfig } from "remotion";
 import { RING, TRANSITION } from "../tokens";
-import { E_ARRIVE, E_MOVE, clamp01, smoothstep } from "../motion/ease";
+import { E_MOVE, clamp01, smoothstep } from "../motion/ease";
 import { radiusToCorners } from "../motion/geometry";
+import { IRIS_DEFAULT_EASE, irisRadius } from "./kinds";
 
 /* ---------------------------------------------------------------- the looks, pure (tested) -------------------- */
 
 /**
- * The ring iris's radius at progress p, from the stone's radius to past the farthest corner: E-arrive (a burst, on the
- * Drop and on hits the cue marks) or E-move (an iris between places, lead ruling L-iris in OVERRIDES §52).
+ * The ring iris's radius at progress p (transitions/kinds.ts, pure, so the checks model the iris as it is drawn):
+ * E-arrive (a burst, on the Drop and on hits the cue marks) or E-move (an iris between places, OVERRIDES §52).
  */
-export const irisRadius = (p: number, r0: number, rMax: number, ease: "arrive" | "move" = "arrive"): number =>
-  r0 + (rMax - r0) * (ease === "move" ? E_MOVE : E_ARRIVE)(clamp01(p));
+export { irisRadius };
 
 /**
  * The swap in place, per side: out over the first half (blur up, opacity down), in over the second, each on E-move so
@@ -79,7 +79,7 @@ const RingIris: React.FC<TransitionPresentationComponentProps<RingIrisProps>> = 
   const cy = passedProps.center[1] * height;
   const R0 = (passedProps.startRadiusPx ?? 40) * unit;
   const Rmax = radiusToCorners({ x: cx, y: cy }, width, height) + feather;
-  const R = irisRadius(presentationProgress, R0, Rmax, passedProps.ease ?? "arrive");
+  const R = irisRadius(presentationProgress, R0, Rmax, passedProps.ease ?? IRIS_DEFAULT_EASE);
   const inner = Math.max(0, R - feather);
   const mask = `radial-gradient(circle at ${cx.toFixed(1)}px ${cy.toFixed(1)}px, #000 ${inner.toFixed(1)}px, transparent ${R.toFixed(1)}px)`;
   const lineOpacity = smoothstep(0, 0.08, presentationProgress) * (1 - smoothstep(0.85, 1, presentationProgress));

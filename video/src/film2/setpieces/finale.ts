@@ -268,6 +268,8 @@ export function planFinale(o: FinaleOptions): ScenePlan {
         out: "converge",
         in: "title",
         presentation: "iris",
+        // an iris between places: E-move (lead ruling §52); PieceView draws exactly this ease
+        ease: "move",
         irisCenter: stoneAt,
         swapAt: irisAt + Math.round(irisF / 2),
         covered: { from: irisAt, to: irisAt + irisF },
@@ -280,6 +282,8 @@ export function planFinale(o: FinaleOptions): ScenePlan {
     hits: [hit],
     takes: [],
     music,
+    // the end card is the film's last frame: its type may stay to the end (anywhere else that would vanish on a cut)
+    endsFilm: true,
     moves: [
       move("ring", convergeAt, convergeFrames > f60(90, fps) ? f60(90, fps) : convergeFrames, "the convergence: the rings return to the stone"),
       move("light", lightCues[0]!.at, lightCues[0]!.frames, "evening to the page"),

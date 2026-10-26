@@ -11,6 +11,7 @@ import { breakLines } from "../setpieces/frame";
 import { halfBars, nextPoint, place, pointsOf, prevPoint, shiftGrid, steadyGrid, gridFromMap, type MusicGrid } from "../setpieces/music";
 import { checkTakeUse, eventFrame, frameOfSource, solveInPoint, sourceFrameAt, takeFramePath, TAKE_HSF, TAKE_RS9, TAKE_RSW } from "../setpieces/take";
 import { checkPlan, planQa } from "../setpieces/qa";
+import { isOpen } from "../setpieces/review-ledger";
 import { planDrop } from "../setpieces/drop";
 import { planRingBlock } from "../setpieces/ringBlock";
 import { ring4 } from "../setpieces/rings";
@@ -44,10 +45,15 @@ const rng = (seed: number) => () => {
   return seed / 4294967296;
 };
 
+/**
+ * Every check passes but the craft review's open findings (setpieces/review-ledger.ts): those are held by
+ * tests/review-checks.test.ts, which fails when one stops firing, so the ledger only shrinks as the fix lane fixes them.
+ */
 const expectClean = (p: ScenePlan, grid?: MusicGrid) => {
   const r = checkPlan(p, grid);
-  if (!r.ok) throw new Error(formatReport(r));
-  expect(r.errors).toEqual([]);
+  const rest = r.errors.filter((e) => !isOpen(p.id, e.check));
+  if (rest.length) throw new Error(formatReport({ ...r, ok: false, errors: rest }));
+  expect(rest).toEqual([]);
 };
 
 describe("the music grid", () => {

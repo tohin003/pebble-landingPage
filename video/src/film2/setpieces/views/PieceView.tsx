@@ -29,7 +29,9 @@ import { defaultEntranceOf, enterFramesOf, exitFramesOf } from "../frame";
 import { Cascade, cascadeSchedule, swapLook } from "../../type/Cascade";
 import { askCardPlaneStyle } from "../../transitions/entrances";
 import { rackFocus, ringIris, swapInPlace } from "../../transitions/presentations";
+import { IRIS_DEFAULT_EASE, IRIS_DRAWN } from "../../transitions/kinds";
 import { Riverbed } from "../../demo/parts";
+import { RIVERBED } from "../ground";
 import { PebbleOnFilm } from "../../../pebble/PebbleOnFilm";
 import type { PlaneSpec, ScenePlan, ShotSpec, TypeSpec } from "../scene";
 import { ImageContent, SetPiecesSlate, StandInView, TakeViewContent } from "./StandInViews";
@@ -111,8 +113,9 @@ export const ShotView: React.FC<{ plan: ScenePlan; shot: ShotSpec }> = ({ plan, 
       <World3D cam={cam} dofScale={shot.dofScale ?? 14} focus={focus} background={ground}>
         {shot.ground === "riverbed" ? (
           <RippleGround specs={shot.rings} pose={s.pose} poseAt={poseAt} offset={shot.from}>
-            <Plane kind="ground" depth={0.4}>
-              <Riverbed center={shot.ref} />
+            {/* the extent and depth the coverage check reads (setpieces/ground.ts, CR-02) */}
+            <Plane kind="ground" depth={RIVERBED.depth}>
+              <Riverbed center={shot.ref} width={RIVERBED.w} />
             </Plane>
           </RippleGround>
         ) : null}
@@ -178,7 +181,7 @@ const Shots: React.FC<{ plan: ScenePlan }> = ({ plan }) => {
         seam.presentation === "rack"
           ? rackFocus({ blurPx: seam.blurPx ?? 13 })
           : seam.presentation === "iris"
-            ? ringIris({ center: [c.x / width, c.y / height], featherPx: 36, startRadiusPx: 44, ease: "move" })
+            ? ringIris({ center: [c.x / width, c.y / height], featherPx: IRIS_DRAWN.featherPx, startRadiusPx: IRIS_DRAWN.startRadiusPx, ease: seam.ease ?? IRIS_DEFAULT_EASE })
             : swapInPlace({});
       items.push(<TransitionSeries.Transition key={`t${i}`} timing={linearTiming({ durationInFrames: T })} presentation={presentation as never} />);
     }

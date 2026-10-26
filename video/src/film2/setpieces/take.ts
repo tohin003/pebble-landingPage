@@ -36,6 +36,11 @@ export interface TakeView {
   stills?: readonly ViewStill[];
   /** placeholders with no published capture: a labelled slot that shows the take's source time ticking at 1× */
   slot?: SlotStandIn;
+  /** the real window the view shows: a still of the same window never shares a frame with it (CR-11) */
+  place?: string;
+  /** real takes: the view's body text (CSS px) and its legible words, for the legibility checks (CR-05) */
+  textPx?: number;
+  words?: number;
 }
 
 export interface TakeManifest {
@@ -167,7 +172,17 @@ export const sourceTimecode = (src: number, fps: number): string => {
  * The companion's panel: a real 1.0.x harness frame with the avatar hidden ("Thinking", "Task: running"; no usage
  * line: that appears from frame 199 of the take), so the film pebble is drawn where its avatar sits.
  */
-export const COMPANION_PANEL = { src: "ui-frames/pet-live-error-light-hidden/00120.png", w: 384, h: 456, stone: { x: 326.7, y: 397.3 } } as const;
+export const COMPANION_PANEL = {
+  src: "ui-frames/pet-live-error-light-hidden/00120.png",
+  w: 384,
+  h: 456,
+  stone: { x: 326.7, y: 397.3 },
+  /** its body text (CSS px, measured: the question's cap height ÷ 0.727) and every legible word in it (CR-05) */
+  textPx: 13.3,
+  words: 27,
+  /** the window it shows (CR-11) */
+  place: "companion",
+} as const;
 
 /**
  * RS-9, the one continuous browser take (TREATMENT §6): the companion's card, Allow, the receipt, Pebble's tab, the
@@ -186,12 +201,13 @@ export const TAKE_RS9: TakeManifest = {
     companionCard: {
       w: 396,
       h: 275,
+      place: "companion",
       stills: [
         { from: 0, to: 566, standIn: STILL.companionCard, rect: { x: 0, y: 0, w: 396, h: 275 }, fadeOut: 12 },
         { from: 566, standIn: STILL.doneReceipt, rect: { x: 0, y: 66, w: 396, h: 143.6 }, entrance: true },
       ],
     },
-    browser: { w: SLOT.browser.w, h: SLOT.browser.h, slot: SLOT.browser },
+    browser: { w: SLOT.browser.w, h: SLOT.browser.h, slot: SLOT.browser, place: "browser" },
   },
   placeholder: true,
   note: "placeholder timings; the 2.0.0 recording's event log replaces them",
@@ -213,6 +229,7 @@ export const TAKE_HSF: TakeManifest = {
     run: {
       w: 726,
       h: 640,
+      place: "studio-bookings",
       stills: [
         { from: 0, standIn: STILL.testsCard, rect: { x: 0, y: 0, w: 495, h: 344 }, entrance: true },
         { from: 278, standIn: STILL.doneReceipt, rect: { x: 0, y: 380, w: 684, h: 248 }, entrance: true },
@@ -248,8 +265,8 @@ export const TAKE_RSW: TakeManifest = {
   h: 800,
   events: { rowsComplete: 120, cardLands: 450, happy: 462 },
   views: {
-    conversation: { w: 1160, h: 800, slot: KILN_SLOT },
-    keptCard: { w: 495, h: 474, stills: [{ from: 450, standIn: STILL.commandCard, rect: { x: 0, y: 0, w: 495, h: 474 }, entrance: true }] },
+    conversation: { w: 1160, h: 800, slot: KILN_SLOT, place: "kiln" },
+    keptCard: { w: 495, h: 474, place: "kiln", stills: [{ from: 450, standIn: STILL.commandCard, rect: { x: 0, y: 0, w: 495, h: 474 }, entrance: true }] },
   },
   placeholder: true,
   note: "placeholder: a 1.0.x card in the kept card's place; the 2.0.0 take (one 1× take) replaces it",
@@ -263,7 +280,7 @@ export const TAKE_HSB3: TakeManifest = {
   w: SLOT.palette.w,
   h: SLOT.palette.h,
   events: { opens: 0, typed: 84, lit: 96, enter: 126 },
-  views: { palette: { w: SLOT.palette.w, h: SLOT.palette.h, slot: SLOT.palette } },
+  views: { palette: { w: SLOT.palette.w, h: SLOT.palette.h, slot: SLOT.palette, place: "palette" } },
   placeholder: true,
 };
 
@@ -280,8 +297,8 @@ export const TAKE_RS13: TakeManifest = {
   h: 900,
   events: { switchOn: 130, dockLeaves: 150, iconChanges: 170 },
   views: {
-    menuBar: { w: SLOT.menuBar.w, h: SLOT.menuBar.h, slot: SLOT.menuBar },
-    dock: { w: SLOT.dock.w, h: SLOT.dock.h, slot: SLOT.dock },
+    menuBar: { w: SLOT.menuBar.w, h: SLOT.menuBar.h, slot: SLOT.menuBar, place: "menu bar" },
+    dock: { w: SLOT.dock.w, h: SLOT.dock.h, slot: SLOT.dock, place: "dock" },
   },
   placeholder: true,
 };
