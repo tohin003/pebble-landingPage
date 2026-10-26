@@ -4,8 +4,9 @@
 // CREDITS.md at the repository root says the same in Markdown; keep the two in step.
 //
 // An entry with a `todo` is unfinished: the credits page hides it, so no placeholder ever ships. The music and sound
-// entries are final (Lane C, 2026-10-23; the instrument samples added by Lane C2 the same day); sources, hashes and
-// the music choice are in docs/media-provenance.json and tools/audio/sample_kit.json.
+// entries follow what the launch trailer plays (OVERRIDES §45): its score is synthesised in code with no samples, and
+// its effects are the takes the final cue list uses (tools/audio/cues.json; credits.test.ts checks the two agree).
+// Sources, hashes and the music choice are in docs/media-provenance.json (music.trailer_score, sfx).
 
 import { links } from "./copy";
 
@@ -59,26 +60,10 @@ export const creditSections: readonly CreditSection[] = [
     title: "Film music",
     items: [
       {
-        name: "Pebble launch cue",
+        name: "Pebble launch trailer score",
         by: "Composed for this film",
         licence: "Part of the film media, © 2026 Tohin Majumder",
-        use: "An original score for the launch film, played on recorded instrument samples. It uses no third-party music.",
-      },
-      {
-        name: "Versilian Community Sample Library (VCSL)",
-        by: "Versilian Studios",
-        licence: "CC0 1.0",
-        licenceUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
-        url: "https://github.com/sgossner/VCSL",
-        use: "Recorded marimba, vibraphone, glockenspiel, upright piano, bass drum and shaker samples that play the score. Credited as a courtesy: CC0 asks for none.",
-      },
-      {
-        name: "VS Chamber Orchestra: Community Edition (VSCO 2 CE)",
-        by: "Versilian Studios (Sam Gossner) and Ivy Audio (Simon Dalzell)",
-        licence: "CC0 1.0",
-        licenceUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
-        url: "http://vis.versilstudios.net/vsco-community.html",
-        use: "Recorded viola and violin section and double bass samples that play the score. Credited as a courtesy: CC0 asks for none.",
+        use: "An original score for the launch trailer, synthesised in code. It uses no samples and no third-party music.",
       },
     ],
   },
@@ -91,7 +76,7 @@ export const creditSections: readonly CreditSection[] = [
         by: "Made for this project",
         licence: "CC0 1.0",
         licenceUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
-        use: "The whooshes, the riser, the soft hit and the shimmer, synthesised in code for the launch film.",
+        use: "The whooshes, the impacts, the sounds on the interface's events, the rim clicks and the suck-backs, synthesised in code for the launch trailer.",
       },
       {
         name: "Impact Sounds and Interface Sounds",
@@ -99,7 +84,7 @@ export const creditSections: readonly CreditSection[] = [
         licence: "CC0 1.0",
         licenceUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
         url: "https://kenney.nl",
-        use: "Recorded clicks, ticks, drops and soft thuds, trimmed and tuned for the launch film.",
+        use: "Recorded clicks, ticks and soft thuds, trimmed and tuned for the launch trailer.",
       },
     ],
   },

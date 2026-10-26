@@ -20,36 +20,27 @@ the media or the third-party work below: each keeps its own licence. The site sh
   text in `shared/pebble/bloub/LICENSE` ("Copyright (c) 2026 Jérémy Perret").
 - The site and the films use only Pebble's own poses.
 
-## Launch film: music
+## Launch trailer: music
 
-- **"Pebble launch cue"**: an original score composed for this film (`tools/audio/compose_score.py`) and played on
-  recorded instrument samples by our own sampler (`tools/audio/render_sampled.py`). It uses no third-party music. It
-  is part of the film media (© 2026 Tohin Majumder).
-- **Instrument samples** (CC0 1.0; credit is a courtesy, not a requirement):
-  - **Versilian Community Sample Library (VCSL)** by Versilian Studios (https://github.com/sgossner/VCSL): marimba,
-    vibraphone, glockenspiel, upright piano, bass drum and shaker.
-  - **VS Chamber Orchestra: Community Edition (VSCO 2 CE)** by Versilian Studios (Sam Gossner) and Ivy Audio
-    (Simon Dalzell) (http://vis.versilstudios.net/vsco-community.html): viola and violin sections, and the double
-    bass pizzicato.
-  - Each file, with its pinned commit and SHA-256 hash, is listed in `tools/audio/sample_kit.json`.
-  - The samples are never distributed on their own: they are heard only inside the film.
-- The same score synthesised entirely in code, with no samples, was the film's first music. It stays one command
-  away: `tools/audio/use_music.sh original`.
-- How it was chosen: five Mixkit tracks were auditioned and scored first. None reached the pass mark, so the planned
-  composed fallback was used, then played on recorded instruments. The scores, the licence checks and the sources
-  are in `docs/media-provenance.json`.
-- If the film is switched to one of the Mixkit alternates (`tools/audio/use_music.sh mixkit-<id>`), replace this entry
-  with that track's `credit_if_used` line from `docs/media-provenance.json`, under the Mixkit Stock Music Free License
-  (https://mixkit.co/license/#musicFree), and keep Mixkit's terms: web and social use only; no broadcast, game, CD or
-  DVD use; no music-only remix; no Content ID registration; the track is never distributed on its own.
+- **"Pebble launch trailer score"**: an original score composed for the launch trailer and synthesised entirely in
+  code by this repository's synthesis engine (`tools/audio/synth`; the score is `tools/audio/scores/trailer_b.py`). It
+  uses no samples, no downloads and no third-party music. It is part of the film media (© 2026 Tohin Majumder).
+- How it was chosen: two candidate scores were written on the engine for the trailer's blueprint, and a judge picked
+  one by measurement (energy, the hits' sync, the climax and the classifier gates). The candidates, the judge and the
+  masters' gates are in `docs/media-provenance.json` (`music.trailer_score`).
+- The earlier film's score, played on CC0 instrument samples (the Versilian Community Sample Library and VS Chamber
+  Orchestra: Community Edition), is retired with that film; no media on the site plays it.
 
-## Launch film: sound effects
+## Launch trailer: sound effects
 
-- Original sound effects synthesised for this project (`tools/audio/sfx_synth.py`): the whooshes, the riser, the soft
-  hit, the shimmer and the downlifter. CC0 1.0.
-- Kenney (www.kenney.nl), "Impact Sounds" and "Interface Sounds": recorded clicks, ticks, drops and soft thuds,
-  trimmed, filtered and tuned for the film (`tools/audio/sfx_foley.py`). CC0 1.0. The source files and their hashes are
+- Original sound effects synthesised for this project: the whooshes, the impacts, the sounds on the interface's
+  events, the rim clicks (`tools/audio/sfx_synth.py`) and the suck-backs (`tools/audio/synth`). CC0 1.0. They are the
+  film's sound design: Pebble itself makes no sounds. The trailer plays no riser, soft hit, shimmer or downlifter from
+  the kit.
+- Kenney (www.kenney.nl), "Impact Sounds" and "Interface Sounds": recorded clicks, ticks and soft thuds, trimmed,
+  filtered and tuned for the trailer (`tools/audio/sfx_foley.py`). CC0 1.0. The source files and their hashes are
   listed in `docs/media-provenance.json`.
+- Which take plays where is the final cue list, `tools/audio/cues.json` (exported from `video/src/film/timeline.ts`).
 
 ## Fonts
 
