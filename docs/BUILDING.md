@@ -238,7 +238,9 @@ scripts/heavy.sh score /usr/sbin/taskpolicy -c utility .work/audio/.venv/bin/pyt
 ```
 
 The render is deterministic: its samples come out identical every time. A float WAV's PEAK chunk records when it was
-written, so compare the samples, not the file's hash. The retired scores (the sampled cue, `tools/audio/use_music.sh`,
+written, so compare the samples, not the file's hash. The score knows the frames where the timeline's impacts peak and
+carves its stems 10 dB out under them for 30-50 ms, so the masters' limiter has only the impact's own peak to catch on
+the drop, the tests passing and Verified. The retired scores (the sampled cue, `tools/audio/use_music.sh`,
 and the recut's drive, `tools/audio/drive.py`) stay in `tools/audio/` for the record.
 
 **The sound effects** (`.work/audio/sfx/`). The whooshes, the riser, the soft hits, the shimmer, the downlifter and
@@ -258,7 +260,8 @@ Download the two zips from the URLs in the header of `tools/audio/sfx_foley.py`,
 ```
 
 **The cue list.** The film's timeline places every effect and the mix's automation; the exporter turns them into
-`tools/audio/cues.json` (41 effects, and 7 automation spans: four breath gaps, Pebble's two holds and the tail):
+`tools/audio/cues.json` (41 effects, and 8 automation spans: four breath gaps, Pebble's two holds, a 6 dB ride under the
+quick chat's send key and the tail):
 
 ```bash
 bun video/scripts/export-cues.ts           # write tools/audio/cues.json from video/src/film/timeline.ts
@@ -288,8 +291,10 @@ the tests passing, each heard straight after silence; and in Pebble's two holds 
 twin, speech is expected over the narrator's lines only, and its music and effects alone pass every gate. Results go
 to `.work/audio/analysis/trailer/`; look at the spectrogram PNGs, then delete them. The checks also gate the AAC
 encodes' true peak and the last 54 frames' digital silence, and report the trailer's loudness curve (the dynamics
-report: the question hits, the dead stop and the drop, the holds, the push on Verified against the tests passing, the
-breakdown). The masters' hashes and measurements are in `docs/media-provenance.json` (`music.trailer_score`).
+report: the question hits, the dead stop and the drop, the holds, the push on Verified against the tests passing and
+as the master's loudest moment, the quick chat building into the whole workspace, the breakdown; and each hit's first
+beat in the full band and through a phone's band). The masters' hashes and measurements are in
+`docs/media-provenance.json` (`music.trailer_score`).
 
 **The 30 s cut's soundtrack.** The cut for X (`docs/film-cuts/x30.json`, section 5) has its own music: the score's own
 bars in the cut's order (`music.score_bars`), not a splice of the film's mix, with the film's effects mapped onto the

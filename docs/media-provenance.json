@@ -2804,8 +2804,8 @@
   },
   "trailer_score": {
    "what": "the launch trailer's music and soundtracks (TRAILER_RESEARCH §7 and report.music; OVERRIDES §37-§41): two candidate scores synthesised on tools/audio/synth, a judge's pick, and the final masters with the picture's own effects and automation; the narrated twin's mix (OVERRIDES §38)",
-   "made": "2026-10-26, the judge-and-final-mix lane",
-   "supersedes": "the energetic recut's soundtracks (music.sampled_score.energetic_recut.final_masters: 2ffcba9c..., 7dc992fe..., 435f33f9...); since 2026-10-26 public/media/v2's encodes and the Desktop films carry these masters instead (lane trailer-deliver; assets)",
+   "made": "2026-10-26, the judge-and-final-mix lane; its masters remade the same day by the audio fix lane after the fresh-eyes review (OVERRIDES §46)",
+   "supersedes": "the energetic recut's soundtracks (music.sampled_score.energetic_recut.final_masters: 2ffcba9c..., 7dc992fe..., 435f33f9...); then the judge-and-final-mix lane's masters (soundtrack_web.wav 913f9dca..., soundtrack_social.wav e517eb99..., soundtrack_x30_social.wav b2187537..., soundtrack_social_narrated.wav 85251839..., soundtrack_social_narrated_me.wav 6de72dd9...), which public/media/v2's encodes and the Desktop films carry until the re-delivery lane re-muxes them with these (assets)",
    "origin": "original synthesis, made for this project: no samples, no downloads, no vocals; the effects are the kit's (sfx.synthesised and sfx.foley); the narration is Sarvam AI's Bulbul voice (docs/film-narration.json)",
    "licence": "part of the film media, (c) 2026 Tohin Majumder",
    "selected": "candidate B: tools/audio/scores/trailer_b.py",
@@ -3073,7 +3073,7 @@
    },
    "score": {
     "file": "tools/audio/scores/trailer_b.py",
-    "commit": "6137540",
+    "commit": "c198595",
     "seed": 52,
     "engine": "tools/audio/synth (fdc35f7)",
     "render": "python -I tools/audio/scores/trailer_b.py render --out .work/audio/render/score (final_mix.sh runs it when a stem is missing or older than the score)",
@@ -3082,59 +3082,65 @@
      "the question hits 3.4-4.4 dB up (QHIT_DB) and the rest of the tension 0.4 dB down (TENSION_DB -7.7)",
      "the push (f1723.5): its chord +2 dB (unpumped), its kick 0.5 and sub 0.45, no score impact (the timeline's impact_a), clap 0.6 and snap 0.5, a second crash, its layers 0-12 ms apart (PUSH_FLAM_MS)",
      "f1656: kick 0.5, impact 0.4, sub 0.85 (0.85, 0.55, 1.0 before); it keeps the timeline's impact_b"
+    ],
+    "changes_after_the_review": [
+     "P2-1, the drop (f648) and the tests passing (f1656): an unpumped chord stab, the chords' downbeat unpumped, a clap and snare crack and crashes on the first beat; no score impact under the timeline's impacts (the drop's kick and sub 0.7, from 1.0); the stems carved 10 dB under each timeline impact's peak and their limiter eased 1.5 dB on the hits (HITS, UNPUMPED_DOWNBEATS, CARVE, EASE_HITS)",
+     "P2-1, the push (f1723.5): lighter transients (crash 1.0 + 0.6, clap 0.4, snare 0.6, open hat; no snap) and no kick (the sub 0.45 stays), the stems carved under impact_a's peak and their limiter eased 2 dB over its first 0.45 s, its chord letting go at bar 25's beat 1.75 (the pumped chords take the D over); bar 25 from beat 2 1 dB, the run-up's last beat 2.5 dB and bar 14's fill 1.5 dB down (PUSH_LAYERS to FILL14_DB)",
+     "to keep the blueprint's margins with the push on top: the montage (bars 15-20) 0.4 dB and the breakdown (bars 26-28) 0.5 dB down (SECTION_DB); the tension 0.3 dB (TENSION_DB -8.0) and the build 1 dB (BUILD_DB -10.5) down, the question hits held (QHIT_DB +0.3 each)",
+     "P2-2, bars 12-13: the groove carries on (the drop groove at 0.88 and 0.94, chords, the hook from beat 1.5 and the lead in bar 12; bar 13 opens the chords' filter and adds kicks on beats 3 and 4, a snare roll and a noise riser into f936); only the send key (f792) is ducked: the cue list's ride and the hats' and bass's own ducks"
     ]
    },
    "stems": {
     "bed.wav": {
      "path": ".work/audio/render/score/bed.wav (not committed)",
-     "sha256": "7dc60e2b83674a1aa16a194d0dc171066a61f92083d4c9d15f396889846045e1",
-     "samples_sha256": "8291a52beffeea7f846ce0bbcf5ab03145f93c578613963b5d685e877e614bc4",
+     "sha256": "ca5d146ef41521318fba03b351dac2114804a55f659b8717c002c5a97a667213",
+     "samples_sha256": "d8039710b8febbfb67191ba5d6f38e78575874256fc418202db016e12b631071",
      "hash_note": "the file's SHA-256 changes with each render: libsndfile stamps the write time into a float WAV's PEAK chunk; samples_sha256 (the float32 samples, interleaved) is what a rebuild reproduces",
      "format": "48000 Hz, FLOAT, stereo, 3,686,400 samples (76.800 s)",
-     "lufs": -22.31,
-     "peak_dbfs": -6.97,
-     "true_peak_dbtp": -6.94
+     "lufs": -22.38,
+     "peak_dbfs": -5.57,
+     "true_peak_dbtp": -5.57
     },
     "drive.wav": {
      "path": ".work/audio/render/score/drive.wav (not committed)",
-     "sha256": "a61f1ff76f80c9058aee04c417d5c46a9780a3079d85bc8ca9e7f6f3ba504cf7",
-     "samples_sha256": "2f6654ec9fa2c97998f819703469dd3c5cefb5cd6d3e16fd3c448936e71cf398",
+     "sha256": "6d1239ba4ae943daeaaceb3bcd8035bf38aa3b8fdfad3e5e30c038f8201e72ab",
+     "samples_sha256": "871c715d90c892030df038d5cb55bfeb8293f8de03a4e59fbb1b49d0b8b63153",
      "hash_note": "the file's SHA-256 changes with each render: libsndfile stamps the write time into a float WAV's PEAK chunk; samples_sha256 (the float32 samples, interleaved) is what a rebuild reproduces",
      "format": "48000 Hz, FLOAT, stereo, 3,686,400 samples (76.800 s)",
-     "lufs": -20.98,
-     "peak_dbfs": -7.3,
-     "true_peak_dbtp": -7.16
+     "lufs": -20.78,
+     "peak_dbfs": -7.51,
+     "true_peak_dbtp": -7.21
     },
     "bed_x30.wav": {
      "path": ".work/audio/render/score/bed_x30.wav (not committed)",
-     "sha256": "a48838c8ddd575f5d49bacb9df02521a7d96e7d108a5e92f9e269c514794b039",
-     "samples_sha256": "a52627c7510a6b504d173651393b615e0ba24f4030716dc0df8b142aa6928e5a",
+     "sha256": "923179a2b7defae86510dcf5a5c9f6e53c34a8a3759e1dbed19f7a3f43c65494",
+     "samples_sha256": "35e0590538b7ae2d696ab9a49b19bd5875453bfdcb342d8d5dbbde2ea6aca2c9",
      "hash_note": "the file's SHA-256 changes with each render: libsndfile stamps the write time into a float WAV's PEAK chunk; samples_sha256 (the float32 samples, interleaved) is what a rebuild reproduces",
      "format": "48000 Hz, FLOAT, stereo, 1,382,400 samples (28.800 s)",
-     "lufs": -20.74,
-     "peak_dbfs": -5.97,
-     "true_peak_dbtp": -5.94
+     "lufs": -21.15,
+     "peak_dbfs": -5.44,
+     "true_peak_dbtp": -5.43
     },
     "drive_x30.wav": {
      "path": ".work/audio/render/score/drive_x30.wav (not committed)",
-     "sha256": "1742a3e3415d117d98112dff90406cca8f59cb92656c813715bd0c5848638d5c",
-     "samples_sha256": "685cade8f898c59c871078e50d991b67eaf0925f565788109649b042618592cb",
+     "sha256": "d802e2c2cc0dcc78490b08a77f32f99e472f5db20aad73fd5e63aba920514fd1",
+     "samples_sha256": "eb53e67427e097618fcbfa032188562aff3a4b39e5d1ff92bb917d107e72330f",
      "hash_note": "the file's SHA-256 changes with each render: libsndfile stamps the write time into a float WAV's PEAK chunk; samples_sha256 (the float32 samples, interleaved) is what a rebuild reproduces",
      "format": "48000 Hz, FLOAT, stereo, 1,382,400 samples (28.800 s)",
-     "lufs": -20.9,
-     "peak_dbfs": -6.99,
-     "true_peak_dbtp": -6.88
+     "lufs": -21.35,
+     "peak_dbfs": -7.64,
+     "true_peak_dbtp": -7.55
     },
-    "render_film": "score bars 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32; 1112 events, seed 52; the drive's exact zeros [[445, 504], [1453, 1512]] and the dead stop's in both stems [[612, 648]] (output frames); the linked limiter's ceiling -7.39 dBFS (-18.89 LUFS + 11.5), at most 5.27 dB, over 1 dB for 3.19 s; the bass bus 6.31 LU under the music bus",
-    "render_x30": "score bars 1 6 7 8 9 10 22 23 24 25 31 32; 407 events, seed 52; the drive's exact zeros [[157, 216]] and the dead stop's in both stems [[324, 360]] (output frames); the linked limiter's ceiling -6.58 dBFS (-18.08 LUFS + 11.5), at most 5.18 dB, over 1 dB for 1.75 s; the bass bus 7.0 LU under the music bus"
+    "render_film": "score bars 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32; 1197 events, seed 52; the drive's exact zeros [[445, 504], [1453, 1512]] and the dead stop's in both stems [[612, 648]] (output frames); the linked limiter's ceiling -7.44 dBFS (-18.94 LUFS + 11.5), eased (start s, end s, dB) [[57.45, 57.9, 2.0], [21.6, 22.05, 1.5], [55.2, 55.65, 1.5]], at most 5.32 dB, over 1 dB for 1.62 s; its reduction over the first 0.4 s of each hit (max, mean dB) f648 1.03/0.47, f1008 0.24/0.06, f1656 2.99/0.72, f1723.5 2.74/0.94, f1746 0.46/0.14, f1764 0.01/0.0; carved under the timeline's impacts (peak s, dB, pre, hold, release ms) [[21.6333, -10.0, 6.0, 50.0, 40.0], [55.2333, -10.0, 4.0, 30.0, 30.0], [57.4667, -10.0, 6.0, 50.0, 40.0]]; the bass bus 6.41 LU under the music bus",
+    "render_x30": "score bars 1 6 7 8 9 10 22 23 24 25 31 32; 411 events, seed 52; the drive's exact zeros [[157, 216]] and the dead stop's in both stems [[324, 360]] (output frames); the linked limiter's ceiling -7.13 dBFS (-18.63 LUFS + 11.5), eased (start s, end s, dB) [[21.45, 21.9, 2.0], [12.0, 12.45, 1.5], [19.2, 19.65, 1.5]], at most 5.22 dB, over 1 dB for 0.87 s; its reduction over the first 0.4 s of each hit (max, mean dB) f648 1.82/0.45, f1656 1.46/0.36, f1723.5 3.02/0.77, f1746 0.71/0.16, f1764 0.03/0.01; carved under the timeline's impacts (peak s, dB, pre, hold, release ms) [[12.0333, -10.0, 6.0, 50.0, 40.0], [19.2333, -10.0, 4.0, 30.0, 30.0], [21.4667, -10.0, 6.0, 50.0, 40.0]]; the bass bus 6.98 LU under the music bus"
    },
    "cues": {
     "tools/audio/cues.json": {
-     "sha256": "ef49c6b5f3d2a9e112164b4c2336a2832d44d4f48ecee3526a255183c1f25f6f",
-     "commit": "927dda6",
+     "sha256": "f97a2e7c9c0ffec4c5138b0c3a1ffd7200a747b0e3ea6a442fe1e5cd1120fa8d",
+     "commit": "f7bb4cc",
      "effects": 41,
-     "automation": 7,
-     "from": "video/src/film/timeline.ts by video/scripts/export-cues.ts (the picture lane)"
+     "automation": 8,
+     "from": "video/src/film/timeline.ts by video/scripts/export-cues.ts (the picture lane; since f7bb4cc it holds OVERRIDES §46 P2-2's ride: -6 dB on the bed and the drive over f792-801, under the send key)"
     },
     "tools/audio/cues.x30.json": {
      "sha256": "7cad82b7457c1f7413b884980dc1c00079534e1a287c1e5ed54aeb5567bc806e",
@@ -3153,421 +3159,639 @@
    },
    "pipeline": {
     "mix": "tools/audio/final_mix.sh (149aed0), mix_master.py (6d5a010)",
-    "gates": "tools/audio/mix_checks.sh (149aed0), mix_checks.py (8956f26); reports in .work/audio/analysis/trailer/ (not committed)"
+    "gates": "tools/audio/mix_checks.sh (149aed0), mix_checks.py (648d9ed); reports in .work/audio/analysis/trailer/ (not committed)",
+    "determinism": "a second run of final_mix.sh rendered the stems again and reproduced all five masters bit for bit"
    },
    "final_masters": {
     "soundtrack_web.wav": {
      "format": "PCM 24-bit, 48 kHz, stereo, in .work/audio/render/ (not committed)",
-     "sha256": "913f9dca33c6c26e18e01221ad5003e1b0ee884e3e462b2c00034434679fd35f",
+     "sha256": "daa5f261534bec26788814e0c1dcc52d9e62476f454e753b37024a92bef8f53a",
      "bytes": 22118444,
-     "for": "the website film (public/media/v2: film-1080 and film-720, HEVC and H.264; tools/encode/encode.sh film)",
+     "for": "the website film (public/media/v2: film-1080 and film-720, HEVC and H.264; tools/encode/encode.sh film) and the 1:1 phone film",
      "length": "76.800 s, 3,686,400 samples (2304 frames at 30 fps)",
      "integrated_lufs": -16.1,
      "true_peak_dbtp": -1.8,
-     "lra_lu": 11.0,
-     "integrated_lufs_pyloudnorm": -16.12,
+     "lra_lu": 11.2,
+     "integrated_lufs_pyloudnorm": -16.1,
      "limiter_ceiling_dbtp": -1.8,
-     "ceiling_note": "the --aac loop's tries (ceiling dBTP: the AAC encode's true peak): -1.7: -1.453, -1.8: -1.587",
-     "aac_160k_true_peak_dbtp": -1.587,
+     "ceiling_note": "the --aac loop's tries (ceiling dBTP: the AAC encode's true peak): -1.7: -1.525, -1.8: -1.598",
+     "aac_160k_true_peak_dbtp": -1.598,
      "aac_192k_true_peak_dbtp": -1.608,
-     "aac_gate": "160k: -1.587 dBTP (gate -1.5)",
-     "mono_loss_db": 0.37,
-     "power_share_above_150hz": 0.351,
+     "aac_gate": "160k: -1.598 dBTP (gate -1.5)",
+     "mono_loss_db": 0.36,
+     "power_share_above_150hz": 0.343,
      "classifier_max": {
       "windows (main, shifted)": {
        "phone": [
-        0.217,
-        0.175
+        0.225,
+        0.174
        ],
        "voice": [
         0.107,
-        0.136
+        0.107
        ],
        "alarm": [
         0.023,
         0.022
        ],
        "foghorn": [
-        0.052,
+        0.053,
         0.048
        ]
       },
-      "opening after silence, phone": 0.175,
+      "opening after silence, phone": 0.174,
       "after silence at f648, f1512 and f1656": {
-       "phone": 0.124,
-       "voice": 0.079,
-       "alarm": 0.034,
-       "foghorn": 0.054
+       "phone": 0.091,
+       "voice": 0.096,
+       "alarm": 0.041,
+       "foghorn": 0.025
       },
       "holds": "f445-504: phone 0.0, voice 0.0, alarm 0.0, foghorn 0.0; f1453-1512: phone 0.0, voice 0.0, alarm 0.0, foghorn 0.0",
-      "end card": "from 67.2 s: phone 0.0, foghorn 0.0",
-      "other watch labels": "french_horn 0.221, singing_bowl 0.119",
-      "top tags": "music 0.806, synthesizer 0.722, keyboard_musical 0.704"
+      "end card": "from 67.2 s: phone 0.101, foghorn 0.0",
+      "other watch labels": "french_horn 0.221, singing_bowl 0.126",
+      "after-silence top 3": [
+       "music, synthesizer, keyboard_musical",
+       "synthesizer, keyboard_musical, music",
+       "synthesizer, music, keyboard_musical"
+      ]
      },
      "silence_last_54_frames": "exact zeros",
      "dynamics": {
-      "bars 1-9 under the integrated level (LU)": 6.4,
+      "bars 1-9 under the integrated level (LU)": 6.71,
       "the question hit on f72: its 300 ms over the 600 ms before (dB)": 10.8,
       "the question hit on f216: its 300 ms over the 600 ms before (dB)": 13.4,
-      "the question hit on f360: its 300 ms over the 600 ms before (dB)": 22.2,
-      "the dead stop f612-638 under the drop's first 300 ms (dB)": 87.7,
-      "the drop's 3 s over bar 9's first half (LU)": 7.73,
-      "the hold on f445: its 2 s under the integrated level (LU)": 5.76,
-      "the hold on f445: its 2 s under the montage, bars 15-20 (LU)": 7.57,
-      "the hold on f1453: its 2 s under the integrated level (LU)": 5.51,
-      "the hold on f1453: its 2 s under the montage, bars 15-20 (LU)": 7.32,
-      "Verified (the push on f1723) is in the loudest 3 s window": "the loudest from 56.4 s at -11.69 LUFS; the best holding the push and its next 300 ms -11.69",
-      "Verified's loudest 3 s over the montage (LU)": 2.62,
-      "the push at least as big as the tests passing (f1656): momentary maximum (400 ms) within 0.6 s (LU)": 1.49,
-      "the push at least as big as the tests passing (f1656): its first 0.3 s (LU)": 1.26,
-      "the push at least as big as the tests passing (f1656): its first 0.4 s (LU)": 1.49,
-      "the push at least as big as the tests passing (f1656): its first 1.0 s (LU)": 2.4,
-      "the breakdown (bars 26-28) under the climax (bars 21-25) (LU)": 6.75,
+      "the question hit on f360: its 300 ms over the 600 ms before (dB)": 22.5,
+      "the dead stop f612-638 under the drop's first 300 ms (dB)": 89.5,
+      "the drop's 3 s over bar 9's first half (LU)": 8.84,
+      "the hold on f445: its 2 s under the integrated level (LU)": 5.86,
+      "the hold on f445: its 2 s under the montage, bars 15-20 (LU)": 7.34,
+      "the hold on f1453: its 2 s under the integrated level (LU)": 5.59,
+      "the hold on f1453: its 2 s under the montage, bars 15-20 (LU)": 7.07,
+      "Verified (the push on f1723) is in the loudest 3 s window": "the loudest from 55.3 s at -12.58 LUFS; the best holding the push and its next 300 ms -12.58",
+      "Verified's loudest 3 s over the montage (LU)": 2.04,
+      "the push at least as big as the tests passing (f1656): momentary maximum (400 ms) within 0.6 s (LU)": 2.07,
+      "the push at least as big as the tests passing (f1656): its first 0.3 s (LU)": 1.28,
+      "the push at least as big as the tests passing (f1656): its first 0.4 s (LU)": 1.94,
+      "the push at least as big as the tests passing (f1656): its first 1.0 s (LU)": 2.01,
+      "Verified (f1723) at least as big as the tests passing (f1656): its first 0.3 s (LU)": 1.05,
+      "Verified (f1723) at least as big as the tests passing (f1656): its first 0.4 s (LU)": 1.77,
+      "Verified (f1723) at least as big as the tests passing (f1656): its first 1.0 s (LU)": 2.0,
+      "the push (f1723) is the master's loudest momentary moment (400 ms): its windows over every other (LU)": 0.88,
+      "the quick chat (bars 12-13) against bars 10-11, ungated (LU)": -0.61,
+      "bars 12-14 build: bar 13 over bar 12, bar 14 over bar 13, ungated (LU)": [
+       2.15,
+       0.61
+      ],
+      "the breakdown (bars 26-28) under the climax (bars 21-25) (LU)": 6.85,
       "gap f63-72: the 300 ms from its hit over its middle 200 ms (dB)": 7.0,
-      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB)": 10.6,
-      "gap f1647-1656: the 300 ms from its hit over its middle 200 ms (dB)": 26.6,
+      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB)": 11.4,
+      "gap f1647-1656: the 300 ms from its hit over its middle 200 ms (dB)": 26.9,
       "gap f2151-2160: the 300 ms from its hit over its middle 200 ms (dB)": 45.3,
-      "bars 23-25 over the mean of bars 9-22 (LU)": 3.78,
-      "the loudest 3-bar span": "bars 23-25 at -12.87 LUFS",
-      "bars 26-28 under bars 23-25 (LU)": 8.16,
+      "bars 23-25 over the mean of bars 9-22 (LU)": 2.68,
+      "the loudest 3-bar span": "bars 23-25 at -13.42 LUFS",
+      "bars 26-28 under bars 23-25 (LU)": 8.17,
       "the last 54 frames are digital silence": "exact zeros"
      },
+     "hits_momentary_max_lufs_full_and_phone_band": {
+      "the drop": [
+       -12.05,
+       -16.55
+      ],
+      "the whole workspace": [
+       -11.77,
+       -15.42
+      ],
+      "the montage lift": [
+       -11.38,
+       -16.87
+      ],
+      "the held run's cut": [
+       -11.93,
+       -16.95
+      ],
+      "Run tests": [
+       -11.86,
+       -14.66
+      ],
+      "the tests pass": [
+       -12.41,
+       -16.95
+      ],
+      "the push (Verified)": [
+       -10.34,
+       -11.01
+      ],
+      "the final hit": [
+       -12.37,
+       -18.33
+      ]
+     },
      "dynamics_misses": [
-      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB): 10.6 (want >= 12)"
+      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB): 11.4 (want >= 12)"
      ],
      "gates_pass": true,
      "fails": []
     },
     "soundtrack_social.wav": {
      "format": "PCM 24-bit, 48 kHz, stereo, in .work/audio/render/ (not committed)",
-     "sha256": "e517eb994317690f87ae50fe51c507565d2690691ce83b15a5b6f81d295e5cbe",
+     "sha256": "fbddeb6214cf2852339f0c270a6181908facd3feb27b352b8453b9b9af39695e",
      "bytes": 22118444,
      "for": "the full-length social films (Pebble-launch-film-1920x1080, -1080x1080, -1080x1920)",
      "length": "76.800 s, 3,686,400 samples (2304 frames at 30 fps)",
      "integrated_lufs": -14.3,
      "true_peak_dbtp": -1.6,
-     "lra_lu": 10.6,
-     "integrated_lufs_pyloudnorm": -14.36,
+     "lra_lu": 10.9,
+     "integrated_lufs_pyloudnorm": -14.32,
      "limiter_ceiling_dbtp": -1.7,
-     "ceiling_note": "the --aac loop's tries (ceiling dBTP: the AAC encode's true peak): -1.5: -0.724, -1.6: -0.81, -1.7: -1.27",
-     "aac_160k_true_peak_dbtp": -0.993,
-     "aac_192k_true_peak_dbtp": -1.27,
-     "aac_gate": "192k: -1.27 dBTP (gate -1.0)",
-     "mono_loss_db": 0.39,
-     "power_share_above_150hz": 0.355,
+     "ceiling_note": "the --aac loop's tries (ceiling dBTP: the AAC encode's true peak): -1.5: -0.175, -1.6: -1.002, -1.7: -1.16",
+     "aac_160k_true_peak_dbtp": -1.18,
+     "aac_192k_true_peak_dbtp": -1.16,
+     "aac_gate": "192k: -1.16 dBTP (gate -1.0)",
+     "mono_loss_db": 0.36,
+     "power_share_above_150hz": 0.344,
      "classifier_max": {
       "windows (main, shifted)": {
        "phone": [
-        0.223,
-        0.18
+        0.231,
+        0.178
        ],
        "voice": [
         0.106,
-        0.107
+        0.11
        ],
        "alarm": [
-        0.022,
+        0.023,
         0.023
        ],
        "foghorn": [
-        0.052,
+        0.053,
         0.048
        ]
       },
-      "opening after silence, phone": 0.18,
+      "opening after silence, phone": 0.178,
       "after silence at f648, f1512 and f1656": {
-       "phone": 0.104,
-       "voice": 0.072,
-       "alarm": 0.032,
-       "foghorn": 0.062
+       "phone": 0.075,
+       "voice": 0.092,
+       "alarm": 0.041,
+       "foghorn": 0.025
       },
       "holds": "f445-504: phone 0.0, voice 0.0, alarm 0.0, foghorn 0.0; f1453-1512: phone 0.0, voice 0.0, alarm 0.0, foghorn 0.0",
       "end card": "from 67.2 s: phone 0.0, foghorn 0.0",
-      "other watch labels": "french_horn 0.225, singing_bowl 0.116",
-      "top tags": "music 0.806, synthesizer 0.721, keyboard_musical 0.704"
+      "other watch labels": "french_horn 0.224, singing_bowl 0.122",
+      "after-silence top 3": [
+       "music, synthesizer, keyboard_musical",
+       "synthesizer, keyboard_musical, music",
+       "synthesizer, music, keyboard_musical"
+      ]
      },
      "silence_last_54_frames": "exact zeros",
      "dynamics": {
-      "bars 1-9 under the integrated level (LU)": 6.16,
+      "bars 1-9 under the integrated level (LU)": 6.49,
       "the question hit on f72: its 300 ms over the 600 ms before (dB)": 10.8,
       "the question hit on f216: its 300 ms over the 600 ms before (dB)": 13.4,
-      "the question hit on f360: its 300 ms over the 600 ms before (dB)": 22.2,
-      "the dead stop f612-638 under the drop's first 300 ms (dB)": 86.4,
-      "the drop's 3 s over bar 9's first half (LU)": 7.38,
-      "the hold on f445: its 2 s under the integrated level (LU)": 5.52,
-      "the hold on f445: its 2 s under the montage, bars 15-20 (LU)": 7.36,
-      "the hold on f1453: its 2 s under the integrated level (LU)": 5.27,
-      "the hold on f1453: its 2 s under the montage, bars 15-20 (LU)": 7.11,
-      "Verified (the push on f1723) is in the loudest 3 s window": "the loudest from 56.4 s at -10.12 LUFS; the best holding the push and its next 300 ms -10.12",
-      "Verified's loudest 3 s over the montage (LU)": 2.4,
-      "the push at least as big as the tests passing (f1656): momentary maximum (400 ms) within 0.6 s (LU)": 0.98,
-      "the push at least as big as the tests passing (f1656): its first 0.3 s (LU)": 0.55,
-      "the push at least as big as the tests passing (f1656): its first 0.4 s (LU)": 0.91,
-      "the push at least as big as the tests passing (f1656): its first 1.0 s (LU)": 2.06,
-      "the breakdown (bars 26-28) under the climax (bars 21-25) (LU)": 6.43,
+      "the question hit on f360: its 300 ms over the 600 ms before (dB)": 22.5,
+      "the dead stop f612-638 under the drop's first 300 ms (dB)": 88.3,
+      "the drop's 3 s over bar 9's first half (LU)": 8.53,
+      "the hold on f445: its 2 s under the integrated level (LU)": 5.64,
+      "the hold on f445: its 2 s under the montage, bars 15-20 (LU)": 7.16,
+      "the hold on f1453: its 2 s under the integrated level (LU)": 5.38,
+      "the hold on f1453: its 2 s under the montage, bars 15-20 (LU)": 6.9,
+      "Verified (the push on f1723) is in the loudest 3 s window": "the loudest from 55.3 s at -11.04 LUFS; the best holding the push and its next 300 ms -11.04",
+      "Verified's loudest 3 s over the montage (LU)": 1.76,
+      "the push at least as big as the tests passing (f1656): momentary maximum (400 ms) within 0.6 s (LU)": 1.45,
+      "the push at least as big as the tests passing (f1656): its first 0.3 s (LU)": 0.52,
+      "the push at least as big as the tests passing (f1656): its first 0.4 s (LU)": 1.08,
+      "the push at least as big as the tests passing (f1656): its first 1.0 s (LU)": 1.37,
+      "Verified (f1723) at least as big as the tests passing (f1656): its first 0.3 s (LU)": 0.32,
+      "Verified (f1723) at least as big as the tests passing (f1656): its first 0.4 s (LU)": 0.94,
+      "Verified (f1723) at least as big as the tests passing (f1656): its first 1.0 s (LU)": 1.36,
+      "the push (f1723) is the master's loudest momentary moment (400 ms): its windows over every other (LU)": 0.45,
+      "the quick chat (bars 12-13) against bars 10-11, ungated (LU)": -0.51,
+      "bars 12-14 build: bar 13 over bar 12, bar 14 over bar 13, ungated (LU)": [
+       2.04,
+       0.47
+      ],
+      "the breakdown (bars 26-28) under the climax (bars 21-25) (LU)": 6.58,
       "gap f63-72: the 300 ms from its hit over its middle 200 ms (dB)": 7.0,
-      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB)": 9.3,
-      "gap f1647-1656: the 300 ms from its hit over its middle 200 ms (dB)": 25.9,
+      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB)": 10.2,
+      "gap f1647-1656: the 300 ms from its hit over its middle 200 ms (dB)": 26.2,
       "gap f2151-2160: the 300 ms from its hit over its middle 200 ms (dB)": 44.0,
-      "bars 23-25 over the mean of bars 9-22 (LU)": 3.55,
-      "the loudest 3-bar span": "bars 23-25 at -11.22 LUFS",
-      "bars 26-28 under bars 23-25 (LU)": 7.81,
+      "bars 23-25 over the mean of bars 9-22 (LU)": 2.49,
+      "the loudest 3-bar span": "bars 23-25 at -11.72 LUFS",
+      "bars 26-28 under bars 23-25 (LU)": 7.87,
       "the last 54 frames are digital silence": "exact zeros"
      },
+     "hits_momentary_max_lufs_full_and_phone_band": {
+      "the drop": [
+       -11.07,
+       -15.63
+      ],
+      "the whole workspace": [
+       -10.52,
+       -13.74
+      ],
+      "the montage lift": [
+       -10.05,
+       -15.53
+      ],
+      "the held run's cut": [
+       -10.16,
+       -15.0
+      ],
+      "Run tests": [
+       -10.54,
+       -12.88
+      ],
+      "the tests pass": [
+       -10.99,
+       -15.58
+      ],
+      "the push (Verified)": [
+       -9.68,
+       -10.35
+      ],
+      "the final hit": [
+       -11.49,
+       -17.5
+      ]
+     },
      "dynamics_misses": [
-      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB): 9.3 (want >= 12)"
+      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB): 10.2 (want >= 12)"
      ],
      "gates_pass": true,
      "fails": []
     },
     "soundtrack_x30_social.wav": {
      "format": "PCM 24-bit, 48 kHz, stereo, in .work/audio/render/ (not committed)",
-     "sha256": "b2187537c5998419165890174769f79265d4442278969697b1ceef3afc590824",
+     "sha256": "6a7f5e22674023c0473c817ba0a660930ecf2426fad2bdb098875c06f048b494",
      "bytes": 8294444,
      "for": "the 30 s cut x30 (Pebble-launch-film-30s-1920x1080, -1080x1080, -1080x1920)",
      "length": "28.800 s, 1,382,400 samples (864 frames at 30 fps)",
-     "integrated_lufs": -14.3,
+     "integrated_lufs": -14.2,
      "true_peak_dbtp": -1.5,
-     "lra_lu": 11.6,
-     "integrated_lufs_pyloudnorm": -14.31,
+     "lra_lu": 11.3,
+     "integrated_lufs_pyloudnorm": -14.24,
      "limiter_ceiling_dbtp": -1.5,
-     "ceiling_note": "the --aac loop's tries (ceiling dBTP: the AAC encode's true peak): -1.5: -1.25",
-     "settle": "0.3 dB of make-up after the limiter (passes, gain: LUFS: 0.0: -14.521, 0.3: -14.315)",
-     "aac_160k_true_peak_dbtp": -1.23,
-     "aac_192k_true_peak_dbtp": -1.25,
-     "aac_gate": "192k: -1.25 dBTP (gate -1.0)",
-     "mono_loss_db": 0.41,
-     "power_share_above_150hz": 0.335,
+     "ceiling_note": "the --aac loop's tries (ceiling dBTP: the AAC encode's true peak): -1.5: -1.351",
+     "settle": "0.3 dB of make-up after the limiter (passes, gain: LUFS: 0.0: -14.451, 0.3: -14.239)",
+     "aac_160k_true_peak_dbtp": -1.18,
+     "aac_192k_true_peak_dbtp": -1.351,
+     "aac_gate": "192k: -1.351 dBTP (gate -1.0)",
+     "mono_loss_db": 0.42,
+     "power_share_above_150hz": 0.334,
      "classifier_max": {
       "windows (main, shifted)": {
        "phone": [
-        0.107,
-        0.179
+        0.105,
+        0.18
        ],
        "voice": [
-        0.117,
-        0.06
+        0.115,
+        0.059
        ],
        "alarm": [
-        0.027,
-        0.035
+        0.028,
+        0.036
        ],
        "foghorn": [
-        0.075,
-        0.045
+        0.081,
+        0.038
        ]
       },
-      "opening after silence, phone": 0.179,
+      "opening after silence, phone": 0.18,
       "after silence at f648, f1512 and f1656": {
        "phone": 0.194,
-       "voice": 0.053,
-       "alarm": 0.027,
-       "foghorn": 0.035
+       "voice": 0.049,
+       "alarm": 0.03,
+       "foghorn": 0.011
       },
       "holds": "f445-504: phone 0.0, voice 0.0, alarm 0.0, foghorn 0.0",
       "end card": "from 24.0 s: phone 0.0, foghorn 0.0",
       "other watch labels": "french_horn 0.138",
-      "top tags": "music 0.788, synthesizer 0.761, keyboard_musical 0.702"
+      "after-silence top 3": [
+       "music, synthesizer, keyboard_musical",
+       "synthesizer, keyboard_musical, music",
+       "synthesizer, music, keyboard_musical"
+      ]
      },
      "silence_last_54_frames": "exact zeros",
      "dynamics": {
-      "bars 1-9 under the integrated level (LU)": 6.25,
-      "the question hit on f360: its 300 ms over the 600 ms before (dB)": 11.7,
-      "the dead stop f612-638 under the drop's first 300 ms (dB)": 87.5,
-      "the drop's 3 s over bar 9's first half (LU)": 6.49,
-      "the hold on f445: its 2 s under the integrated level (LU)": 5.95,
-      "Verified (the push on f1723) is in the loudest 3 s window": "the loudest from 20.4 s at -10.32 LUFS; the best holding the push and its next 300 ms -10.32",
-      "the push at least as big as the tests passing (f1656): momentary maximum (400 ms) within 0.6 s (LU)": 1.1,
-      "the push at least as big as the tests passing (f1656): its first 0.3 s (LU)": -0.02,
-      "the push at least as big as the tests passing (f1656): its first 0.4 s (LU)": 0.46,
-      "the push at least as big as the tests passing (f1656): its first 1.0 s (LU)": 1.81,
-      "gap f63-72: the 300 ms from its hit over its middle 200 ms (dB)": 7.9,
-      "gap f351-360: the 300 ms from its hit over its middle 200 ms (dB)": 10.2,
-      "gap f567-576: the 300 ms from its hit over its middle 200 ms (dB)": 26.4,
-      "bars 23-25 over the mean of bars 9-22 (LU)": 5.98,
-      "the loudest 3-bar span": "bars 8-10 at -11.38 LUFS",
+      "bars 1-9 under the integrated level (LU)": 6.07,
+      "the question hit on f360: its 300 ms over the 600 ms before (dB)": 11.5,
+      "the dead stop f612-638 under the drop's first 300 ms (dB)": 88.1,
+      "the drop's 3 s over bar 9's first half (LU)": 7.23,
+      "the hold on f445: its 2 s under the integrated level (LU)": 5.5,
+      "Verified (the push on f1723) is in the loudest 3 s window": "the loudest from 19.3 s at -10.75 LUFS; the best holding the push and its next 300 ms -10.75",
+      "the push at least as big as the tests passing (f1656): momentary maximum (400 ms) within 0.6 s (LU)": 1.22,
+      "the push at least as big as the tests passing (f1656): its first 0.3 s (LU)": 0.65,
+      "the push at least as big as the tests passing (f1656): its first 0.4 s (LU)": 0.94,
+      "the push at least as big as the tests passing (f1656): its first 1.0 s (LU)": 1.08,
+      "Verified (f1723) at least as big as the tests passing (f1656): its first 0.3 s (LU)": 0.46,
+      "Verified (f1723) at least as big as the tests passing (f1656): its first 0.4 s (LU)": 0.87,
+      "Verified (f1723) at least as big as the tests passing (f1656): its first 1.0 s (LU)": 1.07,
+      "the push (f1723) is the master's loudest momentary moment (400 ms): its windows over every other (LU)": 0.66,
+      "gap f63-72: the 300 ms from its hit over its middle 200 ms (dB)": 7.6,
+      "gap f351-360: the 300 ms from its hit over its middle 200 ms (dB)": 9.8,
+      "gap f567-576: the 300 ms from its hit over its middle 200 ms (dB)": 26.3,
+      "bars 23-25 over the mean of bars 9-22 (LU)": 5.74,
+      "the loudest 3-bar span": "bars 8-10 at -11.45 LUFS",
       "the last 54 frames are digital silence": "exact zeros"
      },
+     "hits_momentary_max_lufs_full_and_phone_band": {
+      "the drop": [
+       -10.98,
+       -15.56
+      ],
+      "Run tests": [
+       -10.59,
+       -13.99
+      ],
+      "the tests pass": [
+       -10.62,
+       -15.42
+      ],
+      "the push (Verified)": [
+       -9.4,
+       -10.12
+      ],
+      "the final hit": [
+       -11.38,
+       -16.94
+      ]
+     },
      "dynamics_misses": [
-      "the push at least as big as the tests passing (f1656): its first 0.3 s (LU): -0.02 (want >= 0)",
-      "gap f351-360: the 300 ms from its hit over its middle 200 ms (dB): 10.2 (want >= 12)"
+      "gap f351-360: the 300 ms from its hit over its middle 200 ms (dB): 9.8 (want >= 12)"
      ],
      "gates_pass": true,
      "fails": []
     },
     "soundtrack_social_narrated.wav": {
      "format": "PCM 24-bit, 48 kHz, stereo, in .work/audio/render/ (not committed)",
-     "sha256": "8525183924e13f7f88a1e4699c79dc062778856d59c4fd638e263c8d2cf92265",
+     "sha256": "b6d06d40fbdbb647713cb5622bd80b831f98e54c2fbde248b3262ffc5d639878",
      "bytes": 22118444,
      "for": "the narrated twin (at least the 16:9 full film; OVERRIDES §38): never published on its own (Sarvam ToS §10.2 item 9)",
      "length": "76.800 s, 3,686,400 samples (2304 frames at 30 fps)",
-     "integrated_lufs": -14.3,
+     "integrated_lufs": -14.2,
      "true_peak_dbtp": -1.6,
-     "lra_lu": 9.2,
-     "integrated_lufs_pyloudnorm": -14.33,
+     "lra_lu": 9.1,
+     "integrated_lufs_pyloudnorm": -14.28,
      "limiter_ceiling_dbtp": -1.7,
-     "ceiling_note": "the --aac loop's tries (ceiling dBTP: the AAC encode's true peak): -1.5: -0.8, -1.6: -1.012, -1.7: -1.32",
+     "ceiling_note": "the --aac loop's tries (ceiling dBTP: the AAC encode's true peak): -1.5: -0.886, -1.6: -0.934, -1.7: -1.351",
      "voice": {
-      "gain_db": -5.54,
+      "gain_db": -5.47,
       "duck": "-4.5 dB under each line, from its first sample (lead 0.0 ms), down in 40.0 ms, back over 300.0 ms",
       "target_line_lufs": -15.0,
       "lines": [
-       "f75.0-108.67: the voice -14.75 LUFS over the music and effects -27.21 LUFS (+12.5 dB)",
-       "f219.0-244.71: the voice -14.94 LUFS over the music and effects -27.99 LUFS (+13.1 dB)",
-       "f363.0-401.85: the voice -15.13 LUFS over the music and effects -25.77 LUFS (+10.6 dB)",
-       "f1803.0-1841.95: the voice -15.27 LUFS over the music and effects -22.47 LUFS (+7.2 dB)"
+       "f75.0-108.67: the voice -14.75 LUFS over the music and effects -27.3 LUFS (+12.6 dB)",
+       "f219.0-244.71: the voice -14.94 LUFS over the music and effects -28.06 LUFS (+13.1 dB)",
+       "f363.0-401.85: the voice -15.13 LUFS over the music and effects -25.93 LUFS (+10.8 dB)",
+       "f1803.0-1841.95: the voice -15.27 LUFS over the music and effects -23.02 LUFS (+7.7 dB)"
       ],
-      "measured_duck": "the music and effects 4.55-4.58 dB under each line against the social master (a 0.06 dB normalisation difference included); 0.06 dB elsewhere"
+      "measured_duck": "the twin's music and effects against the social master, in 100 ms steps: -4.6 dB through every line once its 40 ms attack is down (-2.3 to -3.3 dB in the first step, where the question hits' tails fall); -0.1 dB elsewhere. The twin differs from the social master over f75-114, f219-243, f363-404 and f1803-1847 (the voice and its duck), and over f2162-2164 by the 0.04 dB normalisation difference at the final hit's peak"
      },
-     "aac_160k_true_peak_dbtp": -1.17,
-     "aac_192k_true_peak_dbtp": -1.32,
-     "aac_gate": "192k: -1.32 dBTP (gate -1.0)",
+     "aac_160k_true_peak_dbtp": -1.33,
+     "aac_192k_true_peak_dbtp": -1.351,
+     "aac_gate": "192k: -1.351 dBTP (gate -1.0)",
      "mono_loss_db": 0.35,
-     "power_share_above_150hz": 0.381,
+     "power_share_above_150hz": 0.37,
      "classifier_max": {
       "windows (main, shifted)": {
        "phone": [
-        0.146,
-        0.179
+        0.13,
+        0.178
        ],
        "voice": [
-        0.022,
-        0.108
+        0.023,
+        0.11
        ],
        "alarm": [
         0.053,
         0.028
        ],
        "foghorn": [
-        0.052,
-        0.062
+        0.053,
+        0.048
        ]
       },
-      "opening after silence, phone": 0.179,
+      "opening after silence, phone": 0.178,
       "after silence at f648, f1512 and f1656": {
-       "phone": 0.106,
-       "voice": 0.072,
-       "alarm": 0.032,
-       "foghorn": 0.062
+       "phone": 0.076,
+       "voice": 0.092,
+       "alarm": 0.042,
+       "foghorn": 0.025
       },
       "holds": "f445-504: phone 0.0, voice 0.892, alarm 0.0, foghorn 0.0; f1453-1512: phone 0.0, voice 0.0, alarm 0.0, foghorn 0.0",
       "end card": "from 67.2 s: phone 0.0, foghorn 0.0",
-      "other watch labels": "french_horn 0.224, singing_bowl 0.114",
-      "top tags": "music 0.813, synthesizer 0.728, keyboard_musical 0.71"
+      "other watch labels": "french_horn 0.223, singing_bowl 0.116",
+      "after-silence top 3": [
+       "music, synthesizer, keyboard_musical",
+       "synthesizer, keyboard_musical, music",
+       "synthesizer, music, keyboard_musical"
+      ]
      },
      "silence_last_54_frames": "exact zeros",
      "dynamics": {
-      "bars 1-9 under the integrated level (LU)": 4.23,
-      "the question hit on f72: its 300 ms over the 600 ms before (dB)": 13.1,
-      "the question hit on f216: its 300 ms over the 600 ms before (dB)": 16.3,
-      "the question hit on f360: its 300 ms over the 600 ms before (dB)": 24.1,
-      "the dead stop f612-638 under the drop's first 300 ms (dB)": 86.4,
-      "the drop's 3 s over bar 9's first half (LU)": 7.4,
-      "the hold on f445: its 2 s under the integrated level (LU)": 5.64,
-      "the hold on f445: its 2 s under the montage, bars 15-20 (LU)": 7.39,
-      "the hold on f1453: its 2 s under the integrated level (LU)": 5.38,
-      "the hold on f1453: its 2 s under the montage, bars 15-20 (LU)": 7.13,
-      "Verified (the push on f1723) is in the loudest 3 s window": "the loudest from 56.4 s at -10.16 LUFS; the best holding the push and its next 300 ms -10.16",
-      "Verified's loudest 3 s over the montage (LU)": 2.42,
-      "the push at least as big as the tests passing (f1656): momentary maximum (400 ms) within 0.6 s (LU)": 1.01,
-      "the push at least as big as the tests passing (f1656): its first 0.3 s (LU)": 0.62,
-      "the push at least as big as the tests passing (f1656): its first 0.4 s (LU)": 0.96,
-      "the push at least as big as the tests passing (f1656): its first 1.0 s (LU)": 2.1,
-      "the breakdown (bars 26-28) under the climax (bars 21-25) (LU)": 5.33,
-      "gap f63-72: the 300 ms from its hit over its middle 200 ms (dB)": 9.3,
-      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB)": 9.3,
-      "gap f1647-1656: the 300 ms from its hit over its middle 200 ms (dB)": 25.9,
-      "gap f2151-2160: the 300 ms from its hit over its middle 200 ms (dB)": 44.0,
-      "bars 23-25 over the mean of bars 9-22 (LU)": 3.58,
-      "the loudest 3-bar span": "bars 23-25 at -11.26 LUFS",
-      "bars 26-28 under bars 23-25 (LU)": 6.72,
+      "bars 1-9 under the integrated level (LU)": 4.41,
+      "the question hit on f72: its 300 ms over the 600 ms before (dB)": 13.2,
+      "the question hit on f216: its 300 ms over the 600 ms before (dB)": 16.4,
+      "the question hit on f360: its 300 ms over the 600 ms before (dB)": 24.4,
+      "the dead stop f612-638 under the drop's first 300 ms (dB)": 88.4,
+      "the drop's 3 s over bar 9's first half (LU)": 8.57,
+      "the hold on f445: its 2 s under the integrated level (LU)": 5.77,
+      "the hold on f445: its 2 s under the montage, bars 15-20 (LU)": 7.18,
+      "the hold on f1453: its 2 s under the integrated level (LU)": 5.5,
+      "the hold on f1453: its 2 s under the montage, bars 15-20 (LU)": 6.91,
+      "Verified (the push on f1723) is in the loudest 3 s window": "the loudest from 55.3 s at -11.1 LUFS; the best holding the push and its next 300 ms -11.1",
+      "Verified's loudest 3 s over the montage (LU)": 1.77,
+      "the push at least as big as the tests passing (f1656): momentary maximum (400 ms) within 0.6 s (LU)": 1.45,
+      "the push at least as big as the tests passing (f1656): its first 0.3 s (LU)": 0.53,
+      "the push at least as big as the tests passing (f1656): its first 0.4 s (LU)": 1.09,
+      "the push at least as big as the tests passing (f1656): its first 1.0 s (LU)": 1.39,
+      "Verified (f1723) at least as big as the tests passing (f1656): its first 0.3 s (LU)": 0.33,
+      "Verified (f1723) at least as big as the tests passing (f1656): its first 0.4 s (LU)": 0.96,
+      "Verified (f1723) at least as big as the tests passing (f1656): its first 1.0 s (LU)": 1.38,
+      "the push (f1723) is the master's loudest momentary moment (400 ms): its windows over every other (LU)": 0.49,
+      "the quick chat (bars 12-13) against bars 10-11, ungated (LU)": -0.53,
+      "bars 12-14 build: bar 13 over bar 12, bar 14 over bar 13, ungated (LU)": [
+       2.05,
+       0.49
+      ],
+      "the breakdown (bars 26-28) under the climax (bars 21-25) (LU)": 5.26,
+      "gap f63-72: the 300 ms from its hit over its middle 200 ms (dB)": 9.4,
+      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB)": 10.3,
+      "gap f1647-1656: the 300 ms from its hit over its middle 200 ms (dB)": 26.2,
+      "gap f2151-2160: the 300 ms from its hit over its middle 200 ms (dB)": 44.2,
+      "bars 23-25 over the mean of bars 9-22 (LU)": 2.51,
+      "the loudest 3-bar span": "bars 23-25 at -11.78 LUFS",
+      "bars 26-28 under bars 23-25 (LU)": 6.56,
       "the last 54 frames are digital silence": "exact zeros"
      },
+     "hits_momentary_max_lufs_full_and_phone_band": {
+      "the drop": [
+       -11.09,
+       -15.65
+      ],
+      "the whole workspace": [
+       -10.54,
+       -13.81
+      ],
+      "the montage lift": [
+       -10.1,
+       -15.58
+      ],
+      "the held run's cut": [
+       -10.2,
+       -15.08
+      ],
+      "Run tests": [
+       -10.59,
+       -12.95
+      ],
+      "the tests pass": [
+       -11.02,
+       -15.6
+      ],
+      "the push (Verified)": [
+       -9.69,
+       -10.37
+      ],
+      "the final hit": [
+       -11.42,
+       -17.44
+      ]
+     },
      "dynamics_misses": [
-      "bars 1-9 under the integrated level (LU): 4.23 (want >= 6)",
-      "the breakdown (bars 26-28) under the climax (bars 21-25) (LU): 5.33 (want >= 6)",
-      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB): 9.3 (want >= 12)"
+      "bars 1-9 under the integrated level (LU): 4.41 (want >= 6)",
+      "the breakdown (bars 26-28) under the climax (bars 21-25) (LU): 5.26 (want >= 6)",
+      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB): 10.3 (want >= 12)"
      ],
      "gates_pass": true,
      "fails": [],
      "voice_spans_s": "2.5-3.622; 7.3-8.157; 12.1-13.395; 60.1-61.398",
-     "speech_notes": "10 windows overlapping the narrator's lines read speech (up to 0.892): expected; none outside them. The hold on f445's report includes the 12.0-15.0 s window, which also holds the third line (12.1-13.4 s): its speech reading is the narration"
+     "speech_notes": "10 windows overlapping the narrator's lines read speech or another voice-like label (up to 0.892): expected; none outside them"
     },
     "soundtrack_social_narrated_me.wav": {
      "format": "PCM 24-bit, 48 kHz, stereo, in .work/audio/render/ (not committed)",
-     "sha256": "6de72dd9c34dfab24ae65817b336c3fe2cc4882451dab2d40b9ff74c915538f9",
+     "sha256": "331212e6139128c306567f612a429f492d65b75b834d8b2d751c922d63b31c1b",
      "bytes": 22118444,
      "for": "a check file, never delivered: the narrated twin's music and effects alone, gated with no voice expected",
      "length": "76.800 s, 3,686,400 samples (2304 frames at 30 fps)",
-     "integrated_lufs": -14.4,
+     "integrated_lufs": -14.3,
      "true_peak_dbtp": -1.6,
-     "lra_lu": 10.9,
-     "aac_160k_true_peak_dbtp": -1.17,
-     "aac_192k_true_peak_dbtp": -1.32,
-     "aac_gate": "192k: -1.32 dBTP (gate -1.0)",
-     "mono_loss_db": 0.4,
-     "power_share_above_150hz": 0.356,
+     "lra_lu": 11.1,
+     "aac_160k_true_peak_dbtp": -1.26,
+     "aac_192k_true_peak_dbtp": -1.31,
+     "aac_gate": "192k: -1.31 dBTP (gate -1.0)",
+     "mono_loss_db": 0.36,
+     "power_share_above_150hz": 0.346,
      "classifier_max": {
       "windows (main, shifted)": {
        "phone": [
-        0.166,
-        0.179
+        0.17,
+        0.178
        ],
        "voice": [
         0.119,
-        0.108
+        0.11
        ],
        "alarm": [
         0.025,
-        0.021
+        0.019
        ],
        "foghorn": [
-        0.052,
+        0.053,
         0.048
        ]
       },
-      "opening after silence, phone": 0.179,
+      "opening after silence, phone": 0.178,
       "after silence at f648, f1512 and f1656": {
-       "phone": 0.106,
-       "voice": 0.072,
-       "alarm": 0.032,
-       "foghorn": 0.062
+       "phone": 0.076,
+       "voice": 0.092,
+       "alarm": 0.042,
+       "foghorn": 0.025
       },
       "holds": "f445-504: phone 0.0, voice 0.0, alarm 0.0, foghorn 0.0; f1453-1512: phone 0.0, voice 0.0, alarm 0.0, foghorn 0.0",
       "end card": "from 67.2 s: phone 0.0, foghorn 0.0",
-      "other watch labels": "french_horn 0.224, singing_bowl 0.11",
-      "top tags": "music 0.808, synthesizer 0.723, keyboard_musical 0.706"
+      "other watch labels": "french_horn 0.223, singing_bowl 0.113",
+      "after-silence top 3": [
+       "music, synthesizer, keyboard_musical",
+       "synthesizer, keyboard_musical, music",
+       "synthesizer, music, keyboard_musical"
+      ]
      },
      "silence_last_54_frames": "exact zeros",
      "dynamics": {
-      "bars 1-9 under the integrated level (LU)": 6.41,
+      "bars 1-9 under the integrated level (LU)": 6.73,
       "the question hit on f72: its 300 ms over the 600 ms before (dB)": 10.1,
       "the question hit on f216: its 300 ms over the 600 ms before (dB)": 12.8,
-      "the question hit on f360: its 300 ms over the 600 ms before (dB)": 21.4,
-      "the dead stop f612-638 under the drop's first 300 ms (dB)": 86.4,
-      "the drop's 3 s over bar 9's first half (LU)": 7.4,
-      "the hold on f445: its 2 s under the integrated level (LU)": 5.56,
-      "the hold on f445: its 2 s under the montage, bars 15-20 (LU)": 7.39,
-      "the hold on f1453: its 2 s under the integrated level (LU)": 5.3,
-      "the hold on f1453: its 2 s under the montage, bars 15-20 (LU)": 7.13,
-      "Verified (the push on f1723) is in the loudest 3 s window": "the loudest from 56.4 s at -10.16 LUFS; the best holding the push and its next 300 ms -10.16",
-      "Verified's loudest 3 s over the montage (LU)": 2.42,
-      "the push at least as big as the tests passing (f1656): momentary maximum (400 ms) within 0.6 s (LU)": 1.01,
-      "the push at least as big as the tests passing (f1656): its first 0.3 s (LU)": 0.62,
-      "the push at least as big as the tests passing (f1656): its first 0.4 s (LU)": 0.96,
-      "the push at least as big as the tests passing (f1656): its first 1.0 s (LU)": 2.1,
-      "the breakdown (bars 26-28) under the climax (bars 21-25) (LU)": 7.22,
+      "the question hit on f360: its 300 ms over the 600 ms before (dB)": 21.7,
+      "the dead stop f612-638 under the drop's first 300 ms (dB)": 88.4,
+      "the drop's 3 s over bar 9's first half (LU)": 8.57,
+      "the hold on f445: its 2 s under the integrated level (LU)": 5.68,
+      "the hold on f445: its 2 s under the montage, bars 15-20 (LU)": 7.18,
+      "the hold on f1453: its 2 s under the integrated level (LU)": 5.41,
+      "the hold on f1453: its 2 s under the montage, bars 15-20 (LU)": 6.91,
+      "Verified (the push on f1723) is in the loudest 3 s window": "the loudest from 55.3 s at -11.1 LUFS; the best holding the push and its next 300 ms -11.1",
+      "Verified's loudest 3 s over the montage (LU)": 1.77,
+      "the push at least as big as the tests passing (f1656): momentary maximum (400 ms) within 0.6 s (LU)": 1.45,
+      "the push at least as big as the tests passing (f1656): its first 0.3 s (LU)": 0.53,
+      "the push at least as big as the tests passing (f1656): its first 0.4 s (LU)": 1.09,
+      "the push at least as big as the tests passing (f1656): its first 1.0 s (LU)": 1.39,
+      "Verified (f1723) at least as big as the tests passing (f1656): its first 0.3 s (LU)": 0.33,
+      "Verified (f1723) at least as big as the tests passing (f1656): its first 0.4 s (LU)": 0.96,
+      "Verified (f1723) at least as big as the tests passing (f1656): its first 1.0 s (LU)": 1.38,
+      "the push (f1723) is the master's loudest momentary moment (400 ms): its windows over every other (LU)": 0.49,
+      "the quick chat (bars 12-13) against bars 10-11, ungated (LU)": -0.53,
+      "bars 12-14 build: bar 13 over bar 12, bar 14 over bar 13, ungated (LU)": [
+       2.05,
+       0.49
+      ],
+      "the breakdown (bars 26-28) under the climax (bars 21-25) (LU)": 7.35,
       "gap f63-72: the 300 ms from its hit over its middle 200 ms (dB)": 6.3,
-      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB)": 9.3,
-      "gap f1647-1656: the 300 ms from its hit over its middle 200 ms (dB)": 25.9,
-      "gap f2151-2160: the 300 ms from its hit over its middle 200 ms (dB)": 44.0,
-      "bars 23-25 over the mean of bars 9-22 (LU)": 3.58,
-      "the loudest 3-bar span": "bars 23-25 at -11.26 LUFS",
-      "bars 26-28 under bars 23-25 (LU)": 8.61,
+      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB)": 10.3,
+      "gap f1647-1656: the 300 ms from its hit over its middle 200 ms (dB)": 26.2,
+      "gap f2151-2160: the 300 ms from its hit over its middle 200 ms (dB)": 44.2,
+      "bars 23-25 over the mean of bars 9-22 (LU)": 2.51,
+      "the loudest 3-bar span": "bars 23-25 at -11.78 LUFS",
+      "bars 26-28 under bars 23-25 (LU)": 8.65,
       "the last 54 frames are digital silence": "exact zeros"
      },
+     "hits_momentary_max_lufs_full_and_phone_band": {
+      "the drop": [
+       -11.09,
+       -15.65
+      ],
+      "the whole workspace": [
+       -10.54,
+       -13.81
+      ],
+      "the montage lift": [
+       -10.1,
+       -15.58
+      ],
+      "the held run's cut": [
+       -10.2,
+       -15.08
+      ],
+      "Run tests": [
+       -10.59,
+       -12.95
+      ],
+      "the tests pass": [
+       -11.02,
+       -15.6
+      ],
+      "the push (Verified)": [
+       -9.69,
+       -10.37
+      ],
+      "the final hit": [
+       -11.42,
+       -17.44
+      ]
+     },
      "dynamics_misses": [
-      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB): 9.3 (want >= 12)"
+      "gap f639-648: the 300 ms from its hit over its middle 200 ms (dB): 10.3 (want >= 12)"
      ],
      "gates_pass": true,
      "fails": []
@@ -3576,29 +3800,559 @@
    "sync": {
     "cue_list": "tools/audio/cues.json puts impact_b and ui_done on f1656, impact_a and ui_verified on f1723 (each peaking one frame after its picture frame, the kit's convention)",
     "f1656": {
-     "score_onset_frame": 1655.92,
+     "score_onset_frame": 1655.95,
+     "master_onset_frame": 1655.92,
      "impact_b_onset": 1656.94,
      "ui_done_onset": 1656.76,
      "peaks": 1657.0
     },
     "f1723": {
-     "score_push_onset_frame": 1723.69,
+     "score_push_onset_frame": 1723.54,
      "push_written_at": 1723.5,
+     "master_onset_frame": 1723.93,
      "impact_a_onset": 1723.66,
      "ui_verified_onset": 1724.0,
      "peaks": 1724.0
     },
-    "result": "the score's push and the two effects begin within 0.34 frames of each other and within 1 frame of Verified on f1723 (onset: spectral flux on the stems and the master; an effect's: its first sample within 20 dB of its peak, as mix_master.py places it)"
+    "result": "the score's push and the two effects begin within 0.46 frames of each other and within 1 frame of Verified on f1723 (onset: spectral flux on the stems and the master; an effect's: its first sample within 20 dB of its peak, as mix_master.py places it)"
    },
    "previews_for_the_person": {
     "folder": "Desktop/Pebble launch film/music-preview/ on the build Mac (not committed)",
     "sha256": {
-     "Pebble-trailer-film-soundtrack.m4a": "54ac3d6da56499a2f144ac102215c5d9aaa24e1c050b18d3aae2aef3739e9553",
+     "Pebble-trailer-film-soundtrack.m4a": "6faa556ddedac8ccbeecd7b144bfae96902c017b68cb5ac8e068d49385ab2a38",
      "Pebble-trailer-score-a.m4a": "e723e0383b1a6d6d5c33e1e840ab9125c28a33440d05c23e2688493472580112",
      "Pebble-trailer-score-b.m4a": "327e9e95b54551c7d141b9049db22347295f5001385ec6078778d0e1e494df08",
-     "README.txt": "76b087a94cdecb694aed2e72f75415e9c38c0705dfeaaa33928606eef244be74"
+     "README.txt": "0720683c95cf3657dbc23855cb5bd5af14b2dde4167b0843acb444e98b17f579"
     },
-    "notes": "Pebble-trailer-film-soundtrack.m4a is soundtrack_web.wav as AAC 192 kb/s (48 kHz stereo, 76.800 s, -16.2 LUFS); the two score files are the composers' own previews (stand-in effects, no UI sounds); README.txt says which is in the film"
+    "notes": "Pebble-trailer-film-soundtrack.m4a is soundtrack_web.wav (the masters above) as AAC 192 kb/s (48 kHz stereo, 76.800 s, -16.2 LUFS); the two score files are the composers' own previews (stand-in effects, no UI sounds); README.txt says which is in the film and what the review changed"
+   },
+   "review_fixes_s46": {
+    "decision": "OVERRIDES §46 P2-1 (the hits) and P2-2 (bars 12-13), from the fresh-eyes review of the delivered trailer",
+    "method": "each master as WAV and as its AAC encode (encode.sh's settings: 160 kb/s web, 192 kb/s the others; the review measured the delivered AAC). Momentary loudness: K-weighted 400 ms windows every 10 ms, labelled by their end. A hit's first beat: the loudest window ending 3-15 frames after it (the review's), and its first 0.3, 0.6 s; in the full band and through two phone-like bands (4th-order band-passes, then K-weighted): 150 Hz-12 kHz (the judge's small-speaker band) and 400 Hz-10 kHz (a phone's). A lift is the hit's level over the master's integrated loudness, against the delivered master's. The push's windows end f1726-f1745, against every other window of the master",
+    "delivered": {
+     "web": {
+      "push_minus_the_next_loudest_moment_lu": -0.39,
+      "next_loudest_ends_frame": 1765.5,
+      "s41_worst_lu": 1.19
+     },
+     "social": {
+      "push_minus_the_next_loudest_moment_lu": -1.0,
+      "next_loudest_ends_frame": 1766.1,
+      "s41_worst_lu": 0.48
+     },
+     "x30": {
+      "push_minus_the_next_loudest_moment_lu": -0.45,
+      "next_loudest_ends_frame": 670.8,
+      "s41_worst_lu": -0.1
+     },
+     "narrated": {
+      "push_minus_the_next_loudest_moment_lu": -1.0,
+      "next_loudest_ends_frame": 1766.1,
+      "s41_worst_lu": 0.55
+     }
+    },
+    "final": {
+     "web.wav": {
+      "push_minus_the_next_loudest_moment_lu": 0.88,
+      "next_loudest_ends_frame": 1745.1,
+      "s41": {
+       "mc_1723.5": {
+        "first0.3": 1.28,
+        "first0.4": 1.94,
+        "first1.0": 2.01,
+        "mmax": 2.07
+       },
+       "rev_1723": {
+        "first0.3": 1.05,
+        "first0.4": 1.77,
+        "first1.0": 2.0,
+        "mmax": 2.07
+       },
+       "worst": 1.05
+      },
+      "lift_vs_delivered_db": {
+       "drop": {
+        "mmax": 0.67,
+        "first0.3": 0.7,
+        "first0.6": 0.45,
+        "mmax_spk": 2.37,
+        "first0.6_spk": 2.02,
+        "mmax_ph": 2.65,
+        "first0.6_ph": 2.15
+       },
+       "pass": {
+        "mmax": 0.2,
+        "first0.3": 0.18,
+        "first0.6": 0.17,
+        "mmax_spk": 1.23,
+        "first0.6_spk": 0.89,
+        "mmax_ph": 1.55,
+        "first0.6_ph": 1.04
+       },
+       "push": {
+        "mmax": 0.45,
+        "first0.3": 0.2,
+        "first0.6": 0.72,
+        "mmax_spk": 1.46,
+        "first0.6_spk": 1.12,
+        "mmax_ph": 1.63,
+        "first0.6_ph": 1.19
+       }
+      },
+      "bars_10_14_ungated_lufs": [
+       -14.51,
+       -14.98,
+       -16.43,
+       -14.28,
+       -13.67
+      ],
+      "spans": {
+       "bars1_9_under": 6.71,
+       "verified3s_over_montage": 2.04,
+       "breakdown_under_climax": 6.85,
+       "hold_under_I": [
+        5.96,
+        5.58
+       ]
+      }
+     },
+     "web.aac": {
+      "push_minus_the_next_loudest_moment_lu": 0.87,
+      "next_loudest_ends_frame": 1745.1,
+      "s41": {
+       "mc_1723.5": {
+        "first0.3": 1.18,
+        "first0.4": 1.88,
+        "first1.0": 1.96,
+        "mmax": 2.02
+       },
+       "rev_1723": {
+        "first0.3": 0.94,
+        "first0.4": 1.71,
+        "first1.0": 1.95,
+        "mmax": 2.02
+       },
+       "worst": 0.94
+      },
+      "lift_vs_delivered_db": {
+       "drop": {
+        "mmax": 0.75,
+        "first0.3": 0.79,
+        "first0.6": 0.51,
+        "mmax_spk": 2.43,
+        "first0.6_spk": 2.05,
+        "mmax_ph": 2.69,
+        "first0.6_ph": 2.16
+       },
+       "pass": {
+        "mmax": 0.21,
+        "first0.3": 0.22,
+        "first0.6": 0.19,
+        "mmax_spk": 1.26,
+        "first0.6_spk": 0.92,
+        "mmax_ph": 1.56,
+        "first0.6_ph": 1.06
+       },
+       "push": {
+        "mmax": 0.41,
+        "first0.3": 0.14,
+        "first0.6": 0.68,
+        "mmax_spk": 1.44,
+        "first0.6_spk": 1.11,
+        "mmax_ph": 1.61,
+        "first0.6_ph": 1.17
+       }
+      },
+      "bars_10_14_ungated_lufs": [
+       -14.63,
+       -15.1,
+       -16.56,
+       -14.45,
+       -13.8
+      ],
+      "spans": {
+       "bars1_9_under": 6.63,
+       "verified3s_over_montage": 1.99,
+       "breakdown_under_climax": 6.75,
+       "hold_under_I": [
+        5.86,
+        5.48
+       ]
+      }
+     },
+     "social.wav": {
+      "push_minus_the_next_loudest_moment_lu": 0.45,
+      "next_loudest_ends_frame": 1009.5,
+      "s41": {
+       "mc_1723.5": {
+        "first0.3": 0.52,
+        "first0.4": 1.08,
+        "first1.0": 1.37,
+        "mmax": 1.45
+       },
+       "rev_1723": {
+        "first0.3": 0.32,
+        "first0.4": 0.94,
+        "first1.0": 1.36,
+        "mmax": 1.47
+       },
+       "worst": 0.32
+      },
+      "lift_vs_delivered_db": {
+       "drop": {
+        "mmax": 0.76,
+        "first0.3": 0.85,
+        "first0.6": 0.48,
+        "mmax_spk": 2.19,
+        "first0.6_spk": 1.86,
+        "mmax_ph": 2.68,
+        "first0.6_ph": 2.1
+       },
+       "pass": {
+        "mmax": 0.2,
+        "first0.3": 0.17,
+        "first0.6": 0.17,
+        "mmax_spk": 1.03,
+        "first0.6_spk": 0.72,
+        "mmax_ph": 1.44,
+        "first0.6_ph": 0.93
+       },
+       "push": {
+        "mmax": 0.0,
+        "first0.3": 0.14,
+        "first0.6": 0.37,
+        "mmax_spk": 1.25,
+        "first0.6_spk": 0.73,
+        "mmax_ph": 1.31,
+        "first0.6_ph": 0.78
+       }
+      },
+      "bars_10_14_ungated_lufs": [
+       -12.86,
+       -13.06,
+       -14.49,
+       -12.45,
+       -11.98
+      ],
+      "spans": {
+       "bars1_9_under": 6.49,
+       "verified3s_over_montage": 1.76,
+       "breakdown_under_climax": 6.57,
+       "hold_under_I": [
+        5.74,
+        5.36
+       ]
+      }
+     },
+     "social.aac": {
+      "push_minus_the_next_loudest_moment_lu": 0.45,
+      "next_loudest_ends_frame": 1047.0,
+      "s41": {
+       "mc_1723.5": {
+        "first0.3": 0.42,
+        "first0.4": 1.04,
+        "first1.0": 1.34,
+        "mmax": 1.44
+       },
+       "rev_1723": {
+        "first0.3": 0.22,
+        "first0.4": 0.89,
+        "first1.0": 1.33,
+        "mmax": 1.46
+       },
+       "worst": 0.22
+      },
+      "lift_vs_delivered_db": {
+       "drop": {
+        "mmax": 0.8,
+        "first0.3": 0.91,
+        "first0.6": 0.51,
+        "mmax_spk": 2.19,
+        "first0.6_spk": 1.85,
+        "mmax_ph": 2.67,
+        "first0.6_ph": 2.08
+       },
+       "pass": {
+        "mmax": 0.19,
+        "first0.3": 0.18,
+        "first0.6": 0.17,
+        "mmax_spk": 0.98,
+        "first0.6_spk": 0.68,
+        "mmax_ph": 1.37,
+        "first0.6_ph": 0.88
+       },
+       "push": {
+        "mmax": -0.05,
+        "first0.3": 0.05,
+        "first0.6": 0.33,
+        "mmax_spk": 1.22,
+        "first0.6_spk": 0.71,
+        "mmax_ph": 1.28,
+        "first0.6_ph": 0.75
+       }
+      },
+      "bars_10_14_ungated_lufs": [
+       -12.95,
+       -13.14,
+       -14.57,
+       -12.6,
+       -12.06
+      ],
+      "spans": {
+       "bars1_9_under": 6.43,
+       "verified3s_over_montage": 1.71,
+       "breakdown_under_climax": 6.49,
+       "hold_under_I": [
+        5.67,
+        5.28
+       ]
+      }
+     },
+     "x30.wav": {
+      "push_minus_the_next_loudest_moment_lu": 0.66,
+      "next_loudest_ends_frame": 642.0,
+      "s41": {
+       "mc_1723.5": {
+        "first0.3": 0.65,
+        "first0.4": 0.94,
+        "first1.0": 1.08,
+        "mmax": 1.22
+       },
+       "rev_1723": {
+        "first0.3": 0.46,
+        "first0.4": 0.87,
+        "first1.0": 1.07,
+        "mmax": 1.22
+       },
+       "worst": 0.46
+      },
+      "lift_vs_delivered_db": {
+       "drop": {
+        "mmax": 0.2,
+        "first0.3": 0.15,
+        "first0.6": 0.06,
+        "mmax_spk": 1.74,
+        "first0.6_spk": 1.58,
+        "mmax_ph": 2.28,
+        "first0.6_ph": 1.93
+       },
+       "pass": {
+        "mmax": 0.41,
+        "first0.3": 0.37,
+        "first0.6": 0.46,
+        "mmax_spk": 1.41,
+        "first0.6_spk": 1.19,
+        "mmax_ph": 2.08,
+        "first0.6_ph": 1.57
+       },
+       "push": {
+        "mmax": 0.14,
+        "first0.3": 1.04,
+        "first0.6": 0.58,
+        "mmax_spk": 1.45,
+        "first0.6_spk": 0.9,
+        "mmax_ph": 1.46,
+        "first0.6_ph": 0.95
+       }
+      },
+      "bars_10_14_ungated_lufs": null,
+      "spans": {
+       "bars1_9_under": 6.07,
+       "verified3s_over_montage": null,
+       "breakdown_under_climax": null,
+       "hold_under_I": [
+        5.61
+       ]
+      }
+     },
+     "x30.aac": {
+      "push_minus_the_next_loudest_moment_lu": 0.64,
+      "next_loudest_ends_frame": 667.5,
+      "s41": {
+       "mc_1723.5": {
+        "first0.3": 0.55,
+        "first0.4": 0.86,
+        "first1.0": 1.04,
+        "mmax": 1.14
+       },
+       "rev_1723": {
+        "first0.3": 0.34,
+        "first0.4": 0.78,
+        "first1.0": 1.03,
+        "mmax": 1.14
+       },
+       "worst": 0.34
+      },
+      "lift_vs_delivered_db": {
+       "drop": {
+        "mmax": 0.22,
+        "first0.3": 0.18,
+        "first0.6": 0.09,
+        "mmax_spk": 1.71,
+        "first0.6_spk": 1.56,
+        "mmax_ph": 2.22,
+        "first0.6_ph": 1.89
+       },
+       "pass": {
+        "mmax": 0.43,
+        "first0.3": 0.4,
+        "first0.6": 0.46,
+        "mmax_spk": 1.39,
+        "first0.6_spk": 1.16,
+        "mmax_ph": 2.04,
+        "first0.6_ph": 1.52
+       },
+       "push": {
+        "mmax": 0.08,
+        "first0.3": 0.97,
+        "first0.6": 0.53,
+        "mmax_spk": 1.41,
+        "first0.6_spk": 0.87,
+        "mmax_ph": 1.42,
+        "first0.6_ph": 0.91
+       }
+      },
+      "bars_10_14_ungated_lufs": null,
+      "spans": {
+       "bars1_9_under": 6.0,
+       "verified3s_over_montage": null,
+       "breakdown_under_climax": null,
+       "hold_under_I": [
+        5.53
+       ]
+      }
+     },
+     "narrated.wav": {
+      "push_minus_the_next_loudest_moment_lu": 0.49,
+      "next_loudest_ends_frame": 1009.5,
+      "s41": {
+       "mc_1723.5": {
+        "first0.3": 0.53,
+        "first0.4": 1.09,
+        "first1.0": 1.39,
+        "mmax": 1.45
+       },
+       "rev_1723": {
+        "first0.3": 0.33,
+        "first0.4": 0.96,
+        "first1.0": 1.38,
+        "mmax": 1.47
+       },
+       "worst": 0.33
+      },
+      "lift_vs_delivered_db": {
+       "drop": {
+        "mmax": 0.78,
+        "first0.3": 0.86,
+        "first0.6": 0.49,
+        "mmax_spk": 2.22,
+        "first0.6_spk": 1.86,
+        "mmax_ph": 2.7,
+        "first0.6_ph": 2.1
+       },
+       "pass": {
+        "mmax": 0.21,
+        "first0.3": 0.19,
+        "first0.6": 0.18,
+        "mmax_spk": 1.05,
+        "first0.6_spk": 0.73,
+        "mmax_ph": 1.46,
+        "first0.6_ph": 0.94
+       },
+       "push": {
+        "mmax": 0.0,
+        "first0.3": 0.1,
+        "first0.6": 0.35,
+        "mmax_spk": 1.22,
+        "first0.6_spk": 0.71,
+        "mmax_ph": 1.29,
+        "first0.6_ph": 0.76
+       }
+      },
+      "bars_10_14_ungated_lufs": [
+       -12.92,
+       -13.12,
+       -14.57,
+       -12.52,
+       -12.03
+      ],
+      "spans": {
+       "bars1_9_under": 4.41,
+       "verified3s_over_montage": 1.77,
+       "breakdown_under_climax": 5.26,
+       "hold_under_I": [
+        5.87,
+        5.49
+       ]
+      }
+     },
+     "narrated.aac": {
+      "push_minus_the_next_loudest_moment_lu": 0.5,
+      "next_loudest_ends_frame": 1009.5,
+      "s41": {
+       "mc_1723.5": {
+        "first0.3": 0.46,
+        "first0.4": 1.08,
+        "first1.0": 1.37,
+        "mmax": 1.46
+       },
+       "rev_1723": {
+        "first0.3": 0.25,
+        "first0.4": 0.93,
+        "first1.0": 1.35,
+        "mmax": 1.48
+       },
+       "worst": 0.25
+      },
+      "lift_vs_delivered_db": {
+       "drop": {
+        "mmax": 0.82,
+        "first0.3": 0.91,
+        "first0.6": 0.53,
+        "mmax_spk": 2.22,
+        "first0.6_spk": 1.85,
+        "mmax_ph": 2.67,
+        "first0.6_ph": 2.07
+       },
+       "pass": {
+        "mmax": 0.2,
+        "first0.3": 0.2,
+        "first0.6": 0.16,
+        "mmax_spk": 1.0,
+        "first0.6_spk": 0.69,
+        "mmax_ph": 1.39,
+        "first0.6_ph": 0.89
+       },
+       "push": {
+        "mmax": -0.03,
+        "first0.3": 0.04,
+        "first0.6": 0.32,
+        "mmax_spk": 1.22,
+        "first0.6_spk": 0.71,
+        "mmax_ph": 1.29,
+        "first0.6_ph": 0.75
+       }
+      },
+      "bars_10_14_ungated_lufs": [
+       -12.99,
+       -13.21,
+       -14.68,
+       -12.67,
+       -12.14
+      ],
+      "spans": {
+       "bars1_9_under": 4.35,
+       "verified3s_over_montage": 1.73,
+       "breakdown_under_climax": 5.18,
+       "hold_under_I": [
+        5.79,
+        5.41
+       ]
+      }
+     }
+    },
+    "why the full band moved less than the phone band": "Two limiters set these hits' level. The stems' linked limiter took up to 3.5 dB at f1656 and 4.7-5.7 dB at the push; the masters' own limiter clamps where the timeline's impact_a peaks (-4 dB in tools/audio/cues.json, a frame after f648, f1008, f1723 and f2160): at -14 LUFS that effect alone peaks about 3 dB over the ceiling, and the gain fell 4.9 dB for 100 ms at the delivered x30's push. Upper-mid layers added under a clamped peak come out mostly in the band phones play. The score now carves 10 dB out under each timeline impact's peak for 30-50 ms and eases its stems' limiter on the hits; turning the timeline's impacts down (the picture lane's cue gains) would give the full band more",
+    "bars 12-13": "the groove carries on under the quick chat: bars 10-14 ungated -14.51 -14.98 -16.43 -14.28 -13.67 LUFS (web; delivered -14.69 -14.91 -20.66 -21.0 -13.41); bar 12's first beat sits under the send key's ride (-17.1 LUFS), then the groove is back from beat 2"
    }
   }
  },
