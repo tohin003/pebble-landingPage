@@ -103,8 +103,10 @@ fi
 LABEL="$1"
 shift
 # A Remotion job downloads its headless browser (about 570 MB) when it's missing: budget for it up front, so the
-# download can't cross the disk floor halfway and leave a broken partial copy behind.
+# download can't cross the disk floor halfway and leave a broken partial copy behind. A job that passes its own
+# browser (--browser-executable) downloads nothing.
 case "$*" in
+*--browser-executable*) ;;
 *remotion*)
   if [ ! -d "$REPO/video/node_modules/.remotion/chrome-headless-shell" ]; then
     START_MIN_KB=$((START_MIN_KB + 614400))
