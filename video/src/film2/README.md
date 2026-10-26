@@ -355,14 +355,16 @@ velocity) continues into Ring 1 in the same world without a cut.
 words and text size), the **act** (a take, its view and rect, its start event), the **receipt** (the take's event that
 lands on a beat, where it shows, its words) and up to three lines (`lines.chapter` and its `limit`), then the
 **cascade** (`fixed` line and 2–6 items of four words or fewer, each with its UI card). Local frame 0 is the ring's
-start: put it on a phrase downbeat. The ring leaves the stone and frames the ask; the camera follows 24 frames behind and
-arrives with momentum (a long zoom change takes longer, so the frame's corners never outrun 30 px a frame); the lines land
+start: put it on a phrase downbeat. A fresh block opens on the companion (`startRect`), so the ring is seen to leave the
+stone; the ring travels to the place and frames the ask; the camera follows 24 frames behind and arrives with momentum
+(a long journey bows out in zoom halfway, paced by the frame's half-diagonal so its corners never pass 30 px a frame,
+tested for every demo shot; the momentum cuts leave over 118 px, 28 px a frame at the cut); the lines land
 on beats once no ring crosses them and leave before the camera moves in (the held ring grows with the zoom); the camera
 dollies in to reading size (≥ 28 px at 1080, ≤ 2.4×); the take's receipt event lands on a beat after the ask and the act
 have been read, and the ring returns to the stone on that beat; the camera glides to the receipt (no freeze, no mark, no
 hit) and holds it for its reading time; a momentum cut on a bar line takes it to the cascade's stage, whose swaps land
 2–3 frames before beats; the block ends on the bar line after the last item's hold. `entry` continues a previous piece's
-camera (the same world); without it the block starts as if cut in, already moving toward the place. **To fit it:** start
+camera (the same world). **To fit it:** start
 it on a phrase downbeat, pass the grid; if its length (`plan.duration`) is longer than the phrase you have, lengthen the
 music at a bar line or move the block (§3.2: never a hold).
 
@@ -376,7 +378,8 @@ on purpose. Every cell's text stays under 16 px at 1080 on every frame (checked)
 
 ### 4. The Dusk passage — `planDusk({ w, h, fps, grid?, focusLine? })`
 
-⌘K (HS-B3: its Enter is solved onto a beat; the typed word and the lit row read at ≥ 28 px), a slow push-in and the
+⌘K (HS-B3: its Enter is solved onto a beat; the palette fades in, a placeholder of its own entrance; the typed word and
+the lit row read at ≥ 28 px), a slow push-in and the
 light cooling to dusk over 6.1 s (day to dusk is 0.33 of luminance and the film allows one large change a second); a rack
 focus into the Veil rendered with Pebble's own code (`views/VeilCast.tsx`: `stealthVeil.ts` and `veilDraw()`, the
 1.25-s cast), with "A render, not a screen recording." beside it from the rack's cross to the cut; a momentum cut on a bar
@@ -426,6 +429,16 @@ bun video/src/film2/setpieces/tools/reel-marks.ts 16:9                          
 scripts/heavy.sh f2-sp-demo16 /usr/sbin/taskpolicy -c utility \
   bash video/src/film2/render/render-segments.sh F2-SetPieces-Demo .work/film2/sp/demo16 5692 480 0.5
 ```
+
+**What the demo shows (26 Oct, half size, 60 fps, 5,702 frames each; gitignored evidence in `.work/film2/sp/`).**
+16:9 and 1:1 rendered in 187 s each through heavy.sh (segments of 480 frames; free disk moved by at most 43 MiB a
+segment); their pixel checks (`qa/luma-scan.ts`) pass: no pops away from cuts, no dead second, no dip at a seam, at most
+one flash a second. Sheets and seam strips (`look/sheet.jpg`, `look/seam-<frame>.jpg`) were looked at, and fixed where
+they showed a fault: multi-line type running as one line (SplitText), a line outliving its shot, an empty cascade
+stage after the cut, a card popping in at a take's start, two stones at the title's iris, a palette thrown in too fast.
+The model checks (`check-setpieces.ts`) pass in every aspect, with only notes where type crosses a slot, to check on the
+2.0.0 captures. The 9:16 reel was rendered and looked at before the last round of fixes (its pixel check passed); its
+re-render waits on the disk guard.
 
 **Placeholders.** Every picture of Pebble in the set pieces is a real capture of a published release (1.0.x–1.5.0,
 cropped, never stretched, never showing a usage or timing line) or a labelled slot for what has no published capture
