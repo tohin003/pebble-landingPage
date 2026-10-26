@@ -143,6 +143,20 @@ def build_film(key):
                                                      "film_step_400ms_lu", "incoming_source_own_step_3s_lu", "lsd_film_db",
                                                      "lsd_incoming_source_db", "extra_lsd_db", "hf_click_film_db", "extra_hf_db",
                                                      "attack_film_vs_source_db", "gain_db_out", "gain_db_in")}})
+    # each cue carries its own entry and exit methods and the measured levels of the blocks it plays under
+    jby = {j["id"]: j for j in joins}
+    for oc in out_cues:
+        a = sp["cues"][oc["id"]]
+        for side, jid, note in (("entry", oc["entry_join"], a.get("entry")), ("exit", oc["exit_join"], a.get("exit"))):
+            if jid:
+                j = jby[jid]
+                oc[side] = {"join": jid, "name": j["name"], "film_s": j["film_s"], "film": j["film"], "frame": j["frame"],
+                            "methods": j["methods"], "how": j["how"]}
+            else:
+                oc[side] = {"join": None, "how": note}
+        f0, f1 = oc["film"]["in_s"], oc["film"]["out_s"]
+        oc["levels"] = {"gain_db_points_film_s": oc["gain_db_points_film_s"],
+                        "measured_blocks": [b for b in met["blocks"] if min(f1, b["film"][1]) - max(f0, b["film"][0]) > 0.5]}
     res = {"plan": sp["plan"], "film_length_s": sp["end_film_s"], "film_length": mmss(sp["end_film_s"]),
            "film_length_frames": round(sp["end_film_s"] * FPS), "bed": met["bed"], "blocks_measured": met["blocks"],
            "cues": out_cues, "joins": joins}
