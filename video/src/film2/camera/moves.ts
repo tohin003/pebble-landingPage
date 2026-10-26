@@ -31,14 +31,25 @@ export const pushInCarried = (cam: VelocityCamera, toFrame: number, factor = 1.1
   return cam.hermite(toFrame, { x: aim?.x ?? p.x, y: aim?.y ?? p.y, zoom: p.zoom * factor }, { lz: driftLzPerFrame });
 };
 
-/** A pull-back by `factor` (< 1), easing into a glide of time constant `tau` that runs to `glideTo`. */
-export const pullBack = (cam: VelocityCamera, toFrame: number, factor: number, glideTo: number, fps: number, aim?: { x: number; y: number }): VelocityCamera => {
+/**
+ * A pull-back by `factor` (< 1), easing into a glide of time constant `tau` that runs to `glideTo`. `drift` (world
+ * units per frame) keeps the glide travelling, toward the next cut for example, so the shot never comes to rest.
+ */
+export const pullBack = (
+  cam: VelocityCamera,
+  toFrame: number,
+  factor: number,
+  glideTo: number,
+  fps: number,
+  aim?: { x: number; y: number },
+  drift?: Partial<CamVel>,
+): VelocityCamera => {
   const p = endPose(cam);
   const frames = toFrame - cam.end().frame;
-  // leave the pull-back still moving out (a quarter of its mean speed) so the glide has something to settle
+  // leave the pull-back still moving out (a third of its mean speed) so the glide has something to settle
   const meanLz = Math.log(factor) / frames;
-  cam.hermite(toFrame, { x: aim?.x ?? p.x, y: aim?.y ?? p.y, zoom: p.zoom * factor }, { lz: meanLz * 0.35 });
-  return cam.glide(glideTo, sec(0.4, fps), { lz: meanLz * 0.02 });
+  cam.hermite(toFrame, { x: aim?.x ?? p.x, y: aim?.y ?? p.y, zoom: p.zoom * factor }, { lz: meanLz * 0.35, x: drift?.x ?? 0, y: drift?.y ?? 0 });
+  return cam.glide(glideTo, sec(0.4, fps), { lz: meanLz * 0.02 + (drift?.lz ?? 0), x: drift?.x ?? 0, y: drift?.y ?? 0 });
 };
 
 /** A dolly toward `to` (a place and its framing), arriving with momentum `arriveVel` (per frame), then a glide. */

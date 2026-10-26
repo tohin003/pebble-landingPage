@@ -71,7 +71,8 @@ export const S1_CAMERA = (() => {
   const cam = new VelocityCamera(s1Pose0, { lz: 0.0004 });
   pushInCarried(cam, 160, 1.08, 0.00025, { x: s1Pose0.x, y: panelCentre.y - (APERTURE_CENTER_Y - 540) / (s1Zoom0 * 1.08) });
   // the Drop: a pull-back in log space that eases into a glide, revealing the world west of the companion
-  pullBack(cam, 300, 0.74 / (s1Zoom0 * 1.08), 330, FPS, { x: 2250, y: 1380 });
+  // ... drifting east (the picture moves left), toward the cut's direction, so the shot never rests before its E-leave
+  pullBack(cam, 300, 0.74 / (s1Zoom0 * 1.08), 330, FPS, { x: 2250, y: 1380 }, { x: 0.6 });
   return cam;
 })();
 
