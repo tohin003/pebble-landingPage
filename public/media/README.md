@@ -6,19 +6,21 @@ Third-party material inside them keeps its own licence, listed below.
 
 This covers everything under `public/media/` and the interface stills under `public/ui/`:
 
-- `media/v1/film-1080` and `film-720`, each as `.hevc.mp4` and `.h264.mp4`: the launch film, 76.8 s, with its
-  soundtrack.
-- `media/v1/film.en.vtt`, `film.chapters.vtt` and `film.descriptions.en.vtt`: the film's captions (its sound
+- `media/v2/film-1080` and `film-720`, each as `.hevc.mp4` and `.h264.mp4`: the launch film, a 76.8 s trailer, with
+  its soundtrack.
+- `media/v2/film-square`, as `.hevc.mp4` and `.h264.mp4`: the same film in its own 1:1 framing, played on phones, with
+  the same soundtrack.
+- `media/v2/film.en.vtt`, `film.chapters.vtt` and `film.descriptions.en.vtt`: the film's captions (its sound
   descriptions and on-screen lines), its chapters, and the descriptions the player's audio-description toggle reads.
-- `media/v1/teaser-720`: a silent teaser of the film.
 - `media/v1/loop-companion`, `loop-models`, `loop-isolated-tests`, `loop-memory` and `loop-views`: silent feature
   loops, with 4:5 cuts for phones of the companion and isolated-tests loops (`-phone`).
-- `*.poster.avif` and `*.poster.webp`: each video's first frame. The film's poster and the teaser's are the same
-  picture.
+- `*.poster.avif` and `*.poster.webp`: each video's first frame. The film's, `media/v2/film.poster`, is the 16:9
+  film's first frame; the loops' are in `media/v1`.
 - `media/v1/wallpaper-*`: the riverbed wallpaper.
 - `ui/v1/`: stills of Pebble's real interface, in both themes and two widths.
 
-The social films for X and LinkedIn are made from the same sources and are not in this repository.
+The social films for X and LinkedIn, and a narrated version of the film whose narrator is an AI voice (Sarvam AI's
+Bulbul), are made from the same sources and are not in this repository.
 
 ## What is in them
 
@@ -28,14 +30,12 @@ The social films for X and LinkedIn are made from the same sources and are not i
 - **The pebble.** Pebble's character engine: bloub by Jérémy Perret (MIT).
 - **The type.** Fraunces, Inter and Geist Mono, under the SIL Open Font License 1.1.
 - **The riverbed wallpaper.** Original, made for this site.
-- **The music.** "Pebble launch cue", an original score composed for the film and played on recorded instrument samples
-  released under CC0 1.0: the Versilian Community Sample Library (VCSL) by Versilian Studios, and VS Chamber Orchestra:
-  Community Edition (VSCO 2 CE) by Versilian Studios (Sam Gossner) and Ivy Audio (Simon Dalzell). The films contain no
-  third-party music. Tracks from Mixkit's free library were auditioned for the film and not used.
+- **The music.** The launch trailer's score, an original score composed for the film and synthesised entirely in code
+  by this repository's own engine (`tools/audio/synth`; the score is `tools/audio/scores/trailer_b.py`). It uses no
+  samples, no downloads and no third-party music.
 - **The sound effects.** Synthesised for the film and released under CC0 1.0, plus recorded foley from Kenney's
   "Impact Sounds" and "Interface Sounds" (www.kenney.nl, CC0 1.0).
-- **Audio** is only in the film files. The teaser and the loops are silent, and no audio file is distributed on its
-  own.
+- **Audio** is only in the film files. The loops are silent, and no audio file is distributed on its own.
 
 ## Where the sources and tools are
 

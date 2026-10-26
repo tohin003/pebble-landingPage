@@ -1,0 +1,116 @@
+WEBVTT
+
+NOTE
+Pebble launch film: captions (sound descriptions and the on-screen lines).
+Generated from docs/film-captions.json by tools/captions/build.mjs; edit the JSON, not this file.
+
+c01
+00:00:00.000 --> 00:00:02.400
+[A soft melody and a heartbeat]
+
+c02
+00:00:02.400 --> 00:00:04.800
+[Hit]
+What did it change?
+
+c03
+00:00:04.800 --> 00:00:07.200
+[A low beat begins]
+
+c04
+00:00:07.200 --> 00:00:09.600
+[Hit]
+Can I undo it?
+
+c05
+00:00:12.000 --> 00:00:14.400
+[Hit]
+Did it run the tests?
+
+c06
+00:00:14.833 --> 00:00:16.800
+[The music stops]
+
+c07
+00:00:16.800 --> 00:00:20.400
+[A riser builds]
+An agent shouldn't grade its own work
+
+c08
+00:00:20.400 --> 00:00:21.600
+[Silence]
+
+c09
+00:00:21.600 --> 00:00:24.000
+[Impact]
+A small companion for your Mac
+
+c10
+00:00:33.600 --> 00:00:36.000
+[The beat lifts]
+Views, not just text
+
+c11
+00:00:36.000 --> 00:00:38.400
+Your model, your choice
+
+c12
+00:00:38.400 --> 00:00:40.800
+Memory you can read and forget
+
+c13
+00:00:40.800 --> 00:00:43.200
+You set what it may do
+
+c14
+00:00:43.200 --> 00:00:45.600
+Your tests stay yours
+
+c15
+00:00:48.433 --> 00:00:50.767
+[The music stops]
+AgentGuard checks the evidence
+
+c16
+00:00:51.600 --> 00:00:54.200
+Tests run in an isolated copy
+
+c17
+00:00:55.200 --> 00:00:57.433
+[A big hit]
+
+c18
+00:00:57.433 --> 00:00:59.600
+[The biggest hit]
+Evidence before done
+
+c19
+00:01:00.000 --> 00:01:02.400
+Free and open source
+Apache-2.0
+
+c20
+00:01:02.400 --> 00:01:04.200
+No telemetry
+
+c21
+00:01:04.200 --> 00:01:07.200
+Your keys stay in your Keychain
+
+c22
+00:01:07.200 --> 00:01:09.600
+[The beat returns]
+
+c23
+00:01:09.600 --> 00:01:12.000
+A little help, right here.
+
+c24
+00:01:12.000 --> 00:01:15.000
+[Hit] Free for Macs with Apple silicon
+Not notarized
+
+c25
+00:01:15.000 --> 00:01:16.800
+github.com/tohin003/Pebble
+Shown with sample data
