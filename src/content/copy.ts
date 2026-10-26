@@ -317,7 +317,7 @@ export const film = {
   chaptersHeading: "Chapters",
   transcriptLink: "Read the transcript",
   sampleData: common.sampleData,
-  posterAlt: "The Pebble film. A close-up of the pebble, its eyes looking out from the lower right of a dark frame.", // [C-ALT-1] the poster is the film's frame 0 (OVERRIDES §46)
+  posterAlt: "The Pebble film. A close-up of the pebble, its eyes looking out from the upper right of a dark frame.", // [C-ALT-1] the poster is the film's frame 0 (OVERRIDES §46, §47 R2-3)
 } as const;
 
 export const filmDialog = {
