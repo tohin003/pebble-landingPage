@@ -10,6 +10,7 @@
 //   stones     runs of frames with the stones the plan shows and their radii (qa/stones.ts counts the dark blobs)
 //   apertures  the Drop's hit, the frame its bands start to open in the plan, and a resting stretch before it
 //              (qa/bands.ts measures the bands)
+//   transitions  each iris, rack or swap's frames, which tile pops do not judge (a designed change, as a cut is)
 import { writeFileSync } from "node:fs";
 import { hexToRgb } from "../../light/grades";
 import { demoPlans } from "../demo/plans";
@@ -23,6 +24,7 @@ const out = outAt >= 0 ? args[outAt + 1] : undefined;
 let off = 0;
 const starts: number[] = [];
 const seams: number[] = [];
+const transitions: { from: number; to: number }[] = [];
 const waits: string[] = [];
 const hits: number[] = [];
 const types: unknown[] = [];
@@ -34,6 +36,7 @@ for (const e of entries) {
   const p = e.plan;
   starts.push(off);
   for (const s of p.seams) seams.push(off + s.at + (s.frames > 0 ? Math.round(s.frames / 2) : 0));
+  for (const s of p.seams) if (s.frames > 0) transitions.push({ from: off + s.at, to: off + s.at + s.frames });
   for (const s of p.shots) for (const w of s.waits ?? []) waits.push(`${off + w.from}-${off + w.to}`);
   for (const h of p.hits) hits.push(off + h);
   if (out) {
@@ -77,6 +80,6 @@ for (const e of entries) {
 }
 const marks = { aspect: a, fps: first.fps, width: first.frame.w, height: first.frame.h, total: off, starts, seams, cuts: [...starts.slice(1), ...seams].sort((x, y) => x - y), waits, hits };
 if (out) {
-  writeFileSync(out, JSON.stringify({ ...marks, types, stones, apertures }, null, 1));
+  writeFileSync(out, JSON.stringify({ ...marks, transitions, types, stones, apertures }, null, 1));
   console.log(JSON.stringify({ ...marks, types: types.length, stones: stones.length, apertures }));
 } else console.log(JSON.stringify(marks));

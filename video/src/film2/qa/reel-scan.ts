@@ -19,6 +19,8 @@ export interface ReelMarks {
   height: number;
   total: number;
   cuts: number[];
+  /** transitions' frames [from, to): designed changes tile pops do not judge */
+  transitions?: { from: number; to: number }[];
   waits: string[];
   hits: number[];
   types: (InkTrack & { vanishes?: string })[];
@@ -98,7 +100,7 @@ export class ReelScan {
   }
 
   finish(fps = this.marks.fps): ReelScanReport {
-    const luma = analyseLuma(this.small, { fps, width: this.smallW, height: this.smallH, cuts: this.marks.cuts, waits: parseWaits(this.marks.waits.join(",")) });
+    const luma = analyseLuma(this.small, { fps, width: this.smallW, height: this.smallH, cuts: this.marks.cuts, transitions: this.marks.transitions ?? [], waits: parseWaits(this.marks.waits.join(",")) });
     const problems = [...luma.problems];
     const ink: InkFinding[] = [];
     this.tracks.forEach((t, i) => ink.push(...judgeInk(t, this.ink[i]!)));

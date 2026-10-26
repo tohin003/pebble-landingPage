@@ -32,6 +32,8 @@ export interface LumaOptions {
   grid?: number;
   /** a tile pop: its frame-to-frame difference above `minLevels` and above `ratio` × the median of its own neighbours */
   tilePop?: { minLevels?: number; ratio?: number };
+  /** transitions (an iris, a rack, a swap): designed changes whose frames tile pops do not judge, as cuts are not judged */
+  transitions?: readonly { from: number; to: number }[];
 }
 
 /** One tile's pop: the tile (row-major in the grid), its difference and the median of its own six neighbours. */
@@ -66,11 +68,12 @@ export const TILE_POP = { minLevels: 2, ratio: 3 } as const;
  * `minLevels` and above `ratio` × the median of its own six neighbours (frames f−3…f+3 but f), away from the cuts
  * (±1 frame). Pure: analyseLuma() and qa/luma-scan.ts call it.
  */
-export function findTilePops(tileMad: readonly (readonly number[])[], grid: number, cuts: readonly number[] = [], o: { minLevels?: number; ratio?: number } = {}): TilePop[] {
+export function findTilePops(tileMad: readonly (readonly number[])[], grid: number, cuts: readonly number[] = [], o: { minLevels?: number; ratio?: number } = {}, transitions: readonly { from: number; to: number }[] = []): TilePop[] {
   const minLevels = o.minLevels ?? TILE_POP.minLevels;
   const ratio = o.ratio ?? TILE_POP.ratio;
   const near = new Set<number>();
   for (const c of cuts) for (let k = -1; k <= 1; k++) near.add(c + k);
+  for (const t of transitions) for (let f = t.from - 1; f <= t.to; f++) near.add(f);
   const out: TilePop[] = [];
   tileMad.forEach((series, tile) => {
     const n = series.length;
@@ -231,7 +234,7 @@ export function analyseLuma(frames: readonly Uint8Array[], o: LumaOptions): Luma
   }
   if (pops.length) problems.push(`pops (frame steps away from cuts): frames ${pops.slice(0, 12).join(", ")}${pops.length > 12 ? " …" : ""}`);
   // tile pops: each tile against its own neighbours (a vanishing line, a card popping in)
-  const tilePops = findTilePops(tileMad, G, o.cuts ?? [], o.tilePop);
+  const tilePops = findTilePops(tileMad, G, o.cuts ?? [], o.tilePop, o.transitions ?? []);
   if (tilePops.length) {
     const frames = [...new Set(tilePops.map((p) => p.frame))];
     problems.push(`tile pops (a part of the frame steps, away from cuts): frames ${frames.slice(0, 12).join(", ")}${frames.length > 12 ? " …" : ""}`);
