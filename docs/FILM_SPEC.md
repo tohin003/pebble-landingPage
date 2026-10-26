@@ -1511,15 +1511,19 @@ mapped.
   The largest changes all sit on beats, except the floods' own frames, the dawn's 8-frame steps and, in 1:1, the
   quick chat's tilt to the answer (f902–905). The first masters (2026-10-26, before §46) scanned the same but for the
   16:9 regions' 2.
-- The first delivery's encodes (2026-10-26, from the masters before OVERRIDES §46; the re-delivery makes new ones from
-  the masters above, with the 1:1 film for phones and the poster in `public/media/v2/`): the website's four files in
-  `public/media/v2/` (22.50 MB; −16.23 LUFS and −1.587 dBTP on
-  the AAC) and the seven social films (−14.44 LUFS and −1.270 dBTP at full length, −14.39 and −1.250 for the 30 s cut,
-  −14.40 and −1.320 for the narrated twin, whose video is the 16:9 film's packet for packet) pass `verify.mjs`. Every
-  sampled frame matches its master frame at shift 0 (both sides of every 30 s joint included), each AAC decodes to its
-  soundtrack's exact sample count at lag 0, and the flash counter passes on the encodes too (0 flashes on the frame mean,
-  at most 1 in a region). The masters were deleted after that; their sizes and SHA-256 are in the delivery's cleanup
-  record (`.work/trailer-deliver/cleanup-2026-10-26.json`, not tracked), and a new encode needs them rendered again.
+- The encodes (the re-delivery, 2026-10-26, from the masters above; they replace the first delivery's, made from the
+  masters before OVERRIDES §46). In `public/media/v2/`: the website's four files (21.70 MB); the 1:1 film for phones
+  (`film-square.h264.mp4`, 6.68 MB, the 1:1 social film's video copied, and `film-square.hevc.mp4`, 5.50 MB; the film
+  set is 33.88 MB of 45), all six at −16.20 LUFS and −1.598 dBTP on the AAC; and the poster, the 16:9 film's frame 0
+  rendered from `LaunchFilm` (`film.poster.avif` 14.7 KB, `.webp` 20.5 KB; the still read 50.5 dB PSNR against the
+  master's frame 0). The seven social films: −14.39 LUFS and −1.160 dBTP at full length, −14.31 and −1.351 for the 30 s
+  cut, −14.35 and −1.351 for the narrated twin, whose video is the 16:9 film's packet for packet. All pass `verify.mjs`
+  (89 files with the Desktop folder). Every sampled frame of the thirteen encodes matches its master frame at shift 0
+  (both sides of every 30 s joint included; a neighbour scores higher only on still frames, by at most 0.23 dB), each
+  AAC decodes to its soundtrack's exact sample count at lag 0, each file carries the soundtrack it should, the last
+  1.8 s is silent (peaks −79 to −81 dBFS) and the flash counter passes on every encode (0 flashes on the frame mean, at
+  most 1 in a region). The masters were deleted after that; their sizes and SHA-256 are in the re-delivery's cleanup
+  record (`.work/trailer-redeliver/cleanup-2026-10-26.json`, not tracked), and a new encode needs them rendered again.
 
 ### 24.12 Departures from the blueprint
 
