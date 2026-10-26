@@ -20,7 +20,7 @@ import { insideFrame, lineRect, rectInFrame } from "./frame";
 import { typeEvent } from "./kit";
 import { onGrid, pointsOf, type MusicGrid } from "./music";
 import { STEALTH_FEATURES, shownSize } from "./standins";
-import { cellTextPx } from "./wall";
+import { cellAt, cellTextPx } from "./wall";
 import { checkTakeUse, sourceFrameAt, stillsAt } from "./take";
 import type { PlaneSpec, ScenePlan, ShotSpec } from "./scene";
 
@@ -276,9 +276,12 @@ export function wallCheck(p: ScenePlan): Finding[] {
     if (!s.wall) continue;
     for (const c of s.wall.cells) if ((STEALTH_FEATURES as readonly string[]).includes(c.feature)) out.push({ check: "wall", level: "error", message: `cell ${c.id} shows Stealth Lockdown (${c.feature}): the wall never does` });
     let worst = 0;
-    for (let fr = s.from; fr < s.to; fr += 6) {
+    for (let fr = s.from; fr < s.to; fr += 3) {
       const z = at(p, s, fr).zoom;
-      for (const c of s.wall.cells) worst = Math.max(worst, cellTextPx(c, z, p.frame));
+      for (const c of s.wall.cells) {
+        const cur = cellAt(c, s.wall, fr, p.fps);
+        if (cur.opacity > 0.02) worst = Math.max(worst, cellTextPx(c, z, p.frame, 15, cur.rect.w));
+      }
     }
     if (worst > 16) out.push({ check: "wall", level: "error", message: `${s.id}: a cell's text reaches ${worst.toFixed(1)} px at 1080: the wall is seen, not read (keep it under 16)` });
     else out.push({ check: "wall", level: "info", message: `${s.id}: the cells' text stays under ${worst.toFixed(1)} px at 1080` });

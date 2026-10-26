@@ -73,21 +73,53 @@ export const insideFrame = (r: Rect, f: FrameBox, margin = 0): boolean => r.x >=
 export const lineHeightOf = (tier: TypeTier): number => (tier === "expressive" ? 1.25 : 1.3);
 
 /**
- * Breaks `text` into lines no wider than `maxWidth` px (greedy, on spaces), with "\n" between them: KineticLine never
- * re-wraps, so every multi-line film line is broken here, per aspect.
+ * Breaks `text` into lines no wider than `maxWidth` px, with "\n" between them: KineticLine never re-wraps, so every
+ * multi-line film line is broken here, per aspect. It uses the fewest lines the width allows, and among those the
+ * breaks that make the lines most even (no orphan word on a last line). Explicit "\n" are kept.
  */
 export function breakLines(text: string, tier: TypeTier, f: FrameBox, maxWidth: number, sizeT = 0.5): string {
+  const width = (words: readonly string[]) => approxLineWidth(words.join(" "), tier, f.w, f.h, sizeT);
   const out: string[] = [];
   for (const para of text.split("\n")) {
-    let line = "";
-    for (const word of para.split(/\s+/).filter(Boolean)) {
-      const next = line ? `${line} ${word}` : word;
-      if (line && approxLineWidth(next, tier, f.w, f.h, sizeT) > maxWidth) {
-        out.push(line);
-        line = word;
-      } else line = next;
+    const words = para.split(/\s+/).filter(Boolean);
+    const n = words.length;
+    if (n === 0) {
+      out.push("");
+      continue;
     }
-    out.push(line);
+    // best[i][k]: the smallest possible widest line for words[i..] in k lines (Infinity when impossible)
+    const memo = new Map<string, { worst: number; cut: number }>();
+    const solve = (i: number, k: number): { worst: number; cut: number } => {
+      const key = `${i}:${k}`;
+      const hit = memo.get(key);
+      if (hit) return hit;
+      let res = { worst: Infinity, cut: n };
+      if (k === 1) res = { worst: width(words.slice(i)) <= maxWidth ? width(words.slice(i)) : Infinity, cut: n };
+      else {
+        for (let j = i + 1; j < n; j++) {
+          const w = width(words.slice(i, j));
+          if (w > maxWidth) break;
+          const rest = solve(j, k - 1);
+          const worst = Math.max(w, rest.worst);
+          if (worst < res.worst) res = { worst, cut: j };
+        }
+      }
+      memo.set(key, res);
+      return res;
+    };
+    let k = 1;
+    while (k < n && solve(0, k).worst === Infinity) k++;
+    if (solve(0, k).worst === Infinity) {
+      // a single word wider than the box: one word a line
+      out.push(...words);
+      continue;
+    }
+    let i = 0;
+    for (let left = k; left >= 1; left--) {
+      const c = left === 1 ? n : solve(i, left).cut;
+      out.push(words.slice(i, c).join(" "));
+      i = c;
+    }
   }
   return out.join("\n");
 }

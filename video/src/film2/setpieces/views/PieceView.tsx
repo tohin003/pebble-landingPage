@@ -127,7 +127,7 @@ export const ShotView: React.FC<{ plan: ScenePlan; shot: ShotSpec }> = ({ plan, 
                   const w = sched[i];
                   if (!w) return null;
                   // the first card is on the stage from the cut (the shot is never empty); the rest swap in place
-                  const look = i === 0 && frame < w.inStart ? { opacity: 1, blur: 0 } : swapLook(w, frame, shot.cascade!.holdLast && i === sched.length - 1);
+                  const look = i === 0 && frame < w.inEnd ? { opacity: 1, blur: 0 } : swapLook(w, frame, shot.cascade!.holdLast && i === sched.length - 1);
                   if (!look) return null;
                   return (
                     <Plane key={`card${i}`} kind={card.kind} rect={card.rect} opacity={look.opacity} shadow={card.shadow} radius={card.radius} reading={look.opacity > 0.99} style={{ filter: look.blur > 0.05 ? `blur(${((look.blur * Math.min(plan.frame.w, plan.frame.h)) / 1080 / s.pose.zoom).toFixed(2)}px)` : undefined }}>

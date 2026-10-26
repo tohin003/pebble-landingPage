@@ -22,6 +22,8 @@ export interface ViewStill {
   rect?: Rect;
   /** it arrives with the shared card entrance (a placeholder for the recording's own arrival) */
   entrance?: boolean;
+  /** it fades out over its last N source frames before `to` (a placeholder for the recording's own change) */
+  fadeOut?: number;
 }
 
 export interface TakeView {
@@ -185,7 +187,7 @@ export const TAKE_RS9: TakeManifest = {
       w: 396,
       h: 275,
       stills: [
-        { from: 0, to: 566, standIn: STILL.companionCard, rect: { x: 0, y: 0, w: 396, h: 275 } },
+        { from: 0, to: 566, standIn: STILL.companionCard, rect: { x: 0, y: 0, w: 396, h: 275 }, fadeOut: 12 },
         { from: 566, standIn: STILL.doneReceipt, rect: { x: 0, y: 66, w: 396, h: 143.6 }, entrance: true },
       ],
     },

@@ -97,10 +97,13 @@ export function cellAt(cell: WallCell, spec: WallSpec, frame: number, fps: numbe
   return { rect: { x: cx - w / 2, y: cy - h / 2, w, h }, opacity, depth: spec.depth[cell.ring]! };
 }
 
-/** The largest text a cell shows on screen, px at 1080, under a zoom (the thumbnails' captures carry ~11–15 px text). */
-export const cellTextPx = (cell: WallCell, zoom: number, f: FrameBox, sourceTextCss = 15): number => {
+/**
+ * The largest text a cell shows on screen, px at 1080, under a zoom (the thumbnails' captures carry ~11–15 px text).
+ * `worldW` is the cell's drawn width (it shrinks as it converges); default its size on its ring.
+ */
+export const cellTextPx = (cell: WallCell, zoom: number, f: FrameBox, sourceTextCss = 15, worldW = cell.w): number => {
   const src = CELL_SOURCES.find((c) => c.id === cell.id)!;
-  const k = Math.max(cell.w, cell.h) / Math.max(src.crop.w, src.crop.h);
+  const k = worldW / src.crop.w;
   return (sourceTextCss * k * zoom) / f.unit;
 };
 

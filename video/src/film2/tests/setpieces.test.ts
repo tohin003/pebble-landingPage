@@ -6,7 +6,8 @@ import { describe, expect, test } from "bun:test";
 import { formatReport } from "../qa/checks";
 import { STEALTH_HONEST } from "../../../../shared/pebble/stealthVeil";
 import { checkCues } from "../../../../shared/pebble/cues";
-import { maxScreenSpeed } from "../motion/camera";
+import { maxScreenSpeed, worldToFrame } from "../motion/camera";
+import { breakLines } from "../setpieces/frame";
 import { halfBars, nextPoint, place, pointsOf, prevPoint, shiftGrid, steadyGrid, gridFromMap, type MusicGrid } from "../setpieces/music";
 import { checkTakeUse, eventFrame, frameOfSource, solveInPoint, sourceFrameAt, takeFramePath, TAKE_HSF, TAKE_RS9, TAKE_RSW } from "../setpieces/take";
 import { checkPlan, planQa } from "../setpieces/qa";
@@ -90,6 +91,21 @@ describe("the music grid", () => {
     expect(m.beats).toEqual([600, 630, 660, 690, 720, 750, 780, 810]);
     expect(m.downbeats).toEqual([600, 720]);
     expect(m.phrases).toEqual([720]);
+  });
+});
+
+describe("line breaks", () => {
+  test("the fewest lines, as even as they can be: no orphan word", () => {
+    const f = { w: 1920, h: 1080, aspect: "16:9" as const, unit: 1, safe: 60 };
+    const t = breakLines("AgentGuard, built in.", "expressive", f, 700, 0.15);
+    expect(t.split("\n").length).toBe(2);
+    // the even split, never a lone short word: "AgentGuard," / "built in.", not "AgentGuard, built" / "in."
+    expect(t).toBe("AgentGuard,\nbuilt in.");
+    expect(t.split("\n").some((l) => l.length <= 3)).toBe(false);
+    const h = breakLines(STEALTH_HONEST, "functional", f, 1680, 0.15).split("\n");
+    expect(h.length).toBeLessThanOrEqual(3);
+    expect(h.join(" ")).toBe(STEALTH_HONEST);
+    expect(breakLines("Its own tools.", "expressive", f, 1800, 0.3)).toBe("Its own tools.");
   });
 });
 
@@ -296,6 +312,22 @@ describe("the convergence, the title and the end card", () => {
         const x = p.extra as Record<string, number>;
         expect(p.duration).toBeGreaterThanOrEqual(x.decayEnd + 0.5 * FPS);
       }
+    }
+  });
+  test("one stone through the iris: the convergence lands the wall's stone where, and as large as, the title's", () => {
+    for (const a of ["16:9", "1:1", "9:16"] as const) {
+      const p = demoPlans(a).find((e) => e.plan.id === "finale")!.plan;
+      const conv = p.shots[0]!;
+      const title = p.shots[1]!;
+      const seam = p.seams[0]!;
+      const end = seam.at + seam.frames; // the iris is fully open
+      const pose = conv.camera.pose(end - conv.from);
+      const at = worldToFrame(conv.stone!.at, pose, p.frame.w, p.frame.h);
+      const page = worldToFrame(title.stone!.at, title.camera.pose(end - title.from), p.frame.w, p.frame.h);
+      expect(Math.hypot(at.x - page.x, at.y - page.y)).toBeLessThan(6);
+      const sizeConv = conv.stone!.size * pose.zoom;
+      const sizePage = title.stone!.size * title.camera.pose(end - title.from).zoom;
+      expect(Math.abs(Math.log(sizeConv / sizePage))).toBeLessThan(0.04);
     }
   });
   test("the sweep lightens the glyphs by at most 15 (L*), inside them only", () => {

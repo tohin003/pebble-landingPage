@@ -145,10 +145,13 @@ export function planFinale(o: FinaleOptions): ScenePlan {
   const wall: WallSpec = { centre, cells, radii: WALL_GEOMETRY.radii, orbit: WALL_GEOMETRY.orbit, depth: WALL_GEOMETRY.depth, converge: { at: convergeAt, frames: convergeFrames, turnDeg: 50 }, t0: o.wallElapsed ?? 0 };
   const { far } = wallFramings(f, centre);
   const camC = new VelocityCamera(o.entry?.pose ?? far, o.entry?.vel ?? { lz: -0.00028 });
-  // the camera turns from its outward drift into a push toward the stone as the cells rush in
-  const pushTo: Pose = { x: centre.x, y: centre.y, zoom: far.zoom * 2.1 };
+  // the camera turns from its outward drift into a push toward the stone as the cells rush in, and lands the stone
+  // exactly where, and as large as, the title's stone: the iris then opens around one stone (a match through the iris)
+  const stoneTarget = L.stone(f);
+  const zLand = (L.stonePx * f.unit) / 148;
+  const pushTo: Pose = { x: centre.x - (stoneTarget.x - f.w / 2) / zLand, y: centre.y - (stoneTarget.y - f.h / 2) / zLand, zoom: zLand };
   camC.hermite(convergeAt + Math.round(convergeFrames * 0.35), { ...far, zoom: far.zoom * 1.06, x: centre.x, y: centre.y }, { lz: 0.0035 });
-  camC.hermite(irisEnd + 4, pushTo, { lz: 0.004 });
+  camC.hermite(irisEnd + 4, pushTo, { lz: 0.0004 });
   const ring: RingSpec = {
     id: "converge",
     start: convergeAt,

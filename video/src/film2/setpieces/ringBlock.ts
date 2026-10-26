@@ -97,8 +97,8 @@ interface RingLayout {
 const LAYOUT: Record<FrameBox["aspect"], RingLayout> = {
   "16:9": {
     arrive: (f) => ({ x: f.w * 0.46, y: f.safe, w: f.w * 0.5, h: f.h - 2 * f.safe }),
-    pair: (f, bh) => ({ left: f.safe * 2, top: f.h - f.safe * 2.4 - bh, maxW: f.w * 0.42 - f.safe * 2 }),
-    sizeT: 0.15,
+    pair: (f, bh) => ({ left: f.safe * 2, top: f.h - f.safe * 2.4 - bh, maxW: f.w * 0.46 - f.safe * 2 }),
+    sizeT: 0,
     read: (f) => ({ x: f.safe * 2, y: f.safe * 1.5, w: f.w - f.safe * 4, h: f.h - f.safe * 3 }),
     stage: (f) => ({ x: f.w * 0.52, y: f.h * 0.14, w: f.w * 0.42, h: f.h * 0.72 }),
     fixedBox: (f) => ({ left: f.safe * 2, top: f.h * 0.3, align: "left" }),

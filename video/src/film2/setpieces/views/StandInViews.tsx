@@ -4,7 +4,7 @@
 // ticking at 1× so the edit lane can see where a take's in-point sits.
 import { Img, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLOR, FAMILY, TRANSITION, f60 } from "../../tokens";
-import { E_ARRIVE, clamp01 } from "../../motion/ease";
+import { E_ARRIVE, E_MOVE, clamp01 } from "../../motion/ease";
 import { shownSize, type SlotStandIn, type StandIn } from "../standins";
 import { sourceFrameAt, sourceTimecode, stillsAt, takeFramePath, type TakeUse, type ViewStill } from "../take";
 
@@ -81,6 +81,11 @@ export const TakeViewContent: React.FC<{ use: TakeUse; view: string; w: number; 
         const since = s.entrance ? Math.floor(((src - s.from) * fps) / m.fps) : Infinity;
         const look = s.entrance ? entranceStyle(since, fps, px) : {};
         if (look === null) return null;
+        if (s.fadeOut && s.to !== undefined && src >= s.to - s.fadeOut) {
+          // a placeholder of the recording's own change: out on E-move over its last frames, never a pop
+          const u = Math.min(1, (src - (s.to - s.fadeOut)) / s.fadeOut);
+          look.opacity = (look.opacity === undefined ? 1 : Number(look.opacity)) * (1 - E_MOVE(u));
+        }
         return (
           <div key={i} style={{ position: "absolute", left: r.x * kx, top: r.y * ky, width: r.w * kx, height: r.h * ky, ...look }}>
             {s.standIn.kind === "still" ? <StillImage standIn={s.standIn} w={r.w * kx} h={r.h * ky} /> : <SlotPanel slot={s.standIn} w={r.w * kx} h={r.h * ky} px={px} />}
