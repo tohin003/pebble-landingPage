@@ -217,8 +217,9 @@ with fontTools.
 they could be replaced in place; after it, a re-capture or a re-render goes to `v2/`, never over `v1/`, or returning
 visitors keep the old pictures for a year. Moving to `v2/` also means changing the folders that `next.config.ts` lists
 and sends with the immutable header, and the paths in `src/lib/media.ts`. The energetic recut's film was the first
-move: its four videos and three text tracks are in `public/media/v2/` (`FILM_MEDIA` in `src/lib/media.ts`), while its
-poster, the teaser, the loops and the wallpaper stay in `v1/`.
+move: its four videos and three text tracks are in `public/media/v2/` (`FILM_MEDIA` in `src/lib/media.ts`), and the
+trailer that replaced it added its own poster and the 1:1 film for phones there (OVERRIDES §46), while the loops and
+the wallpaper stay in `v1/`. The first film's poster and the teaser T0 are retired.
 
 ## 3. The score, the sound effects and the mix
 
@@ -317,12 +318,12 @@ run `npx remotion upgrade` mid-project). `video/src/Root.tsx` registers the comp
 | `LaunchFilm` | 1920 × 1080 | The launch film: the website's film and the 16:9 social posts |
 | `LaunchFilmSquare` | 1080 × 1080 | The square cut for social feeds |
 | `LaunchFilmVertical` | 1080 × 1920 | The vertical cut for phones |
-| `FilmTeaser` | 1280 × 720 | The silent teaser beside the film's poster |
+| `FilmTeaser` | 1280 × 720 | The silent teaser T0: retired from the page (OVERRIDES §46 P1-1), still registered |
 | `LoopCompanion`, `LoopModels`, `LoopMemory`, `LoopViews` | 1600 × 1000 | Silent feature loops on the page |
 | `LoopIsolatedTests` | 1080 × 1080 | The project story's loop |
 | `LoopCompanionPhone`, `LoopIsolatedTestsPhone` | 1080 × 1350 | 4:5 cuts for phones |
 | `LoopApproveUndo`, `LoopAgentGuard` (each also `…Phone`), `LoopReviewCommands` | | Registered, not on the page: the project story shows the approval card as an explainer, AgentGuard's section shows real captures, and `LoopReviewCommands` is a stub slate |
-| `FilmPoster` | 1280 × 720 | The film's poster, which is the teaser's first frame; render it at `--scale=2` |
+| `FilmPoster` | 1280 × 720 | The first film's poster (T0's first frame), retired with it: the trailer's poster is `LaunchFilm`'s frame 0 |
 | `OgImage` | 1200 × 630 | The social card |
 | `StyleFrames`, `FilmFrames` (each also `…Square` and `…Vertical`) | as the film | Review samplers for style frames. Never for masters or review frames: `FilmFrames`' frame 0 is sometimes flat |
 | `RiverbedPlate`, `ComponentCheck`, `FontMetrics`, `Placeholder`, `PebbleDemo` | | Tools and reference sheets |
@@ -364,14 +365,14 @@ encode step. The rules, each learned the hard way:
 - **Scan every master before encoding** (below).
 
 ```bash
-cd video && ../scripts/heavy.sh master-film npx remotion render src/index.ts LaunchFilm out/masters/film.mp4 \
+cd video && ../scripts/heavy.sh master-film npx remotion render src/index.ts LaunchFilm out/masters/LaunchFilm.mp4 \
   --codec=h264 --crf=12 --x264-preset=medium --pixel-format=yuv420p --color-space=bt709 --muted \
   --concurrency=1 --image-format=png --browser-executable="$CHROME_PATH" --chrome-mode=chrome-for-testing
 ```
 
 Render the others the same way, one heavy job each, under the names section 5 uses: `LaunchFilmSquare` to
-`out/masters/film-square.mp4`, `LaunchFilmVertical` to `film-vertical.mp4`, `FilmTeaser` to `teaser.mp4`, and each
-loop on the page to `loop-<id>.mp4` (its 4:5 cut to `loop-<id>-phone.mp4`). If a render crashes or is stopped, retry
+`out/masters/LaunchFilmSquare.mp4`, `LaunchFilmVertical` to `LaunchFilmVertical.mp4`, and each loop on the page to
+`loop-<id>.mp4` (its 4:5 cut to `loop-<id>-phone.mp4`). If a render crashes or is stopped, retry
 with `--media-cache-size-in-bytes=1073741824`, then in chunks with `--frames=0-899` and so on, joined afterwards with
 `"$FF" -f concat -safe 0 -i list.txt -c copy`.
 
@@ -385,11 +386,14 @@ sheets will do. Delete each master once its encodes have passed `verify.mjs`.
 
 **Posters and the social card.** Every poster is its video's first frame, rendered from the composition itself, so the
 poster and the video's first picture are the same. `LOOP_POSTERS` in `video/src/stills/LoopPosters.tsx` lists each
-composition, file name and size; the film's poster and the teaser's are both `FilmPoster`, rendered at 2x:
+composition, file name and size. The film's poster is `LaunchFilm`'s own frame 0 at its own size, 1920 × 1080: the
+trailer's cold open, the pebble's eyes in the right third with the centre dark under the play button (OVERRIDES §46
+P1-1; the first film's poster, `FilmPoster` at 2x, and the teaser are retired):
 
 ```bash
 cd video && ../scripts/heavy.sh poster npx remotion still src/index.ts LoopMemory out/stills/loop-memory.poster.png --frame=0
-cd video && ../scripts/heavy.sh poster npx remotion still src/index.ts FilmPoster out/stills/film.poster.png --frame=0 --scale=2
+cd video && ../scripts/heavy.sh poster npx remotion still src/index.ts LaunchFilm out/stills/film.poster.png --frame=0 \
+  --image-format=png --browser-executable="$CHROME_PATH" --chrome-mode=chrome-for-testing
 cd video && ../scripts/heavy.sh og npx remotion still src/index.ts OgImage ../src/app/opengraph-image.png --frame=0
 ```
 
@@ -406,6 +410,7 @@ usage.
 
 ```bash
 tools/encode/encode.sh film   <master.mp4> <soundtrack_web.wav> [--only 1080.hevc,1080.h264,720.hevc,720.h264]
+tools/encode/encode.sh square <square_master.mp4> <soundtrack_web.wav> <square_social.mp4> [--only hevc,h264]
 tools/encode/encode.sh social <master.mp4> <soundtrack_social.wav> <out.mp4> [--cut <cut.json>] [--crf <n>]
 tools/encode/encode.sh loop   <id> <master.mp4> [<phone_master.mp4>]
 tools/encode/encode.sh teaser <master.mp4>
@@ -414,8 +419,8 @@ tools/encode/encode.sh poster <png> <out-base> <width> <height>
 
 - Homebrew FFmpeg through `$FF` and `$FP`. Each command is one `scripts/heavy.sh` job: run directly, the script runs
   itself through `heavy.sh`.
-- It checks its inputs before queueing: 30 fps masters, the film at 1920 × 1080, and a 48 kHz stereo soundtrack as
-  long as the picture, to the frame.
+- It checks its inputs before queueing: 30 fps masters, the film at 1920 × 1080 (its 1:1 cut at 1080 × 1080), and a
+  48 kHz stereo soundtrack as long as the picture, to the frame.
 - HEVC (`hvc1`) first, then H.264, each in `yuv420p` with BT.709 tags and `+faststart`. The film's audio is AAC at
   48 kHz from the web soundtrack, encoded once; the loops and the teaser are silent. Each file starts at its planned
   quality and steps down only as far as its size budget needs; the resolution never drops. A loop can start at a
@@ -429,13 +434,11 @@ tools/encode/encode.sh poster <png> <out-base> <width> <height>
 (`--out-dir`), everything else into `public/media/v1/`:
 
 ```bash
-tools/encode/encode.sh film video/out/masters/film.mp4 .work/audio/render/soundtrack_web.wav --out-dir public/media/v2   # film-1080, film-720
-tools/encode/encode.sh teaser video/out/masters/teaser.mp4                                        # teaser-720
+tools/encode/encode.sh film video/out/masters/LaunchFilm.mp4 .work/audio/render/soundtrack_web.wav --out-dir public/media/v2   # film-1080, film-720
 tools/encode/encode.sh loop isolated-tests video/out/masters/loop-isolated-tests.mp4 video/out/masters/loop-isolated-tests-phone.mp4
 tools/encode/encode.sh loop memory video/out/masters/loop-memory.mp4      # and models, views
 LOOP_HEVC_CRF=22 LOOP_H264_CRF=19 tools/encode/encode.sh loop companion video/out/masters/loop-companion.mp4 video/out/masters/loop-companion-phone.mp4
-tools/encode/encode.sh poster video/out/stills/film.poster.png public/media/v1/film.poster 1920 1080
-tools/encode/encode.sh poster video/out/stills/film.poster.png public/media/v1/teaser.poster 1280 720
+tools/encode/encode.sh poster video/out/stills/film.poster.png public/media/v2/film.poster 1920 1080   # the film's, beside it
 tools/encode/encode.sh poster video/out/stills/loop-memory.poster.png public/media/v1/loop-memory.poster 1600 1000
 node tools/encode/verify.mjs                  # everything in public/media/v1 and v2, and public/'s totals
 node tools/encode/verify.mjs --no-analysis    # the same without the loudness and seam passes: light, no heavy job
@@ -443,22 +446,33 @@ node tools/encode/verify.mjs --no-analysis    # the same without the loudness an
 
 `verify.mjs` checks codecs and profile against the page's `<source type>`, the peak bitrate against the declared level,
 the colour tags, `+faststart`, the frame count (the film's against `docs/film-captions.json`), sizes and budgets
-(every file at most 45 MB, `public/` at most 90 MB, the film set at most 45 MB), the film's loudness on the encoded
-AAC (−16 LUFS ±1, at most −1.5 dBTP), the loops' and the teaser's seams on the encodes, the text tracks against what
-`tools/captions/build.mjs` makes now, and the posters against their videos. A file in a folder the page doesn't read
-it from (a film file left in `v1/`, say) is a warning. Its loudness and seam passes decode every file, so they run as
-one heavy job of their own.
+(every file at most 45 MB, `public/` at most 90 MB, the film set with its 1:1 cut at most 45 MB), the film's loudness
+on the encoded AAC (−16 LUFS ±1, at most −1.5 dBTP), the loops' and the teaser's seams on the encodes, the text tracks
+against what `tools/captions/build.mjs` makes now, and the posters against their videos. A file in a folder the page
+doesn't read it from (a film file left in `v1/`, say) is a warning. Its loudness and seam passes decode every file, so
+they run as one heavy job of their own.
 
 **The social films** for X and LinkedIn: 16:9, 1:1 and 9:16, each from its own master, with the social soundtrack
 (−14 LUFS). They are delivered outside the repository and never committed:
 
 ```bash
 D="<a folder outside the repository>"
-tools/encode/encode.sh social video/out/masters/film.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1920x1080.mp4"
-tools/encode/encode.sh social video/out/masters/film-square.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1080x1080.mp4"
-tools/encode/encode.sh social video/out/masters/film-vertical.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1080x1920.mp4"
-tools/encode/encode.sh social video/out/masters/film.mp4 .work/audio/render/soundtrack_social_narrated.wav "$D/Pebble-launch-film-narrated-1920x1080.mp4"
+tools/encode/encode.sh social video/out/masters/LaunchFilm.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1920x1080.mp4"
+tools/encode/encode.sh social video/out/masters/LaunchFilmSquare.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1080x1080.mp4"
+tools/encode/encode.sh social video/out/masters/LaunchFilmVertical.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1080x1920.mp4"
+tools/encode/encode.sh social video/out/masters/LaunchFilm.mp4 .work/audio/render/soundtrack_social_narrated.wav "$D/Pebble-launch-film-narrated-1920x1080.mp4"
 node tools/captions/build.mjs --out-dir public/media/v2 --srt "$D/Pebble-launch-film.srt" --narrated-srt "$D/Pebble-launch-film-narrated.srt"
+```
+
+**The 1:1 film for phones** (OVERRIDES §46 P2-9): at phone width the page plays the square film, whose interface text
+stays readable there (`src/lib/filmSources.ts`). It is made after the 1:1 social film: `film-square.h264.mp4` is that
+film's video, copied without a second encode, with the web soundtrack's AAC; `film-square.hevc.mp4` is encoded from the
+1:1 master like `film-1080.hevc.mp4`, and only kept while the film set stays within 45 MB. Its timing is the 16:9
+film's, frame for frame, so it shares the three text tracks:
+
+```bash
+tools/encode/encode.sh square video/out/masters/LaunchFilmSquare.mp4 .work/audio/render/soundtrack_web.wav \
+  "$D/Pebble-launch-film-1080x1080.mp4" --out-dir public/media/v2                # film-square.h264, film-square.hevc
 ```
 
 **The narrated twin** (OVERRIDES §38) is the 16:9 film's picture with the narrated social soundtrack (section 3): one
@@ -473,9 +487,9 @@ no separate composition: `encode.sh social --cut` seeks each range frame-exactly
 the cut's own soundtrack (section 3):
 
 ```bash
-tools/encode/encode.sh social video/out/masters/film.mp4 .work/audio/render/soundtrack_x30_social.wav \
+tools/encode/encode.sh social video/out/masters/LaunchFilm.mp4 .work/audio/render/soundtrack_x30_social.wav \
   "$D/Pebble-launch-film-30s-1920x1080.mp4" --cut docs/film-cuts/x30.json
-# the same with film-square.mp4 (-1080x1080) and film-vertical.mp4 (-1080x1920)
+# the same with LaunchFilmSquare.mp4 (-1080x1080) and LaunchFilmVertical.mp4 (-1080x1920)
 node tools/captions/build.mjs --cut docs/film-cuts/x30.json --srt "$D/Pebble-launch-film-30s.srt"
 node tools/encode/verify.mjs "$D"             # public/media and the social folder together
 ```
