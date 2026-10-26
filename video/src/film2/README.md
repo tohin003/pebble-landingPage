@@ -431,14 +431,13 @@ scripts/heavy.sh f2-sp-demo16 /usr/sbin/taskpolicy -c utility \
 ```
 
 **What the demo shows (26 Oct, half size, 60 fps, 5,702 frames each; gitignored evidence in `.work/film2/sp/`).**
-16:9 and 1:1 rendered in 187 s each through heavy.sh (segments of 480 frames; free disk moved by at most 43 MiB a
-segment); their pixel checks (`qa/luma-scan.ts`) pass: no pops away from cuts, no dead second, no dip at a seam, at most
-one flash a second. Sheets and seam strips (`look/sheet.jpg`, `look/seam-<frame>.jpg`) were looked at, and fixed where
+16:9, 1:1 and 9:16 rendered in 185–187 s each through heavy.sh (segments of 480 frames; free disk moved by at most
+43 MiB a segment); all three pass the pixel checks (`qa/luma-scan.ts`): no pops away from cuts, no dead second, no dip at
+a seam, at most one flash a second. Sheets and seam strips (`look/sheet.jpg`, `look/seam-<frame>.jpg`) were looked at, and fixed where
 they showed a fault: multi-line type running as one line (SplitText), a line outliving its shot, an empty cascade
 stage after the cut, a card popping in at a take's start, two stones at the title's iris, a palette thrown in too fast.
 The model checks (`check-setpieces.ts`) pass in every aspect, with only notes where type crosses a slot, to check on the
-2.0.0 captures. The 9:16 reel was rendered and looked at before the last round of fixes (its pixel check passed); its
-re-render waits on the disk guard.
+2.0.0 captures.
 
 **Placeholders.** Every picture of Pebble in the set pieces is a real capture of a published release (1.0.x–1.5.0,
 cropped, never stretched, never showing a usage or timing line) or a labelled slot for what has no published capture
