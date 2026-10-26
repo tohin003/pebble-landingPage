@@ -61,6 +61,8 @@ export interface FinaleOptions {
   roomToneS?: number;
   /** the music credit for the small print (the CC BY line when a Scott Buckley cue is used) */
   musicCredit?: string;
+  /** a trademark line for every brand the final cut shows (R-MARKS; the copy lane writes them) */
+  trademarks?: readonly string[];
   /** the wall's centre and the camera to continue from (the wall piece's exit: its pose, velocity and parallax ref) */
   centre?: Point;
   entry?: { pose: Pose; vel: CamVel; ref?: Pose };
@@ -228,7 +230,7 @@ export function planFinale(o: FinaleOptions): ScenePlan {
   const methodBox: TypeBox = { left: 0, top: sampleBox.top + sSize * lineHeightOf("functional") * 1.6, width: f.w, align: "center" };
   types.push({ id: "L29b", text: method, tier: "functional", at: page2 + f60(10, fps), sizeT: 0, box: methodBox, kind: "end" });
   const credit = o.musicCredit ? [o.musicCredit] : [];
-  const small = [...FINALE_TEXT.small, ...credit].flatMap((t) => breakLines(t, "small", f, f.w - 3 * f.safe, 0.3).split("\n"));
+  const small = [...FINALE_TEXT.small, ...credit, ...(o.trademarks ?? [])].flatMap((t) => breakLines(t, "small", f, f.w - 3 * f.safe, 0.3).split("\n"));
   const smallTop = methodBox.top + method.split("\n").length * sSize * lineHeightOf("functional") + 56 * unit;
   types.push({ id: "L30", text: small.join("\n"), tier: "small", at: page2 + f60(24, fps), sizeT: 0.3, box: { left: 0, top: smallTop, width: f.w, align: "center" }, kind: "small", color: COLOR.ink2 });
   const decayEnd = lastNote + sec(o.decayS ?? 6.6, fps);

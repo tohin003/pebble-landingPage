@@ -309,7 +309,8 @@ plan the music in local frames (`shiftGrid(grid, −start)`). Every piece is fra
 | `drop.ts`, `ringBlock.ts` + `rings.ts`, `wall.ts`, `dusk.ts`, `climax.ts`, `finale.ts` | the six plans |
 | `sweep.ts` | the title's sage sweep and its 15 % cap (L3a) |
 | `pieces.cues.ts` | the stone's cue templates (checked by the engine tests, D6) |
-| `qa.ts` | `planQa()` (a plan as the foundation's `FilmTimelineQa`) and `checkPlan()` (every foundation check, plus the set pieces': band contrast, takes, type in the safe area, type over UI, UI read size, music placement, cues, the wall, small print) |
+| `qa.ts` | `planQa()` (a plan as the foundation's `FilmTimelineQa`) and `checkPlan()` (every foundation check, plus the set pieces': band contrast, takes, type in the safe area, type over UI, UI read size, UI read wholly in frame, music placement, cues, the wall, small print) |
+| `align.ts` | one timeline for all three aspects: `alignAspects()` and `timelineDiffs()` |
 | `views/` | `PieceView`, `ShotView`, `TypeView`, `StandInViews` (stills, slots with a ticking source time, take views), `VeilCast`, `SageSweep`, `WallView` |
 | `demo/` | the demo reels and the measured stretches they are fitted to (`grids.ts`) |
 | `tools/make-cells.ts` | makes the wall's cell thumbnails into `video/public/ui/f2-cells` (gitignored) |
@@ -320,6 +321,13 @@ earliest frame its reading allows, and a transition completes `lead` frames (2�
 placed earlier: a hold is never shortened to land a cut; the music is edited at bar lines instead. Each plan reports
 where its events landed (`plan.music`: event, frame, point, level, frames waited), and `checkPlan(plan, grid)` checks
 every point. Only marked hits snap (the Drop's burst; the title's downbeat is where the wordmark lands).
+
+**One timeline for all three aspects (§3.12).** A piece's framing can move a timed event in one aspect (a line that
+breaks in two lands later; a ring clears a line's band later), so plan pieces with `alignAspects((aspect, align) =>
+planX({ ..., align }))`: it plans every aspect, takes the latest frame of each timed event (`plan.extra.timing`: line
+landings, receipts, cuts, ends), and plans again with those as minimums. Every aspect then cuts, lands and ends on the
+same frames, and `timelineDiffs()` proves it (tested on the demo and on random grids). Only framing and the entrance
+starts of lines that break differently may differ.
 
 **Takes never speed up.** A take's in-point is solved so its event lands on its beat (`solveInPoint`); the take then
 plays at 1× from its first shown frame. One recording may feed several planes (a view each: RS-9 is the companion's card

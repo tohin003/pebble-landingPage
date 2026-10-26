@@ -6,7 +6,7 @@ import { Img, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLOR, FAMILY, TRANSITION, f60 } from "../../tokens";
 import { E_ARRIVE, clamp01 } from "../../motion/ease";
 import { shownSize, type SlotStandIn, type StandIn } from "../standins";
-import { sourceFrameAt, sourceTimecode, stillsAt, type TakeUse, type ViewStill } from "../take";
+import { sourceFrameAt, sourceTimecode, stillsAt, takeFramePath, type TakeUse, type ViewStill } from "../take";
 
 /** A published still, cropped, filling a w × h box at a uniform scale (the box keeps the crop's aspect). */
 export const StillImage: React.FC<{ standIn: Extract<StandIn, { kind: "still" }>; w: number; h: number }> = ({ standIn, w, h }) => {
@@ -65,10 +65,10 @@ export const TakeViewContent: React.FC<{ use: TakeUse; view: string; w: number; 
   if (frame < use.at) return null;
   const src = Math.min(m.frames - 1, sourceFrameAt(frame, use.at, fps, m, use.inPoint));
   if (m.pattern) {
-    const n = String(src + 1).padStart(5, "0");
+    // a real take: the view is a crop of the recording's frame, at a uniform scale
     const c = v.crop ?? { x: 0, y: 0, w: m.w, h: m.h };
     const k = w / c.w;
-    return <Img src={staticFile(m.pattern.replace("{n}", n))} style={{ position: "absolute", left: -c.x * k, top: -c.y * k, width: m.w * k, height: m.h * k, maxWidth: "none" }} />;
+    return <Img src={staticFile(takeFramePath(m, src))} style={{ position: "absolute", left: -c.x * k, top: -c.y * k, width: m.w * k, height: m.h * k, maxWidth: "none" }} />;
   }
   const kx = w / v.w;
   const ky = h / v.h;

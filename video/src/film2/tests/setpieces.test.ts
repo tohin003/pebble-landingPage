@@ -8,7 +8,7 @@ import { STEALTH_HONEST } from "../../../../shared/pebble/stealthVeil";
 import { checkCues } from "../../../../shared/pebble/cues";
 import { maxScreenSpeed } from "../motion/camera";
 import { halfBars, nextPoint, place, pointsOf, prevPoint, shiftGrid, steadyGrid, gridFromMap, type MusicGrid } from "../setpieces/music";
-import { checkTakeUse, eventFrame, frameOfSource, solveInPoint, sourceFrameAt, TAKE_HSF, TAKE_RS9, TAKE_RSW } from "../setpieces/take";
+import { checkTakeUse, eventFrame, frameOfSource, solveInPoint, sourceFrameAt, takeFramePath, TAKE_HSF, TAKE_RS9, TAKE_RSW } from "../setpieces/take";
 import { checkPlan, planQa } from "../setpieces/qa";
 import { planDrop } from "../setpieces/drop";
 import { planRingBlock } from "../setpieces/ringBlock";
@@ -110,6 +110,13 @@ describe("takes at 1×", () => {
   });
   test("a take never runs past its last frame", () => {
     expect(() => solveInPoint(TAKE_RSW, "cardLands", 100, 0, 100000, 60)).toThrow(/ends/);
+  });
+  test("a real take's frames are read from its sequence, 1-based, clamped to the take", () => {
+    const real = { ...TAKE_RSW, pattern: "takes/rs-w/{n}.png" };
+    expect(takeFramePath(real, 0)).toBe("takes/rs-w/00001.png");
+    expect(takeFramePath(real, 449)).toBe("takes/rs-w/00450.png");
+    expect(takeFramePath(real, 99999)).toBe(`takes/rs-w/${String(TAKE_RSW.frames).padStart(5, "0")}.png`);
+    expect(() => takeFramePath(TAKE_RSW, 0)).toThrow(/placeholder/);
   });
   test("the check catches a hand-made use that runs past the take", () => {
     expect(checkTakeUse({ manifest: TAKE_HSF, at: 0, inPoint: 1100, until: 400 }, 60).join()).toContain("past its last frame");

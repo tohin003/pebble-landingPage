@@ -142,6 +142,12 @@ export function checkTakeUse(u: TakeUse, fps: number): string[] {
   return out;
 }
 
+/** The file of a real take's source frame `src` (0-based): `pattern` with "{n}" as the 1-based, 5-digit frame number. */
+export const takeFramePath = (m: TakeManifest, src: number): string => {
+  if (!m.pattern) throw new Error(`take ${m.id} has no frame sequence yet (placeholder)`);
+  return m.pattern.replace("{n}", String(Math.max(0, Math.min(m.frames - 1, src)) + 1).padStart(5, "0"));
+};
+
 /** The placeholder stills a view shows on source frame `src` (each from its `from` until its `to`). */
 export const stillsAt = (v: TakeView, src: number): ViewStill[] => (v.stills ?? []).filter((s) => src >= s.from && (s.to === undefined || src < s.to));
 
