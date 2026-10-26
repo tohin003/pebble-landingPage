@@ -1,0 +1,124 @@
+:root {
+  --paper: #f5efe5;
+  --paper-deep: #ebe2d3;
+  --ink: #3b2b22;
+  --ink-soft: #6e5a4c;
+  --clay: #b45f3d;
+  --glaze: #5f7d74;
+  --line: #d9cbb8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+}
+
+a { color: inherit; }
+
+.top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 28px 7vw 0;
+}
+
+.mark {
+  font-family: ui-serif, "New York", Georgia, serif;
+  font-size: 26px;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+}
+
+nav a {
+  margin-left: 28px;
+  text-decoration: none;
+  color: var(--ink-soft);
+}
+
+nav a[aria-current="page"] {
+  color: var(--ink);
+  border-bottom: 2px solid var(--clay);
+  padding-bottom: 3px;
+}
+
+main { padding: 0 7vw; }
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 4vw;
+  min-height: 62vh;
+}
+
+.kicker {
+  margin: 0 0 6px;
+  color: var(--clay);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+
+h1 {
+  margin: 0;
+  font-family: ui-serif, "New York", Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(64px, 9vw, 132px);
+  line-height: 0.95;
+}
+
+.hours {
+  margin: 12px 0 22px;
+  font-family: ui-serif, "New York", Georgia, serif;
+  font-size: 30px;
+}
+
+.lede { max-width: 30em; font-size: 20px; margin: 0 0 10px; }
+.note { max-width: 34em; color: var(--ink-soft); margin: 0; }
+
+.pot { width: 100%; max-width: 360px; justify-self: center; }
+
+h2 {
+  font-family: ui-serif, "New York", Georgia, serif;
+  font-weight: 500;
+  font-size: 30px;
+  margin: 0 0 14px;
+}
+
+.programme, .prices {
+  border-top: 1px solid var(--line);
+  padding: 28px 0 34px;
+}
+
+.sessions { list-style: none; margin: 0; padding: 0; }
+
+.slot {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.time { font-variant-numeric: tabular-nums; font-weight: 600; }
+.left { color: var(--ink-soft); }
+.slot.full .left { color: var(--clay); font-weight: 600; }
+.slot.free .left { color: var(--glaze); }
+
+.prices dl { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0 40px; }
+.prices dl div { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.prices dd { margin: 0; font-variant-numeric: tabular-nums; }
+
+footer {
+  padding: 26px 7vw 40px;
+  background: var(--paper-deep);
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+footer p { margin: 0 0 4px; }
+.sample { opacity: 0.8; }

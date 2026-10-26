@@ -1,0 +1,125 @@
+{
+  "_what": "The single source of truth for the Pebble 2.0 film's sample world (TREATMENT §3.3): a small pottery studio getting ready for its open day. Everything here is fictional. make_sample_world.py, the 2.0 harness fixtures (capture/fixtures-2.0) and the real-take runbook (.work/real-takes/RUNBOOK.md) all read these facts, so a date or a name changes in one place.",
+  "_embargo": "Local branch film-2.0 only. Never push before the release session posts '2.0.0 published'.",
+  "studio": {
+    "name": "Clay & Current",
+    "kind": "a small pottery studio",
+    "alternates": ["Slow Wheel Studio", "Kiln Lane Studio"],
+    "name_prescreen": {
+      "date": "2026-10-26",
+      "method": "standard web searches for each exact name (with 'pottery' or 'pottery studio'); the lead still checks before capture (TREATMENT §3.3)",
+      "found": {
+        "Clay & Current": "no business by this name found (closest: 'Clay Co', Phillip Island; 'Clay', Noosa)",
+        "Slow Wheel Studio": "no business by this exact name found; 'Slow Clay Centre' (Melbourne) and 'Slow Pottery Studio' (Andhra Pradesh) are similar",
+        "Kiln Lane Studio": "no studio by this name found; 'Kiln Lane' is a street name in several UK towns, and many studios are called 'The Kiln'"
+      }
+    },
+    "website": "example.com/open-day",
+    "website_note": "example.com is reserved for documentation (RFC 2606), so no real site is ever shown or implied.",
+    "currency": "GBP",
+    "locale": "en-GB"
+  },
+  "demo_user": {
+    "full_name": "Studio",
+    "short_name": "studio",
+    "home": "/Users/studio",
+    "why": "A neutral account name: it appears in paths (/Users/studio/...), the login window and the Apple menu, never a person's name."
+  },
+  "open_day": {
+    "date": "2026-11-14",
+    "date_rule": "A Saturday. Regenerate with make_sample_world.py --open-day YYYY-MM-DD before the takes, so that Calendar's week view shows the open-day week on the day of recording.",
+    "opens": "10:00",
+    "closes": "16:00"
+  },
+  "sessions": [
+    {"kind": "wheel taster", "label": "Wheel taster", "starts": "10:30", "minutes": 45, "places": 12, "price": "12.50"},
+    {"kind": "glazing demo", "label": "Glazing demo", "starts": "11:15", "minutes": 30, "places": null, "price": "0.00"},
+    {"kind": "wheel taster", "label": "Wheel taster", "starts": "12:00", "minutes": 45, "places": 12, "price": "12.50"},
+    {"kind": "wheel taster", "label": "Wheel taster", "starts": "13:30", "minutes": 45, "places": 12, "price": "12.50"},
+    {"kind": "glazing demo", "label": "Glazing demo", "starts": "14:15", "minutes": 30, "places": null, "price": "0.00"},
+    {"kind": "wheel taster", "label": "Wheel taster", "starts": "15:00", "minutes": 45, "places": 12, "price": "12.50"}
+  ],
+  "prices": [
+    {"item": "Wheel taster (45 minutes)", "price": "12.50"},
+    {"item": "Glazing demo", "price": "0.00"},
+    {"item": "Hand-building table", "price": "6.00"},
+    {"item": "Paint a bisque mug", "price": "9.00"},
+    {"item": "Firing your piece", "price": "3.00"},
+    {"item": "Gift voucher", "price": "10.00", "from": true}
+  ],
+  "tickets": {
+    "sold": 48,
+    "price": "12.50",
+    "total": "600.00",
+    "note": "4 wheel tasters x 12 places, all sold. 48 x 12.5 = 600 (the 'Tickets' conversation, S11)."
+  },
+  "kiln": {
+    "firing": "Friday's bisque firing",
+    "start_c": 20,
+    "segments": [
+      {"rate_c_per_hour": 80, "to_c": 600, "hold_minutes": 0},
+      {"rate_c_per_hour": 150, "to_c": 1000, "hold_minutes": 15}
+    ],
+    "answer_minutes": 610,
+    "answer_words": "10 hours 10 minutes",
+    "working": "(600-20)/80 h = 7.25 h = 435 min; (1000-600)/150 h = 2.6667 h = 160 min; hold 15 min; total 610 min",
+    "tool_name": "kiln_ramp_time"
+  },
+  "glaze": {
+    "name": "Celadon",
+    "file": "Documents/Open day/glazes/celadon.csv",
+    "batch_grams": 5000,
+    "recipe_percent": [
+      {"material": "Potash feldspar", "percent": 25},
+      {"material": "Silica", "percent": 25},
+      {"material": "Whiting", "percent": 20},
+      {"material": "Kaolin", "percent": 20},
+      {"material": "Talc", "percent": 10}
+    ],
+    "additions_percent": [
+      {"material": "Red iron oxide", "percent": 1}
+    ],
+    "answer_grams": {"Potash feldspar": 1250, "Silica": 1250, "Whiting": 1000, "Kaolin": 1000, "Talc": 500, "Red iron oxide": 50}
+  },
+  "files_in_home": {
+    "documents": "Documents/Open day",
+    "pictures": "Pictures/Open day",
+    "project": "Projects/studio-bookings",
+    "music": "Music/Studio playlist",
+    "workbench": "Pebble Workbench"
+  },
+  "conversations": [
+    {"id": "quick", "title": "What can you do now?", "project": null, "shot": "S01-S02 (RS-15)",
+      "messages": ["What can you do now?"]},
+    {"id": "open-day", "title": "Open day", "project": null, "shot": "S04-S09 (RS-9)",
+      "messages": ["Play our glazing video on YouTube.", "Play the next one."],
+      "note": "'our' only if the video is the person's own; with someone else's CC BY video the first message names the video by its exact title instead (RUNBOOK, open item 1)."},
+    {"id": "tickets", "title": "Tickets", "project": null, "shot": "S11 (RS-4)",
+      "messages": ["What's 48 × 12.5? Use Calculator."]},
+    {"id": "kiln-board", "title": "Kiln Board", "project": null, "shot": "S12 (RS-7)",
+      "messages": ["In Kiln Board, start the bisque program."]},
+    {"id": "notes-delete", "title": "Old price list", "project": null, "shot": "S13 (RS-8)",
+      "messages": ["Delete the note “Old price list (2025)” in Notes."]},
+    {"id": "app-actions", "title": "Open day jobs", "project": null, "shot": "S14 (RS-5)",
+      "messages": [
+        "Run my Open day checklist shortcut.",
+        "Play the Studio playlist in Music.",
+        "Make a note: kiln unload at 9:00, glaze table ready by 9:30.",
+        "Add “Glaze order” to my calendar on Monday at 9:00.",
+        "Show the Open day folder in Finder."
+      ]},
+    {"id": "photos", "title": "Photos", "project": null, "shot": "S15-S16 (RS-H)",
+      "messages": ["Resize the open-day photos in Pictures to 1600 px for the website.", "Put Saturday's hours in the flyer: 10:00 to 16:00."],
+      "note": "TREATMENT's shorter forms ('Resize the open-day photos to 1600 px for the website.', 'Put Saturday's hours in the flyer.') are tried in the dry run; plan.md beside the flyer holds the hours if Pebble looks for them."},
+    {"id": "studio-bookings", "title": "studio-bookings", "project": "Projects/studio-bookings", "shot": "S18 (HS-F or RS-F)",
+      "messages": ["Saturday's wheel tasters are taking one booking too many. Stop a full slot from taking another booking."]},
+    {"id": "glaze", "title": "Glaze", "project": null, "shot": "S23 (HS-G, or RS-G)",
+      "messages": ["Scale the celadon glaze in Documents/Open day/glazes/celadon.csv to a 5 kg batch, and keep the tool for next time."],
+      "note": "Reading the file first means the tool was made after file output could shape it, so 1.7.0's rule makes Pebble ask before keeping it: the real route to the ask card."},
+    {"id": "kiln", "title": "Kiln", "project": null, "shot": "S24 (RS-W, or HS-G playback)",
+      "messages": ["How long will Friday's bisque firing take? The kiln starts at 20 °C. Ramp 1: 80 °C an hour up to 600 °C. Ramp 2: 150 °C an hour up to 1000 °C, then hold for 15 minutes. I fire every week with different ramps, so make a small tool for it and call it kiln_ramp_time."],
+      "note": "Everything the tool needs is in the message: no file, page or command output may come before the tool is made, or 1.7.0's rule turns the keep into an ask."},
+    {"id": "open-file", "title": "Price list", "project": null, "shot": "tour/kit (RS-6)",
+      "messages": ["Open the price list in Preview."]}
+  ]
+}

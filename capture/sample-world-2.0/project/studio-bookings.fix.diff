@@ -1,0 +1,15 @@
+The reference fix for the studio-bookings sample project (kept OUTSIDE the project, so Pebble never sees it).
+Before: 17 passed, 1 failed (tests/test_slots.py::test_full_slot_refuses_another_booking).
+After:  18 passed.
+
+--- a/studio_bookings/slots.py
++++ b/studio_bookings/slots.py
+@@ -34,7 +34,7 @@ class Slot:
+         """Book one place under a reference such as "T07"."""
+         if reference in self.bookings:
+             raise ValueError(f"{reference} is already booked on {self.label}")
+-        if self.booked > self.places:
++        if self.is_full():
+             raise SlotFull(self.label)
+         self.bookings.append(reference)
+ 

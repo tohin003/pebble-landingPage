@@ -1,0 +1,10 @@
+[project]
+name = "studio-bookings"
+version = "0.3.0"
+description = "Open-day bookings for a small pottery studio"
+requires-python = ">=3.9"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"

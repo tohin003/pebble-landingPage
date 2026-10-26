@@ -1,0 +1,5 @@
+Kiln log
+{log_1}: bisque, 20 to 1000 °C, even, nothing cracked
+{log_2}: glaze, celadon on the test tiles, a little crawling on two
+{log_3}: bisque, mugs for the open day, 24 pieces
+Next: bisque {friday_short}, 80 °C an hour to 600, then 150 °C an hour to 1000, hold 15 minutes
