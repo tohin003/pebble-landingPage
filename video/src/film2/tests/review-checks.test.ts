@@ -10,6 +10,7 @@ import { analyseLuma, findTilePops } from "../qa/luma";
 import { inkIn, judgeInk, type InkTrack } from "../qa/ink";
 import { shrink, stoneBlobs } from "../qa/stones";
 import { bandHeights, openingStart } from "../qa/bands";
+import { ReelScan } from "../qa/reel-scan";
 import { frameBox } from "../setpieces/frame";
 import { STILL } from "../setpieces/standins";
 import { TAKE_HSF } from "../setpieces/take";
@@ -214,6 +215,49 @@ describe("the aperture's bands on a render (CR-07)", () => {
     expect(fr[10]!.bottom).toBe(20);
     expect(openingStart(fr, { from: 5, to: 25 }, 25)).toBe(31);
     expect(openingStart(frames(99).map((px) => bandHeights(px, 100, 100)), { from: 5, to: 25 }, 25)).toBeNull();
+  });
+});
+
+describe("the reel scan (qa/reel-scan.ts, what luma-scan.ts runs with --marks)", () => {
+  test("a synthetic reel: the line that vanishes, the second stone and the late bands are all reported", () => {
+    const w = 320;
+    const h = 180;
+    const marks = {
+      aspect: "16:9",
+      fps: 60,
+      width: 640,
+      height: 360,
+      total: 120,
+      cuts: [],
+      waits: [],
+      hits: [40],
+      // plan px: the render is half size
+      types: [{ id: "climax/L24", text: "Its own tools.", rect: { x: 40, y: 140, w: 200, h: 40 }, polarity: "dark" as const, from: 0, landed: 5, until: 60, exits: [] }],
+      stones: [{ from: 0, to: 120, count: 1, rMin: 20, rMax: 20 }],
+      apertures: [{ piece: "drop", hit: 40, planOpen: 41, rest: { from: 0, to: 30 } }],
+    };
+    const scan = new ReelScan(w, h, marks);
+    for (let f = 0; f < 120; f++) {
+      const px = new Uint8Array(w * h).fill(210);
+      const band = f < 60 ? 30 : Math.max(0, 30 - 3 * (f - 60));
+      for (let y = 0; y < band; y++) for (let x = 0; x < w; x++) {
+        px[y * w + x] = 28;
+        px[(h - 1 - y) * w + x] = 28;
+      }
+      if (f < 60) for (let y = 70; y < 90; y++) for (let x = 20; x < 120; x++) if (x % 7 < 2 || y % 9 < 2) px[y * w + x] = 40;
+      const disc = (cx: number, cy: number) => {
+        for (let y = cy - 10; y <= cy + 10; y++) for (let x = cx - 10; x <= cx + 10; x++) if ((x - cx) ** 2 + (y - cy) ** 2 <= 100) px[y * w + x] = 92;
+      };
+      disc(250, 120);
+      if (f >= 90 && f < 96) disc(150, 120);
+      scan.push(px);
+    }
+    const r = scan.finish();
+    expect(r.ink.filter((x) => x.kind === "vanish").map((x) => [x.from, x.to])).toEqual([[59, 60]]);
+    expect(r.stones.twoStoneRuns).toEqual([{ from: 90, to: 96, most: 2 }]);
+    expect(r.apertures[0]!.renderOpen).toBe(61);
+    expect(r.problems.some((p) => /20 frames from the hit|21 frames from the hit/.test(p))).toBe(true);
+    expect(r.problems.filter((p) => p.startsWith("ink:")).length).toBe(1);
   });
 });
 
