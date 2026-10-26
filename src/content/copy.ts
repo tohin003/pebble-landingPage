@@ -311,16 +311,13 @@ export const downloadNotice = {
 export const film = {
   h2: "Watch Pebble at work.",
   lead:
-    "A short film with music and no voiceover: one small bug fix, from a question to a tested change, then a quick tour.", // [C-FILM-1]
+    "A short trailer with music and no voiceover: three questions, Pebble's own answers, a quick tour, and one bug fix carried through to a tested change.", // [C-FILM-2]
   play: "Play the film",
   playNote: "Plays with sound.",
   chaptersHeading: "Chapters",
   transcriptLink: "Read the transcript",
   sampleData: common.sampleData,
-  posterAlt: "The Pebble film. Pebble's window on a sage-green desktop, with an edit waiting for approval.", // FILM_SPEC §15, §18: the poster is T0's frame 0
-  teaserLabel: "A silent preview of the film",
-  /** Lane F2a: the teaser's short name in its pause button ("Pause the film preview clip"). A label, not a claim. */
-  teaserName: "film preview",
+  posterAlt: "The Pebble film. A close-up of the pebble, its eyes looking out from the lower right of a dark frame.", // [C-ALT-1] the poster is the film's frame 0 (OVERRIDES §46)
 } as const;
 
 export const filmDialog = {
@@ -1185,7 +1182,7 @@ export const stickyCta = {
 } as const;
 
 // ---------------------------------------------------------------------------------------------------------------
-// Media: text alternatives for the real-UI stills, the loops and the teaser
+// Media: text alternatives for the real-UI stills and the loops
 // ---------------------------------------------------------------------------------------------------------------
 
 export const media = {
@@ -1250,7 +1247,6 @@ export const media = {
         "Two views Pebble built: the “Spending by category” chart of a Lisbon trip budget, then a Python datetime quiz.", // L8 as rendered (lane v2-loops) [C-F2B-6]
     },
   },
-  teaser: "A silent preview: an edit is approved, the tests run, and the check reads Verified.",
   loopControls: {
     pause: (name: string) => `Pause the ${name} clip`,
     play: (name: string) => `Play the ${name} clip`,
@@ -1284,7 +1280,7 @@ export const filmPage = {
   title: "Film transcript",
   h1: "The Pebble film",
   lead:
-    "A short film with music and no voiceover. This page describes it part by part, with every line of on-screen text.", // [C-FILM-1]
+    "A short trailer with music and no voiceover. This page describes it part by part, with every line of on-screen text.", // [C-FILM-2]
   play: "Play the film",
   sampleData: common.sampleData,
   transcriptHeading: "Transcript",
