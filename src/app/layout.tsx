@@ -2,7 +2,7 @@
 // the JSON-LD record (MASTER_PLAN §2.2, §7.8; docs/DESIGN.md).
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { seo, jsonLdString, softwareApplicationJsonLd } from "@/content/seo";
+import { seo, jsonLdString, openGraphFor, softwareApplicationJsonLd, twitterCard } from "@/content/seo";
 import { Footer } from "@/components/shell/Footer";
 import { ShellSync } from "@/components/shell/ShellSync";
 import { SiteHeader } from "@/components/shell/SiteHeader";
@@ -20,19 +20,8 @@ export const metadata: Metadata = {
   description: seo.description,
   applicationName: seo.siteName,
   alternates: { canonical: "/" },
-  openGraph: {
-    type: seo.openGraph.type,
-    siteName: seo.siteName,
-    locale: seo.openGraph.locale,
-    url: "/",
-    title: seo.openGraph.title,
-    description: seo.openGraph.description,
-  },
-  twitter: {
-    card: seo.twitter.card,
-    title: seo.openGraph.title,
-    description: seo.openGraph.description,
-  },
+  openGraph: openGraphFor("/"),
+  twitter: twitterCard(),
   formatDetection: { telephone: false, email: false, address: false },
 };
 

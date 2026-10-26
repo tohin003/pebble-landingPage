@@ -10,7 +10,7 @@ import Link from "next/link";
 import { chapters, filmDurationLabel, formatTimecode, timedChapters } from "@/content/chapters";
 import { filmPage, film as filmCopy } from "@/content/copy";
 import { chapterSounds } from "@/content/filmCaptions";
-import { seo } from "@/content/seo";
+import { openGraphFor, seo, twitterCard } from "@/content/seo";
 import { FilmPlayer, type TimedChapter } from "@/components/media/FilmPlayer";
 import { FilmTrigger } from "@/components/media/FilmTrigger";
 import { Article, articleStyles } from "@/components/shell/Article";
@@ -23,6 +23,8 @@ export const metadata: Metadata = {
   title: seo.pages.film.title,
   description: seo.pages.film.description,
   alternates: { canonical: "/film" },
+  openGraph: openGraphFor("/film"),
+  twitter: twitterCard(),
 };
 
 export const revalidate = 3600;

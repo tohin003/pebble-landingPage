@@ -7,7 +7,7 @@ import Link from "next/link";
 import { creditsPage } from "@/content/copy";
 import { bloubCredit, creditSections, mediaNotice, type CreditItem } from "@/content/credits";
 import { BLOUB_MIT_LICENCE } from "@/content/licences";
-import { seo } from "@/content/seo";
+import { openGraphFor, seo, twitterCard } from "@/content/seo";
 import { Article, articleStyles } from "@/components/shell/Article";
 import styles from "./credits.module.css";
 
@@ -15,6 +15,8 @@ export const metadata: Metadata = {
   title: seo.pages.credits.title,
   description: seo.pages.credits.description,
   alternates: { canonical: "/credits" },
+  openGraph: openGraphFor("/credits"),
+  twitter: twitterCard(),
 };
 
 function Credit({ item }: { item: CreditItem }) {

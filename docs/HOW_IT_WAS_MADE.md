@@ -422,8 +422,8 @@ at a time (`tools/qa/all.sh` and the extra browser checks).
 
 - The type checks pass for the site and the films. `checkAll()` (the timeline, time honesty, every framing and the
   cold open's rules) reports no problem in any aspect.
-- The Bun suites pass: 121 site and content tests and 82 engine tests.
-- gitleaks finds no secret in the repository's history (it reads 291 of the 293 commits).
+- The Bun suites pass: 124 site and content tests and 82 engine tests.
+- gitleaks finds no secret in the repository's history (it reads 292 of the 294 commits).
 - No committed file holds a local path, raw audio or a file over 45 MB.
 
 **The media**

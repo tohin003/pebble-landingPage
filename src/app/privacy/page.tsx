@@ -4,7 +4,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { privacyPage } from "@/content/copy";
-import { seo } from "@/content/seo";
+import { openGraphFor, seo, twitterCard } from "@/content/seo";
 import { Article, articleStyles } from "@/components/shell/Article";
 import styles from "./privacy.module.css";
 
@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   title: seo.pages.privacy.title,
   description: seo.pages.privacy.description,
   alternates: { canonical: "/privacy" },
+  openGraph: openGraphFor("/privacy"),
+  twitter: twitterCard(),
 };
 
 export default function PrivacyPage() {

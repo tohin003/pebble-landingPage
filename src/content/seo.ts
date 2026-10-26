@@ -67,6 +67,46 @@ const defaultJsonLdInput: JsonLdInput = {
  * The SoftwareApplication record. No aggregateRating or review: Pebble has none, and none may be invented (§7.8).
  * downloadUrl and fileSize are included only when the release is live.
  */
+/**
+ * The card's picture, src/app/opengraph-image.png, named here because a page that sets its own `openGraph` or `twitter`
+ * fields loses the file-based picture: Next.js attaches it only to the segment the file sits in (the layout, whose own
+ * hashed URL wins over this one).
+ */
+const cardImage = {
+  url: "/opengraph-image.png",
+  width: 1200,
+  height: 630,
+  type: "image/png",
+  alt: seo.openGraph.imageAlt,
+};
+
+/**
+ * One page's Open Graph fields: the site's card, with og:url set to the page's own canonical path. A page's `openGraph`
+ * replaces the layout's whole object rather than merging into it, so each route sets all of it. Without this, /film,
+ * /credits and /privacy inherited the layout's url "/", and a shared /film link opened the home page.
+ */
+export function openGraphFor(path: string) {
+  return {
+    type: seo.openGraph.type,
+    siteName: seo.siteName,
+    locale: seo.openGraph.locale,
+    url: path,
+    title: seo.openGraph.title,
+    description: seo.openGraph.description,
+    images: [cardImage],
+  };
+}
+
+/** The X card for every page: the site's text and picture (see cardImage). */
+export function twitterCard() {
+  return {
+    card: seo.twitter.card,
+    title: seo.openGraph.title,
+    description: seo.openGraph.description,
+    images: [cardImage],
+  };
+}
+
 export function softwareApplicationJsonLd(input: JsonLdInput = defaultJsonLdInput): Record<string, unknown> {
   const base: Record<string, unknown> = {
     "@context": "https://schema.org",
