@@ -319,6 +319,7 @@ plan the music in local frames (`shiftGrid(grid, −start)`). Every piece is fra
 | `world.ts` | the composed world per aspect (browser, companion, Calculator, Finder, the project, the Toolbox; the stone) |
 | `scene.ts`, `kit.ts`, `frame.ts` | the plan model; type events, anchored cues, ring-clear frames; framing, line breaking, type timing |
 | `drop.ts`, `ringBlock.ts` + `rings.ts`, `wall.ts`, `dusk.ts`, `climax.ts`, `finale.ts` | the six plans |
+| `coda.ts`, `codaChecks.ts`, `coda.cues.ts` | the post-credit scene after the end card (D157, OVERRIDES §62), its checks and its stone's cues; drawn by `views/CodaView.tsx` |
 | `sweep.ts` | the title's sage sweep and its 15 % cap (L3a) |
 | `pieces.cues.ts` | the stone's cue templates (checked by the engine tests, D6) |
 | `qa.ts` | `planQa()` (a plan as the foundation's `FilmTimelineQa`) and `checkPlan()` (every foundation check, plus the set pieces': band contrast, takes, type in the safe area, type over UI being read (an error), type over any other UI plane (a warning; over a slot, a note to check the 2.0.0 capture), UI read size, UI read wholly in frame, music placement, cues, the wall, small print; the checks added after the craft review, below; and fix round 1's `slotLabels`: a frame of slots always shows a slot's label whole, a read slot its own) |
@@ -492,6 +493,25 @@ within a few per cent of their layout while read and stay in the safe area (chec
 at the very end, after the music's decay, settles to a still, the one declared wait. The piece ends after the ending's
 decay and 0.5–1 s of room tone. **To fit it:** start it where the wall ends; `hit` at least ~4 s in; time the track's
 real ending back so its last strong note lands on `lastNote` (a splice at a real stop, never a fade).
+
+### 7. The post-credit scene — `planCoda({ w, h, fps, endCard, align? })` (`coda.ts`, `codaChecks.ts`, `coda.cues.ts`)
+
+The person's sneak peek of a coming feature (D157, OVERRIDES §62; the design lane's POSTCREDIT_DESIGN.md), in the main
+film only (not the tour cut, the 40-s cut or the shorts), after the end card's true ending: page 2's lines leave, a ring
+iris (E-move) closes onto the end card's stone, a breath of night green (the dark --bg, a declared wait), an iris opens
+from the same stone asleep on the riverbed at night (the Companion's own `sleepy` pose, created asleep, in the page's
+dark palette, one engine blink placed alone in line 1's hold), and "Pebble rests." / "Soon, it will learn while it
+does." / "Not built yet." land one at a time (1:1 and 9:16 break the second after "learn"), the scene's one sound (the
+score lane's: the title's CC0 stone tap at a whisper) on the second; a push at 0.35 px a frame (0.30 in 1:1) eases to
+the film's last breath. Its frames 0–33 ARE the end card, played on past its end by `CodaView`
+(`extra.coda.endCard.extended`): the end card's plan is untouched, so the X version (the main film with the coda is
+over X's 140 s) is the master cut at the coda's first frame (`codaPlacement`, `xCutFrames`). A flash model (6 × 6 tiles, qa/luma.ts's rule)
+lengthens the breath until no tile the iris-out darkened brightens again within a second (9 frames in 9:16: 7.75 s in
+all, on one timeline). `codaChecks()`, in `checkPlan()`, holds its words (§62's four phrases, numbers, versions, dates,
+names), reading holds, one stone, the camera rule (two declared waits only), the pose, no mock screen, the lockup,
+flashes and the sound and captions it hands on; each has a canary in `tests/coda.test.ts`. The night plate is
+`video/public/desktop/riverbed-dark-2400.jpg` (gitignored; `capture/riverbed-plate.mjs dark`, then `sips`): until it
+is made, the view draws the wallpaper's mid tone.
 
 ### The demo and the checks
 
