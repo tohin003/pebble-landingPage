@@ -1,7 +1,7 @@
 """Build the sound-effect kit from a plan: trim, fade, normalise and measure every take, and write KIT.json.
 
 Each plan entry names a source and the edits. Sources:
-  {"provider": "mixkit", "key": "<item id>"}             a file fetched by fetch_items.py (provenance_mixkit.json)
+  {"provider": "mixkit", "key": "<item id>"}             a file the person downloaded by hand (OVERRIDES §55; recorded in provenance_mixkit.json)
   {"provider": "kenney", "key": "<pack>/<file.ogg>"}     a CC0 Kenney file on disk (.work/audio/kenney)
   {"provider": "designed", "recipe": "sub_glide" | "air" | "shimmer", "params": {...}}   made from code, no samples
   {"provider": "derived", "from": "<kit id>" | "from_source": {...}, "op": "reverse_tail" | "preverb" | "reverb"}
