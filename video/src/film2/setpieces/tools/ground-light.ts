@@ -183,7 +183,17 @@ const sections: Partial<Record<ArcSection, RGB>> = {};
 const table: Record<string, unknown> = {};
 for (const sec of ["morning", "warm", "day", "dusk", "evening", "page"] as ArcSection[]) {
   const rs = results.filter((r) => r.section === sec && r.groundShare >= 0.02);
-  if (!rs.length) continue;
+  if (!rs.length) {
+    // said, not skipped (28 Oct: the 16:9 and 1:1 reels' climax showed no ground on any sampled frame, all window and
+    // card, and the section simply went missing from the report): a section with no ground in frame is not judged
+    const all = results.filter((r) => r.section === sec);
+    if (all.length) {
+      const most = Math.max(...all.map((r) => r.groundShare));
+      table[sec] = { frames: all.map((r) => r.frame), unmeasured: true, mostGroundShare: most };
+      console.log(`${sec.padEnd(8)} not measured: none of its ${all.length} sampled frames shows 2 % of ground (at most ${(100 * most).toFixed(1)} %: the frame is window and card)`);
+    }
+    continue;
+  }
   const rgb: RGB = [median(rs.map((r) => r.rgb[0])), median(rs.map((r) => r.rgb[1])), median(rs.map((r) => r.rgb[2]))];
   sections[sec] = rgb;
   const l = levels(rgb);
