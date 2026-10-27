@@ -116,7 +116,7 @@ phase (`"all"`, the convergence). `layer: "ground"` (default) draws it behind ev
 
 | Kind | Build it with | Frames (60 fps) |
 |---|---|---|
-| 1 The ring (iris, mask, hairline) | the ring phases above; `ringIris({ center, featherPx, startRadiusPx })` for a seam | iris 20–36, burst 60–90 |
+| 1 The ring (iris, mask, hairline) | the ring phases above; `ringIris({ center, featherPx, startRadiusPx, ease })` for a seam: `ease` is `"move"` by default (an iris between places, E-move, lead ruling §52); `"arrive"` only on a seam that declares one of the cue's marked hits (`qa/checks.ts` irisEase refuses it otherwise, CR-21) | iris 20–36 (E-move 24–36), burst 60–90 |
 | 2 Momentum cut | `momentumCut()`; `<CutTheCurve>` for a subject (a card, the pointer) | out 12–24 on E-leave; in matched |
 | 3 The product's own motion | `<RecordedTake frames sourceFps at inPoint>` (1×, no rate parameter); `askCardPlaneStyle()` / `<AskCardEntrance>` for the entrance every ask shares | as recorded |
 | 4 Push-in and pull-back | `camera/moves.ts`: `pushIn`, `pushInCarried`, `pullBack`, `dolly`, `crane`, `travelTo`, `leave` | 90–240; 1.00 → 1.06–1.15 |
@@ -166,10 +166,18 @@ capped; no cyan gradients or neon; fromTo tweens instead of onUpdate callbacks).
 ## Light and depth (`light/`, §5.4)
 
 - **Grades** (`grades.ts`): `GRADES.morning | warm | day | dusk | evening | page | night` (numbers: brightness ≤ 1 on light
-  grounds so the page never clips, contrast, saturation, warmth and a tint as soft-light washes, `groundDim`, the key
-  light above left, a shade-green vignette). `gradeAt(frame, initial, cues)`; `mixGrade()`; `checkLightCues()` refuses a
-  step (< 30 frames) or overlapping cues; `gradeColor()` and `gradeLuminance()` model the result for the checks.
+  grounds so the page never clips, contrast, saturation, warmth and a tint as soft-light washes, the key light above
+  left, a shade-green vignette) and, since the craft review (CR-14), **the light in the ground**: `ground`, linear-light
+  gains on the riverbed alone (warm `[1.12, 0.985, 0.8]`, dusk `[0.7, 0.74, 0.9]`, evening `[1.04, 0.9, 0.72]`), and `ui`,
+  a few per cent of the same light on the windows, so the UI keeps its own colours. A 14 % soft-light wash barely moved
+  the near-white ground ("warm" measured cooler than day); gains in linear light do. `gradeAt(frame, initial, cues)`;
+  `mixGrade()`; `checkLightCues()` refuses a step (< 30 frames) or overlapping cues; `gradeColor()`, `groundSample()` and
+  `gradeLuminance()` model the result; `modelArc()` and `lightArcProblems()` hold the arc to the lead's targets (warm and
+  evening +10 levels R − B on day, dusk 10 % darker and bluer, evening slightly darker, neighbours ΔE ≥ 5), on the model
+  and, through `setpieces/tools/ground-light.ts`, on a render's ground pixels.
 - `<GradeLayer grade>`: the CSS version (filter chain, washes, key light, vignette with eased stops). Keep type outside.
+  `<GroundLight gains>` is the gains as an SVG colour matrix in linearRGB (`setpieces/views/PieceView.tsx` wraps the
+  ground world in the `ground` gains and the foreground world in the `ui` gains).
 - **The LUT** (`lut.ts`): the film look (shadows lifted 2 % toward the shade green, a soft shoulder above 0.88,
   saturation −5 % in linear light), `filmCube()` / `gradeCube()`; write it with
   `bun video/src/film2/light/write-lut.ts .work/film2/pebble-film-33.cube`. **The finish in FFmpeg** (one heavy job):
@@ -192,11 +200,15 @@ capped; no cyan gradients or neon; fromTo tweens instead of onUpdate callbacks).
 
 - `<FontGate>` holds the render until Fraunces, Inter and Geist Mono have loaded (SplitText must split identical lines
   in every render tab). Put all type inside one gate, and never inside CameraMotionBlur.
-- `<KineticLine text tier at exitAt? entrance? exit? sizeT? align? style>`: SplitText reveals under masks, through
-  `@remotion/gsap`'s `useGsapTimeline()` (fromTo at absolute positions, no callbacks). Entrances: `lineRise` (30 frames,
-  lines 8 apart: the expressive default), `wordRise`, `wordBlur` (6 → 0 px over 9 frames, words 4 apart), `lineBlur`
-  (8 frames: the functional default). Exits are 40–50 % shorter: `blur`, `lift`, or `camera` (none of its own). A
-  landed line is dead still.
+- `<KineticLine text tier at exitAt? entrance? exit? sizeT? align? style exitFrames? blockWords?>`: SplitText reveals
+  under masks, through `@remotion/gsap`'s `useGsapTimeline()` (fromTo at absolute positions, no callbacks). Entrances:
+  `lineRise` (30 frames, lines 8 apart: the expressive default), `wordRise`, `wordBlur` (6 → 0 px over 9 frames, words 4
+  apart), `lineBlur` (8 frames: the functional default). Exits are 40–50 % shorter and never under 10 frames
+  (`type/exits.ts`, CR-03): `blur` (words blur to 8 px and fade, leading with the first, each over 60 % of the exit on
+  power2.in), `lift` (to −140 % on E-leave, faded by 85 % of it), or `camera` (none of its own: the line is set in the
+  world and leaves with it). A block of 12 words or more (`blockWords`, the whole spec's) blurs out over 14 frames, each
+  word over 70 % of it on power1.in: at 12 frames on power2.in the honest line let 37 % of a word's ink go in one frame,
+  a tile step of 3.6 levels on the 9:16 reel. A landed line is dead still.
 - `<Cascade items start beats? holdLast? ui?>` and `cascadeSchedule()`: one stage, 8 out and 8 in on E-move (E-leave
   out and E-arrive in put the two fastest frames at the hand-off, which the pixel check read as a pop), each swap
   landing 2–3 frames before a beat; `checkCascade()` refuses items over four words and short holds.
@@ -303,18 +315,20 @@ plan the music in local frames (`shiftGrid(grid, −start)`). Every piece is fra
 |---|---|
 | `music.ts` | the music grid: `steadyGrid()`, `gridFromMap()` (a `map.json` stretch), `shiftGrid()`, `place()`, `nextPoint()`, `prevPoint()`, `halfBars()`, `leadFrames()` |
 | `take.ts` | takes at 1×: `TakeManifest` (events, views), `solveInPoint()`, `eventFrame()`, `checkTakeUse()`; the placeholder manifests RS-9, HS-F, RS-W, HS-B3, RS-13 |
-| `standins.ts` | the PLACEHOLDERS: published stills (`STILL`), labelled slots (`SLOT`), the wall's 28 cells (`CELL_SOURCES`) |
+| `standins.ts` | the PLACEHOLDERS: published stills (`STILL`), labelled slots (`SLOT`, each label at its `focus`, laid out by `slotLabelLayout()` for the view and the checks alike), the wall's 28 cells (`CELL_SOURCES`) |
 | `world.ts` | the composed world per aspect (browser, companion, Calculator, Finder, the project, the Toolbox; the stone) |
 | `scene.ts`, `kit.ts`, `frame.ts` | the plan model; type events, anchored cues, ring-clear frames; framing, line breaking, type timing |
 | `drop.ts`, `ringBlock.ts` + `rings.ts`, `wall.ts`, `dusk.ts`, `climax.ts`, `finale.ts` | the six plans |
 | `sweep.ts` | the title's sage sweep and its 15 % cap (L3a) |
 | `pieces.cues.ts` | the stone's cue templates (checked by the engine tests, D6) |
-| `qa.ts` | `planQa()` (a plan as the foundation's `FilmTimelineQa`) and `checkPlan()` (every foundation check, plus the set pieces': band contrast, takes, type in the safe area, type over UI being read (an error), type over any other UI plane (a warning; over a slot, a note to check the 2.0.0 capture), UI read size, UI read wholly in frame, music placement, cues, the wall, small print; and the checks added after the craft review, below) |
-| `ground.ts`, `review-ledger.ts` | the riverbed's extent and depth, shared by the view and the coverage check; the open findings of the craft review |
+| `qa.ts` | `planQa()` (a plan as the foundation's `FilmTimelineQa`) and `checkPlan()` (every foundation check, plus the set pieces': band contrast, takes, type in the safe area, type over UI being read (an error), type over any other UI plane (a warning; over a slot, a note to check the 2.0.0 capture), UI read size, UI read wholly in frame, music placement, cues, the wall, small print; the checks added after the craft review, below; and fix round 1's `slotLabels`: a frame of slots always shows a slot's label whole, a read slot its own) |
+| `ground.ts`, `review-ledger.ts` | the riverbed's extent and depth, sized from each shot's widest pose and shared by the view and the coverage check (CR-02); the open findings of the craft review, and the ones fix round 1 closed |
+| `joins.ts` | the joins between pieces (CR-06): `cutVelocity()`, `shareGround()`, `checkJoins()` (continued worlds continuous, cuts velocity-matched and never between rests, each piece readable within 6 frames) |
 | `align.ts` | one timeline for all three aspects: `alignAspects()` and `timelineDiffs()` |
 | `views/` | `PieceView`, `ShotView`, `TypeView`, `StandInViews` (stills, slots with a ticking source time, take views), `VeilCast`, `SageSweep`, `WallView` |
 | `demo/` | the demo reels and the measured stretches they are fitted to (`grids.ts`) |
 | `tools/make-cells.ts` | makes the wall's cell thumbnails into `video/public/ui/f2-cells` (gitignored) |
+| `tools/ground-light.ts` | the light arc on a render (CR-14): the median of the ground's pixels per section, held to `lightArcProblems()` (a heavy job) |
 
 **The music rule (lead ruling L3d) is in every plan.** An event is placed with `place(earliest, grid, { level, frames,
 lead })`: its first readable frame lands on the first point of `level` (beat, half bar, bar, phrase) at or after the
@@ -331,24 +345,33 @@ same frames, and `timelineDiffs()` proves it (tested on the demo and on random g
 starts of lines that break differently may differ.
 
 **Takes never speed up.** A take's in-point is solved so its event lands on its beat (`solveInPoint`); the take then
-plays at 1× from its first shown frame. One recording may feed several planes (a view each: RS-9 is the companion's card
+plays at 1× from its first shown frame. A recorded take is conformed to 60 fps by its timestamps only, and
+`checkTakeManifest()` refuses one whose conform record is missing, made any other way (an input-side `-r`, `setpts`),
+whose durations differ by more than a frame, or whose events sit more than a frame off their wall-clock times
+(CR-12; `.work/real-takes/RUNBOOK.md` §6.2.1); `checkPlan()` runs it on every take a plan uses. One recording may feed several planes (a view each: RS-9 is the companion's card
 and the browser), all on one clock. Until the 2.0.0 takes exist the views are published stills or labelled slots, and a
 slot shows the take's source time ticking at 1× (`src 0:09.40 · 1×`), so the in-points can be seen on the reel.
 
 ### 1. The Drop — `planDrop({ w, h, fps, hit, grid?, take?, lines?, apertureCenterY?, band? })`
 
 `hit` is the track's entrance (a local frame): the person's Allow lands on it (RS-9's in-point is solved), a ring bursts
-from the stone (E-arrive: the Drop's one snap), the frame opens with it from the narrow aperture (16:9 from 2.39:1, 1:1
-from 16:9, 9:16 from 4:5) over 34 frames from the frame the ring reaches its edge, the light warms over 60 frames, one
-code light leak plays (one of the film's two). "Now it works across your Mac." and "Where you allow it." each land on a
-beat once the burst has left their rect, and are held together (3.6 s and ≥ 3.0 s: the reference's 4.8 and 4.3 s would
-still be on screen when the reveal ring passes them). At hit + 4 s the camera pulls back in log space to the whole Mac
-(160 frames) and glides toward the browser; a second ring travels out through the world and each dimmed place lifts into
-light as it passes. The piece ends on the next phrase line at least 7.5 s after the hit (up to 4 s later), else a bar
-line. The frames before `hit` are the pre-roll: the companion's card waiting in the aperture, and S05's lead-in line
-(L04) in a band on the night green, gone before the burst could reach it (`lines.leadIn: null` drops it; it needs about
-150 frames of pre-roll). **To fit it:** start the piece `hit` frames before the entrance's downbeat; its `exit` (pose and
-velocity) continues into Ring 1 in the same world without a cut.
+from the stone (E-arrive: the Drop's one snap), and the frame opens **on the hit's next frame in every aspect** (16:9 from
+2.39:1, 1:1 from 16:9, 9:16 from 4:5; CR-07: it used to wait for the ring to reach the edge, 24 frames late in 9:16) over
+34 frames on power2.out, leading the ring out; the light warms over 60 frames; one code light leak plays (one of the
+film's two) once the bands have cleared, never over them. The frames before `hit` are the pre-roll: the card the Allow
+answers is **read in the aperture at 28 px or more** (12 words declared; CR-09), pushing in and drifting up through the
+room the aperture leaves it (a pre-roll longer than the read can glide comes in from wider first), with S05's lead-in
+line (L04) in a band on the night green, gone before the bands move (`lines.leadIn: null` drops it; it needs about 150
+frames of pre-roll). The companion is RS-9's own view (CR-11, CR-18): a slot holding its card until the receipt, then a
+real 1.0.x frame of it at work, switched in with a hard cut on the event. The camera hands off to the opened framing
+as the frame opens and drifts out at 0.4 px a frame through "Now it works across your Mac." and "Where you allow it."
+(CR-04: it froze here), each landing on a beat once the burst has left its rect and the bands have cleared, held
+together (3.6 s and ≥ 3.0 s). At hit + 4 s the camera pulls back in log space to the whole Mac, composed dense
+(`world.ts`: the browser, the project and the Toolbox at 25–40 % of the frame's width at the wide, overlapping, the
+context windows at their own parallax depths; CR-16) and glides toward the browser; a second ring travels out through
+the world and each dimmed place lifts into light as it passes. The piece ends on the next phrase line at least 7.5 s
+after the hit (up to 4 s later), else a bar line. **To fit it:** start the piece `hit` frames before the entrance's
+downbeat; its `exit` (pose, velocity, riverbed and light) continues into Ring 1 in the same world without a cut.
 
 ### 2. A ring block — `planRingBlock({ w, h, fps, content, grid?, entry? })` with `RingContent` (`rings.ts`)
 
@@ -365,9 +388,14 @@ dollies in to reading size (≥ 28 px at 1080, ≤ 2.4×); the take's receipt ev
 have been read, and the ring returns to the stone on that beat; the camera glides to the receipt (no freeze, no mark, no
 hit) and holds it for its reading time; a momentum cut on a bar line takes it to the cascade's stage, whose swaps land
 2–3 frames before beats; the block ends on the bar line after the last item's hold. `entry` continues a previous piece's
-camera (the same world). **To fit it:** start
-it on a phrase downbeat, pass the grid; if its length (`plan.duration`) is longer than the phrase you have, lengthen the
-music at a bar line or move the block (§3.2: never a hold).
+camera (the same world: the demo's Ring 4 continues the Drop's). **Every plane of the place is a view of one take, on
+one clock** (CR-11): the window, the ask (the history's sentence that persists whatever the person clicks, never a live
+button beside a run), the act and the receipt inside it, each cropped at a line boundary and framed whole while its text
+is legible (CR-05), every legible word counted. The reading holds glide (0.4 px a frame); the stage is entered on a
+glide at the cut's speed (never landing at rest); the swaps cross at mid-blur with a short matched slide, so the stage
+never empties (CR-17); the fixed line and the last item leave with drawn blur exits on the stage's E-leave, before the
+cut (CR-03). **To fit it:** start it on a phrase downbeat, pass the grid; if its length (`plan.duration`) is longer than
+the phrase you have, lengthen the music at a bar line or move the block (§3.2: never a hold).
 
 ### 3. The wall — `planWall({ w, h, fps, grid?, centre?, entry?, minS? })`
 
@@ -379,41 +407,58 @@ on purpose. Every cell's text stays under 16 px at 1080 on every frame (checked)
 
 ### 4. The Dusk passage — `planDusk({ w, h, fps, grid?, focusLine? })`
 
-⌘K (HS-B3: its Enter is solved onto a beat; the palette fades in, a placeholder of its own entrance; the typed word and
-the lit row read at ≥ 28 px), a slow push-in and the
-light cooling to dusk over 6.1 s (day to dusk is 0.33 of luminance and the film allows one large change a second); a rack
-focus into the Veil rendered with Pebble's own code (`views/VeilCast.tsx`: `stealthVeil.ts` and `veilDraw()`, the
-1.25-s cast), with "A render, not a screen recording." beside it from the rack's cross to the cut; a momentum cut on a bar
-line into a crane over RS-13 (the Dock icon leaves on a beat; the crane arrives on the menu-bar icon's new state). The
-honest line, word for word from `STEALTH_HONEST`, holds from the rack's first frame (just after the Enter, as the palette
-defocuses under it) to the passage's end (≥ 12 s, across the rack and the cut; it needs 9). The crane frames the Dock and
-the menu bar above the line's band; the Dock is marked `textless` (icons), so the line may pass over it. No leak, sweep or rim in the passage; L23 (the focus line) only with
-`focusLine: { text, releaseNotesConfirmed: true }`, default out. **To fit it:** start it on the quiet section's first
-downbeat; it ends on a bar line.
+The passage opens **on HS-B3's own frame of the workspace** (CR-06: it opened on bare ground), entered with the previous
+piece's momentum and pushing on (`cutIn`); ⌘K (its Enter solved onto a beat; the palette's own entrance, a placeholder;
+the typed word and the lit row read at ≥ 28 px) and the light cooling to dusk over 6.1 s; a rack focus into the Veil
+rendered with Pebble's own code (`views/VeilCast.tsx`: `stealthVeil.ts` and `veilDraw()`, the 1.25-s cast), **in macro:
+its body 47 % of the frame's height, pushing in** (CR-19: it filled 19 % of the width), with "A render, not a screen
+recording." beside it, set in the render's world (`TypeSpec.carry`): on screen exactly as long as the render, and kept
+in the safe area while it is read; the camera carries both out of the frame and the cut follows as the last of them
+leaves (8 px past the edge). A momentum cut on a bar line into RS-13 (the Dock icon leaves on a beat), a crane up that
+starts late enough to cut, on a beat, while the Dock is still in frame and clear of the honest line's band (CR-19: the
+crane passed empty ground, the empty middle is skipped), into its last stretch at 3.5× on the menu-bar icon's new
+state (77 px at 1080). The honest line, word for word from `STEALTH_HONEST`, holds from the rack's first frame to the
+passage's end (≥ 12 s across the rack and both cuts; it needs 9). No leak, sweep or rim in the passage; L23 (the focus
+line) only with `focusLine: { text, releaseNotesConfirmed: true }`, default out. **To fit it:** start it on the quiet
+section's first downbeat; it ends on a bar line, leaving on an E-leave into the next piece's cut.
 
 ### 5. The climax shell — `planClimax({ w, h, fps, peak, grid?, take?, entry? })`
 
-S23 ("Glaze"): the ask card arrives (the shared entrance, a placeholder of the recording's own), readable from its first
-frame, a carried push-in, "Its own tools." on a beat. A momentum cut on the last beat at least 0.75 s before `peak` (so
-the card lands 0.75–1.25 s into the take, §3.6 chain 11) into S24 ("Kiln"): RS-W's in-point is solved so the kept card
-lands exactly on `peak`; the avatar turns happy on the take's own event; the camera glides through the landing (never
-still, tested) and then pushes in until the whole card, Remove included, reads at ≥ 28 px; "Kept on its own only after an
-independent check." lands on a beat beside it and holds 6.5 s. The take's frames fill the slot from a frame sequence
-(`TakeManifest.pattern`, views cropped from it) as soon as RS-W is recorded. **To fit it:** `peak` is the peak's first
-strong downbeat in local frames; the piece needs about 3.5 s before it.
+S23 ("Glaze") **opens on its take** (CR-06: it opened on 16 frames of its slot): HS-G's ask card is 4 frames into its
+entrance on the cut, entered with the previous piece's momentum, gliding into a push that meets it; "Its own tools."
+lands on a beat and leaves with a drawn blur exit over before the cut (CR-03: its "camera" exit drew nothing). A momentum
+cut on the last beat at least 0.75 s before `peak` (so the card lands 0.75–1.25 s into the take, §3.6 chain 11) into S24
+("Kiln"): RS-W's in-point is solved so the kept card lands exactly on `peak`; the avatar turns happy on the take's own
+event; the camera glides through the landing, pushes in until the card reads at ≥ 28 px, and **keeps gliding across the
+whole hold** to its E-leave (a push where the card has room, else a slow pan away from the line; CR-04: it froze for 6.2
+s on the card). "Kept on its own only after an independent check." lands on a beat beside it and holds 6.5 s. The
+Workshop's cards are labelled slots at the 2.0.0 cards' sizes (the 1.0.x approval and command cards stood in, with 82
+and 78 legible words of other states; CR-05); a view that shows nothing yet draws nothing (no card-shaped box before the
+card lands). The take's frames fill the slots from a frame sequence (`TakeManifest.pattern`) once RS-W is recorded.
+**To fit it:** `peak` is the peak's first strong downbeat in local frames; the piece needs about 3.5 s before it.
 
 ### 6. The convergence, the title and the end card — `planFinale({ w, h, fps, hit, grid?, lastNote?, decayS?, roomToneS?, musicCredit?, centre?, entry? })`
 
 The wall's cells travel inward along their rings and shrink into the stone (E-leave, accelerating) while rings return to
-the stone in a train and the camera pushes in; the light goes from evening to the page; a ring iris on E-move (30 frames,
-the lead's ruling) opens the sage-white page from the stone; "Pebble" and "2.0" rise to land ON `hit` (the final strong
-downbeat), the stone at rest beside them; one sage sweep crosses the wordmark 1 frame after it (`SageTextSweep`: inside
-the glyphs only, its alpha capped so their L* rises by at most 15, tested); the README's line rises beneath. Page 1: the
-facts rise from masks 8 frames apart at one size, each limit beside its promise, landing on `lastNote` (the track's last
-strong note); page 2: "Shown with sample data.", the method line (L4: "Real Pebble 2.0 screens, composed in one space.
-Nothing Pebble does is sped up.") and the small print, with the music credit. The piece ends after the ending's decay and
-0.5–1 s of room tone. **To fit it:** start it where the wall ends; `hit` at least ~4 s in; time the track's real ending
-back so its last strong note lands on `lastNote` (a splice at a real stop, never a fade).
+the stone in a train and the camera pushes in (its look waits for the montage decision, OVERRIDES §54–§57: CR-08); the
+light goes from evening to the page. **One stone through the iris** (CR-01): the push lands the world's stone exactly on
+the title stone's pose, at its size and with its velocity, 2 frames before the iris starts, and moves with it through
+it; the iris (E-move, 30 frames) opens the sage-white page from the stone; "Pebble" and "2.0" rise to land ON `hit`, the
+stone at rest beside them; one sage sweep crosses the wordmark 1 frame after it (`SageTextSweep`: inside the glyphs, its
+alpha capped so their L* rises by at most 15, tested); the README's line rises beneath. Page 1: the facts rise from masks
+at one size, **each its own span, rows centred with `FACT_GAP_EM` (1.25 em) between facts** (CR-20: one string with three
+spaces collapsed to "Apache-2.0 No telemetry."; 9:16 sets one a line), each limit beside its promise, landing on
+`lastNote`; page 2: "Shown with sample data." and the method line (L4: "Real Pebble 2.0 screens, composed in one space.
+Nothing Pebble does is sped up."), held for their reading time. **The small print leaves the film's frames** (CR-10, §55:
+102 words, the honest line among them, sat on screen for 6 s): the honest line is held 12 s in the Dusk passage where
+Stealth shows, and the credits (bloub's, the music's CC BY line, the trademark lines, the sign-in and signing limits) are
+`FILM_CREDITS`, for the description, the captions and the site's credits page. **The pages glide** (OVERRIDES §58): the
+page is one rigid world, the stone and every line set in it, pushing in at 0.3 px a frame at the frame's corners from the
+iris to the film's last breath; each page's lines are exact at the middle of their page (`extra.anchors`), so they sit
+within a few per cent of their layout while read and stay in the safe area (checked on every frame); only the room tone
+at the very end, after the music's decay, settles to a still, the one declared wait. The piece ends after the ending's
+decay and 0.5–1 s of room tone. **To fit it:** start it where the wall ends; `hit` at least ~4 s in; time the track's
+real ending back so its last strong note lands on `lastNote` (a splice at a real stop, never a fade).
 
 ### The demo and the checks
 
@@ -424,22 +469,22 @@ runs `checkPlan()` on every piece in every aspect, for the demo's stretches and 
 
 ```
 bun test video/src/film2
-bun video/src/film2/setpieces/tools/check-setpieces.ts [16:9|1:1|9:16] [--verbose]   # every check, and the music report
+bun video/src/film2/setpieces/tools/check-setpieces.ts [16:9|1:1|9:16] [--verbose]   # every check, the joins, the music report
 bun video/src/film2/setpieces/tools/reel-marks.ts 16:9                               # cuts and still holds, for the sheets
 /usr/sbin/taskpolicy -c utility bun video/src/film2/setpieces/tools/make-cells.ts    # once: the wall's thumbnails
 scripts/heavy.sh f2-sp-demo16 /usr/sbin/taskpolicy -c utility \
-  bash video/src/film2/render/render-segments.sh F2-SetPieces-Demo .work/film2/sp/demo16 5692 480 0.5
+  bash video/src/film2/render/render-segments.sh F2-SetPieces-Demo .work/film2/sp3/demo16 5919 480 0.5
+scripts/heavy.sh f2-ground16 /usr/sbin/taskpolicy -c utility \
+  bun video/src/film2/setpieces/tools/ground-light.ts .work/film2/sp3/demo16/F2-SetPieces-Demo.mp4 16:9   # the light arc
 ```
 
-**What the demo shows (26 Oct, half size, 60 fps, 5,702 frames each; gitignored evidence in `.work/film2/sp/`).**
-16:9, 1:1 and 9:16 rendered in 185–187 s each through heavy.sh (segments of 480 frames; free disk moved by at most
-43 MiB a segment); all three pass the pixel checks (`qa/luma-scan.ts`): no pops away from cuts, no dead second, no dip at
-a seam, at most one flash a second. Sheets and seam strips (`look/sheet.jpg`, `look/seam-<frame>.jpg`) were looked at, and fixed where
-they showed a fault: multi-line type running as one line (SplitText), a line outliving its shot, an empty cascade
-stage after the cut, a card popping in at a take's start, two stones at the title's iris, a palette thrown in too fast.
-The model checks (`check-setpieces.ts`) pass in every aspect, with only notes where type crosses a slot, to check on the
-2.0.0 captures. (Those passes were before the craft review: the checks added after it fail these plans and reels where the
-review saw its defects; see "Checks added after the craft review" below.)
+**What the demo shows** now is in "Fix round 1" below (27 Oct: 5,919 frames a reel, every check passing on the plans
+and on the three reels). **Before the craft review** (26 Oct, 5,702 frames each; the reels since deleted, their scans and
+sheets kept in `.work/film2/sp/`), the three reels passed the whole-frame pixel checks of the time (no pops away from
+cuts, no dead second, no dip at a seam, at most one flash a second), and the sheets and seam strips had been looked at
+and fixed where they showed a fault (multi-line type running as one line, a line outliving its shot, an empty cascade
+stage after the cut, a card popping in at a take's start, two stones at the title's iris, a palette thrown in too
+fast); the checks added after the review failed those plans and reels where it saw its defects (below).
 
 **Placeholders.** Every picture of Pebble in the set pieces is a real capture of a published release (1.0.x–1.5.0,
 cropped, never stretched, never showing a usage or timing line) or a labelled slot for what has no published capture
@@ -494,9 +539,10 @@ scripts/heavy.sh f2-scan16 /usr/sbin/taskpolicy -c utility \
 pairs listed there, and each listed finding must still fire, covering the frames the review saw: an entry that stops
 firing fails the tests, so the ledger only shrinks and every fix is a visible edit to it. `check-setpieces.ts` and
 `luma-scan.ts` ignore the ledger and fail while anything is open. A fix counts only when they pass AND the frames look
-right (§55). Entries marked `waitsForMontage` (the wall, the convergence) wait for the montage decision (§54).
+right (§55). Entries marked `waitsForMontage` (the wall, the convergence) wait for the montage decision (§54). After fix
+round 1 (below) one entry is left: the foundation demo's own camera floor (S2 and its title), outside the set pieces.
 
-**On the current plans (27 Oct), every piece fails in every aspect** (`check-setpieces.ts --summary`: cameraFloor 22,
+**On the plans before fix round 1 (27 Oct), every piece failed in every aspect** (`check-setpieces.ts --summary`: cameraFloor 22,
 legibleWords 31, groundCoverage 12, planesInFrame 12, askActClock 6, typeExits 6, smallPrintHolds 6, hitSync 4,
 stoneCount 3), where the review saw it:
 
@@ -513,7 +559,7 @@ stoneCount 3), where the review saw it:
 | CR-11 a still of the held card above a live, verified run | `askActClock`: Ring 4 303–929; also the Drop's 1.0.x panel around RS-9's card |
 | CR-21 `ringIris()` defaults to E-arrive | `irisEase`: the foundation demo's iris at 1358 |
 
-**On the current reels (27 Oct, `luma-scan.ts --marks`, 8–12 s a reel through heavy.sh), every reel fails** where the
+**On the reels before fix round 1 (27 Oct, `luma-scan.ts --marks`, 8–12 s a reel through heavy.sh), every reel failed** where the
 review saw its defects; the only other things they report are the abrupt events after the table:
 
 | Review | Caught on the render |
@@ -542,6 +588,107 @@ that vanish on one) and the frame's opening on the hit; a lift's descender resid
 2050) is not caught; stone blobs are dark pixels at grey 140 or under; `planesInFrame` and `legibleWords` use the body
 text's size, so the Drop's companion panel (about 20 px) sits on the line.
 
+## Fix round 1 (27 Oct): the craft review's findings, fixed
+
+The fixes OVERRIDES §55 lists under "Fix now", to its targets, and the two rulings of §58 (the title and the end card
+glide; `readPx` is the measured truth). Waiting for the montage decision (§54–§57), not touched: CR-08 (the
+convergence's look), the wall's parts of CR-02 and CR-16, and CR-06's S24 → S25 pull-back into the wall. CR-13 (Mixkit)
+and CR-22 (the pre-push guard) are the lead's. Every check, old and new, passes the plans in all three aspects
+(`check-setpieces.ts`: every piece, the joins and one timeline), the tests hold them (`tests/fix-round1.test.ts` adds a
+canary for each new rule), and the three reels were rendered again and looked at where the review saw each defect.
+
+| Finding | What changed | Held by |
+|---|---|---|
+| CR-01 two stones at the iris | the convergence lands the world's stone on the title stone's pose, size and velocity 2 frames before the iris; both cameras then zoom alike | `stoneCount`; stones on the reels |
+| CR-02 the riverbed's edge | each shot's riverbed is sized from its own widest pose, padded 5 %, at the image's 1.6:1 (`ground.ts groundRectOf`); joined shots share one (`joins.ts shareGround`) | `groundCoverage` |
+| CR-03 lines vanishing | every exit is drawn and at least 10 frames (`type/exits.ts`); "Its own tools." blurs out before its cut; the cascade's last item and fixed line leave on the stage's E-leave; a lift goes to −140 %, fading out by 85 % of it; a block of 12 words or more (the honest line) blurs out over 14 frames, each word over 10 on power1.in; the Veil's label is set in the render's world and leaves with it | `typeExits`; tests; ink and tile pops on the reels |
+| CR-04 a frozen camera | every reading hold glides 0.3–0.6 px a frame at the corners (`frame.ts holdGlide`, `glideLz`); the climax's push carries across the whole hold; momentum cuts land on a glide, never at rest | `cameraFloor` |
+| CR-05 cards cut by the frame | Ring 4's ask, act and receipt are crops of HS-F's views at line boundaries, framed whole; the climax's cards are slots at the 2.0.0 sizes | `planesInFrame`, `legibleWords` |
+| CR-06 undesigned joins | every piece has an entry and an exit pose and velocity: the Drop's world continues into Ring 4, the cascade, the crane and the climax leave on E-leaves into momentum cuts the next piece enters at the same speed; Dusk opens on HS-B3's workspace, the climax on its card arriving | `joins.ts checkJoins` (in `check-setpieces.ts`) |
+| CR-07 9:16 late on the hit | the frame opens on the hit's next frame in every aspect; the leak plays once the bands have cleared | `hitSync`, `hitSyncAcross`; bands on the reels |
+| CR-09 the ask never readable | the pre-roll reads the card at 28 px or more, 12 words declared | `legibleWords`, `uiReadSize` |
+| CR-10 100 words in 6 s | page 2 is the sample line and the method line (18 words, 6.2 s); the honest line stays in the Dusk passage; the credits are `FILM_CREDITS` (description, captions, the site's credits page) | `smallPrintHolds` |
+| CR-11 a still beside a live take | every plane of a place is a view of one take on one clock (Ring 4's HS-F; the Drop's RS-9) | `askActClock` |
+| CR-12 a frame-count conform | RUNBOOK §6.2.1: conform by timestamps only (`-vf fps=60 -fps_mode cfr`), log the durations and each event's wall-clock time; `TakeConform` and `checkTakeManifest()` refuse anything else, through `checkPlan()` | `takes`; tests |
+| CR-14 no light arc | the light lives in the ground (linear-light gains, `<GroundLight>`) | `lightArcProblems` on the model and on the reels (`tools/ground-light.ts`) |
+| CR-16 the Drop's sparse Mac | `world.ts`: the browser, the project and the Toolbox at 25–40 % of the frame's width at the wide, overlapping, the context windows at their own depths | the wide's sheet |
+| CR-17 empty swaps | the outgoing item and card leave over the same 8 frames the incoming arrive, crossing at mid-blur with a matched slide | `stageCover` (tests); the swap's frames |
+| CR-18 dissolving placeholders | placeholder states switch with a hard cut on their event frame (no `fadeOut` exists); where no capture shows a state, a slot; a view that shows nothing yet draws nothing | tests; the reel scan lists each state change |
+| CR-19 a weak Dusk | the Veil's body 47 % of the frame's height, pushing in; the label carried with the render; the crane cut short on a beat while the Dock is in frame and clear of the honest line; the menu bar at 3.5× (77 px) | `typeSafe` (carried lines too); the passage's frames |
+| CR-20 facts run together | each fact its own span with 1.25 em between facts (9:16 one a line) | tests; gaps on the reels (`reel-scan.ts`) |
+| CR-21 E-arrive by default | `IRIS_DEFAULT_EASE` is E-move; E-arrive only on a seam with a marked hit | `irisEase` |
+| CR-23 Apache-2.0 notices | each HyperFrames port's header; `THIRD_PARTY_NOTICES.md` | tests |
+| §58 the title and end card | one rigid page pushing in at 0.3 px a frame, every line set in it; only the room tone at the end is still | `cameraFloor`, `typeSafe` |
+| §58 `readPx` | each still's `readPx` is its measured body text (held 11.7, tests 13.1, approval 13.8, command 13.1) | tests |
+| PLACEHOLDERS: the slots' labels (found on the reels) | a frame made of slots always shows a slot's label whole, and a slot being read shows its own: the Dusk's workspace and palette now name themselves where the camera reads the palette's middle row (in 1:1 and 9:16 both labels, and the palette's states "typed: stealth", "Turn Stealth Lockdown on" and "Enter", sat outside the frame's left edge for the passage's first 3.8 s); `slotLabelLayout()` places the label for the view and the check alike | `slotLabels` (in `checkPlan()`); tests |
+
+**New tools and checks.** `setpieces/joins.ts` (the join check, CR-06); `setpieces/tools/ground-light.ts` (the ground's
+light on a render: the median of the pixels the plan leaves to the ground, per section, then `lightArcProblems()`);
+in the reel scan (`qa/reel-scan.ts`, fed by `reel-marks.ts`): the end card's gaps must stay empty (CR-20), a line set in
+the world is measured where its world carries it (`rectAt`), and a take's placeholder state changes (`states`) and the
+Veil's own cast are declared, so they are listed rather than judged as pops; `typeSafe` checks lines set in the world on
+every frame they are read; `checkTakeManifest()` (CR-12); `slotLabels` (a frame made of slots, with no published
+still, real take or film line to read, shows a slot's label whole, and a read slot its own; runs under half a second
+and camera sweeps over 4 px a frame are not judged).
+
+**On the reels** (27 Oct, the fix's last renders: 16:9, 1:1 and 9:16 at half size, 60 fps, 5,919 frames each, 192–200 s
+each through heavy.sh; `luma-scan.ts --marks` and `ground-light.ts`; gitignored evidence in `.work/film2/sp3/demo*/`
+(`scan.json`, `ground-light.json`, `marks.json`), the sheets in the lane's scratchpad;
+16:9 from round 5, the code as committed but for the Dusk's slot labels: its round-6 render waits
+for disk room, the renderer's preflight refusing it at 2.29 GiB free, and the labels' change was checked on the plans):
+
+| Check | 16:9 | 1:1 | 9:16 |
+|---|---|---|---|
+| ink: lines that vanish (CR-03) | 0 of 25 | 0 of 25 | 0 of 25 |
+| stones: frames with two (CR-01) | 0 (2,823 checked) | 0 (2,835 checked) | 0 (2,849 checked) |
+| bands: opening frame, hit 180 (CR-07) | 181 | 181 | 181 |
+| gaps between facts holding ink (CR-20) | 0 % in all 3 | 0 % in both | (one fact a line) |
+| tile pops, whole-frame pops, dead seconds, dips | none | none | none |
+| flashes a second (at most 3) | 1 | 2 | 1 |
+| placeholder state changes listed (CR-18) | 6 | 6 | 6 |
+
+The light on the ground's pixels (median of each section's frames, RGB, R − B and luma in 8-bit levels; the review
+measured warm at R − B +2, day +4 to +7, dusk luma 206–210 and R − B 0 to +1, evening +3 to +4 at luma 234):
+
+| Section | 16:9 | 1:1 | 9:16 |
+|---|---|---|---|
+| morning (the pre-roll) | too little ground | 203/214/208, −5, 211 | 202/214/207, −5, 211 |
+| warm (the Drop) | 222/219/186, +36, 217 | 219/218/185, +34, 216 | 224/222/188, +36, 220 |
+| day (Ring 4) | 225/232/219, +6, 230 | 222/230/217, +5, 227 | 217/225/211, +6, 222 |
+| dusk | 181/191/197, −16, 189 (18 % darker) | 179/190/197, −18, 188 (17 % darker) | 175/187/193, −18, 185 (17 % darker) |
+| evening (the climax) | 221/214/185, +36, 213 (7 % darker) | the cards fill the frame | 224/218/187, +37, 217 (2 % darker) |
+| page (the title) | 247/247/244, +3, 247 | 244/244/242, +2, 244 | 244/244/242, +2, 244 |
+
+Every target the lead set holds where the ground shows (`lightArcProblems()` reports nothing): warm and evening about
+30 levels warmer in R − B than day, dusk about 17 % darker and bluer, evening a few per cent darker than day, neighbours
+ΔE 9.8 or more apart on the model. Where a frame is all window (1:1's climax), the evening shows as the `ui` gains' cream
+on the slots.
+
+**Looked at** (sheets every 10–30 frames and strips frame by frame, at the review's frames in each finding): the Drop's
+pre-roll, hit, hold and reveal; Ring 4's travel, two reads (1:1, 9:16), receipt and cascade (the swaps cross); the
+Dusk's workspace, palette, Veil and its label, the crane and the Dock clear of the honest line; the climax's ask, the
+kept card arriving with its shadow and its hold; the wall and the convergence; one stone through the iris; the title
+and both pages gliding; every join; the honest line's exit frame by frame; the Dusk's opening at the reel's own pixels.
+**Four faults found only by looking and measuring, and fixed:** the slots' hatch stepped every 15–17 frames of a slow
+push (its stops were rounded to 0.01 of a world unit: a whole-frame step of 2.2–2.8 levels on the 1:1 receipt; now
+unrounded); the end card's lines snapped a whole pixel now and then as the page pushed in (a tile step of 3–8 levels;
+the carried lines now sit on their own compositor layer, which moves at sub-pixel precision, measured on 40-frame tests:
+steps of 0.02–0.04 px, no jump); on the 9:16 reel, where the honest line fills the frame's width, its 12-frame blur exit
+let 37 % of a word's ink go in one frame (a tile step of 3.6 levels at 3352; a block of 12 words or more now leaves over
+14 frames, each word over 10 on power1.in, its words going as a wave from each line's first, the last gone 5 frames
+before the cut); and in 1:1 and 9:16 the Dusk opened on its slots with their labels outside the frame (the table's last
+row). A plane that a placeholder view leaves empty (the kept card before it lands) drew a card-shaped box with its
+shadow; it now draws nothing until its still arrives, and then arrives whole.
+
+**Still placeholder-bound** (they change with the 2.0.0 captures, not with the plans): Ring 4's reads (published crops)
+sit on the conversation's slot and the climax's cards are slots, so those frames read pale and sparse whatever the light
+does; the evening light shows on the slots' cream rather than on the ground there; the cut into Kiln shows the empty
+conversation slot for about 0.75 s while the camera sweeps in, before the kept card lands on the peak.
+
+**Open:** the foundation demo's own camera floor (`review-ledger.ts`, the one entry left: its S2 lands on E-arrive at
+rest and its title page breathes under 0.25 px a frame); it is the motion foundation's demo reel, not a set piece, and
+the fix is the one the finale uses.
+
 ## The lead's rulings (OVERRIDES §52), as decided and as built
 
 - **L2, the frame rate: 60 fps.** Every master and cut renders natively at 60 fps in all three aspects; review proxies
@@ -559,8 +706,9 @@ text's size, so the Drop's companion panel (about 20 px) sits on the line.
 - **L3d:** every cut has a musical cause (above: `place()`); reading holds are never shortened; only hits snap.
 - **L4, the method line**, after "Shown with sample data.": "Real Pebble 2.0 screens, composed in one space. Nothing
   Pebble does is sped up." (`setpieces/finale.ts`). It holds only while §3.6's time rules hold (`checkTakeUse`).
-- **The ring iris between places:** E-move over 24–36 frames with the outgoing shot still drifting (`ringIris({ ease:
-  "move" })`, added for the ruling); E-arrive's burst only on the Drop and on hits the cue marks.
+- **The ring iris between places:** E-move over 24–36 frames with the outgoing shot still drifting: `ringIris()`'s
+  default since the craft review (CR-21; `IRIS_DEFAULT_EASE`); E-arrive's burst only on the Drop and on hits the cue marks,
+  declared on the seam (`qa/checks.ts` irisEase).
 - **Act I's aperture bands:** opaque night green (`COLOR.nightPage`), never black; the set pieces' check measures
   11.8:1 against the riverbed's edge under the morning grade (at least 3:1), and the Drop's demo sheet shows the
   2.39:1 frame at 320 px.
