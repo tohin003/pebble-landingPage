@@ -56,6 +56,12 @@ export interface SlotStandIn {
   standsFor: string;
   /** where its label sits (fractions of the slot): where the shot looks, so a framing of part of it still names it */
   focus?: { x: number; y: number };
+  /**
+   * the label again at these places (fractions of the slot): a slot much larger than the frame names itself wherever
+   * the shot reads it (fix round 2, NF-01: Ring 4's receipt sat 5 s on the conversation's hatching with its label out of
+   * frame above). Each copy is whole or not drawn, as the first (setpieces/labels.ts)
+   */
+  alsoAt?: readonly { x: number; y: number }[];
   /** the window it shows (CR-11), as StillStandIn.place */
   place?: string;
 }
@@ -209,8 +215,9 @@ export const SLOT = {
   companionCard: { ...slot("companionCard", "RS-9", "the companion's card \"Use youtube.com\": its sites, Allow", 384, 456, "pebble", "A9, J3: the card answered in the companion"), focus: { x: 0.08, y: 0.18 }, place: "companion" },
   /** Ring 4's conversation window: the take's full frame, around the views the film reads */
   // (its label between the held card's answered sentence and the run, where Ring 4 reads: until HS-F exists the frame
-  // says what fills it while it is read; the card asking covers it until the click: the verifier's NF-01)
-  project: { ...slot("project", "HS-F", "the conversation \"studio-bookings\"", 1160, 800, "pebble", "F1, F11: the project conversation"), focus: { x: 0.285, y: 0.285 }, place: "studio-bookings" },
+  // says what fills it while it is read; the card asking covers it until the click: the verifier's NF-01; and again
+  // above the receipt, which the camera reads further down the conversation, with the first label out of frame)
+  project: { ...slot("project", "HS-F", "the conversation \"studio-bookings\"", 1160, 800, "pebble", "F1, F11: the project conversation"), focus: { x: 0.285, y: 0.285 }, alsoAt: [{ x: 0.285, y: 0.69 }], place: "studio-bookings" },
   /** the Workshop's cards (1.7.0, never published): the ask and the kept card, at the sizes the 2.0.0 cards take */
   glazeCard: { ...slot("glazeCard", "HS-G", "\"Keep this tool in Pebble's Toolbox?\" Discard · Keep", 440, 220, "pebble", "G4: the Workshop's ask"), place: "glaze" },
   keptCard: { ...slot("keptCard", "RS-W", "\"Kept in Pebble's Toolbox · kiln_ramp_time\" View code · Remove", 440, 240, "pebble", "G3: the kept tool, told"), place: "kiln" },

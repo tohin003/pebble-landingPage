@@ -25,28 +25,39 @@ export const StillImage: React.FC<{ standIn: Extract<StandIn, { kind: "still" }>
  * The label sits at the slot's `focus` (where the shot looks: the menu bar's status icons, a card inside a window),
  * and a take view's `state` names what the take shows at that moment (a placeholder's caption, never drawn UI).
  */
-export const SlotPanel: React.FC<{ slot: SlotStandIn; w: number; h: number; px: number; timecode?: string; state?: string; labelOpacity?: number }> = ({ slot, w, h, px, timecode, state, labelOpacity = 1 }) => {
+export const SlotPanel: React.FC<{ slot: SlotStandIn; w: number; h: number; px: number; timecode?: string; state?: string; labelOpacity?: number; copyOpacity?: (i: number) => number }> = ({ slot, w, h, px, timecode, state, labelOpacity = 1, copyOpacity = () => 1 }) => {
   const u = 1 / Math.max(0.05, px); // world units per frame px
-  // (its size and corner as the checks read them: standins.ts slotLabelLayout)
-  const { fs, left, top } = slotLabelLayout(slot, w, h, px, state, timecode);
   // (the stops are not rounded: rounded to 0.01 of a world unit, the period stepped every 15–17 frames of a slow push
   // and the far stripes jumped by up to 2 px at once, a whole-frame step of 2.2–2.8 levels on the 1:1 reel)
   const hatch = `repeating-linear-gradient(135deg, ${COLOR.line} 0px, ${COLOR.line} ${(1.2 * u).toFixed(5)}px, transparent ${(1.2 * u).toFixed(5)}px, transparent ${(14 * u).toFixed(5)}px)`;
+  // the label at the slot's focus, and its copies (alsoAt: each whole or not drawn, as labels.ts has it)
+  const labels = [slot, ...(slot.alsoAt ?? []).map((focus) => ({ ...slot, focus, alsoAt: undefined }))];
   return (
     <div style={{ position: "absolute", inset: 0, background: `${hatch}, ${COLOR.fill}`, border: `${(1.5 * u).toFixed(2)}px solid ${COLOR.line}`, boxSizing: "border-box", overflow: "hidden" }}>
-      <div style={{ position: "absolute", left, top, right: fs * 0.9, fontFamily: `"${FAMILY.mono}"`, fontSize: fs, color: COLOR.ink2, lineHeight: 1.35, opacity: labelOpacity, display: labelOpacity <= 0.001 ? "none" : undefined }}>
-        <div style={{ fontWeight: 500, color: COLOR.ink }}>{slot.captureId}</div>
-        <div style={{ fontFamily: `"${FAMILY.sans}"`, fontSize: fs * 0.92 }}>{slot.label}</div>
-        {state ? <div style={{ fontFamily: `"${FAMILY.sans}"`, fontSize: fs * 0.92, color: COLOR.ink }}>{state}</div> : null}
-        <div style={{ fontSize: fs * 0.78, opacity: 0.85, marginTop: fs * 0.3 }}>{SLOT_CAPTION}</div>
-        {timecode ? <div style={{ fontSize: fs * 0.9, marginTop: fs * 0.3, color: COLOR.accent }}>src {timecode} · 1×</div> : null}
-      </div>
+      {labels.map((at, i) => (
+        <SlotLabel key={i} slot={at} w={w} h={h} px={px} timecode={timecode} state={state} opacity={i === 0 ? labelOpacity : copyOpacity(i)} />
+      ))}
     </div>
   );
 };
 
-export const StandInView: React.FC<{ standIn: StandIn; w: number; h: number; px: number; labelOpacity?: number }> = ({ standIn, w, h, px, labelOpacity }) =>
-  standIn.kind === "still" ? <StillImage standIn={standIn} w={w} h={h} /> : <SlotPanel slot={standIn} w={w} h={h} px={px} labelOpacity={labelOpacity} />;
+/** One slot label at its slot's focus, its size and corner as the checks read them (standins.ts slotLabelLayout). */
+const SlotLabel: React.FC<{ slot: SlotStandIn; w: number; h: number; px: number; timecode?: string; state?: string; opacity: number }> = ({ slot, w, h, px, timecode, state, opacity }) => {
+  const { fs, left, top } = slotLabelLayout(slot, w, h, px, state, timecode);
+  if (opacity <= 0.001) return null;
+  return (
+    <div style={{ position: "absolute", left, top, right: fs * 0.9, fontFamily: `"${FAMILY.mono}"`, fontSize: fs, color: COLOR.ink2, lineHeight: 1.35, opacity }}>
+      <div style={{ fontWeight: 500, color: COLOR.ink }}>{slot.captureId}</div>
+      <div style={{ fontFamily: `"${FAMILY.sans}"`, fontSize: fs * 0.92 }}>{slot.label}</div>
+      {state ? <div style={{ fontFamily: `"${FAMILY.sans}"`, fontSize: fs * 0.92, color: COLOR.ink }}>{state}</div> : null}
+      <div style={{ fontSize: fs * 0.78, opacity: 0.85, marginTop: fs * 0.3 }}>{SLOT_CAPTION}</div>
+      {timecode ? <div style={{ fontSize: fs * 0.9, marginTop: fs * 0.3, color: COLOR.accent }}>src {timecode} · 1×</div> : null}
+    </div>
+  );
+};
+
+export const StandInView: React.FC<{ standIn: StandIn; w: number; h: number; px: number; labelOpacity?: number; copyOpacity?: (i: number) => number }> = ({ standIn, w, h, px, labelOpacity, copyOpacity }) =>
+  standIn.kind === "still" ? <StillImage standIn={standIn} w={w} h={h} /> : <SlotPanel slot={standIn} w={w} h={h} px={px} labelOpacity={labelOpacity} copyOpacity={copyOpacity} />;
 
 /**
  * The card entrance on a still inside a view (rise 24 px and an 8 px blur clearing over 24 frames on E-arrive, the
@@ -84,7 +95,7 @@ export const TakeViewContent: React.FC<{ use: TakeUse; view: string; w: number; 
   // setpieces/labels.ts, NF-08)
   return (
     <>
-      {v.slot ? <SlotPanel slot={v.slot} w={w} h={h} px={px} timecode={sourceTimecode(src, m.fps)} state={state} labelOpacity={labelOpacity("self")} /> : null}
+      {v.slot ? <SlotPanel slot={v.slot} w={w} h={h} px={px} timecode={sourceTimecode(src, m.fps)} state={state} labelOpacity={labelOpacity("self")} copyOpacity={(i) => labelOpacity(`self@${i}`)} /> : null}
       {stillsAt(v, src).map((s: ViewStill, i) => {
         const r = s.rect ?? { x: 0, y: 0, w: v.w, h: v.h };
         // the frame on which this still first showed, for its entrance; a still with no entrance switches in with a
@@ -95,7 +106,7 @@ export const TakeViewContent: React.FC<{ use: TakeUse; view: string; w: number; 
         if (look === null) return null;
         return (
           <div key={i} style={{ position: "absolute", left: r.x * kx, top: r.y * ky, width: r.w * kx, height: r.h * ky, ...look }}>
-            {s.standIn.kind === "still" ? <StillImage standIn={s.standIn} w={r.w * kx} h={r.h * ky} /> : <SlotPanel slot={s.standIn} w={r.w * kx} h={r.h * ky} px={px} timecode={sourceTimecode(src, m.fps)} state={state} labelOpacity={labelOpacity(`still:${(v.stills ?? []).indexOf(s)}`)} />}
+            {s.standIn.kind === "still" ? <StillImage standIn={s.standIn} w={r.w * kx} h={r.h * ky} /> : <SlotPanel slot={s.standIn} w={r.w * kx} h={r.h * ky} px={px} timecode={sourceTimecode(src, m.fps)} state={state} labelOpacity={labelOpacity(`still:${(v.stills ?? []).indexOf(s)}`)} copyOpacity={(i) => labelOpacity(`still:${(v.stills ?? []).indexOf(s)}@${i}`)} />}
           </div>
         );
       })}

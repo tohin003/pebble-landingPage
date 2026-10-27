@@ -10,6 +10,7 @@ import { demoPlans } from "../setpieces/demo/plans";
 import { CONTENT_FLOOR_PX, READ_AFTER_CUT_60, contentFloor, cutsReadable, slotLabels, sway, typeExitKind, typeExits, typeOverPlanes, typeOverType, typeTracks } from "../setpieces/qa";
 import { contentMotion } from "../setpieces/motion-qa";
 import { LABEL_FADE_FRAMES, drawnSlots, labelClear, labelOpacityOn } from "../setpieces/labels";
+// (drawnSlots expands a slot's label copies, SlotStandIn.alsoAt, each keyed "<key>@<i>")
 import { carriedRect, planesClearFrame } from "../setpieces/kit";
 import { glideLz, lineRect, rectInFrame, zoomAbout } from "../setpieces/frame";
 import { HSF_VIEWS, TAKE_HSB3, TAKE_HSF, frameOfSource, stillsAt } from "../setpieces/take";
@@ -310,6 +311,36 @@ describe("Ring 4 frames the held card asking, then reads its answer (NF-01)", ()
     expect(c.y + c.h).toBeGreaterThan(52.7);
     expect(c.y + c.h).toBeLessThan(68.7);
     expect(STILL.verifiedTop.words).toBe(7);
+  });
+  test("the conversation names itself through the receipt too, one label at a time (its copy above the receipt)", () => {
+    for (const a of ASPECTS) {
+      const p = piece(a, "ring4");
+      const s = p.shots[0]!;
+      const x = p.extra as Record<string, number>;
+      const win = s.planes.find((pl) => pl.id === "ring4-window")!;
+      const labels = drawnSlots(p, s, win);
+      expect(labels.map((d) => d.key)).toEqual(["self", "self@1"]);
+      // from the receipt's arrival to the camera's leave, a label of the conversation is drawn whole on every frame
+      for (let fr = x.receiptArrive; fr < x.cut - 19; fr++) expect(`${a} ${fr} ${Math.max(...labels.map((d) => labelOpacityOn(p, s, d, fr))) >= 0.99}`).toBe(`${a} ${fr} true`);
+      // and never two at once: the copy gives way while the first label shows
+      for (let fr = s.from; fr < s.to; fr += 2) {
+        const [o0, o1] = labels.map((d) => labelOpacityOn(p, s, d, fr)) as [number, number];
+        expect(o0 * o1 <= 0.25 + 1e-9 && o0 + o1 <= 1 + 1e-9).toBe(true);
+      }
+    }
+  });
+  test("the canary: without its copy, the receipt sat on the conversation's hatching with no label in frame", () => {
+    for (const a of ASPECTS) {
+      const p = piece(a, "ring4");
+      const s = p.shots[0]!;
+      const x = p.extra as Record<string, number>;
+      const win = s.planes.find((pl) => pl.id === "ring4-window")!;
+      const one = drawnSlots(p, s, win).filter((d) => d.key === "self");
+      const shown = (fr: number) => one.some((d) => labelOpacityOn(p, s, d, fr) >= 0.99);
+      let unnamed = 0;
+      for (let fr = x.receiptArrive; fr < x.cut - 19; fr++) if (!shown(fr)) unnamed++;
+      expect(unnamed / p.fps).toBeGreaterThan(2.0);
+    }
   });
 });
 

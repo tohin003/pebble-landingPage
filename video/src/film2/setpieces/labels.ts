@@ -35,10 +35,24 @@ export interface DrawnSlot {
   labelOutFrom?: number;
   /** the local frame its label starts to show (TakeView.labelFrom) */
   labelInFrom?: number;
+  /** a copy of a label (SlotStandIn.alsoAt): the slot's labels before it, which it gives way to while they show */
+  earlier?: readonly DrawnSlot[];
 }
 
-/** Every slot a shot's plane draws (a slot stand-in; a take view's own slot; a slot among a view's stills). */
-export const drawnSlots = (p: ScenePlan, s: ShotSpec, pl: PlaneSpec): DrawnSlot[] => {
+/**
+ * A slot's label and its copies (SlotStandIn.alsoAt): each copy is a drawn slot of its own, keyed "<key>@<i>", with the
+ * copy's place as its focus, so it is whole or not drawn by the same rule and the checks see every label the view draws.
+ */
+export const withCopies = (d: DrawnSlot): DrawnSlot[] => {
+  const out: DrawnSlot[] = [d];
+  (d.slot.alsoAt ?? []).forEach((focus, i) => out.push({ ...d, id: `${d.id}@${i + 1}`, key: `${d.key}@${i + 1}`, slot: { ...d.slot, focus, alsoAt: undefined }, earlier: [...out] }));
+  return out;
+};
+
+/** Every slot a shot's plane draws (a slot stand-in; a take view's own slot; a slot among a view's stills), each label copy its own. */
+export const drawnSlots = (p: ScenePlan, s: ShotSpec, pl: PlaneSpec): DrawnSlot[] => drawnSlotsOnce(p, s, pl).flatMap(withCopies);
+
+const drawnSlotsOnce = (p: ScenePlan, s: ShotSpec, pl: PlaneSpec): DrawnSlot[] => {
   const c = pl.content;
   const depth = pl.depth ?? 1;
   if (c.kind === "standIn") return c.standIn.kind === "slot" ? [{ id: pl.id, key: "self", slot: c.standIn, box: pl.rect, depth, from: s.from, to: s.to, state: () => undefined, timecode: () => undefined }] : [];
@@ -116,5 +130,8 @@ export const labelOpacityOn = (p: ScenePlan, s: ShotSpec, d: DrawnSlot, fr: numb
   const H = Math.max(1, Math.round((LABEL_HANDOFF_FRAMES * p.fps) / 60));
   const handoff = d.labelOutFrom === undefined ? 1 : 1 - E_MOVE(clamp01((fr - d.labelOutFrom) / H));
   const arrive = d.labelInFrom === undefined ? 1 : E_MOVE(clamp01((fr - d.labelInFrom) / H));
-  return edge * handoff * arrive;
+  // a copy shows only where the slot's earlier labels do not: one label of a slot at a time, handing over as one
+  // leaves the frame's clear part and the other enters it
+  const yieldTo = d.earlier?.length ? 1 - Math.max(...d.earlier.map((e) => labelOpacityOn(p, s, e, fr))) : 1;
+  return edge * handoff * arrive * yieldTo;
 };

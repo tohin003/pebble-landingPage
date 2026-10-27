@@ -369,7 +369,8 @@ The camera hands off to the opened framing as the frame opens and drifts out thr
 and "Where you allow it.", **panning at `HOLD_PAN_PX` (0.42 px a frame) the way the reveal's glide then goes** (fix
 round 2, the verifier's CR-04: the pull-back about the companion alone moved the frame's corners 0.4–0.6 px a frame
 while the companion, the frame's subject, moved 0.04–0.09; the content now moves 0.33–0.57), each line landing on a
-beat once the burst has left its rect and the bands have cleared, held together (3.6 s and ≥ 3.0 s). At hit + 4 s, or
+beat once the burst has left its rect and the bands have cleared, held together (3.6 s and ≥ 3.0 s), then lifting out
+through their masks as they rose, the promise's lines first and the limit after (type leaves the way it came). At hit + 4 s, or
 as the pair's exit starts if that is later (so the pull-back never brings a capture under a line still read), the
 camera pulls back in log space to the whole Mac, composed dense
 (`world.ts`: the browser, the project and the Toolbox at 25–40 % of the frame's width at the wide, overlapping, the
@@ -408,8 +409,9 @@ second). The chapter pair lands once no capture with text sits under its band fo
 (`kit.ts planesClearFrame`; in 1:1 and 9:16 it keeps to the frame's left, in 9:16 in the top band, the place arriving
 in the frame's lower part so the camera never turns back up). The reading holds glide (0.4 px a frame); the stage is
 entered on a glide at the cut's speed (never landing at rest) and pans at the reading pace; the swaps cross at
-mid-blur with a short matched slide, so the stage never empties (CR-17); the fixed line and the last item leave with
-drawn blur exits on the stage's E-leave, before the cut (CR-03). **To fit it:** start it on a phrase downbeat, pass the grid; if its length (`plan.duration`) is longer than
+mid-blur with a short matched slide, so the stage never empties (CR-17); on the stage's E-leave the fixed line lifts out
+through its mask and the last item blurs out, each the way it came, both gone before the cut (CR-03). The chapter line
+lifts out through its mask too, and the limit blurs out. **To fit it:** start it on a phrase downbeat, pass the grid; if its length (`plan.duration`) is longer than
 the phrase you have, lengthen the music at a bar line or move the block (§3.2: never a hold).
 
 ### 3. The wall — `planWall({ w, h, fps, grid?, centre?, entry?, minS? })`
@@ -447,7 +449,7 @@ the way the climax then glides (fix round 2: a leave to the left turned the clim
 
 S23 ("Glaze") **opens on its take** (CR-06: it opened on 16 frames of its slot): HS-G's ask card is 4 frames into its
 entrance on the cut, entered with the previous piece's momentum, gliding into a pan at 0.45 px a frame with a slight
-push; "Its own tools." lands on a beat and leaves with a drawn blur exit over before the cut (CR-03: its "camera" exit
+push; "Its own tools." lands on a beat and lifts out through its mask, as it rose, over before the cut (CR-03: its "camera" exit
 drew nothing). A momentum cut on the last beat at least 0.75 s before `peak` (so the card lands 0.75–1.25 s into the
 take, §3.6 chain 11) into S24 ("Kiln"): RS-W's in-point is solved so the kept card lands exactly on `peak`; the avatar
 turns happy on the take's own event. **The climax's content travels one way** (`travel`: right in 16:9, down in 1:1

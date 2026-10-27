@@ -105,6 +105,10 @@ export const CLOSED_FINDINGS: readonly { piece: string; check: string; cr: strin
   { piece: "climax", check: "contentFloor", cr: "CR-04", how: "the ask pans the climax's way at 0.45 px a frame with a slight push" },
   { piece: "climax", check: "sway", cr: "NF-02", how: "one direction from Glaze's leave through Kiln's landing, push and hold to its leave; the kept card pushed about its trailing edge" },
   { piece: "climax", check: "cutsReadable", cr: "NF-07", how: "the Kiln slot's label sits where the cut lands, under the kept card's place" },
+  // type leaves the way it came (fix round 2, CR-03's aim): a rise through a mask lifts out through it
+  { piece: "drop", check: "typeExitKind", cr: "CR-03", how: "L05 and L06 lift out through their masks as they rose, the wave running down the block" },
+  { piece: "ring4", check: "typeExitKind", cr: "CR-03", how: "the chapter line and the cascade's fixed line lift out through their masks, gone 2 frames before their cuts" },
+  { piece: "climax", check: "typeExitKind", cr: "CR-03", how: "\"Its own tools.\" lifts out through its mask, gone 2 frames before the cut into Kiln" },
 ];
 
 /** Is a finding one of the open findings of this piece? */

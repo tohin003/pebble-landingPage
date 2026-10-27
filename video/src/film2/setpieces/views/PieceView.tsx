@@ -117,7 +117,7 @@ const PlaneView: React.FC<{ plan: ScenePlan; shot: ShotSpec; pl: PlaneSpec; fram
   return (
     <Plane kind={pl.kind} rect={pl.rect} depth={pl.depth ?? 1} tilt={tilt} reading={reading} opacity={opacity} shadow={pl.shadow} radius={pl.radius} style={style}>
       {c.kind === "standIn" ? (
-        <StandInView standIn={c.standIn} w={pl.rect.w} h={pl.rect.h} px={zoom} labelOpacity={labelOpacity("self")} />
+        <StandInView standIn={c.standIn} w={pl.rect.w} h={pl.rect.h} px={zoom} labelOpacity={labelOpacity("self")} copyOpacity={(i) => labelOpacity(`self@${i}`)} />
       ) : c.kind === "take" ? (
         <TakeViewContent use={c.use} view={c.view} w={pl.rect.w} h={pl.rect.h} px={zoom} offset={shot.from} planeEntrance={planeEntrance} labelOpacity={labelOpacity} />
       ) : (
