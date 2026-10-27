@@ -63,6 +63,11 @@ export interface PlaneSpec {
    * legible on the way in (a dolly) and still legible on the way out (a glide that carries it out of frame)
    */
   read?: { from: number; to: number; words: number; receipt?: boolean; textPx?: number; rect?: Rect; seenFrom?: number; seenTo?: number };
+  /**
+   * the frames the camera frames this plane whole as the frame's subject, seen but not read (Ring 4's held card asking,
+   * its buttons in view): like a read, nothing drawn in front of it may cover it (qa.ts subjectsCovered)
+   */
+  framed?: { from: number; to: number };
   shadow?: boolean;
   radius?: number;
   /** carries no text (the Dock's icons): film type may pass over it */

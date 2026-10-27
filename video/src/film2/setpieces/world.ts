@@ -75,8 +75,10 @@ export const WORLD: Record<Aspect, WorldLayout> = {
     browser: { x: 40, y: -120, w: 1440, h: 900 },
     ...companionAt(1060, 500),
     calculator: { x: -60, y: 700, w: 232, h: 372 },
-    // (right of the held card: at x 560 it covered the card's right half, drawn in front of the place)
-    finder: { x: 990, y: -1100, w: 820, h: 500 },
+    // (right of the held card: at x 560 it covered the card's right half, drawn in front of the place; at 990 it still
+    // covered the card's right end and its "Details" while the camera framed the card asking, 36 px at 1080: 28 Oct's
+    // render, subjectsCovered; at 1080 it is just out of the frame then, 69 px clear of the card)
+    finder: { x: 1080, y: -1100, w: 820, h: 500 },
     ...projectAt(-80, -960),
     // below the type's band at the Drop's hold (fix round 2, NF-05: L05 and L06 sat over its Settings still, the band
     // spanning world y 1085–1537 at its depth), so the lines sit on the ground

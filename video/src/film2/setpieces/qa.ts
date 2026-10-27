@@ -42,6 +42,7 @@ import { cascadeSchedule, swapLook } from "../type/Cascade";
 import { IRIS_DEFAULT_EASE, IRIS_DRAWN, irisRadius } from "../transitions/kinds";
 import { checkCues } from "../../../../shared/pebble/cues";
 import { STEALTH_HONEST } from "../../../../shared/pebble/stealthVeil";
+import { BODY } from "../../../../shared/pebble";
 import { defaultEntranceOf, enterFramesOf, exitFramesOf, insideFrame, lineRect, rectInFrame } from "./frame";
 import { carriedRect, typeEvent } from "./kit";
 import { onGrid, pointsOf, type MusicGrid } from "./music";
@@ -1504,6 +1505,116 @@ export function sway(p: ScenePlan, step = 2): Finding[] {
   return out;
 }
 
+/* ---------------------------------------------------------------- seen on fix round 2's render (28 Oct) ---------- */
+
+/**
+ * Nothing drawn in front of the frame's subject covers it (28 Oct, fix round 2's render: in 9:16 the Finder, a context
+ * window at its own parallax depth drawn in front of Ring 4's place, covered the held card's right end and its
+ * "Details" for the whole 1.2 s the camera framed the card asking). The subjects: every declared read (a plane's `read`
+ * from its `from` to its `to`, a shot's `reads`) and every plane `framed` whole as the frame's subject. A plane drawn
+ * after the subject's own plane (for a shot's read, the last plane at depth 1 that holds it) that covers the subject on
+ * screen by 2 px at 1080 or more, for 6 frames or more, is an error. Sampled every 2 frames.
+ */
+export function subjectsCovered(p: ScenePlan): Finding[] {
+  const out: Finding[] = [];
+  const step = Math.max(1, Math.round((2 * p.fps) / 60));
+  const minRun = Math.round((6 * p.fps) / 60);
+  const tol = 2 * p.frame.unit;
+  const holds = (a: Rect, b: Rect) => a.x <= b.x + 0.5 && a.y <= b.y + 0.5 && a.x + a.w >= b.x + b.w - 0.5 && a.y + a.h >= b.y + b.h - 0.5;
+  for (const s of p.shots) {
+    const subjects: { id: string; host: number; rect: Rect; depth: number; from: number; to: number; what: string }[] = [];
+    s.planes.forEach((pl, i) => {
+      if (pl.read) subjects.push({ id: pl.id, host: i, rect: pl.read.rect ?? pl.rect, depth: pl.depth ?? 1, from: pl.read.from, to: pl.read.to, what: "read" });
+      if (pl.framed) subjects.push({ id: pl.id, host: i, rect: pl.rect, depth: pl.depth ?? 1, from: pl.framed.from, to: pl.framed.to, what: "framed whole" });
+    });
+    for (const r of s.reads ?? []) {
+      let host = -1;
+      s.planes.forEach((pl, i) => {
+        if ((pl.depth ?? 1) === 1 && holds(pl.rect, r.rect)) host = i;
+      });
+      subjects.push({ id: r.id, host, rect: r.rect, depth: 1, from: r.from, to: r.to, what: "read" });
+    }
+    for (const sub of subjects) {
+      const hits = new Map<string, number[]>();
+      for (let fr = Math.max(sub.from, s.from); fr < Math.min(sub.to, s.to); fr += step) {
+        const pose = at(p, s, fr);
+        const sr = rectInFrame(sub.rect, planePose(pose, s.ref, sub.depth), p.frame);
+        s.planes.forEach((q, j) => {
+          if (j <= sub.host || planeOpacityAt(p, q, fr) < 0.5) return;
+          const c = clipTo(sr, rectInFrame(q.rect, planePose(pose, s.ref, q.depth ?? 1), p.frame));
+          if (!c || c.w < tol || c.h < tol) return;
+          hits.set(q.id, [...(hits.get(q.id) ?? []), fr]);
+        });
+      }
+      for (const [qid, frames] of hits) {
+        if (frames.length * step < minRun) continue;
+        out.push({
+          check: "subjectsCovered",
+          level: "error",
+          message: `${qid}, drawn in front of ${sub.id}, covers it while it is ${sub.what} for about ${((frames.length * step) / p.fps).toFixed(2)} s from frame ${frames[0]}: nothing sits in front of the frame's subject (move the plane, or put it behind)`,
+          frame: frames[0],
+          to: frames[frames.length - 1]! + step,
+        });
+      }
+    }
+  }
+  return out;
+}
+
+/** A stone's drawn body on a frame (the pebble's own bounds, BODY, at its drawn size), frame px. */
+const stoneBodyOn = (p: ScenePlan, s: ShotSpec, fr: number): { cx: number; cy: number; rx: number; ry: number } | null => {
+  const st = s.stone;
+  if (!st) return null;
+  const pose = s.camera.pose(fr - s.from);
+  const c = worldToFrame(st.at, pose, p.frame.w, p.frame.h);
+  const k = (st.size / 220) * pose.zoom;
+  return { cx: c.x + ((BODY.left + BODY.right) / 2) * k, cy: c.y + ((BODY.top + BODY.bottom) / 2) * k, rx: (BODY.width / 2) * k, ry: (BODY.height / 2) * k };
+};
+
+/**
+ * Film type never sits on the stone (28 Oct, fix round 2's render: in 9:16 the honest line's last lines sat on the
+ * Veil's render, the stone drawn in macro, from the rack to the crane, about 70 px at 1080 into its body). Each line,
+ * from its landing until its exit starts (a line set in the world where its world carries it), against each stone's
+ * body (an ellipse in the pebble's own bounds) on every frame at least a quarter of the stone shows; 6 frames or more
+ * is an error. Sampled every 3 frames.
+ */
+export function typeOverStone(p: ScenePlan): Finding[] {
+  const out: Finding[] = [];
+  const step = Math.max(1, Math.round((3 * p.fps) / 60));
+  const minRun = Math.round((6 * p.fps) / 60);
+  for (const t of p.types) {
+    const r0 = lineRect(t.text, t.tier, p.frame, t.box, t.sizeT ?? 0.5);
+    const d = drawnSpan(t, p.fps, p.duration);
+    const hits: number[] = [];
+    for (let fr = d.landed; fr < d.exitAt; fr += step) {
+      const r = t.carry ? carriedRect(p, t, r0, fr) : r0;
+      for (const ds of drawnShots(p, fr)) {
+        const b = stoneBodyOn(p, ds.shot, fr);
+        if (!b || shownShare(p, ds, fr, { x: b.cx, y: b.cy }, Math.min(b.rx, b.ry)) < 0.25) continue;
+        // the rect's point nearest the body's centre, inside the ellipse: the line sits on the stone
+        const nx = Math.max(r.x, Math.min(b.cx, r.x + r.w));
+        const ny = Math.max(r.y, Math.min(b.cy, r.y + r.h));
+        if (((nx - b.cx) / b.rx) ** 2 + ((ny - b.cy) / b.ry) ** 2 < 1) {
+          hits.push(fr);
+          break;
+        }
+      }
+    }
+    if (hits.length * step >= minRun)
+      out.push({
+        check: "typeOverStone",
+        level: "error",
+        message: `"${t.text.replace(/\n/g, " ").slice(0, 40)}" sits on the stone for about ${((hits.length * step) / p.fps).toFixed(2)} s from frame ${hits[0]}: film type sits on the ground, never on the frame's subject (move the line's band or the stone)`,
+        frame: hits[0],
+        to: hits[hits.length - 1]! + step,
+      });
+  }
+  return out;
+}
+
+/** The checks added on fix round 2's render (28 Oct): what the reels showed and no check saw. */
+export const ROUND2_RENDER_CHECKS = ["subjectsCovered", "typeOverStone"] as const;
+
 /** The checks added in fix round 2, by name (the verifier's findings after fix round 1). */
 export const ROUND2_CHECKS = ["contentFloor", "sway", "cutsReadable", "slotLabels", "typeOverType", "typeExitKind"] as const;
 
@@ -1544,6 +1655,9 @@ export function checkPlan(p: ScenePlan, grid?: MusicGrid, extraMoves: readonly Q
     ...cutsReadable(p),
     ...typeOverType(p),
     ...typeExitKind(p),
+    // added on fix round 2's render (28 Oct): nothing in front of the subject, no type on the stone
+    ...subjectsCovered(p),
+    ...typeOverStone(p),
     // the Return (OVERRIDES §61 R2: returnSchedule, returnWindows, returnContent, returnMerge, returnRadius, cellText,
     // blinkPlaced, joinPose; setpieces/returnChecks.ts)
     ...returnChecks(p),

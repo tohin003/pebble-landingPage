@@ -505,7 +505,8 @@ export function planRingBlock(o: RingOptions): ScenePlan {
     // (with two reads the ask's read ends as the camera eases back to the act's floor: it has been read by then)
     // (each read is declared from the frame its dolly or ease lands, at reading size; its words count from the frame
     // they are legible on the way in: `seenFrom`)
-    view("ask", c.ask.view, c.ask.rect, { from: dollyTo, to: twoReads ? actReadFrom - easeBackF : glideStart, words: c.ask.words, textPx: c.ask.textPx, rect: askRead, seenFrom: clickAt ?? dollyFrom, seenTo: glideStart + glideF }),
+    // (while it asks, before the click, the card is framed whole as the frame's subject: nothing may cover it)
+    { ...view("ask", c.ask.view, c.ask.rect, { from: dollyTo, to: twoReads ? actReadFrom - easeBackF : glideStart, words: c.ask.words, textPx: c.ask.textPx, rect: askRead, seenFrom: clickAt ?? dollyFrom, seenTo: glideStart + glideF }), ...(clickAt === null ? {} : { framed: { from: dolly1To, to: clickAt } }) },
     view("act", c.act.view, c.act.rect, { from: Math.max(dollyTo, actReadFrom), to: glideStart, words: c.act.words, textPx: c.act.textPx, rect: c.act.readRect, seenFrom: Math.max(clickAt ?? dollyFrom, actAt), seenTo: glideStart + glideF }),
     ...(c.context ?? []),
   ];

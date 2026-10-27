@@ -49,6 +49,12 @@ export const INK = {
   groundPercentile: 0.85,
   /** a line whose held ink is under this many fully inked pixels cannot be measured (it is reported, not judged) */
   minHeld: 40,
+  /**
+   * after a line's last drawn frame, ink above this share of its held ink is what covers its rect next, not the line (28
+   * Oct: the post-credit scene's iris-out filled the end card's last line's rect with night green, 6.4 × the line's ink,
+   * then read 0 once it covered it, 6 frames after the line's drawn blur had ended)
+   */
+  notOwnAfterUntil: 1.5,
 } as const;
 
 /**
@@ -136,6 +142,9 @@ export function judgeInk(track: InkTrack, ink: readonly (number | undefined)[], 
     return [{ id: track.id, text: track.text, kind: "unmeasured", from: track.landed, to: track.until, before: held, after: held, held, message: `${label}: ${held.toFixed(0)} ink px while held, too few to judge` }];
   }
   const declared = (a: number, b: number) => track.exits.some((e) => a <= e.to + 1 && b >= e.from - 1);
+  // did the line leave on its own (its ink at 10 % of its held level or less on a frame of its drawn exit)?
+  let left = false;
+  for (let f = firstExit; f < track.until; f++) if (ink[f] !== undefined && ink[f]! <= 0.1 * held) left = true;
   const out: InkFinding[] = [];
   const end = track.until + within;
   const drop = fallShare * held;
@@ -161,6 +170,13 @@ export function judgeInk(track: InkTrack, ink: readonly (number | undefined)[], 
         break;
       }
     if (declared(start, settled)) {
+      f = settled;
+      continue;
+    }
+    // a fall that starts once a line that left on its own has stopped being drawn, from far more ink than it ever held,
+    // is whatever covers its rect next (an iris, the next shot), not the line; a line still drawn past its last frame
+    // (its own ink level there), or one that never left before an iris covered it, is judged as before
+    if (left && start >= track.until && ink[start]! > INK.notOwnAfterUntil * held) {
       f = settled;
       continue;
     }

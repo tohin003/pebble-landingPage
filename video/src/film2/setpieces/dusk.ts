@@ -106,7 +106,9 @@ const LAYOUT: Record<FrameBox["aspect"], DuskLayout> = {
     honest: (f) => ({ left: f.safe * 1.2, top: f.safe * 2, maxW: f.w - f.safe * 2.4, align: "left" }),
     stage: (f, b) => ({ x: f.safe, y: b.bottom + f.safe, w: f.w - 2 * f.safe, h: f.h - b.bottom - 2.2 * f.safe }),
     palette: (f) => ({ x: f.safe * 0.5, y: f.h * 0.24, w: f.w - f.safe, h: f.h * 0.32 }),
-    veil: (f) => ({ x: f.w * 0.5, y: f.h * 0.44 }),
+    // (below the honest line's band with a margin from the rack to the crane: at 0.44 of the height the render's top,
+    // drifting down from 398 px, sat up to 137 px in the band's last lines for 7.5 s: typeOverStone, 28 Oct's render)
+    veil: (f) => ({ x: f.w * 0.5, y: f.h * 0.535 }),
     label: labelUnder,
     craneOut: { x: -1, y: 0 },
     orbit: { x: 0, y: 1 },
