@@ -6,6 +6,14 @@ Inputs, all in one work folder (default .work/score2/cuesheet), plus the music m
   plan_main.json, plan_x40.json            the cue plans (cue_plan.py's input)
   main.metrics.json, x40.metrics.json      cue_plan.py's measurements of the assembled beds
   ../maps/<Track>.map.json, ../MUSIC_MAP.json
+  r2/ (optional, revision 2, the Return): main_g1b.metrics.json and plan_main_g1b.json (G1's B side), title_A.json and
+                         title_B.json (the classifier around the swell and the title), x40mask.json, probe.json (the
+                         splice candidates), g1_decision.json (the supervisor's authored choice)
+  archive-2026-10-26-2213/ (optional): 22:13's plans and spec, for the "unchanged" checks and the beat sheet's
+                         before-and-after table
+
+Writes WORK_DIR/../CUE_SHEET.json and, from the same data, WORK_DIR/../BEAT_SHEET.json and BEAT_SHEET.md (the picture
+lanes' timing source).
 
 Every time in the output is resolved from a source time on a cue (film = cue film_in + (src - src_in)), so the beat
 sheet cannot drift from the music. Frames are given at the spec's frame rate. No audio is read or written.
@@ -34,6 +42,19 @@ def mmss(t):
 
 
 SPEC = load(os.path.join(WORK, "sheet_spec.json"))
+R2 = os.path.join(WORK, "r2")
+ARCH = os.path.join(WORK, "archive-2026-10-26-2213")
+
+
+def _opt(p):
+    return load(p) if os.path.exists(p) else None
+
+
+EXTRA = {k: _opt(os.path.join(R2, k)) for k in ("main_g1b.metrics.json", "title_A.json", "title_B.json", "x40mask.json",
+                                                 "probe.json", "g1_decision.json")}
+EXTRA["chosen_title_variant"] = (EXTRA.get("g1_decision.json") or {}).get("title_variant")
+if os.path.exists(os.path.join(ARCH, "plan_main.json")):
+    EXTRA["archive_plans"] = {"main": load(os.path.join(ARCH, "plan_main.json")), "x40": load(os.path.join(ARCH, "plan_x40.json"))}
 MM = load(os.path.join(SCORE2, "MUSIC_MAP.json"))
 FPS = SPEC["frame_rate"]
 MAPS = {}
@@ -139,10 +160,11 @@ def build_film(key):
                       "incoming_starts_film_s": round(s.get("in_film", s["t"]), 4),
                       "from": s["from"], "to": s["to"], "methods": a["methods"], "how": a["how"], "motivation": a["motivation"],
                       "tempo": a["tempo"], "key": a["key"],
-                      "measured": {k: m[k] for k in ("xfade_s", "film_lufs_3s_before", "film_lufs_3s_after", "film_step_3s_lu",
-                                                     "film_step_400ms_lu", "incoming_source_own_step_3s_lu", "lsd_film_db",
-                                                     "lsd_incoming_source_db", "extra_lsd_db", "hf_click_film_db", "extra_hf_db",
-                                                     "attack_film_vs_source_db", "gain_db_out", "gain_db_in")}})
+                      "measured": {**{k: m[k] for k in ("xfade_s", "film_lufs_3s_before", "film_lufs_3s_after", "film_step_3s_lu",
+                                                        "film_step_400ms_lu", "incoming_source_own_step_3s_lu", "lsd_film_db",
+                                                        "lsd_incoming_source_db", "extra_lsd_db", "hf_click_film_db", "extra_hf_db",
+                                                        "attack_film_vs_source_db", "gain_db_out", "gain_db_in")},
+                                   **met.get("extras", {}).get("seams", {}).get(jid, {})}})
     # each cue carries its own entry and exit methods and the measured levels of the blocks it plays under
     jby = {j["id"]: j for j in joins}
     for oc in out_cues:
@@ -255,9 +277,70 @@ def checks(main, plan, met, x40, xplan, xmet):
         b["Dusk"]["st_median"] <= rings_med - 6, f"Dusk {b['Dusk']['st_median']} against the rings' {rings_med}")
     add("main: the Drop is a step of +3 LU or more", main["joins"][0]["measured"]["film_step_3s_lu"] >= 3,
         f"J1 {main['joins'][0]['measured']['film_step_3s_lu']} LU over 3 s, {main['joins'][0]['measured']['film_step_400ms_lu']} LU over 400 ms")
-    unint = [j for j in main["joins"] if j["id"] in ("J2", "J5")]
-    add("main: unplanned loudness jumps at most 1.5 LU (J2, J5)", all(abs(j["measured"]["film_step_3s_lu"]) <= 1.5 for j in unint),
+    unint = [j for j in main["joins"] if j["id"] in ("J2", "M2s", "M3s", "F4")]
+    add("main: unplanned loudness jumps at most 1.5 LU (J2 and the splices M2s, M3s, F4)",
+        all(abs(j["measured"]["film_step_3s_lu"]) <= 1.5 for j in unint),
         "; ".join(f"{j['id']} {j['measured']['film_step_3s_lu']} LU" for j in unint))
+    j5 = next(j for j in main["joins"] if j["id"] == "J5")
+    add("main: J5 is the merge's planned dip, -1.5 to -4.0 LU over 3 s (Loops' merge ran 2-4 LU quieter)",
+        -4.0 <= j5["measured"]["film_step_3s_lu"] <= -1.5,
+        f"J5 {j5['measured']['film_step_3s_lu']} LU over 3 s, {j5['measured']['film_step_400ms_lu']} LU over 400 ms")
+    ex = met.get("extras", {})
+    if ex.get("return_vs_climax"):
+        rv, ta = ex["return_vs_climax"], ex["title_arrival"]
+        add("main: the Return adds no new peak (short-term max at most 0.5 LU over the climax's)",
+            rv["return_st_max"] <= rv["climax_st_max"] + 0.5, f"Return {rv['return_st_max']} against the climax's {rv['climax_st_max']} LUFS")
+        add("main: the merge dips under the rush (integrated, by 1.5 LU or more)", rv["merge_vs_rush_lu"] <= -1.5,
+            f"merge against rush {rv['merge_vs_rush_lu']} LU")
+        add("main: the title is an arrival (the music's second after its downbeat at least as loud as the second before)",
+            ta["step_1s_lu"] >= 0.0, f"{ta['lufs_1s_before']} to {ta['lufs_1s_after']} LUFS ({ta['step_1s_lu']} LU)")
+    cues = {c["id"]: c for c in plan["cues"]}
+    for jid in ("M2s", "M3s", "F4"):
+        sm = next((s_ for s_ in plan["seams"] if s_["id"] == jid), None)
+        if sm is None:
+            continue
+        a, b = cues[sm["from"]], cues[sm["to"]]
+        oo, oi = nearest_db(a["track"], a["src_out"])[2], nearest_db(b["track"], b["src_in"])[2]
+        add(f"main: {jid} is a forward splice at bar lines (in the same track, in its order)",
+            a["track"] == b["track"] and b["src_in"] > a["src_out"] and abs(oo) <= 2 and abs(oi) <= 2,
+            f"{a['track']} out {mmss(a['src_out'])} (downbeat {oo} ms), in {mmss(b['src_in'])} (downbeat {oi} ms)")
+        mj = next(j for j in main["joins"] if j["id"] == jid)["measured"]
+        pc = mj.get("lsd_percentile_of_incoming_own_downbeats")
+        add(f"main: {jid}'s spectral step is within the track's own bar changes (at or under their 95th percentile)",
+            pc is not None and pc <= 95.0, f"LSD {mj['lsd_film_db']} dB = percentile {pc} of the track's own downbeats")
+    sw = SPEC["main"].get("swell")
+    if sw:
+        title_t = film_of(cues, {"cue": "M6a", "src": 164.5244})
+        L = sw["beats"] * 60.0 / sw["bpm"]
+        add("main: the reverse swell is one bar (4 beats) and its last sample lands on the title frame",
+            sw["beats"] == 4 and abs(sw["end_film_s"] - title_t) < 0.5 / FPS,
+            f"{L:.4f} s, {mmss(sw['end_film_s'] - L)}-{mmss(sw['end_film_s'])}; the title at {mmss(title_t)} (frame {round(title_t * FPS)})")
+    for tid, tpath in (("A", "title_A.json"), ("B", "title_B.json")):
+        T = EXTRA.get(tpath)
+        if T and tid == "A":
+            ch = next((v for v in T["variants"] if v["id"] == EXTRA.get("chosen_title_variant")), None)
+            if ch:
+                add("main: no 'foghorn' (or phone, voice or alarm) reading at 0.30 or more in any 3 s window around the "
+                    "swell and the title (the chosen composite, 0.5 s grid)", ch["verdict"] != "fail",
+                    f"{ch['id']}: foghorn max {ch['foghorn_max']} at {ch['foghorn_max_at']} s over {ch['windows']} windows; watched {ch['watched_max']}")
+    arch = EXTRA.get("archive_plans")
+    if arch:
+        m1_old = next(c for c in arch["main"]["cues"] if c["id"] == "M1")
+        m1_new = cues["M1"]
+        add("main: M1 is unchanged (no ident, §61)", all(m1_old[k] == m1_new[k] for k in ("src_in", "src_out", "film_in", "gain_db", "head")),
+            f"A4 {m1_new['src_in']}-{m1_new['src_out']} at film {m1_new['film_in']}")
+        xo = {c["id"]: c for c in arch["x40"]["cues"]}
+        same = all(all(xo[c["id"]][k] == c[k] for k in ("track", "src_in", "src_out", "film_in", "gain_db", "head", "tail")) for c in xplan["cues"])
+        add("x40: the 40-s cut's music is unchanged (X1-X3)", same and len(xo) == len(xplan["cues"]), ", ".join(c["id"] for c in xplan["cues"]))
+    xj2 = next((s_ for s_ in xplan["seams"] if s_["id"] == "XJ2"), {})
+    add("x40: XJ2 is masked by the kit's CC0 reverse swell, and no Mixkit sweep", xj2.get("mask", {}).get("take") == "impact_body_cc0",
+        xj2.get("mask", {}).get("what", "no mask"))
+    words = json.dumps({"shots": main["shots"], "blocks": main.get("blocks"), "sync": main.get("sync_points"),
+                        "roles": [c["role"] for c in main["cues"]], "joins": [j["name"] for j in main["joins"]],
+                        "x40": [x40["slots"], [c["role"] for c in x40["cues"]], [j["name"] for j in x40["joins"]]]}).lower()
+    add("the wall and the convergence are gone from every cue, join, block, shot, slot and sync point",
+        "the wall" not in words and "wall" not in words and "convergence" not in words.replace("a2 convergence", ""),
+        "searched the structural parts of the sheet (the revision log may name them)")
     add("main: no click at any seam (extra 8-16 kHz under +3 dB, except where a drop's transient is the seam)",
         all(j["measured"]["extra_hf_db"] is None or j["measured"]["extra_hf_db"] < 3 or j["id"] == "J1" for j in main["joins"]),
         "; ".join(f"{j['id']} {j['measured']['extra_hf_db']}" for j in main["joins"]) + " (J1: B2's drop transient against a quiet pad; no click line on the spectrogram)")
@@ -268,6 +351,120 @@ def checks(main, plan, met, x40, xplan, xmet):
         rate = (len(seg) - (0 if a0 == "S01" else 0)) / (dur / 60)
         add(f"main: cut rate in '{act}' at most 18 a minute", rate <= 18, f"{len(seg)} shots in {dur:.1f} s = {rate:.1f} a minute")
     return out
+
+
+def return_frames(plan, met):
+    """The Return in R-frames (MONTAGE_DESIGN §2.3): R0 is B2 1:36.53 (M5); the bar lines under it, in film time and
+    frames, and the film frame of every R-mark the design names."""
+    cues = {c["id"]: c for c in plan["cues"]}
+    R0 = plan["return"]["R0_film_s"]
+    title = plan["return"]["R720_film_s"]
+    bars = []
+    for cid in ("M5", "M6a"):
+        c = cues[cid]
+        for k, d in enumerate(tmap(c["track"])["downbeats_s"]):
+            ft = c["film_in"] + (d - c["src_in"])
+            if R0 - 2.5 <= ft <= title + 2.5 and c["src_in"] - 1e-3 <= d <= c["src_out"] + 1e-3:
+                bars.append({"cue": cid, "track": c["track"], "bar": k, "src_s": d, "film_s": round(ft, 4),
+                             "frame": round(ft * FPS), "R": round((ft - R0) * FPS, 1)})
+    marks = [(-60, "the pull-back from S24's last frame begins"), (0, "the release"), (120, "the gather"),
+             (240, "the middle ring's swaps begin"), (360, "the rush"), (480, "J5: the merge on A4's dominant; the dip"),
+             (600, "A4 bar 81; the one-bar reverse swell begins"), (646, "the blink (no sound)"),
+             (658, "the iris opens the page from the stone"), (690, "'Pebble' rises"), (720, "THE TITLE")]
+    rows = []
+    for R, what in marks:
+        ft = R0 + R / FPS if R != 720 else title
+        if R == 480:
+            ft = next(s["t"] for s in plan["seams"] if s["id"] == "J5")
+        rows.append({"R": R, "film_s": round(ft, 4), "film": mmss(ft), "frame": round(ft * FPS), "what": what})
+    return {"R0_film_s": R0, "R0_frame": round(R0 * FPS), "title_film_s": title, "title_frame": round(title * FPS),
+            "marks": rows, "bar_lines": bars, "bars_per_120_frames": "B2: 120.006 frames a bar; A4: 119.99",
+            "per_bar": met.get("extras", {}).get("return_bars")}
+
+
+def g1_record(ma, mb):
+    """G1's music A/B, by measurement: the same picture phases under each side's music."""
+    def side(M):
+        ex = M["extras"]
+        j5 = next(s for s in M["seams"] if s["id"] == "J5")
+        e5 = ex["seams"]["J5"]
+        return {"J5_film_s": j5["t_film"], "J5_step_3s_lu": j5["film_step_3s_lu"], "J5_step_400ms_lu": j5["film_step_400ms_lu"],
+                "J5_extra_lsd_db": j5["extra_lsd_db"], "J5_lsd_percentile_of_A4_downbeats": e5.get("lsd_percentile_of_incoming_own_downbeats"),
+                "J5_extra_hf_db": j5["extra_hf_db"], "J5_d2_ratio": e5.get("d2_ratio_at_seam"),
+                "J5_harmony": e5.get("harmony"), "J5_harmony_A4_own": e5.get("harmony_incoming_own"),
+                "J5_harmony_B2_own": e5.get("harmony_outgoing_own"), "J5_onsets": e5.get("onsets_around_seam"),
+                "J5_beat_interval_across_ms": e5.get("beat_interval_across_ms"),
+                "return_blocks": ex["return_vs_climax"]["return_blocks"], "climax_st_max": ex["return_vs_climax"]["climax_st_max"],
+                "return_st_max": ex["return_vs_climax"]["return_st_max"], "merge_vs_rush_lu": ex["return_vs_climax"]["merge_vs_rush_lu"],
+                "title_arrival": ex["title_arrival"], "per_bar": ex.get("return_bars"),
+                "bed": M["bed"]}
+    return {"A": side(ma), "B": side(mb)}
+
+
+def beat_sheet(sheet, plan):
+    """The picture lanes' timing source: MONTAGE_DESIGN §5.2's block table moved to the revised music, the Return in
+    R-frames, every shot, the sync points and the bar lines under the Return, from the same data as CUE_SHEET.json."""
+    m = sheet["main_film"]
+    old = {}
+    arch = os.path.join(ARCH, "CUE_SHEET.json")
+    if os.path.exists(arch):
+        for b in load(arch)["main_film"]["blocks"]:
+            old.setdefault(b["block"], b)
+    rows = []
+    for b in m["blocks"]:
+        o = old.get(b["block"])
+        rows.append({"block": b["block"], "start_s": b["start_s"], "end_s": b["end_s"], "start": b["start"], "end": b["end"],
+                     "start_frame": round(b["start_s"] * FPS), "end_frame": round(b["end_s"] * FPS), "dur_s": b["dur_s"],
+                     "start_pct": b["start_pct"], "music": b["music"],
+                     "on_22_13": f"{o['start']}-{o['end']}" if o else None})
+    for name in ("Cascade 1", "Cascade 2", "Cascade 3", "Convergence"):
+        o = old.get(name)
+        if o:
+            rows.append({"block": name, "on_22_13": f"{o['start']}-{o['end']}", "now": "out",
+                         "why": "§61: Cascades 1-3 leave the main film (35 readable features); the Return replaces the wall and the convergence"})
+    out = {"title": "Ripples: the picture beat sheet (revision 2, the Return)", "version": sheet["version"],
+           "frame_rate": FPS, "film_length_s": m["film_length_s"], "film_length": m["film_length"],
+           "film_length_frames": m["film_length_frames"], "blocks": rows, "return": m.get("return"),
+           "shots": m["shots"], "sync_points": m["sync_points"],
+           "rule": "every time is a source time on a cue (film = cue film_in + (src - src_in)); the incoming shot's first "
+                   "readable frame lands on a beat, a half bar or a phrase line; a reading hold is never shortened; only "
+                   "hits snap (OVERRIDES §52 L3d)"}
+    with open(os.path.join(SCORE2, "BEAT_SHEET.json"), "w") as fh:
+        json.dump(out, fh, indent=1, ensure_ascii=False)
+    L = ["# Ripples: the picture beat sheet", "",
+         f"Revision 2, generated by `tools/audio/score2/cue_sheet.py` from the cue plans and their measurements, the same data as "
+         f"`CUE_SHEET.json`. It is the picture lanes' timing source. Film length {m['film_length']} ({m['film_length_frames']} "
+         f"frames at {FPS} fps). Frames are film frames at {FPS} fps (round(seconds x {FPS})).", "",
+         "## The blocks (MONTAGE_DESIGN §5.2, moved to the revised music)", "",
+         "| Block | Film (frames) | Length, s | % | Music | On 22:13 |", "|---|---|---|---|---|---|"]
+    for r_ in rows:
+        if r_.get("now") == "out":
+            L.append(f"| {r_['block']} | **out** | | | | {r_['on_22_13']} |")
+        else:
+            L.append(f"| {r_['block']} | {r_['start']}-{r_['end']} ({r_['start_frame']}-{r_['end_frame']}) | {r_['dur_s']:.2f} | "
+                     f"{r_['start_pct']} | {', '.join(r_['music'])} | {r_['on_22_13'] or 'new'} |")
+    rt = m.get("return")
+    if rt:
+        L += ["", "## The Return in R-frames (MONTAGE_DESIGN §2.3)", "",
+              f"R0 = film {mmss(rt['R0_film_s'])} (frame {rt['R0_frame']}); the title (R720) = film {mmss(rt['title_film_s'])} "
+              f"(frame {rt['title_frame']}). One bar is 120.006 frames under B2 and 119.99 under A4: place events on the bar "
+              "lines below, not on R0 + 120k.", "", "| R | Film | Frame | What |", "|---|---|---|---|"]
+        for r_ in rt["marks"]:
+            L.append(f"| R{r_['R']} | {r_['film']} | {r_['frame']} | {r_['what']} |")
+        L += ["", "Bar lines under the Return:", "", "| Cue | Bar | Source | Film | Frame | R |", "|---|---|---|---|---|---|"]
+        for b in rt["bar_lines"]:
+            L.append(f"| {b['cue']} ({b['track']}) | {b['bar']} | {mmss(b['src_s'])} | {mmss(b['film_s'])} | {b['frame']} | {b['R']} |")
+    L += ["", "## The shots", "", "| Shot | Block | Film (frames) | Length, s | Music | What lands where |", "|---|---|---|---|---|---|"]
+    for s_ in m["shots"]:
+        L.append(f"| {s_['id']} | {s_.get('block', '')} | {s_['start']}-{s_['end']} ({s_['start_frame']}-{s_['start_frame'] + s_['dur_frames']}) | "
+                 f"{s_['dur_s']:.2f} | {s_['music_under']} | {s_['what']} |")
+    L += ["", "## The sync points", "", "| Film | Frame | What |", "|---|---|---|"]
+    for sp_ in m["sync_points"]:
+        L.append(f"| {sp_['film']}{' (about)' if sp_.get('approximate') else ''} | {sp_['frame']} | {sp_['what']} |")
+    L += ["", "Every film time above is resolved from a source time on a cue; nothing in Pebble's own time moves. Reading "
+          "holds are never shortened: if a 2.0.0 take needs time, use the flex rules in `CUE_SHEET.md` §5.4.", ""]
+    with open(os.path.join(SCORE2, "BEAT_SHEET.md"), "w") as fh:
+        fh.write("\n".join(L))
 
 
 def main():
@@ -309,12 +506,41 @@ def main():
         "credits": SPEC["credits"],
         "tracks_used": {k: sorted(v) for k, v in sorted(used.items())},
         "checks": ck,
-        "files": {"plans": ["cuesheet/plan_main.json", "cuesheet/plan_x40.json"],
-                  "measurements": ["cuesheet/main.metrics.json", "cuesheet/x40.metrics.json", "cuesheet/main.npz", "cuesheet/x40.npz"],
-                  "pictures": ["cuesheet/main-overview.png", "cuesheet/main-seams.png", "cuesheet/x40-overview.png", "cuesheet/x40-seams.png"]},
+        "files": {"plans": ["cuesheet/plan_main.json", "cuesheet/plan_x40.json", "cuesheet/plan_main_g1b.json"],
+                  "measurements": ["cuesheet/main.metrics.json", "cuesheet/x40.metrics.json", "cuesheet/main.npz", "cuesheet/x40.npz",
+                                   "cuesheet/r2/main_g1b.metrics.json", "cuesheet/r2/probe.json", "cuesheet/r2/title_A.json",
+                                   "cuesheet/r2/title_B.json", "cuesheet/r2/x40mask.json"],
+                  "pictures": ["cuesheet/main-overview.png", "cuesheet/main-seams.png", "cuesheet/x40-overview.png", "cuesheet/x40-seams.png",
+                               "cuesheet/r2/probe.png", "cuesheet/r2/g1-ab.png", "cuesheet/r2/title-foghorn.png", "cuesheet/r2/x40-mask.png"],
+                  "archive_22_13": "cuesheet/archive-2026-10-26-2213/ (22:13's plans, spec, metrics, sheet and pictures)"},
     }
+    if "return" in plan:
+        sheet["main_film"]["return"] = return_frames(plan, met)
+    if EXTRA.get("main_g1b.metrics.json"):
+        sheet["g1_music_ab"] = g1_record(met, EXTRA["main_g1b.metrics.json"])
+    for k in ("title_A.json", "title_B.json"):
+        if EXTRA.get(k):
+            T = EXTRA[k]
+            sheet.setdefault("title_classifier", {})[k[:-5]] = {
+                "plan": T["plan"], "master_gain_db": T["master_gain_db"], "windows": T["windows"],
+                "variants": [{kk: v[kk] for kk in v if kk != "rows"} for v in T["variants"]]}
+    if EXTRA.get("x40mask.json"):
+        sheet["cut_40s"]["xj2_mask_measured"] = {k: EXTRA["x40mask.json"][k] for k in ("mask", "music_alone", "with_mask")}
+    if EXTRA.get("probe.json"):
+        P = EXTRA["probe.json"]
+        keep = ("label", "out_bar", "in_bar", "end_bar", "map_cost", "step_3s_lu", "step_400ms_lu", "extra_lsd_db",
+                "lsd_percentile_of_incoming_own_downbeats", "extra_hf_db", "d2_ratio_at_seam", "breath_db",
+                "beat_interval_across_ms")
+        sheet["splice_probe"] = {k: [{kk: c.get(kk) for kk in keep} | {
+            "harmony": {kk: c.get("harmony_edit", {}).get(kk) for kk in ("beat_cos", "bar_cos", "two_bar_cos", "camelot_steps")},
+            "harmony_incoming_own": {kk: c.get("harmony_incoming_own", {}).get(kk) for kk in ("beat_cos", "bar_cos", "two_bar_cos")},
+            "onsets": c.get("onsets_around_seam")} for c in P[k]] for k in ("M2", "M3", "J2")}
+        sheet["splice_probe"]["own_downbeat_lsd"] = P["own_downbeat_lsd"]
+    if EXTRA.get("g1_decision.json"):
+        sheet["decisions"] = EXTRA["g1_decision.json"]
     with open(os.path.join(SCORE2, "CUE_SHEET.json"), "w") as fh:
         json.dump(sheet, fh, indent=1, ensure_ascii=False)
+    beat_sheet(sheet, plan)
     bad = [c for c in ck if not c["ok"]]
     for c in ck:
         print(("ok  " if c["ok"] else "FAIL") + "  " + c["check"] + " :: " + c["detail"])

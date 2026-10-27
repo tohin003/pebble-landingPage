@@ -378,7 +378,6 @@ def main():
         meter = subprocess.run([FFMPEG, "-hide_banner", "-nostdin", "-nostats", "-i", out, "-map", "0:a:0", "-af",
                                 "ebur128=peak=true", "-f", "null", "-"], capture_output=True, text=True).stderr
         s = meter[meter.rfind("Summary:"):]
-        import re
         get = lambda pat: float(re.search(pat, s, re.S).group(1))  # noqa: E731
         res["streams"] = [{k: st.get(k) for k in ("codec_name", "profile", "width", "height", "r_frame_rate",
                                                    "pix_fmt", "sample_rate", "channels", "bit_rate", "duration")}

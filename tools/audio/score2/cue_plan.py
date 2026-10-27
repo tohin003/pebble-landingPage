@@ -16,8 +16,13 @@ does, so times agree with the music map), lays the cues into a film-length bed i
 Mixkit licence (OVERRIDES §51): the assembled bed exists only in memory while this runs. Nothing here writes a WAV,
 an MP3 or any music-only file; the outputs are curves (NPZ) and numbers (JSON). Previews of the score are VIDEO.
 
-  python -I tools/audio/score2/cue_plan.py PLAN.json OUT_PREFIX      (audio venv, through scripts/heavy.sh)
+  python -I tools/audio/score2/cue_plan.py PLAN.json OUT_PREFIX [LAYERS.json]   (audio venv, through scripts/heavy.sh)
   -> OUT_PREFIX.npz (curves) and OUT_PREFIX.metrics.json
+
+With LAYERS.json (the build's layer sheet), its measured source-time corrections are applied first (score_common's
+apply_corrections, as score_build.py builds the masters): B2's and B4's audible attacks then land on the plan's film
+times. Without it, the plan is laid exactly as written (the cue sheet's 22:13 convention). assemble() and measure() are
+the two halves of main(), for revise_measure.py.
 """
 import json
 import os
@@ -189,29 +194,28 @@ def mean_lufs_mono(y, sr, t0, t1):
     return float(lufs_of(ms.mean())) if len(ms) else None
 
 
-def main():
-    plan_path, out = sys.argv[1], sys.argv[2]
-    T0 = time.perf_counter()
-    plan = json.load(open(plan_path))
-    cues = {c["id"]: c for c in plan["cues"]}
+SR = BED_SR
+
+
+def assemble(plan, keep_tracks=False):
+    """Lay every cue of the plan into a film-length bed in memory (48 kHz stereo). Returns the bed, the per-seam source
+    snippets (the source around its cut point, with the cue's gain at the seam), the tracks' facts and, with keep_tracks,
+    each decoded track at 48 kHz (for analyses that need more of a source). The cues get '_film_extent'."""
     global SR
-    SR = None
+    SR = BED_SR
+    cues = {c["id"]: c for c in plan["cues"]}
     end = plan["end_film_s"]
-    mel_fb = mel_filterbank()
-    bed = None
+    bed = np.zeros((int(np.ceil(end * SR)) + 1, 2), dtype=np.float32)
     src_snips = {}   # (seam id, side) -> (array, sr, t0_in_source)
     seam_src = {}
     for s in plan["seams"]:
         seam_src[(s["id"], "out")] = cues[s["from"]]
         seam_src[(s["id"], "in")] = cues[s["to"]]
     tracks = sorted(set(c["track"] for c in plan["cues"]))
-    track_info = {}
+    track_info, kept = {}, {}
     for tr in tracks:
         path = os.path.join(AUD, tr + ".mp3")
         y, sr = sf.read(path, dtype="float32", always_2d=True)
-        if SR is None:
-            SR = BED_SR
-            bed = np.zeros((int(np.ceil(end * SR)) + 1, 2), dtype=np.float32)
         track_info[tr] = {"file": os.path.basename(path), "sr": sr, "duration_s": round(len(y) / sr, 3),
                           "resampled_to": SR if sr != SR else None}
         if sr != SR:  # one rate for the bed (the film's 48 kHz); times in seconds are unchanged
@@ -239,7 +243,16 @@ def main():
             a = max(0, int((p - WIN) * SR)); b = min(len(y), int((p + WIN) * SR))
             gdb = float(env_db(c["gain_db"], np.array([seam["t"] - 0.05 if side == "out" else seam.get("in_film", seam["t"]) + 0.05]))[0])
             src_snips[(sid, side)] = (y[a:b, :2].copy() * 10 ** (gdb / 20), a / SR, p, gdb)
+        if keep_tracks:
+            kept[tr] = y
         del y
+    return bed, src_snips, track_info, kept
+
+
+def measure(plan, bed, src_snips, mel_fb):
+    """cue_plan.py's measurements of an assembled bed: loudness, blocks, seams and the curves for the strips.
+    Returns the metrics (without the run's timing) and the NPZ arrays."""
+    cues = {c["id"]: c for c in plan["cues"]}
     n = len(bed)
     film_t_end = n / SR
     # ---------------------------------------------------------------- loudness of the bed
@@ -320,20 +333,45 @@ def main():
         npz[f"{sid}_{side}_mel"] = m2; npz[f"{sid}_{side}_mel_t"] = (t2 + a0).astype(np.float32)
         npz[f"{sid}_{side}_lt"] = (np.arange(len(ms2)) * LH + LH / 2 + a0).astype(np.float32)
         npz[f"{sid}_{side}_mom"] = mo2.astype(np.float32); npz[f"{sid}_{side}_st"] = st2.astype(np.float32)
-    np.savez_compressed(out + ".npz", **npz)
     for c in plan["cues"]:
         c.pop("_tmp", None)
     res = {
-        "plan": os.path.basename(plan_path), "film": plan["film"], "sr": SR, "film_length_s": round(film_t_end, 3),
-        "tracks": track_info,
+        "film": plan["film"], "sr": SR, "film_length_s": round(film_t_end, 3),
         "cue_extents_film_s": {c["id"]: c.get("_film_extent") for c in plan["cues"]},
         "bed": {"integrated_lufs": r(integ), "lra_lu": r(LRA), "sample_peak_dbfs": r(20 * np.log10(peak + 1e-12)),
                 "st_max": r(np.max(st)), "st_min_above_-70": r(np.min(st[st > -70])) if (st > -70).any() else None},
         "blocks": blocks, "seams": seams,
         "audio_written": "none (the bed was assembled in memory only)",
-        "secs": round(time.perf_counter() - T0, 1),
-        "peak_rss_mb": round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1048576, 1),
     }
+    return res, npz
+
+
+def load_plan(plan_path, layers_path=None):
+    """The plan, with the build's measured source-time corrections applied when a layer sheet is given."""
+    plan = json.load(open(plan_path))
+    corr = None
+    if layers_path:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # -I leaves the script's folder off sys.path
+        from score_common import apply_corrections
+        sheet = json.load(open(layers_path))
+        plan = apply_corrections(plan, sheet)
+        corr = sheet.get("source_time_correction_s", {})
+    return plan, corr
+
+
+def main():
+    plan_path, out = sys.argv[1], sys.argv[2]
+    layers_path = sys.argv[3] if len(sys.argv) > 3 else None
+    T0 = time.perf_counter()
+    plan, corr = load_plan(plan_path, layers_path)
+    mel_fb = mel_filterbank()
+    bed, src_snips, track_info, _ = assemble(plan)
+    res, npz = measure(plan, bed, src_snips, mel_fb)
+    np.savez_compressed(out + ".npz", **npz)
+    res = {"plan": os.path.basename(plan_path), **{k: v for k, v in res.items()}, "tracks": track_info,
+           "source_time_correction_s": corr,
+           "secs": round(time.perf_counter() - T0, 1),
+           "peak_rss_mb": round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1048576, 1)}
     json.dump(res, open(out + ".metrics.json", "w"), indent=1)
     print(json.dumps({"bed": res["bed"], "secs": res["secs"], "rss_mb": res["peak_rss_mb"]}))
 
