@@ -16,6 +16,8 @@
 //   - Stealth Lockdown's never-words (OVERRIDES §21): "undetectable", "invisible", and exams, interviews, proctoring,
 //     monitoring, cheating, bypassing or evading, except inside the honest line itself; and "Context Warping", the name
 //     of 1.3.0's prompt-caching change, which waits for its benchmark (OVERRIDES §25).
+//   - the coming feature's four phrases (OVERRIDES §62): "rewrites its memory", "never forgets", "learns everything" and
+//     "smarter every night", on every page, in the forms src/content/next.ts NEXT_NEVER_PHRASES lists.
 // Exact strings that are right as written (Pebble's own words, honest negatives, approved sentences) are allowed by
 // exact match only (ALLOW below; the reasons are in docs/CLAIMS.md "Allow-list for tools/qa/copy-lint.mjs"). The one
 // exact passage allowed inside a longer text is Stealth Lockdown's honest line (ALLOW_PASSAGES).
@@ -79,6 +81,13 @@ const BANNED = [
   [/\b(evad(e|es|ed|ing)|evasion)\b/i, "Stealth: evading"],
   // Pebble 1.3.0's prompt-caching change keeps its name off the site until a benchmark measures it (OVERRIDES §25)
   [/\bcontext[\s-]*warp/i, "unannounced: Context Warping (waits for its benchmark)"],
+  // The coming feature (D157): never §62's four phrases, on any page (the same expressions as src/content/next.ts
+  // NEXT_NEVER_PHRASES; src/content/next.test.ts checks)
+  [/\brewr[io]t\w*\b.{0,20}\bmemor/i, "coming feature: never rewrites its memory (OVERRIDES §62)"],
+  [/\bnever forget/i, "coming feature: never forgets (OVERRIDES §62)"],
+  [/\blearn\w*\s+everything/i, "coming feature: learns everything (OVERRIDES §62)"],
+  [/\bsmarter\b/i, "coming feature: smarter (OVERRIDES §62; a comparison)"],
+  [/\bevery night\b/i, "coming feature: every night (OVERRIDES §62)"],
 ];
 
 /**

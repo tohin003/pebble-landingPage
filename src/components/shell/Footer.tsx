@@ -1,7 +1,9 @@
 // The footer (DESIGN-LEXINGTON §6 Footer, with the lead's graft of comp B's wordmark): the hero's pebble is awake at the
 // top of the page; at the bottom it sleeps. The wordmark "pebble" is set huge and tone on tone (--word), and the
 // sleeping pebble is its full stop, standing on a local ground line along the baseline. Under it, the statement
-// "Pebble is resting." / "No telemetry." (copy.ts footer.resting, split at its full stop) in two tones.
+// "Pebble is resting." / "No telemetry." (copy.ts footer.resting, split at its full stop) in two tones. Under the
+// statement, only from 2.0.0's page on, the hint of the coming feature (src/content/next.ts; D157, OVERRIDES §62): a
+// promise and its limit in one paragraph, whose only picture is the sleeping pebble above it.
 // Then the colophon on the page's grid: the links ("Pebble": GitHub, Releases and, while the benchmark is shown, the
 // home page's Benchmarks section; "This site": Film transcript, Credits, Privacy) and "Appearance" (the theme as words,
 // and Pause motion); and the fine print from column 4: the honesty stamp
@@ -17,6 +19,7 @@ import Link from "next/link";
 import { footer, type Link as LinkCopy } from "@/content/copy";
 import { bloubCredit } from "@/content/credits";
 import { footerColumns } from "@/content/labels";
+import { comingNext, comingNextShown } from "@/content/next";
 import { releaseFacts } from "@/content/releaseFacts";
 import { Pebble } from "@/components/pebble/Pebble";
 import { Horizon } from "@/components/ui/Horizon";
@@ -31,8 +34,13 @@ const isExternal = (link: LinkCopy) => "external" in link && link.external === t
 /**
  * `benchmarkShown`: the Benchmarks section's gate (releaseFacts.benchmarksPublic, as the section and Infrastructure's
  * link read it), a prop so the tests can render the closed site.
+ * `nextShown`: the coming feature's gate (comingNextShown: the release facts say 2.0.0 or later, and the feature is
+ * still planned), a prop so the tests can render both states.
  */
-export function Footer({ benchmarkShown = releaseFacts.benchmarksPublic }: { benchmarkShown?: boolean } = {}) {
+export function Footer({
+  benchmarkShown = releaseFacts.benchmarksPublic,
+  nextShown = comingNextShown(),
+}: { benchmarkShown?: boolean; nextShown?: boolean } = {}) {
   const [resting, then] = firstSentence(footer.resting);
   const columns: { key: string; title: string; links: readonly LinkCopy[] }[] = [
     {
@@ -57,6 +65,11 @@ export function Footer({ benchmarkShown = releaseFacts.benchmarksPublic }: { ben
           <p className={`display-3 two-tone ${styles.resting}`}>
             <span>{resting}</span> <span>{then}</span>
           </p>
+          {nextShown && (
+            <p className={styles.coming}>
+              <span>{comingNext.lead}</span> <span>{comingNext.limit}</span>
+            </p>
+          )}
         </div>
 
         <div className={`grid-12 ${styles.colophon}`}>

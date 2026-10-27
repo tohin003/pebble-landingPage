@@ -85,6 +85,29 @@
   margin-top: 0;
 }
 
+/* The coming feature's hint (Footer.tsx; src/content/next.ts), only from 2.0.0's page on: one paragraph under the
+   statement, on its left edge, in the body voice, so the statement stays the loudest line. The promise in ink at 500,
+   then its limit in muted ink: the site's two tones, inline. Tokens only, so it follows the theme; no animation. */
+.coming {
+  margin-top: 20px;
+  max-width: 46ch;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.coming > span:first-child {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+@media (max-width: 560px) {
+  .coming {
+    margin-top: 16px;
+    font-size: 16px;
+  }
+}
+
 /* --- the colophon on the page's grid: the links and Appearance from column 4, the fine print under them --- */
 .colophon {
   margin-top: 48px;
