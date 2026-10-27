@@ -54,6 +54,10 @@ LIST="$ABS_OUT/concat.txt"
 : >"$LIST"
 
 cd "$REPO/video"
+# a failed segment exits through `set -e`: stop its disk sampler then too (on 28 Oct six failed renders left six
+# sampler loops running under launchd)
+SAMPLER=""
+trap '[ -n "$SAMPLER" ] && kill "$SAMPLER" 2>/dev/null; true' EXIT
 i=0
 from="$START"
 while [ "$from" -lt "$TOTAL" ]; do
@@ -75,6 +79,7 @@ while [ "$from" -lt "$TOTAL" ]; do
   t1=$(date +%s)
   kill "$SAMPLER" 2>/dev/null || true
   wait "$SAMPLER" 2>/dev/null || true
+  SAMPLER=""
   lowest="$(cat "$ABS_OUT/.lowest" 2>/dev/null || echo "$f0")"
   drop=$((f0 - lowest))
   [ "$drop" -gt "$NEED_KB" ] && NEED_KB="$drop"
