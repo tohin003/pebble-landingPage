@@ -261,7 +261,6 @@ export function planReturn(o: ReturnOptions): ScenePlan {
         fps: o.climax.fps,
       }
     : null;
-  let extra: ReturnExtra | null = null;
 
   const head = (ctx: FinaleHeadContext): FinaleHead => {
     const { f, irisAt, landAt, titleStone, titleStonePx, lzPage } = ctx;
@@ -314,7 +313,7 @@ export function planReturn(o: ReturnOptions): ScenePlan {
       move("light", r0, f60(120, fps), "evening to the page grade (the release)"),
       ...(["mid2", "mid3", "out2"] as const).map((w) => move("swap", Math.round(localOfR(firstSwap(w), fps)), f60(16, fps), `the ${w} wave's swaps (8 out, 8 in, crossing at mid-blur)`)),
     ];
-    extra = {
+    const extra: ReturnExtra = {
       field,
       span: { from: 0, to: irisAt },
       r0,
