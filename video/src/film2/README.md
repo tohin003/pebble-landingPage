@@ -362,13 +362,19 @@ film's two) once the bands have cleared, never over them. The frames before `hit
 answers is **read in the aperture at 28 px or more** (12 words declared; CR-09), pushing in and drifting up through the
 room the aperture leaves it (a pre-roll longer than the read can glide comes in from wider first), with S05's lead-in
 line (L04) in a band on the night green, gone before the bands move (`lines.leadIn: null` drops it; it needs about 150
-frames of pre-roll). The companion is RS-9's own view (CR-11, CR-18): a slot holding its card until the receipt, then a
-real 1.0.x frame of it at work, switched in with a hard cut on the event. The camera hands off to the opened framing
-as the frame opens and drifts out at 0.4 px a frame through "Now it works across your Mac." and "Where you allow it."
-(CR-04: it froze here), each landing on a beat once the burst has left its rect and the bands have cleared, held
-together (3.6 s and ≥ 3.0 s). At hit + 4 s the camera pulls back in log space to the whole Mac, composed dense
+frames of pre-roll); where the aperture leaves the card no room to rise (1:1's 16:9 aperture) it drifts sideways too, so
+the card itself moves at `READ_DRIFT_PX` (0.36) or more. The companion is RS-9's own view (CR-11, CR-18): a slot
+holding its card until the receipt, then a real 1.0.x frame of it at work, switched in with a hard cut on the event.
+The camera hands off to the opened framing as the frame opens and drifts out through "Now it works across your Mac."
+and "Where you allow it.", **panning at `HOLD_PAN_PX` (0.42 px a frame) the way the reveal's glide then goes** (fix
+round 2, the verifier's CR-04: the pull-back about the companion alone moved the frame's corners 0.4–0.6 px a frame
+while the companion, the frame's subject, moved 0.04–0.09; the content now moves 0.33–0.57), each line landing on a
+beat once the burst has left its rect and the bands have cleared, held together (3.6 s and ≥ 3.0 s). At hit + 4 s, or
+as the pair's exit starts if that is later (so the pull-back never brings a capture under a line still read), the
+camera pulls back in log space to the whole Mac, composed dense
 (`world.ts`: the browser, the project and the Toolbox at 25–40 % of the frame's width at the wide, overlapping, the
-context windows at their own parallax depths; CR-16) and glides toward the browser; a second ring travels out through
+context windows at their own parallax depths; CR-16; in 9:16 the Toolbox sits below the pair's band and the Finder right
+of the held card, fix round 2's NF-05) and glides toward the browser; a second ring travels out through
 the world and each dimmed place lifts into light as it passes. The piece ends on the next phrase line at least 7.5 s
 after the hit (up to 4 s later), else a bar line. **To fit it:** start the piece `hit` frames before the entrance's
 downbeat; its `exit` (pose, velocity, riverbed and light) continues into Ring 1 in the same world without a cut.
@@ -389,12 +395,21 @@ have been read, and the ring returns to the stone on that beat; the camera glide
 hit) and holds it for its reading time; a momentum cut on a bar line takes it to the cascade's stage, whose swaps land
 2–3 frames before beats; the block ends on the bar line after the last item's hold. `entry` continues a previous piece's
 camera (the same world: the demo's Ring 4 continues the Drop's). **Every plane of the place is a view of one take, on
-one clock** (CR-11): the window, the ask (the history's sentence that persists whatever the person clicks, never a live
-button beside a run), the act and the receipt inside it, each cropped at a line boundary and framed whole while its text
-is legible (CR-05), every legible word counted. The reading holds glide (0.4 px a frame); the stage is entered on a
-glide at the cut's speed (never landing at rest); the swaps cross at mid-blur with a short matched slide, so the stage
-never empties (CR-17); the fixed line and the last item leave with drawn blur exits on the stage's E-leave, before the
-cut (CR-03). **To fit it:** start it on a phrase downbeat, pass the grid; if its length (`plan.duration`) is longer than
+one clock** (CR-11): the window, the ask, the act and the receipt inside it, each cropped at a line boundary and framed
+whole while its text is legible (CR-05), every legible word counted. **The ask is a decision** (fix round 2, the
+verifier's NF-01: the ask beat framed only the history's sentence, so no decision was ever framed): with
+`ask.asking`, the take rolls from the card asking and a first dolly frames it whole with its buttons, its text kept
+under `SEEN_TEXT_PX` (17 px: seen, not read; its 43 words at reading size would ask 3.9 words a second of the shot),
+for at least `SEEN_S` before the person's click; on the click the view switches with a hard cut to its answered
+sentence, and a second dolly brings that sentence, then the act, to 28 px; the receipt lands Pebble's own time after
+the click (it may land while the act is still read: the camera then glides down to it); Ring 4's receipt is its
+Verified line (H6, S18), the reply's list below it left out (its 41 words would take the shot past 3.14 words a
+second). The chapter pair lands once no capture with text sits under its band for its whole hold
+(`kit.ts planesClearFrame`; in 1:1 and 9:16 it keeps to the frame's left, in 9:16 in the top band, the place arriving
+in the frame's lower part so the camera never turns back up). The reading holds glide (0.4 px a frame); the stage is
+entered on a glide at the cut's speed (never landing at rest) and pans at the reading pace; the swaps cross at
+mid-blur with a short matched slide, so the stage never empties (CR-17); the fixed line and the last item leave with
+drawn blur exits on the stage's E-leave, before the cut (CR-03). **To fit it:** start it on a phrase downbeat, pass the grid; if its length (`plan.duration`) is longer than
 the phrase you have, lengthen the music at a bar line or move the block (§3.2: never a hold).
 
 ### 3. The wall — `planWall({ w, h, fps, grid?, centre?, entry?, minS? })`
@@ -411,33 +426,48 @@ The passage opens **on HS-B3's own frame of the workspace** (CR-06: it opened on
 piece's momentum and pushing on (`cutIn`); ⌘K (its Enter solved onto a beat; the palette's own entrance, a placeholder;
 the typed word and the lit row read at ≥ 28 px) and the light cooling to dusk over 6.1 s; a rack focus into the Veil
 rendered with Pebble's own code (`views/VeilCast.tsx`: `stealthVeil.ts` and `veilDraw()`, the 1.25-s cast), **in macro:
-its body 47 % of the frame's height, pushing in** (CR-19: it filled 19 % of the width), with "A render, not a screen
-recording." beside it, set in the render's world (`TypeSpec.carry`): on screen exactly as long as the render, and kept
-in the safe area while it is read; the camera carries both out of the frame and the cut follows as the last of them
-leaves (8 px past the edge). A momentum cut on a bar line into RS-13 (the Dock icon leaves on a beat), a crane up that
+its body 47 % of the frame's height (42 % in 1:1), pushing in and orbiting at `VEIL_ORBIT_PX` (0.36 px a frame)
+through its framing** (CR-19: it filled 19 % of the width; fix round 2: at a 0.12 px orbit the render, the frame's
+subject, moved 0.14), with "A render, not a screen recording." **under it, right-aligned with its body's right edge**,
+set in the render's world (`TypeSpec.carry`): on screen exactly as long as the render, kept in the safe area while it
+is read; the camera carries both out of the frame's left edge (in every aspect) and they leave on the same frame, the
+cut 2 frames later (fix round 2, the verifier's NF-03: set beside the render on the right, the label was the last
+thing out and labelled bare ground for 24 frames, then 6 frames of ground before the cut). The palette's push pans
+the way the cut came in, and the workspace hands its slot's label to the palette's as the palette opens over it
+(`TakeView.labelOut`: NF-08, the two labels were drawn one over the other). A momentum cut on a bar line into RS-13 (the Dock icon leaves on a beat), a crane up that
 starts late enough to cut, on a beat, while the Dock is still in frame and clear of the honest line's band (CR-19: the
 crane passed empty ground, the empty middle is skipped), into its last stretch at 3.5× on the menu-bar icon's new
 state (77 px at 1080). The honest line, word for word from `STEALTH_HONEST`, holds from the rack's first frame to the
 passage's end (≥ 12 s across the rack and both cuts; it needs 9). No leak, sweep or rim in the passage; L23 (the focus
 line) only with `focusLine: { text, releaseNotesConfirmed: true }`, default out. **To fit it:** start it on the quiet
-section's first downbeat; it ends on a bar line, leaving on an E-leave into the next piece's cut.
+section's first downbeat; it ends on a bar line, the menu bar drifting right and leaving on an E-leave to the right,
+the way the climax then glides (fix round 2: a leave to the left turned the climax's content back through a stop).
 
 ### 5. The climax shell — `planClimax({ w, h, fps, peak, grid?, take?, entry? })`
 
 S23 ("Glaze") **opens on its take** (CR-06: it opened on 16 frames of its slot): HS-G's ask card is 4 frames into its
-entrance on the cut, entered with the previous piece's momentum, gliding into a push that meets it; "Its own tools."
-lands on a beat and leaves with a drawn blur exit over before the cut (CR-03: its "camera" exit drew nothing). A momentum
-cut on the last beat at least 0.75 s before `peak` (so the card lands 0.75–1.25 s into the take, §3.6 chain 11) into S24
-("Kiln"): RS-W's in-point is solved so the kept card lands exactly on `peak`; the avatar turns happy on the take's own
-event; the camera glides through the landing, pushes in until the card reads at ≥ 28 px, and **keeps gliding across the
-whole hold** to its E-leave (a push where the card has room, else a slow pan away from the line; CR-04: it froze for 6.2
-s on the card). "Kept on its own only after an independent check." lands on a beat beside it and holds 6.5 s. The
+entrance on the cut, entered with the previous piece's momentum, gliding into a pan at 0.45 px a frame with a slight
+push; "Its own tools." lands on a beat and leaves with a drawn blur exit over before the cut (CR-03: its "camera" exit
+drew nothing). A momentum cut on the last beat at least 0.75 s before `peak` (so the card lands 0.75–1.25 s into the
+take, §3.6 chain 11) into S24 ("Kiln"): RS-W's in-point is solved so the kept card lands exactly on `peak`; the avatar
+turns happy on the take's own event. **The climax's content travels one way** (`travel`: right in 16:9, down in 1:1
+and 9:16, away from the lines; fix round 2, the verifier's NF-02: the Kiln hold moved left, stopped, drifted right
+70 px, stopped and panned left again): the ask's pan, the cut, the incoming glide that decays the cut's speed straight
+into the hold's pan (`KEPT_PAN_PX`, 0.42), the push-in for reading (about the card's trailing edge, so that edge keeps
+the pan's pace) and the hold's own glide to its E-leave, the same way again (CR-04: it froze for 6.2 s on the card).
+The Kiln slot's label sits under where the card lands, where the cut's first frames look, so the cut into the peak
+reads at once (NF-07: it landed on 62 frames of unlabelled hatching). "Kept on its own only after an independent check." lands on a beat beside it and holds 6.5 s. The
 Workshop's cards are labelled slots at the 2.0.0 cards' sizes (the 1.0.x approval and command cards stood in, with 82
 and 78 legible words of other states; CR-05); a view that shows nothing yet draws nothing (no card-shaped box before the
 card lands). The take's frames fill the slots from a frame sequence (`TakeManifest.pattern`) once RS-W is recorded.
 **To fit it:** `peak` is the peak's first strong downbeat in local frames; the piece needs about 3.5 s before it.
 
 ### 6. The convergence, the title and the end card — `planFinale({ w, h, fps, hit, grid?, lastNote?, decayS?, roomToneS?, musicCredit?, centre?, entry? })`
+
+**OVERRIDES §61 (27 Oct ~12:35):** the person put the montage, the Return, at the end only, and it **replaces the wall
+and the convergence**; the Return lane owns that replacement (`setpieces/return*.ts`, `blink.ts`), and CR-08, the
+wall's parts of CR-02 and CR-16 and CR-06's S24 → S25 pull-back close with it. What follows describes the convergence as
+it stands in the demo until then; the title and the end card stay.
 
 The wall's cells travel inward along their rings and shrink into the stone (E-leave, accelerating) while rings return to
 the stone in a train and the camera pushes in (its look waits for the montage decision, OVERRIDES §54–§57: CR-08); the
@@ -446,9 +476,10 @@ the title stone's pose, at its size and with its velocity, 2 frames before the i
 it; the iris (E-move, 30 frames) opens the sage-white page from the stone; "Pebble" and "2.0" rise to land ON `hit`, the
 stone at rest beside them; one sage sweep crosses the wordmark 1 frame after it (`SageTextSweep`: inside the glyphs, its
 alpha capped so their L* rises by at most 15, tested); the README's line rises beneath. Page 1: the facts rise from masks
-at one size, **each its own span, rows centred with `FACT_GAP_EM` (1.25 em) between facts** (CR-20: one string with three
-spaces collapsed to "Apache-2.0 No telemetry."; 9:16 sets one a line), each limit beside its promise, landing on
-`lastNote`; page 2: "Shown with sample data." and the method line (L4: "Real Pebble 2.0 screens, composed in one space.
+at one size, **each its own span, each row one flex row the browser lays out with `FACT_GAP_EM` (1.25 em) between its
+facts** (`TypeSpec.row`; CR-20: one string with three spaces collapsed to "Apache-2.0 No telemetry."; fix round 2,
+the verifier's NF-04: placed by estimated advance widths, the gaps came out 62–165 px; 9:16 sets one a line), each
+limit beside its promise, landing on `lastNote`; page 2: "Shown with sample data." and the method line (L4: "Real Pebble 2.0 screens, composed in one space.
 Nothing Pebble does is sped up."), held for their reading time. **The small print leaves the film's frames** (CR-10, §55:
 102 words, the honest line among them, sat on screen for 6 s): the honest line is held 12 s in the Dusk passage where
 Stealth shows, and the credits (bloub's, the music's CC BY line, the trademark lines, the sign-in and signing limits) are

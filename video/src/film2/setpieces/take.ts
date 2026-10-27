@@ -46,6 +46,12 @@ export interface TakeView {
    * stack (NF-08: "HS-B3 ⌘K, typed, Enter" was drawn over the workspace's label during the palette's entrance)
    */
   labelOut?: number;
+  /**
+   * the source frame from which the view's own slot shows its label (fading in over LABEL_HANDOFF_FRAMES): the HS-F
+   * conversation's label sits between the held card's answer and the run, where the card asking covers it until the
+   * click (a label part-covered by a capture peeked out below the card)
+   */
+  labelFrom?: number;
   /** the real window the view shows: a still of the same window never shares a frame with it (CR-11) */
   place?: string;
   /** real takes: the view's body text (CSS px) and its legible words, for the legibility checks (CR-05) */
@@ -319,7 +325,7 @@ export const TAKE_HSF: TakeManifest = {
   h: 800,
   events: { history: 0, click: 894, running: 900, done: 1068, verified: 1178 },
   views: {
-    window: { w: SLOT.project.w, h: SLOT.project.h, slot: SLOT.project, place: "studio-bookings" },
+    window: { w: SLOT.project.w, h: SLOT.project.h, slot: SLOT.project, place: "studio-bookings", labelFrom: 894 },
     held: {
       w: HSF_VIEWS.held.w,
       h: HSF_VIEWS.held.h,

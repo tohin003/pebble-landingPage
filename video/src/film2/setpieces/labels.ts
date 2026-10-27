@@ -33,6 +33,8 @@ export interface DrawnSlot {
   timecode: (fr: number) => string | undefined;
   /** the local frame its label starts handing the frame's naming to a slot entering over it (NF-08) */
   labelOutFrom?: number;
+  /** the local frame its label starts to show (TakeView.labelFrom) */
+  labelInFrom?: number;
 }
 
 /** Every slot a shot's plane draws (a slot stand-in; a take view's own slot; a slot among a view's stills). */
@@ -51,7 +53,8 @@ export const drawnSlots = (p: ScenePlan, s: ShotSpec, pl: PlaneSpec): DrawnSlot[
   const from = Math.max(s.from, u.at);
   const to = Math.min(s.to, u.until);
   const labelOutFrom = v.labelOut === undefined ? undefined : frameOfSource(v.labelOut, u.at, p.fps, m, u.inPoint);
-  const out: DrawnSlot[] = v.slot ? [{ id: `${pl.id}:${v.slot.id}`, key: "self", slot: v.slot, box: pl.rect, depth, from, to, state, timecode, labelOutFrom }] : [];
+  const labelInFrom = v.labelFrom === undefined ? undefined : frameOfSource(v.labelFrom, u.at, p.fps, m, u.inPoint);
+  const out: DrawnSlot[] = v.slot ? [{ id: `${pl.id}:${v.slot.id}`, key: "self", slot: v.slot, box: pl.rect, depth, from, to, state, timecode, labelOutFrom, labelInFrom }] : [];
   const kx = pl.rect.w / v.w;
   const ky = pl.rect.h / v.h;
   (v.stills ?? []).forEach((vs, i) => {
@@ -110,6 +113,8 @@ export const labelOpacityOn = (p: ScenePlan, s: ShotSpec, d: DrawnSlot, fr: numb
       break;
     }
   const edge = Math.min(1, ahead / N, behind / N);
-  const handoff = d.labelOutFrom === undefined ? 1 : 1 - E_MOVE(clamp01((fr - d.labelOutFrom) / Math.max(1, Math.round((LABEL_HANDOFF_FRAMES * p.fps) / 60))));
-  return edge * handoff;
+  const H = Math.max(1, Math.round((LABEL_HANDOFF_FRAMES * p.fps) / 60));
+  const handoff = d.labelOutFrom === undefined ? 1 : 1 - E_MOVE(clamp01((fr - d.labelOutFrom) / H));
+  const arrive = d.labelInFrom === undefined ? 1 : E_MOVE(clamp01((fr - d.labelInFrom) / H));
+  return edge * handoff * arrive;
 };

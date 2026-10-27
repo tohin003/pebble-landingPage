@@ -63,9 +63,10 @@ export const OPEN_FINDINGS: readonly OpenFinding[] = [
 ];
 
 /**
- * The findings the fix lane closed (fix round 1, 27 Oct): each check now passes the plan in all three aspects, and the
- * reels were rendered and looked at where the review saw the defect (film2/README.md, "Fix round 1"). The tests hold
- * them closed: every error on the current plans must be an open finding, and these are not.
+ * The findings the fix lane closed (fix rounds 1 and 2, 27 Oct): each check now passes the plan in all three aspects,
+ * and the reels were rendered and looked at where the review (round 1) or the verifier (round 2) saw the defect
+ * (film2/README.md, "Fix round 1", "Fix round 2"). The tests hold them closed: every error on the current plans must
+ * be an open finding, and these are not.
  */
 export const CLOSED_FINDINGS: readonly { piece: string; check: string; cr: string; how: string }[] = [
   { piece: "drop", check: "cameraFloor", cr: "CR-04", how: "the pre-roll pushes in from its first frame, the hand-off drifts out through L05 and L06 at 0.4 px a frame" },
@@ -92,6 +93,18 @@ export const CLOSED_FINDINGS: readonly { piece: string; check: string; cr: strin
   { piece: "finale", check: "smallPrintHolds", cr: "CR-10", how: "page 2 is the sample line and the method line (18 words), held for their reading time; the credits go with the film (FILM_CREDITS)" },
   { piece: "finale", check: "cameraFloor", cr: "CR-04", how: "the title and both end-card pages glide at 0.3 px a frame (OVERRIDES §58); only the last breath is still" },
   { piece: "F2-Foundation-Demo", check: "irisEase", cr: "CR-21", how: "ringIris() defaults to E-move (IRIS_DEFAULT_EASE)" },
+  // fix round 2 (27 Oct): the verifier's findings after round 1, held by the checks added for them
+  { piece: "drop", check: "contentFloor", cr: "CR-04", how: "the hold after the hit pans at 0.42 px a frame the way the reveal glides, besides its pull-back about the companion; the 1:1 pre-roll drifts sideways where the aperture leaves the card no room to rise" },
+  { piece: "ring4", check: "contentFloor", cr: "CR-04", how: "the cascade's stage pans at the reading pace (0.4 px a frame; it was 0.24)" },
+  { piece: "ring4", check: "sway", cr: "NF-02", how: "the 9:16 place arrives in the frame's lower part, so after the travel up the camera only moves down" },
+  { piece: "ring4", check: "slotLabels", cr: "NF-08", how: "labels are whole or not drawn (setpieces/labels.ts); the browser's label sits right of its middle" },
+  { piece: "ring4", check: "typeOverPlanes", cr: "NF-05", how: "the chapter pair lands once no capture with text is under its band for its whole hold, the pair kept to the frame's left in 1:1 and 9:16" },
+  { piece: "drop", check: "typeOverPlanes", cr: "NF-05", how: "the 9:16 Toolbox sits below the pair's band; the reveal waits for the pair's exit" },
+  { piece: "dusk", check: "contentFloor", cr: "CR-04", how: "the palette pans the cut's way, the Veil orbits at 0.36 px a frame through its framing" },
+  { piece: "dusk", check: "typeOverType", cr: "NF-03", how: "the Veil's label under the render clears the honest line's band (1:1's render 42 % of the frame's height)" },
+  { piece: "climax", check: "contentFloor", cr: "CR-04", how: "the ask pans the climax's way at 0.45 px a frame with a slight push" },
+  { piece: "climax", check: "sway", cr: "NF-02", how: "one direction from Glaze's leave through Kiln's landing, push and hold to its leave; the kept card pushed about its trailing edge" },
+  { piece: "climax", check: "cutsReadable", cr: "NF-07", how: "the Kiln slot's label sits where the cut lands, under the kept card's place" },
 ];
 
 /** Is a finding one of the open findings of this piece? */
