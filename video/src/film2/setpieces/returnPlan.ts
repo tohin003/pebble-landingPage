@@ -7,8 +7,8 @@
 //
 //   returnGrid()        the music: B2 "Your Breath" run on in its own order from 1:36.53 (bar 48, R0) to the J5 beat cut
 //                       at 1:44.53 (R480) into A4 "Born Of The Sky" 2:40.52 (bar 80), bar 81 (R600), bar 82 (R720, the
-//                       title's hit). MONTAGE_DESIGN §5.2's timings until the score lane's cue sheet carries a dated
-//                       revision for the Return
+//                       title's hit), on the score lane's revised beat sheet (CUE_SHEET.md revision 2, "the Return";
+//                       BEAT_SHEET.json of 28 Oct), whose marks and bar lines all fall on the plan's frames
 //   returnCameraAt()    the camera of §2.6 on an R-frame: a log-space pull-back from S24's last frame to the whole field
 //                       (slow at first, E-move on u^1.3), panning from the kept card to the stone; a 12 % push from R200
 //                       to R480 overlapping it; a pan that lands the stone on the title stone's pose on R656 (with the
@@ -39,24 +39,26 @@ import type { Aspect } from "../tokens";
 
 /* ---------------------------------------------------------------- the music (§2.10, §5.2) ---------------------- */
 
-/** The Return's music, measured (the score lane's maps): B2 run on, then J5 into A4 bars 80–82. */
+/** The Return's music, measured (the score lane's maps; source times as the revised beat sheet gives its bar lines): B2 run on, then J5 into A4 bars 80–82. */
 export const RETURN_MUSIC = {
-  /** B2 "Your Breath" (Mixkit): 119.994 BPM; R0 is its bar 48 at 1:36.53 */
-  b2: { bpm: 119.994, r0S: 96.531 },
-  /** A4 "Born Of The Sky" (Scott Buckley, CC BY 4.0): 120.014 BPM; J5 lands on bar 80 at 2:40.52, the title on bar 82 at 2:44.52 */
-  a4: { bpm: 120.014, j5S: 160.525, titleS: 164.524 },
+  /** B2 "Your Breath" (Mixkit): 119.994 BPM; R0 is its bar 48 at 1:36.5306 */
+  b2: { bpm: 119.994, r0S: 96.5306 },
+  /** A4 "Born Of The Sky" (Scott Buckley, CC BY 4.0): 120.014 BPM; J5 lands on bar 80 at 2:40.5249, the title on bar 82 at 2:44.5244 */
+  a4: { bpm: 120.014, j5S: 160.5249, titleS: 164.5244 },
   /** R-frames */
   j5R: 480,
   titleR: 720,
 } as const;
 
 /**
- * Where the Return sits in the main film, seconds of film time: MONTAGE_DESIGN §5.2 (the recommended fit, the cue sheet's
- * 22:13 timings shifted): the piece from 1:45.03 (R−60), R0 at 1:46.03, J5 at 1:54.03, the title at 1:58.03. The timing
- * source until the score lane's CUE_SHEET.md carries a dated revision for the Return. At 60 fps these put R0 on film frame
- * 6362 and the title on 7082, the frames the score lane's draft plan of 27 Oct uses (not yet its cue sheet).
+ * Where the Return sits in the main film, seconds of film time, from the timing source: the score lane's revised beat
+ * sheet (CUE_SHEET.md revision 2 of 27–28 Oct, "the Return"; BEAT_SHEET.json's `return`, 28 Oct 04:30): the piece from
+ * 1:45.0333 (R−60), R0 on B2's bar 48 at 1:46.0333, J5 on A4's bar 80 at 1:54.0337, the title on A4's bar 82 at
+ * 1:58.0332. These are MONTAGE_DESIGN §5.2's 1:45.03, 1:46.03, 1:54.03 and 1:58.03 to within 4 ms. At 60 fps R−60, R0,
+ * R480 and R720 fall on film frames 6302, 6362, 6842 and 7082, as the beat sheet's do; J5 is 0.4 ms past R0 + 8 s
+ * (B2's bar is 120.006 frames), which rounds to the same frame.
  */
-export const RETURN_FILM_S = { start: 105.03, r0: 106.03, j5: 114.03, title: 118.03 } as const;
+export const RETURN_FILM_S = { start: 105.0333, r0: 106.0333, j5: 114.0337, title: 118.0332 } as const;
 
 /** The film frame of an R-frame at `fps` (the piece's local frame 0 is R−60, on RETURN_FILM_S.start). */
 export const filmFrameOfR = (r: number, fps: number): number => Math.round(RETURN_FILM_S.start * fps) + localOfR(r, fps);

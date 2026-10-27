@@ -240,11 +240,20 @@ describe("the Return, planned and joined to S24, passes every check in every asp
     // the field's own frames do not depend on the aspect: its span, the landing, the blink and the stone's clock
     expect(new Set(ASPECTS.map((a) => returnOf(plans[a])!).map((x) => `${x.span.from}-${x.span.to} ${x.landing.landAt} ${x.blink.at} ${x.blink.clockOffset}`)).size).toBe(1);
   });
-  test("its place in the film is MONTAGE_DESIGN §5.2's: the piece from 1:45.03, R0 1:46.03, J5 1:54.03, the title 1:58.03", () => {
-    expect(RETURN_FILM_S.r0 - RETURN_FILM_S.start).toBeCloseTo(1, 9);
-    expect(RETURN_FILM_S.j5 - RETURN_FILM_S.r0).toBeCloseTo(RETURN_MUSIC.j5R / 60, 9);
-    expect(RETURN_FILM_S.title - RETURN_FILM_S.r0).toBeCloseTo(RETURN_MUSIC.titleR / 60, 9);
-    expect([-60, 0, 480, 720].map((r) => filmFrameOfR(r, 60))).toEqual([6302, 6362, 6842, 7082]);
+  test("its place in the film is the score lane's revised beat sheet's (CUE_SHEET.md revision 2): every mark and bar line on its frame", () => {
+    // BEAT_SHEET.json `return` (28 Oct 04:30): the marks R−60 … R720 and the bar lines under the Return, in film frames at 60 fps
+    const marks: [number, number][] = [[-60, 6302], [0, 6362], [120, 6482], [240, 6602], [360, 6722], [480, 6842], [600, 6962], [646, 7008], [658, 7020], [690, 7052], [720, 7082]];
+    expect(marks.map(([r]) => filmFrameOfR(r, 60))).toEqual(marks.map(([, f]) => f));
+    // B2 bars 47–52, then A4 bars 80–83 (J5 on bar 80)
+    const bars = [6242, 6362, 6482, 6602, 6722, 6842, 6962, 7082, 7202];
+    const start = filmFrameOfR(-60, 60);
+    const downbeats = new Set(returnGrid(FPS).downbeats.map((x) => Math.round(x)));
+    for (const f of bars) expect(downbeats.has(f - start)).toBe(true);
+    // its seconds are MONTAGE_DESIGN §5.2's to within 4 ms, and the R-frames' spans within a fifth of a frame
+    expect([RETURN_FILM_S.start, RETURN_FILM_S.r0, RETURN_FILM_S.j5, RETURN_FILM_S.title].map((s, i) => Math.abs(s - [105.03, 106.03, 114.03, 118.03][i]!) < 0.004)).toEqual([true, true, true, true]);
+    expect(Math.abs((RETURN_FILM_S.r0 - RETURN_FILM_S.start) * 60 - 60)).toBeLessThan(0.2);
+    expect(Math.abs((RETURN_FILM_S.j5 - RETURN_FILM_S.r0) * 60 - RETURN_MUSIC.j5R)).toBeLessThan(0.2);
+    expect(Math.abs((RETURN_FILM_S.title - RETURN_FILM_S.r0) * 60 - RETURN_MUSIC.titleR)).toBeLessThan(0.2);
     expect(filmFrameOfR(720, 30)).toBe(Math.round(RETURN_FILM_S.title * 30));
   });
   test("one stone: the clock offset 710 and the film layer on the field's stone and the title's, landing on it through the iris", () => {
