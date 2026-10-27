@@ -241,7 +241,7 @@ export interface CodaOptions {
   irisIn?: number;
   clockOffset?: number;
   hold?: number;
-  text?: Partial<Pick<typeof CODA_TEXT, "rests" | "soon" | "soonBroken" | "status">>;
+  text?: Partial<Record<"rests" | "soon" | "soonBroken" | "status", string>>;
 }
 
 /* ---------------------------------------------------------------- the layout ---------------------------------- */
