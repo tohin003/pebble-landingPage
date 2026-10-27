@@ -628,6 +628,13 @@ def title_check(plan_path, metrics_path, out, layers_path, variants_path=None):
                          "loudest_400ms_lufs_in_film": r(sb.mmax_lufs(y * 10 ** (gain / 20))), "bed_ref_lufs": r(ref)})
             res["layers"][key] = {k: rec.get(k) for k in ("take", "licence", "status", "final_allowed", "designed", "swell",
                                                          "tune", "prelimit", "highpass")}
+            if key == "swell":  # its shape: a swell rises into the downbeat and stops on it
+                pk = int(np.argmax(np.abs(y).max(1)))
+                res["layers"][key]["shape"] = {
+                    "length_s": r(len(y) / SR, 4), "peak_s_before_its_end": r((len(y) - pk) / SR, 4),
+                    "rise_lu_first_to_last_200ms": r(sb.lufs_seg(y, len(y) / SR - 0.2, len(y) / SR) - sb.lufs_seg(y, 0.0, 0.2)),
+                    "last_400ms_lufs": r(sb.lufs_seg(y, len(y) / SR - 0.4, len(y) / SR)),
+                    "loudest_400ms_lufs": r(sb.mmax_lufs(y))}
         mix_g = (music + sfx) * 10 ** (g_master / 20)
         rows = classify_grid(mix_g, j5 + 0.002, title + 5.5, tmp_dir)
         sm = summarise(rows)

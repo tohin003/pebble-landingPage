@@ -137,7 +137,8 @@ def seam_sheet(plan, Z, M, s, half=5.0):
     # 2 and 3: the two sources around their cut points (gain applied)
     for side, title in (("out", "outgoing source at its out-point"), ("in", "incoming source at its in-point")):
         c = next(cc for cc in plan["cues"] if cc["id"] == (s["from"] if side == "out" else s["to"]))
-        p = c["src_out"] if side == "out" else c["src_in"]
+        # measured as built: the source points the snippets were cut at carry the build's correction (cue_plan.py)
+        p = (c["src_out"] if side == "out" else c["src_in"]) + float((M.get("source_time_correction_s") or {}).get(c["track"], 0.0))
         a0, a1 = p - half, p + half
         im = Image.new("RGB", (W, 22 + hs + hl + 22), (0, 0, 0)); d = ImageDraw.Draw(im)
         d.text((6, 3), f"    {title}: {c['id']} {c['track']} {fmt_t(p)} (gain {sm['gain_db_' + side]} dB)", font=FONT_B,
