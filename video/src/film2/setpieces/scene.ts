@@ -56,8 +56,12 @@ export interface PlaneSpec {
   /** degrees, keyed: Pebble's own windows only, flattened before reading */
   tiltRx?: readonly ScalarKey[];
   tiltRy?: readonly ScalarKey[];
-  /** the viewer reads it on these frames: never defocused, face-on; its words count toward the reading load */
-  read?: { from: number; to: number; words: number; receipt?: boolean; textPx?: number; rect?: Rect };
+  /**
+   * the viewer reads it on these frames: never defocused, face-on, at 28 px or more, wholly in frame; its words count
+   * toward the reading load from `seenFrom` to `seenTo` (default `from`, `to`): the frames its text is already
+   * legible on the way in (a dolly) and still legible on the way out (a glide that carries it out of frame)
+   */
+  read?: { from: number; to: number; words: number; receipt?: boolean; textPx?: number; rect?: Rect; seenFrom?: number; seenTo?: number };
   shadow?: boolean;
   radius?: number;
   /** carries no text (the Dock's icons): film type may pass over it */
@@ -91,6 +95,12 @@ export interface TypeSpec {
   pairWith?: string;
   /** a gradient-free sage sweep through the glyphs (the title only, L3a) */
   sweep?: { at: number; frames: number };
+  /**
+   * the line is set in the world of shot `shot` (TREATMENT §5.2: "type is set in the world, as a layer the camera
+   * passes"): its box is exact under that shot's camera on frame `at` (a piece-local frame), and the line moves with
+   * the world from there, so the camera's E-leave carries it out (CR-03, CR-19: the Veil's label leaves with the render)
+   */
+  carry?: { shot: string; at: number };
 }
 
 /** A cascade (kind 5): one fixed line, one swapping item and its UI card, swapped in place. */
@@ -106,6 +116,8 @@ export interface CascadeSpec {
   cards: readonly PlaneSpec[];
   /** the last item stays (the shot leaves with the camera) */
   holdLast: boolean;
+  /** the cascade's end: the last item leaves with a 12-frame blur exit from this frame, before its shot cuts (CR-03) */
+  endAt?: number;
 }
 
 /* ---------------------------------------------------------------- the stone ---------------------------------- */
@@ -137,6 +149,8 @@ export interface ShotSpec {
   ref: Pose;
   /** the world's ground: the riverbed under still water (L3c), or the sage-white page */
   ground: "riverbed" | "page";
+  /** the riverbed's rect in its plane (setpieces/ground.ts): set where a shot continues another one's world; default sized from the shot's own widest pose */
+  groundRect?: Rect;
   planes: readonly PlaneSpec[];
   stone?: StoneSpec;
   /** rings on this shot's world (frames are the piece's local frames) */
@@ -144,7 +158,7 @@ export interface ShotSpec {
   /** CameraMotionBlur windows (local to the shot) on the foreground only, at cuts */
   blur?: readonly { from: number; to: number }[];
   /** UI read in this shot that is not a plane of its own (a receipt inside a take's view), world rects */
-  reads?: readonly { id: string; rect: Rect; from: number; to: number; words: number; receipt?: boolean; textPx: number }[];
+  reads?: readonly { id: string; rect: Rect; from: number; to: number; words: number; receipt?: boolean; textPx: number; seenFrom?: number }[];
   /** waiting states inside takes: the only allowed still frames (piece-local frames) */
   waits?: readonly { from: number; to: number }[];
   /** the frame aperture (the Drop): a function of the piece's local frame, 0 narrow … 1 full bleed */
@@ -186,8 +200,11 @@ export interface ScenePlan {
   takes: readonly TakeUse[];
   music: readonly MusicHit[];
   moves: readonly QaMove[];
-  /** what the next piece continues from: the camera's last state (the same world), for a continuous hand-off */
-  exit?: { pose: Pose; vel: { x: number; y: number; lz: number }; shot: string; ref: Pose };
+  /**
+   * what the next piece continues from: the camera's last state (the same world, for a continuous hand-off), or the
+   * screen velocity its last frame leaves with (a momentum cut into another world), and its riverbed and light
+   */
+  exit?: { pose: Pose; vel: { x: number; y: number; lz: number }; shot: string; ref: Pose; groundRect?: Rect; grade?: GradeName | Grade };
   /** the piece ends the film (the end card): type may stay to its last frame; anywhere else that type vanishes on a cut */
   endsFilm?: boolean;
   /** anything a piece's own checks need (the Dusk's honest line, the title's sweep) */

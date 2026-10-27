@@ -3,34 +3,40 @@
 //
 // It works for ANY music hit: the track's entrance (a downbeat with a step of about +3 LU) is `hit`, a local frame, and
 // every event is placed from it:
+//   0 … hit        the pre-roll: S05's tail. The card the Allow answers reads at 28 px or more in the narrow aperture
+//                  (CR-09: it was never readable, declared as 0 words), the camera still pushing in slowly (Act I's
+//                  push carried across the cut, never from rest), L04 in the band
 //   hit            the Allow click: RS-9's in-point is solved so its "allow" lands exactly here (1×, never retimed)
-//   hit            the burst: a ring leaves the stone (E-arrive, the one snap the Drop's hit allows), reaches the
-//                  aperture's edges, and the frame opens with it over 34 frames (S06: 30–36); a code light leak (one
-//                  of the film's two, where the light changes) and the warm grade over 60 frames (≥ 0.5 s)
-//   receipt        the take's own receipt; the pebble turns `working` on it (a real host event)
+//   hit            the burst: a ring leaves the stone (E-arrive, the one snap the Drop's hit allows), and the frame opens
+//                  ON THE HIT in every aspect, over 34 frames (S06: 30–36; CR-07: in 9:16 it waited 24 frames for the
+//                  ring to reach the 4:5 edge); the camera hands off to the wider framing as it opens; the warm grade over
+//                  60 frames (≥ 0.5 s); one code light leak (of the film's two) once the bands have cleared, so it never
+//                  tints them (CR-07: it turned the night green muddy brown)
+//   receipt        the take's own receipt; the pebble turns `working` on it (a real host event), and the companion's view
+//                  switches to the recording's next state with a hard cut, as a recording changes (CR-18)
 //   L05, L06       "Now it works across your Mac." / "Where you allow it.": each lands on a beat once the burst has
-//                  cleared its band (a ring never crosses a line being read), held together ≥ 3.0 s
-//   hit + 4.0 s    S07: a pull-back in log space to the whole Mac, easing into a glide toward the browser
+//                  cleared its band (a ring never crosses a line being read), held together ≥ 3.0 s, while the camera
+//                  keeps drifting out at 0.4 px a frame at the frame's edge (CR-04: it froze here for 3.5 s)
+//   hit + 4.0 s    S07: a pull-back in log space to the whole Mac (dense: CR-16), easing into a glide toward the browser
 //   after L06      a second ring travels out through the world; each dimmed place lifts into light as it passes
 //   end            the next phrase line at or after hit + 7.5 s (S07 extends by up to 4 s within its phrase), else a
 //                  bar line; never earlier (holds are never shortened)
-// Pure data (setpieces/scene.ts): components/Drop draws it, setpieces/qa.ts checks it.
+// Pure data (setpieces/scene.ts): setpieces/views/PieceView.tsx draws it, setpieces/qa.ts checks it.
 import { COLOR, f60, sec } from "../tokens";
-import { VelocityCamera, worldToFrame, type Pose } from "../motion/camera";
-
+import { VelocityCamera, type Pose } from "../motion/camera";
 import { clamp01, curve } from "../motion/ease";
 import { dist, farDistToRect, rectCenter, type Rect } from "../motion/geometry";
 import { ringEnd, ringStates, type RingSpec } from "../carrier/ring";
-import { apertureOpenForRing, apertureRect } from "../carrier/apertureMath";
+import { apertureRect } from "../carrier/apertureMath";
 import type { LightCue } from "../light/grades";
 import { typeSizePx } from "../type/scale";
 import { place, type MusicGrid } from "./music";
-import { breakLines, exitFramesOf, fitPose, frameBox, lineHeightOf, lineRect, unionRect, type FrameBox, type TypeBox } from "./frame";
-import { STILL } from "./standins";
-import { COMPANION_PANEL, TAKE_RS9, eventFrame, solveInPoint, type TakeManifest } from "./take";
+import { breakLines, exitFramesOf, fitPose, frameBox, glideLz, lineHeightOf, lineRect, unionRect, zoomAbout, type FrameBox, type TypeBox } from "./frame";
+import { SLOT, STILL } from "./standins";
+import { TAKE_RS9, eventFrame, solveInPoint, type TakeManifest } from "./take";
 import { STONE_R, STONE_SIZE, WORLD, worldRects } from "./world";
 import { DROP_CUES } from "./pieces.cues";
-import { anchored, edgeRadius, landFrames, musicHit, ringClearFrame } from "./kit";
+import { anchored, landFrames, musicHit, ringClearFrame } from "./kit";
 import { move, type MusicHit, type PlaneSpec, type ScenePlan, type TypeSpec } from "./scene";
 
 export interface DropOptions {
@@ -63,6 +69,8 @@ export interface DropTiming {
   linesExit: number;
   revealRingAt: number;
   end: number;
+  /** the frame the aperture starts to open (the hit's next frame, in every aspect: CR-07) */
+  apertureOpen: number;
 }
 
 export const DROP_DEFAULTS = {
@@ -73,35 +81,48 @@ export const DROP_DEFAULTS = {
   maxExtendS: 4,
 } as const;
 
+/**
+ * The card the Allow answers, as the 2.0.0 companion shows it: "Use youtube.com", the sites it may act on and only
+ * read, Allow (TREATMENT S05). Its must-read words and its text (the companion's body text, measured on the 1.0.x
+ * panel: 13.3 CSS px) are the read's, so the 28 px floor and the reading load both see it (CR-09).
+ */
+export const DROP_CARD = { words: 12, textPx: 13.3 } as const;
+
 interface DropLayout {
-  /** where the companion sits in the narrow aperture (fractions of the frame, x0, x1; y within the aperture) */
-  subject: (f: FrameBox, ap: Rect) => Rect;
-  fill: number;
+  /** where the card reads in the narrow aperture (frame px) */
+  read: (f: FrameBox, ap: Rect) => Rect;
+  /** where the companion sits once the frame has opened: its centre, a share of the frame's width */
+  companionX: number;
+  /** the companion's height on screen once the frame has opened, a share of the frame's height */
+  companionH: number;
   /** the pair's block: left, top (computed from its height), max width */
   pair: (f: FrameBox, blockH: number) => { left: number; top: number; maxW: number };
   sizeT: number;
 }
 
 const LAYOUT: Record<FrameBox["aspect"], DropLayout> = {
-  // subject right, type left (the lines never sit over the companion's own text)
+  // the card right of centre; type left (the lines never sit over the companion's own text)
   "16:9": {
-    subject: (f, ap) => ({ x: f.w * 0.5, y: ap.y, w: f.w * 0.44, h: ap.h }),
-    fill: 0.86,
+    read: (f, ap) => ({ x: f.w * 0.5, y: ap.y + 6 * f.unit, w: f.w * 0.46, h: ap.h - 12 * f.unit }),
+    companionX: 0.74,
+    companionH: 0.42,
     pair: (f, bh) => ({ left: f.safe * 2, top: f.h / 2 - bh / 2, maxW: f.w * 0.46 - f.safe * 2 }),
     sizeT: 0.35,
   },
   // the aperture is 16:9 inside the square; type sits above it (TREATMENT §3.12)
   "1:1": {
-    subject: (f, ap) => ({ x: f.w * 0.3, y: ap.y, w: f.w * 0.64, h: ap.h }),
-    fill: 0.9,
+    read: (f, ap) => ({ x: f.w * 0.1, y: ap.y + 6 * f.unit, w: f.w * 0.8, h: ap.h - 12 * f.unit }),
+    companionX: 0.66,
+    companionH: 0.4,
     // one line each at the tier's smallest size, so the pair stays in the top band, clear of the companion
     pair: (f) => ({ left: f.safe * 1.2, top: f.safe, maxW: f.w - f.safe * 2.2 }),
     sizeT: 0,
   },
-  // the aperture is 4:5; the companion in its upper part, the type below it
+  // the aperture is 4:5; the card in its upper part, the type below it
   "9:16": {
-    subject: (f, ap) => ({ x: f.safe, y: ap.y, w: f.w - 2 * f.safe, h: ap.h * 0.6 }),
-    fill: 0.86,
+    read: (f, ap) => ({ x: f.safe * 0.6, y: ap.y + ap.h * 0.08, w: f.w - 1.2 * f.safe, h: ap.h * 0.62 }),
+    companionX: 0.6,
+    companionH: 0.26,
     pair: (f, bh) => ({ left: f.safe * 1.2, top: f.h - f.safe * 2.2 - bh, maxW: f.w - f.safe * 2.4 }),
     sizeT: 0.35,
   },
@@ -116,37 +137,58 @@ export function planDrop(o: DropOptions): ScenePlan {
   const L = LAYOUT[A];
   const take = o.take ?? TAKE_RS9;
   const hit = Math.round(o.hit);
+  const al = o.align ?? {};
   const text = { promise: o.lines?.promise ?? DROP_DEFAULTS.promise, limit: o.lines?.limit ?? DROP_DEFAULTS.limit, leadIn: o.lines?.leadIn === undefined ? DROP_DEFAULTS.leadIn : o.lines.leadIn };
   const cy = o.apertureCenterY ?? f.h / 2;
   const band = o.band ?? COLOR.nightPage;
   const music: MusicHit[] = [{ event: "the entrance: Allow, the burst", frame: hit, point: o.grid?.beats.includes(hit) ? hit : null, level: "hit", waited: 0 }];
+  const lzHold = glideLz(f);
 
-  /* ------------------------------------------------ the camera up to the end of the pull-back ------------------- */
+  /* ------------------------------------------------ the framings ---------------------------------------------- */
   const ap0 = apertureRect(f.w, f.h, 0, cy);
-  const tight = fitPose(unionRect(W.companion, W.card), L.subject(f, ap0), f, L.fill);
+  // the card reads at 28 px or more (4 % over the floor), framed in the narrow aperture (CR-09)
+  const readZoom = ((28 * f.unit) / DROP_CARD.textPx) * 1.04;
+  const readFit = fitPose(W.card, L.read(f, ap0), f, 0.96);
+  // the pre-roll's push starts at the reading floor and grows from it, so the card reads at 28 px from frame 0
+  const prePush = Math.exp(lzHold * 1.25 * hit);
+  const read: Pose = { ...readFit, zoom: Math.max(readZoom, Math.min(readFit.zoom, readZoom * 1.02)) * prePush };
+  // once the frame has opened: the companion whole, right of centre, the type left of it
+  const openZoom = (L.companionH * f.h) / W.companion.h;
+  const compC = rectCenter(W.companion);
+  const opened: Pose = { x: compC.x - (L.companionX * f.w - f.w / 2) / openZoom, y: compC.y, zoom: openZoom };
   const full: Rect = { x: f.safe, y: f.safe, w: f.w - 2 * f.safe, h: f.h - 2 * f.safe };
   const wide = fitPose(unionRect(...worldRects(W)), full, f, 0.98);
-  const settle = hit + f60(30, fps);
+
+  /* ------------------------------------------------ the camera, never at rest (CR-04) -------------------------- */
   const revealStart = hit + sec(4.0, fps);
   const revealEnd = revealStart + f60(160, fps);
-  // Act I's push-in is carried into the Drop and slows as the frame opens (it never stops dead)
-  const cam = new VelocityCamera({ ...tight, zoom: tight.zoom * Math.exp(-0.00022 * hit) }, { lz: 0.00022 });
-  cam.hermite(settle, { ...tight, zoom: tight.zoom * 1.02 }, { lz: 0.00005 });
-  cam.glide(revealStart, f60(30, fps), { lz: 0.00004 });
+  const openFrames = f60(90, fps);
+  // the pre-roll: at reading size from its first frame and still pushing in, about the card's centre
+  const cardC = rectCenter(W.card);
+  const readAt = { x: f.w / 2 + (cardC.x - read.x) * read.zoom, y: f.h / 2 + (cardC.y - read.y) * read.zoom };
+  const zoom0 = read.zoom / prePush;
+  // the pose that puts the card's centre at the same frame point at the smaller zoom
+  const read0: Pose = { x: cardC.x - (readAt.x - f.w / 2) / zoom0, y: cardC.y - (readAt.y - f.h / 2) / zoom0, zoom: zoom0 };
+  const cam = new VelocityCamera(read0, zoomAbout(read0, readAt, lzHold * 1.25, f));
+  cam.hermite(hit, read, zoomAbout(read, readAt, lzHold, f));
+  // the hand-off on the burst: out to the opened framing as the frame opens, then drifting out through the pair
+  const driftOut = zoomAbout(opened, { x: L.companionX * f.w, y: f.h / 2 }, -lzHold * 1.1, f);
+  cam.hermite(hit + openFrames, opened, driftOut);
+  cam.glide(revealStart, f60(30, fps), driftOut);
   const atReveal = cam.pose(revealStart);
   const browserC = rectCenter(W.browser);
   const toward = { x: browserC.x - wide.x, y: browserC.y - wide.y };
   const tl = Math.hypot(toward.x, toward.y) || 1;
-  // the glide drifts toward the browser (Ring 1), about 0.5 px a frame on screen at the wide zoom
-  const driftSpeed = (1.6 * 60) / fps;
+  // the glide drifts toward the browser (Ring 1), 0.45 px a frame on screen at the wide zoom
+  const driftSpeed = (0.45 * f.unit * 60) / fps / wide.zoom;
   const drift = { x: (toward.x / tl) * driftSpeed, y: (toward.y / tl) * driftSpeed, lz: 0 };
   // the pull-back in log space (pullBack()'s Hermite: it lands still moving out, then glides)
-  const factor = (wide.zoom * 1.06) / atReveal.zoom;
+  const factor = (wide.zoom * 1.05) / atReveal.zoom;
   const meanLz = Math.log(factor) / (revealEnd - revealStart);
   cam.hermite(revealEnd, { x: wide.x, y: wide.y, zoom: atReveal.zoom * factor }, { lz: meanLz * 0.35, x: drift.x, y: drift.y });
   const poseAt = (fr: number): Pose => cam.pose(fr);
 
-  /* ------------------------------------------------ the burst and the aperture ---------------------------------- */
+  /* ------------------------------------------------ the burst and the aperture, on the hit --------------------- */
   const burst: RingSpec = {
     id: "drop-burst",
     start: hit,
@@ -160,20 +202,11 @@ export function planDrop(o: DropOptions): ScenePlan {
     echoes: 2,
     layer: "ground",
   };
-  const edge = edgeRadius(poseAt, f.w, f.h);
-  let touch = hit;
-  for (let fr = hit; fr < hit + f60(120, fps); fr++) {
-    const r = ringStates(burst, fr, fps, edge).find((x) => x.echo === 0);
-    if (!r) continue;
-    const pose = poseAt(fr);
-    const c = worldToFrame(r.c, pose, f.w, f.h);
-    if (apertureOpenForRing(f.w, f.h, c.y, r.r * pose.zoom, cy) > 0) {
-      touch = fr;
-      break;
-    }
-  }
   const apertureFrames = f60(34, fps);
-  const open = (fr: number): number => curve("power2.out")(clamp01((fr - touch) / apertureFrames));
+  // the frame opens ON THE HIT in every aspect (its first moved frame is hit + 1), on power2.out: it leads the ring out
+  const apertureOpen = Math.max(hit + 1, al.apertureOpen ?? 0);
+  const open = (fr: number): number => curve("power2.out")(clamp01((fr - (apertureOpen - 1)) / apertureFrames));
+  const bandsClear = apertureOpen - 1 + apertureFrames;
 
   /* ------------------------------------------------ type ------------------------------------------------------- */
   const sizeE = typeSizePx("expressive", f.w, f.h, L.sizeT);
@@ -193,13 +226,12 @@ export function planDrop(o: DropOptions): ScenePlan {
   const specL: TypeSpec = { id: "L06", text: limit, tier: "expressive", at: 0, sizeT: L.sizeT, box: boxL, kind: "film", key: true };
   const rectP = lineRect(promise, "expressive", f, boxP, L.sizeT);
   const rectL = lineRect(limit, "expressive", f, boxL, L.sizeT);
-  // each line is read only once the burst (and its echoes) has left its rect; it lands on a beat
+  // each line is read only once the burst (and its echoes) has left its rect and the bands have cleared; on a beat
   const clearP = ringClearFrame([burst], [rectP], fps, poseAt, f, hit, hit + f60(150, fps));
   const clearL = ringClearFrame([burst], [rectL], fps, poseAt, f, hit, hit + f60(150, fps));
   const enterP = landFrames(specP, fps);
   const enterL = landFrames(specL, fps);
-  const al = o.align ?? {};
-  const landP = place(Math.max(hit + f60(48, fps) + enterP, clearP, al.promiseLand ?? -Infinity), o.grid, { level: "beat", frames: enterP });
+  const landP = place(Math.max(hit + f60(48, fps) + enterP, clearP, bandsClear + enterP, al.promiseLand ?? -Infinity), o.grid, { level: "beat", frames: enterP });
   specP.at = landP.at;
   const landL = place(Math.max((landP.point ?? landP.at + enterP) + f60(24, fps), clearL, al.limitLand ?? -Infinity), o.grid, { level: "beat", frames: enterL });
   specL.at = landL.at;
@@ -212,23 +244,15 @@ export function planDrop(o: DropOptions): ScenePlan {
   const linesGone = exitAt + Math.max(exitFramesOf("lineRise", "blur", promise, fps), exitFramesOf("lineRise", "blur", limit, fps));
   types.push(specP, specL);
 
-  // the lead-in (S05's L04) in a band on the night green, gone before the burst could reach it or the band moves
+  // the lead-in (S05's L04) in a band on the night green, gone before the bands move on the hit
   if (text.leadIn) {
     const sizeF = typeSizePx("functional", f.w, f.h, 0.3);
     const lh = sizeF * lineHeightOf("functional");
     const upperRoom = ap0.y - 4 * f.unit;
     const top = upperRoom - lh >= f.safe ? Math.max(f.safe, (ap0.y - lh) / 2) : ap0.y + ap0.h + 4 * f.unit;
     const box: TypeBox = { left: 0, top, width: f.w, align: "center" };
-    const rect04 = lineRect(text.leadIn, "functional", f, box, 0.3);
-    let firstReach = touch;
-    for (let fr = hit; fr < touch; fr++) {
-      if (ringClearFrame([burst], [rect04], fps, poseAt, f, fr, fr + 1) > fr) {
-        firstReach = fr;
-        break;
-      }
-    }
     const exitF = exitFramesOf("lineBlur", "blur", text.leadIn, fps);
-    const leadExit = Math.min(touch, firstReach) - exitF - 2;
+    const leadExit = hit - exitF - 2;
     const need = sec(0.5 + 0.3 * text.leadIn.split(/\s+/).length, fps) + 2;
     const at = leadExit - need;
     if (at < 0) throw new Error(`the Drop's lead-in "${text.leadIn}" needs ${need} frames before the band opens; the pre-roll is ${hit} frames`);
@@ -239,7 +263,7 @@ export function planDrop(o: DropOptions): ScenePlan {
   const dimmed: { id: string; rect: Rect }[] = [
     { id: "calculator", rect: W.calculator },
     { id: "finder", rect: W.finder },
-    { id: "project", rect: unionRect(W.project.held, W.project.run) },
+    { id: "project", rect: W.project.window },
     { id: "toolbox", rect: W.toolbox },
   ];
   const farR = Math.max(...dimmed.map((d) => farDistToRect(W.stone, d.rect))) + 80;
@@ -288,20 +312,17 @@ export function planDrop(o: DropOptions): ScenePlan {
   const use = solveInPoint(take, "allow", hit, 0, end, fps);
   const receiptAt = eventFrame(use, "receipt", fps);
 
-  /* ------------------------------------------------ planes ----------------------------------------------------- */
-  const slot = (id: string, captureId: string, label: string, r: Rect, window: "apple" | "thirdParty" | "pebble", standsFor: string): PlaneSpec["content"] => ({
-    kind: "standIn",
-    standIn: { kind: "slot", id, captureId, label, w: r.w, h: r.h, window, standsFor },
-  });
+  /* ------------------------------------------------ planes, back to front --------------------------------------- */
+  const slotOf = (s: (typeof SLOT)[keyof typeof SLOT], r: Rect): PlaneSpec["content"] => ({ kind: "standIn", standIn: { ...s, w: r.w, h: r.h } });
   const planes: PlaneSpec[] = [
+    { id: "project-window", kind: "pebble", rect: W.project.window, content: slotOf(SLOT.project, W.project.window), dim: lift(W.project.window), shadow: true },
+    { id: "project-held", kind: "pebble", rect: W.project.held, content: { kind: "standIn", standIn: STILL.heldNote }, dim: lift(W.project.window), radius: 4, shadow: false },
+    { id: "toolbox", kind: "pebble", rect: W.toolbox, depth: W.depth.toolbox, content: { kind: "standIn", standIn: STILL.settings }, dim: lift(W.toolbox), shadow: true },
+    { id: "finder", kind: "apple", rect: W.finder, depth: W.depth.finder, content: slotOf(SLOT.finder, W.finder), dim: lift(W.finder), shadow: true },
+    { id: "calculator", kind: "apple", rect: W.calculator, depth: W.depth.calculator, content: slotOf(SLOT.calculator, W.calculator), dim: lift(W.calculator), shadow: true },
     { id: "browser", kind: "thirdParty", rect: W.browser, content: { kind: "take", use, view: "browser" }, shadow: true, radius: 10 },
-    { id: "calculator", kind: "apple", rect: W.calculator, content: slot("calculator", "RS-4", "Calculator, before \"=\"", W.calculator, "apple", "I1, I8"), dim: lift(W.calculator), shadow: true },
-    { id: "finder", kind: "apple", rect: W.finder, content: slot("finder", "RS-H", "Finder at Pebble Workbench", W.finder, "apple", "H1, H2"), dim: lift(W.finder), shadow: true },
-    { id: "project-held", kind: "pebble", rect: W.project.held, content: { kind: "standIn", standIn: STILL.held }, dim: lift(dimmed[2]!.rect) },
-    { id: "project-run", kind: "pebble", rect: { x: W.project.run.x, y: W.project.run.y, w: 495, h: 344 }, content: { kind: "standIn", standIn: STILL.testsCard }, dim: lift(dimmed[2]!.rect) },
-    { id: "toolbox", kind: "pebble", rect: W.toolbox, content: { kind: "standIn", standIn: STILL.settings }, dim: lift(W.toolbox) },
-    { id: "companion", kind: "pebble", rect: W.companion, content: { kind: "image", src: COMPANION_PANEL.src, w: COMPANION_PANEL.w, h: COMPANION_PANEL.h, note: "1.0.x harness frame, avatar hidden" }, shadow: true, radius: 14 },
-    { id: "companion-card", kind: "pebble", rect: W.card, content: { kind: "take", use, view: "companionCard" }, shadow: false, radius: 8, read: { from: 0, to: receiptAt + f60(60, fps), words: 0, receipt: false } },
+    // the companion: RS-9's view; the card the Allow answers reads at 28 px until the Allow (CR-09, CR-11)
+    { id: "companion", kind: "pebble", rect: W.companion, content: { kind: "take", use, view: "companion" }, shadow: true, radius: 14, read: { from: 0, to: hit, words: DROP_CARD.words, textPx: DROP_CARD.textPx, rect: W.card } },
   ];
 
   /* ------------------------------------------------ light, leak, cues ------------------------------------------ */
@@ -322,7 +343,8 @@ export function planDrop(o: DropOptions): ScenePlan {
         to: end,
         kind: "cutscene",
         camera: cam,
-        ref: tight,
+        // the parallax planes line up at the whole Mac's framing, so the composed world is exact at its widest
+        ref: wide,
         ground: "riverbed",
         planes,
         stone: { at: W.stone, r: STONE_R, size: STONE_SIZE, cues },
@@ -335,22 +357,25 @@ export function planDrop(o: DropOptions): ScenePlan {
     types,
     lightInitial: "morning",
     lightCues,
-    leaks: [{ at: hit + 2, frames: f60(48, fps) }],
+    // the leak plays once the bands have cleared, never over them (CR-07)
+    leaks: [{ at: bandsClear, frames: f60(48, fps) }],
     hits: [hit],
     takes: [use],
     music,
     moves: [
       move("ring", hit, f60(18, fps) + f60(72, fps), "the burst: emit and burst to the frame's edge"),
       move("ring", revealRingAt, f60(72, fps), "the reveal ring through the world"),
+      move("push", hit, openFrames, "S06: the hand-off to the opened framing as the frame opens"),
       move("push", revealStart, revealEnd - revealStart, "S07: the pull-back to the whole Mac"),
-      move("product", 0, end, "RS-9 at 1× (the companion's card, the receipt, the browser)"),
+      move("product", 0, end, "RS-9 at 1× (the companion, its card, the receipt, the browser)"),
       ...lightCues.map((c) => move("light", c.at, c.frames, "the light warms")),
     ],
-    exit: { pose: cam.pose(end), vel: cam.sample(end).vel, shot: "drop", ref: tight },
+    exit: { pose: cam.pose(end), vel: cam.sample(end).vel, shot: "drop", ref: wide, grade: "warm" },
     extra: {
-      timing: { promiseLand: specP.at + enterP, limitLand: specL.at + enterL, linesExit: exitAt, revealRingAt, end } satisfies DropTiming,
-      touch,
+      timing: { promiseLand: specP.at + enterP, limitLand: specL.at + enterL, linesExit: exitAt, revealRingAt, end, apertureOpen } satisfies DropTiming,
+      apertureOpen,
       apertureFrames,
+      bandsClear,
       band,
       receiptAt,
       linesGone,
@@ -359,7 +384,8 @@ export function planDrop(o: DropOptions): ScenePlan {
       revealEnd,
       clearP,
       clearL,
-      tightZoom: tight.zoom,
+      readZoom: read.zoom,
+      openedZoom: opened.zoom,
       wideZoom: wide.zoom,
     },
   };

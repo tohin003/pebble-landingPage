@@ -3,8 +3,9 @@
 // never stretched); a slot is a hatched panel that names the capture which fills it, and shows the take's source time
 // ticking at 1× so the edit lane can see where a take's in-point sits.
 import { Img, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { COLOR, FAMILY, TRANSITION, f60 } from "../../tokens";
-import { E_ARRIVE, E_MOVE, clamp01 } from "../../motion/ease";
+import { COLOR, FAMILY } from "../../tokens";
+import { E_MOVE } from "../../motion/ease";
+import { askCardLook } from "../../transitions/entrances";
 import { shownSize, type SlotStandIn, type StandIn } from "../standins";
 import { sourceFrameAt, sourceTimecode, stillsAt, takeFramePath, type TakeUse, type ViewStill } from "../take";
 
@@ -22,16 +23,22 @@ export const StillImage: React.FC<{ standIn: Extract<StandIn, { kind: "still" }>
 /**
  * A slot: what the 2.0.0 capture will show here, named, on a hatched panel. Sizes are world units; `px` is the frame
  * px per world unit, so the label stays legible whatever the camera does (and stays small: it is a slate, not a line).
+ * The label sits at the slot's `focus` (where the shot looks: the menu bar's status icons, a card inside a window),
+ * and a take view's `state` names what the take shows at that moment (a placeholder's caption, never drawn UI).
  */
-export const SlotPanel: React.FC<{ slot: SlotStandIn; w: number; h: number; px: number; timecode?: string }> = ({ slot, w, h, px, timecode }) => {
+export const SlotPanel: React.FC<{ slot: SlotStandIn; w: number; h: number; px: number; timecode?: string; state?: string }> = ({ slot, w, h, px, timecode, state }) => {
   const u = 1 / Math.max(0.05, px); // world units per frame px
-  const fs = Math.min(Math.max(13 * u, 10), Math.min(w, h) / 6);
+  const fs = Math.min(Math.max(13 * u, 10), Math.min(w, h) / (state ? 7.5 : 6));
   const hatch = `repeating-linear-gradient(135deg, ${COLOR.line} 0px, ${COLOR.line} ${(1.2 * u).toFixed(2)}px, transparent ${(1.2 * u).toFixed(2)}px, transparent ${(14 * u).toFixed(2)}px)`;
+  const f = slot.focus ?? { x: 0, y: 0 };
+  const left = Math.max(fs * 0.9, Math.min(w - fs * 16, f.x * w));
+  const top = Math.max(fs * 0.8, Math.min(h - fs * 5.6, f.y * h));
   return (
     <div style={{ position: "absolute", inset: 0, background: `${hatch}, ${COLOR.fill}`, border: `${(1.5 * u).toFixed(2)}px solid ${COLOR.line}`, boxSizing: "border-box", overflow: "hidden" }}>
-      <div style={{ position: "absolute", left: fs * 0.9, top: fs * 0.8, right: fs * 0.9, fontFamily: `"${FAMILY.mono}"`, fontSize: fs, color: COLOR.ink2, lineHeight: 1.35 }}>
+      <div style={{ position: "absolute", left, top, right: fs * 0.9, fontFamily: `"${FAMILY.mono}"`, fontSize: fs, color: COLOR.ink2, lineHeight: 1.35 }}>
         <div style={{ fontWeight: 500, color: COLOR.ink }}>{slot.captureId}</div>
         <div style={{ fontFamily: `"${FAMILY.sans}"`, fontSize: fs * 0.92 }}>{slot.label}</div>
+        {state ? <div style={{ fontFamily: `"${FAMILY.sans}"`, fontSize: fs * 0.92, color: COLOR.ink }}>{state}</div> : null}
         <div style={{ fontSize: fs * 0.78, opacity: 0.85, marginTop: fs * 0.3 }}>placeholder · not captured yet</div>
         {timecode ? <div style={{ fontSize: fs * 0.9, marginTop: fs * 0.3, color: COLOR.accent }}>src {timecode} · 1×</div> : null}
       </div>
@@ -42,14 +49,15 @@ export const SlotPanel: React.FC<{ slot: SlotStandIn; w: number; h: number; px: 
 export const StandInView: React.FC<{ standIn: StandIn; w: number; h: number; px: number }> = ({ standIn, w, h, px }) =>
   standIn.kind === "still" ? <StillImage standIn={standIn} w={w} h={h} /> : <SlotPanel slot={standIn} w={w} h={h} px={px} />;
 
-/** The card entrance on a still inside a view (rise 24 px, blur 8 px clearing, 24 frames, E-arrive), in view units. */
+/**
+ * The card entrance on a still inside a view (rise 24 px and an 8 px blur clearing over 24 frames on E-arrive, the
+ * opacity on E-move over the first 10: transitions/entrances.tsx askCardLook), in view units.
+ */
 const entranceStyle = (frameSinceFrom: number, fps: number, px: number): React.CSSProperties | null => {
-  const N = f60(TRANSITION.cardEntrance.frames, fps);
-  const u = clamp01(frameSinceFrom / N);
-  if (u >= 1) return {};
-  const e = E_ARRIVE(u);
+  const l = askCardLook(frameSinceFrom, 0, fps);
+  if (l.dy < 0.01 && l.blur < 0.01 && l.opacity >= 1) return {};
   const k = 1 / Math.max(0.05, px);
-  return { opacity: Math.min(1, e * 1.6), transform: `translateY(${(TRANSITION.cardEntrance.risePx * (1 - e) * k).toFixed(2)}px)`, filter: `blur(${(TRANSITION.cardEntrance.blurPx * (1 - e) * k).toFixed(2)}px)` };
+  return { opacity: l.opacity, transform: `translateY(${(l.dy * k).toFixed(2)}px)`, filter: `blur(${(l.blur * k).toFixed(2)}px)` };
 };
 
 /**
@@ -72,23 +80,24 @@ export const TakeViewContent: React.FC<{ use: TakeUse; view: string; w: number; 
   }
   const kx = w / v.w;
   const ky = h / v.h;
+  const state = [...(v.slotStates ?? [])].reverse().find((x) => src >= x.from)?.label;
   return (
     <>
-      {v.slot ? <SlotPanel slot={v.slot} w={w} h={h} px={px} timecode={sourceTimecode(src, m.fps)} /> : null}
+      {v.slot ? <SlotPanel slot={v.slot} w={w} h={h} px={px} timecode={sourceTimecode(src, m.fps)} state={state} /> : null}
       {stillsAt(v, src).map((s: ViewStill, i) => {
         const r = s.rect ?? { x: 0, y: 0, w: v.w, h: v.h };
-        // the frame on which this still first showed, for its entrance
+        // the frame on which this still first showed, for its entrance; a still with no entrance switches in with a
+        // hard cut on its source frame, as a recording's own change does (CR-18: placeholder states never dissolve)
         const since = s.entrance ? Math.floor(((src - s.from) * fps) / m.fps) : Infinity;
         const look = s.entrance ? entranceStyle(since, fps, px) : {};
         if (look === null) return null;
         if (s.fadeOut && s.to !== undefined && src >= s.to - s.fadeOut) {
-          // a placeholder of the recording's own change: out on E-move over its last frames, never a pop
           const u = Math.min(1, (src - (s.to - s.fadeOut)) / s.fadeOut);
           look.opacity = (look.opacity === undefined ? 1 : Number(look.opacity)) * (1 - E_MOVE(u));
         }
         return (
           <div key={i} style={{ position: "absolute", left: r.x * kx, top: r.y * ky, width: r.w * kx, height: r.h * ky, ...look }}>
-            {s.standIn.kind === "still" ? <StillImage standIn={s.standIn} w={r.w * kx} h={r.h * ky} /> : <SlotPanel slot={s.standIn} w={r.w * kx} h={r.h * ky} px={px} />}
+            {s.standIn.kind === "still" ? <StillImage standIn={s.standIn} w={r.w * kx} h={r.h * ky} /> : <SlotPanel slot={s.standIn} w={r.w * kx} h={r.h * ky} px={px} timecode={sourceTimecode(src, m.fps)} state={state} />}
           </div>
         );
       })}

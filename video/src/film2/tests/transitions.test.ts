@@ -2,7 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import { irisRadius, rackLook, swapPresentationLook } from "../transitions/presentations";
 import { takeFrame, askCardLook } from "../transitions/entrances";
-import { KINDS, checkKindFrames } from "../transitions/kinds";
+import { IRIS_DEFAULT_EASE, KINDS, checkKindFrames } from "../transitions/kinds";
 import { cutTheCurveNumbers, whipNumbers } from "../transitions/ports";
 import { matchCutNumbers } from "../type/TextMatchCut";
 import { phaseWindows, ringEnd, type RingSpec } from "../carrier/ring";
@@ -10,12 +10,21 @@ import { focusPull } from "../camera/moves";
 import { TRANSITION_KINDS } from "../tokens";
 
 describe("kind 1: the ring iris", () => {
-  test("opens from the stone past the farthest corner, fast then slow (E-arrive)", () => {
+  test("a burst opens from the stone past the farthest corner, fast then slow (E-arrive, on a marked hit)", () => {
+    expect(irisRadius(0, 44, 2300, "arrive")).toBe(44);
+    expect(irisRadius(1, 44, 2300, "arrive")).toBe(2300);
+    const early = irisRadius(0.2, 44, 2300, "arrive") - 44;
+    const late = 2300 - irisRadius(0.8, 44, 2300, "arrive");
+    expect(early).toBeGreaterThan(late * 5);
+  });
+  test("an iris between places is E-move by default (CR-21, lead ruling §52): slow in, slow out, symmetric", () => {
+    expect(IRIS_DEFAULT_EASE).toBe("move");
     expect(irisRadius(0, 44, 2300)).toBe(44);
     expect(irisRadius(1, 44, 2300)).toBe(2300);
     const early = irisRadius(0.2, 44, 2300) - 44;
     const late = 2300 - irisRadius(0.8, 44, 2300);
-    expect(early).toBeGreaterThan(late * 5);
+    expect(Math.abs(early - late)).toBeLessThan(1);
+    expect(irisRadius(0.5, 44, 2300)).toBeCloseTo((44 + 2300) / 2, 0);
   });
 });
 

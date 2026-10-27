@@ -4,7 +4,7 @@ import { GRADES, checkLightCues, gradeAt, gradeColor, gradeLuminance, hexToRgb, 
 import { FILM_LOOK, filmCube, filmLook, maxLookShift } from "../light/lut";
 import { leakEnvelope } from "../light/LightLeak";
 import { earliestExit, readingLoad, requiredHoldS, wordCount } from "../type/reading";
-import { cascadeSchedule, checkCascade, swapLook } from "../type/Cascade";
+import { cascadeSchedule, checkCascade, stageCover, swapLook } from "../type/Cascade";
 import { safeMarginPx, typeSizePx } from "../type/scale";
 import { COLOR, TRANSITION } from "../tokens";
 
@@ -83,14 +83,34 @@ describe("reading", () => {
 
 describe("the cascade (kind 5)", () => {
   const items = [{ text: "Remember that …", holdS: 1.1 }, { text: "Six kinds, six switches", holdS: 1.05 }, { text: "Forget this memory", holdS: 1.05 }];
-  test("one stage, no gap: each item swaps in as the last swaps out, 8 frames each", () => {
+  test("one stage, never empty: each item swaps out over the same 8 frames the next swaps in (CR-17)", () => {
     const s = cascadeSchedule(50, items, 60);
-    for (let i = 1; i < s.length; i++) expect(s[i]!.inStart).toBe(s[i - 1]!.outEnd);
+    for (let i = 1; i < s.length; i++) {
+      expect(s[i]!.inStart).toBe(s[i - 1]!.outStart);
+      expect(s[i]!.inEnd).toBe(s[i - 1]!.outEnd);
+    }
     for (const w of s) {
       expect(w.inEnd - w.inStart).toBe(TRANSITION.swap.inFrames);
       expect(w.outEnd - w.outStart).toBe(TRANSITION.swap.outFrames);
     }
     expect(checkCascade(items, s, 60)).toEqual([]);
+    // the stage holds a whole item's worth on every frame from the first landing to the last item's hold
+    for (let f = s[0]!.inEnd; f < s[s.length - 1]!.outStart + 40; f++) expect(stageCover(s, f, true)).toBeGreaterThan(0.99);
+  });
+  test("the old sequential swap emptied the stage: a canary the cover catches", () => {
+    const s = cascadeSchedule(50, items, 60).map((w) => ({ ...w }));
+    // out, then in (8 frames each): what the review saw at 1720–1724
+    s[1]!.inStart = s[0]!.outEnd;
+    s[1]!.inEnd = s[1]!.inStart + 8;
+    expect(Math.min(...Array.from({ length: 16 }, (_, k) => stageCover(s.slice(0, 2), s[0]!.outStart + k, false)))).toBeLessThan(0.05);
+  });
+  test("a cascade with an end takes its last item out with a 12-frame drawn exit", () => {
+    const s = cascadeSchedule(50, items, 60, undefined, undefined, 400);
+    const last = s[s.length - 1]!;
+    expect(last.outStart).toBe(400);
+    expect(last.outEnd - last.outStart).toBe(TRANSITION.swap.exitFrames);
+    expect(swapLook(last, 411, false)!.opacity).toBeLessThan(0.05);
+    expect(swapLook(last, 412, false)).toBeNull();
   });
   test("with beats, each swap lands 2–3 frames before one", () => {
     const beats = Array.from({ length: 40 }, (_, k) => 30 + k * 30);
@@ -107,7 +127,7 @@ describe("the cascade (kind 5)", () => {
   test("the swap blurs out to 8 px and back from 8 px", () => {
     const [w] = cascadeSchedule(0, items, 60);
     expect(swapLook(w!, w!.inStart, false)!.blur).toBeCloseTo(8, 6);
-    expect(swapLook(w!, w!.inEnd, false)).toEqual({ opacity: 1, blur: 0 });
+    expect(swapLook(w!, w!.inEnd, false)).toEqual({ opacity: 1, blur: 0, shift: 0 });
     expect(swapLook(w!, w!.outEnd - 1e-6, false)!.opacity).toBeLessThan(0.01);
   });
 });

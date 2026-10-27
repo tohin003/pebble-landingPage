@@ -7,7 +7,7 @@
 // validators check (qa/checks.ts cutAudit).
 import { TRANSITION, f60 } from "../tokens";
 import { E_LEAVE } from "../motion/ease";
-import { arriveWithMomentum, screenVelocity, toPose, type Pose, type VelocityCamera } from "../motion/camera";
+import { arriveWithMomentum, screenVelocity, toPose, type CamVel, type Pose, type VelocityCamera } from "../motion/camera";
 import type { Vec } from "../motion/geometry";
 
 export interface MomentumCutPlan {
@@ -27,6 +27,8 @@ export interface MomentumCutPlan {
   inFrames: number;
   mode?: "arrive" | "glide";
   tau?: number;
+  /** with mode "glide": the drift the incoming camera settles into (world units and log zoom a frame), never a rest */
+  drift?: Partial<CamVel>;
   frameW: number;
   frameH: number;
   fps: number;
@@ -60,7 +62,7 @@ export function momentumCut(p: MomentumCutPlan): MomentumSeam {
   p.out.ease(p.cutFrame - 1, { x: startPose.x + wx, y: startPose.y + wy, zoom: startPose.zoom }, E_LEAVE);
   const c = { x: p.frameW / 2, y: p.frameH / 2 };
   const vOut = screenVelocity(p.out.sample(p.cutFrame - 1), c, p.frameW, p.frameH);
-  const inCam = arriveWithMomentum({ target: p.target, frames: p.inFrames, vScreen: vOut, mode: p.mode, tau: p.tau });
+  const inCam = arriveWithMomentum({ target: p.target, frames: p.inFrames, vScreen: vOut, mode: p.mode, tau: p.tau, drift: p.drift });
   const vIn = screenVelocity(inCam.sample(0), c, p.frameW, p.frameH);
   return { vOut, vIn, inCam };
 }

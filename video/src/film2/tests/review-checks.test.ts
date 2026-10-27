@@ -12,6 +12,8 @@ import { shrink, stoneBlobs } from "../qa/stones";
 import { bandHeights, openingStart } from "../qa/bands";
 import { ReelScan } from "../qa/reel-scan";
 import { frameBox } from "../setpieces/frame";
+import { RIVERBED, groundRectOf, riverbedRect } from "../setpieces/ground";
+import { IRIS_DEFAULT_EASE } from "../transitions/kinds";
 import { STILL } from "../setpieces/standins";
 import { TAKE_HSF } from "../setpieces/take";
 import { STEALTH_HONEST } from "../../../../shared/pebble/stealthVeil";
@@ -92,8 +94,9 @@ describe("the iris ease (CR-21)", () => {
     const t = clean();
     return { ...t, seams: [{ at: 240, kind: "ring", frames: 30, out: "A", in: "B", ease, hit }], hits };
   };
-  test("an iris that names no ease takes ringIris's default, E-arrive, and is refused without a marked hit", () => {
-    expect(errorsOf(irisEase(withIris())).length).toBe(1);
+  test("an iris that names no ease takes ringIris's default, now E-move, and passes; E-arrive without a marked hit is refused", () => {
+    expect(IRIS_DEFAULT_EASE).toBe("move");
+    expect(irisEase(withIris())).toEqual([]);
     expect(errorsOf(irisEase(withIris("arrive"))).length).toBe(1);
   });
   test("E-move between places passes; E-arrive passes only on a marked hit inside its seam", () => {
@@ -324,14 +327,25 @@ const mini = (o: Partial<ScenePlan> & { shots?: ShotSpec[] } = {}): ScenePlan =>
 };
 
 describe("ground coverage (CR-02)", () => {
-  test("a shot near its ref is covered; a pull-back to a tenth of the zoom shows the riverbed's edges", () => {
+  test("a shot near its ref is covered; a pull-back to a tenth of the zoom shows a fixed-size riverbed's edges", () => {
     expect(groundCoverage(mini())).toEqual([]);
     const ref: Pose = { x: 0, y: 0, zoom: 1 };
     const cam = new VelocityCamera(ref);
     cam.hermite(300, { x: 0, y: 0, zoom: 0.1 }, { lz: -0.0005 });
-    const f = groundCoverage(mini({ shots: [{ id: "a", from: 0, to: 600, kind: "ui", camera: cam, ref, ground: "riverbed", planes: [], rings: [] }] }));
+    // the canary: the old fixed 3400-unit riverbed centred on the ref
+    const f = groundCoverage(mini({ shots: [{ id: "a", from: 0, to: 600, kind: "ui", camera: cam, ref, ground: "riverbed", planes: [], rings: [], groundRect: riverbedRect(ref) }] }));
     expect(f.length).toBe(1);
     expect(f[0]!.message).toMatch(/left and right/);
+  });
+  test("the general rule: a riverbed sized from the shot's widest pose covers every frame of the same pull-back", () => {
+    const ref: Pose = { x: 0, y: 0, zoom: 1 };
+    const cam = new VelocityCamera(ref);
+    cam.hermite(300, { x: 400, y: -200, zoom: 0.1 }, { lz: -0.0005 });
+    const shot = { id: "a", from: 0, to: 600, kind: "ui" as const, camera: cam, ref, ground: "riverbed" as const, planes: [], rings: [] };
+    expect(groundCoverage(mini({ shots: [shot] }))).toEqual([]);
+    const r = groundRectOf(shot, W, H);
+    expect(r.w / r.h).toBeCloseTo(RIVERBED.aspect, 6);
+    expect(r.w).toBeGreaterThan(RIVERBED.w);
   });
   test("the page has no edge to show", () => {
     const ref: Pose = { x: 0, y: 0, zoom: 1 };

@@ -36,6 +36,8 @@ export interface TakeView {
   stills?: readonly ViewStill[];
   /** placeholders with no published capture: a labelled slot that shows the take's source time ticking at 1× */
   slot?: SlotStandIn;
+  /** a slot's caption of what the take shows from source frame `from` (the menu-bar icon's new state …) */
+  slotStates?: readonly { from: number; label: string }[];
   /** the real window the view shows: a still of the same window never shares a frame with it (CR-11) */
   place?: string;
   /** real takes: the view's body text (CSS px) and its legible words, for the legibility checks (CR-05) */
@@ -187,8 +189,11 @@ export const COMPANION_PANEL = {
 /**
  * RS-9, the one continuous browser take (TREATMENT §6): the companion's card, Allow, the receipt, Pebble's tab, the
  * results, the video starting, the reply. PLACEHOLDER timings inside §3.6 chain 3 (8–13 s from the Allow to the reply).
- * Two views: the companion's card (a real 1.0.x card standing in for "Use youtube.com", then a receipt) and the browser
- * (a slot: no published capture of it exists; it shows the take's source time ticking at 1×).
+ * Two views of one picture, on one clock (CR-11): the companion and the browser. No published capture shows the
+ * companion holding a card, so until the receipt the companion is a labelled slot; from the receipt it is a real
+ * 1.0.x frame of the companion at work, switched in with a hard cut on the event, as a recording changes (CR-18: the
+ * old placeholder dissolved a main-window card into a receipt that overhung the panel). The browser is a slot with
+ * the take's source time ticking at 1×.
  */
 export const TAKE_RS9: TakeManifest = {
   id: "RS-9",
@@ -198,13 +203,13 @@ export const TAKE_RS9: TakeManifest = {
   h: 1800,
   events: { card: 300, allow: 540, receipt: 566, tabOpens: 690, results: 830, press: 1100, videoStarts: 1190, reply: 1290 },
   views: {
-    companionCard: {
-      w: 396,
-      h: 275,
+    companion: {
+      w: COMPANION_PANEL.w,
+      h: COMPANION_PANEL.h,
       place: "companion",
       stills: [
-        { from: 0, to: 566, standIn: STILL.companionCard, rect: { x: 0, y: 0, w: 396, h: 275 }, fadeOut: 12 },
-        { from: 566, standIn: STILL.doneReceipt, rect: { x: 0, y: 66, w: 396, h: 143.6 }, entrance: true },
+        { from: 0, to: 566, standIn: SLOT.companionCard },
+        { from: 566, standIn: STILL.companionWorking },
       ],
     },
     browser: { w: SLOT.browser.w, h: SLOT.browser.h, slot: SLOT.browser, place: "browser" },
@@ -213,31 +218,47 @@ export const TAKE_RS9: TakeManifest = {
   note: "placeholder timings; the 2.0.0 recording's event log replaces them",
 };
 
+/** Ring 4's views inside HS-F's picture (the conversation "studio-bookings"), view px: the history and the run. */
+export const HSF_VIEWS = {
+  held: { w: 253, h: 66 },
+  /**
+   * the test card's sentence, and further down the conversation the receipt (the resumed turn's own row), far enough
+   * below that the camera's glide down to it carries the sentence out of frame before it reads the receipt closer
+   */
+  run: { w: 424, h: 312, tests: { x: 0, y: 0, w: 424, h: 43 }, receipt: { x: 0, y: 260, w: 250, h: 52 } },
+} as const;
+
 /**
- * HS-F, Ring 4's AgentGuard run (F3, F12): the test card reading Running, then Done, then "Verified" after the resumed
- * turn. 1.5.0's real span was 4.63 s from the click (TREATMENT §3.6 chain 9). PLACEHOLDER: 1.0.x stills; the tests card
- * stands for Running and Done, the done receipt (cropped below its timing line) for Verified.
+ * HS-F, Ring 4's AgentGuard run (F3, F12): the conversation "studio-bookings", the held card in its history, the test
+ * card reading Running, then Done, then "Verified" after the resumed turn. 1.5.0's real span was 4.63 s from the click
+ * (TREATMENT §3.6 chain 9); the take rolls 15 s before Running (the person's own time, the click in the history).
+ * Every plane of the place is a VIEW of this one take, on one clock (CR-11): the window (a slot: no published capture
+ * shows the 2.0.0 conversation), the history (the held card's sentence) and the run (the test card's sentence, then
+ * the receipt). PLACEHOLDER: 1.0.x stills cropped to what persists whatever the state (no buttons, no review badge),
+ * so no frame shows a live button beside a verified run; the run's parts arrive with the card entrance on their events.
  */
 export const TAKE_HSF: TakeManifest = {
   id: "HS-F",
   fps: 60,
-  frames: 1200,
-  w: 726,
-  h: 640,
-  events: { running: 0, done: 168, verified: 278 },
+  frames: 2400,
+  w: 1160,
+  h: 800,
+  events: { history: 0, running: 900, done: 1068, verified: 1178 },
   views: {
+    window: { w: SLOT.project.w, h: SLOT.project.h, slot: SLOT.project, place: "studio-bookings" },
+    held: { w: HSF_VIEWS.held.w, h: HSF_VIEWS.held.h, place: "studio-bookings", stills: [{ from: 0, standIn: STILL.heldNote }] },
     run: {
-      w: 726,
-      h: 640,
+      w: HSF_VIEWS.run.w,
+      h: HSF_VIEWS.run.h,
       place: "studio-bookings",
       stills: [
-        { from: 0, standIn: STILL.testsCard, rect: { x: 0, y: 0, w: 495, h: 344 }, entrance: true },
-        { from: 278, standIn: STILL.doneReceipt, rect: { x: 0, y: 380, w: 684, h: 248 }, entrance: true },
+        { from: 900, standIn: STILL.testsLine, rect: HSF_VIEWS.run.tests, entrance: true },
+        { from: 1178, standIn: STILL.verifiedTop, rect: HSF_VIEWS.run.receipt, entrance: true },
       ],
     },
   },
   placeholder: true,
-  note: "placeholder: 1.0.x stills; the 2.0.0 harness playback (timings from its event log) replaces them",
+  note: "placeholder: 1.0.x stills cropped to persistent text; the 2.0.0 harness playback (timings from its event log) replaces them",
 };
 
 /** The slot for the climax's conversation "Kiln" (no published capture shows it). */
@@ -266,21 +287,47 @@ export const TAKE_RSW: TakeManifest = {
   events: { rowsComplete: 120, cardLands: 450, happy: 462 },
   views: {
     conversation: { w: 1160, h: 800, slot: KILN_SLOT, place: "kiln" },
-    keptCard: { w: 495, h: 474, place: "kiln", stills: [{ from: 450, standIn: STILL.commandCard, rect: { x: 0, y: 0, w: 495, h: 474 }, entrance: true }] },
+    // no published capture shows the kept card (1.7.0): a labelled slot at the 2.0.0 card's size, arriving on its event
+    keptCard: { w: SLOT.keptCard.w, h: SLOT.keptCard.h, place: "kiln", stills: [{ from: 450, standIn: SLOT.keptCard, entrance: true }] },
   },
   placeholder: true,
-  note: "placeholder: a 1.0.x card in the kept card's place; the 2.0.0 take (one 1× take) replaces it",
+  note: "placeholder: slots for the conversation and the kept card; the 2.0.0 take (one 1× take) replaces them",
+};
+
+/**
+ * HS-G, the climax's first beat (G4): the conversation "Glaze" and Pebble's ask card, "Keep this tool in Pebble's
+ * Toolbox?" with Discard and Keep, arriving (the product's own motion; the shared card entrance stands in for it).
+ * PLACEHOLDER: slots (the Workshop's cards were never published). The climax opens on this take with the card
+ * already arriving (CR-06: it opened on 16 blank frames of its slot).
+ */
+export const TAKE_HSG: TakeManifest = {
+  id: "HS-G",
+  fps: 60,
+  frames: 1200,
+  w: 1160,
+  h: 800,
+  events: { conversation: 0, card: 240 },
+  views: {
+    conversation: { w: 1160, h: 800, slot: { kind: "slot", id: "glaze", captureId: "HS-G", label: "the conversation \"Glaze\"", w: 1160, h: 800, window: "pebble", standsFor: "G4's conversation", place: "glaze" }, place: "glaze" },
+    card: { w: SLOT.glazeCard.w, h: SLOT.glazeCard.h, place: "glaze", stills: [{ from: 240, standIn: SLOT.glazeCard, entrance: true }] },
+  },
+  placeholder: true,
+  note: "placeholder: slots; the 2.0.0 harness capture replaces them",
 };
 
 /** HS-B3, ⌘K: the palette opens, "stealth" is typed, the row lights, Enter. PLACEHOLDER timings over a slot. */
 export const TAKE_HSB3: TakeManifest = {
   id: "HS-B3",
   fps: 60,
-  frames: 600,
-  w: SLOT.palette.w,
-  h: SLOT.palette.h,
-  events: { opens: 0, typed: 84, lit: 96, enter: 126 },
-  views: { palette: { w: SLOT.palette.w, h: SLOT.palette.h, slot: SLOT.palette, place: "palette" } },
+  frames: 900,
+  w: SLOT.workspace.w,
+  h: SLOT.workspace.h,
+  // the take rolls on the workspace before ⌘K, so the passage opens on it (CR-06: it opened on bare ground)
+  events: { workspace: 0, opens: 120, typed: 204, lit: 216, enter: 246 },
+  views: {
+    workspace: { w: SLOT.workspace.w, h: SLOT.workspace.h, slot: SLOT.workspace, place: "workspace" },
+    palette: { w: SLOT.palette.w, h: SLOT.palette.h, place: "workspace", stills: [{ from: 120, standIn: SLOT.palette, entrance: true }], slotStates: [{ from: 0, label: "" }, { from: 204, label: "typed: stealth" }, { from: 216, label: "Turn Stealth Lockdown on" }, { from: 246, label: "Enter" }] },
+  },
   placeholder: true,
 };
 
@@ -297,8 +344,8 @@ export const TAKE_RS13: TakeManifest = {
   h: 900,
   events: { switchOn: 130, dockLeaves: 150, iconChanges: 170 },
   views: {
-    menuBar: { w: SLOT.menuBar.w, h: SLOT.menuBar.h, slot: SLOT.menuBar, place: "menu bar" },
-    dock: { w: SLOT.dock.w, h: SLOT.dock.h, slot: SLOT.dock, place: "dock" },
+    menuBar: { w: SLOT.menuBar.w, h: SLOT.menuBar.h, slot: SLOT.menuBar, place: "menu bar", slotStates: [{ from: 0, label: "Pebble's icon: the pebble" }, { from: 170, label: "now a filled pebble in a ring" }] },
+    dock: { w: SLOT.dock.w, h: SLOT.dock.h, slot: SLOT.dock, place: "dock", slotStates: [{ from: 0, label: "Pebble's icon in the Dock" }, { from: 150, label: "Pebble's icon has left the Dock" }] },
   },
   placeholder: true,
 };

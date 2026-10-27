@@ -11,8 +11,16 @@
 //   night    for dark-theme scenes in the tour and kit (the hero film has no night arc: §3.3)
 //
 // A grade is a small set of numbers, so it can be interpolated, applied in CSS (light/Grade.tsx), modelled for the
-// luminance checks (gradeLuminance) and baked into a .cube LUT (light/lut.ts) with the same arithmetic. Grades stay
-// subtle on purpose: the UI under them is real, and must keep its own colours closely enough to read as itself.
+// luminance checks (gradeLuminance) and baked into a .cube LUT (light/lut.ts) with the same arithmetic.
+//
+// The light lives in the GROUND (CR-14): each grade carries linear-light gains for the riverbed alone (`ground`,
+// multiplied in before everything else, light/Grade.tsx <GroundLight>), so the arc reads (warm and evening about 29–30
+// levels warmer in R − B than day, golden rather than yellow; dusk about 17 % darker and blue; evening about 5 % darker
+// than day; adjacent sections ΔE 9.8 or more apart, modelled on the riverbed's median), and the same light, a few per
+// cent of it (`ui`), on the windows, so a frame that windows fill still shows the hour; the grade on the whole frame
+// (the filter chain and faint washes) stays subtle: the UI under it is real, and must keep its own colours closely
+// enough to read as itself. (A 14 % soft-light wash over everything barely moved the near-white ground: "warm"
+// measured cooler than day.)
 import { COLOR, LIGHT, TRANSITION, f60 } from "../tokens";
 import { E_MOVE, clamp01, curve } from "../motion/ease";
 
@@ -29,8 +37,16 @@ export interface Grade {
   /** an extra soft-light tint (the dusk blue) and its amount 0..0.2 */
   tint: string;
   tintAmount: number;
-  /** extra darkening of the ground only (multiply), 0..0.3: "the ground dims" */
-  groundDim: number;
+  /**
+   * the ground's own light: linear-light gains for R, G and B on the riverbed only (never on the UI), multiplied in
+   * before the filter chain. "The ground dims" at dusk is here too (CR-14)
+   */
+  ground: readonly [number, number, number];
+  /**
+   * the same light, much fainter, on the foreground world (the windows, the stone): linear-light gains a few per cent
+   * from 1, so a frame that windows fill still shows the hour (evening's cream) while the UI keeps its own colours
+   */
+  ui: readonly [number, number, number];
   /** the key light's pool, above left (screen), 0..0.12 */
   keyLight: number;
   /** the vignette, tinted with the brand's shade green, 0.06–0.10 */
@@ -41,13 +57,14 @@ const WARM = "#FFB36B";
 const COOL = "#8FB6D9";
 
 export const GRADES = {
-  morning: { name: "morning", brightness: 1.0, contrast: 0.98, saturate: 0.95, warmth: -0.3, tint: COOL, tintAmount: 0, groundDim: 0, keyLight: 0.05, vignette: 0.06 },
-  warm: { name: "warm", brightness: 1.0, contrast: 1.01, saturate: 1.02, warmth: 0.32, tint: WARM, tintAmount: 0, groundDim: 0, keyLight: 0.07, vignette: 0.07 },
-  day: { name: "day", brightness: 1.0, contrast: 1.03, saturate: 1.02, warmth: 0.08, tint: WARM, tintAmount: 0, groundDim: 0, keyLight: 0.08, vignette: 0.07 },
-  dusk: { name: "dusk", brightness: 0.93, contrast: 1.0, saturate: 0.9, warmth: -0.18, tint: COLOR.dusk, tintAmount: 0.15, groundDim: 0.16, keyLight: 0.03, vignette: 0.1 },
-  evening: { name: "evening", brightness: 0.985, contrast: 1.02, saturate: 1.03, warmth: 0.45, tint: WARM, tintAmount: 0, groundDim: 0.04, keyLight: 0.07, vignette: 0.08 },
-  page: { name: "page", brightness: 1, contrast: 1, saturate: 1, warmth: 0, tint: WARM, tintAmount: 0, groundDim: 0, keyLight: 0.03, vignette: 0.06 },
-  night: { name: "night", brightness: 0.86, contrast: 1.04, saturate: 0.92, warmth: -0.3, tint: COOL, tintAmount: 0.05, groundDim: 0.2, keyLight: 0.04, vignette: 0.1 },
+  morning: { name: "morning", brightness: 1.0, contrast: 0.98, saturate: 0.95, warmth: -0.12, tint: COOL, tintAmount: 0, ground: [0.96, 0.99, 1.05], ui: [0.99, 1.0, 1.01], keyLight: 0.05, vignette: 0.06 },
+  // golden, not yellow: red rises past the riverbed's green, blue falls
+  warm: { name: "warm", brightness: 1.0, contrast: 1.01, saturate: 1.03, warmth: 0.12, tint: WARM, tintAmount: 0, ground: [1.12, 0.985, 0.8], ui: [1.0, 0.99, 0.95], keyLight: 0.07, vignette: 0.07 },
+  day: { name: "day", brightness: 1.0, contrast: 1.03, saturate: 1.02, warmth: 0.04, tint: WARM, tintAmount: 0, ground: [1.0, 1.0, 0.985], ui: [1, 1, 1], keyLight: 0.08, vignette: 0.07 },
+  dusk: { name: "dusk", brightness: 0.97, contrast: 1.0, saturate: 0.92, warmth: -0.08, tint: COLOR.dusk, tintAmount: 0.07, ground: [0.7, 0.74, 0.9], ui: [0.96, 0.97, 1.0], keyLight: 0.03, vignette: 0.1 },
+  evening: { name: "evening", brightness: 0.99, contrast: 1.02, saturate: 1.03, warmth: 0.14, tint: WARM, tintAmount: 0, ground: [1.04, 0.9, 0.72], ui: [1.0, 0.975, 0.93], keyLight: 0.07, vignette: 0.08 },
+  page: { name: "page", brightness: 1, contrast: 1, saturate: 1, warmth: 0, tint: WARM, tintAmount: 0, ground: [1, 1, 1], ui: [1, 1, 1], keyLight: 0.03, vignette: 0.06 },
+  night: { name: "night", brightness: 0.86, contrast: 1.04, saturate: 0.92, warmth: -0.3, tint: COOL, tintAmount: 0.05, ground: [0.78, 0.8, 0.86], ui: [0.97, 0.98, 1.0], keyLight: 0.04, vignette: 0.1 },
 } as const satisfies Record<string, Grade>;
 export type GradeName = keyof typeof GRADES;
 
@@ -101,13 +118,45 @@ export const applyWashes = (c: RGB, g: Grade): RGB => {
   return out.map(clamp01) as RGB;
 };
 
-/** A colour through a grade (filter, then washes, then the key light at `key` 0..1 of its pool). */
+/** The ground's own light on a colour: its linear-light gains (light/Grade.tsx <GroundLight> draws exactly this). */
+export const applyGroundLight = (c: RGB, g: Pick<Grade, "ground">): RGB => c.map((v, i) => toSrgb(clamp01(toLin(v) * g.ground[i]!))) as RGB;
+/** The faint light on the foreground world (light/Grade.tsx <GroundLight> with the `ui` gains). */
+export const applyUiLight = (c: RGB, g: Pick<Grade, "ui">): RGB => c.map((v, i) => toSrgb(clamp01(toLin(v) * g.ui[i]!))) as RGB;
+
+/** A colour through a grade (the ground's light if it is ground, else the UI's, the filter, the washes, the key light). */
 export const gradeColor = (c: RGB, g: Grade, key = 0.5, ground = false): RGB => {
-  let out = applyWashes(applyFilter(c, g), g);
-  if (ground && g.groundDim > 0) out = out.map((v) => v * (1 - g.groundDim)) as RGB;
+  let out = applyWashes(applyFilter(ground ? applyGroundLight(c, g) : applyUiLight(c, g), g), g);
   const k = g.keyLight * key;
   if (k > 0) out = out.map((v) => screen(v, k)) as RGB;
   return out.map(clamp01) as RGB;
+};
+
+/** CIE L*a*b* (D65) of an sRGB colour, and the CIE76 difference between two colours. */
+export const toLab = (c: RGB): [number, number, number] => {
+  const [r, g, b] = c.map(toLin) as RGB;
+  const X = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047;
+  const Y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const Z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883;
+  const f = (t: number) => (t > (6 / 29) ** 3 ? Math.cbrt(t) : t / (3 * (6 / 29) ** 2) + 4 / 29);
+  return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
+};
+export const deltaE = (a: RGB, b: RGB): number => {
+  const A = toLab(a);
+  const B = toLab(b);
+  return Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]);
+};
+
+/**
+ * The riverbed ground's sample under a grade: its median colour (measured on riverbed-light-2400.jpg, 212/221/206)
+ * through the ground's light and the grade, the key light at half its pool and a third of the vignette, as a frame's
+ * ground pixels measure (the review's method, CR-14).
+ */
+export const RIVERBED_MEDIAN: RGB = [212 / 255, 221 / 255, 206 / 255];
+export const groundSample = (g: Grade, base: RGB = RIVERBED_MEDIAN): RGB => {
+  const c = gradeColor(base, g, 0.5, true);
+  const a = g.vignette * 0.35;
+  const shade = COLOR.shadeRgb.split(",").map((x) => Number(x) / 255);
+  return c.map((v, i) => clamp01(v * (1 - a) + shade[i]! * a)) as RGB;
 };
 
 /** The approximate mean relative luminance of a frame on the page or the riverbed under a grade (for the checks). */
@@ -129,7 +178,8 @@ export const mixGrade = (a: Grade, b: Grade, t: number): Grade => {
     warmth: n(a.warmth, b.warmth),
     tint,
     tintAmount: n(a.tintAmount, b.tintAmount),
-    groundDim: n(a.groundDim, b.groundDim),
+    ground: [n(a.ground[0], b.ground[0]), n(a.ground[1], b.ground[1]), n(a.ground[2], b.ground[2])],
+    ui: [n(a.ui[0], b.ui[0]), n(a.ui[1], b.ui[1]), n(a.ui[2], b.ui[2])],
     keyLight: n(a.keyLight, b.keyLight),
     vignette: n(a.vignette, b.vignette),
   };

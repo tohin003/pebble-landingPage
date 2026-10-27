@@ -19,19 +19,20 @@ import { ForegroundMotionBlur } from "../../camera/MotionBlur";
 import { RingLayer } from "../../carrier/RingLayer";
 import { RippleGround } from "../../carrier/Ripple";
 import { Aperture } from "../../carrier/Aperture";
-import { GradeLayer } from "../../light/Grade";
+import { GradeLayer, GroundLight } from "../../light/Grade";
 import { gradeAt } from "../../light/grades";
 import { LightLeak } from "../../light/LightLeak";
 import { FontGate } from "../../type/FontGate";
 import { KineticLine } from "../../type/KineticLine";
 import { typeSizePx } from "../../type/scale";
-import { defaultEntranceOf, enterFramesOf, exitFramesOf } from "../frame";
-import { Cascade, cascadeSchedule, swapLook } from "../../type/Cascade";
+import { defaultEntranceOf, exitPlanOf } from "../frame";
+import { carryTransform } from "../kit";
+import { Cascade, SWAP_SLIDE, cascadeSchedule, swapLook } from "../../type/Cascade";
 import { askCardPlaneStyle } from "../../transitions/entrances";
 import { rackFocus, ringIris, swapInPlace } from "../../transitions/presentations";
 import { IRIS_DEFAULT_EASE, IRIS_DRAWN } from "../../transitions/kinds";
 import { Riverbed } from "../../demo/parts";
-import { RIVERBED } from "../ground";
+import { RIVERBED, groundRectOf } from "../ground";
 import { PebbleOnFilm } from "../../../pebble/PebbleOnFilm";
 import type { PlaneSpec, ScenePlan, ShotSpec, TypeSpec } from "../scene";
 import { ImageContent, SetPiecesSlate, StandInView, TakeViewContent } from "./StandInViews";
@@ -98,9 +99,10 @@ const PlaneView: React.FC<{ shot: ShotSpec; pl: PlaneSpec; frame: number; zoom: 
   );
 };
 
-/** One shot of a piece: the ground world, the foreground world, the rings and the aperture. */
+/** One shot of a piece: the ground world (in its own light), the foreground world, the rings and the aperture. */
 export const ShotView: React.FC<{ plan: ScenePlan; shot: ShotSpec }> = ({ plan, shot }) => {
   const L = useCurrentFrame();
+  const { width, height } = useVideoConfig();
   const frame = L + shot.from; // the piece's local frame
   const s = shot.camera.sample(L);
   const cam = { pose: s.pose, ref: shot.ref, vel: s.vel };
@@ -108,19 +110,28 @@ export const ShotView: React.FC<{ plan: ScenePlan; shot: ShotSpec }> = ({ plan, 
   const focus = shot.focus ? shot.focus(frame) : 1;
   const ground = shot.ground === "page" ? COLOR.page : COLOR.riverbedMid;
   const st = shot.stone;
+  // the riverbed sized from the shot's widest pose (or the rect a join shares), as the coverage check reads it (CR-02)
+  const seamOut = plan.seams.find((x) => x.out === shot.id && x.frames > 0);
+  const bed = shot.ground === "riverbed" ? groundRectOf(shot, width, height, seamOut ? seamOut.frames : 0) : null;
+  // the light lives in the ground (CR-14): the grade's linear-light gains on the riverbed, a few per cent on the windows
+  const gradeNow = gradeAt(frame, plan.lightInitial, plan.lightCues);
+  const gains = gradeNow.ground;
   return (
     <AbsoluteFill style={{ backgroundColor: ground }}>
-      <World3D cam={cam} dofScale={shot.dofScale ?? 14} focus={focus} background={ground}>
-        {shot.ground === "riverbed" ? (
-          <RippleGround specs={shot.rings} pose={s.pose} poseAt={poseAt} offset={shot.from}>
-            {/* the extent and depth the coverage check reads (setpieces/ground.ts, CR-02) */}
-            <Plane kind="ground" depth={RIVERBED.depth}>
-              <Riverbed center={shot.ref} width={RIVERBED.w} />
-            </Plane>
-          </RippleGround>
-        ) : null}
-        <RingLayer specs={shot.rings} pose={s.pose} layer="ground" offset={shot.from} poseAt={poseAt} />
-      </World3D>
+      <GroundLight gains={shot.ground === "riverbed" ? gains : [1, 1, 1]}>
+        <World3D cam={cam} dofScale={shot.dofScale ?? 14} focus={focus} background={ground}>
+          {bed ? (
+            <RippleGround specs={shot.rings} pose={s.pose} poseAt={poseAt} offset={shot.from}>
+              {/* the extent and depth the coverage check reads (setpieces/ground.ts, CR-02) */}
+              <Plane kind="ground" depth={RIVERBED.depth}>
+                <Riverbed center={{ x: bed.x + bed.w / 2, y: bed.y + bed.h / 2 }} width={bed.w} />
+              </Plane>
+            </RippleGround>
+          ) : null}
+          <RingLayer specs={shot.rings} pose={s.pose} layer="ground" offset={shot.from} poseAt={poseAt} />
+        </World3D>
+      </GroundLight>
+      <GroundLight gains={gradeNow.ui}>
       <ForegroundMotionBlur windows={shot.blur ?? []}>
         <World3D cam={cam} dofScale={shot.dofScale ?? 14} focus={focus} background="transparent">
           {shot.planes.map((pl) => (
@@ -129,15 +140,22 @@ export const ShotView: React.FC<{ plan: ScenePlan; shot: ShotSpec }> = ({ plan, 
           {shot.wall ? <WallCells spec={shot.wall} frame={frame} /> : null}
           {shot.cascade
             ? (() => {
-                const sched = cascadeSchedule(shot.cascade.start, shot.cascade.items, plan.fps, shot.cascade.beats);
-                return shot.cascade.cards.map((card, i) => {
+                const c = shot.cascade;
+                const sched = cascadeSchedule(c.start, c.items, plan.fps, c.beats, undefined, c.endAt);
+                const unit = Math.min(plan.frame.w, plan.frame.h) / 1080;
+                return c.cards.map((card, i) => {
                   const w = sched[i];
                   if (!w) return null;
-                  // the first card is on the stage from the cut (the shot is never empty); the rest swap in place
-                  const look = i === 0 && frame < w.inEnd ? { opacity: 1, blur: 0 } : swapLook(w, frame, shot.cascade!.holdLast && i === sched.length - 1);
+                  // the first card is on the stage from the cut (the shot is never empty); the rest swap in place,
+                  // crossing the outgoing card at mid-blur with a matched slide (CR-17)
+                  // the last card is UI in the world: it holds and leaves with the camera's E-leave (its item exits first)
+                  const look = i === 0 && frame < w.inEnd ? { opacity: 1, blur: 0, shift: 0 } : swapLook(w, frame, i === sched.length - 1);
                   if (!look) return null;
+                  const k = unit / s.pose.zoom; // world units per px at 1080
+                  const dx = look.shift * SWAP_SLIDE.cardPx * k;
+                  const fx = [look.blur > 0.05 ? `blur(${(look.blur * k).toFixed(2)}px)` : "", ""].filter(Boolean).join(" ");
                   return (
-                    <Plane key={`card${i}`} kind={card.kind} rect={card.rect} opacity={look.opacity} shadow={card.shadow} radius={card.radius} reading={look.opacity > 0.99} style={{ filter: look.blur > 0.05 ? `blur(${((look.blur * Math.min(plan.frame.w, plan.frame.h)) / 1080 / s.pose.zoom).toFixed(2)}px)` : undefined }}>
+                    <Plane key={`card${i}`} kind={card.kind} rect={card.rect} opacity={look.opacity} shadow={card.shadow} radius={card.radius} reading={look.opacity > 0.99} style={{ filter: fx || undefined, transform: Math.abs(dx) > 0.01 ? `translateX(${dx.toFixed(2)}px)` : undefined }}>
                       {card.content.kind === "standIn" ? <StandInView standIn={card.content.standIn} w={card.rect.w} h={card.rect.h} px={s.pose.zoom} /> : null}
                     </Plane>
                   );
@@ -155,6 +173,7 @@ export const ShotView: React.FC<{ plan: ScenePlan; shot: ShotSpec }> = ({ plan, 
           ) : null}
         </World3D>
       </ForegroundMotionBlur>
+      </GroundLight>
       <RingLayer specs={shot.rings} pose={s.pose} layer="front" offset={shot.from} poseAt={poseAt} />
       {shot.aperture ? <Aperture open={shot.aperture.open(frame)} centerY={shot.aperture.centerY} color={shot.aperture.band} /> : null}
     </AbsoluteFill>
@@ -192,11 +211,14 @@ const Shots: React.FC<{ plan: ScenePlan }> = ({ plan }) => {
 /**
  * One TypeSpec as KineticLines, one per explicit line: GSAP SplitText drops the "\n" of a single block (it re-flows the
  * words on one line), so a multi-line spec is drawn as stacked lines with KineticLine's own stagger (lineRise lines 8
- * frames apart; lifts staggered as KineticLine staggers them). Each line is unmounted once its exit is over, and a
- * "camera" exit (the line leaves with its shot) unmounts on its exit frame.
+ * frames apart; lifts staggered as setpieces/frame.ts exitPlanOf says). Each line is unmounted once its exit is over;
+ * a line set in the world (`carry`) moves with its shot's camera and is drawn until that shot ends (it leaves with the
+ * world: the plans carry it out of frame first, setpieces/qa.ts typeExits).
  */
-const TypeLines: React.FC<{ t: TypeSpec; pieceEnd: number }> = ({ t, pieceEnd }) => {
+const TypeLines: React.FC<{ t: TypeSpec; plan: ScenePlan }> = ({ t, plan }) => {
   const { fps, width, height } = useVideoConfig();
+  const frame = useCurrentFrame();
+  const pieceEnd = plan.duration;
   const tier = t.tier;
   const lines = t.text.split("\n");
   const size = typeSizePx(tier, width, height, t.sizeT ?? 0.5);
@@ -204,20 +226,21 @@ const TypeLines: React.FC<{ t: TypeSpec; pieceEnd: number }> = ({ t, pieceEnd })
   const ent = t.entrance ?? defaultEntranceOf(tier);
   const exit = t.exit ?? "blur";
   const stagger = ent === "lineRise" ? f60(8, fps) : 0;
-  const blockExit = t.exitAt === undefined ? 0 : exitFramesOf(ent, exit, t.text, fps);
-  const liftEach = Math.max(2, Math.round(Math.max(2, Math.round(enterFramesOf(ent, lines[0]!, fps) * 0.55))));
-  const liftStagger = exit === "lift" ? Math.max(1, Math.round(liftEach * 0.4)) : 0;
-  const end = t.exitAt === undefined ? pieceEnd : exit === "camera" ? t.exitAt : t.exitAt + blockExit + 2;
+  const plan_ = exitPlanOf(ent, exit, t.text, fps);
+  const carriedShot = t.carry ? plan.shots.find((x) => x.id === t.carry!.shot) : undefined;
+  const end = t.exitAt === undefined || exit === "camera" ? Math.min(pieceEnd, carriedShot ? carriedShot.to : pieceEnd) : t.exitAt + plan_.total + 2;
   if (end <= 0) return null;
-  return (
-    <Sequence durationInFrames={Math.max(1, end)} layout="none" name={t.id}>
+  const m = carryTransform(plan, t, frame);
+  const body = (
+    <>
       {lines.map((ln, i) => (
         <KineticLine
           key={i}
           text={ln}
           tier={tier}
           at={t.at + i * stagger}
-          exitAt={t.exitAt === undefined || exit === "camera" ? undefined : t.exitAt + i * liftStagger}
+          exitAt={t.exitAt === undefined || exit === "camera" ? undefined : t.exitAt + i * plan_.stagger}
+          exitFrames={plan_.perLine || undefined}
           entrance={ent}
           exit={exit}
           sizeT={t.sizeT ?? 0.5}
@@ -227,6 +250,15 @@ const TypeLines: React.FC<{ t: TypeSpec; pieceEnd: number }> = ({ t, pieceEnd })
         />
       ))}
       {t.sweep ? <SageTextSweep spec={t} /> : null}
+    </>
+  );
+  return (
+    <Sequence durationInFrames={Math.max(1, end)} layout="none" name={t.id}>
+      {m ? (
+        <AbsoluteFill style={{ transformOrigin: "0 0", transform: `matrix(${m.k.toFixed(6)}, 0, 0, ${m.k.toFixed(6)}, ${m.tx.toFixed(2)}, ${m.ty.toFixed(2)})` }}>{body}</AbsoluteFill>
+      ) : (
+        body
+      )}
     </Sequence>
   );
 };
@@ -235,13 +267,20 @@ const TypeLines: React.FC<{ t: TypeSpec; pieceEnd: number }> = ({ t, pieceEnd })
 export const TypeView: React.FC<{ plan: ScenePlan }> = ({ plan }) => (
   <FontGate>
     {plan.types.map((t) => (
-      <TypeLines key={t.id} t={t} pieceEnd={plan.duration} />
+      <TypeLines key={t.id} t={t} plan={plan} />
     ))}
     {plan.shots.map((s) =>
       s.cascade ? (
         <Fragment key={`c-${s.id}`}>
-          <TypeLines t={s.cascade.fixed} pieceEnd={plan.duration} />
-          <Cascade items={s.cascade.items} start={s.cascade.start} beats={s.cascade.beats} holdLast={s.cascade.holdLast} itemStyle={{ left: s.cascade.itemBox.left, top: s.cascade.itemBox.top, width: s.cascade.itemBox.width, textAlign: s.cascade.itemBox.align }} />
+          <TypeLines t={s.cascade.fixed} plan={plan} />
+          <Cascade
+            items={s.cascade.items}
+            start={s.cascade.start}
+            beats={s.cascade.beats}
+            holdLast={s.cascade.holdLast}
+            endAt={s.cascade.endAt}
+            itemStyle={{ left: s.cascade.itemBox.left, top: s.cascade.itemBox.top, width: s.cascade.itemBox.width, textAlign: s.cascade.itemBox.align }}
+          />
         </Fragment>
       ) : null,
     )}

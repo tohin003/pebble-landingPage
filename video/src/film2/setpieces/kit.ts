@@ -6,7 +6,7 @@ import { ringStates, type RingSpec } from "../carrier/ring";
 import { checkCues, type PebbleCue } from "../../../../shared/pebble/cues";
 import type { TextEvent } from "../type/reading";
 import { defaultEntranceOf, enterFramesOf, exitFramesOf, lineRect, type FrameBox } from "./frame";
-import type { MusicHit, TypeSpec } from "./scene";
+import type { MusicHit, ScenePlan, TypeSpec } from "./scene";
 import type { Placement } from "./music";
 
 /** A type spec's time on screen, as the reading checks see it. Small print is legal text, not a reading requirement. */
@@ -85,3 +85,26 @@ export const musicHit = (event: string, p: Placement): MusicHit => ({ event, fra
 
 /** Round a frame count up to a whole frame. */
 export const ceilF = (x: number): number => Math.ceil(x - 1e-9);
+
+/**
+ * A line set in the world (TypeSpec.carry): the transform that moves its box, exact under its shot's camera on frame
+ * `carry.at`, with that camera on `frame` (it scales with the zoom about the frame's centre and travels with the pan).
+ * TypeView draws it; the checks and the render's marks read it.
+ */
+export const carryTransform = (plan: ScenePlan, t: TypeSpec, frame: number): { k: number; tx: number; ty: number } | null => {
+  if (!t.carry) return null;
+  const shot = plan.shots.find((x) => x.id === t.carry!.shot);
+  if (!shot) return null;
+  const P0 = shot.camera.pose(t.carry.at - shot.from);
+  const P = shot.camera.pose(frame - shot.from);
+  const k = P.zoom / P0.zoom;
+  const cx = plan.frame.w / 2;
+  const cy = plan.frame.h / 2;
+  return { k, tx: cx * (1 - k) + (P0.x - P.x) * P.zoom, ty: cy * (1 - k) + (P0.y - P.y) * P.zoom };
+};
+
+/** Where a carried line's rect is on a frame (frame px), or the rect itself for a line in a fixed band. */
+export const carriedRect = (plan: ScenePlan, t: TypeSpec, r: Rect, frame: number): Rect => {
+  const m = carryTransform(plan, t, frame);
+  return m ? { x: r.x * m.k + m.tx, y: r.y * m.k + m.ty, w: r.w * m.k, h: r.h * m.k } : r;
+};

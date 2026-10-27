@@ -3,7 +3,8 @@
 // presentation's progress, so any frame renders on its own. None uses HTML-in-canvas: they run on the headless shell.
 //
 //   ringIris()     kind 1: the next place opens inside the ring, from the stone, feathered 24–48 px, the sage hairline
-//                  riding its edge; E-arrive. An iris between places 20–36 frames, a burst to the edge 60–90.
+//                  riding its edge. An iris between places is E-move over 24–36 frames (the default, lead ruling §52);
+//                  E-arrive (a burst to the edge, 60–90) only on a seam that declares a marked hit (qa/checks.ts irisEase).
 //   swapInPlace()  kind 5: the blur swap on one stage, 8 frames out (blur 0 → 8 px, opacity → 0), 8 in (8 → 0 px).
 //   rackFocus()    kind 6: the outgoing shot defocuses (0 → 10–16 px), the swap happens at full defocus (the frame is
 //                  covered by blur), the incoming one focuses in; a 1.00 → 1.01 focus breath. 24–48 frames.
@@ -66,7 +67,10 @@ export type RingIrisProps = {
   tone?: "light" | "dark";
   /** the radius the iris starts from, px at 1080 (the stone's radius) */
   startRadiusPx?: number;
-  /** "arrive" (default, a burst) or "move" (an iris between places, 24–36 frames: lead ruling, OVERRIDES §52) */
+  /**
+   * "move" (the default: an iris between places, 24–36 frames, lead ruling OVERRIDES §52) or "arrive" (a burst, only on
+   * a seam that declares one of the cue's marked hits; qa/checks.ts irisEase refuses it otherwise)
+   */
   ease?: "arrive" | "move";
 };
 

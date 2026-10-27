@@ -4,10 +4,34 @@
 //
 // Film type sits outside the grade (its ink stays the brand's ink); the master LUT (light/lut.ts) then grades the
 // whole frame once, at the finish, in FFmpeg.
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { AbsoluteFill } from "remotion";
 import { COLOR } from "../tokens";
 import { KEY_LIGHT, type Grade } from "./grades";
+
+/**
+ * <GroundLight>: the grade's own light on the GROUND only (CR-14): its linear-light gains (`grade.ground`) as an SVG
+ * colour matrix in linearRGB (light/grades.ts applyGroundLight models exactly this), around the riverbed's world, so
+ * warm, day, dusk and evening read on the ground while the UI planes above it keep their own colours.
+ */
+export const GroundLight: React.FC<{ gains: readonly [number, number, number]; children: ReactNode }> = ({ gains, children }) => {
+  const id = `f2gl${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const neutral = gains.every((g) => Math.abs(g - 1) < 1e-4);
+  if (neutral) return <AbsoluteFill>{children}</AbsoluteFill>;
+  const [r, g, b] = gains.map((v) => v.toFixed(5));
+  return (
+    <AbsoluteFill style={{ filter: `url(#${id})` }}>
+      <svg width={0} height={0} style={{ position: "absolute" }} aria-hidden>
+        <defs>
+          <filter id={id} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="linearRGB">
+            <feColorMatrix type="matrix" values={`${r} 0 0 0 0  0 ${g} 0 0 0  0 0 ${b} 0 0  0 0 0 1 0`} />
+          </filter>
+        </defs>
+      </svg>
+      {children}
+    </AbsoluteFill>
+  );
+};
 
 /** `n` eased colour stops from alpha a0 to a1 (smoothstep), no Mach bands on large grounds. */
 export function easedStops(rgb: string, a0: number, a1: number, from = 0, to = 100, n = 12): string {

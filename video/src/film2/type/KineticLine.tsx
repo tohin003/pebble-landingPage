@@ -6,10 +6,10 @@
 //   wordRise  the same rise per word, words 4 frames apart (for a two- or three-word line);
 //   wordBlur  per word, blur 6 → 0 px and opacity 0 → 1 over 9 frames, words 4 apart, no movement;
 //   lineBlur  the whole line blurs in over 8 frames from opacity 0: the functional and label tiers' default.
-// Exits are 40–50 % shorter than the entrance (TYPE_MOTION.exitRatio):
+// Exits are 40–50 % shorter than the entrance (TYPE_MOTION.exitRatio), and never under 10 frames (type/exits.ts):
 //   blur      words blur out (0 → 8 px) and fade, leading with the first word;
-//   lift      lines leave upward through their masks on E-leave (to −125 %, fading over the second half);
-//   camera    no exit of its own: the line leaves with the camera or the layer that carries it.
+//   lift      lines leave upward through their masks on E-leave (to −140 %, fading linearly to nothing by 85 % of it);
+//   camera    no exit of its own: the line is set in the world and leaves with the layer that carries it.
 // A landed line is dead still: nothing moves while it is read (the rule the old film's slams broke).
 //
 // SplitText needs the fonts: put every <KineticLine> inside <FontGate>. Never put it inside a CameraMotionBlur: the
@@ -20,6 +20,7 @@ import { useVideoConfig } from "remotion";
 import { COLOR, TYPE_MOTION, f60, type TypeTier } from "../tokens";
 import { SplitText, fs } from "./gsap";
 import { typeStyle } from "./scale";
+import { EXIT, blurTiming, exitOutFrames, liftTiming } from "./exits";
 
 export type Entrance = "lineRise" | "wordRise" | "wordBlur" | "lineBlur";
 export type Exit = "blur" | "lift" | "camera";
@@ -40,6 +41,8 @@ export interface KineticLineProps {
   align?: "left" | "center" | "right";
   /** where the line sits (absolute positioning in frame px) */
   style?: CSSProperties;
+  /** the exit's length in frames, when a caller times it (type/exits.ts exitOutFrames is the default) */
+  exitFrames?: number;
 }
 
 export const defaultEntrance = (tier: TypeTier): Entrance => (tier === "expressive" || tier === "data" ? "lineRise" : "lineBlur");
@@ -58,7 +61,7 @@ export const entranceFrames = (e: Entrance, units: number, fps: number): number 
   }
 };
 
-export const KineticLine: React.FC<KineticLineProps> = ({ text, tier, at, exitAt, entrance, exit = "blur", sizeT = 0.5, color = COLOR.ink, align = "left", style }) => {
+export const KineticLine: React.FC<KineticLineProps> = ({ text, tier, at, exitAt, entrance, exit = "blur", sizeT = 0.5, color = COLOR.ink, align = "left", style, exitFrames }) => {
   const { fps, width, height } = useVideoConfig();
   const ent = entrance ?? defaultEntrance(tier);
   const scope = useGsapTimeline<HTMLDivElement>(
@@ -86,20 +89,19 @@ export const KineticLine: React.FC<KineticLineProps> = ({ text, tier, at, exitAt
       if (exitAt !== undefined && exit !== "camera") {
         const units = byLine ? split!.lines.length : byWord ? split!.words.length : 1;
         const inFrames = entranceFrames(ent, units, fps);
-        const outFrames = Math.max(2, Math.round(inFrames * TYPE_MOTION.exitRatio));
+        const outFrames = exitFrames ?? exitOutFrames(inFrames, fps);
         const t1 = fs(exitAt, fps);
         if (exit === "lift") {
           const n = split!.lines.length;
-          const each = Math.max(2, Math.round(outFrames / Math.max(1, n * 0.5 + 0.5)));
-          // to −125 % with a fade over its last half: a lift to −105 % left the descenders of "y" showing below the mask
-          // (looked at on the demo's frame 1340)
-          const stg = fs(Math.max(1, Math.round(each * 0.4)), fps);
-          tl.fromTo(split!.lines, { yPercent: 0 }, { yPercent: -125, duration: fs(each, fps), ease: "E-leave", stagger: stg, immediateRender: false }, t1);
-          tl.fromTo(split!.lines, { opacity: 1 }, { opacity: 0, duration: fs(each / 2, fps), ease: "power1.in", stagger: stg, immediateRender: false }, t1 + fs(each / 2, fps));
+          const { each, stagger } = liftTiming(outFrames, n);
+          // to −140 %, fading linearly to nothing by 85 % of the lift: at −125 % with a fade over its last half, the
+          // descenders of "gg" were the last thing left in the mask, at about 60 % (CR-03, the review's frame 2050)
+          const stg = fs(stagger, fps);
+          tl.fromTo(split!.lines, { yPercent: 0 }, { yPercent: EXIT.liftToPercent, duration: fs(each, fps), ease: "E-leave", stagger: stg, immediateRender: false }, t1);
+          tl.fromTo(split!.lines, { opacity: 1 }, { opacity: 0, duration: fs(each * EXIT.liftFadeShare, fps), ease: "none", stagger: stg, immediateRender: false }, t1);
         } else {
           const words = split!.words;
-          const each = Math.max(2, Math.round(outFrames * 0.6));
-          const stagger = words.length > 1 ? (outFrames - each) / (words.length - 1) : 0;
+          const { each, stagger } = blurTiming(outFrames, words.length);
           tl.fromTo(
             words,
             { opacity: 1, filter: "blur(0px)" },
@@ -109,7 +111,7 @@ export const KineticLine: React.FC<KineticLineProps> = ({ text, tier, at, exitAt
         }
       }
     },
-    { dependencies: [text, tier, at, exitAt, ent, exit, fps, width, height, sizeT] },
+    { dependencies: [text, tier, at, exitAt, ent, exit, fps, width, height, sizeT, exitFrames] },
   );
   return (
     <div ref={scope} style={{ position: "absolute", textAlign: align, ...style }}>

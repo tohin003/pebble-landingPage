@@ -13,7 +13,7 @@ import { E_LEAVE, clamp01 } from "../motion/ease";
 import { VelocityCamera, type CamVel, type Pose } from "../motion/camera";
 import type { Point, Rect } from "../motion/geometry";
 import { place, type MusicGrid } from "./music";
-import { fitPose, frameBox, type FrameBox } from "./frame";
+import { fitPose, frameBox, glideLz, type FrameBox } from "./frame";
 import { CELL_SOURCES, STEALTH_FEATURES, cellThumbPath } from "./standins";
 import { WALL_CUES } from "./pieces.cues";
 import { anchored, musicHit } from "./kit";
@@ -116,6 +116,8 @@ export interface WallOptions {
   centre?: Point;
   /** continue a camera; default the wall's own pull-back from the inner ring */
   entry?: { pose: Pose; vel: CamVel };
+  /** a momentum cut into the wall: the previous piece's screen velocity on its last frame (px a frame) */
+  cutIn?: { vScreen: { x: number; y: number } };
   /** at least this long (the pull-back and a hold to see the whole wall), then the next bar line */
   minS?: number;
 }
@@ -145,16 +147,20 @@ export function planWall(o: WallOptions): ScenePlan {
   const spec: WallSpec = { centre, cells, radii: WALL_GEOMETRY.radii, orbit: WALL_GEOMETRY.orbit, depth: WALL_GEOMETRY.depth };
   const { near, far } = wallFramings(f, centre);
 
-  // the pull-back: 150 frames in log space from the inner ring to the whole wall, easing into a slow drift outward
+  // the pull-back: 150 frames in log space from the inner ring to the whole wall, easing into a slow drift outward;
+  // a cut into the wall carries the previous piece's screen velocity into its first frame, decaying into the pull-back
   const pullFrames = f60(150, fps);
-  const cam = new VelocityCamera(o.entry?.pose ?? near, o.entry?.vel ?? { lz: -0.0006 });
-  const meanLz = Math.log(far.zoom / (o.entry?.pose.zoom ?? near.zoom)) / pullFrames;
+  const start = o.entry?.pose ?? near;
+  const vIn = o.cutIn ? { x: -o.cutIn.vScreen.x / start.zoom, y: -o.cutIn.vScreen.y / start.zoom } : { x: 0, y: 0 };
+  const cam = new VelocityCamera(start, o.entry?.vel ?? { ...vIn, lz: -0.0006 });
+  const meanLz = Math.log(far.zoom / start.zoom) / pullFrames;
   cam.hermite(pullFrames, far, { lz: meanLz * 0.25 });
   const earliestEnd = Math.max(pullFrames + sec(1.6, fps), sec(o.minS ?? 4, fps));
   const endP = place(earliestEnd, o.grid, { level: "bar", maxWait: sec(2.5, fps) });
   const end = endP.point ?? earliestEnd;
   music.push(musicHit("the wall ends (the convergence starts)", endP));
-  cam.glide(end, f60(40, fps), { lz: -0.00028 });
+  // the drift on: 0.4 px a frame at the frame's corners in every aspect (CR-04: 1:1's drift was 0.22)
+  cam.glide(end, f60(40, fps), { lz: -glideLz(f) });
 
   return {
     id: "wall",

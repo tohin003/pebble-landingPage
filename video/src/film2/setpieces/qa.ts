@@ -33,12 +33,12 @@ import { IRIS_DEFAULT_EASE, IRIS_DRAWN, irisRadius } from "../transitions/kinds"
 import { checkCues } from "../../../../shared/pebble/cues";
 import { STEALTH_HONEST } from "../../../../shared/pebble/stealthVeil";
 import { defaultEntranceOf, enterFramesOf, exitFramesOf, insideFrame, lineRect, rectInFrame } from "./frame";
-import { typeEvent } from "./kit";
+import { carriedRect, typeEvent } from "./kit";
 import { onGrid, pointsOf, type MusicGrid } from "./music";
 import { STEALTH_FEATURES, shownSize, type StandIn, type StillStandIn } from "./standins";
 import { cellAt, cellTextPx } from "./wall";
 import { COMPANION_PANEL, checkTakeUse, frameOfSource, sourceFrameAt, stillsAt, type TakeUse } from "./take";
-import { RIVERBED, riverbedRect } from "./ground";
+import { RIVERBED, groundRectOf } from "./ground";
 import { shotOf, type PlaneSpec, type ScenePlan, type ShotSpec, type TypeSpec } from "./scene";
 
 const at = (p: ScenePlan, s: ShotSpec, fr: number) => s.camera.pose(fr - s.from);
@@ -403,7 +403,7 @@ export function groundCoverage(p: ScenePlan): Finding[] {
     if (s.ground !== "riverbed") continue;
     const seam = p.seams.find((x) => x.out === s.id && x.frames > 0);
     const to = s.to + (seam ? seam.frames : 0);
-    const g = riverbedRect(s.ref);
+    const g = groundRectOf(s, w, h, seam ? seam.frames : 0);
     const over = new Float64Array(to - s.from);
     const edges: string[][] = [];
     for (let fr = s.from; fr < to; fr++) {
@@ -545,7 +545,8 @@ export function textItems(p: ScenePlan): TextItem[] {
       s.cascade.cards.forEach((card, i) => {
         const w = sched[i];
         if (!w) return;
-        const last = s.cascade!.holdLast && i === sched.length - 1;
+        // the last card holds to the cut (UI in the world leaves with the camera); its item exits before it
+        const last = i === sched.length - 1;
         planes.push({ ...card, from: i === 0 ? s.from : w.inStart, to: last ? s.to : w.outEnd });
       });
     }
@@ -651,8 +652,8 @@ const countedWords = (p: ScenePlan, it: TextItem, fr: number): number => {
     return x * y > 0.5 * Math.min(r.w * r.h, it.rect.w * it.rect.h);
   };
   const r = it.plane.read;
-  if (r && fr >= r.from && fr < r.to && overlaps(r.rect ?? it.plane.rect)) n += r.words;
-  for (const x of it.shot.reads ?? []) if (fr >= x.from && fr < x.to && overlaps(x.rect)) n += x.words;
+  if (r && fr >= (r.seenFrom ?? r.from) && fr < (r.seenTo ?? r.to) && overlaps(r.rect ?? it.plane.rect)) n += r.words;
+  for (const x of it.shot.reads ?? []) if (fr >= (x.seenFrom ?? x.from) && fr < x.to && overlaps(x.rect)) n += x.words;
   return n;
 };
 
@@ -879,6 +880,8 @@ export interface TypeTrack {
   id: string;
   text: string;
   rect: Rect;
+  /** a line set in the world moves with it: its rect on each frame it is drawn (TypeSpec.carry) */
+  rects?: Record<number, Rect>;
   color: string;
   from: number;
   landed: number;
@@ -888,6 +891,13 @@ export interface TypeTrack {
   vanishes?: string;
 }
 
+/** How much of a frame px rect the frame shows. */
+const inFrameShare = (r: Rect, w: number, h: number): number => {
+  const ix = Math.max(0, Math.min(r.x + r.w, w) - Math.max(r.x, 0));
+  const iy = Math.max(0, Math.min(r.y + r.h, h) - Math.max(r.y, 0));
+  return (ix * iy) / Math.max(1e-6, r.w * r.h);
+};
+
 /** Every line a plan draws: its film lines, its cascades' fixed lines and items. */
 export function typeTracks(p: ScenePlan): TypeTrack[] {
   const out: TypeTrack[] = [];
@@ -895,12 +905,33 @@ export function typeTracks(p: ScenePlan): TypeTrack[] {
   const track = (t: TypeSpec): TypeTrack => {
     const d = drawnSpan(t, p.fps, end);
     const exit = t.exit ?? "blur";
-    const exits = t.exitAt !== undefined && exit !== "camera" ? [{ from: t.exitAt, to: d.until, kind: exit }] : [];
+    const rect = lineRect(t.text, t.tier, p.frame, t.box, t.sizeT ?? 0.5);
+    let exits: TypeTrack["exits"] = t.exitAt !== undefined && exit !== "camera" ? [{ from: t.exitAt, to: d.until, kind: exit }] : [];
     let vanishes: string | undefined;
+    let rects: Record<number, Rect> | undefined;
+    if (t.carry) {
+      // a line set in the world leaves with it: drawn until its shot ends, it must be out of frame by then, and the
+      // frames it crosses the frame's edge are its exit (the world carries it out)
+      const shot = p.shots.find((x) => x.id === t.carry!.shot);
+      const until = Math.min(d.until, shot ? shot.to : d.until);
+      rects = {};
+      let leaving: number | null = null;
+      let gone: number | null = null;
+      for (let fr = d.from; fr < until; fr++) {
+        const r = carriedRect(p, t, rect, fr);
+        rects[fr] = r;
+        const share = inFrameShare(r, p.frame.w, p.frame.h);
+        if (fr >= d.landed && share < 0.999 && leaving === null) leaving = fr;
+        if (share <= 1e-3 && gone === null && fr >= d.landed) gone = fr;
+      }
+      if (gone === null && !p.endsFilm) vanishes = `it is set in the world of ${t.carry.shot} but still in frame when that shot cuts (${until}): carry it out of frame first`;
+      exits = leaving !== null ? [{ from: leaving, to: gone ?? until, kind: "carried" }] : [];
+      return { id: t.id, text: t.text, rect, rects, color: t.color ?? COLOR.ink, from: d.from, landed: d.landed, until, exits, vanishes };
+    }
     if (t.exitAt !== undefined && exit === "camera") vanishes = `its "camera" exit draws nothing (the type layer is fixed to the screen): it vanishes on frame ${t.exitAt}`;
     else if (t.exitAt === undefined && !p.endsFilm) vanishes = `it has no exit and is drawn to the piece's last frame: it vanishes on the cut at ${end}`;
     else if (t.exitAt !== undefined && !p.endsFilm && t.exitAt + exitFramesOf(t.entrance ?? defaultEntranceOf(t.tier), exit, t.text, p.fps) > end) vanishes = `its exit runs past the piece's end (${end}): the cut takes it mid-exit`;
-    return { id: t.id, text: t.text, rect: lineRect(t.text, t.tier, p.frame, t.box, t.sizeT ?? 0.5), color: t.color ?? COLOR.ink, from: d.from, landed: d.landed, until: d.until, exits, vanishes };
+    return { id: t.id, text: t.text, rect, color: t.color ?? COLOR.ink, from: d.from, landed: d.landed, until: d.until, exits, vanishes };
   };
   for (const t of p.types) out.push(track(t));
   for (const s of p.shots) {

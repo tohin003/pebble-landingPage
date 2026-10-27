@@ -4,6 +4,7 @@ import { SAFE_MARGIN_PX, TYPE_MOTION, f60, type Aspect, type TypeTier } from "..
 import type { Pose } from "../motion/camera";
 import type { Rect } from "../motion/geometry";
 import { approxLineWidth, aspectOfFrame, typeSizePx } from "../type/scale";
+import { exitOutFrames, lineLiftStagger } from "../type/exits";
 
 export interface FrameBox {
   w: number;
@@ -170,14 +171,75 @@ export const enterFramesOf = (e: EntranceKind, text: string, fps: number): numbe
   }
 };
 
-/** Frames an exit takes, from its start to the last glyph gone (KineticLine's arithmetic; "camera" has none). */
-export const exitFramesOf = (e: EntranceKind, x: ExitKind, text: string, fps: number): number => {
-  if (x === "camera") return 0;
-  const inF = enterFramesOf(e, text, fps);
-  const out = Math.max(2, Math.round(inF * TYPE_MOTION.exitRatio));
-  if (x === "blur") return out;
-  const n = linesOf(text);
-  const each = Math.max(2, Math.round(out / Math.max(1, n * 0.5 + 0.5)));
-  const stg = Math.max(1, Math.round(each * 0.4));
-  return each + stg * (n - 1);
+/**
+ * A line's exit as TypeView draws it (one KineticLine per explicit line, each running its own exit, type/exits.ts):
+ * each line's exit frames, the stagger between the lines (lifts only), and the frames from the exit's start to the
+ * last glyph gone. "camera" draws none: the line is set in the world and leaves with it.
+ */
+export const exitPlanOf = (e: EntranceKind, x: ExitKind, text: string, fps: number): { perLine: number; stagger: number; total: number } => {
+  if (x === "camera") return { perLine: 0, stagger: 0, total: 0 };
+  const lines = text.split("\n");
+  const perLine = Math.max(...lines.map((l) => exitOutFrames(enterFramesOf(e, l, fps), fps)));
+  const stagger = x === "lift" ? lineLiftStagger(perLine) : 0;
+  return { perLine, stagger, total: perLine + stagger * (lines.length - 1) };
 };
+
+/** Frames an exit takes, from its start to the last glyph gone (KineticLine's arithmetic; "camera" has none). */
+export const exitFramesOf = (e: EntranceKind, x: ExitKind, text: string, fps: number): number => exitPlanOf(e, x, text, fps).total;
+
+/* ---------------------------------------------------------------- the glide every hold keeps (CR-04) ---------- */
+
+/** The speed a reading hold glides at, px a frame at 1080 at the frame's edge (OVERRIDES §55: 0.3–0.6; the floor is 0.25). */
+export const HOLD_GLIDE_PX = 0.4;
+
+/** The log-zoom rate that moves the frame's corners `px` a frame at 1080 (a push-in or a pull-back about the centre). */
+export const glideLz = (f: FrameBox, px = HOLD_GLIDE_PX): number => (px * f.unit) / (Math.hypot(f.w, f.h) / 2);
+
+/**
+ * A camera velocity (world units and log zoom per frame) that zooms at `lz` about the frame point `at` (frame px) under
+ * `pose`, so what sits there stays put while the rest of the frame breathes: vX = (P − centre)·lz ÷ zoom.
+ */
+export const zoomAbout = (pose: Pose, at: { x: number; y: number }, lz: number, f: FrameBox): { x: number; y: number; lz: number } => ({
+  x: ((at.x - f.w / 2) * lz) / pose.zoom,
+  y: ((at.y - f.h / 2) * lz) / pose.zoom,
+  lz,
+});
+
+/** The fastest corner's speed (frame px a frame) of a camera velocity under a pose. */
+export const cornerSpeedOf = (pose: Pose, v: { x: number; y: number; lz: number }, f: FrameBox): number => {
+  let m = 0;
+  for (const [px, py] of [
+    [0, 0],
+    [f.w, 0],
+    [0, f.h],
+    [f.w, f.h],
+  ] as const)
+    m = Math.max(m, Math.hypot(-pose.zoom * v.x + (px - f.w / 2) * v.lz, -pose.zoom * v.y + (py - f.h / 2) * v.lz));
+  return m;
+};
+
+/**
+ * The glide a hold keeps (CR-04, OVERRIDES §55: 0.3–0.6 px a frame at the frame's edge, never arrive-and-hold) for a
+ * world rect framed by `pose` over `frames`: a push-in about the rect's centre when the rect still fits the frame
+ * (inset by `margin` px) at the end of it, else a pan along `pan` (a unit direction, frame px) that starts half its
+ * travel back so the rect drifts through its framing. Returns the hold's first pose and its velocity (constant).
+ */
+export function holdGlide(f: FrameBox, rect: Rect, pose: Pose, frames: number, o: { px?: number; pan?: { x: number; y: number }; margin?: number; preferPan?: boolean } = {}): { from: Pose; vel: { x: number; y: number; lz: number }; kind: "push" | "pan" } {
+  const px = (o.px ?? HOLD_GLIDE_PX) * f.unit;
+  const margin = (o.margin ?? 24) * f.unit;
+  const inFrame = (r: Rect) => r.x >= margin && r.y >= margin && r.x + r.w <= f.w - margin && r.y + r.h <= f.h - margin;
+  const centre = { x: f.w / 2 + (rect.x + rect.w / 2 - pose.x) * pose.zoom, y: f.h / 2 + (rect.y + rect.h / 2 - pose.y) * pose.zoom };
+  if (!o.preferPan) {
+    const lz = glideLz(f, px / f.unit);
+    const vel = zoomAbout(pose, centre, lz, f);
+    const k = Math.exp(lz * frames);
+    const end: Pose = { x: pose.x + vel.x * frames, y: pose.y + vel.y * frames, zoom: pose.zoom * k };
+    if (inFrame(rectInFrame(rect, end, f))) return { from: pose, vel, kind: "push" };
+  }
+  const d = o.pan ?? { x: 1, y: 0 };
+  const n = Math.hypot(d.x, d.y) || 1;
+  // the camera moves opposite to the content: content drifting along d means the camera moves along −d
+  const vel = { x: (-(d.x / n) * px) / pose.zoom, y: (-(d.y / n) * px) / pose.zoom, lz: 0 };
+  const from: Pose = { x: pose.x - (vel.x * frames) / 2, y: pose.y - (vel.y * frames) / 2, zoom: pose.zoom };
+  return { from, vel, kind: "pan" };
+}

@@ -11,7 +11,15 @@
 import type { ReactNode } from "react";
 import { AbsoluteFill, Img, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { TRANSITION, f60 } from "../tokens";
-import { E_ARRIVE, clamp01 } from "../motion/ease";
+import { E_ARRIVE, E_MOVE, clamp01 } from "../motion/ease";
+
+/**
+ * The card's opacity over its entrance: E-move over its first 10 frames (60 fps). The rise and the blur keep E-arrive
+ * over 24; the opacity used to ride E-arrive too (×1.6), which put the card at 38 % on its first frame and 92 % on its
+ * third, and the reels' tile check read that as a pop (Ring 4's test card, the climax's ask and the kept card).
+ */
+export const cardEntranceOpacity = (frame: number, at: number, fps: number): number =>
+  frame < at ? 0 : E_MOVE(clamp01((frame - at) / Math.max(1, f60(TRANSITION.cardEntrance.fadeFrames, fps))));
 
 /** The ask card's entrance on `frame`: { dy px (at 1080), blur px (at 1080), opacity }. */
 export const askCardLook = (frame: number, at: number, fps: number): { dy: number; blur: number; opacity: number } => {
@@ -21,7 +29,7 @@ export const askCardLook = (frame: number, at: number, fps: number): { dy: numbe
   return {
     dy: TRANSITION.cardEntrance.risePx * (1 - e),
     blur: TRANSITION.cardEntrance.blurPx * (1 - e),
-    opacity: frame < at ? 0 : Math.min(1, e * 1.6),
+    opacity: cardEntranceOpacity(frame, at, fps),
   };
 };
 

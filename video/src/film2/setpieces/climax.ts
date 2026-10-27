@@ -1,24 +1,29 @@
 // THE CLIMAX SHELL (TREATMENT §3.9, S23–S24; OVERRIDES §50 and L1: the Workshop keep is the peak):
-//   S23  "Glaze", evening light: Pebble's ask card, "Keep this tool in Pebble's Toolbox?" with Discard and Keep (G4),
-//        arrives with the entrance every ask shares, and the camera pushes in to meet it; "Its own tools." (L24)
+//   S23  "Glaze", evening light: the shot opens ON ITS TAKE (CR-06: it opened on 16 blank frames of its slot), HS-G's
+//        ask card already arriving with the entrance every ask shares, "Keep this tool in Pebble's Toolbox?" with
+//        Discard and Keep (G4); the camera comes in with the cut's momentum and pushes in to meet it, never at rest;
+//        "Its own tools." (L24) lands on a beat and leaves with a drawn blur exit that is over before the cut (CR-03: its
+//        "camera" exit drew nothing, and it vanished 6 frames before the cut)
 //   S24  a momentum cut into "Kiln", on the last beat at least 0.75 s before the peak: ONE continuous 1× take (RS-W)
 //        whose in-point is SOLVED so the kept card lands on the peak's first strong downbeat (`peak`): "Kept in
 //        Pebble's Toolbox · kiln_ramp_time", "Pebble kept this tested calculation on its own. Remove it if you don't
-//        want it.", View code and Remove. The avatar turns happy on the take's own event. The camera keeps gliding
-//        through the landing (no freeze, no snap: the card's landing is the product's motion), then pushes in slowly
-//        until the whole card, Remove included, reads at ≥ 28 px; "Kept on its own only after an independent check."
-//        (L25) beside it. Nothing inside the take is cut or sped up; its frames fill the slot from a frame sequence.
+//        want it.", View code and Remove. The avatar turns happy on the take's own event. The camera glides through the
+//        landing, pushes in until the card reads at ≥ 28 px, and keeps gliding across the whole hold (CR-04: it froze
+//        for 6.2 s on the card: the peak was the reel's most static frame); "Kept on its own only after an independent
+//        check." (L25) lands on a beat beside it and holds 6.5 s. Nothing inside the take is cut or sped up.
+//   end  on a bar line, leaving on an E-leave into the next piece's cut.
+// PLACEHOLDERS: the Workshop's cards and conversations were never published (1.7.0), so they are labelled slots at the
+// 2.0.0 cards' sizes (CR-05: the 1.0.x approval and command cards stood in with 82 and 78 legible words).
 // Pure data.
 import { f60, sec } from "../tokens";
-import { VelocityCamera, type CamVel, type Pose } from "../motion/camera";
-import { pushInCarried } from "../camera/moves";
+import { VelocityCamera, arriveWithMomentum, type CamVel, type Pose } from "../motion/camera";
 import { momentumCut } from "../transitions/momentum";
-import type { Rect } from "../motion/geometry";
-import type { LightCue } from "../light/grades";
+import type { Rect, Vec } from "../motion/geometry";
+import type { Grade, GradeName, LightCue } from "../light/grades";
 import { place, prevPoint, type MusicGrid } from "./music";
-import { breakLines, fitPose, frameBox, type FrameBox, type TypeBox } from "./frame";
-import { STILL } from "./standins";
-import { TAKE_RSW, eventFrame, solveInPoint, type TakeManifest } from "./take";
+import { breakLines, fitPose, frameBox, glideLz, holdGlide, rectInFrame, type FrameBox, type TypeBox } from "./frame";
+import { SLOT } from "./standins";
+import { TAKE_HSG, TAKE_RSW, eventFrame, solveInPoint, type TakeManifest, type TakeUse } from "./take";
 import { CLIMAX_CUES } from "./pieces.cues";
 import { anchored, landFrames, musicHit } from "./kit";
 import { move, type MusicHit, type PlaneSpec, type ScenePlan, type TypeSpec } from "./scene";
@@ -28,6 +33,9 @@ export const CLIMAX_TEXT = {
   check: "Kept on its own only after an independent check.",
 } as const;
 
+/** The 2.0.0 cards' must-read words and text (CSS px): the ask's question and buttons, the kept card's two lines. */
+export const CLIMAX_CARDS = { ask: { words: 7, textPx: 13 }, kept: { words: 12, textPx: 13 } } as const;
+
 export interface ClimaxOptions {
   w: number;
   h: number;
@@ -36,54 +44,62 @@ export interface ClimaxOptions {
   /** the peak's first strong downbeat, a local frame: the kept card lands on it */
   peak: number;
   take?: TakeManifest;
+  /** a momentum cut into the climax: the previous piece's screen velocity on its last frame (px a frame), its light */
+  cutIn?: { vScreen: Vec; grade?: GradeName | Grade };
+  /** continue a camera instead (the same world) */
   entry?: { pose: Pose; vel: CamVel };
 }
 
-/** The climax's world: "Glaze" and "Kiln", east of it (the cut travels east). PLACEHOLDERS: slots and 1.0.x cards. */
+/** The climax's world: "Glaze" and "Kiln", east of it (the cut travels east). PLACEHOLDERS: slots. */
 const GLAZE: Rect = { x: 0, y: 0, w: 1160, h: 800 };
-const ASK: Rect = { x: 560, y: 150, w: 495, h: 482 };
+const ASK: Rect = { x: 350, y: 240, w: SLOT.glazeCard.w, h: SLOT.glazeCard.h };
 const KILN: Rect = { x: 2600, y: 0, w: 1160, h: 800 };
-const KEPT: Rect = { x: 2600 + 560, y: 150, w: 495, h: 474 };
+const KEPT: Rect = { x: 2600 + 350, y: 250, w: SLOT.keptCard.w, h: SLOT.keptCard.h };
 const STONE = { x: 2600 + 1160 + 120, y: 720 };
 
 interface ClimaxLayout {
-  /** where the ask sits on screen (the chapter line owns the rest); the part of it read (card px) */
+  /** where the ask sits on screen (the chapter line owns the rest) */
   ask: (f: FrameBox) => Rect;
-  askRead: Rect;
-  /** the part of the kept card read: the whole card where it fits at reading size (1:1 reads its top) */
-  keptRead: Rect;
+  /** the ask's glide: a push where it has room, else a pan away from the chapter line */
+  askPan: { x: number; y: number };
   chapter: (f: FrameBox) => TypeBox;
   /** the kept card's reading region, and the check line's box beside it */
   kept: (f: FrameBox) => Rect;
-  check: (f: FrameBox, maxW: number) => { box: TypeBox; maxW: number };
+  check: (f: FrameBox) => { box: TypeBox; maxW: number };
+  /** the hold's glide on the kept card: a push where the card has room, else a pan away from the check line */
+  keptPan: { x: number; y: number };
+  keptPreferPan: boolean;
 }
 
 const LAYOUT: Record<FrameBox["aspect"], ClimaxLayout> = {
   "16:9": {
-    ask: (f) => ({ x: f.w * 0.44, y: f.safe, w: f.w * 0.52, h: f.h - 2 * f.safe }),
-    askRead: { x: 0, y: 0, w: 495, h: 482 },
-    keptRead: { x: 0, y: 0, w: 495, h: 474 },
+    ask: (f) => ({ x: f.w * 0.42, y: f.h * 0.14, w: f.w * 0.55, h: f.h * 0.72 }),
+    askPan: { x: 1, y: 0 },
     chapter: (f) => ({ left: f.safe * 2, top: f.h * 0.42, align: "left" }),
-    kept: (f) => ({ x: f.w * 0.42, y: f.safe * 0.6, w: f.w * 0.56, h: f.h - f.safe * 1.2 }),
-    check: (f) => ({ box: { left: f.safe * 2, top: f.h * 0.4, align: "left" }, maxW: f.w * 0.36 }),
+    kept: (f) => ({ x: f.w * 0.4, y: f.h * 0.16, w: f.w * 0.57, h: f.h * 0.68 }),
+    check: (f) => ({ box: { left: f.safe * 2, top: f.h * 0.42, align: "left" }, maxW: f.w * 0.33 }),
+    keptPan: { x: -1, y: 0 },
+    keptPreferPan: false,
   },
   "1:1": {
-    ask: (f) => ({ x: f.safe * 0.6, y: f.h * 0.2, w: f.w - f.safe * 1.2, h: f.h * 0.78 }),
-    // the placeholder cards are taller than the square at reading size: the title and first lines are read, the rest
-    // bleeds off the frame's foot (the 2.0.0 kept card is shorter; its read rect must include Remove)
-    askRead: { x: 0, y: 0, w: 495, h: 150 },
-    keptRead: { x: 0, y: 0, w: 495, h: 320 },
+    ask: (f) => ({ x: f.safe * 0.4, y: f.h * 0.3, w: f.w - f.safe * 0.8, h: f.h * 0.6 }),
+    askPan: { x: 0, y: 1 },
     chapter: (f) => ({ left: f.safe * 1.2, top: f.safe * 1.2, align: "left" }),
-    kept: (f) => ({ x: f.safe * 0.6, y: f.h * 0.22, w: f.w - f.safe * 1.2, h: f.h * 0.76 }),
+    kept: (f) => ({ x: f.safe * 0.4, y: f.h * 0.36, w: f.w - f.safe * 0.8, h: f.h * 0.5 }),
     check: (f) => ({ box: { left: f.safe * 1.2, top: f.safe * 1.1, align: "left" }, maxW: f.w - f.safe * 2.4 }),
+    // the card fills the square's width at reading size: the hold drifts down, away from the check line at the top
+    keptPan: { x: 0, y: 1 },
+    keptPreferPan: true,
   },
   "9:16": {
-    ask: (f) => ({ x: f.safe * 0.5, y: f.h * 0.28, w: f.w - f.safe, h: f.h * 0.5 }),
-    askRead: { x: 0, y: 0, w: 495, h: 482 },
-    keptRead: { x: 0, y: 0, w: 495, h: 474 },
-    chapter: (f) => ({ left: 0, top: f.h * 0.14, width: f.w, align: "center" }),
-    kept: (f) => ({ x: f.safe * 0.5, y: f.h * 0.3, w: f.w - f.safe, h: f.h * 0.5 }),
-    check: (f) => ({ box: { left: f.safe * 1.2, top: f.h * 0.82, align: "left" }, maxW: f.w - f.safe * 2.4 }),
+    ask: (f) => ({ x: f.safe * 0.4, y: f.h * 0.3, w: f.w - f.safe * 0.8, h: f.h * 0.4 }),
+    askPan: { x: 0, y: 1 },
+    chapter: (f) => ({ left: 0, top: f.h * 0.15, width: f.w, align: "center" }),
+    kept: (f) => ({ x: f.safe * 0.4, y: f.h * 0.3, w: f.w - f.safe * 0.8, h: f.h * 0.4 }),
+    check: (f) => ({ box: { left: f.safe * 1.2, top: f.h * 0.8, align: "left" }, maxW: f.w - f.safe * 2.4 }),
+    // the card fills the frame's width at reading size: the hold drifts up, away from the check line below it
+    keptPan: { x: 0, y: -1 },
+    keptPreferPan: true,
   },
 };
 
@@ -96,83 +112,98 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
   const g = o.grid;
   const peak = Math.round(o.peak);
   const take = o.take ?? TAKE_RSW;
+  const lzHold = glideLz(f);
   const music: MusicHit[] = [{ event: "the peak: the kept card lands", frame: peak, point: g?.beats.includes(peak) ? peak : null, level: "hit", waited: 0 }];
   const types: TypeSpec[] = [];
-  const readZoom = (css: number) => ((28 * f.unit) / css) * 1.03;
+  const readZoom = (css: number) => ((28 * f.unit) / css) * 1.04;
 
-  /* ------------------------------------------------ S23: Glaze ------------------------------------------------- */
-  const askAt = f60(12, fps);
-  const askReadWorld: Rect = { x: ASK.x + L.askRead.x, y: ASK.y + L.askRead.y, w: L.askRead.w, h: L.askRead.h };
-  const askFit = fitPose(askReadWorld, L.ask(f), f, 0.9);
-  const askPose: Pose = { ...askFit, zoom: Math.max(askFit.zoom / 1.06, readZoom(STILL.approvalCard.readPx!)) };
-  // the card is readable from its first frame; the push-in brings it closer (1.00 → 1.06)
-  const camA = new VelocityCamera(askPose, o.entry?.vel ?? { lz: 0.0003 });
+  /* ------------------------------------------------ S23: Glaze, opening on its take ------------------------------- */
+  // the ask card's entrance is 4 frames along on the cut: it is arriving as the shot opens, and reads within 6 frames
+  const hsg = TAKE_HSG;
+  const cardSrc = hsg.events.card!;
+  const askAt = -4; // the card's entrance starts 4 frames before the cut (local frames)
+  const askFit = fitPose(ASK, L.ask(f), f, 0.94);
+  const askPose: Pose = { ...askFit, zoom: Math.max(readZoom(CLIMAX_CARDS.ask.textPx), Math.min(askFit.zoom, readZoom(CLIMAX_CARDS.ask.textPx) * 1.05)) };
+  const vIn: Vec = o.cutIn?.vScreen ?? { x: -3 * f.unit, y: 0 };
+  // the shot's glide: a push that meets the card where it has room (16:9), a slow pan away from the chapter line where
+  // the card fills the frame's width at reading size (1:1, 9:16); estimated over the shot's usual length
+  const askHold = holdGlide(f, ASK, askPose, Math.max(1, peak - f60(60, fps)), { pan: L.askPan, px: 0.45 });
+  const pushA = askHold.vel;
+  // in with the cut's momentum, gliding into that glide (never from rest, never landing at rest)
+  // (the glide lands its framing after five time constants: what is left of the cut's speed then is under 1 %)
+  const camA = o.entry ? new VelocityCamera(o.entry.pose, o.entry.vel) : arriveWithMomentum({ target: askHold.from, frames: f60(80, fps), vScreen: vIn, mode: "glide", tau: f60(16, fps), drift: pushA });
   const chapterText = breakLines(CLIMAX_TEXT.chapter, "expressive", f, f.w - 2 * f.safe, 0.3);
-  const chapter: TypeSpec = { id: "L24", text: chapterText, tier: "expressive", at: 0, sizeT: 0.3, box: L.chapter(f), kind: "film", key: true };
-  const landC = place(askAt + f60(30, fps), g, { level: "beat", frames: landFrames(chapter, fps) });
+  const chapter: TypeSpec = { id: "L24", text: chapterText, tier: "expressive", at: 0, sizeT: 0.3, box: L.chapter(f), kind: "film", key: true, exit: "blur" };
+  const landC = place(f60(30, fps) + landFrames(chapter, fps), g, { level: "beat", frames: landFrames(chapter, fps) });
   chapter.at = landC.at;
   music.push(musicHit("\"Its own tools.\" lands", landC));
-  // the ask is read (7 words: 2.6 s) and the chapter line held (≥ 2 s) before the cut, which comes on the last beat at
-  // least 0.75 s before the peak: the kept card then lands 0.75–1.25 s into S24 (§3.6 chain 11: about 1.0 s)
-  const minCut = Math.max(askAt + f60(24, fps) + sec(2.6, fps), chapter.at + sec(2.4, fps));
+  // the ask is read (7 words: 2.6 s) and the chapter line held (≥ 2.4 s) before the cut, which comes on the last beat
+  // at least 0.75 s before the peak: the kept card then lands 0.75–1.25 s into S24 (§3.6 chain 11: about 1.0 s)
+  const leaveF = f60(18, fps);
+  const minCut = Math.max(f60(8, fps) + sec(2.6, fps), chapter.at + landFrames(chapter, fps) + sec(2.4, fps) + leaveF);
   const cutCandidate = g ? prevPoint(g, peak - f60(45, fps), "beat") : undefined;
   const cut = cutCandidate !== undefined && cutCandidate >= minCut && peak - cutCandidate <= f60(75, fps) ? cutCandidate : peak - f60(60, fps);
   if (cut < minCut) throw new Error(`the climax needs ${minCut - cut} more frames before its peak (the ask must be read first)`);
   music.push({ event: "the cut into Kiln", frame: cut, point: g?.beats.includes(cut) ? cut : null, level: g?.beats.includes(cut) ? "beat" : null, waited: 0 });
-  chapter.exitAt = cut - f60(6, fps);
-  chapter.exit = "camera";
-  // the push-in meets the card, carried from the incoming velocity (never from rest), over at most 240 frames (§5.1),
-  // then drifts on into the cut's E-leave
-  const leaveStart = cut - 1 - f60(18, fps);
-  const pushEnd = Math.min(leaveStart, f60(240, fps));
-  pushInCarried(camA, pushEnd, 1.06, 0.0001);
-  if (pushEnd < leaveStart) camA.glide(leaveStart, f60(30, fps), { lz: 0.0001 });
+  // L24 leaves with the camera's E-leave: a drawn blur exit, over 2 frames before the cut (CR-03)
+  const leaveStart = cut - 1 - leaveF;
+  chapter.exitAt = leaveStart;
+  camA.glide(leaveStart, f60(30, fps), pushA);
+  const hsgUse: TakeUse = { manifest: hsg, at: 0, inPoint: cardSrc - askAt, until: cut };
 
   /* ------------------------------------------------ S24: Kiln, the take at 1× ------------------------------------ */
-  const keptReadWorld: Rect = { x: KEPT.x + L.keptRead.x, y: KEPT.y + L.keptRead.y, w: L.keptRead.w, h: L.keptRead.h };
-  const keptFit = fitPose(keptReadWorld, L.kept(f), f, 0.9);
-  const keptRead: Pose = { ...keptFit, zoom: Math.max(keptFit.zoom, readZoom(STILL.commandCard.readPx!)) };
+  const keptFit = fitPose(KEPT, L.kept(f), f, 0.94);
+  const keptRead: Pose = { ...keptFit, zoom: Math.max(readZoom(CLIMAX_CARDS.kept.textPx), Math.min(keptFit.zoom, readZoom(CLIMAX_CARDS.kept.textPx) * 1.06)) };
   // the landing framing: the card a little wide, so the push-in that follows reads as the climax's breath
   const landPose: Pose = { ...keptRead, zoom: keptRead.zoom / 1.1 };
-  // the incoming glide runs 72 frames (τ 24): it is still gliding as the card lands on the peak, and only 5 % of the
-  // cut's speed is left to carry past the framing (36 frames left 22 %: a 160 px overshoot toward the type)
-  const seam = momentumCut({ out: camA, cutFrame: cut, dir: { x: -1, y: 0 }, dPx: 118 * f.unit, leaveFrames: f60(18, fps), target: landPose, inFrames: f60(72, fps), mode: "glide", tau: f60(24, fps), frameW: f.w, frameH: f.h, fps });
+  // the incoming glide runs 72 frames (τ 24): it is still gliding as the card lands on the peak
+  const inF = f60(120, fps);
+  const seam = momentumCut({ out: camA, cutFrame: cut, dir: { x: -1, y: 0 }, dPx: 118 * f.unit, leaveFrames: leaveF, target: landPose, inFrames: inF, mode: "glide", tau: f60(24, fps), drift: { x: (0.3 * f.unit * 60) / fps / landPose.zoom, y: 0, lz: lzHold * 0.6 }, frameW: f.w, frameH: f.h, fps });
   const camB = seam.inCam;
-  // through the landing without a freeze: the glide drifts on, then a slow push-in (E-move) for reading
-  const pushFrom = Math.max(peak - cut + f60(30, fps), f60(72, fps) + 1);
-  camB.glide(pushFrom, f60(24, fps), { x: (0.2 * f.unit * 60) / fps / landPose.zoom, lz: 0.00006 });
-  const pushTo = pushFrom + f60(200, fps);
-  camB.hermite(pushTo, keptRead, { lz: 0.00006 });
+  // through the landing without a freeze: the glide drifts on, then a push-in (a Hermite carried from the drift) for
+  // reading, and from there the hold's own glide to the end: the push never stops (CR-04)
+  const pushFrom = Math.max(peak - cut + f60(30, fps), inF + 1);
+  camB.glide(pushFrom, f60(24, fps), { x: (0.3 * f.unit * 60) / fps / landPose.zoom, lz: lzHold * 0.6 });
+  const pushTo = pushFrom + f60(160, fps);
 
   // the check line lands on a beat after the card, beside it
-  const ck = L.check(f, 0);
+  const ck = L.check(f);
   const checkText = breakLines(CLIMAX_TEXT.check, "functional", f, ck.maxW, 0.3);
   const check: TypeSpec = { id: "L25", text: checkText, tier: "functional", at: 0, sizeT: 0.3, box: ck.box, kind: "film" };
   const landK = place(peak + f60(45, fps), g, { level: "beat", frames: landFrames(check, fps) });
   check.at = landK.at;
   music.push(musicHit("\"Kept on its own only after an independent check.\" lands", landK));
   // the card is read once the push-in has reached reading size (12 words: 4.1 s), and the check line held 6.5 s
-  const readEnd = Math.max(check.at + sec(6.5, fps), cut + pushTo + sec(4.1, fps));
-  const endP = place(readEnd + f60(12, fps), g, { level: "bar", maxWait: sec(2.2, fps) });
-  const end = endP.point ?? readEnd + f60(12, fps);
+  const readEnd = Math.max(check.at + landFrames(check, fps) + sec(6.5, fps), cut + pushTo + sec(4.1, fps));
+  const endP = place(readEnd + leaveF + f60(12, fps), g, { level: "bar", maxWait: sec(2.2, fps) });
+  const end = endP.point ?? readEnd + leaveF + f60(12, fps);
   music.push(musicHit("the climax ends (the convergence)", endP));
-  check.exitAt = end - f60(14, fps);
+  const exitStart = end - 1 - leaveF;
+  check.exitAt = exitStart;
   types.push(chapter, check);
-  camB.glide(end - cut, f60(40, fps), { lz: 0.00005 });
+  // the hold on the card: a push about it where it has room, else a pan away from the check line; it starts as the
+  // reading push lands and runs to the E-leave
+  const hold = holdGlide(f, KEPT, keptRead, exitStart - cut - pushTo, { pan: L.keptPan, preferPan: L.keptPreferPan, px: 0.42 });
+  camB.hermite(pushTo, hold.from, hold.vel);
+  camB.glide(exitStart - cut, f60(30, fps), hold.vel);
+  const pEnd = camB.pose(exitStart - cut);
+  camB.ease(end - cut - 1, { x: pEnd.x + (118 * f.unit) / pEnd.zoom, y: pEnd.y, zoom: pEnd.zoom * Math.exp(hold.vel.lz * leaveF) }, "E-leave");
 
   const use = solveInPoint(take, "cardLands", peak, cut, end, fps);
   const happyAt = eventFrame(use, "happy", fps);
 
   /* ------------------------------------------------ planes ----------------------------------------------------- */
   const planesA: PlaneSpec[] = [
-    { id: "glaze", kind: "pebble", rect: GLAZE, content: { kind: "standIn", standIn: { kind: "slot", id: "glaze", captureId: "HS-G", label: "the conversation \"Glaze\"", w: GLAZE.w, h: GLAZE.h, window: "pebble", standsFor: "G4's conversation" } } },
-    { id: "ask", kind: "pebble", rect: ASK, content: { kind: "standIn", standIn: STILL.approvalCard }, enterAt: askAt, read: { from: askAt + f60(24, fps), to: leaveStart, words: 7, rect: askReadWorld } },
+    { id: "glaze", kind: "pebble", rect: GLAZE, content: { kind: "take", use: hsgUse, view: "conversation" }, shadow: true },
+    // read once the cut's momentum has settled into the glide (the card is arriving meanwhile)
+    { id: "ask", kind: "pebble", rect: ASK, content: { kind: "take", use: hsgUse, view: "card" }, shadow: true, read: { from: f60(44, fps), to: leaveStart, words: CLIMAX_CARDS.ask.words, textPx: CLIMAX_CARDS.ask.textPx, rect: ASK } },
   ];
   const planesB: PlaneSpec[] = [
-    { id: "kiln", kind: "pebble", rect: KILN, content: { kind: "take", use, view: "conversation" } },
-    { id: "kept", kind: "pebble", rect: KEPT, content: { kind: "take", use, view: "keptCard" }, shadow: true, read: { from: cut + pushTo - f60(40, fps), to: end, words: 12, receipt: true, textPx: STILL.commandCard.readPx, rect: keptReadWorld } },
+    { id: "kiln", kind: "pebble", rect: KILN, content: { kind: "take", use, view: "conversation" }, shadow: true },
+    { id: "kept", kind: "pebble", rect: KEPT, content: { kind: "take", use, view: "keptCard" }, shadow: true, read: { from: cut + pushTo - f60(40, fps), to: exitStart, words: CLIMAX_CARDS.kept.words, receipt: true, textPx: CLIMAX_CARDS.kept.textPx, rect: KEPT } },
   ];
-  // evening light: dusk (0.39) to evening (0.63) is 0.24 of luminance, so on E-move it takes at least 4.4 s
+  // evening light: dusk to evening is about 0.17 of luminance on the ground, so on E-move it takes at least 3.1 s
+  const lightInitial = o.cutIn?.grade ?? "dusk";
   const lightCues: LightCue[] = [{ at: 0, to: "evening", frames: sec(4.6, fps) }];
   const cues = anchored(CLIMAX_CUES, happyAt / fps, "the climax's cues");
 
@@ -189,19 +220,20 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
     ],
     seams: [{ at: cut, kind: "momentum", frames: 0, out: "glaze", in: "kiln" }],
     types,
-    lightInitial: "dusk",
+    lightInitial,
     lightCues,
     leaks: [],
     hits: [],
-    takes: [use],
+    takes: [hsgUse, use],
     music,
     moves: [
-      move("product", askAt, f60(24, fps), "S23: the ask card's entrance (a placeholder of the recorded one)"),
-      move("push", 0, Math.max(f60(90, fps), pushEnd), "S23: the push-in to meet the card"),
+      move("product", 0, f60(20, fps), "S23: the ask card's entrance (a placeholder of the recorded one)"),
+      move("push", 0, leaveStart, "S23: the push-in to meet the card"),
       move("product", cut, end - cut, "RS-W at 1×: the kept card lands on the peak"),
-      move("push", pushFrom + cut, pushTo - pushFrom, "S24: the slow push-in for reading"),
+      move("push", pushFrom + cut, pushTo - pushFrom, "S24: the push-in for reading"),
       move("light", 0, sec(4.6, fps), "dusk to evening"),
     ],
-    extra: { cut, peak, happyAt, cardLands: eventFrame(use, "cardLands", fps), pushFrom: pushFrom + cut, pushTo: pushTo + cut, end, readZoom: keptRead.zoom },
+    exit: { pose: camB.pose(end - cut), vel: camB.sample(end - cut).vel, shot: "kiln", ref: landPose, grade: "evening" },
+    extra: { cut, peak, happyAt, cardLands: eventFrame(use, "cardLands", fps), pushFrom: pushFrom + cut, pushTo: pushTo + cut, end, readZoom: keptRead.zoom, holdKind: hold.kind, keptOnScreen: rectInFrame(KEPT, keptRead, f) },
   };
 }

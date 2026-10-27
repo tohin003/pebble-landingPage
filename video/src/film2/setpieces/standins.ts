@@ -53,6 +53,10 @@ export interface SlotStandIn {
   h: number;
   window: WindowKind;
   standsFor: string;
+  /** where its label sits (fractions of the slot): where the shot looks, so a framing of part of it still names it */
+  focus?: { x: number; y: number };
+  /** the window it shows (CR-11), as StillStandIn.place */
+  place?: string;
 }
 
 export type StandIn = StillStandIn | SlotStandIn;
@@ -102,6 +106,42 @@ export const STILL = {
   mainWelcome: still("mainWelcome", "ui/v150/main-welcome@2x.png", 1160, 800, "the project conversation \"studio-bookings\" (Ring 4's place)", { version: "1.5.0", words: 140, textPx: 12.4, place: "studio-bookings" }),
   /** Pebble 1.5.0's Settings */
   settings: still("settings", "ui/v150/settings-permissions@2x.png", 1160, 800, "Pebble's Toolbox in Settings › Skills & connectors (G5)", { version: "1.5.0", words: 205, textPx: 11.0, place: "settings" }),
+  /**
+   * Ring 4's ask, cropped to what persists in the conversation's history whatever the person clicks (CR-05, CR-11):
+   * "Blocked" and "Pebble's change isn't verified yet.", cut at the sentence's end (before "· 2 file(s) …") and above
+   * the second line and the buttons, so it never shows a live button beside a run (measured 27 Oct on the 2× capture:
+   * "yet." ends at 250 CSS px, the separator starts at 255; the first line's foot at 187, the second's head at 191).
+   * Ring 4's three crops are drawn from the 3× captures: they are read at up to 3× (16:9)
+   */
+  heldNote: still("heldNote", "ui/crop-held@3x.png", 726, 256, "Ring 4's ask in the history: \"Pebble's change isn't verified yet.\" (F11, F12), from the 2.0.0 run", {
+    crop: { x: 0, y: 124, w: 253, h: 66 },
+    readPx: 11.7,
+    words: 6,
+    textPx: 11.7,
+    place: "studio-bookings",
+  }),
+  /**
+   * Ring 4's act: the test card's sentence (the treatment's own words for it, S18), without its title row's review
+   * badge or its buttons, which are a 1.0.x approval state (the 2.0.0 card reads Running, then Done): 13 words, cap
+   * height 9 CSS px (12.4 px type)
+   */
+  testsLine: still("testsLine", "ui/crop-tests-card@3x.png", 495, 344, "Ring 4's act: the test card reading Running, \"Runs the project's tests in a temporary copy. Your project files don't change.\" (F3)", {
+    crop: { x: 24, y: 47, w: 424, h: 43 },
+    readPx: 12.4,
+    words: 13,
+    textPx: 12.4,
+    place: "studio-bookings",
+  }),
+  /** Ring 4's receipt: "Verified · pytest 42 passed on current files" and "Done, and verified:", below the timing line */
+  verifiedTop: still("verifiedTop", "ui/crop-done-receipt@3x.png", 684, 278, "Ring 4's receipt: \"Verified · pytest … passed on current files\" (F12)", {
+    crop: { x: 12, y: 33, w: 250, h: 52 },
+    readPx: 11.0,
+    words: 10,
+    textPx: 11.0,
+    place: "studio-bookings",
+  }),
+  /** the companion at work: a real 1.0.x harness frame ("Thinking", "Task: running"; avatar hidden: the stone is drawn there) */
+  companionWorking: still("companionWorking", "ui-frames/pet-live-error-light-hidden/00120.png", 384, 456, "the companion working after the Allow (A3, A9), from RS-9", { readPx: 13.3, words: 27, textPx: 13.3, place: "companion" }),
 } as const satisfies Record<string, StillStandIn>;
 
 /* ---------------------------------------------------------------- slots (not captured yet) ---------------------- */
@@ -119,14 +159,23 @@ const slot = (id: string, captureId: string, label: string, w: number, h: number
 
 export const SLOT = {
   browser: slot("browser", "RS-9", "the browser take: Pebble's own tab, at 1×", 1440, 900, "thirdParty", "J2, J1, J6, F14: Pebble's tab, the results, the video starting"),
+  /** no published capture shows the companion holding a card: its card and its sites, before the Allow (CR-18) */
+  companionCard: { ...slot("companionCard", "RS-9", "the companion's card \"Use youtube.com\": its sites, Allow", 384, 456, "pebble", "A9, J3: the card answered in the companion"), focus: { x: 0.08, y: 0.18 }, place: "companion" },
+  /** Ring 4's conversation window: the take's full frame, around the views the film reads */
+  project: { ...slot("project", "HS-F", "the conversation \"studio-bookings\"", 1160, 800, "pebble", "F1, F11: the project conversation"), focus: { x: 0.05, y: 0.06 }, place: "studio-bookings" },
+  /** the Workshop's cards (1.7.0, never published): the ask and the kept card, at the sizes the 2.0.0 cards take */
+  glazeCard: { ...slot("glazeCard", "HS-G", "\"Keep this tool in Pebble's Toolbox?\" Discard · Keep", 440, 220, "pebble", "G4: the Workshop's ask"), place: "glaze" },
+  keptCard: { ...slot("keptCard", "RS-W", "\"Kept in Pebble's Toolbox · kiln_ramp_time\" View code · Remove", 440, 240, "pebble", "G3: the kept tool, told"), place: "kiln" },
   calculator: slot("calculator", "RS-4", "Calculator, before \"=\"", 232, 372, "apple", "I1, I8: Ring 2's place"),
   finder: slot("finder", "RS-H", "Finder at Pebble Workbench", 820, 500, "apple", "H1, H2: Ring 3's place"),
   agents: slot("agents", "HS-N", "the agents panel", 520, 360, "pebble", "N1: Agents read and propose"),
   goal: slot("goal", "HS-N", "a goal with its criteria", 520, 360, "pebble", "N2: A goal, with criteria"),
   skills: slot("skills", "HS-O", "Skills & connectors", 520, 360, "pebble", "O1: Skills you review"),
   connector: slot("connector", "HS-O", "a connector's call, asking", 520, 360, "pebble", "O2: Connectors that ask"),
-  palette: slot("palette", "HS-B3", "⌘K, typed, Enter", 680, 400, "pebble", "B6: the palette and its row"),
-  menuBar: slot("menuBar", "RS-13", "the menu bar: Pebble's icon", 1440, 56, "apple", "L5: a filled pebble in a ring"),
+  palette: { ...slot("palette", "HS-B3", "⌘K, typed, Enter", 680, 400, "pebble", "B6: the palette and its row"), place: "workspace" },
+  /** the workspace ⌘K opens over (the take's full frame; Pebble 1.5.0's own window stands for it where it shows whole) */
+  workspace: { ...slot("workspace", "HS-B3", "the workspace, before ⌘K", 1160, 800, "pebble", "B6: the workspace"), place: "workspace" },
+  menuBar: { ...slot("menuBar", "RS-13", "the menu bar: Pebble's icon", 1440, 56, "apple", "L5: a filled pebble in a ring"), focus: { x: 0.62, y: 0.05 } },
   dock: slot("dock", "RS-13", "the Dock: Pebble's icon leaves", 900, 104, "apple", "L4: leaves the Dock"),
 } as const satisfies Record<string, SlotStandIn>;
 

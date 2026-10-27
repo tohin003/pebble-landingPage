@@ -1,32 +1,40 @@
 // A RING BLOCK (TREATMENT §3.5 S08–S19, §3.6, §3.8): one feature place's ask → act → receipt, then the in-place
 // cascade that follows it. A template driven by data (setpieces/rings.ts holds Ring 4 and the edit lane adds the
-// others): the place and its planes, the take and the event that lands on a beat, the lines, the cascade.
+// others): the place and its take, the views the film reads, the event that lands on a beat, the lines, the cascade.
+//
+// Every plane of the place is a VIEW of one take, on one clock (CR-11: a still of the ask beside a live take of the
+// act showed states that never coexisted): the window, the ask (the history), the act and, inside it, the receipt.
+// Each view is cropped at a clean card or line boundary and framed whole while its text is legible (CR-05).
 //
 // The ring shot, in local frames from the block's start (the edit lane puts frame 0 on a phrase downbeat):
-//   0            a ring leaves the stone; it travels to the place and frames the ask (E-move), and holds
-//   +12 … +108   the camera follows 12 frames behind, a ring-led move of ≤ 1.4 s arriving with momentum into a glide,
-//                at a framing where the ring's circle stays clear of the type
+//   0            a ring leaves the stone; it travels to the place and frames the ask (E-move), and holds. The camera
+//                continues the previous piece's (`entry`, the same world) or opens on the stone
+//   +24 …        the camera follows the ring, a ring-led move arriving with momentum into a glide
 //   lines        the chapter line and its limit (≤ 3 lines a ring), each landing on a beat once no ring crosses it,
 //                held together ≥ 2.5 s; they leave before the camera moves in (the held ring grows with the zoom)
-//   dolly        in to reading magnification (UI text ≥ 28 px at 1080), then a reading glide (≈ 0.3 px a frame)
-//   the take     at 1×: its in-point is solved so its receipt event lands on a beat, after the ask and the act have
-//                been read; nothing inside it is cut (§3.6 chain 9); the ring returns to the stone on that beat
-//   the receipt  the camera glides to it (no freeze, no mark, no hit: "Verified gets no hit") and holds it for its
-//                reading time
-//   the cut      a momentum cut (E-leave out, matched speed in) onto the cascade's stage, on a bar line
-// The cascade shot: one fixed line, items swapped in place with their UI cards (8 frames out, 8 in), each landing
-// 2–3 frames before a beat; the block ends on the next bar line after the last item's hold.
+//   dolly        in to reading magnification (UI text ≥ 28 px at 1080); then the reading glide, a drift of 0.4 px a
+//                frame toward where the receipt lands (CR-04: never arrive-and-hold)
+//   the take     at 1×, shown from the block's first frame (its in-point is solved so the receipt event lands on a
+//                beat); the ask is read in the take's history, the act from its start event; nothing is cut (§3.6)
+//   the receipt  the camera glides down the conversation to it, arriving as it lands (the ring returns to the stone on
+//                that beat), and holds it for its reading time, still drifting (no freeze, no mark, no hit)
+//   the cut      a momentum cut (E-leave out, matched speed in, gliding on: never landing at rest) onto the cascade's
+//                stage, on a bar line
+// The cascade shot: one fixed line, items swapped in place with their UI cards, crossing at mid-blur (CR-17), each
+// landing 2–3 frames before a beat; the block ends on the next bar line after the last item's hold, the camera leaving
+// on an E-leave with the fixed line and the last item drawing their exits before the cut (CR-03, CR-06).
 // Pure data (setpieces/scene.ts).
 import { f60, sec } from "../tokens";
 import { VelocityCamera, type CamVel, type Pose } from "../motion/camera";
 import { travelTo } from "../camera/moves";
 import { momentumCut } from "../transitions/momentum";
-import type { Point, Rect } from "../motion/geometry";
+import type { Point, Rect, Vec } from "../motion/geometry";
 import type { RingSpec } from "../carrier/ring";
+import type { Grade, GradeName, LightCue } from "../light/grades";
 import { cascadeSchedule } from "../type/Cascade";
 import { typeSizePx } from "../type/scale";
 import { place, pointsOf, type MusicGrid } from "./music";
-import { breakLines, enterFramesOf, exitFramesOf, fitPose, frameBox, lineHeightOf, lineRect, rectInFrame, unionRect, type FrameBox, type TypeBox } from "./frame";
+import { breakLines, enterFramesOf, exitFramesOf, fitPose, frameBox, glideLz, lineHeightOf, lineRect, rectInFrame, unionRect, type FrameBox, type TypeBox } from "./frame";
 import { frameOfSource, solveInPoint, type TakeManifest } from "./take";
 import type { StandIn } from "./standins";
 import { RING_RECEIPT_CUES, RING_START_CUES } from "./pieces.cues";
@@ -42,12 +50,16 @@ export interface RingContent {
   stone: Point;
   /** what a fresh block opens on (default: the companion around the stone) */
   startRect?: Rect;
-  /** context planes drawn in the place's world (the place's window, other windows) */
+  /** context planes drawn in the place's world (the other windows) */
   context?: readonly PlaneSpec[];
-  /** the ask the ring frames: a still (in the conversation's history) or a slot; `readRect` is the part read (world) */
-  ask: { rect: Rect; standIn: StandIn; words: number; textPx: number; readRect?: Rect };
-  /** the act: one view of a take, played at 1× */
-  act: { take: TakeManifest; view: string; rect: Rect; startEvent: string; words: number; textPx: number; readRect: Rect };
+  /** the one take every plane of the place is a view of (CR-11), and its event the act starts on */
+  take: TakeManifest;
+  /** the place's window: a view of the take, drawn behind the views the film reads */
+  window?: { view: string; rect: Rect };
+  /** the ask: a view of the take (in its history); `readRect` is the part read (world) */
+  ask: { view: string; rect: Rect; words: number; textPx: number; readRect?: Rect };
+  /** the act: a view of the take, from its start event */
+  act: { view: string; rect: Rect; startEvent: string; words: number; textPx: number; readRect: Rect };
   /** the receipt: the take event that lands on a beat, and where it shows (inside the act's view, view px) */
   receipt: { event: string; rect: Rect; words: number; textPx: number; readRect?: Rect };
   lines: { chapter: string; limit?: string };
@@ -60,8 +72,8 @@ export interface RingOptions {
   fps: number;
   content: RingContent;
   grid?: MusicGrid;
-  /** continue the previous piece's camera in the same world (a continuous hand-off); default: a fresh start */
-  entry?: { pose: Pose; vel: CamVel };
+  /** continue the previous piece's camera in the same world (a continuous hand-off): its pose, velocity, parallax ref, riverbed and light */
+  entry?: { pose: Pose; vel: CamVel; ref?: Pose; groundRect?: Rect; grade?: GradeName | Grade };
   /**
    * One timeline for every aspect (§3.12): the latest frame of each timed event across the aspects (setpieces/align.ts
    * alignAspects); each is a minimum here, so every aspect cuts on the same frames.
@@ -88,8 +100,10 @@ interface RingLayout {
   /** the chapter pair's box */
   pair: (f: FrameBox, blockH: number) => { left: number; top: number; maxW: number };
   sizeT: number;
-  /** the reading region (the act and the receipt are framed into it) */
+  /** the reading region (the ask and the act are framed into it) */
   read: (f: FrameBox) => Rect;
+  /** where the receipt is framed once the camera has glided down to it (the conversation above it out of frame) */
+  receipt: (f: FrameBox) => Rect;
   /** the cascade: the card's region, the fixed line's box and the item's box */
   stage: (f: FrameBox) => Rect;
   fixedBox: (f: FrameBox) => TypeBox;
@@ -98,20 +112,23 @@ interface RingLayout {
 
 const LAYOUT: Record<FrameBox["aspect"], RingLayout> = {
   "16:9": {
-    arrive: (f) => ({ x: f.w * 0.46, y: f.safe, w: f.w * 0.5, h: f.h - 2 * f.safe }),
+    arrive: (f) => ({ x: f.w * 0.46, y: f.safe * 2, w: f.w * 0.5, h: f.h - 4 * f.safe }),
     pair: (f, bh) => ({ left: f.safe * 2, top: f.h - f.safe * 2.4 - bh, maxW: f.w * 0.46 - f.safe * 2 }),
     sizeT: 0,
-    read: (f) => ({ x: f.safe * 2, y: f.safe * 1.5, w: f.w - f.safe * 4, h: f.h - f.safe * 3 }),
-    stage: (f) => ({ x: f.w * 0.52, y: f.h * 0.14, w: f.w * 0.42, h: f.h * 0.72 }),
-    fixedBox: (f) => ({ left: f.safe * 2, top: f.h * 0.3, align: "left" }),
-    itemBox: (f) => ({ left: f.safe * 2 + 2 * f.unit, top: f.h * 0.3 + 128 * f.unit, align: "left" }),
+    read: (f) => ({ x: f.safe * 2, y: f.safe * 2, w: f.w - f.safe * 4, h: f.h - f.safe * 4 }),
+    receipt: (f) => ({ x: f.safe * 2, y: f.safe * 2, w: f.w - f.safe * 4, h: f.h - f.safe * 4 }),
+    // the stage card fills the right half: a cascade is a frame of real UI beside its words, not a card in a field (CR-16)
+    stage: (f) => ({ x: f.w * 0.47, y: f.h * 0.11, w: f.w * 0.48, h: f.h * 0.78 }),
+    fixedBox: (f) => ({ left: f.safe * 2, top: f.h * 0.32, align: "left" }),
+    itemBox: (f) => ({ left: f.safe * 2 + 2 * f.unit, top: f.h * 0.32 + 128 * f.unit, align: "left" }),
   },
   "1:1": {
     arrive: (f) => ({ x: f.w * 0.3, y: f.safe, w: f.w * 0.66, h: f.h * 0.58 }),
     pair: (f, bh) => ({ left: f.safe * 1.2, top: f.h - f.safe * 1.6 - bh, maxW: f.w - f.safe * 2.4 }),
     sizeT: 0.1,
-    read: (f) => ({ x: f.safe, y: f.safe, w: f.w - 2 * f.safe, h: f.h - 2 * f.safe }),
-    stage: (f) => ({ x: f.safe * 1.2, y: f.h * 0.36, w: f.w - f.safe * 2.4, h: f.h * 0.56 }),
+    read: (f) => ({ x: f.safe, y: f.safe * 1.5, w: f.w - 2 * f.safe, h: f.h - 3 * f.safe }),
+    receipt: (f) => ({ x: f.safe, y: f.safe * 1.5, w: f.w - 2 * f.safe, h: f.h - 3 * f.safe }),
+    stage: (f) => ({ x: f.safe * 1.2, y: f.h * 0.34, w: f.w - f.safe * 2.4, h: f.h * 0.6 }),
     fixedBox: (f) => ({ left: f.safe * 1.2, top: f.safe * 1.4, align: "left" }),
     itemBox: (f) => ({ left: f.safe * 1.2 + 2 * f.unit, top: f.safe * 1.4 + 104 * f.unit, align: "left" }),
   },
@@ -120,15 +137,21 @@ const LAYOUT: Record<FrameBox["aspect"], RingLayout> = {
     arrive: (f) => ({ x: f.safe, y: f.h * 0.12, w: f.w - 2 * f.safe, h: f.h * 0.5 }),
     pair: (f, bh) => ({ left: f.safe * 1.2, top: f.h - f.safe * 2.6 - bh, maxW: f.w - f.safe * 2.4 }),
     sizeT: 0.2,
-    read: (f) => ({ x: f.safe * 0.5, y: f.h * 0.2, w: f.w - f.safe, h: f.h * 0.55 }),
-    stage: (f) => ({ x: f.safe, y: f.h * 0.3, w: f.w - 2 * f.safe, h: f.h * 0.42 }),
-    fixedBox: (f) => ({ left: 0, top: f.h * 0.14, width: f.w, align: "center" }),
-    itemBox: (f) => ({ left: 0, top: f.h * 0.76, width: f.w, align: "center" }),
+    read: (f) => ({ x: f.safe * 0.5, y: f.h * 0.22, w: f.w - f.safe, h: f.h * 0.5 }),
+    // the tall frame frames the receipt high, so the test card's sentence, wider than the frame at the receipt's zoom,
+    // glides up out of it whole
+    receipt: (f) => ({ x: f.safe * 0.5, y: f.h * 0.12, w: f.w - f.safe, h: f.h * 0.3 }),
+    stage: (f) => ({ x: f.safe * 0.7, y: f.h * 0.27, w: f.w - 1.4 * f.safe, h: f.h * 0.46 }),
+    fixedBox: (f) => ({ left: 0, top: f.h * 0.13, width: f.w, align: "center" }),
+    itemBox: (f) => ({ left: 0, top: f.h * 0.77, width: f.w, align: "center" }),
   },
 };
 
 /** Seconds a viewer needs for `words` words of UI (§5.2's hold formula). */
 const readS = (words: number) => Math.max(50 / 60, 0.5 + 0.3 * words);
+
+/** The world rect of a rect given inside a view of a plane. */
+const inView = (plane: Rect, r: Rect): Rect => ({ x: plane.x + r.x, y: plane.y + r.y, w: r.w, h: r.h });
 
 /** The plan of one ring block for one aspect. */
 export function planRingBlock(o: RingOptions): ScenePlan {
@@ -138,27 +161,30 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   const L = LAYOUT[A];
   const c = o.content;
   const g = o.grid;
+  const m = c.take;
   const music: MusicHit[] = [];
   const types: TypeSpec[] = [];
+  const lzHold = glideLz(f);
+  const holdPx = 0.4 * f.unit; // the reading drift, px a frame at the frame's corners (all of them: a pan)
 
   /* ------------------------------------------------ the place and its framings -------------------------------- */
-  const placeRect = unionRect(c.ask.rect, c.act.rect);
-  // the arrival frames the ask and the top of the act's place (the act's card arrives there when its take starts)
-  const arrivePose = fitPose(unionRect(c.ask.rect, c.act.readRect), L.arrive(f), f, 0.9);
-  const zoomFor = (css: number) => (28 * f.unit) / css; // UI text ≥ 28 px at 1080
-  // reading magnification: at least the 28 px floor, and no more than 2.4 (the captures are 2×; past that they soften)
-  const readZoom = (fit: number, css: number) => Math.max(zoomFor(css) * 1.02, Math.min(fit, 2.4 * f.unit));
+  const placeRect = unionRect(c.window?.rect ?? c.ask.rect, c.ask.rect, c.act.rect);
   const askRead = c.ask.readRect ?? c.ask.rect;
-  const readAskPose = (() => {
-    const p = fitPose(unionRect(askRead, c.act.readRect), L.read(f), f, 0.94);
-    return { ...p, zoom: readZoom(p.zoom, Math.min(c.ask.textPx, c.act.textPx)) };
-  })();
-  const receiptWorld: Rect = { x: c.act.rect.x + c.receipt.rect.x, y: c.act.rect.y + c.receipt.rect.y, w: c.receipt.rect.w, h: c.receipt.rect.h };
-  const receiptRead: Rect = c.receipt.readRect ? { x: receiptWorld.x + c.receipt.readRect.x, y: receiptWorld.y + c.receipt.readRect.y, w: c.receipt.readRect.w, h: c.receipt.readRect.h } : receiptWorld;
-  const readReceiptPose = (() => {
-    const p = fitPose(receiptRead, L.read(f), f, 0.94);
-    return { ...p, zoom: readZoom(p.zoom, c.receipt.textPx) };
-  })();
+  const receiptWorld = inView(c.act.rect, c.receipt.rect);
+  const receiptRead = c.receipt.readRect ? inView(receiptWorld, c.receipt.readRect) : receiptWorld;
+  // the arrival frames the place's window whole (its text too small to read yet: the dolly brings it to reading size)
+  const arrivePose = fitPose(c.window?.rect ?? unionRect(askRead, c.act.readRect), L.arrive(f), f, 0.9);
+  const zoomFor = (css: number) => ((28 * f.unit) / css) * 1.03; // UI text ≥ 28 px at 1080
+  // the ask and the act are read together, framed whole (CR-05), at the 28 px floor of the smaller of their texts
+  const readBlock = unionRect(askRead, c.act.readRect);
+  const readFit = fitPose(readBlock, L.read(f), f, 0.94);
+  // (as large as the frame allows, up to 3× (the read crops are 3× captures): a read is a frame's subject, not a
+  // card in a field; at least the 28 px floor)
+  const readZoom = Math.max(zoomFor(Math.min(c.ask.textPx, c.act.textPx)), Math.min(readFit.zoom, 3.0 * f.unit));
+  const readPose: Pose = { ...readFit, zoom: readZoom };
+  // the receipt, framed alone at its own floor (the conversation glides up past the frame's top as it comes)
+  const recFit = fitPose(receiptRead, L.receipt(f), f, 0.9);
+  const receiptPose: Pose = { ...recFit, zoom: Math.max(zoomFor(c.receipt.textPx), Math.min(recFit.zoom, 3.2 * f.unit)) };
 
   /* ------------------------------------------------ the ring ---------------------------------------------------- */
   const emitF = f60(36, fps);
@@ -166,13 +192,14 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   const framedAt = emitF + frameF;
 
   /* ------------------------------------------------ the camera: arrival ---------------------------------------- */
-  // A fresh block opens on the stone, so the ring is seen to leave it, and the camera follows the ring 24 frames behind
-  // (a continuous hand-off, `entry`, starts from the previous piece's camera instead). A long journey bows out in zoom
-  // halfway, so the picture never moves faster than about 22 px a frame on the way (§5.3 travel ≤ 30), and lands on the
-  // place with momentum (a ring-led move of 0.7–1.4 s, longer only when the distance or the zoom change needs it).
+  // A fresh block opens on the stone, so the ring is seen to leave it; a continued one (`entry`) starts where the
+  // previous piece's camera is, moving as it moves. The camera follows the ring 24 frames behind; a long journey bows
+  // out in zoom halfway, so the picture never moves faster than about 22 px a frame on the way (§5.3 travel ≤ 30), and
+  // lands on the place with momentum (a ring-led move of 0.7–1.4 s, longer only when the distance or the zoom needs it).
   const startRect: Rect = c.startRect ?? { x: c.stone.x - 420, y: c.stone.y - 520, w: 560, h: 640 };
   const start: Pose = o.entry?.pose ?? fitPose(startRect, { x: 0, y: 0, w: f.w, h: f.h }, f, 0.8);
-  const startVel: CamVel = o.entry?.vel ?? { x: 0, y: 0, lz: 0.0002 };
+  const startVel: CamVel = o.entry?.vel ?? { x: 0, y: 0, lz: lzHold };
+  const ref: Pose = o.entry?.ref ?? arrivePose;
   const followFrom = f60(24, fps);
   const D = Math.hypot(arrivePose.x - start.x, arrivePose.y - start.y);
   const travelDir = { x: D > 1e-6 ? (arrivePose.x - start.x) / D : 1, y: D > 1e-6 ? (arrivePose.y - start.y) / D : 0 };
@@ -181,7 +208,6 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   // the bow: the zoom halfway that keeps the peak screen speed (≈ 1.5 × D × z ÷ T) at about 22 px a frame
   const zMid = Math.min(zLow, (22 * f.unit * T0 * 60) / fps / (1.5 * Math.max(D, 1)));
   const bow = zMid < zLow * 0.97;
-  // with a bow, each half (out, then in) takes half the time, so the larger half sets the pace
   const lzTravel = bow ? 2 * Math.max(Math.abs(Math.log(zMid / start.zoom)), Math.abs(Math.log(arrivePose.zoom / zMid))) : Math.abs(Math.log(arrivePose.zoom / start.zoom));
   // the zoom moves the frame's corners at (half-diagonal × log-zoom rate): keep that at ≤ 18 px a frame at 60 fps (a
   // Hermite peaks at 1.5× its mean), so with the pan the corners stay within the 30 px travel limit
@@ -189,7 +215,8 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   const zoomFrames = Math.ceil(((1.5 * lzTravel) / lzMax) * (fps / 60));
   const al = o.align ?? {};
   const arriveAt = Math.max(followFrom + T0, followFrom + zoomFrames, al.arriveAt ?? 0);
-  const travelDrift = { x: (travelDir.x * 0.28 * f.unit * 60) / fps / arrivePose.zoom, y: (travelDir.y * 0.28 * f.unit * 60) / fps / arrivePose.zoom, lz: 0.00006 };
+  // the arrival glide drifts on at 0.4 px a frame in the travel's direction, breathing in (never a rest)
+  const travelDrift = { x: (travelDir.x * holdPx * 60) / fps / arrivePose.zoom, y: (travelDir.y * holdPx * 60) / fps / arrivePose.zoom, lz: lzHold * 0.3 };
   const arrival = (into: VelocityCamera, glideTo: number) => {
     into.glide(followFrom, f60(24, fps), startVel);
     if (bow) {
@@ -262,56 +289,70 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   const linesGone = Math.max(exitAt + Math.max(exitFramesOf("lineRise", "blur", chapter, fps), limit ? exitFramesOf("lineBlur", "blur", limit, fps) : 0), al.linesGone ?? 0);
   if (linesGone > provisionalEnd) throw new Error(`${c.id}: the lines run to ${linesGone}, past the arrival glide (${provisionalEnd})`);
 
-  /* ------------------------------------------------ the camera: in to read, the take, the receipt --------------- */
-  // the arrival glide was provisional: rebuild the camera with the glide ending where the dolly starts
-  const cam2 = new VelocityCamera(start, startVel);
+  /* ------------------------------------------------ the take's timing ------------------------------------------ */
+  const startSrc = m.events[c.act.startEvent];
+  const recSrc = m.events[c.receipt.event];
+  if (startSrc === undefined) throw new Error(`${c.id}: the take ${m.id} has no event "${c.act.startEvent}"`);
+  if (recSrc === undefined) throw new Error(`${c.id}: the take ${m.id} has no event "${c.receipt.event}"`);
+  const actToReceipt = Math.ceil(((recSrc - startSrc) * fps) / m.fps); // Pebble's own time, never shortened
+  // the glide down the conversation to the receipt: long enough for its distance at ≤ about 22 px a frame on average
+  // (a Hermite peaks at 1.5× its mean: §5.3 travel ≤ 30), straddling the receipt's landing (a third before it), so
+  // the act is read for nearly all of the take's own span from its start event to the receipt
+  const glideDist = Math.hypot((receiptPose.x - readPose.x) * Math.sqrt(readZoom * receiptPose.zoom), (receiptPose.y - readPose.y) * Math.sqrt(readZoom * receiptPose.zoom)) / f.unit;
+  const glideF = Math.max(f60(56, fps), Math.ceil(((1.5 * glideDist) / 22) * (fps / 60)));
+  const glideDownF = Math.round(glideF / 3);
+  // the dolly, then the ask read in the take's history; the act starts after it; the receipt lands on a beat after
+  // the act's read and the glide down to it: every span is the take's own (1×), every hold its reading time
   const dollyFrom = Math.max(linesGone + 2, arriveAt + f60(30, fps));
-  arrival(cam2, dollyFrom);
-  const dollyTo = dollyFrom + f60(72, fps);
-  // the reading glide: about 0.25 px a frame on screen in the arrival's direction (slower drifts read as stills; §5.3
-  // allows up to 1) and a slow breath in; the framing starts half the drift back, so the cards drift through the
-  // middle of the frame and never toward its edge
-  const readFramesEst = sec(readS(c.ask.words) + readS(c.act.words), fps);
-  const readDrift = { x: (travelDir.x * 0.25 * f.unit * 60) / fps / readAskPose.zoom, y: (travelDir.y * 0.25 * f.unit * 60) / fps / readAskPose.zoom, lz: 0.00005 };
-  const readFrom: Pose = { x: readAskPose.x - (readDrift.x * readFramesEst) / 2, y: readAskPose.y - (readDrift.y * readFramesEst) / 2, zoom: readAskPose.zoom };
-  cam2.hermite(dollyTo, readFrom, { x: readDrift.x, y: readDrift.y, lz: 0.0001 });
-
-  // the receipt lands on a beat once the ask and the act have been read
-  const askAndActS = readS(c.ask.words) + readS(c.act.words) - 0.5;
-  const earliestReceipt = dollyTo + sec(Math.max(askAndActS - 1.0, 1.0), fps);
+  // (long enough for its zoom change at the frame's corners and its pan: ≤ about 22 px a frame on average)
+  const dollyLz = Math.abs(Math.log(readZoom / arrivePose.zoom));
+  const dollyPan = (Math.hypot(readPose.x - arrivePose.x, readPose.y - arrivePose.y) * Math.sqrt(readZoom * arrivePose.zoom)) / f.unit;
+  const dollyF = Math.max(f60(110, fps), Math.ceil(((1.5 * ((Math.hypot(f.w, f.h) / 2 / f.unit) * dollyLz + dollyPan)) / 22) * (fps / 60)));
+  const dollyTo = dollyFrom + dollyF;
+  const askReadF = sec(readS(c.ask.words), fps);
+  const actReadF = sec(readS(c.act.words) - 0.5, fps);
+  const earliestReceipt = Math.max(dollyTo + askReadF + actToReceipt, dollyTo + askReadF + actReadF + glideDownF);
   const landR = place(Math.max(earliestReceipt, al.receiptAt ?? 0), g, { level: "beat" });
   const receiptAt = landR.point ?? landR.at;
   music.push(musicHit("the receipt lands (the ring returns)", landR));
-  // the take: its receipt event on that beat; it starts on its start event, or entered later (never cut, never sped up)
-  const m = c.act.take;
-  const startSrc = m.events[c.act.startEvent] ?? 0;
-  const recSrc = m.events[c.receipt.event];
-  if (recSrc === undefined) throw new Error(`${c.id}: the take ${m.id} has no event "${c.receipt.event}"`);
-  const takeAt = Math.max(0, receiptAt - Math.floor(((recSrc - startSrc) * fps) / m.fps));
-  // the ask must be read before the act is: the take is on screen from at least the dolly's end
-  if (takeAt > dollyTo) throw new Error(`${c.id}: the take would start at ${takeAt}, after the dolly (${dollyTo})`);
+  const actAt = receiptAt - actToReceipt;
+  const receiptReadEnd = receiptAt - glideDownF + glideF + sec(readS(c.receipt.words), fps);
 
-  cam2.glide(receiptAt + f60(6, fps), f60(30, fps), readDrift);
-  const receiptArrive = receiptAt + f60(60, fps);
-  const receiptReadEnd = receiptArrive + sec(readS(c.receipt.words), fps);
-  // to the receipt: a glide-in that never stops (no freeze on Verified), drifting on in its own direction
-  const toReceipt = (() => {
-    const p0 = cam2.pose(receiptAt + f60(6, fps));
-    const dx = readReceiptPose.x - p0.x;
-    const dy = readReceiptPose.y - p0.y;
-    const n = Math.hypot(dx, dy) || 1;
-    return { x: dx / n, y: dy / n };
-  })();
-  const receiptDrift = { x: (toReceipt.x * 0.25 * f.unit * 60) / fps / readReceiptPose.zoom, y: (toReceipt.y * 0.25 * f.unit * 60) / fps / readReceiptPose.zoom, lz: 0.00005 };
-  const receiptFrom: Pose = { x: readReceiptPose.x - (receiptDrift.x * (receiptReadEnd - receiptArrive)) / 2, y: readReceiptPose.y - (receiptDrift.y * (receiptReadEnd - receiptArrive)) / 2, zoom: readReceiptPose.zoom };
-  travelTo(cam2, receiptArrive, receiptFrom, receiptReadEnd, fps, { arriveSpeedPxPerFrame: 5, tauS: 0.45, drift: receiptDrift });
+  /* ------------------------------------------------ the camera: in to read, the glide down, the receipt ---------- */
+  // the arrival glide was provisional: rebuild the camera with the glide ending where the dolly starts
+  const cam2 = new VelocityCamera(start, startVel);
+  arrival(cam2, dollyFrom);
+  // the reading drift: 0.4 px a frame, down toward where the receipt lands (a pan: every corner moves), and the
+  // framing starts half the drift back, so the block drifts through the middle of the frame and never toward its edge
+  // (straight down: the read block can be nearly as wide as a square or tall frame, so it never drifts sideways)
+  const down = { x: 0, y: receiptPose.y >= readPose.y ? 1 : -1 };
+  const readDrift = { x: (down.x * holdPx * 60) / fps / readZoom, y: (down.y * holdPx * 60) / fps / readZoom, lz: 0 };
+  const readSpan = receiptAt - glideDownF - dollyTo;
+  const readFrom: Pose = { x: readPose.x - (readDrift.x * readSpan) / 2, y: readPose.y - (readDrift.y * readSpan) / 2, zoom: readZoom };
+  cam2.hermite(dollyTo, readFrom, readDrift);
+  cam2.glide(receiptAt - glideDownF, f60(30, fps), readDrift);
+  // the glide down the conversation to the receipt, landing a little after it lands, then drifting on through its
+  // hold (the receipt is legible on the way: its words count from its landing)
+  const receiptArrive = receiptAt - glideDownF + glideF;
+  const recDrift = { x: (down.x * holdPx * 60) / fps / receiptPose.zoom, y: (down.y * holdPx * 60) / fps / receiptPose.zoom, lz: lzHold * 0.25 };
+  const recHold = receiptReadEnd - receiptArrive;
+  const recFrom: Pose = { x: receiptPose.x - (recDrift.x * recHold) / 2, y: receiptPose.y - (recDrift.y * recHold) / 2, zoom: receiptPose.zoom / Math.exp((recDrift.lz * recHold) / 2) };
+  // two phases: straight down at the reading zoom until the receipt sits where it will be read (the sentences above
+  // it leave through the frame's top, never cut at its sides), then in to the receipt's own zoom and centre
+  const recScreenY = f.h / 2 + (receiptRead.y + receiptRead.h / 2 - recFrom.y) * recFrom.zoom;
+  const midPose: Pose = { x: readPose.x, y: receiptRead.y + receiptRead.h / 2 - (recScreenY - f.h / 2) / readZoom, zoom: readZoom };
+  const midAt = receiptAt - glideDownF + Math.round(glideF * 0.6);
+  const midV = { x: 0, y: ((midPose.y - cam2.pose(receiptAt - glideDownF).y) / (glideF * 0.6)) * 0.9, lz: 0 };
+  cam2.hermite(midAt, midPose, midV);
+  cam2.hermite(receiptArrive, recFrom, recDrift);
+  cam2.glide(receiptReadEnd, f60(30, fps), recDrift);
 
   /* ------------------------------------------------ the cut to the cascade, on a bar line ---------------------- */
   const leaveF = f60(18, fps);
   const cutP = place(Math.max(receiptReadEnd + leaveF + 1, al.cut ?? 0), g, { level: "bar" });
   const cut = cutP.point ?? cutP.at;
   music.push(musicHit("the cut to the cascade", cutP));
-  const use = solveInPoint(m, c.receipt.event, receiptAt, takeAt, cut, fps);
+  const use = solveInPoint(m, c.receipt.event, receiptAt, 0, cut, fps);
 
   // the ring: frames the ask, holds, returns to the stone on the receipt's beat
   const ring = ringWith(receiptAt);
@@ -323,69 +364,81 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   let cascadeSpec: CascadeSpec | undefined;
   const stageWorld: Rect = { x: placeRect.x + placeRect.w + 1400, y: placeRect.y + 120, w: 640, h: 520 };
   let inCam: VelocityCamera | null = null;
-  const stagePose = fitPose(stageWorld, L.stage(f), f, 0.96);
+  let leaveDir: Vec = { x: -1, y: 0 };
+  const stagePose = fitPose(stageWorld, L.stage(f), f, 0.97);
   if (c.cascade) {
-    const seam = momentumCut({ out: cam2, cutFrame: cut, dir: { x: -1, y: 0 }, dPx: 118 * f.unit, leaveFrames: leaveF, target: stagePose, inFrames: f60(50, fps), frameW: f.w, frameH: f.h, fps });
+    // the incoming camera glides on at the cut's speed into the stage's push (CR-04: E-arrive to rest, then a glide up
+    // from 0, was an arrive-and-hold of a second)
+    const stageDrift = { x: (holdPx * 0.6 * 60) / fps / stagePose.zoom, y: 0, lz: lzHold * 0.8 };
+    // (the glide lands its framing after five time constants: what is left of the cut's speed then is under 1 %)
+    const seam = momentumCut({ out: cam2, cutFrame: cut, dir: { x: -1, y: 0 }, dPx: 118 * f.unit, leaveFrames: leaveF, target: stagePose, inFrames: f60(100, fps), mode: "glide", tau: f60(20, fps), drift: stageDrift, frameW: f.w, frameH: f.h, fps });
     inCam = seam.inCam;
     // the fixed line, then the items, each swap landing 2–3 frames before a beat (local frames of the piece)
     const fixedBox = L.fixedBox(f);
     const fixedText = breakLines(c.cascade.fixed, "expressive", f, f.w - 2 * f.safe, 0.3);
-    const fixed: TypeSpec = { id: `${c.id}-fixed`, text: fixedText, tier: "expressive", at: cut + f60(6, fps), sizeT: 0.3, box: fixedBox, kind: "cascade", exit: "lift" };
+    const fixed: TypeSpec = { id: `${c.id}-fixed`, text: fixedText, tier: "expressive", at: cut + f60(6, fps), sizeT: 0.3, box: fixedBox, kind: "cascade", exit: "blur" };
     const items = c.cascade.items.map((it, i) => ({ text: it.text, holdS: it.holdS ?? (i === 0 ? 1.1 : 0.85) }));
     const beats = g ? pointsOf(g, "beat").filter((b) => b > cut) : undefined;
     const itemsStart = cut + f60(6, fps) + enterFramesOf("lineRise", fixedText, fps) + f60(6, fps);
     const sched = cascadeSchedule(itemsStart, items, fps, beats);
     const last = sched[sched.length - 1]!;
-    const endEarliest = last.outStart + f60(6, fps);
+    // the block ends on the bar line after the last item's hold and the leave: the camera's E-leave starts 19 frames
+    // before the end, the fixed line and the last item draw their exits from it, gone before the cut (CR-03)
+    const endEarliest = last.outStart + leaveF + 1;
     const endP = place(Math.max(endEarliest, al.end ?? 0), g, { level: "bar" });
     duration = endP.point ?? endEarliest;
     music.push(musicHit("the cascade ends (the next block)", endP));
-    for (const w of sched) music.push({ event: `swap "${w.text}" lands`, frame: w.inEnd, point: null, level: null, waited: 0 });
-    fixed.exitAt = duration - exitFramesOf("lineRise", "lift", fixedText, fps) - 2;
+    for (const w of cascadeSchedule(itemsStart, items, fps, beats)) music.push({ event: `swap "${w.text}" lands`, frame: w.inEnd, point: null, level: null, waited: 0 });
+    const leaveAt = duration - 1 - leaveF;
+    fixed.exitAt = leaveAt;
     const cards: PlaneSpec[] = c.cascade.items.map((it, i) => {
       // each card at a uniform scale that fits the stage (never stretched), centred on it
-      const k = Math.min(1, stageWorld.w / it.card.w, stageWorld.h / it.card.h);
+      const k = Math.min(stageWorld.w / it.card.w, stageWorld.h / it.card.h);
       const w = it.card.w * k;
       const h = it.card.h * k;
       return { id: `${c.id}-card${i}`, kind: "pebble", rect: { x: stageWorld.x + (stageWorld.w - w) / 2, y: stageWorld.y + (stageWorld.h - h) / 2, w, h }, content: { kind: "standIn", standIn: it.card }, shadow: true };
     });
-    cascadeSpec = { fixed, items, start: itemsStart, beats, itemBox: L.itemBox(f), cards, holdLast: true };
-    // the stage's slow push-in after the arrival: it drifts on through every hold (≥ 12 px a second at 1080)
-    inCam.glide(duration - cut, f60(30, fps), { x: (0.42 * f.unit * 60) / fps / stagePose.zoom, lz: 0.00022 });
+    cascadeSpec = { fixed, items, start: itemsStart, beats, itemBox: L.itemBox(f), cards, holdLast: false, endAt: leaveAt };
+    // the stage's slow push-in after the arrival drifts on through every hold, then leaves on an E-leave into the cut
+    inCam.glide(leaveAt - cut, f60(30, fps), stageDrift);
+    leaveDir = { x: -1, y: 0 };
+    const p0 = inCam.pose(leaveAt - cut);
+    inCam.ease(duration - cut - 1, { x: p0.x + (118 * f.unit) / p0.zoom, y: p0.y, zoom: p0.zoom * Math.exp(lzHold * 0.8 * leaveF) }, "E-leave");
     seams.push({ at: cut, kind: "momentum", frames: 0, out: `${c.id}-ring`, in: `${c.id}-cascade` });
   }
 
   /* ------------------------------------------------ planes of the ring shot ------------------------------------ */
+  const view = (id: string, v: string, rect: Rect, read?: PlaneSpec["read"]): PlaneSpec => ({ id: `${c.id}-${id}`, kind: "pebble", rect, content: { kind: "take", use, view: v }, shadow: id === "window", radius: id === "window" ? 10 : 4, read });
+  // the place first, then the context in front of it, in the composed world's own order (a continued world keeps its
+  // stacking: setpieces/drop.ts draws the same places in the same order)
   const planes: PlaneSpec[] = [
+    ...(c.window ? [view("window", c.window.view, c.window.rect)] : []),
+    // read until the glide down to the receipt carries them up out of the frame
+    // their words count from the dolly's start (legible on the way in); read until the glide down carries them out
+    view("ask", c.ask.view, c.ask.rect, { from: dollyTo, to: receiptAt - glideDownF, words: c.ask.words, textPx: c.ask.textPx, rect: askRead, seenFrom: dollyFrom, seenTo: receiptAt - glideDownF + glideF }),
+    view("act", c.act.view, c.act.rect, { from: Math.max(dollyTo, actAt), to: receiptAt - glideDownF, words: c.act.words, textPx: c.act.textPx, rect: c.act.readRect, seenFrom: Math.max(dollyFrom, actAt), seenTo: receiptAt - glideDownF + glideF }),
     ...(c.context ?? []),
-    { id: `${c.id}-ask`, kind: "pebble", rect: c.ask.rect, content: { kind: "standIn", standIn: c.ask.standIn }, read: { from: dollyTo, to: receiptAt, words: c.ask.words, textPx: c.ask.textPx, rect: askRead } },
-    {
-      id: `${c.id}-act`,
-      kind: "pebble",
-      rect: c.act.rect,
-      content: { kind: "take", use, view: c.act.view },
-      shadow: false,
-      radius: 0,
-      read: { from: Math.max(dollyTo, takeAt), to: receiptAt, words: c.act.words, textPx: c.act.textPx, rect: c.act.readRect },
-    },
   ];
 
   const cues = cueList(`${c.id} cues`, anchored(RING_START_CUES, 0, `${c.id} start`), anchored(RING_RECEIPT_CUES, receiptAt / fps, `${c.id} receipt`));
-  shots.push({
+  const ringShot = {
     id: `${c.id}-ring`,
     from: 0,
     to: c.cascade ? cut : duration,
-    kind: "ui",
+    kind: "ui" as const,
     camera: cam2,
-    ref: arrivePose,
-    ground: "riverbed",
+    ref,
+    ground: "riverbed" as const,
+    groundRect: o.entry?.groundRect,
     planes,
     // the receipt shows inside the act's view at its event; it is read here and never framed by a ring
-    reads: [{ id: `${c.id}-receipt`, rect: receiptRead, from: receiptArrive, to: receiptReadEnd, words: c.receipt.words, receipt: true, textPx: c.receipt.textPx }],
+    // the receipt is read from its landing until the camera leaves (its whole legible span: CR-05)
+    reads: [{ id: `${c.id}-receipt`, rect: receiptRead, from: receiptArrive, to: c.cascade ? cut - leaveF - 1 : duration, words: c.receipt.words, receipt: true, textPx: c.receipt.textPx, seenFrom: receiptAt }],
     stone: { at: c.stone, r: STONE_R, size: STONE_SIZE, cues },
     rings: [ring],
     dofScale: 14,
-  });
+  };
+  shots.push(ringShot);
   if (c.cascade && inCam && cascadeSpec) {
     shots.push({
       id: `${c.id}-cascade`,
@@ -403,6 +456,12 @@ export function planRingBlock(o: RingOptions): ScenePlan {
     });
   }
 
+  // the light: the day of the rings, from whatever the previous piece ended on (a continued world never steps)
+  const lightInitial = o.entry?.grade ?? "day";
+  const lightCues: LightCue[] = lightInitial === "day" ? [] : [{ at: 0, to: "day", frames: f60(90, fps) }];
+  const lastShot = shots[shots.length - 1]!;
+  const exitSample = lastShot.camera.sample(duration - lastShot.from);
+
   return {
     id: c.id,
     name: c.name,
@@ -413,24 +472,21 @@ export function planRingBlock(o: RingOptions): ScenePlan {
     shots,
     seams,
     types,
-    lightInitial: "day",
-    lightCues: [],
+    lightInitial,
+    lightCues,
     leaks: [],
     hits: [],
     takes: [use],
     music,
     moves: [
       move("ring", emitF, frameF, "the ring leads to the ask and frames it"),
-      move("push", dollyFrom, dollyTo - dollyFrom + f60(30, fps), "the dolly in to reading magnification"),
-      move("product", takeAt, cut - takeAt, `${m.id} at 1×`),
+      move("push", dollyFrom, dollyF + f60(30, fps), "the dolly in to reading magnification"),
+      move("product", 0, cut, `${m.id} at 1×`),
       move("ring", receiptAt, f60(42, fps), "the ring returns to the stone on the receipt's beat"),
-      ...(cascadeSpec ? cascadeSchedule(cascadeSpec.start, cascadeSpec.items, fps, cascadeSpec.beats).slice(1).map((w, i) => move("swap", w.inStart - f60(8, fps), f60(16, fps), `swap ${i + 1}`)) : []),
+      ...lightCues.map((x) => move("light", x.at, x.frames, "the light to day")),
+      ...(cascadeSpec ? cascadeSchedule(cascadeSpec.start, cascadeSpec.items, fps, cascadeSpec.beats).slice(1).map((w, i) => move("swap", w.inStart, w.inEnd - w.inStart, `swap ${i + 1}`)) : []),
     ],
-    exit: (() => {
-      const last = shots[shots.length - 1]!;
-      const s = last.camera.sample(duration - last.from);
-      return { pose: s.pose, vel: s.vel, shot: last.id, ref: last.ref };
-    })(),
+    exit: { pose: exitSample.pose, vel: exitSample.vel, shot: lastShot.id, ref: lastShot.ref, grade: "day" },
     extra: {
       timing: { arriveAt, chapterLand: specC.at + landFrames(specC, fps), limitLand: specL ? specL.at + landFrames(specL, fps) : specC.at + landFrames(specC, fps), linesExit: exitAt, linesGone, receiptAt, cut, end: duration } satisfies RingTiming,
       arriveAt,
@@ -438,13 +494,15 @@ export function planRingBlock(o: RingOptions): ScenePlan {
       dollyFrom,
       dollyTo,
       receiptAt,
-      takeAt,
+      actAt,
+      takeAt: 0,
       receiptArrive,
       receiptReadEnd,
       cut,
+      leaveDir,
       receiptFrame: frameOfSource(recSrc, use.at, fps, m, use.inPoint),
-      readZoom: readAskPose.zoom,
-      receiptZoom: readReceiptPose.zoom,
+      readZoom,
+      receiptZoom: receiptPose.zoom,
     },
   };
 }

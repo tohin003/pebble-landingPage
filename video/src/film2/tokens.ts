@@ -97,8 +97,9 @@ export const TRANSITION = {
     scale: [1.06, 1.15], // from 1.00, in log space
   },
   swap: {
-    outFrames: 8, // blur 0 → 8 px, opacity → 0
+    outFrames: 8, // blur 0 → 8 px, opacity → 0, over the same frames as the next item's in (they cross, CR-17)
     inFrames: 8, // blur 8 → 0 px
+    exitFrames: 12, // the cascade's last item leaves with a 12-frame blur exit before its shot cuts (CR-03)
     blurPx: 8,
     maxWords: 4,
     firstHoldS: 1.1,
@@ -114,7 +115,7 @@ export const TRANSITION = {
     maxFrames: 60, // "or longer" is allowed; this is the usual upper end
     maxLargeChangesPerSecond: 1,
   },
-  cardEntrance: { risePx: 24, blurPx: 8, frames: 24 }, // the entrance every ask card shares
+  cardEntrance: { risePx: 24, blurPx: 8, frames: 24, fadeFrames: 10 }, // the entrance every ask card shares (its opacity on E-move over 10)
 } as const;
 
 /** Which of the seven kinds a seam or a move is (TREATMENT §5.1). */
@@ -186,6 +187,7 @@ export const TYPE_MOTION = {
   wordBlur: { frames: 9, wordStagger: 4, blurPx: 6 }, // a per-word blur-in, no movement
   blurIn: { frames: 8, blurPx: 6 }, // the functional line's blur-in, opacity from 0
   exitRatio: 0.55, // exits are 40–50 % shorter than entrances
+  exitMinFrames: 10, // ... and never under 10 frames (CR-03: a 4-frame blur exit read as a pop on the reels)
 } as const;
 
 /** Text keeps 60 px from every edge (at 1080 px on the short side). */
