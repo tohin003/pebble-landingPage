@@ -465,6 +465,8 @@ export function returnContentOf(t: ReturnTrace, name = "the Return"): Finding[] 
       }
   }
   if (adjacent) e(`two card-type cells sit side by side: ${adjacent} (cards go to every other slot)`);
+  // the light-theme rule holds by declaration only until each crop's mean luminance is measured: say so, as for red
+  if (unmeasured) out.push({ check: "returnContent", level: "warn", message: `${name}: the light-theme rule is declared, not measured: ${unmeasured} of ${field.cells.length} crops have no mean relative luminance yet (0.70 or more; measure the 2.0.0 crops, through heavy.sh, before the schedule freezes)` });
   out.push({ check: "returnContent", level: "info", message: `${name}: ${field.cells.length} cells, ${field.cells.filter((c) => c.spec.card).length} card-type, ${reds.length} red (${reds.map((c) => `${c.id} R${c.enter ?? c.swapIn}→R${c.settle}`).join(", ")}), ${field.cells.filter((c) => c.spec.shown).length} the film shows; ${unmeasured} crops' luminance not measured yet (light-theme stand-ins)` });
   return out;
 }

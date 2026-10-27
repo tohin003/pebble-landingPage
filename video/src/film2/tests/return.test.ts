@@ -10,10 +10,12 @@ import { checkPlan } from "../setpieces/qa";
 import { planClimax } from "../setpieces/climax";
 import { STRETCH, demoGrid } from "../setpieces/demo/grids";
 import { halfBars } from "../setpieces/music";
+import { alignAspects, timelineDiffs } from "../setpieces/align";
+import type { FinaleTiming } from "../setpieces/finale";
 import { BLINK_S, blinkStartsFor, offsetForBlink } from "../setpieces/blink";
 import { RETURN_CELLS, RETURN_WAVES, manifestProblems, refuseBadManifest, type ReturnCellSpec } from "../setpieces/returnCells";
 import { RETURN_GEOMETRY, RETURN_TIMING, buildReturnField, cellPoseAt, hairlineAt, localOfR, slotOrder, type FieldCell, type ReturnFieldOptions } from "../setpieces/returnField";
-import { RETURN_BLINK_R, RETURN_EVENTS, blinkKeepClear, planReturn, returnCameraAt, returnCameraSpec, returnGrid, type ReturnCameraSpec, type ReturnOptions } from "../setpieces/returnPlan";
+import { RETURN_BLINK_R, RETURN_EVENTS, RETURN_FILM_S, RETURN_MUSIC, blinkKeepClear, filmFrameOfR, planReturn, returnCameraAt, returnCameraSpec, returnGrid, type ReturnCameraSpec, type ReturnOptions } from "../setpieces/returnPlan";
 import {
   R2_EXEMPT,
   RETURN_CHECKS,
@@ -213,8 +215,8 @@ describe("the Return, planned and joined to S24, passes every check in every asp
       if (r.errors.length) throw new Error(r.errors.map((e) => `[${e.check}] ${e.message}`).join("\n"));
       expect(r.errors).toEqual([]);
       for (const c of RETURN_CHECKS) expect(r.infos.some((x) => x.check === c)).toBe(true);
-      // only IRIS's warning level (the model's bloom in 16:9) and the unmeasured red shares warn
-      expect(r.warnings.every((w) => (w.check === "returnWindows" && /IRIS's warning level/.test(w.message)) || (w.check === "returnContent" && /not measured yet/.test(w.message)))).toBe(true);
+      // only IRIS's warning level (the model's bloom in 16:9), the unmeasured red shares and the unmeasured luminance warn
+      expect(r.warnings.every((w) => (w.check === "returnWindows" && /IRIS's warning level/.test(w.message)) || (w.check === "returnContent" && /not measured/.test(w.message)))).toBe(true);
     });
   }
   test("every music event lands on the point the design gives it (no event waited)", () => {
@@ -226,6 +228,20 @@ describe("the Return, planned and joined to S24, passes every check in every asp
     }
     expect(p.hits).toEqual([780]);
     expect(halfBars(returnGrid(FPS))).toContain(0);
+  });
+  test("one timeline in all three aspects (§2.11): planned through alignAspects, every cut, music event and end lands on one frame", () => {
+    const plans = alignAspects<FinaleTiming>((a, align) => planFor(a, { align }));
+    expect(timelineDiffs(plans)).toEqual([]);
+    for (const a of ASPECTS) expect(errs(checkPlan(plans[a], returnGrid(FPS)))).toEqual([]);
+    // the field's own frames do not depend on the aspect: its span, the landing, the blink and the stone's clock
+    expect(new Set(ASPECTS.map((a) => returnOf(plans[a])!).map((x) => `${x.span.from}-${x.span.to} ${x.landing.landAt} ${x.blink.at} ${x.blink.clockOffset}`)).size).toBe(1);
+  });
+  test("its place in the film is MONTAGE_DESIGN §5.2's: the piece from 1:45.03, R0 1:46.03, J5 1:54.03, the title 1:58.03", () => {
+    expect(RETURN_FILM_S.r0 - RETURN_FILM_S.start).toBeCloseTo(1, 9);
+    expect(RETURN_FILM_S.j5 - RETURN_FILM_S.r0).toBeCloseTo(RETURN_MUSIC.j5R / 60, 9);
+    expect(RETURN_FILM_S.title - RETURN_FILM_S.r0).toBeCloseTo(RETURN_MUSIC.titleR / 60, 9);
+    expect([-60, 0, 480, 720].map((r) => filmFrameOfR(r, 60))).toEqual([6302, 6362, 6842, 7082]);
+    expect(filmFrameOfR(720, 30)).toBe(Math.round(RETURN_FILM_S.title * 30));
   });
   test("one stone: the clock offset 710 and the film layer on the field's stone and the title's, landing on it through the iris", () => {
     for (const a of ASPECTS) {
@@ -342,6 +358,13 @@ describe("returnContent: its canaries fail", () => {
   test("two cards side by side", () => {
     const f = errs(returnContentOf(modelTrace("16:9", { waves: swapCell("inner", "A6", { card: true }) })));
     expect(f.some((e) => /two card-type cells sit side by side: G3 and A6|A6 and G3/.test(e.message))).toBe(true);
+  });
+  test("the light-theme rule warns while it is declared, not measured; measured light crops clear the warning", () => {
+    const warned = (fo: ReturnFieldOptions) => returnContentOf(modelTrace("16:9", fo)).filter((x) => x.level === "warn" && /light-theme rule is declared, not measured/.test(x.message));
+    expect(warned({}).map((x) => /(\d+) of 85 crops/.exec(x.message)?.[1])).toEqual(["84"]);
+    const lit = Object.fromEntries(Object.entries(RETURN_WAVES).map(([k, v]) => [k, v.map((c) => ({ ...c, meanLum: 0.86 }))])) as unknown as typeof RETURN_WAVES;
+    expect(warned({ waves: lit })).toEqual([]);
+    expect(errs(returnContentOf(modelTrace("16:9", { waves: lit })))).toEqual([]);
   });
 });
 

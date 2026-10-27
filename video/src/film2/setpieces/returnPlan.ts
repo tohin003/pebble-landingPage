@@ -50,6 +50,17 @@ export const RETURN_MUSIC = {
   titleR: 720,
 } as const;
 
+/**
+ * Where the Return sits in the main film, seconds of film time: MONTAGE_DESIGN §5.2 (the recommended fit, the cue sheet's
+ * 22:13 timings shifted): the piece from 1:45.03 (R−60), R0 at 1:46.03, J5 at 1:54.03, the title at 1:58.03. The timing
+ * source until the score lane's CUE_SHEET.md carries a dated revision for the Return. At 60 fps these put R0 on film frame
+ * 6362 and the title on 7082, the frames the score lane's draft plan of 27 Oct uses (not yet its cue sheet).
+ */
+export const RETURN_FILM_S = { start: 105.03, r0: 106.03, j5: 114.03, title: 118.03 } as const;
+
+/** The film frame of an R-frame at `fps` (the piece's local frame 0 is R−60, on RETURN_FILM_S.start). */
+export const filmFrameOfR = (r: number, fps: number): number => Math.round(RETURN_FILM_S.start * fps) + localOfR(r, fps);
+
 /** The R-frames the plan places on the music, with their level (MONTAGE_DESIGN §2.3, §2.10). */
 export const RETURN_EVENTS: readonly { r: number; level: MusicalLevel; event: string }[] = [
   { r: -60, level: "half", event: "the pull-back starts from S24's last frame (B2 1:35.53)" },
