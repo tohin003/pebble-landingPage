@@ -6,6 +6,8 @@
 import { AbsoluteFill, Sequence } from "remotion";
 import type { Aspect } from "../../tokens";
 import { PieceView } from "../views/PieceView";
+import { CodaView } from "../views/CodaView";
+import { codaOf } from "../coda";
 import { demoPlans, type DemoEntry } from "./plans";
 
 export const DEMO_SIZE: Record<Aspect, { w: number; h: number }> = { "16:9": { w: 1920, h: 1080 }, "1:1": { w: 1080, h: 1080 }, "9:16": { w: 1080, h: 1920 } };
@@ -22,7 +24,7 @@ export const SetPiecesDemo: React.FC<{ aspect: Aspect; only?: string }> = ({ asp
         at += e.plan.duration;
         return (
           <Sequence key={e.plan.id} from={from} durationInFrames={e.plan.duration} name={e.plan.name}>
-            <PieceView plan={e.plan} />
+            {codaOf(e.plan) ? <CodaView plan={e.plan} /> : <PieceView plan={e.plan} />}
           </Sequence>
         );
       })}

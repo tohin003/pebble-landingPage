@@ -572,6 +572,12 @@ const NEVER = [
   /\bunique\b/i,
   /\bcontext warping\b/i,
   /\bnever takes focus\b/i,
+  // the coming feature (D157, OVERRIDES §62): never its four phrases, anywhere in the film (the site's copy lint bans the same)
+  /\brewr[io]t\w*\b.{0,20}\bmemor/i,
+  /\bnever forget/i,
+  /\blearn\w*\s+everything/i,
+  /\bsmarter\b/i,
+  /\bevery night\b/i,
 ];
 
 export function copy(t: FilmTimelineQa): Finding[] {

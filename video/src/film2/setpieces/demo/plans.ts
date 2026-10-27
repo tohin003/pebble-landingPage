@@ -14,6 +14,7 @@ import { planWall } from "../wall";
 import { planDusk } from "../dusk";
 import { planClimax } from "../climax";
 import { planFinale, type FinaleTiming } from "../finale";
+import { CODA_GRID, CODA_STRETCH, planCoda, type CodaTiming } from "../coda";
 import { ASPECTS, alignAspects } from "../align";
 import { cutVelocity, shareGround, type JoinKind } from "../joins";
 import { STRETCH, demoGrid, type DemoStretch } from "./grids";
@@ -31,8 +32,8 @@ const cache = new Map<Aspect, DemoEntry[]>();
 /** The credit line a CC BY cue needs (TREATMENT §3.11 L30; OVERRIDES §51): it goes with the film (FILM_CREDITS). */
 export const ccByCredit = (title: string) => `"${title}" by Scott Buckley (edited) – CC BY 4.0 – www.scottbuckley.com.au`;
 
-/** How each piece after the first starts (setpieces/joins.ts checkJoins holds the reel to it). */
-export const DEMO_JOINS: readonly JoinKind[] = ["continue", "cut", "cut", "cut", "continue"];
+/** How each piece after the first starts (setpieces/joins.ts checkJoins holds the reel to it); the coda continues the end card's page. */
+export const DEMO_JOINS: readonly JoinKind[] = ["continue", "cut", "cut", "cut", "continue", "continue"];
 
 /** Every piece in every aspect, each piece on one timeline across the aspects (setpieces/align.ts). */
 function buildAll(): Map<Aspect, DemoEntry[]> {
@@ -76,6 +77,10 @@ function buildAll(): Map<Aspect, DemoEntry[]> {
     });
     for (const a of ASPECTS) shareGround(walls[a], finales[a]);
     add(finales, grid, STRETCH.finale);
+    // the post-credit scene (D157, OVERRIDES §62): from the end card's true ending, the main film only; the X version is
+    // the master cut at its first frame (setpieces/coda.ts codaPlacement)
+    const codas = alignAspects<CodaTiming>((a, align) => planCoda({ ...SIZE[a], fps: FPS, endCard: finales[a], align }));
+    add(codas, CODA_GRID, CODA_STRETCH);
   }
   return out;
 }

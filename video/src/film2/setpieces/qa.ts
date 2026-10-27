@@ -26,6 +26,8 @@
 // Added for the Return (OVERRIDES §61 R2; setpieces/returnChecks.ts, each with a canary in tests/return.test.ts):
 //   returnSchedule, returnWindows, returnContent, returnMerge, returnRadius, cellText, blinkPlaced, joinPose; and the
 //   Return's span exempt from cutRate, holds and readingLoad there only (exemptReturnSpan)
+// Added for the post-credit scene (D157, OVERRIDES §62; setpieces/codaChecks.ts, each with a canary in tests/coda.test.ts):
+//   codaWords, codaHolds, codaStone, codaCamera, codaPose, codaNoUi, codaLockup, codaFlashes, codaSound, codaCaptions
 // Pure; no React. setpieces/tests run checkPlan() on every piece, every aspect and many music grids.
 import { CAMERA, COLOR } from "../tokens";
 import { checkAll, type Finding, type QaMove, type Report } from "../qa/checks";
@@ -51,6 +53,7 @@ import { contentMotion, planeOpacityAt, probeGrid } from "./motion-qa";
 import { drawnSlots, labelOpacityOn, labelRectOn, visibleFrameOn, type DrawnSlot } from "./labels";
 import { apertureRect } from "../carrier/apertureMath";
 import { exemptReturnSpan, returnChecks } from "./returnChecks";
+import { codaChecks } from "./codaChecks";
 
 const at = (p: ScenePlan, s: ShotSpec, fr: number) => s.camera.pose(fr - s.from);
 
@@ -1543,6 +1546,9 @@ export function checkPlan(p: ScenePlan, grid?: MusicGrid, extraMoves: readonly Q
     // the Return (OVERRIDES §61 R2: returnSchedule, returnWindows, returnContent, returnMerge, returnRadius, cellText,
     // blinkPlaced, joinPose; setpieces/returnChecks.ts)
     ...returnChecks(p),
+    // the post-credit scene (D157, OVERRIDES §62; setpieces/codaChecks.ts, each with a canary in tests/coda.test.ts):
+    // its words, holds, one stone, camera, pose, no mock screen, lockup, flashes, sound and captions
+    ...codaChecks(p),
   ];
   const errors = [...r.errors, ...more.filter((x) => x.level === "error")];
   return {
