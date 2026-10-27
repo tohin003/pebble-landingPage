@@ -1,6 +1,6 @@
 // Helpers every set-piece plan shares: type events for the reading checks, anchored cues, ring geometry against the
 // frame, and the music report. Pure; no React.
-import { worldToFrame, type Pose } from "../motion/camera";
+import { worldToFrame, type Pose, type VelocityCamera } from "../motion/camera";
 import { annulusHitsRect, radiusToCorners, type Point, type Rect } from "../motion/geometry";
 import { ringStates, type RingSpec } from "../carrier/ring";
 import { checkCues, type PebbleCue } from "../../../../shared/pebble/cues";
@@ -95,12 +95,15 @@ export const carryTransform = (plan: ScenePlan, t: TypeSpec, frame: number): { k
   if (!t.carry) return null;
   const shot = plan.shots.find((x) => x.id === t.carry!.shot);
   if (!shot) return null;
-  const P0 = shot.camera.pose(t.carry.at - shot.from);
-  const P = shot.camera.pose(frame - shot.from);
+  return carryWith(shot.camera, shot.from, t.carry.at, frame, plan.frame.w, plan.frame.h);
+};
+
+/** The same transform from a camera directly (a plan laying out a carried line before the plan exists). */
+export const carryWith = (camera: VelocityCamera, shotFrom: number, at: number, frame: number, w: number, h: number): { k: number; tx: number; ty: number } => {
+  const P0 = camera.pose(at - shotFrom);
+  const P = camera.pose(frame - shotFrom);
   const k = P.zoom / P0.zoom;
-  const cx = plan.frame.w / 2;
-  const cy = plan.frame.h / 2;
-  return { k, tx: cx * (1 - k) + (P0.x - P.x) * P.zoom, ty: cy * (1 - k) + (P0.y - P.y) * P.zoom };
+  return { k, tx: (w / 2) * (1 - k) + (P0.x - P.x) * P.zoom, ty: (h / 2) * (1 - k) + (P0.y - P.y) * P.zoom };
 };
 
 /** Where a carried line's rect is on a frame (frame px), or the rect itself for a line in a fixed band. */

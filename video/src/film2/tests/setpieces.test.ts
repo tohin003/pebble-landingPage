@@ -128,7 +128,8 @@ describe("takes at 1×", () => {
     }
   });
   test("a take is never sped up to fit: an event too early in it cannot land late", () => {
-    expect(() => solveInPoint(TAKE_HSF, "verified", 600, 0, 700, 60)).toThrow(/start the take later/);
+    // "running" is 15 s into HS-F: it cannot land 16.7 s after the take starts showing without a speed-up
+    expect(() => solveInPoint(TAKE_HSF, "running", 1000, 0, 1100, 60)).toThrow(/start the take later/);
   });
   test("a take never runs past its last frame", () => {
     expect(() => solveInPoint(TAKE_RSW, "cardLands", 100, 0, 100000, 60)).toThrow(/ends/);
@@ -141,7 +142,7 @@ describe("takes at 1×", () => {
     expect(() => takeFramePath(TAKE_RSW, 0)).toThrow(/placeholder/);
   });
   test("the check catches a hand-made use that runs past the take", () => {
-    expect(checkTakeUse({ manifest: TAKE_HSF, at: 0, inPoint: 1100, until: 400 }, 60).join()).toContain("past its last frame");
+    expect(checkTakeUse({ manifest: TAKE_HSF, at: 0, inPoint: TAKE_HSF.frames - 300, until: 400 }, 60).join()).toContain("past its last frame");
     expect(frameOfSource(278, 0, 60, TAKE_HSF, 0)).toBe(278);
   });
 });
@@ -296,7 +297,7 @@ describe("the climax shell", () => {
       for (const [w, h] of SIZES) {
         const p = planClimax({ w, h, fps: FPS, grid, peak });
         expectClean(p, grid);
-        const u = p.takes[0]!;
+        const u = p.takes.find((x) => x.manifest.id === "RS-W")!;
         expect(eventFrame(u, "cardLands", FPS)).toBe(peak);
         const x = p.extra as Record<string, number>;
         // the take begins 0.75–1.25 s before the card lands (§3.6 chain 11: about 1.0 s)

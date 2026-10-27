@@ -9,8 +9,7 @@
 //              through the iris; the iris (E-move, 30 frames: lead ruling §52) opens the sage-white page from the stone;
 //              the stone at rest beside "Pebble" (Fraunces) and "2.0" (Geist Mono), never inside the wordmark; the
 //              wordmark lands ON the final strong downbeat (`hit`); the one sage sweep crosses it 1 frame later (L3a:
-//              ≤ 15 % L*, inside the glyphs); the README's line rises beneath. The title holds still by design once
-//              the page is open (TREATMENT S26–S28: "the type stays still"; a declared wait), the page breathing
+//              ≤ 15 % L*, inside the glyphs); the README's line rises beneath
 //   the end    page 1 keeps the line; the facts rise beneath it at one size, each its own span with a margin, each
 //              limit beside its promise (CR-20: one string with three spaces collapsed to "Apache-2.0 No telemetry."),
 //              landing with the track's last strong note; page 2 is "Shown with sample data." and the method line (L4),
@@ -18,6 +17,11 @@
 //              the honest line among them, sat on screen for 6 s): the honest line is held 12 s in the Dusk passage,
 //              where Stealth shows, and the credits (the music's CC BY line, bloub's, the trademark lines, the limits)
 //              go into the description, the captions and the site's credits page (`FILM_CREDITS`)
+//   the glide  the title and both end-card pages glide (OVERRIDES §58: nothing in the film arrives and holds): the page
+//              is one rigid world, the stone and every line set in it (TypeSpec.carry), pushing in about the frame's
+//              centre at 0.3 px a frame at its corners (the floor is 0.25). Each page's lines are exact at the middle
+//              of their page (`anchors`), so they sit within a few per cent of their layout while they are read. Only
+//              the film's last breath, the room tone after the music's decay, settles to a still (a declared wait)
 //   The track's real ending decays across page 2; the piece ends 0.5–1 s of room tone after the decay (never a fade).
 // It works for any title downbeat: the convergence and the iris are placed back from `hit`.
 // Pure data.
@@ -139,6 +143,9 @@ const LAYOUT: Record<FrameBox["aspect"], FinaleLayout> = {
 /** The margin between two facts on one row, in ems of their size (approximate advance widths err by about 10 %). */
 export const FACT_GAP_EM = 1.25;
 
+/** The page's glide: px a frame at 1080 at the frame's corners (OVERRIDES §58: at least the 0.25 floor, 0.3–0.6 preferred). */
+export const PAGE_GLIDE_PX = 0.3;
+
 /** The plan of the convergence, the title and the end card. */
 export function planFinale(o: FinaleOptions): ScenePlan {
   const f = frameBox(o.w, o.h);
@@ -150,9 +157,9 @@ export function planFinale(o: FinaleOptions): ScenePlan {
   const types: TypeSpec[] = [];
   const unit = f.unit;
   const lzHold = glideLz(f);
+  const al = o.align ?? {};
 
-  /* ------------------------------------------------ the convergence --------------------------------------------- */
-  const centre = o.centre ?? { x: 0, y: 0 };
+  /* ------------------------------------------------ the timeline, back from the title's downbeat ---------------- */
   const markRise = enterFramesOf("lineRise", FINALE_TEXT.wordmark, fps);
   const irisF = f60(30, fps);
   const irisEnd = hit - markRise - 2; // the page is open 2 frames before the wordmark starts to rise
@@ -162,33 +169,118 @@ export function planFinale(o: FinaleOptions): ScenePlan {
   const convergeFrames = Math.min(f60(150, fps), Math.max(f60(90, fps), convergeEnd - f60(10, fps)));
   const convergeAt = convergeEnd - convergeFrames;
   if (convergeAt < 0) throw new Error(`the finale needs ${-convergeAt} more frames before the title's downbeat (hit ${hit})`);
+
+  /* ------------------------------------------------ the title (layout at its page's anchor) -------------------- */
+  const stonePx = L.stonePx * unit;
+  const stoneAt = L.stone(f);
+  const markPos = L.mark(f, stoneAt, stonePx * 0.3);
+  const markSize = typeSizePx("expressive", f.w, f.h, 1);
+  const markW = FINALE_TEXT.wordmark.length * 0.48 * markSize;
+  const markBox: TypeBox = { left: markPos.left, top: markPos.top, align: "left" };
+  const page1: TypeSpec[] = [];
+  page1.push({ id: "L26", text: FINALE_TEXT.wordmark, tier: "expressive", at: hit - markRise, sizeT: 1, box: markBox, kind: "title", key: true, sweep: { at: hit + 1, frames: f60(44, fps) } });
+  const verSize = typeSizePx("data", f.w, f.h, 1);
+  page1.push({ id: "L26v", text: FINALE_TEXT.version, tier: "data", at: hit - markRise + f60(8, fps), sizeT: 1, box: { left: markPos.left + markW + 18 * unit, top: markPos.top + (markSize - verSize) * 0.78, align: "left" }, kind: "title" });
+  const lineText = breakLines(FINALE_TEXT.line, "expressive", f, L.lineMaxW(f), 0);
+  const lineBox: TypeBox = { left: 0, top: L.lineTop(f), width: f.w, align: "center" };
+  const lineAt = hit + f60(30, fps);
+  const lineH = lineText.split("\n").length * typeSizePx("expressive", f.w, f.h, 0) * lineHeightOf("expressive");
+
+  /* ------------------------------------------------ the end card, page 1: the facts land with the last note ---- */
+  const lastNote = o.lastNote ?? hit + sec(4.0, fps);
+  const factsTop = L.factsTop(f, lineBox.top + lineH);
+  const fT = 0.2;
+  const fSize = typeSizePx("functional", f.w, f.h, fT);
+  const fLine = fSize * lineHeightOf("functional");
+  // every fact of L28 is on the card, once
+  const said = L.facts.flat();
+  if (FINALE_TEXT.facts.flat().some((x) => !said.includes(x)) || said.length !== FINALE_TEXT.facts.flat().length) throw new Error(`the ${A} end card does not carry every fact of L28 once`);
+  const riseF = enterFramesOf("lineRise", "x", fps);
+  const landFacts = place(Math.max(lastNote, lineAt + sec(1.2, fps), al.factsLand ?? 0), o.grid, { level: "beat" });
+  const factsLand = landFacts.point ?? landFacts.at;
+  music.push(musicHit("the facts land with the last strong note", landFacts));
+  const factsHoldEnd = factsLand + sec(5.7, fps);
+  // each fact its own span, a row centred with FACT_GAP_EM between its facts (CR-20); the rows rise 8 frames apart
+  const gapPx = FACT_GAP_EM * fSize;
+  const factRows = [...L.facts.map((r) => [...r]), [FINALE_TEXT.url]];
+  const factGaps: { id: string; left: string; right: string; rect: { x: number; y: number; w: number; h: number } }[] = [];
+  factRows.forEach((row, i) => {
+    const widths = row.map((t) => approxLineWidth(t, "functional", f.w, f.h, fT));
+    const total = widths.reduce((a, b) => a + b, 0) + gapPx * (row.length - 1);
+    let x = (f.w - total) / 2;
+    const top = factsTop + i * fLine;
+    row.forEach((text, j) => {
+      const id = i === factRows.length - 1 ? "L28-url" : `L28-${i}-${j}`;
+      page1.push({ id, text, tier: "functional", entrance: "lineRise", exit: "lift", at: factsLand - riseF + i * f60(8, fps) + j * f60(3, fps), exitAt: factsHoldEnd, sizeT: fT, box: { left: x, top, align: "left" }, kind: "end" });
+      if (j > 0) factGaps.push({ id: `${id}-gap`, left: `L28-${i}-${j - 1}`, right: id, rect: { x: x - gapPx * 0.75, y: top + fLine * 0.15, w: gapPx * 0.5, h: fLine * 0.7 } });
+      x += widths[j]! + gapPx;
+    });
+  });
+  // the title and the line leave with page 1
+  for (const t of page1) if (t.exitAt === undefined) {
+    t.exitAt = factsHoldEnd;
+    t.exit = "lift";
+  }
+  page1.push({ id: "L27", text: lineText, tier: "expressive", at: lineAt, sizeT: 0, box: lineBox, kind: "film", key: true, exitAt: factsHoldEnd, exit: "lift" });
+
+  /* ------------------------------------------------ page 2: the sample line and the method line ---------------- */
+  // page 2 starts once every line of page 1 has lifted out (an allowance that covers every aspect's line breaks)
+  const lifted = Math.max(...page1.map((t) => exitFramesOf(t.entrance ?? "lineRise", "lift", t.text, fps)));
+  const page2 = Math.max(factsHoldEnd + Math.max(lifted, f60(30, fps)) + f60(6, fps), al.page2 ?? 0);
+  const sSize = typeSizePx("functional", f.w, f.h, 0);
+  const page2Types: TypeSpec[] = [];
+  const sampleBox: TypeBox = { left: 0, top: f.h * (A === "9:16" ? 0.4 : 0.36), width: f.w, align: "center" };
+  page2Types.push({ id: "L29a", text: FINALE_TEXT.sample, tier: "functional", at: page2, sizeT: 0, box: sampleBox, kind: "end" });
+  // one line where it fits; else broken at its sentence first ("… composed in one space." / "Nothing Pebble does is sped up.")
+  const methodOne = breakLines(FINALE_TEXT.method, "functional", f, f.w - 4 * f.safe, 0);
+  const method = methodOne.includes("\n") ? breakLines(FINALE_TEXT.method.replace(". ", ".\n"), "functional", f, f.w - 4 * f.safe, 0) : methodOne;
+  const methodBox: TypeBox = { left: 0, top: sampleBox.top + sSize * lineHeightOf("functional") * 1.6, width: f.w, align: "center" };
+  page2Types.push({ id: "L29b", text: method, tier: "functional", at: page2 + f60(10, fps), sizeT: 0, box: methodBox, kind: "end" });
+  // page 2 holds for its reading time (18 words: 5.9 s) and past the ending's decay and the room tone
+  const page2Words = [FINALE_TEXT.sample, FINALE_TEXT.method].join(" ").split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+  const page2Hold = sec(0.5 + 0.3 * page2Words, fps) + f60(10, fps) + enterFramesOf("lineBlur", "x", fps) + 2;
+  const decayEnd = lastNote + sec(o.decayS ?? 6.6, fps);
+  const roomToneF = sec(o.roomToneS ?? 0.75, fps);
+  const end = Math.max(page2 + page2Hold, decayEnd + roomToneF, al.end ?? 0);
+  // the film's last breath: the room tone at its very end, after the music's decay (the one still the film may hold;
+  // page 2 is still on screen through it)
+  const breathFrom = end - roomToneF;
+
+  /* ------------------------------------------------ the page's glide (OVERRIDES §58) --------------------------- */
+  // one rigid page: world units are frame px on the page's anchor frame (page 1's middle), and the camera pushes in
+  // about the frame's centre at PAGE_GLIDE_PX at the corners from the iris to the last breath, which settles to rest
+  const lzPage = glideLz(f, PAGE_GLIDE_PX);
+  const anchor1 = Math.round((hit + factsHoldEnd) / 2);
+  const anchor2 = Math.round((page2 + breathFrom) / 2);
+  const pageRef: Pose = { x: f.w / 2, y: f.h / 2, zoom: 1 };
+  const camT = new VelocityCamera({ ...pageRef, zoom: Math.exp(-lzPage * (anchor1 - irisAt)) }, { lz: lzPage });
+  camT.glide(breathFrom - irisAt, 1e9, { lz: lzPage });
+  camT.glide(end - irisAt, f60(12, fps), { lz: 0 });
+  // every line of the page is set in it: page 1's exact on its anchor, page 2's on its own (CR-03's "leaves the way it
+  // came" holds: each still lifts or blurs out through its own exit)
+  for (const t of page1) t.carry = { shot: "title", at: anchor1 };
+  for (const t of page2Types) t.carry = { shot: "title", at: anchor2 };
+  types.push(...page1, ...page2Types);
+
+  /* ------------------------------------------------ the convergence --------------------------------------------- */
+  const centre = o.centre ?? { x: 0, y: 0 };
   const cells = wallCells();
   const wall: WallSpec = { centre, cells, radii: WALL_GEOMETRY.radii, orbit: WALL_GEOMETRY.orbit, depth: WALL_GEOMETRY.depth, converge: { at: convergeAt, frames: convergeFrames, turnDeg: 50 }, t0: o.wallElapsed ?? 0 };
   const { far } = wallFramings(f, centre);
-
-  // the page: world units are frame px under a near-identity camera that breathes in (the type stays still on it)
-  const pageRef: Pose = { x: f.w / 2, y: f.h / 2, zoom: 1 };
-  const titleV0 = 0.00012;
-  const titleVd = 0.00006;
-  const titleTau = f60(60, fps);
-  const camT = new VelocityCamera(pageRef, { lz: titleV0 });
-
   // the camera keeps the wall's drift until the cells turn inward, pushes in with them, and lands the world's stone
   // exactly where, as large as and moving as the title's stone is on `landAt` (a match through the iris): the title's
   // camera is a pure zoom about the frame's centre, so the convergence's holds its x, y and moves its log zoom alike
-  const stoneTarget = L.stone(f);
   const tPose = camT.pose(landAt - irisAt);
-  const titleStone = worldToFrame(stoneTarget, tPose, f.w, f.h);
+  const titleStone = worldToFrame(stoneAt, tPose, f.w, f.h);
   const zLand = ((L.stonePx * unit) / 148) * tPose.zoom;
   const pushTo: Pose = { x: centre.x - (titleStone.x - f.w / 2) / zLand, y: centre.y - (titleStone.y - f.h / 2) / zLand, zoom: zLand };
   const wallDrift: CamVel = o.entry?.vel ?? { x: 0, y: 0, lz: -lzHold };
   const camC = new VelocityCamera(o.entry?.pose ?? far, wallDrift);
   camC.glide(convergeAt, f60(40, fps), wallDrift);
   camC.hermite(convergeAt + Math.round(convergeFrames * 0.2), { ...far, zoom: far.zoom * 1.04, x: centre.x, y: centre.y }, { lz: 0.0036 });
-  camC.hermite(landAt, pushTo, { x: 0, y: 0, lz: titleV0 });
-  // then exactly the title's own breath, through the iris (the two cameras then show one stone on every frame)
-  camC.glide(irisAt, 1e9, { lz: titleV0 });
-  camC.glide(irisAt + irisF + f60(30, fps), titleTau, { lz: titleVd });
+  camC.hermite(landAt, pushTo, { x: 0, y: 0, lz: lzPage });
+  // then exactly the title's own glide, through the iris (the two cameras then show one stone on every frame)
+  camC.glide(irisAt, 1e9, { lz: lzPage });
   const ring: RingSpec = {
     id: "converge",
     start: convergeAt,
@@ -206,79 +298,9 @@ export function planFinale(o: FinaleOptions): ScenePlan {
     layer: "ground",
   };
 
-  /* ------------------------------------------------ the title -------------------------------------------------- */
-  const stonePx = L.stonePx * unit;
-  const stoneAt = L.stone(f);
-  const markPos = L.mark(f, stoneAt, stonePx * 0.3);
-  const markSize = typeSizePx("expressive", f.w, f.h, 1);
-  const markW = FINALE_TEXT.wordmark.length * 0.48 * markSize;
-  const markBox: TypeBox = { left: markPos.left, top: markPos.top, align: "left" };
-  types.push({ id: "L26", text: FINALE_TEXT.wordmark, tier: "expressive", at: hit - markRise, sizeT: 1, box: markBox, kind: "title", key: true, sweep: { at: hit + 1, frames: f60(44, fps) } });
-  const verSize = typeSizePx("data", f.w, f.h, 1);
-  types.push({ id: "L26v", text: FINALE_TEXT.version, tier: "data", at: hit - markRise + f60(8, fps), sizeT: 1, box: { left: markPos.left + markW + 18 * unit, top: markPos.top + (markSize - verSize) * 0.78, align: "left" }, kind: "title" });
-  const lineText = breakLines(FINALE_TEXT.line, "expressive", f, L.lineMaxW(f), 0);
-  const lineBox: TypeBox = { left: 0, top: L.lineTop(f), width: f.w, align: "center" };
-  const lineAt = hit + f60(30, fps);
-  const lineH = lineText.split("\n").length * typeSizePx("expressive", f.w, f.h, 0) * lineHeightOf("expressive");
-
-  /* ------------------------------------------------ the end card, page 1: the facts land with the last note ---- */
-  const lastNote = o.lastNote ?? hit + sec(4.0, fps);
-  const factsTop = L.factsTop(f, lineBox.top + lineH);
-  const fT = 0.2;
-  const fSize = typeSizePx("functional", f.w, f.h, fT);
-  const fLine = fSize * lineHeightOf("functional");
-  // every fact of L28 is on the card, once
-  const said = L.facts.flat();
-  if (FINALE_TEXT.facts.flat().some((x) => !said.includes(x)) || said.length !== FINALE_TEXT.facts.flat().length) throw new Error(`the ${A} end card does not carry every fact of L28 once`);
-  const riseF = enterFramesOf("lineRise", "x", fps);
-  const al = o.align ?? {};
-  const landFacts = place(Math.max(lastNote, lineAt + sec(1.2, fps), al.factsLand ?? 0), o.grid, { level: "beat" });
-  const factsLand = landFacts.point ?? landFacts.at;
-  music.push(musicHit("the facts land with the last strong note", landFacts));
-  const factsHoldEnd = factsLand + sec(5.7, fps);
-  // each fact its own span, a row centred with FACT_GAP_EM between its facts (CR-20); the rows rise 8 frames apart
-  const gapPx = FACT_GAP_EM * fSize;
-  const factRows = [...L.facts.map((r) => [...r]), [FINALE_TEXT.url]];
-  const factGaps: { id: string; left: string; right: string; rect: { x: number; y: number; w: number; h: number } }[] = [];
-  factRows.forEach((row, i) => {
-    const widths = row.map((t) => approxLineWidth(t, "functional", f.w, f.h, fT));
-    const total = widths.reduce((a, b) => a + b, 0) + gapPx * (row.length - 1);
-    let x = (f.w - total) / 2;
-    const top = factsTop + i * fLine;
-    row.forEach((text, j) => {
-      const id = i === factRows.length - 1 ? "L28-url" : `L28-${i}-${j}`;
-      types.push({ id, text, tier: "functional", entrance: "lineRise", exit: "lift", at: factsLand - riseF + i * f60(8, fps) + j * f60(3, fps), exitAt: factsHoldEnd, sizeT: fT, box: { left: x, top, align: "left" }, kind: "end" });
-      if (j > 0) factGaps.push({ id: `${id}-gap`, left: `L28-${i}-${j - 1}`, right: id, rect: { x: x - gapPx * 0.75, y: top + fLine * 0.15, w: gapPx * 0.5, h: fLine * 0.7 } });
-      x += widths[j]! + gapPx;
-    });
-  });
-  // the title and the line leave with page 1
-  for (const t of types) if (t.exitAt === undefined) {
-    t.exitAt = factsHoldEnd;
-    t.exit = "lift";
-  }
-  types.push({ id: "L27", text: lineText, tier: "expressive", at: lineAt, sizeT: 0, box: lineBox, kind: "film", key: true, exitAt: factsHoldEnd, exit: "lift" });
-
-  /* ------------------------------------------------ page 2: the sample line and the method line ---------------- */
-  // page 2 starts once every line of page 1 has lifted out (an allowance that covers every aspect's line breaks)
-  const lifted = Math.max(...types.map((t) => exitFramesOf(t.entrance ?? "lineRise", "lift", t.text, fps)));
-  const page2 = Math.max(factsHoldEnd + Math.max(lifted, f60(30, fps)) + f60(6, fps), al.page2 ?? 0);
-  const sSize = typeSizePx("functional", f.w, f.h, 0);
-  const sampleBox: TypeBox = { left: 0, top: f.h * (A === "9:16" ? 0.4 : 0.36), width: f.w, align: "center" };
-  types.push({ id: "L29a", text: FINALE_TEXT.sample, tier: "functional", at: page2, sizeT: 0, box: sampleBox, kind: "end" });
-  const method = breakLines(FINALE_TEXT.method, "functional", f, f.w - 4 * f.safe, 0);
-  const methodBox: TypeBox = { left: 0, top: sampleBox.top + sSize * lineHeightOf("functional") * 1.6, width: f.w, align: "center" };
-  types.push({ id: "L29b", text: method, tier: "functional", at: page2 + f60(10, fps), sizeT: 0, box: methodBox, kind: "end" });
-  // page 2 holds for its reading time (18 words: 5.9 s) and past the ending's decay and the room tone
-  const page2Words = [FINALE_TEXT.sample, FINALE_TEXT.method].join(" ").split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
-  const page2Hold = sec(0.5 + 0.3 * page2Words, fps) + f60(10, fps) + enterFramesOf("lineBlur", "x", fps) + 2;
-  const decayEnd = lastNote + sec(o.decayS ?? 6.6, fps);
-  const end = Math.max(page2 + page2Hold, decayEnd + sec(o.roomToneS ?? 0.75, fps), al.end ?? 0);
-
-  /* ------------------------------------------------ cameras, light ---------------------------------------------- */
-  camT.glide(end - irisAt, titleTau, { lz: titleVd });
+  /* ------------------------------------------------ light ------------------------------------------------------- */
   const lightCues: LightCue[] = [{ at: convergeAt + Math.round(convergeFrames * 0.4), to: "page", frames: Math.max(f60(60, fps), irisEnd - (convergeAt + Math.round(convergeFrames * 0.4))) }];
-  // the stone on the page (world = frame px): its size and its cues
+  // the stone on the page (world = frame px on the anchor): its size and its cues
   const stonePage = { at: stoneAt, r: stonePx * 0.3, size: stonePx, cues: anchored(TITLE_CUES, 0, "the title's cues") };
   const sweepT = types.find((t) => t.sweep)!;
 
@@ -291,8 +313,8 @@ export function planFinale(o: FinaleOptions): ScenePlan {
     duration: end,
     shots: [
       { id: "converge", from: 0, to: irisAt, kind: "cutscene", camera: camC, ref: o.entry?.ref ?? o.entry?.pose ?? far, ground: "riverbed", planes: [], wall, stone: { at: centre, r: 44, size: 148, cues: anchored(WALL_CUES, 0, "the convergence's cues") }, rings: [ring], dofScale: 8 },
-      // the title holds still once the page is open, by design (TREATMENT S26–S28: "the type stays still"): a wait
-      { id: "title", from: irisAt, to: end, kind: "title", camera: camT, ref: pageRef, ground: "page", planes: [], stone: stonePage, rings: [], waits: [{ from: irisAt + irisF, to: end }] },
+      // the page glides to the film's last breath (OVERRIDES §58), the room tone after the decay: the one declared still
+      { id: "title", from: irisAt, to: end, kind: "title", camera: camT, ref: pageRef, ground: "page", planes: [], stone: stonePage, rings: [], waits: [{ from: breathFrom, to: end }] },
     ],
     seams: [
       {
@@ -330,8 +352,12 @@ export function planFinale(o: FinaleOptions): ScenePlan {
       irisEnd,
       landAt,
       factsLand,
+      factsHoldEnd,
       page2,
       end,
+      breathFrom,
+      anchors: { page1: anchor1, page2: anchor2 },
+      lzPage,
       sweep: sweepT.sweep,
       sweepFrames: SAGE_SWEEP.frames,
       lastNote,

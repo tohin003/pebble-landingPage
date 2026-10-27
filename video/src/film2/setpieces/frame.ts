@@ -4,7 +4,7 @@ import { SAFE_MARGIN_PX, TYPE_MOTION, f60, type Aspect, type TypeTier } from "..
 import type { Pose } from "../motion/camera";
 import type { Rect } from "../motion/geometry";
 import { approxLineWidth, aspectOfFrame, typeSizePx } from "../type/scale";
-import { exitOutFrames, lineLiftStagger } from "../type/exits";
+import { exitOutFrames, lineLiftStagger, wordsIn } from "../type/exits";
 
 export interface FrameBox {
   w: number;
@@ -179,7 +179,8 @@ export const enterFramesOf = (e: EntranceKind, text: string, fps: number): numbe
 export const exitPlanOf = (e: EntranceKind, x: ExitKind, text: string, fps: number): { perLine: number; stagger: number; total: number } => {
   if (x === "camera") return { perLine: 0, stagger: 0, total: 0 };
   const lines = text.split("\n");
-  const perLine = Math.max(...lines.map((l) => exitOutFrames(enterFramesOf(e, l, fps), fps)));
+  const words = wordsIn(text);
+  const perLine = Math.max(...lines.map((l) => exitOutFrames(enterFramesOf(e, l, fps), fps, words)));
   const stagger = x === "lift" ? lineLiftStagger(perLine) : 0;
   return { perLine, stagger, total: perLine + stagger * (lines.length - 1) };
 };

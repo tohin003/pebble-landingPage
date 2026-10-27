@@ -26,10 +26,10 @@ import { STEALTH_HONEST } from "../../../../shared/pebble/stealthVeil";
 import { ACTIVATE } from "../../../../shared/pebble/veil";
 import { BODY } from "../../../../shared/pebble";
 import { place, type MusicGrid } from "./music";
-import { breakLines, exitFramesOf, fitPose, frameBox, glideLz, lineHeightOf, lineRect, zoomAbout, type FrameBox, type TypeBox } from "./frame";
+import { breakLines, exitFramesOf, fitPose, frameBox, glideLz, insideFrame, lineHeightOf, lineRect, rectInFrame, zoomAbout, type FrameBox, type TypeBox } from "./frame";
 import { TAKE_HSB3, TAKE_RS13, eventFrame, solveInPoint } from "./take";
 import { DUSK_CUES } from "./pieces.cues";
-import { anchored, landFrames, musicHit } from "./kit";
+import { anchored, carryWith, landFrames, musicHit } from "./kit";
 import { move, type MusicHit, type PlaneSpec, type ScenePlan, type TypeSpec } from "./scene";
 
 export const DUSK_TEXT = {
@@ -171,8 +171,8 @@ export function planDusk(o: DuskOptions): ScenePlan {
   const camB = new VelocityCamera({ ...veilPose, zoom: 0.985 }, orbit);
   // the label: beside the render, in its world (TypeSpec.carry): it is on screen exactly as long as the render is
   const labelAt = rackAt + Math.round(rackF * 0.36);
+  const labelLand = labelAt + landFrames({ text: DUSK_TEXT.label, tier: "label" }, fps);
   const labelBox = L.label(f, vc, hw, hh);
-  const label = breakLines(DUSK_TEXT.label, "label", f, A === "9:16" ? f.w - 2 * f.safe : f.w - labelBox.left - f.safe, 0.4);
 
   /* ------------------------------------------------ the crane out of the render, into RS-13 --------------------- */
   const cutP = place(veilShotAt + veilShotFrames, g, { level: "bar" });
@@ -182,21 +182,50 @@ export function planDusk(o: DuskOptions): ScenePlan {
   // band: the content accelerates evenly to the cut's speed (§5.3: travel ≤ 30 px a frame) until both are out
   const craneV = 27 * f.unit;
   const dir = L.craneOut;
-  const labelR = lineRect(label, "label", f, labelBox, 0.4);
-  const grown = 1.2; // the push-in's growth by the crane, with room
-  // (the push grows the render and its label about the frame's centre by the time the crane starts)
-  const gx = (x: number) => f.w / 2 + (x - f.w / 2) * grown;
-  const gy = (y: number) => f.h / 2 + (y - f.h / 2) * grown;
-  const reach =
-    dir.x < 0
-      ? Math.max(gx(vc.x + hw), gx(labelR.x + labelR.w))
-      : dir.x > 0
-        ? f.w - Math.min(gx(vc.x - hw), gx(labelR.x))
-        : dir.y > 0
-          ? f.h - Math.min(gy(vc.y - hh), gy(labelR.y))
-          : Math.max(gy(vc.y + hh), gy(labelR.y + labelR.h));
-  const craneOut = Math.ceil(((reach + 40 * f.unit) * 2) / craneV);
-  const craneFrom = cut - veilShotAt - 1 - craneOut;
+  // how far the render and its label must travel to clear the frame, measured where the push has put them on the
+  // crane's first frame (the render's body about its centre, the label where its world carries it), plus 8 px: the
+  // crane ends as the last of them leaves, so the cut follows no stretch of empty ground (CR-19)
+  const clearOf = (labelR: Rect, craneFromLocal: number): number => {
+    const P = camB.pose(craneFromLocal);
+    const c = { x: f.w / 2 + (veilCentreWorld.x - P.x) * P.zoom, y: f.h / 2 + (veilCentreWorld.y - P.y) * P.zoom };
+    const k = P.zoom / veilPose.zoom;
+    const body = { x: c.x - hw * k, y: c.y - hh * k, w: 2 * hw * k, h: 2 * hh * k };
+    const m = carryWith(camB, veilShotAt, labelLand, veilShotAt + craneFromLocal, f.w, f.h);
+    const lr = { x: labelR.x * m.k + m.tx, y: labelR.y * m.k + m.ty, w: labelR.w * m.k, h: labelR.h * m.k };
+    const reach =
+      dir.x < 0
+        ? Math.max(body.x + body.w, lr.x + lr.w)
+        : dir.x > 0
+          ? f.w - Math.min(body.x, lr.x)
+          : dir.y > 0
+            ? f.h - Math.min(body.y, lr.y)
+            : Math.max(body.y + body.h, lr.y + lr.h);
+    return reach + 8 * f.unit;
+  };
+  const craneFor = (labelR: Rect) => {
+    // (the crane's start depends on how far the push has grown them by then: a few rounds settle it)
+    let craneOut = Math.ceil((clearOf(labelR, veilShotFrames - f60(60, fps)) * 2) / craneV);
+    for (let i = 0; i < 4; i++) craneOut = Math.ceil((clearOf(labelR, cut - veilShotAt - 1 - craneOut) * 2) / craneV);
+    return { craneOut, craneFrom: cut - veilShotAt - 1 - craneOut };
+  };
+  // the label is read from its landing until the crane carries it out: in the safe area all that time, while the push
+  // grows it about the frame's centre (CR-19's label beside the render, never in the frame's margin)
+  const inSafeUntil = (labelR: Rect, untilLocal: number): boolean => {
+    for (let fr = labelLand; fr < veilShotAt + untilLocal; fr += 3) {
+      const m = carryWith(camB, veilShotAt, labelLand, fr, f.w, f.h);
+      if (!insideFrame({ x: labelR.x * m.k + m.tx, y: labelR.y * m.k + m.ty, w: labelR.w * m.k, h: labelR.h * m.k }, f, f.safe)) return false;
+    }
+    return true;
+  };
+  let labelMaxW = A === "9:16" ? f.w - 2 * f.safe : f.w - labelBox.left - f.safe;
+  let label = breakLines(DUSK_TEXT.label, "label", f, labelMaxW, 0.4);
+  let crane = craneFor(lineRect(label, "label", f, labelBox, 0.4));
+  for (let i = 0; i < 8 && !inSafeUntil(lineRect(label, "label", f, labelBox, 0.4), crane.craneFrom); i++) {
+    labelMaxW *= 0.88;
+    label = breakLines(DUSK_TEXT.label, "label", f, labelMaxW, 0.4);
+    crane = craneFor(lineRect(label, "label", f, labelBox, 0.4));
+  }
+  const { craneOut, craneFrom } = crane;
   if (craneFrom < f60(150, fps)) throw new Error(`the Veil needs ${f60(150, fps) - craneFrom} more frames before its crane (the render is seen first)`);
   camB.glide(craneFrom, f60(40, fps), orbit);
   const pB = camB.pose(craneFrom);
@@ -233,12 +262,25 @@ export function planDusk(o: DuskOptions): ScenePlan {
   const cut2P = place(cut2Earliest, g, { level: "beat" });
   const cut2 = cut2P.point ?? cut2Earliest;
   music.push(musicHit("the cut to the menu bar", cut2P));
-  const upFrom = dockAt - cut + f60(8, fps);
-  const upF = cut2 - cut - 1 - upFrom;
+  // the crane up accelerates into the cut while the Dock is still in frame and clear of the honest line's band (the
+  // content moves down: in 16:9 and 1:1 the band is below the Dock, so the crane is short and the cut comes before the
+  // Dock reaches it; CR-19: the crane passed empty ground, then the Dock ran under the honest line)
+  const upV = 18 * f.unit;
+  const lastLocal = cut2 - cut - 1;
+  const dockOn = (local: number) => rectInFrame(dock, camC.pose(local), f);
+  const bandBelow = band.top > f.h / 2;
+  const room = (local: number) => (bandBelow ? band.top - 16 * f.unit - (dockOn(local).y + dockOn(local).h) : f.h - 24 * f.unit - dockOn(local).y);
+  const minStart = dockAt - cut + f60(8, fps);
+  let upFrom = minStart;
+  // the crane's travel is upV × its frames ÷ 2: start it as late as its room allows (at least 20 frames of crane)
+  for (let i = 0; i < 4; i++) {
+    const upFi = Math.max(f60(20, fps), Math.floor((2 * Math.max(0, room(upFrom))) / upV));
+    upFrom = Math.max(minStart, lastLocal - upFi);
+  }
+  const upF = lastLocal - upFrom;
   camC.glide(upFrom, f60(20, fps), holdDrift(dockPose));
   const pC = camC.pose(upFrom);
-  const upV = 18 * f.unit;
-  camC.hermite(cut2 - cut - 1, { x: pC.x, y: pC.y - ((upV * upF) / 2) / pC.zoom, zoom: pC.zoom }, { x: 0, y: -upV / pC.zoom, lz: 0 });
+  camC.hermite(lastLocal, { x: pC.x, y: pC.y - ((upV * upF) / 2) / pC.zoom, zoom: pC.zoom }, { x: 0, y: -upV / pC.zoom, lz: 0 });
   const vOut2 = centreV(camC, cut2 - cut - 1);
   const camD = arriveWithMomentum({ target: menuPose, frames: f60(80, fps), vScreen: vOut2, mode: "glide", tau: f60(16, fps), drift: { x: (0.4 * f.unit * 60) / fps / menuZoom, y: 0, lz: lzHold * 0.3 } });
   const arriveMenu = cut2 + f60(80, fps);
@@ -255,7 +297,7 @@ export function planDusk(o: DuskOptions): ScenePlan {
   const honestExit = end - 1 - leaveF;
   types.push({ id: "L21", text: honest, tier: "functional", at: honestAt, exitAt: honestExit, sizeT: 0.15, box: honestBox, kind: "film", honest: true });
   // the label beside the render, carried with its world: it leaves the frame with the render on the crane
-  types.push({ id: "L22", text: label, tier: "label", at: labelAt, exitAt: cut, sizeT: 0.4, box: labelBox, kind: "label", color: COLOR.ink2, exit: "camera", carry: { shot: "dusk-veil", at: labelAt + landFrames({ text: label, tier: "label" }, fps) } });
+  types.push({ id: "L22", text: label, tier: "label", at: labelAt, exitAt: cut, sizeT: 0.4, box: labelBox, kind: "label", color: COLOR.ink2, exit: "camera", carry: { shot: "dusk-veil", at: labelLand, outFrom: veilShotAt + craneFrom } });
   if (focus) {
     types.push({ id: "L23", text: breakLines(focus.text, "functional", f, hb.maxW, 0.15), tier: "functional", at: arriveMenu + sec(1.6, fps), exitAt: arriveMenu + sec(3.6, fps), sizeT: 0.15, box: { left: honestBox.left, top: honestBox.top - hSize * 2.4, align: "left" }, kind: "film" });
   }

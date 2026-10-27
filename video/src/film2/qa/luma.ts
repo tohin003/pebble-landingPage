@@ -38,6 +38,12 @@ export interface LumaOptions {
   tilePop?: { minLevels?: number; ratio?: number };
   /** transitions (an iris, a rack, a swap): designed changes whose frames tile pops do not judge, as cuts are not judged */
   transitions?: readonly { from: number; to: number }[];
+  /**
+   * a take's own state changes: a placeholder still switching in or out with a hard cut on its event frame, as the
+   * recording changes (CR-18: placeholder states never dissolve). Pops are not judged on them (±1 frame), as on a cut;
+   * they are listed in the report so they can be looked at, and they are no seams (no dips are measured there)
+   */
+  states?: readonly number[];
 }
 
 /** One tile's pop: the tile (row-major in the grid), its difference and the median of its own six neighbours. */
@@ -229,7 +235,7 @@ export function analyseLuma(frames: readonly Uint8Array[], o: LumaOptions): Luma
   for (const d of deadRuns) problems.push(`dead frames: ${d.seconds.toFixed(2)} s without change from frame ${d.from}`);
   // pops away from cuts
   const cuts = new Set<number>();
-  for (const c of o.cuts ?? []) for (let k = -1; k <= 1; k++) cuts.add(c + k);
+  for (const c of [...(o.cuts ?? []), ...(o.states ?? [])]) for (let k = -1; k <= 1; k++) cuts.add(c + k);
   const pops: number[] = [];
   for (let f = 3; f < n - 3; f++) {
     if (cuts.has(f)) continue;
@@ -239,7 +245,7 @@ export function analyseLuma(frames: readonly Uint8Array[], o: LumaOptions): Luma
   }
   if (pops.length) problems.push(`pops (frame steps away from cuts): frames ${pops.slice(0, 12).join(", ")}${pops.length > 12 ? " …" : ""}`);
   // tile pops: each tile against its own neighbours (a vanishing line, a card popping in)
-  const tilePops = findTilePops(tileMad, G, o.cuts ?? [], o.tilePop, o.transitions ?? []);
+  const tilePops = findTilePops(tileMad, G, [...(o.cuts ?? []), ...(o.states ?? [])], o.tilePop, o.transitions ?? []);
   if (tilePops.length) {
     const frames = [...new Set(tilePops.map((p) => p.frame))];
     problems.push(`tile pops (a part of the frame steps, away from cuts): frames ${frames.slice(0, 12).join(", ")}${frames.length > 12 ? " …" : ""}`);

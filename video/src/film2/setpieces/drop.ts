@@ -31,7 +31,7 @@ import { apertureRect } from "../carrier/apertureMath";
 import type { LightCue } from "../light/grades";
 import { typeSizePx } from "../type/scale";
 import { place, type MusicGrid } from "./music";
-import { breakLines, exitFramesOf, fitPose, frameBox, glideLz, lineHeightOf, lineRect, unionRect, zoomAbout, type FrameBox, type TypeBox } from "./frame";
+import { breakLines, cornerSpeedOf, exitFramesOf, fitPose, frameBox, glideLz, lineHeightOf, lineRect, unionRect, zoomAbout, type FrameBox, type TypeBox } from "./frame";
 import { SLOT, STILL } from "./standins";
 import { TAKE_RS9, eventFrame, solveInPoint, type TakeManifest } from "./take";
 import { STONE_R, STONE_SIZE, WORLD, worldRects } from "./world";
@@ -148,10 +148,34 @@ export function planDrop(o: DropOptions): ScenePlan {
   const ap0 = apertureRect(f.w, f.h, 0, cy);
   // the card reads at 28 px or more (4 % over the floor), framed in the narrow aperture (CR-09)
   const readZoom = ((28 * f.unit) / DROP_CARD.textPx) * 1.04;
-  const readFit = fitPose(W.card, L.read(f, ap0), f, 0.96);
-  // the pre-roll's push starts at the reading floor and grows from it, so the card reads at 28 px from frame 0
-  const prePush = Math.exp(lzHold * 1.25 * hit);
-  const read: Pose = { ...readFit, zoom: Math.max(readZoom, Math.min(readFit.zoom, readZoom * 1.02)) * prePush };
+  const readRegion = L.read(f, ap0);
+  const readFit = fitPose(W.card, readRegion, f, 0.96);
+  // the pre-roll's push starts at the reading floor and grows from it, so the card reads at 28 px from frame 0; it never
+  // grows the card past the aperture's read region (a long pre-roll pushes more slowly), and the card drifts up through
+  // the room the region leaves it, so the frame's corners keep moving where the push has little room (1:1's 16:9
+  // aperture is about as wide as the card at reading size)
+  const zStart = Math.max(readZoom, Math.min(readFit.zoom, readZoom * 1.02));
+  const zMax = Math.max(zStart, (readFit.zoom / 0.96) * 0.995);
+  const cardC = rectCenter(W.card);
+  const regionC = rectCenter(readRegion);
+  // the pose that puts the card's centre on frame point (regionC.x, sy) at `zoom`
+  const cardPose = (zoom: number, sy: number): Pose => ({ x: cardC.x - (regionC.x - f.w / 2) / zoom, y: cardC.y - (sy - f.h / 2) / zoom, zoom });
+  // the read over its last T frames before the hit: the push and the drift that fill the room in T frames
+  const readOver = (T: number) => {
+    const lz = Math.min(lzHold * 1.25, Math.log(zMax / zStart) / Math.max(1, T));
+    const zHit = zStart * Math.exp(lz * T);
+    const roomY = Math.max(0, readRegion.h - W.card.h * zHit - 4 * f.unit);
+    const travelY = Math.min(roomY * 0.9, 0.5 * f.unit * T);
+    const from = cardPose(zStart, regionC.y + travelY / 2);
+    const to = cardPose(zHit, regionC.y - travelY / 2);
+    const v = { x: (to.x - from.x) / Math.max(1, T), y: (to.y - from.y) / Math.max(1, T), lz: Math.log(zHit / zStart) / Math.max(1, T) };
+    return { from, to, v, corner: cornerSpeedOf(from, v, f) / f.unit };
+  };
+  // the longest read the room keeps gliding at 0.32 px a frame or more (CR-04); a longer pre-roll comes in from wider
+  let readT = Math.max(1, hit);
+  while (readT > f60(90, fps) && readOver(readT).corner < 0.32) readT -= 2;
+  const { from: read0, to: read, v: vPre } = readOver(readT);
+  const readFrom = hit - readT;
   // once the frame has opened: the companion whole, right of centre, the type left of it
   const openZoom = (L.companionH * f.h) / W.companion.h;
   const compC = rectCenter(W.companion);
@@ -163,14 +187,18 @@ export function planDrop(o: DropOptions): ScenePlan {
   const revealStart = hit + sec(4.0, fps);
   const revealEnd = revealStart + f60(160, fps);
   const openFrames = f60(90, fps);
-  // the pre-roll: at reading size from its first frame and still pushing in, about the card's centre
-  const cardC = rectCenter(W.card);
-  const readAt = { x: f.w / 2 + (cardC.x - read.x) * read.zoom, y: f.h / 2 + (cardC.y - read.y) * read.zoom };
-  const zoom0 = read.zoom / prePush;
-  // the pose that puts the card's centre at the same frame point at the smaller zoom
-  const read0: Pose = { x: cardC.x - (readAt.x - f.w / 2) / zoom0, y: cardC.y - (readAt.y - f.h / 2) / zoom0, zoom: zoom0 };
-  const cam = new VelocityCamera(read0, zoomAbout(read0, readAt, lzHold * 1.25, f));
-  cam.hermite(hit, read, zoomAbout(read, readAt, lzHold, f));
+  // the pre-roll: at reading size from `readFrom` (its first frame, unless the pre-roll is longer than the read can
+  // glide), pushing in and drifting at one velocity; before it, a faster push-in from wider brings the card to it
+  let cam: VelocityCamera;
+  if (readFrom > 0) {
+    const lzIn = glideLz(f, 0.6);
+    const sy = f.h / 2 + (cardC.y - read0.y) * read0.zoom;
+    const z0 = read0.zoom * Math.exp(-lzIn * readFrom);
+    const approach0 = cardPose(z0, sy);
+    cam = new VelocityCamera(approach0, zoomAbout(approach0, { x: regionC.x, y: sy }, lzIn, f));
+    cam.hermite(readFrom, read0, vPre);
+  } else cam = new VelocityCamera(read0, vPre);
+  cam.hermite(hit, read, vPre);
   // the hand-off on the burst: out to the opened framing as the frame opens, then drifting out through the pair
   const driftOut = zoomAbout(opened, { x: L.companionX * f.w, y: f.h / 2 }, -lzHold * 1.1, f);
   cam.hermite(hit + openFrames, opened, driftOut);
@@ -322,7 +350,7 @@ export function planDrop(o: DropOptions): ScenePlan {
     { id: "calculator", kind: "apple", rect: W.calculator, depth: W.depth.calculator, content: slotOf(SLOT.calculator, W.calculator), dim: lift(W.calculator), shadow: true },
     { id: "browser", kind: "thirdParty", rect: W.browser, content: { kind: "take", use, view: "browser" }, shadow: true, radius: 10 },
     // the companion: RS-9's view; the card the Allow answers reads at 28 px until the Allow (CR-09, CR-11)
-    { id: "companion", kind: "pebble", rect: W.companion, content: { kind: "take", use, view: "companion" }, shadow: true, radius: 14, read: { from: 0, to: hit, words: DROP_CARD.words, textPx: DROP_CARD.textPx, rect: W.card } },
+    { id: "companion", kind: "pebble", rect: W.companion, content: { kind: "take", use, view: "companion" }, shadow: true, radius: 14, read: { from: readFrom, to: hit, words: DROP_CARD.words, textPx: DROP_CARD.textPx, rect: W.card, seenFrom: 0 } },
   ];
 
   /* ------------------------------------------------ light, leak, cues ------------------------------------------ */
@@ -385,6 +413,7 @@ export function planDrop(o: DropOptions): ScenePlan {
       clearP,
       clearL,
       readZoom: read.zoom,
+      readFrom,
       openedZoom: opened.zoom,
       wideZoom: wide.zoom,
     },

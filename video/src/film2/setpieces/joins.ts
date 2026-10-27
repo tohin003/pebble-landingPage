@@ -54,9 +54,11 @@ export type JoinKind = "continue" | "cut";
 
 /**
  * The first frame of a piece that shows something to read: a line landed, the stone at a quarter or more, a plane the
- * piece reads (its `read`, or a cascade's card) at 85 % opacity or more and at least half in frame. Blank ground, a
- * slot's hatch with nothing read on it and a palette still fading in are not (CR-06: Dusk opened on 12 blank frames,
- * the climax on 16 frames of its slot).
+ * piece reads (its `read`, or a cascade's card) at 85 % opacity or more and at least half in frame, or a recorded
+ * take's own window filling a third of the frame or more while the take plays (the recording itself is on screen:
+ * CR-06's fix opens Dusk "on the HS-B3 frame that already shows the workspace"). Blank ground, a still slot with
+ * nothing read on it and a palette still fading in are not (CR-06: Dusk opened on 12 blank frames of bare ground, the
+ * climax on 16 frames of its slot before its take began).
  */
 export function firstReadableFrame(p: ScenePlan, within = 60): number | null {
   for (let fr = 0; fr < Math.min(p.duration, within); fr++) {
@@ -68,9 +70,13 @@ export function firstReadableFrame(p: ScenePlan, within = 60): number | null {
     const s = p.shots.find((x) => fr >= x.from && fr < x.to);
     if (!s) continue;
     for (const pl of s.planes) {
-      if (!pl.read) continue;
       if (fr < (pl.from ?? -Infinity) || fr >= (pl.to ?? Infinity)) continue;
-      if (visibleShare(p, s, pl, fr) >= 0.5 && planeOpacity(p, pl, fr) >= 0.85) return fr;
+      if (pl.read) {
+        if (visibleShare(p, s, pl, fr) >= 0.5 && planeOpacity(p, pl, fr) >= 0.85) return fr;
+        continue;
+      }
+      // a take's window, playing, filling a third of the frame: the recording is what the shot opens on
+      if (pl.content.kind === "take" && fr >= pl.content.use.at && fr < pl.content.use.until && planeOpacity(p, pl, fr) >= 0.85 && frameCover(p, s, pl, fr) >= 1 / 3) return fr;
     }
     if (s.cascade) {
       const sched = cascadeSchedule(s.cascade.start, s.cascade.items, p.fps, s.cascade.beats, undefined, s.cascade.endAt);
@@ -79,6 +85,14 @@ export function firstReadableFrame(p: ScenePlan, within = 60): number | null {
   }
   return null;
 }
+
+/** The share of the frame a plane covers on a frame. */
+const frameCover = (p: ScenePlan, s: ShotSpec, pl: ShotSpec["planes"][number], fr: number): number => {
+  const r = planeRectAt(p, s, pl, fr);
+  const ix = Math.max(0, Math.min(r.x + r.w, p.frame.w) - Math.max(r.x, 0));
+  const iy = Math.max(0, Math.min(r.y + r.h, p.frame.h) - Math.max(r.y, 0));
+  return (ix * iy) / (p.frame.w * p.frame.h);
+};
 
 /** The share of a plane's rect inside the frame on a frame. */
 const visibleShare = (p: ScenePlan, s: ShotSpec, pl: ShotSpec["planes"][number], fr: number): number => {

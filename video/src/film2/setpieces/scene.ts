@@ -98,9 +98,10 @@ export interface TypeSpec {
   /**
    * the line is set in the world of shot `shot` (TREATMENT §5.2: "type is set in the world, as a layer the camera
    * passes"): its box is exact under that shot's camera on frame `at` (a piece-local frame), and the line moves with
-   * the world from there, so the camera's E-leave carries it out (CR-03, CR-19: the Veil's label leaves with the render)
+   * the world from there, so the camera's E-leave carries it out (CR-03, CR-19: the Veil's label leaves with the render);
+   * `outFrom` is the frame its world starts carrying it out of the frame (the crane): it is read until then
    */
-  carry?: { shot: string; at: number };
+  carry?: { shot: string; at: number; outFrom?: number };
 }
 
 /** A cascade (kind 5): one fixed line, one swapping item and its UI card, swapped in place. */

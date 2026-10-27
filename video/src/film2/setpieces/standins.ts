@@ -27,8 +27,9 @@ export interface StillStandIn {
    * every legible word in the part shown (its crop), counted on the capture, and its body text's size in CSS px,
    * measured on the capture (cap height ÷ Inter's 0.727): the legibility checks (setpieces/qa.ts planesInFrame,
    * legibleWords; CR-05) count every word the frame shows with body text at 20 px or more at 1080, read or not.
-   * Measured on 27 Oct, the body text is smaller than some `readPx` values (held 11.7 against 13, the tests card 13.1
-   * against 15, the approval card 13.8 against 15, the command card 13.1 against 15)
+   * Measured on 27 Oct, the body text was smaller than some `readPx` values (held 11.7 against 13, the tests card 13.1
+   * against 15, the approval card 13.8 against 15, the command card 13.1 against 15); since OVERRIDES §58 ("readPx is
+   * the measured truth") each `readPx` is at most its measured body text, so the 28 px floor is checked on what shows
    */
   words?: number;
   textPx?: number;
@@ -64,6 +65,39 @@ export type StandIn = StillStandIn | SlotStandIn;
 /** The shown size of a stand-in (its crop, or the whole capture). */
 export const shownSize = (s: StandIn): { w: number; h: number } => (s.kind === "still" && s.crop ? { w: s.crop.w, h: s.crop.h } : { w: s.w, h: s.h });
 
+/** The caption every slot's label carries under its capture's id and label. */
+export const SLOT_CAPTION = "placeholder · not captured yet";
+
+/**
+ * Where a slot's label sits in a slot drawn `w` × `h` (its plane's units) at `px` frame px a unit: its font size, its
+ * corner (at the slot's `focus`, kept inside the slot) and its box, estimated from the advance widths (Geist Mono 0.6
+ * em, Inter about 0.56 em a character), wrapping where <SlotPanel> wraps. The view and the checks (setpieces/qa.ts
+ * slotLabels) both read it, so a label the check passes is the label drawn.
+ */
+export const slotLabelLayout = (slot: SlotStandIn, w: number, h: number, px: number, state?: string, timecode?: string): { fs: number; left: number; top: number; rect: Rect } => {
+  const u = 1 / Math.max(0.05, px); // units per frame px
+  const fs = Math.min(Math.max(13 * u, 10), Math.min(w, h) / (state ? 7.5 : 6));
+  const f = slot.focus ?? { x: 0, y: 0 };
+  const left = Math.max(fs * 0.9, Math.min(w - fs * 16, f.x * w));
+  const top = Math.max(fs * 0.8, Math.min(h - fs * 5.6, f.y * h));
+  const avail = Math.max(fs, w - fs * 0.9 - left);
+  const lines = [
+    { chars: slot.captureId.length, size: fs, em: 0.6, gap: 0 },
+    { chars: slot.label.length, size: fs * 0.92, em: 0.56, gap: 0 },
+    ...(state ? [{ chars: state.length, size: fs * 0.92, em: 0.56, gap: 0 }] : []),
+    { chars: SLOT_CAPTION.length, size: fs * 0.78, em: 0.6, gap: fs * 0.3 },
+    ...(timecode ? [{ chars: `src ${timecode} · 1×`.length, size: fs * 0.9, em: 0.6, gap: fs * 0.3 }] : []),
+  ];
+  let width = 0;
+  let height = 0;
+  for (const l of lines) {
+    const lw = l.chars * l.size * l.em;
+    width = Math.max(width, Math.min(lw, avail));
+    height += l.gap + Math.max(1, Math.ceil(lw / avail)) * l.size * 1.35;
+  }
+  return { fs, left, top, rect: { x: left, y: top, w: width, h: height } };
+};
+
 /* ---------------------------------------------------------------- stills (published captures) ------------------ */
 
 const still = (id: string, src: string, w: number, h: number, standsFor: string, extra: Partial<StillStandIn> = {}): StillStandIn => ({
@@ -82,13 +116,13 @@ export const STILL = {
   /** "Blocked · Pebble's change isn't verified yet" with Run the tests: cropped below its usage line */
   held: still("held", "ui/crop-held@2x.png", 726, 256, "Ring 4's ask: the held card with Run the tests (F11, F12), from the 2.0.0 run", {
     crop: { x: 0, y: 122, w: 726, h: 134 },
-    readPx: 13,
+    readPx: 11.7,
     words: 43,
     textPx: 11.7,
     place: "studio-bookings",
   }),
   /** "Run isolated tests" with Don't allow / Run tests */
-  testsCard: still("testsCard", "ui/crop-tests-card@2x.png", 495, 344, "Ring 4's act: the test card reading Running, then Done (F3)", { readPx: 15, words: 47, textPx: 13.1, place: "studio-bookings" }),
+  testsCard: still("testsCard", "ui/crop-tests-card@2x.png", 495, 344, "Ring 4's act: the test card reading Running, then Done (F3)", { readPx: 13.1, words: 47, textPx: 13.1, place: "studio-bookings" }),
   /** the done receipt, cropped below its "Worked for …" timing line */
   doneReceipt: still("doneReceipt", "ui/crop-done-receipt@2x.png", 684, 278, "a receipt: Verified (F12), the file receipt (H4)", {
     crop: { x: 0, y: 30, w: 684, h: 248 },
@@ -97,11 +131,11 @@ export const STILL = {
     textPx: 13.8,
   }),
   /** an ask card with two buttons: Don't allow / Apply edit */
-  approvalCard: still("approvalCard", "ui/crop-approval-card@2x.png", 495, 482, "the Workshop's ask: \"Keep this tool in Pebble's Toolbox?\" with Discard and Keep (G4)", { readPx: 15, words: 82, textPx: 13.8, place: "glaze" }),
+  approvalCard: still("approvalCard", "ui/crop-approval-card@2x.png", 495, 482, "the Workshop's ask: \"Keep this tool in Pebble's Toolbox?\" with Discard and Keep (G4)", { readPx: 13.8, words: 82, textPx: 13.8, place: "glaze" }),
   /** a card with two buttons: Don't allow / Run command (its first button's place is Remove's) */
-  commandCard: still("commandCard", "ui/crop-command-card@2x.png", 495, 474, "the kept card: \"Kept in Pebble's Toolbox · kiln_ramp_time\" with View code and Remove (G3)", { readPx: 15, words: 78, textPx: 13.1, place: "kiln" }),
+  commandCard: still("commandCard", "ui/crop-command-card@2x.png", 495, 474, "the kept card: \"Kept in Pebble's Toolbox · kiln_ramp_time\" with View code and Remove (G3)", { readPx: 13.1, words: 78, textPx: 13.1, place: "kiln" }),
   /** a site card stand-in: the "Run isolated tests" card again, for the companion's card in the Drop */
-  companionCard: still("companionCard", "ui/crop-tests-card@2x.png", 495, 344, "the companion's card \"Use youtube.com\" with Allow (A9, J3), from RS-9", { readPx: 15, words: 47, textPx: 13.1, place: "companion" }),
+  companionCard: still("companionCard", "ui/crop-tests-card@2x.png", 495, 344, "the companion's card \"Use youtube.com\" with Allow (A9, J3), from RS-9", { readPx: 13.1, words: 47, textPx: 13.1, place: "companion" }),
   /** Pebble 1.5.0's main window, welcome: a Pebble window in the composed world */
   mainWelcome: still("mainWelcome", "ui/v150/main-welcome@2x.png", 1160, 800, "the project conversation \"studio-bookings\" (Ring 4's place)", { version: "1.5.0", words: 140, textPx: 12.4, place: "studio-bookings" }),
   /** Pebble 1.5.0's Settings */
@@ -172,10 +206,14 @@ export const SLOT = {
   goal: slot("goal", "HS-N", "a goal with its criteria", 520, 360, "pebble", "N2: A goal, with criteria"),
   skills: slot("skills", "HS-O", "Skills & connectors", 520, 360, "pebble", "O1: Skills you review"),
   connector: slot("connector", "HS-O", "a connector's call, asking", 520, 360, "pebble", "O2: Connectors that ask"),
-  palette: { ...slot("palette", "HS-B3", "⌘K, typed, Enter", 680, 400, "pebble", "B6: the palette and its row"), place: "workspace" },
+  // (the palette and the workspace name themselves where the Dusk reads the palette's middle row: in 1:1 and 9:16 the
+  // camera shows the palette's 13–88 % and the workspace's 27–73 % across, and their labels at the top left were cut by
+  // the frame's left edge for the passage's first 3.8 s; setpieces/qa.ts slotLabels)
+  palette: { ...slot("palette", "HS-B3", "⌘K, typed, Enter", 680, 400, "pebble", "B6: the palette and its row"), focus: { x: 0.2, y: 0.1 }, place: "workspace" },
   /** the workspace ⌘K opens over (the take's full frame; Pebble 1.5.0's own window stands for it where it shows whole) */
-  workspace: { ...slot("workspace", "HS-B3", "the workspace, before ⌘K", 1160, 800, "pebble", "B6: the workspace"), place: "workspace" },
-  menuBar: { ...slot("menuBar", "RS-13", "the menu bar: Pebble's icon", 1440, 56, "apple", "L5: a filled pebble in a ring"), focus: { x: 0.62, y: 0.05 } },
+  workspace: { ...slot("workspace", "HS-B3", "the workspace, before ⌘K", 1160, 800, "pebble", "B6: the workspace"), focus: { x: 0.32, y: 0.12 }, place: "workspace" },
+  // (its label beside where Pebble's icon sits, so the 3.5× framing of 1:1 and 9:16 shows it whole)
+  menuBar: { ...slot("menuBar", "RS-13", "the menu bar: Pebble's icon", 1440, 56, "apple", "L5: a filled pebble in a ring"), focus: { x: 0.7, y: 0.05 } },
   dock: slot("dock", "RS-13", "the Dock: Pebble's icon leaves", 900, 104, "apple", "L4: leaves the Dock"),
 } as const satisfies Record<string, SlotStandIn>;
 

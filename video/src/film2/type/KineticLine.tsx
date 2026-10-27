@@ -20,7 +20,7 @@ import { useVideoConfig } from "remotion";
 import { COLOR, TYPE_MOTION, f60, type TypeTier } from "../tokens";
 import { SplitText, fs } from "./gsap";
 import { typeStyle } from "./scale";
-import { EXIT, blurTiming, exitOutFrames, liftTiming } from "./exits";
+import { EXIT, blurTiming, exitOutFrames, isLongBlock, liftTiming, wordsIn } from "./exits";
 
 export type Entrance = "lineRise" | "wordRise" | "wordBlur" | "lineBlur";
 export type Exit = "blur" | "lift" | "camera";
@@ -43,6 +43,8 @@ export interface KineticLineProps {
   style?: CSSProperties;
   /** the exit's length in frames, when a caller times it (type/exits.ts exitOutFrames is the default) */
   exitFrames?: number;
+  /** the words of the whole block this line is one line of (a long block leaves softer: type/exits.ts); its own by default */
+  blockWords?: number;
 }
 
 export const defaultEntrance = (tier: TypeTier): Entrance => (tier === "expressive" || tier === "data" ? "lineRise" : "lineBlur");
@@ -61,7 +63,7 @@ export const entranceFrames = (e: Entrance, units: number, fps: number): number 
   }
 };
 
-export const KineticLine: React.FC<KineticLineProps> = ({ text, tier, at, exitAt, entrance, exit = "blur", sizeT = 0.5, color = COLOR.ink, align = "left", style, exitFrames }) => {
+export const KineticLine: React.FC<KineticLineProps> = ({ text, tier, at, exitAt, entrance, exit = "blur", sizeT = 0.5, color = COLOR.ink, align = "left", style, exitFrames, blockWords }) => {
   const { fps, width, height } = useVideoConfig();
   const ent = entrance ?? defaultEntrance(tier);
   const scope = useGsapTimeline<HTMLDivElement>(
@@ -89,7 +91,8 @@ export const KineticLine: React.FC<KineticLineProps> = ({ text, tier, at, exitAt
       if (exitAt !== undefined && exit !== "camera") {
         const units = byLine ? split!.lines.length : byWord ? split!.words.length : 1;
         const inFrames = entranceFrames(ent, units, fps);
-        const outFrames = exitFrames ?? exitOutFrames(inFrames, fps);
+        const block = blockWords ?? wordsIn(text);
+        const outFrames = exitFrames ?? exitOutFrames(inFrames, fps, block);
         const t1 = fs(exitAt, fps);
         if (exit === "lift") {
           const n = split!.lines.length;
@@ -101,17 +104,17 @@ export const KineticLine: React.FC<KineticLineProps> = ({ text, tier, at, exitAt
           tl.fromTo(split!.lines, { opacity: 1 }, { opacity: 0, duration: fs(each * EXIT.liftFadeShare, fps), ease: "none", stagger: stg, immediateRender: false }, t1);
         } else {
           const words = split!.words;
-          const { each, stagger } = blurTiming(outFrames, words.length);
+          const { each, stagger, ease } = blurTiming(outFrames, words.length, isLongBlock(block));
           tl.fromTo(
             words,
             { opacity: 1, filter: "blur(0px)" },
-            { opacity: 0, filter: "blur(8px)", duration: fs(each, fps), ease: "power2.in", stagger: fs(stagger, fps), immediateRender: false },
+            { opacity: 0, filter: "blur(8px)", duration: fs(each, fps), ease, stagger: fs(stagger, fps), immediateRender: false },
             t1,
           );
         }
       }
     },
-    { dependencies: [text, tier, at, exitAt, ent, exit, fps, width, height, sizeT, exitFrames] },
+    { dependencies: [text, tier, at, exitAt, ent, exit, fps, width, height, sizeT, exitFrames, blockWords] },
   );
   return (
     <div ref={scope} style={{ position: "absolute", textAlign: align, ...style }}>

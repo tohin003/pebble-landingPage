@@ -13,7 +13,11 @@
 import type { Rect } from "../motion/geometry";
 import { SLOT, STILL, type SlotStandIn, type StandIn } from "./standins";
 
-/** A still shown in a placeholder view from source frame `from` (until `to`), at `rect` inside the view. */
+/**
+ * A still shown in a placeholder view from source frame `from` (until `to`), at `rect` inside the view. A still switches
+ * in and out with a hard cut on its source frames, as a recording's own state changes (CR-18: placeholder states never
+ * dissolve), or arrives with the card entrance where the recording shows the card arriving.
+ */
 export interface ViewStill {
   from: number;
   to?: number;
@@ -22,8 +26,6 @@ export interface ViewStill {
   rect?: Rect;
   /** it arrives with the shared card entrance (a placeholder for the recording's own arrival) */
   entrance?: boolean;
-  /** it fades out over its last N source frames before `to` (a placeholder for the recording's own change) */
-  fadeOut?: number;
 }
 
 export interface TakeView {
@@ -45,6 +47,25 @@ export interface TakeView {
   words?: number;
 }
 
+/**
+ * How a recorded take was made constant-rate (CR-12, OVERRIDES §55; .work/real-takes/RUNBOOK.md §6.2.1). macOS's
+ * screencapture records only when the screen changes, so its frame rate varies; conforming it by frame count (an
+ * input-side `-r 60`, `setpts=N/60/TB`, or reading its frames as a 60 fps sequence) would play Pebble's waits faster.
+ * Only the timestamp conform is accepted: `ffmpeg -i raw.mov -vf fps=60 -fps_mode cfr …`, which repeats a frame to fill
+ * a gap and never re-times one. The record proves it: the raw and conformed durations (ffprobe's format duration) match
+ * within a frame, and every event's frame in the conformed take ÷ its fps equals the event's wall-clock time from the
+ * recording's start (the harness's event log, or the take's own clock read off the screen) within a frame.
+ */
+export interface TakeConform {
+  method: "fps-filter-cfr";
+  /** the FFmpeg command that conformed it, word for word */
+  command: string;
+  sourceDurationS: number;
+  outputDurationS: number;
+  /** each event's wall-clock time from the recording's start, seconds */
+  events: Readonly<Record<string, { wallS: number }>>;
+}
+
 export interface TakeManifest {
   /** the capture ID (TREATMENT §6): RS-9, RS-W, HS-F … */
   id: string;
@@ -63,7 +84,42 @@ export interface TakeManifest {
   views: Readonly<Record<string, TakeView>>;
   /** true until the 2.0.0 capture replaces it */
   placeholder: boolean;
+  /** a recorded take's conform record (required once it has frames: checkTakeManifest) */
+  conform?: TakeConform;
   note?: string;
+}
+
+/**
+ * The time-honesty validator for a take's manifest (CR-12): a take with frames (`pattern`) is refused unless its conform
+ * record shows the timestamp conform, durations that match within one frame, a frame count that matches its conformed
+ * duration, and every event within one frame of its wall-clock time. A take conformed by frame count therefore never
+ * reaches the edit. Placeholders (no frames yet) carry no conform and pass. setpieces/qa.ts `takes` runs it on every
+ * take a plan uses.
+ */
+export function checkTakeManifest(m: TakeManifest): string[] {
+  if (!m.pattern) return [];
+  const out: string[] = [];
+  const c = m.conform;
+  const frame = 1 / m.fps;
+  if (!c) return [`take ${m.id}: a recorded take with no conform record (RUNBOOK §6.2.1: conform by timestamps, log the durations and the events)`];
+  if (c.method !== "fps-filter-cfr") out.push(`take ${m.id}: conformed by "${c.method}"; only the timestamp conform (-vf fps=…, -fps_mode cfr) keeps Pebble's time`);
+  const cmd = ` ${c.command} `;
+  const firstInput = cmd.indexOf(" -i ");
+  const inputRate = firstInput >= 0 && /\s-(r|framerate)\s/.test(cmd.slice(0, firstInput));
+  if (inputRate) out.push(`take ${m.id}: its conform sets the input's frame rate (-r or -framerate before -i), which re-times the frames`);
+  if (/setpts/.test(cmd)) out.push(`take ${m.id}: its conform uses setpts, which re-times the frames`);
+  if (!/fps=\s*\d/.test(cmd) || !/-fps_mode\s+cfr/.test(cmd)) out.push(`take ${m.id}: its conform command is not the timestamp conform (-vf fps=${m.fps} -fps_mode cfr)`);
+  if (!(Math.abs(c.sourceDurationS - c.outputDurationS) <= frame + 1e-9)) out.push(`take ${m.id}: the raw take lasts ${c.sourceDurationS.toFixed(3)} s and the conformed one ${c.outputDurationS.toFixed(3)} s: more than a frame apart, so its time was changed`);
+  if (!(Math.abs(m.frames / m.fps - c.outputDurationS) <= frame + 1e-9)) out.push(`take ${m.id}: ${m.frames} frames at ${m.fps} fps are ${(m.frames / m.fps).toFixed(3)} s, but the conformed take lasts ${c.outputDurationS.toFixed(3)} s`);
+  for (const [name, src] of Object.entries(m.events)) {
+    const w = c.events[name];
+    if (!w) {
+      out.push(`take ${m.id}: event "${name}" has no wall-clock time in the conform record`);
+      continue;
+    }
+    if (!(Math.abs(src / m.fps - w.wallS) <= frame + 1e-9)) out.push(`take ${m.id}: event "${name}" is at ${(src / m.fps).toFixed(3)} s in the take but ${w.wallS.toFixed(3)} s on the clock: the take is re-timed by ${(src / m.fps - w.wallS).toFixed(3)} s`);
+  }
+  return out;
 }
 
 /** The source frame a composition frame shows: 1×, from `inPoint` at frame `at`. */

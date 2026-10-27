@@ -2,11 +2,14 @@
 // added after the craft review among them) over the demo's plans, in one aspect or all three, and prints where each
 // piece's events landed on its music. Light work:
 //   bun video/src/film2/setpieces/tools/check-setpieces.ts [16:9|1:1|9:16] [--verbose] [--summary]
-// With all three aspects it also holds each piece's hit to one timeline across them (hitSyncAcross, CR-07).
+// With all three aspects it also holds each piece's hit to one timeline across them (hitSyncAcross, CR-07), and in each
+// aspect it checks the joins between the pieces (setpieces/joins.ts checkJoins, CR-06: continued worlds continuous,
+// cuts velocity-matched and never between two rests, every piece reading within 6 frames of its join).
 // --summary prints one line per piece and check instead of every finding. Exit status 0 only when every piece passes.
 import { formatReport, type Finding } from "../../qa/checks";
 import { REVIEW_CHECKS, checkPlan, hitSyncAcross } from "../qa";
-import { demoPlans } from "../demo/plans";
+import { DEMO_JOINS, demoPlans } from "../demo/plans";
+import { checkJoins } from "../joins";
 import type { ScenePlan } from "../scene";
 
 const only = process.argv.slice(2).find((a) => /^(16:9|1:1|9:16)$/.test(a)) as "16:9" | "1:1" | "9:16" | undefined;
@@ -41,6 +44,18 @@ if (!only) {
     console.log(`all   ${id.padEnd(7)} ${x.findings.length ? "FAIL" : "PASS"} the aperture opens on ${Object.entries(x.byAspect).map(([a, v]) => `${a} ${v.open} (hit ${v.hit})`).join(", ")}`);
     for (const f of x.findings) console.log(`  ERROR [${f.check}] ${f.message}`);
     if (x.findings.length) ok = false;
+  }
+}
+for (const a of aspects) {
+  const joins = checkJoins(
+    demoPlans(a).map((e) => e.plan),
+    DEMO_JOINS,
+  );
+  console.log(`${a.padEnd(5)} joins   ${joins.length ? "FAIL" : "PASS"} ${DEMO_JOINS.map((k, i) => `${demoPlans(a)[i]!.plan.id} → ${demoPlans(a)[i + 1]!.plan.id} (${k})`).join(", ")}`);
+  for (const f of joins) console.log(`  ERROR [${f.check}] ${f.message}`);
+  if (joins.length) {
+    ok = false;
+    counts.joins = (counts.joins ?? 0) + joins.length;
   }
 }
 if (summary) console.log(`errors by check: ${Object.entries(counts).map(([k, v]) => `${k} ${v}`).join(", ")}`);

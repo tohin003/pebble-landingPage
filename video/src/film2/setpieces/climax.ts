@@ -228,7 +228,7 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
     music,
     moves: [
       move("product", 0, f60(20, fps), "S23: the ask card's entrance (a placeholder of the recorded one)"),
-      move("push", 0, leaveStart, "S23: the push-in to meet the card"),
+      move("push", 0, Math.min(leaveStart, f60(240, fps)), "S23: the push-in to meet the card (then its glide)"),
       move("product", cut, end - cut, "RS-W at 1×: the kept card lands on the peak"),
       move("push", pushFrom + cut, pushTo - pushFrom, "S24: the push-in for reading"),
       move("light", 0, sec(4.6, fps), "dusk to evening"),

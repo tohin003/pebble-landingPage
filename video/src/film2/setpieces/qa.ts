@@ -19,6 +19,10 @@
 //   askActClock      a still and a take view of the same window never share a frame (CR-11)
 //   typeExits        no line vanishes: a "camera" exit or a line held to a piece's end has no drawn exit (CR-03)
 // (cameraFloor and irisEase, CR-04 and CR-21, are foundation checks in qa/checks.ts and run through checkAll.)
+// Added in fix round 1, proved on a planted canary in tests/fix-round1.test.ts:
+//   slotLabels       a frame of slots always shows a slot's label whole, and a slot being read shows its own
+//                    (PLACEHOLDERS: each slot names what it stands for; the Dusk's palette and workspace had theirs
+//                    outside the frame in 1:1 and 9:16)
 // Pure; no React. setpieces/tests run checkPlan() on every piece, every aspect and many music grids.
 import { CAMERA, COLOR } from "../tokens";
 import { checkAll, type Finding, type QaMove, type Report } from "../qa/checks";
@@ -35,9 +39,9 @@ import { STEALTH_HONEST } from "../../../../shared/pebble/stealthVeil";
 import { defaultEntranceOf, enterFramesOf, exitFramesOf, insideFrame, lineRect, rectInFrame } from "./frame";
 import { carriedRect, typeEvent } from "./kit";
 import { onGrid, pointsOf, type MusicGrid } from "./music";
-import { STEALTH_FEATURES, shownSize, type StandIn, type StillStandIn } from "./standins";
+import { STEALTH_FEATURES, shownSize, slotLabelLayout, type SlotStandIn, type StandIn, type StillStandIn } from "./standins";
 import { cellAt, cellTextPx } from "./wall";
-import { COMPANION_PANEL, checkTakeUse, frameOfSource, sourceFrameAt, stillsAt, type TakeUse } from "./take";
+import { COMPANION_PANEL, checkTakeManifest, checkTakeUse, frameOfSource, sourceFrameAt, sourceTimecode, stillsAt, type TakeUse } from "./take";
 import { RIVERBED, groundRectOf } from "./ground";
 import { shotOf, type PlaneSpec, type ScenePlan, type ShotSpec, type TypeSpec } from "./scene";
 
@@ -160,7 +164,12 @@ export function bandContrast(p: ScenePlan): Finding[] {
 }
 
 export function takes(p: ScenePlan): Finding[] {
-  return p.takes.flatMap((u) => checkTakeUse(u, p.fps).map((m) => ({ check: "takes", level: "error" as const, message: m })));
+  // every use at 1×, and every recorded take conformed by timestamps (CR-12: checkTakeManifest refuses a frame-count conform)
+  const manifests = [...new Set(p.takes.map((u) => u.manifest))];
+  return [
+    ...p.takes.flatMap((u) => checkTakeUse(u, p.fps).map((m) => ({ check: "takes", level: "error" as const, message: m }))),
+    ...manifests.flatMap((m) => checkTakeManifest(m).map((x) => ({ check: "takes", level: "error" as const, message: x }))),
+  ];
 }
 
 export function typeSafe(p: ScenePlan): Finding[] {
@@ -168,6 +177,20 @@ export function typeSafe(p: ScenePlan): Finding[] {
   for (const t of p.types) {
     const r = lineRect(t.text, t.tier, p.frame, t.box, t.sizeT ?? 0.5);
     if (!insideFrame(r, p.frame, p.frame.safe - 0.5)) out.push({ check: "typeSafe", level: "error", message: `"${t.text.replace(/\n/g, " ")}" leaves the safe area (${Math.round(r.x)}, ${Math.round(r.y)}, ${Math.round(r.w)} × ${Math.round(r.h)})` });
+    if (!t.carry) continue;
+    // a line set in the world moves with it (the title's page, the Veil's label): inside the safe area on every frame
+    // it is read, from its landing until its drawn exit starts, or (a "camera" exit) until its world carries it out
+    const d = drawnSpan(t, p.fps, p.duration);
+    const camera = (t.exit ?? "blur") === "camera";
+    const readUntil = camera ? Math.min(d.exitAt, t.carry.outFrom ?? d.exitAt) : d.exitAt;
+    for (let fr = d.landed; fr < readUntil; fr += 2) {
+      const cr = carriedRect(p, t, r, fr);
+      if (camera && !insideFrame(cr, p.frame, -0.5)) break;
+      if (!insideFrame(cr, p.frame, p.frame.safe - 0.5)) {
+        out.push({ check: "typeSafe", level: "error", message: `"${t.text.replace(/\n/g, " ").slice(0, 40)}", set in the world of ${t.carry.shot}, leaves the safe area on frame ${fr} while it is read (${Math.round(cr.x)}, ${Math.round(cr.y)}, ${Math.round(cr.w)} × ${Math.round(cr.h)})`, frame: fr });
+        break;
+      }
+    }
   }
   for (const s of p.shots) {
     if (!s.cascade) continue;
@@ -909,7 +932,7 @@ export function typeTracks(p: ScenePlan): TypeTrack[] {
     let exits: TypeTrack["exits"] = t.exitAt !== undefined && exit !== "camera" ? [{ from: t.exitAt, to: d.until, kind: exit }] : [];
     let vanishes: string | undefined;
     let rects: Record<number, Rect> | undefined;
-    if (t.carry) {
+    if (t.carry && exit === "camera") {
       // a line set in the world leaves with it: drawn until its shot ends, it must be out of frame by then, and the
       // frames it crosses the frame's edge are its exit (the world carries it out)
       const shot = p.shots.find((x) => x.id === t.carry!.shot);
@@ -928,10 +951,15 @@ export function typeTracks(p: ScenePlan): TypeTrack[] {
       exits = leaving !== null ? [{ from: leaving, to: gone ?? until, kind: "carried" }] : [];
       return { id: t.id, text: t.text, rect, rects, color: t.color ?? COLOR.ink, from: d.from, landed: d.landed, until, exits, vanishes };
     }
+    if (t.carry) {
+      // set in the world but leaving through its own drawn exit (the title's page): where it is on each frame it is drawn
+      rects = {};
+      for (let fr = d.from; fr < d.until; fr++) rects[fr] = carriedRect(p, t, rect, fr);
+    }
     if (t.exitAt !== undefined && exit === "camera") vanishes = `its "camera" exit draws nothing (the type layer is fixed to the screen): it vanishes on frame ${t.exitAt}`;
     else if (t.exitAt === undefined && !p.endsFilm) vanishes = `it has no exit and is drawn to the piece's last frame: it vanishes on the cut at ${end}`;
     else if (t.exitAt !== undefined && !p.endsFilm && t.exitAt + exitFramesOf(t.entrance ?? defaultEntranceOf(t.tier), exit, t.text, p.fps) > end) vanishes = `its exit runs past the piece's end (${end}): the cut takes it mid-exit`;
-    return { id: t.id, text: t.text, rect, color: t.color ?? COLOR.ink, from: d.from, landed: d.landed, until: d.until, exits, vanishes };
+    return { id: t.id, text: t.text, rect, ...(rects ? { rects } : {}), color: t.color ?? COLOR.ink, from: d.from, landed: d.landed, until: d.until, exits, vanishes };
   };
   for (const t of p.types) out.push(track(t));
   for (const s of p.shots) {
@@ -969,6 +997,153 @@ export function typeExits(p: ScenePlan): Finding[] {
     .map((t) => ({ check: "typeExits", level: "error" as const, message: `${t.id} "${t.text.replace(/\n/g, " ").slice(0, 40)}": ${t.vanishes} (give it a drawn exit that ends by the cut, CR-03)`, frame: Math.min(t.until, p.duration) - 1 }));
 }
 
+/** The least share of the frame a slot fills before its label must be wholly in frame. */
+export const SLOT_LABEL_MIN_SHARE = 0.1;
+/** Frames where the camera moves a point of the frame faster than this (px a frame at 1080) are a sweep, not read. */
+export const SLOT_LABEL_SWEEP_PX = 4;
+/** A published still or image covering this share of the frame is something to read besides the slots. */
+const OTHER_CONTENT_SHARE = 0.02;
+
+/** A slot as a plane draws it: the slot, its box in world units, its frames, and its caption's state and source time. */
+interface DrawnSlot {
+  id: string;
+  slot: SlotStandIn;
+  box: Rect;
+  from: number;
+  to: number;
+  state: (fr: number) => string | undefined;
+  timecode: (fr: number) => string | undefined;
+}
+
+/** Every slot a shot's planes draw (a slot stand-in; a take view's own slot; a slot among a view's stills). */
+const drawnSlots = (p: ScenePlan, s: ShotSpec, pl: PlaneSpec): DrawnSlot[] => {
+  const c = pl.content;
+  if (c.kind === "standIn") return c.standIn.kind === "slot" ? [{ id: pl.id, slot: c.standIn, box: pl.rect, from: s.from, to: s.to, state: () => undefined, timecode: () => undefined }] : [];
+  if (c.kind !== "take" || c.use.manifest.pattern) return [];
+  const u = c.use;
+  const m = u.manifest;
+  const v = m.views[c.view];
+  if (!v) return [];
+  const src = (fr: number) => Math.min(m.frames - 1, sourceFrameAt(fr, u.at, p.fps, m, u.inPoint));
+  const state = (fr: number) => [...(v.slotStates ?? [])].reverse().find((x) => src(fr) >= x.from)?.label;
+  const timecode = (fr: number) => sourceTimecode(src(fr), m.fps);
+  const from = Math.max(s.from, u.at);
+  const to = Math.min(s.to, u.until);
+  const out: DrawnSlot[] = v.slot ? [{ id: `${pl.id}:${v.slot.id}`, slot: v.slot, box: pl.rect, from, to, state, timecode }] : [];
+  const kx = pl.rect.w / v.w;
+  const ky = pl.rect.h / v.h;
+  (v.stills ?? []).forEach((vs, i) => {
+    if (vs.standIn.kind !== "slot") return;
+    const r = vs.rect ?? { x: 0, y: 0, w: v.w, h: v.h };
+    const a = Math.max(from, frameOfSource(vs.from, u.at, p.fps, m, u.inPoint));
+    const b = Math.min(to, vs.to === undefined ? Infinity : frameOfSource(vs.to, u.at, p.fps, m, u.inPoint));
+    out.push({ id: `${pl.id}:${vs.standIn.id}${i ? `#${i}` : ""}`, slot: vs.standIn, box: { x: pl.rect.x + r.x * kx, y: pl.rect.y + r.y * ky, w: r.w * kx, h: r.h * ky }, from: a, to: b, state, timecode });
+  });
+  return out;
+};
+
+/** The fastest any of the frame's corners or its centre moves on screen from `fr` to `fr + 1`, px at 1080. */
+const sweepPx = (p: ScenePlan, s: ShotSpec, fr: number): number => {
+  const a = at(p, s, fr);
+  const b = at(p, s, Math.min(fr + 1, s.to - 1));
+  const { w, h, unit } = p.frame;
+  let worst = 0;
+  for (const [x, y] of [[0, 0], [w, 0], [0, h], [w, h], [w / 2, h / 2]] as const) {
+    const wx = a.x + (x - w / 2) / a.zoom;
+    const wy = a.y + (y - h / 2) / a.zoom;
+    worst = Math.max(worst, Math.hypot(w / 2 + (wx - b.x) * b.zoom - x, h / 2 + (wy - b.y) * b.zoom - y));
+  }
+  return worst / unit;
+};
+
+/** Is anything besides slots there to read on `fr`: a published still or image, a real take, the film's own type? */
+const otherContent = (p: ScenePlan, s: ShotSpec, fr: number): boolean => {
+  if (s.cascade || p.types.some((t) => fr >= t.at && (t.exitAt === undefined || fr < t.exitAt))) return true;
+  const pose = at(p, s, fr);
+  const { w, h } = p.frame;
+  const share = (r: Rect) => {
+    const q = rectInFrame(r, pose, p.frame);
+    return (Math.max(0, Math.min(q.x + q.w, w) - Math.max(q.x, 0)) * Math.max(0, Math.min(q.y + q.h, h) - Math.max(q.y, 0))) / (w * h);
+  };
+  for (const pl of s.planes) {
+    if (!visible(pl, fr) || (pl.enterAt !== undefined && fr < pl.enterAt) || (pl.swapInAt !== undefined && fr < pl.swapInAt) || (pl.swapOutAt !== undefined && fr >= pl.swapOutAt)) continue;
+    const c = pl.content;
+    if (c.kind === "image" || (c.kind === "standIn" && c.standIn.kind === "still")) {
+      if (share(pl.rect) >= OTHER_CONTENT_SHARE) return true;
+      continue;
+    }
+    if (c.kind !== "take" || fr < c.use.at || fr >= c.use.until) continue;
+    const m = c.use.manifest;
+    if (m.pattern) {
+      if (share(pl.rect) >= OTHER_CONTENT_SHARE) return true;
+      continue;
+    }
+    const v = m.views[c.view];
+    if (!v) continue;
+    const kx = pl.rect.w / v.w;
+    const ky = pl.rect.h / v.h;
+    for (const vs of stillsAt(v, Math.min(m.frames - 1, sourceFrameAt(fr, c.use.at, p.fps, m, c.use.inPoint)))) {
+      if (vs.standIn.kind !== "still") continue;
+      const r = vs.rect ?? { x: 0, y: 0, w: v.w, h: v.h };
+      if (share({ x: pl.rect.x + r.x * kx, y: pl.rect.y + r.y * ky, w: r.w * kx, h: r.h * ky }) >= OTHER_CONTENT_SHARE) return true;
+    }
+  }
+  return false;
+};
+
+/**
+ * A viewer always knows what a placeholder stands for (PLACEHOLDERS: each slot names its capture): a frame made of
+ * slots (one fills a tenth of it or more, and no published still, real take or line of the film's type is there to
+ * read) shows at least one slot's label whole, and a slot being read shows its own (it carries the take's state).
+ * Not judged: a run under half a second, and frames where the camera sweeps faster than 4 px a frame at 1080 (a
+ * momentum cut's incoming glide); a label another plane covers counts as shown (planes are not occluded here). On the
+ * fix's reels the Dusk opened in 1:1 and 9:16 on the workspace with its label outside the frame, and the palette, read
+ * at its middle row, had its label and its states cut by the left edge. Set the slot's `focus` where the camera frames it.
+ */
+export function slotLabels(p: ScenePlan): Finding[] {
+  const out: Finding[] = [];
+  const glimpse = Math.round((GLIMPSE_FRAMES_60 * p.fps) / 60);
+  const { w, h } = p.frame;
+  for (const s of p.shots) {
+    const slots = s.planes.flatMap((pl) => drawnSlots(p, s, pl).map((d) => ({ pl, d })));
+    if (!slots.length) continue;
+    const shown = ({ pl, d }: (typeof slots)[number], fr: number) =>
+      fr >= d.from && fr < d.to && visible(pl, fr) && (pl.enterAt === undefined || fr >= pl.enterAt) && (pl.swapInAt === undefined || fr >= pl.swapInAt) && (pl.swapOutAt === undefined || fr < pl.swapOutAt);
+    const big = ({ d }: (typeof slots)[number], fr: number) => {
+      const r = rectInFrame(d.box, at(p, s, fr), p.frame);
+      return Math.max(0, Math.min(r.x + r.w, w) - Math.max(r.x, 0)) * Math.max(0, Math.min(r.y + r.h, h) - Math.max(r.y, 0)) >= SLOT_LABEL_MIN_SHARE * w * h;
+    };
+    const labelIn = ({ d }: (typeof slots)[number], fr: number) => {
+      const pose = at(p, s, fr);
+      const L = slotLabelLayout(d.slot, d.box.w, d.box.h, pose.zoom, d.state(fr), d.timecode(fr)).rect;
+      return insideFrame(rectInFrame({ x: d.box.x + L.x, y: d.box.y + L.y, w: L.w, h: L.h }, pose, p.frame), p.frame, -0.5);
+    };
+    const unlabelled = (fr: number) => {
+      const xs = slots.filter((x) => shown(x, fr));
+      return xs.some((x) => big(x, fr)) && !xs.some((x) => labelIn(x, fr)) && sweepPx(p, s, fr) <= SLOT_LABEL_SWEEP_PX && !otherContent(p, s, fr);
+    };
+    for (const run of runsOf(s.from, s.to, unlabelled)) {
+      if (run.to - run.from < glimpse) continue;
+      const names = [...new Set(slots.filter((x) => shown(x, run.from) && big(x, run.from)).map((x) => x.d.id))].join(", ");
+      out.push({ check: "slotLabels", level: "error", message: `${s.id}: slots fill the frame (${names}) with no slot's label in frame for ${((run.to - run.from) / p.fps).toFixed(2)} s, frames ${run.from}–${run.to}: set a slot's focus where the camera frames it`, frame: run.from, to: run.to });
+    }
+    for (const x of slots) {
+      const r = x.pl.read;
+      if (!r) continue;
+      const rr = r.rect ?? x.pl.rect;
+      const ix = Math.max(0, Math.min(rr.x + rr.w, x.d.box.x + x.d.box.w) - Math.max(rr.x, x.d.box.x));
+      const iy = Math.max(0, Math.min(rr.y + rr.h, x.d.box.y + x.d.box.h) - Math.max(rr.y, x.d.box.y));
+      if (ix * iy < 0.5 * rr.w * rr.h) continue; // the read is not this slot's
+      const cut = (fr: number) => fr >= r.from && fr < r.to && shown(x, fr) && !labelIn(x, fr) && sweepPx(p, s, fr) <= SLOT_LABEL_SWEEP_PX;
+      for (const run of runsOf(Math.max(r.from, s.from), Math.min(r.to, s.to), cut)) {
+        if (run.to - run.from < glimpse) continue;
+        out.push({ check: "slotLabels", level: "error", message: `${s.id}/${x.d.id}: read with its label cut by the frame for ${((run.to - run.from) / p.fps).toFixed(2)} s, frames ${run.from}–${run.to} (its label carries the take's state): set its focus where the camera reads it`, frame: run.from, to: run.to });
+      }
+    }
+  }
+  return out;
+}
+
 /** The checks added after the craft review, by name (CR-15). */
 export const REVIEW_CHECKS = ["cameraFloor", "irisEase", "groundCoverage", "stoneCount", "planesInFrame", "legibleWords", "hitSync", "smallPrintHolds", "askActClock", "typeExits"] as const;
 
@@ -996,6 +1171,8 @@ export function checkPlan(p: ScenePlan, grid?: MusicGrid, extraMoves: readonly Q
     ...smallPrintHolds(p),
     ...askActClock(p),
     ...typeExits(p),
+    // added in fix round 1
+    ...slotLabels(p),
   ];
   const errors = [...r.errors, ...more.filter((x) => x.level === "error")];
   return {

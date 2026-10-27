@@ -24,6 +24,7 @@ import { gradeAt } from "../../light/grades";
 import { LightLeak } from "../../light/LightLeak";
 import { FontGate } from "../../type/FontGate";
 import { KineticLine } from "../../type/KineticLine";
+import { wordsIn } from "../../type/exits";
 import { typeSizePx } from "../../type/scale";
 import { defaultEntranceOf, exitPlanOf } from "../frame";
 import { carryTransform } from "../kit";
@@ -35,6 +36,7 @@ import { Riverbed } from "../../demo/parts";
 import { RIVERBED, groundRectOf } from "../ground";
 import { PebbleOnFilm } from "../../../pebble/PebbleOnFilm";
 import type { PlaneSpec, ScenePlan, ShotSpec, TypeSpec } from "../scene";
+import { frameOfSource, sourceFrameAt, stillsAt } from "../take";
 import { ImageContent, SetPiecesSlate, StandInView, TakeViewContent } from "./StandInViews";
 import { SageTextSweep } from "./SageSweep";
 import { VeilCast } from "./VeilCast";
@@ -82,6 +84,25 @@ const PlaneView: React.FC<{ shot: ShotSpec; pl: PlaneSpec; frame: number; zoom: 
     const f = dimFilter(d);
     if (f) filters.push(f);
   }
+  // a take's placeholder view that shows nothing yet draws nothing (no card-shaped box or shadow before the card
+  // lands); a view showing one arriving still arrives with it, its shadow included
+  let planeEntrance = false;
+  if (pl.content.kind === "take") {
+    const u = pl.content.use;
+    const v = u.manifest.views[pl.content.view];
+    if (v && !u.manifest.pattern && !v.slot) {
+      if (frame < u.at || frame >= u.until) return null;
+      const shown = stillsAt(v, sourceFrameAt(frame, u.at, fps, u.manifest, u.inPoint));
+      if (!shown.length) return null;
+      if (shown.length === 1 && shown[0]!.entrance) {
+        const e = askCardPlaneStyle(frame, frameOfSource(shown[0]!.from, u.at, fps, u.manifest, u.inPoint), fps, unit / zoom);
+        opacity *= e.opacity;
+        if (e.style.transform) style.transform = [style.transform, e.style.transform].filter(Boolean).join(" ");
+        if (e.style.filter) filters.push(String(e.style.filter));
+        planeEntrance = true;
+      }
+    }
+  }
   if (filters.length) style.filter = [style.filter, ...filters].filter(Boolean).join(" ");
   const tilt = pl.kind === "pebble" && (pl.tiltRx || pl.tiltRy) ? { rx: pl.tiltRx ? new ScalarTrack(pl.tiltRx).at(frame) : 0, ry: pl.tiltRy ? new ScalarTrack(pl.tiltRy).at(frame) : 0 } : undefined;
   const reading = !!pl.read && frame >= pl.read.from && frame < pl.read.to;
@@ -91,7 +112,7 @@ const PlaneView: React.FC<{ shot: ShotSpec; pl: PlaneSpec; frame: number; zoom: 
       {c.kind === "standIn" ? (
         <StandInView standIn={c.standIn} w={pl.rect.w} h={pl.rect.h} px={zoom} />
       ) : c.kind === "take" ? (
-        <TakeViewContent use={c.use} view={c.view} w={pl.rect.w} h={pl.rect.h} px={zoom} offset={shot.from} />
+        <TakeViewContent use={c.use} view={c.view} w={pl.rect.w} h={pl.rect.h} px={zoom} offset={shot.from} planeEntrance={planeEntrance} />
       ) : (
         <ImageContent src={c.src} w={pl.rect.w} h={pl.rect.h} />
       )}
@@ -241,6 +262,7 @@ const TypeLines: React.FC<{ t: TypeSpec; plan: ScenePlan }> = ({ t, plan }) => {
           at={t.at + i * stagger}
           exitAt={t.exitAt === undefined || exit === "camera" ? undefined : t.exitAt + i * plan_.stagger}
           exitFrames={plan_.perLine || undefined}
+          blockWords={wordsIn(t.text)}
           entrance={ent}
           exit={exit}
           sizeT={t.sizeT ?? 0.5}
@@ -255,7 +277,10 @@ const TypeLines: React.FC<{ t: TypeSpec; plan: ScenePlan }> = ({ t, plan }) => {
   return (
     <Sequence durationInFrames={Math.max(1, end)} layout="none" name={t.id}>
       {m ? (
-        <AbsoluteFill style={{ transformOrigin: "0 0", transform: `matrix(${m.k.toFixed(6)}, 0, 0, ${m.k.toFixed(6)}, ${m.tx.toFixed(2)}, ${m.ty.toFixed(2)})` }}>{body}</AbsoluteFill>
+        // its own compositor layer, moved at sub-pixel precision: laid out in the page, a line's glyphs snap to whole
+        // pixels and a slow push makes each line jump a pixel now and then (measured on the 1:1 reel's end card: a
+        // tile step of 3–8 levels), where the layer glides
+        <AbsoluteFill style={{ transformOrigin: "0 0", transform: `matrix(${m.k.toFixed(6)}, 0, 0, ${m.k.toFixed(6)}, ${m.tx.toFixed(3)}, ${m.ty.toFixed(3)})`, willChange: "transform" }}>{body}</AbsoluteFill>
       ) : (
         body
       )}

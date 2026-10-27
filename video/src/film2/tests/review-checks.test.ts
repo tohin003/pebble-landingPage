@@ -19,7 +19,7 @@ import { TAKE_HSF } from "../setpieces/take";
 import { STEALTH_HONEST } from "../../../../shared/pebble/stealthVeil";
 import { REVIEW_CHECKS, apertureOpenStart, askActClock, checkPlan, groundCoverage, hitSync, legibleWords, planesInFrame, smallPrintHolds, stoneCount, typeExits } from "../setpieces/qa";
 import { demoPlans } from "../setpieces/demo/plans";
-import { OPEN_FINDINGS, isOpen } from "../setpieces/review-ledger";
+import { CLOSED_FINDINGS, OPEN_FINDINGS, isOpen } from "../setpieces/review-ledger";
 import { demoQa, MOVES } from "../demo/timeline";
 import type { PlaneSpec, ScenePlan, ShotSpec, TypeSpec } from "../setpieces/scene";
 import type { Aspect } from "../tokens";
@@ -497,13 +497,21 @@ describe("the craft review's findings, caught on the current plans (CR-15)", () 
       }
     });
   }
-  test("the 9:16 bands open 22 frames later than 16:9's and 1:1's, as the review measured (about 202 against 181)", () => {
-    const open = (a: Aspect) => apertureOpenStart(demoPlans(a)[0]!.plan);
-    expect(open("16:9")).toBe(182);
-    expect(open("1:1")).toBe(182);
-    expect(open("9:16")).toBe(204);
-    expect(errorsOf(hitSync(demoPlans("16:9")[0]!.plan)).some((x) => /starts to open/.test(x.message))).toBe(false);
-    expect(errorsOf(hitSync(demoPlans("9:16")[0]!.plan)).some((x) => /24 frames after the hit/.test(x.message))).toBe(true);
+  test("the bands open on the hit's next frame in every aspect (the review measured 9:16 at about 202 against 181)", () => {
+    for (const a of ASPECTS) {
+      const p = demoPlans(a)[0]!.plan;
+      expect(apertureOpenStart(p)).toBe(p.hits[0]! + 1);
+      expect(errorsOf(hitSync(p))).toEqual([]);
+    }
+  });
+  test("every finding the fix lane closed stays closed: its check passes its piece in every aspect", () => {
+    for (const c of CLOSED_FINDINGS) {
+      if (c.piece === "F2-Foundation-Demo") {
+        expect(errorsOf(foundationErrors(), c.check)).toEqual([]);
+        continue;
+      }
+      for (const a of ASPECTS) expect(errorsOf(reportOf(a, c.piece).errors, c.check).map((x) => `${a} ${x.message}`)).toEqual([]);
+    }
   });
   test("the whole-frame checks the review cited still pass these plans: the new checks are what sees the defects", () => {
     for (const a of ASPECTS)

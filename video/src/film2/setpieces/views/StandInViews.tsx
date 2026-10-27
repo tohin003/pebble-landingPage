@@ -4,9 +4,8 @@
 // ticking at 1× so the edit lane can see where a take's in-point sits.
 import { Img, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLOR, FAMILY } from "../../tokens";
-import { E_MOVE } from "../../motion/ease";
 import { askCardLook } from "../../transitions/entrances";
-import { shownSize, type SlotStandIn, type StandIn } from "../standins";
+import { SLOT_CAPTION, shownSize, slotLabelLayout, type SlotStandIn, type StandIn } from "../standins";
 import { sourceFrameAt, sourceTimecode, stillsAt, takeFramePath, type TakeUse, type ViewStill } from "../take";
 
 /** A published still, cropped, filling a w × h box at a uniform scale (the box keeps the crop's aspect). */
@@ -28,18 +27,18 @@ export const StillImage: React.FC<{ standIn: Extract<StandIn, { kind: "still" }>
  */
 export const SlotPanel: React.FC<{ slot: SlotStandIn; w: number; h: number; px: number; timecode?: string; state?: string }> = ({ slot, w, h, px, timecode, state }) => {
   const u = 1 / Math.max(0.05, px); // world units per frame px
-  const fs = Math.min(Math.max(13 * u, 10), Math.min(w, h) / (state ? 7.5 : 6));
-  const hatch = `repeating-linear-gradient(135deg, ${COLOR.line} 0px, ${COLOR.line} ${(1.2 * u).toFixed(2)}px, transparent ${(1.2 * u).toFixed(2)}px, transparent ${(14 * u).toFixed(2)}px)`;
-  const f = slot.focus ?? { x: 0, y: 0 };
-  const left = Math.max(fs * 0.9, Math.min(w - fs * 16, f.x * w));
-  const top = Math.max(fs * 0.8, Math.min(h - fs * 5.6, f.y * h));
+  // (its size and corner as the checks read them: standins.ts slotLabelLayout)
+  const { fs, left, top } = slotLabelLayout(slot, w, h, px, state, timecode);
+  // (the stops are not rounded: rounded to 0.01 of a world unit, the period stepped every 15–17 frames of a slow push
+  // and the far stripes jumped by up to 2 px at once, a whole-frame step of 2.2–2.8 levels on the 1:1 reel)
+  const hatch = `repeating-linear-gradient(135deg, ${COLOR.line} 0px, ${COLOR.line} ${(1.2 * u).toFixed(5)}px, transparent ${(1.2 * u).toFixed(5)}px, transparent ${(14 * u).toFixed(5)}px)`;
   return (
     <div style={{ position: "absolute", inset: 0, background: `${hatch}, ${COLOR.fill}`, border: `${(1.5 * u).toFixed(2)}px solid ${COLOR.line}`, boxSizing: "border-box", overflow: "hidden" }}>
       <div style={{ position: "absolute", left, top, right: fs * 0.9, fontFamily: `"${FAMILY.mono}"`, fontSize: fs, color: COLOR.ink2, lineHeight: 1.35 }}>
         <div style={{ fontWeight: 500, color: COLOR.ink }}>{slot.captureId}</div>
         <div style={{ fontFamily: `"${FAMILY.sans}"`, fontSize: fs * 0.92 }}>{slot.label}</div>
         {state ? <div style={{ fontFamily: `"${FAMILY.sans}"`, fontSize: fs * 0.92, color: COLOR.ink }}>{state}</div> : null}
-        <div style={{ fontSize: fs * 0.78, opacity: 0.85, marginTop: fs * 0.3 }}>placeholder · not captured yet</div>
+        <div style={{ fontSize: fs * 0.78, opacity: 0.85, marginTop: fs * 0.3 }}>{SLOT_CAPTION}</div>
         {timecode ? <div style={{ fontSize: fs * 0.9, marginTop: fs * 0.3, color: COLOR.accent }}>src {timecode} · 1×</div> : null}
       </div>
     </div>
@@ -64,7 +63,7 @@ const entranceStyle = (frameSinceFrom: number, fps: number, px: number): React.C
  * One view of a take, at 1×: the real frame sequence (cropped to the view) when the take has one; otherwise its
  * placeholder stills and slot. `px`: frame px per world unit (for the slot's label and the entrance's rise).
  */
-export const TakeViewContent: React.FC<{ use: TakeUse; view: string; w: number; h: number; px: number; offset?: number }> = ({ use, view, w, h, px, offset = 0 }) => {
+export const TakeViewContent: React.FC<{ use: TakeUse; view: string; w: number; h: number; px: number; offset?: number; planeEntrance?: boolean }> = ({ use, view, w, h, px, offset = 0, planeEntrance = false }) => {
   const frame = useCurrentFrame() + offset;
   const { fps } = useVideoConfig();
   const m = use.manifest;
@@ -88,13 +87,10 @@ export const TakeViewContent: React.FC<{ use: TakeUse; view: string; w: number; 
         const r = s.rect ?? { x: 0, y: 0, w: v.w, h: v.h };
         // the frame on which this still first showed, for its entrance; a still with no entrance switches in with a
         // hard cut on its source frame, as a recording's own change does (CR-18: placeholder states never dissolve)
+        // (when the plane itself arrives with its one still, PlaneView draws the entrance, shadow and all)
         const since = s.entrance ? Math.floor(((src - s.from) * fps) / m.fps) : Infinity;
-        const look = s.entrance ? entranceStyle(since, fps, px) : {};
+        const look = s.entrance && !planeEntrance ? entranceStyle(since, fps, px) : {};
         if (look === null) return null;
-        if (s.fadeOut && s.to !== undefined && src >= s.to - s.fadeOut) {
-          const u = Math.min(1, (src - (s.to - s.fadeOut)) / s.fadeOut);
-          look.opacity = (look.opacity === undefined ? 1 : Number(look.opacity)) * (1 - E_MOVE(u));
-        }
         return (
           <div key={i} style={{ position: "absolute", left: r.x * kx, top: r.y * ky, width: r.w * kx, height: r.h * ky, ...look }}>
             {s.standIn.kind === "still" ? <StillImage standIn={s.standIn} w={r.w * kx} h={r.h * ky} /> : <SlotPanel slot={s.standIn} w={r.w * kx} h={r.h * ky} px={px} timecode={sourceTimecode(src, m.fps)} state={state} />}

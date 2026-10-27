@@ -31,15 +31,23 @@ export interface ReelMarks {
   cuts: number[];
   /** transitions' frames [from, to): designed changes tile pops do not judge */
   transitions?: { from: number; to: number }[];
+  /** a take's placeholder state changes (hard cuts on its event frames, CR-18): not judged as pops, listed */
+  states?: { frame: number; id: string }[];
   waits: string[];
   hits: number[];
-  types: (InkTrack & { vanishes?: string })[];
+  types: (InkTrack & { vanishes?: string; rectAt?: Record<number, [number, number, number, number]> })[];
   stones: { from: number; to: number; count: number; rMin: number; rMax: number }[];
   /** each frame's stones as the plan draws them: [centre x, centre y, radius], the plans' frame px */
   stoneAt?: Record<number, [number, number, number][]>;
   /** planes' card entrances and placeholder stills' entrances, to name what a tile pop shows */
   entrances?: { id: string; from: number; to: number; kind: string }[];
   apertures: { piece: string; hit: number; planOpen: number; rest: { from: number; to: number } }[];
+  /**
+   * the gaps that must stay empty while their neighbours are held (CR-20: the end card's facts, each its own span with
+   * a margin): the middle of the margin between two facts, its frames, its ink's grey level, where it moves (a page set
+   * in the world)
+   */
+  gaps?: { id: string; from: number; to: number; rect: Rect; inkLuma: number; rectAt?: Record<number, [number, number, number, number]> }[];
 }
 
 export interface ReelScanReport {
@@ -51,8 +59,13 @@ export interface ReelScanReport {
   settles: number;
   popCauses: { frame: number; tile: number; cause: string; mad: number }[];
   apertures: { piece: string; hit: number; planOpen: number; renderOpen: number | null; framesFromHit: number | null; trace: Record<number, BandHeights> }[];
+  /** each gap's worst share of inked pixels while its facts are held (CR-20) */
+  gaps: { id: string; worstShare: number; at: number }[];
   problems: string[];
 }
+
+/** A gap holds ink when more than this share of its pixels are on the ink's side (CR-20: two facts running together). */
+export const GAP_INK_SHARE = 0.04;
 
 export const parseWaits = (s: string) =>
   s
@@ -71,10 +84,12 @@ export class ReelScan {
   private small: Uint8Array[] = [];
   private smallW: number;
   private smallH: number;
-  private tracks: InkTrack[];
+  private tracks: (InkTrack & { rectAt?: Record<number, Rect> })[];
   private ink: (number | undefined)[][];
   private stoneAt: ReelScanReport["stones"]["frames"] = [];
   private bands: (BandHeights | undefined)[] = [];
+  private gapInk = new Map<string, { worst: number; at: number; over: number; runStart: number; longest: number }>();
+  private gaps: { id: string; from: number; to: number; rect: Rect; inkLuma: number; rectAt?: Record<number, Rect> }[];
   private prevFull: Uint8Array | null = null;
   private prevSmall: Uint8Array | null = null;
   private tileOf: Uint16Array;
@@ -95,8 +110,17 @@ export class ReelScan {
     this.smallH = Math.floor(H / this.K);
     const s = this.S;
     const scale = (r: Rect): Rect => ({ x: r.x * s, y: r.y * s, w: r.w * s, h: r.h * s });
-    this.tracks = marks.types.map((t) => ({ ...t, rect: scale(t.rect) }));
+    this.tracks = marks.types.map((t) => ({
+      ...t,
+      rect: scale(t.rect),
+      rectAt: t.rectAt ? Object.fromEntries(Object.entries(t.rectAt).map(([fr, [x, y, w, h]]) => [Number(fr), scale({ x, y, w, h })])) : undefined,
+    }));
     this.ink = this.tracks.map(() => []);
+    this.gaps = (marks.gaps ?? []).map((g) => ({
+      ...g,
+      rect: scale(g.rect),
+      rectAt: g.rectAt ? Object.fromEntries(Object.entries(g.rectAt).map(([fr, [x, y, w, h]]) => [Number(fr), scale({ x, y, w, h })])) : undefined,
+    }));
     const G = TILE_GRID;
     this.tileOf = new Uint16Array(this.smallW * this.smallH);
     this.tilePx = new Array(G * G).fill(0);
@@ -109,6 +133,17 @@ export class ReelScan {
       }
     }
     this.lastTileMad = Array.from({ length: G * G }, () => []);
+  }
+
+  /** A line's rect on a frame: where its world carries it (a line set in the world), else its fixed rect. */
+  private rectOf(t: InkTrack & { rectAt?: Record<number, Rect> }, f: number): Rect {
+    if (!t.rectAt) return t.rect;
+    const r = t.rectAt[f];
+    if (r) return r;
+    // outside the frames it is drawn: where it was last (or first) drawn
+    const keys = Object.keys(t.rectAt).map(Number);
+    const k = f < Math.min(...keys) ? Math.min(...keys) : Math.max(...keys);
+    return t.rectAt[k]!;
   }
 
   /** A tile's rect at full size (the small frame's tile, scaled back by K). */
@@ -179,7 +214,7 @@ export class ReelScan {
     this.prevSmall = s.px;
     this.prevFull = px.slice();
     this.tracks.forEach((t, i) => {
-      if (f >= t.from - INK.withinFrames && f < t.until + INK.withinFrames + 1) this.ink[i]![f] = inkIn(px, W, H, t.rect, t.polarity, INK.noise, t.inkLuma);
+      if (f >= t.from - INK.withinFrames && f < t.until + INK.withinFrames + 1) this.ink[i]![f] = inkIn(px, W, H, this.rectOf(t, f), t.polarity, INK.noise, t.inkLuma);
     });
     const run = marks.stones.find((x) => f >= x.from && f < x.to);
     if (run) {
@@ -187,7 +222,7 @@ export class ReelScan {
       // glyph (Fraunces at 72–96 px makes compact dark shapes), not a stone
       const h2 = shrink(px, W, H, 2);
       const k = S / 2;
-      const typeRects = this.tracks.filter((t) => f >= t.from && f < t.until).map((t) => ({ x: t.rect.x / 2 - 2, y: t.rect.y / 2 - 2, w: t.rect.w / 2 + 4, h: t.rect.h / 2 + 4 }));
+      const typeRects = this.tracks.filter((t) => f >= t.from && f < t.until).map((t) => this.rectOf(t, f)).map((r) => ({ x: r.x / 2 - 2, y: r.y / 2 - 2, w: r.w / 2 + 4, h: r.h / 2 + 4 }));
       // around the plan's stones on this frame: within 4 of their radii (two stones of a bad match are 2–3 apart)
       const near = (marks.stoneAt?.[f] ?? []).map(([x, y, r]) => ({ x: x * k, y: y * k, R: 4 * r * k }));
       const rs = (marks.stoneAt?.[f] ?? []).map((s) => s[2]);
@@ -207,6 +242,22 @@ export class ReelScan {
       });
     }
     if (marks.apertures.some((a) => f >= a.rest.from && f < a.hit + 90)) this.bands[f] = bandHeights(px, W, H);
+    for (const g of this.gaps) {
+      if (f < g.from || f >= g.to) continue;
+      const r = g.rectAt?.[f] ?? g.rect;
+      const n = Math.max(1, Math.round(r.w) * Math.round(r.h));
+      const share = inkIn(px, W, H, r, "dark", INK.noise, g.inkLuma) / n;
+      const st = this.gapInk.get(g.id) ?? { worst: 0, at: f, over: 0, runStart: -1, longest: 0 };
+      if (share > st.worst) {
+        st.worst = share;
+        st.at = f;
+      }
+      if (share > GAP_INK_SHARE) {
+        if (st.runStart < 0) st.runStart = f;
+        st.longest = Math.max(st.longest, f - st.runStart + 1);
+      } else st.runStart = -1;
+      this.gapInk.set(g.id, st);
+    }
   }
 
   get frames(): number {
@@ -214,7 +265,7 @@ export class ReelScan {
   }
 
   finish(fps = this.marks.fps): ReelScanReport {
-    const lumaAll = analyseLuma(this.small, { fps, width: this.smallW, height: this.smallH, cuts: this.marks.cuts, transitions: this.marks.transitions ?? [], waits: parseWaits(this.marks.waits.join(",")), tilePop: TILE_POP_REEL });
+    const lumaAll = analyseLuma(this.small, { fps, width: this.smallW, height: this.smallH, cuts: this.marks.cuts, transitions: this.marks.transitions ?? [], states: (this.marks.states ?? []).map((x) => x.frame), waits: parseWaits(this.marks.waits.join(",")), tilePop: TILE_POP_REEL });
     // a change that a small shift explains, or that keeps the tile's mean, is a move (glyphs settling, the camera), not a pop
     const tilePops = lumaAll.tilePops.filter((p) => {
       const m = this.moveTest.get(`${p.frame}:${p.tile}`) ?? { shiftRatio: 1, meanShare: 1 };
@@ -258,13 +309,21 @@ export class ReelScan {
       for (let f = a.rest.from; f < a.hit + 90; f++) if (this.bands[f]) trace[f] = this.bands[f]!;
       return { ...a, renderOpen: open, framesFromHit: late, trace };
     });
+    const gaps = this.gaps.map((g) => {
+      const st = this.gapInk.get(g.id);
+      if (st && st.longest >= 3) problems.push(`gap: ${g.id} holds ink on ${st.longest} frames in a row (up to ${(100 * st.worst).toFixed(1)} % of it on frame ${st.at}): two facts run together (CR-20)`);
+      return { id: g.id, worstShare: st ? Math.round(st.worst * 1000) / 1000 : 0, at: st?.at ?? g.from };
+    });
     const inkSeries = Object.fromEntries(this.tracks.map((t, i) => [t.id, Object.fromEntries(Object.entries(this.ink[i]!).map(([f, v]) => [Number(f), Math.round(v! * 10) / 10]))]));
-    return { luma, ink, inkSeries, stones: { framesChecked: this.stoneAt.length, twoStoneRuns: runs, frames: this.stoneAt }, apertures, settles, popCauses, problems };
+    return { luma, ink, inkSeries, stones: { framesChecked: this.stoneAt.length, twoStoneRuns: runs, frames: this.stoneAt }, apertures, gaps, settles, popCauses, problems };
   }
 
   /** What a tile shows on a frame, per the plan's lines: an exit, an entrance, a line that stops being drawn … */
   private causeOf(f: number, tile: Rect): string {
-    const over = this.tracks.filter((t) => t.rect.x < tile.x + tile.w && t.rect.x + t.rect.w > tile.x && t.rect.y < tile.y + tile.h && t.rect.y + t.rect.h > tile.y);
+    const over = this.tracks.filter((t) => {
+      const r = this.rectOf(t, f);
+      return r.x < tile.x + tile.w && r.x + r.w > tile.x && r.y < tile.y + tile.h && r.y + r.h > tile.y;
+    });
     for (const t of over) if (f >= t.until - 1 && f <= t.until + 1 && !t.exits.some((e) => f >= e.from - 1 && f <= e.to + 1)) return `${t.id} stops being drawn`;
     // of the exits under way, the fastest (two lines leaving together: the quicker one is what pops)
     const leaving = over.flatMap((t) => t.exits.filter((e) => f >= e.from - 1 && f <= e.to + 1).map((e) => ({ t, e }))).sort((x, y) => x.e.to - x.e.from - (y.e.to - y.e.from));

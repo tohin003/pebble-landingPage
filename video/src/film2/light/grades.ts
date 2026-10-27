@@ -159,6 +159,60 @@ export const groundSample = (g: Grade, base: RGB = RIVERBED_MEDIAN): RGB => {
   return c.map((v, i) => clamp01(v * (1 - a) + shade[i]! * a)) as RGB;
 };
 
+/** 8-bit levels: R − B and the BT.709 luma of a colour (what the review measured on the ground's pixels, CR-14). */
+export const levels = (c: RGB): { rMinusB: number; luma: number } => ({ rMinusB: (c[0] - c[2]) * 255, luma: (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) * 255 });
+
+/** The film's sections in order, each with the light its ground carries (TREATMENT §3.3). */
+export const LIGHT_ARC_ORDER = ["morning", "warm", "day", "dusk", "evening", "page"] as const;
+export type ArcSection = (typeof LIGHT_ARC_ORDER)[number];
+
+/**
+ * The light arc the film's ground must show (CR-14, OVERRIDES §55). Given each section's ground sample (the model's
+ * `modelArc()`, or the median of a render's ground pixels: setpieces/tools/ground-light.ts), it returns the lead's
+ * targets that fail:
+ *   - warm and evening at least +10 levels R − B against day;
+ *   - dusk at least 10 % darker than day, with a visible dusk tint (at least 10 levels bluer in R − B than day);
+ *   - evening slightly darker than day (1–15 %);
+ *   - adjacent sections' samples at least ΔE 5 apart.
+ */
+export function lightArcProblems(s: Readonly<Partial<Record<ArcSection, RGB>>>): string[] {
+  const out: string[] = [];
+  const L = (k: ArcSection) => (s[k] ? levels(s[k]!) : null);
+  const day = L("day");
+  if (day) {
+    for (const k of ["warm", "evening"] as const) {
+      const x = L(k);
+      if (x && x.rMinusB < day.rMinusB + 10) out.push(`${k}'s ground is ${(x.rMinusB - day.rMinusB).toFixed(1)} levels R − B against day's (at least +10)`);
+    }
+    const dusk = L("dusk");
+    if (dusk && dusk.luma > 0.9 * day.luma) out.push(`dusk's ground is ${(100 * (1 - dusk.luma / day.luma)).toFixed(1)} % darker than day's (at least 10 %)`);
+    if (dusk && dusk.rMinusB > day.rMinusB - 10) out.push(`dusk's ground is ${(day.rMinusB - dusk.rMinusB).toFixed(1)} levels bluer than day's in R − B (a visible dusk tint: at least 10)`);
+    const evening = L("evening");
+    if (evening) {
+      const ev = 1 - evening.luma / day.luma;
+      if (ev < 0.01 || ev > 0.15) out.push(`evening's ground is ${(100 * ev).toFixed(1)} % darker than day's (slightly: 1–15 %)`);
+    }
+  }
+  for (let i = 1; i < LIGHT_ARC_ORDER.length; i++) {
+    const a = s[LIGHT_ARC_ORDER[i - 1]!];
+    const b = s[LIGHT_ARC_ORDER[i]!];
+    if (!a || !b) continue;
+    const d = deltaE(a, b);
+    if (d < 5) out.push(`${LIGHT_ARC_ORDER[i - 1]} → ${LIGHT_ARC_ORDER[i]}: the grounds are ΔE ${d.toFixed(1)} apart (at least 5)`);
+  }
+  return out;
+}
+
+/** The model's ground sample for each section (the riverbed under its grade; the title's sage-white page). */
+export const modelArc = (): Record<ArcSection, RGB> => ({
+  morning: groundSample(GRADES.morning),
+  warm: groundSample(GRADES.warm),
+  day: groundSample(GRADES.day),
+  dusk: groundSample(GRADES.dusk),
+  evening: groundSample(GRADES.evening),
+  page: gradeColor(hexToRgb(COLOR.page), GRADES.page, 0.5, false),
+});
+
 /** The approximate mean relative luminance of a frame on the page or the riverbed under a grade (for the checks). */
 export const gradeLuminance = (g: Grade, base: string = COLOR.riverbedMid, ground = true): number =>
   relLuminance(gradeColor(hexToRgb(base), g, 0.5, ground)) * (1 - g.vignette * 0.35);

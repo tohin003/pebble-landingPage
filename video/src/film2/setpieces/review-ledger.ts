@@ -26,38 +26,40 @@ export interface OpenFinding {
 }
 
 export const OPEN_FINDINGS: readonly OpenFinding[] = [
-  // ---- the Drop
-  { piece: "drop", check: "cameraFloor", cr: "CR-04", saw: [{ aspect: "16:9", from: 210, to: 420 }], note: "the camera freezes after the hit while L05 and L06 are held (lz 0.00004, 0.04 px a frame at the corners)" },
-  { piece: "drop", check: "hitSync", cr: "CR-07", saw: [{ aspect: "9:16", from: 202, to: 205 }], note: "9:16's bands open 24 frames after the hit (16:9 and 1:1 open on 182); the warm leak plays over the bands in every aspect" },
-  { piece: "drop", check: "legibleWords", cr: "CR-09", note: "the ask card is declared read with 0 words; the companion's panel shows its 27 words at about 20 px, uncounted" },
-  { piece: "drop", check: "askActClock", cr: "CR-11", note: "the companion's panel (a 1.0.x still) frames RS-9's live card view of the same window (the review's CR-18 overhang is the same composite)" },
-  { piece: "drop", check: "groundCoverage", cr: "CR-02", note: "9:16 only: the riverbed's top edge in frame at the end of the pull-back (561–660)" },
-  // ---- Ring 4 and Cascade 4
-  { piece: "ring4", check: "planesInFrame", cr: "CR-05", saw: [{ aspect: "16:9", from: 420, to: 600 }, { aspect: "16:9", from: 645, to: 915 }, { aspect: "1:1", from: 360, to: 900 }], note: "the held card, the test card and the receipt cut by the frame's edge at reading size" },
-  { piece: "ring4", check: "legibleWords", cr: "CR-05", saw: [{ aspect: "16:9", from: 645, to: 915 }], note: "162 legible words at 26–36 px against 22 counted (ask 5, act 8, receipt 9)" },
-  { piece: "ring4", check: "askActClock", cr: "CR-11", saw: [{ aspect: "16:9", from: 645, to: 915 }], note: "the held card (a still) above HS-F's live run view of the same conversation, Verified included" },
-  { piece: "ring4", check: "typeExits", cr: "CR-03", saw: [{ aspect: "16:9", from: 1393, to: 1394 }], note: "the cascade's last item is held to the piece's end and vanishes on the cut (reel 2054)" },
-  { piece: "ring4", check: "cameraFloor", cr: "CR-04", note: "the cascade's stage arrives on E-arrive at rest, then glides up from 0 (local 956–1024): an arrive-and-hold of about 1 s" },
-  { piece: "ring4", check: "groundCoverage", cr: "CR-02", note: "the riverbed's edge in frame while the ring leaves the stone (local 0–132 in 16:9; visible in the review's own ring_travel.jpg at reel 700–780)" },
-  // ---- the Dusk passage
-  { piece: "dusk", check: "cameraFloor", cr: "CR-04", note: "the palette's push starts from rest on E-move (local 0–67), over the blank frames CR-06 names" },
-  { piece: "dusk", check: "groundCoverage", cr: "CR-02", note: "9:16 only: the riverbed's top edge in frame under the crane to the menu bar" },
-  // ---- the climax shell
-  { piece: "climax", check: "cameraFloor", cr: "CR-04", saw: [{ aspect: "16:9", from: 530, to: 900 }], note: "the freeze on the kept card after the push-in (0.055 px a frame); also the end of Glaze's push (local 132–226)" },
-  { piece: "climax", check: "typeExits", cr: "CR-03", saw: [{ aspect: "16:9", from: 232, to: 234 }], note: "L24's 'camera' exit draws nothing: it vanishes on local 234 (reel 3368), 6 frames before the cut" },
-  { piece: "climax", check: "legibleWords", cr: "CR-05", note: "the approval card's 82 and the kept card's 78 legible words against 7 and 12 counted" },
-  { piece: "climax", check: "planesInFrame", cr: "CR-05", note: "1:1 only: both cards bleed off the frame's foot at reading size (§53 deferred this to the 2.0.0 captures; §55 asks every plane at 20 px wholly in frame)" },
-  // ---- the wall
-  { piece: "wall", check: "groundCoverage", cr: "CR-02", waitsForMontage: true, saw: [{ aspect: "16:9", from: 106, to: 360 }], note: "the riverbed shows as an inset rectangle through the pull-back (reel 4140–4394)" },
-  { piece: "wall", check: "cameraFloor", cr: "CR-04", waitsForMontage: true, note: "1:1 only: the drift after the pull-back (0.22 px a frame)" },
-  // ---- the convergence, the title and the end card
-  { piece: "finale", check: "stoneCount", cr: "CR-01", saw: [{ aspect: "16:9", from: 238, to: 244 }, { aspect: "1:1", from: 238, to: 245 }, { aspect: "9:16", from: 238, to: 243 }], note: "two stones as the iris opens, 148–163 px apart at 1080" },
-  { piece: "finale", check: "groundCoverage", cr: "CR-02", waitsForMontage: true, saw: [{ aspect: "16:9", from: 0, to: 166 }], note: "the riverbed's edges through the convergence (reel 4394–4560)" },
-  { piece: "finale", check: "smallPrintHolds", cr: "CR-10", saw: [{ aspect: "16:9", from: 926, to: 1308 }], note: "page 2: 102 words, the honest line among them, on screen together 5.97 s (they need 31.1 s; the honest line 9 s)" },
-  { piece: "finale", check: "cameraFloor", cr: "CR-04", note: "the convergence's first second (0.19 px a frame) and the title page's breath before its declared wait (0.08 px a frame, local 266–374)" },
-  // ---- the foundation demo (qa/checks.ts on demo/timeline.ts)
-  { piece: "F2-Foundation-Demo", check: "irisEase", cr: "CR-21", note: "its iris at 1358 takes ringIris's default, E-arrive, with no marked hit" },
-  { piece: "F2-Foundation-Demo", check: "cameraFloor", cr: "CR-04", note: "S2's reading hold (371–459) and the title before its wait (1367–1536) glide under 0.25 px a frame" },
+  // ---- the foundation demo (qa/checks.ts on demo/timeline.ts): the motion foundation's own demo reel, not a set piece
+  { piece: "F2-Foundation-Demo", check: "cameraFloor", cr: "CR-04", note: "S2's reading hold (371–459: its momentum cut lands on E-arrive at rest) and the title before its wait (1367–1536) glide under 0.25 px a frame; the fix is the set pieces' (a glide in, the title set in its page's world, setpieces/finale.ts), for the foundation lane's demo" },
+];
+
+/**
+ * The findings the fix lane closed (fix round 1, 27 Oct): each check now passes the plan in all three aspects, and the
+ * reels were rendered and looked at where the review saw the defect (film2/README.md, "Fix round 1"). The tests hold
+ * them closed: every error on the current plans must be an open finding, and these are not.
+ */
+export const CLOSED_FINDINGS: readonly { piece: string; check: string; cr: string; how: string }[] = [
+  { piece: "drop", check: "cameraFloor", cr: "CR-04", how: "the pre-roll pushes in from its first frame, the hand-off drifts out through L05 and L06 at 0.4 px a frame" },
+  { piece: "drop", check: "hitSync", cr: "CR-07", how: "the frame opens on the hit's next frame in every aspect; the leak plays once the bands have cleared" },
+  { piece: "drop", check: "legibleWords", cr: "CR-09", how: "the card is read at 28 px or more in the aperture, 12 words declared" },
+  { piece: "drop", check: "askActClock", cr: "CR-11", how: "the companion is RS-9's own view (a slot holding its card, then its frame at work from the receipt)" },
+  { piece: "drop", check: "groundCoverage", cr: "CR-02", how: "the riverbed is sized from the shot's widest pose (setpieces/ground.ts), shared with Ring 4 across the join" },
+  { piece: "ring4", check: "planesInFrame", cr: "CR-05", how: "the ask, the act and the receipt are views of HS-F cropped at line boundaries and framed whole while legible" },
+  { piece: "ring4", check: "legibleWords", cr: "CR-05", how: "every legible word is a declared read (6 + 13 + 10)" },
+  { piece: "ring4", check: "askActClock", cr: "CR-11", how: "every plane of the place is a view of HS-F, on its one clock" },
+  { piece: "ring4", check: "typeExits", cr: "CR-03", how: "the cascade's fixed line and last item leave with drawn exits on the stage's E-leave, before the cut" },
+  { piece: "ring4", check: "cameraFloor", cr: "CR-04", how: "the stage is entered on a glide at the cut's speed into its push, never landing at rest" },
+  { piece: "ring4", check: "groundCoverage", cr: "CR-02", how: "the ground sized from the widest pose, shared with the Drop" },
+  { piece: "dusk", check: "cameraFloor", cr: "CR-04", how: "the passage is entered with the cascade's momentum, gliding into the palette's push" },
+  { piece: "dusk", check: "groundCoverage", cr: "CR-02", how: "the ground sized from each shot's widest pose" },
+  { piece: "climax", check: "cameraFloor", cr: "CR-04", how: "the kept card's hold keeps a glide to the E-leave (push or pan, 0.42 px a frame)" },
+  { piece: "climax", check: "typeExits", cr: "CR-03", how: "L24 has a drawn blur exit ending 2 frames before the cut" },
+  { piece: "climax", check: "legibleWords", cr: "CR-05", how: "the Workshop's cards are labelled slots at the 2.0.0 cards' sizes (no 1.0.x card stands in their state)" },
+  { piece: "climax", check: "planesInFrame", cr: "CR-05", how: "as legibleWords: slots, framed whole" },
+  { piece: "wall", check: "groundCoverage", cr: "CR-02", how: "the general rule covers the wall too (its look still waits for the montage decision)" },
+  { piece: "wall", check: "cameraFloor", cr: "CR-04", how: "the drift after the pull-back is 0.4 px a frame in every aspect" },
+  { piece: "finale", check: "stoneCount", cr: "CR-01", how: "the world's stone lands on the title stone's pose, with its velocity, 2 frames before the iris" },
+  { piece: "finale", check: "groundCoverage", cr: "CR-02", how: "the wall's riverbed is shared with the convergence across the join" },
+  { piece: "finale", check: "smallPrintHolds", cr: "CR-10", how: "page 2 is the sample line and the method line (18 words), held for their reading time; the credits go with the film (FILM_CREDITS)" },
+  { piece: "finale", check: "cameraFloor", cr: "CR-04", how: "the title and both end-card pages glide at 0.3 px a frame (OVERRIDES §58); only the last breath is still" },
+  { piece: "F2-Foundation-Demo", check: "irisEase", cr: "CR-21", how: "ringIris() defaults to E-move (IRIS_DEFAULT_EASE)" },
 ];
 
 /** Is a finding one of the open findings of this piece? */

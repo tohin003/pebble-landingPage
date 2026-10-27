@@ -182,9 +182,17 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   // card in a field; at least the 28 px floor)
   const readZoom = Math.max(zoomFor(Math.min(c.ask.textPx, c.act.textPx)), Math.min(readFit.zoom, 3.0 * f.unit));
   const readPose: Pose = { ...readFit, zoom: readZoom };
-  // the receipt, framed alone at its own floor (the conversation glides up past the frame's top as it comes)
+  // where the two together are wider than the reading region at that floor (1:1 and 9:16: the act's sentence at the
+  // ask's floor is nearly the frame's width, 17 px from its edges), the camera eases back to the act's own floor as the
+  // act starts, so the act is read with its margins (the ask has been read by then)
+  const twoReads = readBlock.w * readZoom > L.read(f).w + 0.5;
+  const actFit = fitPose(c.act.readRect, L.read(f), f, 0.94);
+  const actZoom = twoReads ? Math.min(readZoom, Math.max(zoomFor(c.act.textPx), Math.min(actFit.zoom, 3.0 * f.unit))) : readZoom;
+  const actPose: Pose = twoReads ? { ...actFit, zoom: actZoom } : readPose;
+  // the receipt, framed alone at its own floor (the conversation glides up past the frame's top as it comes), at most
+  // 1.2× the act's zoom, so the glide down to it never has to move the frame's corners faster than travel allows
   const recFit = fitPose(receiptRead, L.receipt(f), f, 0.9);
-  const receiptPose: Pose = { ...recFit, zoom: Math.max(zoomFor(c.receipt.textPx), Math.min(recFit.zoom, 3.2 * f.unit)) };
+  const receiptPose: Pose = { ...recFit, zoom: Math.max(zoomFor(c.receipt.textPx), Math.min(recFit.zoom, 3.2 * f.unit, actZoom * 1.2)) };
 
   /* ------------------------------------------------ the ring ---------------------------------------------------- */
   const emitF = f60(36, fps);
@@ -298,8 +306,10 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   // the glide down the conversation to the receipt: long enough for its distance at ≤ about 22 px a frame on average
   // (a Hermite peaks at 1.5× its mean: §5.3 travel ≤ 30), straddling the receipt's landing (a third before it), so
   // the act is read for nearly all of the take's own span from its start event to the receipt
-  const glideDist = Math.hypot((receiptPose.x - readPose.x) * Math.sqrt(readZoom * receiptPose.zoom), (receiptPose.y - readPose.y) * Math.sqrt(readZoom * receiptPose.zoom)) / f.unit;
-  const glideF = Math.max(f60(56, fps), Math.ceil(((1.5 * glideDist) / 22) * (fps / 60)));
+  const glideDist = Math.hypot((receiptPose.x - actPose.x) * Math.sqrt(actZoom * receiptPose.zoom), (receiptPose.y - actPose.y) * Math.sqrt(actZoom * receiptPose.zoom)) / f.unit;
+  // (its zoom change moves the frame's corners too: half the diagonal × the log-zoom change, as the dolly counts it)
+  const glideLzChange = Math.abs(Math.log(receiptPose.zoom / actZoom));
+  const glideF = Math.max(f60(56, fps), Math.ceil(((1.5 * ((Math.hypot(f.w, f.h) / 2 / f.unit) * glideLzChange + glideDist)) / 22) * (fps / 60)));
   const glideDownF = Math.round(glideF / 3);
   // the dolly, then the ask read in the take's history; the act starts after it; the receipt lands on a beat after
   // the act's read and the glide down to it: every span is the take's own (1×), every hold its reading time
@@ -327,10 +337,18 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   // (straight down: the read block can be nearly as wide as a square or tall frame, so it never drifts sideways)
   const down = { x: 0, y: receiptPose.y >= readPose.y ? 1 : -1 };
   const readDrift = { x: (down.x * holdPx * 60) / fps / readZoom, y: (down.y * holdPx * 60) / fps / readZoom, lz: 0 };
-  const readSpan = receiptAt - glideDownF - dollyTo;
+  const readSpan = (twoReads ? actAt : receiptAt - glideDownF) - dollyTo;
   const readFrom: Pose = { x: readPose.x - (readDrift.x * readSpan) / 2, y: readPose.y - (readDrift.y * readSpan) / 2, zoom: readZoom };
   cam2.hermite(dollyTo, readFrom, readDrift);
-  cam2.glide(receiptAt - glideDownF, f60(30, fps), readDrift);
+  const actDrift = { x: (down.x * holdPx * 60) / fps / actZoom, y: (down.y * holdPx * 60) / fps / actZoom, lz: 0 };
+  const easeBackF = f60(40, fps);
+  if (twoReads) {
+    // the ask's read, then, as the act starts, the ease back to the act's framing, drifting on at the same pace
+    cam2.glide(actAt, f60(30, fps), readDrift);
+    const actSpan = receiptAt - glideDownF - (actAt + easeBackF);
+    cam2.hermite(actAt + easeBackF, { x: actPose.x - (actDrift.x * actSpan) / 2, y: actPose.y - (actDrift.y * actSpan) / 2, zoom: actZoom }, actDrift);
+  }
+  cam2.glide(receiptAt - glideDownF, f60(30, fps), twoReads ? actDrift : readDrift);
   // the glide down the conversation to the receipt, landing a little after it lands, then drifting on through its
   // hold (the receipt is legible on the way: its words count from its landing)
   const receiptArrive = receiptAt - glideDownF + glideF;
@@ -340,7 +358,7 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   // two phases: straight down at the reading zoom until the receipt sits where it will be read (the sentences above
   // it leave through the frame's top, never cut at its sides), then in to the receipt's own zoom and centre
   const recScreenY = f.h / 2 + (receiptRead.y + receiptRead.h / 2 - recFrom.y) * recFrom.zoom;
-  const midPose: Pose = { x: readPose.x, y: receiptRead.y + receiptRead.h / 2 - (recScreenY - f.h / 2) / readZoom, zoom: readZoom };
+  const midPose: Pose = { x: actPose.x, y: receiptRead.y + receiptRead.h / 2 - (recScreenY - f.h / 2) / actZoom, zoom: actZoom };
   const midAt = receiptAt - glideDownF + Math.round(glideF * 0.6);
   const midV = { x: 0, y: ((midPose.y - cam2.pose(receiptAt - glideDownF).y) / (glideF * 0.6)) * 0.9, lz: 0 };
   cam2.hermite(midAt, midPose, midV);
@@ -415,7 +433,8 @@ export function planRingBlock(o: RingOptions): ScenePlan {
     ...(c.window ? [view("window", c.window.view, c.window.rect)] : []),
     // read until the glide down to the receipt carries them up out of the frame
     // their words count from the dolly's start (legible on the way in); read until the glide down carries them out
-    view("ask", c.ask.view, c.ask.rect, { from: dollyTo, to: receiptAt - glideDownF, words: c.ask.words, textPx: c.ask.textPx, rect: askRead, seenFrom: dollyFrom, seenTo: receiptAt - glideDownF + glideF }),
+    // (with two reads the ask's read ends as the camera eases back to the act's floor: it has been read by then)
+    view("ask", c.ask.view, c.ask.rect, { from: dollyTo, to: twoReads ? actAt : receiptAt - glideDownF, words: c.ask.words, textPx: c.ask.textPx, rect: askRead, seenFrom: dollyFrom, seenTo: receiptAt - glideDownF + glideF }),
     view("act", c.act.view, c.act.rect, { from: Math.max(dollyTo, actAt), to: receiptAt - glideDownF, words: c.act.words, textPx: c.act.textPx, rect: c.act.readRect, seenFrom: Math.max(dollyFrom, actAt), seenTo: receiptAt - glideDownF + glideF }),
     ...(c.context ?? []),
   ];
@@ -502,6 +521,8 @@ export function planRingBlock(o: RingOptions): ScenePlan {
       leaveDir,
       receiptFrame: frameOfSource(recSrc, use.at, fps, m, use.inPoint),
       readZoom,
+      actZoom,
+      twoReads: twoReads ? 1 : 0,
       receiptZoom: receiptPose.zoom,
     },
   };
