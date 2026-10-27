@@ -17,14 +17,52 @@ W = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.path.join(REPO, ".
 OLD = json.load(open(os.path.join(W, "archive-2026-10-26-2213", "sheet_spec.json")))
 
 
+R2 = os.path.join(W, "r2")
+
+
+def _opt(name, folder=None):
+    p = os.path.join(folder or R2, name)
+    return json.load(open(p)) if os.path.exists(p) else None
+
+
+MET = _opt("main.metrics.json", W) or {}
+GB = _opt("main_g1b.metrics.json") or {}
+PROBE = _opt("probe.json") or {}
+DEC = _opt("g1_decision.json") or {}
+VARIANTS = (_opt("title_variants.json") or []) + (_opt("title_variants_r2.json") or [])
+CARRIED = DEC.get("title_variant_for_the_chosen_side") or DEC.get("title_variant")
+CV = next((x for x in VARIANTS if x["id"] == CARRIED), None) or {}
+LP = CV.get("layer_params") or {}
+
+
+def g(d, *ks, nd=3):
+    """A measured number from nested dicts, rounded, or None."""
+    for k in ks:
+        if not isinstance(d, dict) or k not in d:
+            return None
+        d = d[k]
+    return round(d, nd) if isinstance(d, (int, float)) else d
+
+
+def seam_h(sid):
+    e = g(MET, "extras", "seams", sid) or {}
+    return (g(e, "harmony", "bar_cos"), g(e, "harmony_incoming_own", "bar_cos"), g(e, "harmony_outgoing_own", "bar_cos"))
+
+
+def probe_m2(splice):
+    a, b = (int(x) for x in splice.split(":"))
+    return next((c for c in PROBE.get("M2", []) if c.get("out_bar") == a and c.get("in_bar") == b), {})
+
+
+def j2_probe(bar):
+    return next((c for c in PROBE.get("J2", []) if c.get("end_bar") == bar), {})
+
+
 def eq_text():
-    """M6a's EQ in words, from the title decision and the variant's spec."""
-    dp, vp = os.path.join(W, "r2", "g1_decision.json"), os.path.join(W, "r2", "title_variants.json")
-    if not (os.path.exists(dp) and os.path.exists(vp)):
+    """M6a's EQ in words, from the title decision and the variant's spec (round 1's or round 2's)."""
+    if not DEC or not VARIANTS:
         return "none"
-    dec = json.load(open(dp))
-    vid = dec.get("title_variant_for_the_chosen_side") or dec.get("title_variant")
-    v = next((x for x in json.load(open(vp)) if x["id"] == vid), None)
+    v = CV
     if not v or not v.get("eq"):
         return "none" if not (v and v.get("dip_db")) else f"none (the dip deepened to {v['dip_db']} dB)"
     words = []
@@ -38,9 +76,30 @@ def eq_text():
 
 
 EQ_M6 = eq_text()
-TITLE_HIT_TEMP = "impact_body_cc0 (Kenney, CC0), tuned to G#2, the title chord's fifth"
+_hit = LP.get("hit_cc0") or {}
+_sw = LP.get("swell") or {}
+SWELL_HP = _sw.get("highpass_hz", 150.0)
+SWELL_DB = _sw.get("level_offset_db", -3.0)
+TITLE_HIT_TEMP = ("impact_body_cc0 (Kenney, CC0), tuned to G#2, the title chord's fifth"
+                  + (f", shortened (its designed reverb tail faded from {_hit['tail']['keep_s_after_peak']:g} s after the "
+                     f"peak over {_hit['tail']['fade_s']:g} s)" if _hit.get("tail") else "")
+                  + (f", high-passed at {_hit['highpass_hz']:g} Hz" if _hit.get("highpass_hz") else ", high-passed at 70 Hz")
+                  + (f", {_hit['level_offset_db']:+g} dB against the music's 3 s after the title"
+                     if "level_offset_db" in _hit else ", 3 dB over the music's 3 s after the title")
+                  + (f" (composite {CARRIED}, §4.1)" if CARRIED else ""))
+H_M2S = seam_h("M2s")
+H_M3S = seam_h("M3s")
+P1721, P1723 = probe_m2("17:21"), probe_m2("17:23")
+J2_26, J2_24 = j2_probe(26), j2_probe(24)
+TA_ = g(MET, "extras", "title_arrival") or {}
+TB_ = g(GB, "extras", "title_arrival") or {}
+RVC = g(MET, "extras", "return_vs_climax") or {}
+
+
+def fx(v, d=3, sign=False):
+    return "n/a" if v is None else (f"{v:+.{d}f}" if sign else f"{v:.{d}f}")
 sp = copy.deepcopy(OLD)
-sp["version"] = "cue sheet revision 2 (27 Oct 2026): the Return at the end only, 35 readable features, F4 on"
+sp["version"] = "cue sheet revision 2 (27-28 Oct 2026): the Return at the end only, 35 readable features, F4 on"
 m = sp["main"]
 oc = OLD["main"]["cues"]
 c = {}
@@ -64,9 +123,15 @@ c["M2b"] = {
             "take, the click, and the Delete card on B2's brighter phrase (bar 23, now 0:48.00)",
             "the splice lands on Ring 2's ring-led arrival (0:40.00), under ring_sweep_c: the cut has a picture cause, "
             "and a sound covers it",
-            "of the forward splices that keep Ring 1 whole, this one has the closest harmony on both sides of the cut "
-            "(bar chroma cosine 0.998 before and after it)",
-            "Cascade 2's bars (26-27) leave from the end: M2 exits after bar 25's hat breath (22:13's F5), into J2"],
+            f"of the three splices that land on Ring 2's arrival, this one keeps the harmony closest across the cut "
+            f"[M, as built]: bar chroma cosine {fx(H_M2S[0])} across it, against B2's own {fx(H_M2S[1])} at bar 19 and "
+            f"{fx(H_M2S[2])} at bar 17 (17:21 {fx(g(P1721, 'harmony_edit', 'bar_cos'))}, 17:23 "
+            f"{fx(g(P1723, 'harmony_edit', 'bar_cos'))})",
+            f"Cascade 2's bars (26-27) leave from the end: M2 exits on bar 26's downbeat into J2 (22:13's F5), after the "
+            f"breath B2 takes in every second bar: its top octave falls about 20 dB for half a second on bar 25's third "
+            f"beat, then its last beat's hats lead into the cut, as at 22:13's J2 (bar 28); the rule's breath test reads "
+            f"the last two beats' 8-16 kHz attacks at {fx(g(J2_26, 'breath_db'), 1, True)} dB against the four before (it "
+            f"read {fx(g(j2_probe(28), 'breath_db'), 1, True)} dB at 22:13's bar 28), so it fails there, as §9.2 reports"],
     "eq": "none",
     "layers": ["ring_sweep_c 12 frames before Ring 2 (0:39.80): it carries the splice",
                "tick 2 on the real '=' press (S11)", "tick 3 on the real click (S12)"]}
@@ -104,7 +169,9 @@ c["M5"] = {
         "§2.10)",
         "one excerpt in B2's order, after M2 (which left B2 at 0:53.53) and never overlapping it: B2 shortened, not "
         "rearranged (§51, §56)",
-        "the run-on holds the climax's level, so the kept card stays the film's one peak (§1.4: the Return is the "
+        f"the run-on holds the climax's level [M]: the Return's short-term maximum is {fx(RVC.get('return_st_max'), 2)} "
+        f"LUFS against the climax's {fx(RVC.get('climax_st_max'), 2)}, inside g1_rule's 0.5 LU, so it adds no new peak by "
+        "the rule, and the kept card's hit and the lift's arrival keep the climax the film's one peak (§1.4: the Return is the "
         "climax's consequence, not a second peak)"],
     "eq": "none",
     "layers": ["the climax composite on 1:38.03 (hit, sub 2); the music ducks for 250 ms",
@@ -115,16 +182,19 @@ c["M6a"] = {
             "page 1 on IV (bar 84)",
     "why": ["the pulse thins at the merge: A4 bars 80-81 measure 1.25 and 1.5 onsets a beat against B2's 2.75-3.5, as "
             "Loops' strong onsets stop for its merge (MONTAGE_DESIGN §2.10; R2 §1.3)",
-            "the dip (bars 80-81 at -2.8 dB against M6's -0.3 dB) turns the title into an arrival: raw, A4's bar 81 "
-            "is 1.5 LU louder than the title's bar; dipped, it sits under it",
+            f"the dip (bars 80-81 at -2.8 dB against M6's -0.3 dB) turns the title into an arrival [M, on the bed]: "
+            f"undipped (G1's B side), A4's bar 81 measures {fx(TB_.get('bar_before_lufs'), 2)} LUFS against the title "
+            f"bar's {fx(TB_.get('bar_after_lufs'), 2)}; dipped, {fx(TA_.get('bar_before_lufs'), 2)}, under it, and the "
+            f"title's first second is {fx(TA_.get('step_1s_lu'), 2, True)} LU over the second before",
             "the film closes on the voice it opened with (M1): V (bars 80-81), vi (bar 82, the title), IV (bar 84), "
             "I (bar 86)",
             "2:44.52 is the plateau's last strong downbeat (-10.4 LUFS momentary peak), and it rings and steps down: "
             "a title that rings",
             "tempo-matched with B2 (120.014 against 119.994 BPM), so J5 is a beat cut"],
     "eq": EQ_M6,
-    "layers": ["the one-bar reverse swell made from A4's own title chord (2:44.52, 4 beats, reversed), 1:56.03-1:58.03, "
-               "its last sample on the title frame (7082)",
+    "layers": [f"the one-bar reverse swell made from A4's own title chord (2:44.52, 4 beats, reversed), 1:56.03-1:58.03, "
+               f"its last sample on the title frame (7082), high-passed at {SWELL_HP:g} Hz, its loudest 400 ms "
+               f"{-SWELL_DB:g} dB under the music over its last second",
                "nothing on the blink (R646, 1:56.80): a sound would claim a reaction",
                "the title composite on 1:58.03: the stone tap as its attack (Kenney's standin_tap_a, CC0, tuned to E, "
                "until the person's recording, P9), the hit (final Sonniss EffectiveTrailer_Booms_Vol2_075; temp "
@@ -153,10 +223,11 @@ j["M2s"] = {
     "motivation": "Ring 2's ring-led arrival (your apps): the cascade between the rings left the film, and the music "
                   "joins the two rings where the picture does",
     "tempo": "the same track: the grid holds (119.994 BPM)",
-    "key": "the same section (G major): bars 16 and 18 share their harmony (bar chroma cosine 0.998), as do bars 17 "
-           "and 19"}
+    "key": f"the same section (G major): bar chroma cosine {fx(H_M2S[0])} across the cut, against B2's own "
+           f"{fx(H_M2S[1])} at bar 19 and {fx(H_M2S[2])} at bar 17 [M]"}
 j["J2"] = copy.deepcopy(oj["J2"])
-j["J2"]["how"] = ("B2's hats thin over the last two beats of bar 25 (its milder breath: 22:13's F5). The cut lands on "
+j["J2"]["how"] = ("B2's top octave drops out for half a second on bar 25's third beat, and its last beat's hats lead "
+                  "into the cut, as at 22:13's J2 (bar 27 into bar 28: B2 repeats the figure every two bars). The cut lands on "
                   "B4's bar 47, its own riser bar, with Ring 3's sweep pre-lapped 12 frames. B4's riser and its own "
                   "3.4 LU breath lift into its phrase B at 0:55.93, the second ring arrival. 60 ms pre-roll; no beat "
                   "overlap.")
@@ -168,8 +239,8 @@ j["M3s"] = {
            "52's downbeat.",
     "motivation": "the cut from S15 (the sips receipt) to S16 (the flyer)",
     "tempo": "the same track: the grid holds (123.995 BPM)",
-    "key": "the same riff (G-centred, 6A): bars 49 and 51 share their harmony (bar chroma cosine 0.999), as do bars 50 "
-           "and 52 (0.998)"}
+    "key": f"the same riff (G-centred, 6A): bar chroma cosine {fx(H_M3S[0])} across the cut, against B4's own "
+           f"{fx(H_M3S[1])} at bar 52 and {fx(H_M3S[2])} at bar 50 [M]"}
 j["J3"] = copy.deepcopy(oj["J3"])
 j["J3"]["how"] = j["J3"]["how"].replace("M4 fades in from 1:36.40", "M4 fades in from 1:24.53")
 j["J4"] = copy.deepcopy(oj["J4"])
@@ -228,8 +299,10 @@ m["shots"] = [
 m["end_film_s"] = 135.0333
 m["swell"] = {"beats": 4, "bpm": 120.014, "end_film_s": 118.0332, "from_src_s": 164.5244,
               "what": "a reverse swell made from A4's own title chord (2:44.52; CC BY 4.0, edited) with the kit's preverb, "
-                      "one bar long, its last sample on the title frame; its loudest 400 ms 3 dB under the music over its "
-                      "last second; high-passed at 150 Hz so sub 3 owns the low end"}
+                      f"one bar long, its last sample on the title frame; its loudest 400 ms {-SWELL_DB:g} dB under the "
+                      f"music over its last second; high-passed at {SWELL_HP:g} Hz so sub 3 owns the low end"
+                      + (f" (composite {CARRIED}, §4.1)" if CARRIED else ""),
+              "highpass_hz": SWELL_HP, "level_offset_db": SWELL_DB}
 m["acts"] = [["Act I and the Drop", "S01", "S07"], ["The rings", "S08", "S19"],
              ["The quiet passage to the end", "S20", "S28"]]
 m["sync_points"] = [

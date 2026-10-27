@@ -550,6 +550,35 @@ def summarise(rows, label="foghorn"):
             "verdict": "fail" if fail else ("warn" if warn else "ok")}
 
 
+def layer_with(base, ov):
+    """A title layer with a variant's changes (title_variants_r2.json "layer_params"): any of the layer's own keys
+    (highpass_hz, prelimit_db, tune ...), "level_offset_db" for its level against the music, and "tail" (applied after
+    the take is made, by tail_fade)."""
+    Ly = dict(base)
+    for k, v in ov.items():
+        if k == "level_offset_db":
+            Ly["level"] = {**Ly["level"], "offset_db": float(v)}
+        elif k != "tail":
+            Ly[k] = v
+    return Ly
+
+
+def tail_fade(y, rec, spec):
+    """Shorten a hit: keep it whole to keep_s_after_peak after its peak, then a raised-cosine fade over fade_s, then
+    nothing. For impact_body_cc0 this shortens the 2.5-s reverb tail the kit designed around Kenney's 0.57-s thud."""
+    pk = int(np.argmax(np.abs(y).max(1)))
+    a = pk + int(round(spec["keep_s_after_peak"] * SR))
+    n = int(round(spec["fade_s"] * SR))
+    if a >= len(y):
+        return y, rec
+    z = y[:min(len(y), a + n)].copy()
+    m = len(z) - a
+    z[a:] *= (0.5 + 0.5 * np.cos(np.linspace(0, np.pi, m)))[:, None]
+    rec = {**rec, "tail": {"keep_s_after_peak": spec["keep_s_after_peak"], "fade_s": spec["fade_s"],
+                           "len_s": [r(len(y) / SR, 4), r(len(z) / SR, 4)], "how": "raised-cosine fade, then cut"}}
+    return z.astype(np.float32), rec
+
+
 def title_check(plan_path, metrics_path, out, layers_path, variants_path=None):
     T0 = time.perf_counter()
     plan, corr = cp.load_plan(plan_path, layers_path)
@@ -614,10 +643,15 @@ def title_check(plan_path, metrics_path, out, layers_path, variants_path=None):
         sfx = np.zeros_like(bed)
         recs = []
         for key in v["layers"]:
-            Ly = dict(L[key])
-            if key not in takes:
-                takes[key] = sb.make_take(Ly, kit, kplan, tracks48)
-            y, rec = takes[key]
+            ov = (v.get("layer_params") or {}).get(key) or {}
+            Ly = layer_with(L[key], ov)
+            ck = key + json.dumps(ov, sort_keys=True)
+            if ck not in takes:
+                y_, rec_ = sb.make_take(Ly, kit, kplan, tracks48)
+                if ov.get("tail"):
+                    y_, rec_ = tail_fade(y_, rec_, ov["tail"])
+                takes[ck] = (y_, rec_)
+            y, rec = takes[ck]
             lv = Ly["level"]
             ref = lufs(bed, lv["ref"][0], lv["ref"][1])
             gain = ref + lv["offset_db"] - sb.mmax_lufs(y)
@@ -625,7 +659,11 @@ def title_check(plan_path, metrics_path, out, layers_path, variants_path=None):
             a, b = max(0, i0), min(N, i0 + len(y))
             sfx[a:b] += y[a - i0:b - i0] * 10 ** (gain / 20)
             recs.append({"layer": key, "id": Ly["id"], "gain_db": r(gain), "film_s": [r(a / SR, 4), r(b / SR, 4)],
-                         "loudest_400ms_lufs_in_film": r(sb.mmax_lufs(y * 10 ** (gain / 20))), "bed_ref_lufs": r(ref)})
+                         "loudest_400ms_lufs_in_film": r(sb.mmax_lufs(y * 10 ** (gain / 20))), "bed_ref_lufs": r(ref),
+                         **({"params": ov, "highpass": rec.get("highpass"), "tail": rec.get("tail"),
+                             "level_offset_db": lv["offset_db"]} if ov else {})})
+            if ov:
+                continue  # res["layers"] records each layer as round 1 made it; a variant's changes are in its "placed"
             res["layers"][key] = {k: rec.get(k) for k in ("take", "licence", "status", "final_allowed", "designed", "swell",
                                                          "tune", "prelimit", "highpass")}
             if key == "swell":  # its shape: a swell rises into the downbeat and stops on it
@@ -638,7 +676,8 @@ def title_check(plan_path, metrics_path, out, layers_path, variants_path=None):
         mix_g = (music + sfx) * 10 ** (g_master / 20)
         rows = classify_grid(mix_g, j5 + 0.002, title + 5.5, tmp_dir)
         sm = summarise(rows)
-        res["variants"].append({"id": v["id"], "what": v["what"], **{k: v[k] for k in ("dip", "dip_db", "eq") if k in v},
+        res["variants"].append({"id": v["id"], "what": v["what"],
+                                **{k: v[k] for k in ("dip", "dip_db", "eq", "layer_params", "diagnostic") if k in v},
                                 "placed": recs, **sm, "rows": rows})
         print(v["id"], json.dumps({k: sm[k] for k in ("foghorn_max", "foghorn_max_at", "windows_ge_0.30",
                                                      "windows_ge_0.25", "verdict")}), flush=True)

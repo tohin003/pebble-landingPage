@@ -51,7 +51,7 @@ def _opt(p):
 
 
 EXTRA = {k: _opt(os.path.join(R2, k)) for k in ("main_g1b.metrics.json", "title_A.json", "title_B.json", "x40mask.json",
-                                                 "probe.json", "g1_decision.json")}
+                                                 "probe.json", "g1_decision.json", "title_A_r2.json", "title_B_r2.json")}
 EXTRA["chosen_title_variant"] = (EXTRA.get("g1_decision.json") or {}).get("title_variant")
 if os.path.exists(os.path.join(ARCH, "plan_main.json")):
     EXTRA["archive_plans"] = {"main": load(os.path.join(ARCH, "plan_main.json")), "x40": load(os.path.join(ARCH, "plan_x40.json"))}
@@ -192,14 +192,21 @@ def build_film(key):
             sid, what, anc = r; block = None
         t0 = film_of(cues, anc)
         seq.append([sid, block, t0, what, anc])
+    def sounding(c):
+        """A cue's film span: its in-point to its out-point, or to the end of its own ring-out."""
+        end_src = c["tail"]["until"] if (c.get("tail") or {}).get("mode") == "ring" else c["src_out"]
+        return c["film_in"], c["film_in"] + (end_src - c["src_in"])
+
     shots = []
     for i, (sid, block, t0, what, anc) in enumerate(seq):
         t1 = seq[i + 1][2] if i + 1 < len(seq) else sp["end_film_s"]
-        cue_here = max((c for c in plan["cues"] if c["film_in"] - 1e-6 <= t0), key=lambda c: c["film_in"], default=None)
+        # every cue heard under the shot for 0.25 s or more (a crossfade's pre-roll alone does not count), in order
+        under = [c["id"] for c in sorted(plan["cues"], key=lambda c: c["film_in"])
+                 if min(sounding(c)[1], t1) - max(sounding(c)[0], t0) >= 0.25]
         shots.append({"id": sid, **({"block": block} if block else {}), "start_s": round(t0, 4), "start": mmss(t0),
                       "start_frame": round(t0 * FPS), "end_s": round(t1, 4), "end": mmss(t1), "dur_s": round(t1 - t0, 3),
-                      "dur_frames": round(t1 * FPS) - round(t0 * FPS), "anchor": anc, "music_under": cue_here and cue_here["id"],
-                      "what": what})
+                      "dur_frames": round(t1 * FPS) - round(t0 * FPS), "anchor": anc, "music_under": ", ".join(under),
+                      "music_cues": under, "what": what})
     res["shots" if "shots" in sp else "slots"] = shots
     if "sync_points" in sp:
         res["sync_points"] = [{"film_s": round(film_of(cues, a) if isinstance(a, dict) else a, 4),
@@ -219,7 +226,7 @@ def build_film(key):
             b["end_s"] = blocks[i + 1]["start_s"] if i + 1 < len(blocks) else sp["end_film_s"]
             b["end"] = mmss(b["end_s"]); b["dur_s"] = round(b["end_s"] - b["start_s"], 3)
             b["start_pct"] = round(100 * b["start_s"] / sp["end_film_s"], 1)
-            b["music"] = sorted({s["music_under"] for s in shots if s["block"] == b["block"]})
+            b["music"] = [cid for cid in dict.fromkeys(m for s in shots if s["block"] == b["block"] for m in s["music_cues"])]
         res["blocks"] = blocks
     return res, plan, met
 
@@ -315,14 +322,13 @@ def checks(main, plan, met, x40, xplan, xmet):
         add("main: the reverse swell is one bar (4 beats) and its last sample lands on the title frame",
             sw["beats"] == 4 and abs(sw["end_film_s"] - title_t) < 0.5 / FPS,
             f"{L:.4f} s, {mmss(sw['end_film_s'] - L)}-{mmss(sw['end_film_s'])}; the title at {mmss(title_t)} (frame {round(title_t * FPS)})")
-    for tid, tpath in (("A", "title_A.json"), ("B", "title_B.json")):
-        T = EXTRA.get(tpath)
-        if T and tid == "A":
-            ch = next((v for v in T["variants"] if v["id"] == EXTRA.get("chosen_title_variant")), None)
-            if ch:
-                add("main: no 'foghorn' (or phone, voice or alarm) reading at 0.30 or more in any 3 s window around the "
-                    "swell and the title (the chosen composite, 0.5 s grid)", ch["verdict"] != "fail",
-                    f"{ch['id']}: foghorn max {ch['foghorn_max']} at {ch['foghorn_max_at']} s over {ch['windows']} windows; watched {ch['watched_max']}")
+    ta_all = [v for k in ("title_A.json", "title_A_r2.json") for v in (EXTRA.get(k) or {}).get("variants", [])]
+    if ta_all:  # the composite the sheet carries, from round 1 or round 2 (r2/title_round2_rule.json)
+        ch = next((v for v in ta_all if v["id"] == EXTRA.get("chosen_title_variant")), None)
+        if ch:
+            add("main: no 'foghorn' (or phone, voice or alarm) reading at 0.30 or more in any 3 s window around the "
+                "swell and the title (the composite the sheet carries, 0.5 s grid)", ch["verdict"] != "fail",
+                f"{ch['id']}: foghorn max {ch['foghorn_max']} at {ch['foghorn_max_at']} s over {ch['windows']} windows; watched {ch['watched_max']}")
     arch = EXTRA.get("archive_plans")
     if arch:
         m1_old = next(c for c in arch["main"]["cues"] if c["id"] == "M1")
@@ -514,7 +520,8 @@ def main():
         "files": {"plans": ["cuesheet/plan_main.json", "cuesheet/plan_x40.json", "cuesheet/plan_main_g1b.json"],
                   "measurements": ["cuesheet/main.metrics.json", "cuesheet/x40.metrics.json", "cuesheet/main.npz", "cuesheet/x40.npz",
                                    "cuesheet/r2/main_g1b.metrics.json", "cuesheet/r2/probe.json", "cuesheet/r2/title_A.json",
-                                   "cuesheet/r2/title_B.json", "cuesheet/r2/x40mask.json"],
+                                   "cuesheet/r2/title_B.json", "cuesheet/r2/title_A_r2.json", "cuesheet/r2/title_B_r2.json",
+                                   "cuesheet/r2/x40mask.json"],
                   "pictures": ["cuesheet/main-overview.png", "cuesheet/main-seams.png", "cuesheet/x40-overview.png", "cuesheet/x40-seams.png",
                                "cuesheet/r2/probe.png", "cuesheet/r2/g1-ab.png", "cuesheet/r2/title-foghorn.png", "cuesheet/r2/x40-mask.png"],
                   "archive_22_13": "cuesheet/archive-2026-10-26-2213/ (22:13's plans, spec, metrics, sheet and pictures)"},
@@ -523,7 +530,7 @@ def main():
         sheet["main_film"]["return"] = return_frames(plan, met)
     if EXTRA.get("main_g1b.metrics.json"):
         sheet["g1_music_ab"] = g1_record(met, EXTRA["main_g1b.metrics.json"])
-    for k in ("title_A.json", "title_B.json"):
+    for k in ("title_A.json", "title_B.json", "title_A_r2.json", "title_B_r2.json"):
         if EXTRA.get(k):
             T = EXTRA[k]
             sheet.setdefault("title_classifier", {})[k[:-5]] = {

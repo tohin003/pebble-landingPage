@@ -154,6 +154,42 @@ def decide_title(T):
     return {"chosen": None, "tried_in_order": tried}
 
 
+TITLE_ORDER_R2 = [f"C{k}" for k in range(1, 13)]
+NO_EQ_ALL_LAYERS = [f"C{k}" for k in range(1, 8)]  # C1-C7: every layer of the design, A4 not EQ'd
+
+
+def decide_title_r2(T, t1):
+    """Round 2 (r2/title_round2_rule.json, written 04:04 on 28 Oct before its measurement): the first of C1-C12 with no
+    fail. When round 1 already chose, round 2 is only recorded. When nothing passes in either round, the sheet carries
+    the supervisor's choice (written 04:20, after round 2's numbers, and labelled so): among C1-C7, which keep every
+    layer and leave A4 un-EQ'd, the lowest worst-window reading, then the fewest windows at 0.30 or more."""
+    if not T:
+        return None
+    by = {v["id"]: v for v in T["variants"]}
+    tried, chosen = [], None
+    for vid in TITLE_ORDER_R2:
+        v = by.get(vid)
+        if not v:
+            continue
+        tried.append({"id": vid, "verdict": v["verdict"], "foghorn_max": v["foghorn_max"], "foghorn_max_at": v["foghorn_max_at"],
+                      "windows_ge_0.30": v["windows_ge_0.30"], "watched_max": v["watched_max"]})
+        if v["verdict"] != "fail" and chosen is None:
+            chosen = vid
+    out = {"chosen": chosen, "tried_in_order": tried,
+           "diagnostics": {k: {"foghorn_max": v["foghorn_max"], "foghorn_max_at": v["foghorn_max_at"],
+                               "windows_ge_0.30": v["windows_ge_0.30"]} for k, v in by.items() if v.get("diagnostic")}}
+    if chosen is None and not (t1 or {}).get("chosen"):
+        pool = [by[k] for k in NO_EQ_ALL_LAYERS if k in by]
+        if pool:
+            best = min(pool, key=lambda v: (v["foghorn_max"], v["windows_ge_0.30"]))
+            out["carried"] = best["id"]
+            out["carried_why"] = (f"nothing passes in either round, so the flag stays open; the sheet carries {best['id']} "
+                                  f"[I, the supervisor's choice after round 2's numbers]: of C1-C7, which keep every layer "
+                                  f"and leave A4 un-EQ'd, it has the lowest worst window ({best['foghorn_max']} at "
+                                  f"{best['foghorn_max_at']} s, {best['windows_ge_0.30']} windows at 0.30 or more)")
+    return out
+
+
 # ------------------------------------------------------------------------------------------------ G1
 def side(M):
     s = next(x for x in M["seams"] if x["id"] == "J5")
@@ -177,13 +213,21 @@ def hard_fails(s):
     return out
 
 
-def decide_g1(MA, MB, ta, tb):
+def clears(*ts):
+    """Whether any tested composite cleared the title on a side, over its rounds (None when no round ran)."""
+    ran = [t for t in ts if t is not None]
+    return None if not ran else any(t.get("chosen") for t in ran)
+
+
+def decide_g1(MA, MB, ta, tb, ta2=None, tb2=None):
     a, b = side(MA), side(MB)
     fa, fb = hard_fails(a), hard_fails(b)
-    if ta is not None and tb is not None and ta["chosen"] is None and tb["chosen"] is not None:
-        fa.append("the classifier: no tested composite clears the title on A")
-    if tb is not None and tb["chosen"] is None:
-        fb.append("the classifier: no tested composite clears the title on B")
+    ca, cb = clears(ta, ta2), clears(tb, tb2)
+    flag = "the classifier: no tested composite clears the title"  # one label, so clause (1) counts it only when B clears
+    if ca is False:
+        fa.append(flag)
+    if cb is False:
+        fb.append(flag)
     why = []
     one = [f for f in fa if f not in fb]
     if one:
@@ -230,13 +274,22 @@ def main():
         dec["m3"] = decide_m3(P)
     ta, tb = decide_title(TA), decide_title(TB)
     dec["title_A"], dec["title_B"] = ta, tb
+    TA2, TB2, r2r = load("title_A_r2.json"), load("title_B_r2.json"), load("title_round2_rule.json")
+    ta2, tb2 = decide_title_r2(TA2, ta), decide_title_r2(TB2, tb)
+    if ta2 or tb2:
+        dec["rules_written_at"].append(r2r and r2r.get("written_at"))
+        dec["title_A_r2"], dec["title_B_r2"] = ta2, tb2
     if MA and MB and "extras" in MA and "extras" in MB:
-        dec["g1"] = decide_g1(MA, MB, ta, tb)
+        dec["g1"] = decide_g1(MA, MB, ta, tb, ta2, tb2)
         dec["g1_side"] = dec["g1"]["side"]
-    side_t = (tb if dec.get("g1_side") == "B" else ta) or {}
-    dec["title_variant"] = (ta or {}).get("chosen")
-    dec["title_variant_b"] = (tb or {}).get("chosen")
-    dec["title_variant_for_the_chosen_side"] = side_t.get("chosen")
+
+    def pick(t1, t2):
+        return (t1 or {}).get("chosen") or (t2 or {}).get("chosen") or (t2 or {}).get("carried")
+
+    dec["title_variant"] = pick(ta, ta2)
+    dec["title_variant_b"] = pick(tb, tb2)
+    dec["title_variant_for_the_chosen_side"] = dec["title_variant_b"] if dec.get("g1_side") == "B" else dec["title_variant"]
+    dec["title_flag_cleared"] = {"A": bool(clears(ta, ta2)), "B": bool(clears(tb, tb2))}
     dec["x40_mask"] = decide_mask(X)
     old = load("g1_decision.json") or {}
     texts = load("texts.json")
@@ -254,6 +307,10 @@ def main():
     if "g1" in dec:
         print("g1", dec["g1"]["side"], dec["g1"]["clause"], "|", "; ".join(dec["g1"]["why"]))
     print("title A", ta and ta["chosen"], "| title B", tb and tb["chosen"])
+    for nm, t in (("title A r2", ta2), ("title B r2", tb2)):
+        if t:
+            print(nm, t["chosen"], "| carried", t.get("carried"), "|", t.get("carried_why", ""))
+    print("title variant carried:", dec["title_variant_for_the_chosen_side"], "| flag cleared", dec["title_flag_cleared"])
     print("x40 mask", dec["x40_mask"] and dec["x40_mask"]["accepted"])
 
 
