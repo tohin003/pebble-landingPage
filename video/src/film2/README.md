@@ -506,12 +506,35 @@ score lane's: the title's CC0 stone tap at a whisper) on the second; a push at 0
 the film's last breath. Its frames 0–33 ARE the end card, played on past its end by `CodaView`
 (`extra.coda.endCard.extended`): the end card's plan is untouched, so the X version (the main film with the coda is
 over X's 140 s) is the master cut at the coda's first frame (`codaPlacement`, `xCutFrames`). A flash model (6 × 6 tiles, qa/luma.ts's rule)
-lengthens the breath until no tile the iris-out darkened brightens again within a second (9 frames in 9:16: 7.75 s in
+lengthens the breath until no tile the iris-out darkened brightens again within a second (12 frames in 16:9: 7.80 s in
 all, on one timeline). `codaChecks()`, in `checkPlan()`, holds its words (§62's four phrases, numbers, versions, dates,
-names), reading holds, one stone, the camera rule (two declared waits only), the pose, no mock screen, the lockup,
-flashes and the sound and captions it hands on; each has a canary in `tests/coda.test.ts`. The night plate is
-`video/public/desktop/riverbed-dark-2400.jpg` (gitignored; `capture/riverbed-plate.mjs dark`, then `sips`): until it
-is made, the view draws the wallpaper's mid tone.
+names), reading holds, one stone, the camera rule (two declared waits only), the pose, no mock screen, the lockup (and
+that it is centred), flashes, the sound and captions it hands on, and the night ground's light; each has a canary in
+`tests/coda.test.ts`. The night plate is `video/public/desktop/riverbed-dark-2400.jpg` (gitignored;
+`capture/riverbed-plate.mjs dark`, then `sips`): until it is made, the view draws the wallpaper's mid tone.
+
+**What the stills of 28 Oct changed** (half-size key frames in every aspect, looked at; the lane's scratch
+`postcredit/stills`):
+- **The irises keep the face.** The film's 36-px feather, invisible where an iris opens light on light, was the whole
+  look of a small hole on the night green: the closing iris ended as a glowing dot and the opening one began as an orb
+  with a halo round its hairline. A coda iris's feather narrows to 30 % of a small hole (`codaFeather`; the film's 36 px
+  from 120 px on), in the model and the view alike.
+- **The 16:9 lockup is centred.** approxLineWidth's 0.48 em a character set L-C2 at 1,175 px; the browser draws 884, so
+  the lockup sat 150 px left of centre. The coda's 16:9 lines use their measured widths (`CODA_INK_EM_16x9`), which the
+  checks read too (`TypeBox.inkWidth`, frame.ts), and `codaLockup` holds the lockup centred within 2 % of its width.
+- **The night ground matches the site's.** The plate as it comes measured ΔE 8.0–9.4 from the dark --bg (#191E1B) on
+  the last frame; its own constant exposure (`CODA_PLATE.exposure`, 0.55, linear, multiplied into the ground's light by
+  `CodaView`) brings its median to #1D2520, the site's dark --wallpaper-tint, and `codaLight` holds it within ΔE 5; the
+  last frames rendered again measure ΔE 2.1 (16:9), 2.5 (1:1) and 3.7 (9:16). (A gain in the coda's grade instead made
+  the foundation's light model count three large changes in the breath's light cue, which no frame shows: the exposure
+  is the plate's, not a change of light.)
+- **The render's stone scan sees the night stone.** Light on the night green, the sleeping stone is no dark blob, so
+  `qa/reel-scan.ts` read no stone on every coda frame from the iris-in (it never false-alarmed: it could not check).
+  `reel-marks.ts` now hands it the coda's stones as `CodaView` draws them (`codaMarkStones`: the end card's stone through
+  the closing iris, which the set pieces' model drops by about L14, and the sleeping stone marked light), and the scan
+  looks for a light stone on the inverted frame: on the stills rendered again it reads one stone on every marked frame
+  from the iris-in on, in all three aspects, and the end card's stone through the closing iris until the night touches
+  it (then none, as the scan reads any stone joined to a large dark area).
 
 ### The demo and the checks
 

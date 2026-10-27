@@ -131,13 +131,15 @@ export interface TypeBox {
   top: number;
   width?: number;
   align: "left" | "center" | "right";
+  /** the line's measured width, frame px (its box edge to its ink's far edge), used instead of the estimate (the coda's 16:9 lines) */
+  inkWidth?: number;
 }
 
-/** The rect a (possibly multi-line) line occupies, frame px (approximate advance widths; for the checks). */
+/** The rect a (possibly multi-line) line occupies, frame px (approximate advance widths, or the box's measured one; for the checks). */
 export function lineRect(text: string, tier: TypeTier, f: FrameBox, box: TypeBox, sizeT = 0.5): Rect {
   const size = typeSizePx(tier, f.w, f.h, sizeT);
   const lines = text.split("\n");
-  const w = Math.max(...lines.map((l) => approxLineWidth(l, tier, f.w, f.h, sizeT)));
+  const w = box.inkWidth ?? Math.max(...lines.map((l) => approxLineWidth(l, tier, f.w, f.h, sizeT)));
   const h = lines.length * size * lineHeightOf(tier);
   const x = box.align === "left" || box.width === undefined ? box.left : box.align === "center" ? box.left + (box.width - w) / 2 : box.left + box.width - w;
   return { x, y: box.top, w, h };

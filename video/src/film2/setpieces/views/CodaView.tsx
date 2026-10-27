@@ -62,10 +62,13 @@ const CodaShot: React.FC<{ plan: ScenePlan; shot: ShotSpec }> = ({ plan, shot })
   const cues = useMemo(() => st.cues.map((c) => ({ ...c, at: c.at + off / plan.fps })), [st.cues, off, plan.fps]);
   const grade = gradeAt(frame, plan.lightInitial, plan.lightCues);
   const dof = shot.dofScale ?? 8;
+  // the ground's light with the plate's own exposure in it (coda.ts CODA_PLATE.exposure: linear gains multiply)
+  const e = x.ground.exposure;
+  const groundGains = useMemo(() => [grade.ground[0] * e, grade.ground[1] * e, grade.ground[2] * e] as const, [grade.ground, e]);
   return (
     <GradeLayer grade={grade}>
       <AbsoluteFill style={{ backgroundColor: x.ground.fallback }}>
-        <GroundLight gains={grade.ground}>
+        <GroundLight gains={groundGains}>
           <World3D cam={cam} dofScale={dof} focus={1} background={x.ground.fallback}>
             {/* the extent and depth the coverage check reads (setpieces/ground.ts, CR-02) */}
             <Plane kind="ground" depth={RIVERBED.depth}>
@@ -97,8 +100,9 @@ const NightCover: React.FC<{ plan: ScenePlan }> = ({ plan }) => {
   const shut = fr >= x.irisOut.at + x.irisOut.frames && fr < x.irisIn.at;
   if (!hole) return shut ? <AbsoluteFill style={{ backgroundColor: COLOR.nightPage }} /> : null;
   const iris = out ? x.irisOut : x.irisIn;
-  // clear inside max(0, R − feather), night green from R: the same feathered edge ringIris() draws
-  const inner = Math.max(0, hole.R - iris.feather);
+  // clear inside max(0, R − feather), night green from R: ringIris()'s feathered edge, its feather narrowed while the
+  // hole is small (coda.ts codaFeather), so the face shows and no halo rings it
+  const inner = Math.max(0, hole.R - hole.feather);
   const mask = `radial-gradient(circle at ${hole.c.x.toFixed(1)}px ${hole.c.y.toFixed(1)}px, transparent ${inner.toFixed(1)}px, #000 ${Math.max(hole.R, inner + 0.01).toFixed(2)}px)`;
   const lineOpacity = smoothstep(0, 0.08, hole.u) * (1 - smoothstep(0.85, 1, hole.u));
   return (

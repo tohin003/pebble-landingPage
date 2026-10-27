@@ -2,7 +2,8 @@
 // synthetic ones). With the plans' marks (setpieces/tools/reel-marks.ts --out) it runs, besides qa/luma.ts on frames
 // shrunk to about 192 px:
 //   ink      the ink in every line's rect (qa/ink.ts; CR-03)
-//   stones   the stone-sized dark blobs around the plan's stones (qa/stones.ts; CR-01)
+//   stones   the stone-sized dark blobs around the plan's stones (qa/stones.ts; CR-01), and light ones around a stone
+//            drawn light on a dark ground (the post-credit scene's), found on the inverted frame
 //   bands    the Drop's bands and the frame they start to open (qa/bands.ts; CR-07)
 // and it holds tile pops to what a viewer sees as a pop (calibrated on the three set-piece reels, 27 Oct):
 //   - 3 levels in a tile, not 2: the encoder's pulses and the pebble's blinks measured 2.0–2.9 in still tiles, while a
@@ -37,8 +38,11 @@ export interface ReelMarks {
   hits: number[];
   types: (InkTrack & { vanishes?: string; rectAt?: Record<number, [number, number, number, number]> })[];
   stones: { from: number; to: number; count: number; rMin: number; rMax: number }[];
-  /** each frame's stones as the plan draws them: [centre x, centre y, radius], the plans' frame px */
-  stoneAt?: Record<number, [number, number, number][]>;
+  /**
+   * each frame's stones as the plan draws them: [centre x, centre y, radius], the plans' frame px, and a 4th value, 1,
+   * for a stone drawn light on a dark ground (the post-credit scene's sleeping stone, in the page's dark palette)
+   */
+  stoneAt?: Record<number, number[][]>;
   /** planes' card entrances and placeholder stills' entrances, to name what a tile pop shows */
   entrances?: { id: string; from: number; to: number; kind: string }[];
   apertures: { piece: string; hit: number; planOpen: number; rest: { from: number; to: number } }[];
@@ -279,14 +283,21 @@ export class ReelScan {
       const h2 = shrink(px, W, H, 2);
       const k = S / 2;
       const typeRects = this.tracks.filter((t) => f >= t.from && f < t.until).map((t) => this.rectOf(t, f)).map((r) => ({ x: r.x / 2 - 2, y: r.y / 2 - 2, w: r.w / 2 + 4, h: r.h / 2 + 4 }));
-      // around the plan's stones on this frame: within 4 of their radii (two stones of a bad match are 2–3 apart)
-      const near = (marks.stoneAt?.[f] ?? []).map(([x, y, r]) => ({ x: x * k, y: y * k, R: 4 * r * k }));
-      const rs = (marks.stoneAt?.[f] ?? []).map((s) => s[2]);
-      const rMin = rs.length ? Math.min(...rs) : run.rMin;
-      const rMax = rs.length ? Math.max(...rs) : run.rMax;
-      const blobs = stoneBlobs(h2.px, h2.w, h2.h, { minR: Math.max(3, rMin * k * 0.5), maxR: rMax * k * 1.6 }).filter(
-        (b) => !typeRects.some((r) => b.cx >= r.x && b.cx < r.x + r.w && b.cy >= r.y && b.cy < r.y + r.h) && (!marks.stoneAt || near.some((n) => Math.hypot(b.cx - n.x, b.cy - n.y) <= n.R)),
-      );
+      // around the plan's stones on this frame: within 4 of their radii (two stones of a bad match are 2–3 apart). A stone
+      // drawn light on a dark ground (marked 1: the post-credit scene's sleeping stone, in the page's dark palette) is no
+      // dark blob, so it is looked for on the inverted frame, around the light stones only; every other stone as before
+      const here = marks.stoneAt?.[f] ?? [];
+      const kinds = marks.stoneAt ? [...new Set(here.map((s) => s[3] === 1))] : [false];
+      const blobs = kinds.flatMap((light) => {
+        const set = here.filter((s) => (s[3] === 1) === light);
+        const near = set.map(([x, y, r]) => ({ x: x! * k, y: y! * k, R: 4 * r! * k }));
+        const rs = set.map((s) => s[2]!);
+        const rMin = rs.length ? Math.min(...rs) : run.rMin;
+        const rMax = rs.length ? Math.max(...rs) : run.rMax;
+        return stoneBlobs(light ? h2.px.map((v) => 255 - v) : h2.px, h2.w, h2.h, { minR: Math.max(3, rMin * k * 0.5), maxR: rMax * k * 1.6 }).filter(
+          (b) => !typeRects.some((r) => b.cx >= r.x && b.cx < r.x + r.w && b.cy >= r.y && b.cy < r.y + r.h) && (!marks.stoneAt || near.some((n) => Math.hypot(b.cx - n.x, b.cy - n.y) <= n.R)),
+        );
+      });
       // each blob's diameter and centre in px at 1080: shrunk px → render px (×2) → the plans' px (÷S) → at 1080
       const unit1080 = Math.min(marks.width, marks.height) / 1080;
       this.stoneAt.push({

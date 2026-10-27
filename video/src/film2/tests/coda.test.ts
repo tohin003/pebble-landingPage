@@ -1,13 +1,18 @@
 // The post-credit scene (setpieces/coda.ts, setpieces/codaChecks.ts; POSTCREDIT_DESIGN §5; OVERRIDES §62; D157): the
 // coda as planned passes every check in all three aspects, on one timeline, continuing the end card without changing a
 // frame of it; and every coda check FAILS on its planted canary: the forbidden words and numbers, a version or a date,
-// short reading holds, two stones, a camera that stops, the wrong pose, a mock screen, a flash, the X cut.
+// short reading holds, two stones, a camera that stops, the wrong pose, a mock screen, a flash, the X cut; and what the
+// stills of 28 Oct showed: an off-centre lockup, a night ground too light, irises that glowed, and the render's stone
+// scan, blind to a light stone on a night frame.
 import { describe, expect, test } from "bun:test";
 import { VelocityCamera, type CamSample } from "../motion/camera";
 import type { Aspect } from "../tokens";
 import { checkAll, copy, type Finding } from "../qa/checks";
 import type { FilmTimelineQa } from "../qa/timeline";
-import { checkPlan, groundCoverage, irisOnFrame, planQa, stoneCount } from "../setpieces/qa";
+import { ReelScan, type ReelMarks } from "../qa/reel-scan";
+import { deltaE, hexToRgb, rgbToHex } from "../light/grades";
+import { checkPlan, groundCoverage, irisOnFrame, planQa, stoneCount, stonesOnFrame } from "../setpieces/qa";
+import { lineRect } from "../setpieces/frame";
 import { groundView } from "../setpieces/ground";
 import { demoPlans } from "../setpieces/demo/plans";
 import { timelineDiffs } from "../setpieces/align";
@@ -15,8 +20,8 @@ import { checkJoins } from "../setpieces/joins";
 import { blinkStartsFor, offsetForBlink } from "../setpieces/blink";
 import { checkCues } from "../../../../shared/pebble/cues";
 import { CODA_CUES } from "../setpieces/coda.cues";
-import { CODA_GRID, CODA_TEXT, codaFlashModel, codaIrisIn, codaIrisOut, codaOf, codaPlacement, planCoda, xCutFrames, type CodaExtra, type FilmPiece } from "../setpieces/coda";
-import { CODA_CHECKS, codaCamera, codaCaptions, codaChecks, codaHolds, codaLockup, codaNoUi, codaPose, codaSound, codaStone, codaStonesOn, codaWords, forbiddenIn } from "../setpieces/codaChecks";
+import { CODA_GRADE, CODA_GRID, CODA_INK_EM_16x9, CODA_PLATE, CODA_TEXT, IRIS_FEATHER_SHARE, codaFeather, codaFlashModel, codaIrisIn, codaIrisOut, codaOf, codaPlacement, planCoda, plateUnder, xCutFrames, type CodaExtra, type FilmPiece } from "../setpieces/coda";
+import { CODA_CHECKS, codaCamera, codaCaptions, codaChecks, codaHolds, codaLight, codaLockup, codaMarkStones, codaNoUi, codaPose, codaSound, codaStone, codaStonesOn, codaWords, forbiddenIn } from "../setpieces/codaChecks";
 import type { ScenePlan, ShotSpec, TypeSpec } from "../setpieces/scene";
 
 const ASPECTS: readonly Aspect[] = ["16:9", "1:1", "9:16"];
@@ -274,7 +279,7 @@ describe("C4: one stone", () => {
       expect(out.R).toBeLessThan(st.r * 0.1);
     }
   });
-  test("the opening iris is the one setpieces/qa.ts models (and ringIris() draws)", () => {
+  test("the opening iris is the one setpieces/qa.ts models (and ringIris() draws): its centre and radius, and its feather from 120 px on", () => {
     for (const a of ASPECTS) {
       const p = coda(a);
       const seam = p.seams.find((s) => s.in === "coda")!;
@@ -282,7 +287,29 @@ describe("C4: one stone", () => {
         const mine = codaIrisIn(p, fr)!;
         const theirs = irisOnFrame(p, seam, fr);
         expect(Math.abs(mine.R - theirs.R) + Math.abs(mine.c.x - theirs.c.x) + Math.abs(mine.c.y - theirs.c.y)).toBeLessThan(1e-6);
+        if (mine.R >= 120 * p.frame.unit) expect(mine.feather).toBeCloseTo(theirs.feather, 9);
+        else expect(mine.feather).toBeLessThan(theirs.feather);
       }
+    }
+  });
+  test("the irises show the stone's face: the feather narrows to 30 % of a small hole; the canary (the film's fixed 36 px) leaves the iris-in's first hole a halo and the iris-out's last a blur", () => {
+    for (const a of ASPECTS) {
+      const p = coda(a);
+      const x = X(p);
+      const clear = (i: { R: number; feather: number }) => (i.R - i.feather) / i.R;
+      const fixed = (i: { R: number }) => Math.max(0, i.R - x.irisIn.feather) / i.R;
+      const first = codaIrisIn(p, x.irisIn.at)!;
+      const last = codaIrisOut(p, x.irisOut.at + x.irisOut.frames - 3)!;
+      for (const i of [first, last]) {
+        expect(clear(i)).toBeGreaterThanOrEqual(1 - IRIS_FEATHER_SHARE - 1e-9);
+        // the hairline rides the half-opaque radius
+        expect(i.edge).toBeCloseTo(i.R - i.feather / 2, 9);
+      }
+      expect(fixed(first)).toBeLessThan(0.25);
+      expect(fixed(last)).toBe(0);
+      expect(codaFeather(120 * p.frame.unit, x.irisIn.feather)).toBeCloseTo(x.irisIn.feather, 9);
+      expect(codaFeather(400 * p.frame.unit, x.irisIn.feather)).toBe(x.irisIn.feather);
+      expect(codaFeather(0, x.irisIn.feather)).toBe(0);
     }
   });
   test("the canary: an iris-in that starts on L30, while the iris-out still shows the end card's stone, fails", () => {
@@ -458,6 +485,49 @@ describe("the lockup: no line on the stone or its z's", () => {
     const bad = withLine(p, "L-C1", (t) => ({ ...t, box: { ...t.box, left: st.at.x - 40, top: st.at.y - 30 } }));
     expect(errorsOf(codaLockup(bad, X(bad)))).not.toEqual([]);
   });
+  test("centred on the frame, the 16:9 lines at the widths the browser draws (measured on the 28 Oct renders); the canary (the lockup 150 px left, where the 0.48-em estimate set it) fails", () => {
+    const p = coda("16:9");
+    const x = X(p);
+    // the layout and the checks read the measured widths, not approxLineWidth's (1,175 px for L-C2; 884 drawn)
+    for (const id of x.lines) {
+      const t = p.types.find((y) => y.id === id)!;
+      expect(t.box.inkWidth).toBeCloseTo(CODA_INK_EM_16x9[t.text]! * 72, 6);
+      expect(lineRect(t.text, t.tier, p.frame, t.box, t.sizeT ?? 0.5).w).toBe(t.box.inkWidth!);
+    }
+    expect(lineRect(CODA_TEXT.soon, "expressive", p.frame, { left: 0, top: 0, align: "left" }, 0).w).toBeGreaterThan(1.3 * CODA_INK_EM_16x9[CODA_TEXT.soon]! * 72);
+    // 1:1 and 9:16 centre their lines across the frame (the browser does), so they keep the estimate
+    for (const a of ["1:1", "9:16"] as const) for (const t of coda(a).types.filter((y) => X(coda(a)).lines.includes(y.id))) expect(t.box.inkWidth).toBeUndefined();
+    const shift = 150;
+    const bad: ScenePlan = {
+      ...withShot(p, "coda", (s) => ({ ...s, stone: { ...s.stone!, at: { x: s.stone!.at.x - shift, y: s.stone!.at.y } } })),
+      types: p.types.map((t) => (x.lines.includes(t.id) ? { ...t, box: { ...t.box, left: t.box.left - shift } } : t)),
+    };
+    const xs = errorsOf(codaLockup(bad, X(bad)));
+    expect(xs.some((f) => /left of the frame's centre/.test(f.message))).toBe(true);
+    expect(xs.some((f) => /sits on the stone/.test(f.message))).toBe(false);
+  });
+});
+
+describe("the night ground's light (codaLight)", () => {
+  test("as planned: the plate's measured median at its exposure, under the coda's light, is within ΔE 5 of the dark --bg, in every aspect", () => {
+    for (const a of ASPECTS) expect(msgs(errorsOf(codaLight(coda(a), X(coda(a))))).map((m) => `${a} ${m}`)).toEqual([]);
+    const c = plateUnder(CODA_GRADE);
+    expect(deltaE(c, hexToRgb("#191E1B"))).toBeLessThanOrEqual(5);
+    // the site's own dark --wallpaper-tint, its riverbed's ground
+    expect(rgbToHex(c)).toBe("#1D2520");
+    // the exposure is the plate's, constant: the light cue under the breath stays the neutral one it was
+    expect(CODA_GRADE.ground).toEqual([1, 1, 1]);
+  });
+  test("the canaries: the plate as it comes (as the 28 Oct renders drew it, ΔE 9.9) fails; a ground exposed toward black fails", () => {
+    const p = coda("16:9");
+    const exposed = (e: number) => withCoda(p, (x) => ({ ...x, ground: { ...x.ground, exposure: e } }));
+    for (const [e, re] of [[1, /lighter/], [0.1, /toward black/]] as const) {
+      const bad = exposed(e);
+      expect(errorsOf(codaLight(bad, X(bad))).some((f) => re.test(f.message))).toBe(true);
+      expect(checkPlan(bad, CODA_GRID).ok).toBe(false);
+    }
+    expect(deltaE(plateUnder(CODA_GRADE, { ...CODA_PLATE, exposure: 1 }), hexToRgb("#191E1B"))).toBeGreaterThan(9);
+  });
 });
 
 describe("C8: no flash (no opposing pair of large luminance changes within a second, in any tile or the whole frame)", () => {
@@ -559,7 +629,81 @@ describe("C11 and C12: the sound layer and the captions the plan hands on", () =
 
 describe("the registry", () => {
   test("checkPlan runs every coda check on the coda only", () => {
-    expect(CODA_CHECKS.length).toBe(10);
+    expect(CODA_CHECKS.length).toBe(11);
     for (const id of ["drop", "finale"]) expect(codaChecks(piece("16:9", id))).toEqual([]);
+  });
+});
+
+/* ---------------------------------------------------------------- the render's stone scan on a night frame ------ */
+
+describe("the stones reel-marks.ts hands the render's scan (codaMarkStones)", () => {
+  test("the end card's stone through the closing iris until it is three-quarters gone, then the sleeping stone, marked light; never both", () => {
+    for (const a of ASPECTS) {
+      const p = coda(a);
+      const x = X(p);
+      const shut = x.irisOut.at + x.irisOut.frames;
+      let lastPage = -1;
+      for (let fr = 0; fr < p.duration; fr++) {
+        const st = codaMarkStones(p, fr)!;
+        expect(st.length).toBeLessThanOrEqual(1);
+        for (const s of st) expect(s.light).toBe(s.shot === "coda");
+        if (st.some((s) => s.shot === "page")) lastPage = fr;
+        if (fr >= x.irisIn.at + 12) expect(st.map((s) => s.shot)).toEqual(["coda"]);
+      }
+      // the set pieces' model takes the closing iris for a swap and drops the stone by about L14; the view shows it longer
+      expect(lastPage).toBeGreaterThan(20);
+      expect(lastPage).toBeLessThan(shut);
+      expect(stonesOnFrame(p, 20).length).toBe(0);
+      expect(codaMarkStones(piece(a, "finale"), 0)).toBeNull();
+    }
+  });
+});
+
+describe("the render's stone scan on a night frame (qa/reel-scan.ts)", () => {
+  // a half-size render of a 640 × 360 plan: the night ground and the sleeping stone, light (the page's dark palette), its two eyes dark
+  const w = 320;
+  const h = 180;
+  const frames = 40;
+  const marksOf = (light: boolean): ReelMarks => ({
+    aspect: "16:9",
+    fps: 60,
+    width: 640,
+    height: 360,
+    total: frames,
+    cuts: [],
+    waits: [],
+    hits: [],
+    types: [],
+    apertures: [],
+    stones: [{ from: 0, to: frames, count: 1, rMin: 20, rMax: 20 }],
+    stoneAt: Object.fromEntries(Array.from({ length: frames }, (_, f) => [f, [[500, 240, 20, ...(light ? [1] : [])]]])),
+  });
+  const reel = (marks: ReelMarks, second: (f: number) => boolean) => {
+    const scan = new ReelScan(w, h, marks);
+    for (let f = 0; f < frames; f++) {
+      const px = new Uint8Array(w * h).fill(30);
+      const stone = (cx: number, cy: number) => {
+        for (let y = cy - 10; y <= cy + 10; y++) for (let x = cx - 10; x <= cx + 10; x++) if ((x - cx) ** 2 + (y - cy) ** 2 <= 100) px[y * w + x] = 193;
+        for (const ex of [cx - 3, cx + 2]) for (let y = cy - 1; y < cy + 1; y++) for (let x = ex; x < ex + 2; x++) px[y * w + x] = 45;
+      };
+      stone(250, 120);
+      if (second(f)) stone(280, 120);
+      scan.push(px);
+    }
+    return scan.finish();
+  };
+  test("marked light, as reel-marks.ts marks the coda's stone: the one stone is found on every frame; the canary, a second stone beside it, is reported", () => {
+    const one = reel(marksOf(true), () => false);
+    expect(one.stones.frames.length).toBe(frames);
+    expect(one.stones.frames.every((s) => s.blobs === 1)).toBe(true);
+    expect(one.stones.twoStoneRuns).toEqual([]);
+    const two = reel(marksOf(true), (f) => f >= 20 && f < 26);
+    expect(two.stones.twoStoneRuns).toEqual([{ from: 20, to: 26, most: 2 }]);
+    expect(two.problems.some((p) => /^stones: 2 stone-sized/.test(p))).toBe(true);
+  });
+  test("marked as before (every stone a dark blob): the scan saw no stone on a night frame, and so missed the second", () => {
+    const blind = reel(marksOf(false), (f) => f >= 20 && f < 26);
+    expect(blind.stones.frames.every((s) => s.blobs === 0)).toBe(true);
+    expect(blind.stones.twoStoneRuns).toEqual([]);
   });
 });

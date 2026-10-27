@@ -9,7 +9,9 @@
 //              polarity, when it lands, when it stops being drawn, and the exits it declares (qa/ink.ts judges its ink)
 //   stones     runs of frames with the stones the plan shows and their radii, and each frame's stones (centre and
 //              radius): qa/stones.ts counts the dark blobs around them (the placeholders carry Pebble's own avatar and
-//              dark controls, which are compact dark blobs too, but the film's stone is only where the plan draws it)
+//              dark controls, which are compact dark blobs too, but the film's stone is only where the plan draws it);
+//              a stone drawn light on a dark ground (the post-credit scene's sleeping stone) carries a 4th value, 1,
+//              and the scan looks for it on the inverted frame
 //   apertures  the Drop's hit, the frame its bands start to open in the plan, and a resting stretch before it
 //              (qa/bands.ts measures the bands)
 //   transitions  each iris, rack or swap's frames, and the Veil's own cast, which tile pops do not judge (a designed
@@ -23,6 +25,7 @@ import { hexToRgb } from "../../light/grades";
 import { demoPlans } from "../demo/plans";
 import { COLOR } from "../../tokens";
 import { apertureOpenStart, drawnSpan, stonesOnFrame, typeTracks } from "../qa";
+import { codaMarkStones } from "../codaChecks";
 import { carriedRect } from "../kit";
 import { ACTIVATE } from "../../../../../shared/pebble/veil";
 import { frameOfSource } from "../take";
@@ -40,7 +43,8 @@ const waits: string[] = [];
 const hits: number[] = [];
 const types: unknown[] = [];
 const stones: { from: number; to: number; count: number; rMin: number; rMax: number }[] = [];
-const stoneAt: Record<number, [number, number, number][]> = {};
+// [x, y, r], or [x, y, r, 1] for a stone drawn light on a dark ground (the post-credit scene's: the scan inverts for it)
+const stoneAt: Record<number, number[][]> = {};
 const apertures: { piece: string; hit: number; planOpen: number; rest: { from: number; to: number } }[] = [];
 const entrances: { id: string; from: number; to: number; kind: string }[] = [];
 const rows: { id: string; from: number; to: number; rect: { x: number; y: number; w: number; h: number }; facts: number; gapPx: number; size: number; inkLuma: number; rectAt?: Record<number, number[]> }[] = [];
@@ -75,8 +79,9 @@ for (const e of entries) {
     }
     let run: (typeof stones)[number] | null = null;
     for (let fr = 0; fr < p.duration; fr++) {
-      const st = stonesOnFrame(p, fr);
-      if (st.length) stoneAt[off + fr] = st.map((s) => [Math.round(s.c.x * 10) / 10, Math.round(s.c.y * 10) / 10, Math.round(s.r * 10) / 10]);
+      // the post-credit scene's stones as CodaView draws them (its closing iris; its sleeping stone light on the night ground)
+      const st = codaMarkStones(p, fr) ?? stonesOnFrame(p, fr).map((s) => ({ ...s, light: false }));
+      if (st.length) stoneAt[off + fr] = st.map((s) => [Math.round(s.c.x * 10) / 10, Math.round(s.c.y * 10) / 10, Math.round(s.r * 10) / 10, ...(s.light ? [1] : [])]);
       const count = st.length;
       const rMin = count ? Math.min(...st.map((s) => s.r)) : 0;
       const rMax = count ? Math.max(...st.map((s) => s.r)) : 0;

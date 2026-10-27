@@ -24,18 +24,24 @@
 //   codaSound     C11, the plan's half: one one-shot (the tap, CC0, never Mixkit) within a frame of L-C2's landing, and
 //                 room tone over every frame; no music
 //   codaCaptions  C12, the plan's half: each caption cue 1.2 s or more, carrying each line's words exactly
-// The film's half of C10 (the X cut) is coda.ts codaPlacement(), run on the film's pieces (tests/coda.test.ts).
+//   codaLight     the night ground (POSTCREDIT_DESIGN §3.5, §3.9): the plate's measured median at its exposure, under
+//                 the coda's light, within ΔE 5 of the site's dark --bg, which the footer sits on; never black
+// The film's half of C10 (the X cut) is coda.ts codaPlacement(), run on the film's pieces (tests/coda.test.ts). For the
+// render's stone scan, codaMarkStones() gives reel-marks.ts the stones as CodaView draws them (the closing iris, and the
+// sleeping stone light on the night ground, which qa/reel-scan.ts finds on the inverted frame).
 // Pure; no React.
 import { CAMERA_FLOOR_PX_PER_FRAME_1080, type Finding } from "../qa/checks";
-import { READING, f60 } from "../tokens";
+import { COLOR, READING, f60 } from "../tokens";
 import { screenVelocity } from "../motion/camera";
+import type { Point } from "../motion/geometry";
+import { deltaE, gradeAt, hexToRgb, relLuminance, rgbToHex } from "../light/grades";
 import { requiredHoldS, wordCount } from "../type/reading";
 import { HOLD_SECONDS } from "../../../../shared/pebble/character";
 import { checkCues } from "../../../../shared/pebble/cues";
 import { BLINK_S, blinkStartsFor, blinkTouches } from "./blink";
 import { carriedRect } from "./kit";
 import { defaultEntranceOf, enterFramesOf, lineRect } from "./frame";
-import { CODA_STONE_COLORS, codaFlashModel, codaIrisIn, codaIrisOut, codaOf, stoneExtent, type CodaExtra } from "./coda";
+import { CODA_STONE_COLORS, codaFlashModel, codaIrisIn, codaIrisOut, codaOf, plateUnder, stoneExtent, type CodaExtra } from "./coda";
 import type { ScenePlan, ShotSpec, TypeSpec } from "./scene";
 
 /* ---------------------------------------------------------------- C1: the words ------------------------------- */
@@ -222,6 +228,22 @@ export function codaStone(p: ScenePlan, x: CodaExtra): Finding[] {
   return out;
 }
 
+/**
+ * The coda's stones on a frame as CodaView draws them, for the render's stone scan (setpieces/tools/reel-marks.ts): the
+ * end card's stone through the closing iris, which setpieces/qa.ts stonesOnFrame() takes for a swap and drops by about
+ * L14 while the render shows it to L31; and the sleeping stone through the opening iris and after, marked `light` (the
+ * page's dark palette: a light stone on the night ground, which the scan's dark-blob search cannot see, so
+ * qa/reel-scan.ts looks for it on the inverted frame). Kept from a quarter shown, as stonesOnFrame() keeps them; null on
+ * a plan that is not the coda.
+ */
+export function codaMarkStones(p: ScenePlan, fr: number, minShare = 0.25): { shot: string; c: Point; r: number; share: number; light: boolean }[] | null {
+  const x = codaOf(p);
+  if (!x) return null;
+  return codaStonesOn(p, x, fr)
+    .filter((s) => s.share >= minShare)
+    .map((s) => ({ ...s, light: s.shot === "coda" && x.stone.palette === "dark" }));
+}
+
 /* ---------------------------------------------------------------- C7: the camera ------------------------------ */
 
 /** The fastest corner of the frame under a shot's camera on a local frame, px a frame at 1080. */
@@ -357,11 +379,36 @@ export function codaNoUi(p: ScenePlan): Finding[] {
 
 /* ---------------------------------------------------------------- the lockup ---------------------------------- */
 
-/** The lines never sit on the stone or its z's (POSTCREDIT_DESIGN §3.4), on any frame they are on screen. */
+/** The lockup's centre may sit this share of its width off the frame's centre. */
+export const CODA_LOCKUP_CENTRE_SHARE = 0.02;
+
+/**
+ * The lockup: the lines never sit on the stone or its z's (POSTCREDIT_DESIGN §3.4), on any frame they are on screen; and
+ * the lockup (the stone's extent with the lines' rects, measured where the layout depends on their widths: coda.ts
+ * CODA_INK_EM_16x9) is centred across the frame, within 2 % of its width, once every line has landed (the push zooms
+ * about the frame's centre, so it stays centred). The 16:9 lines placed by approxLineWidth's estimate left the drawn
+ * lockup 150 px left of centre (the renders of 28 Oct).
+ */
 export function codaLockup(p: ScenePlan, x: CodaExtra): Finding[] {
   const out: Finding[] = [];
   const coda = p.shots.find((s) => s.id === "coda");
   if (!coda?.stone) return out;
+  const shown = x.lines.map((id) => p.types.find((y) => y.id === id)).filter((t): t is TypeSpec => !!t);
+  if (shown.length) {
+    const fr = Math.min(p.duration - 1, Math.max(...shown.map((t) => spanOf(t, p).landed)));
+    const pose = coda.camera.pose(fr - coda.from);
+    const c = { x: p.frame.w / 2 + (coda.stone.at.x - pose.x) * pose.zoom, y: p.frame.h / 2 + (coda.stone.at.y - pose.y) * pose.zoom };
+    const e = stoneExtent(c, coda.stone.size * pose.zoom);
+    let x0 = e.x;
+    let x1 = e.x + e.w;
+    for (const t of shown) {
+      const r = carriedRect(p, t, lineRect(t.text, t.tier, p.frame, t.box, t.sizeT ?? 0.5), fr);
+      x0 = Math.min(x0, r.x);
+      x1 = Math.max(x1, r.x + r.w);
+    }
+    const off = (x0 + x1) / 2 - p.frame.w / 2;
+    if (Math.abs(off) > CODA_LOCKUP_CENTRE_SHARE * (x1 - x0)) out.push({ check: "codaLockup", level: "error", message: `the lockup (the stone and its lines, ${Math.round(x0)}–${Math.round(x1)} px on frame ${fr}) sits ${Math.abs(off).toFixed(0)} px ${off < 0 ? "left" : "right"} of the frame's centre: centred within ${CODA_LOCKUP_CENTRE_SHARE * 100} % of its width`, frame: fr });
+  }
   for (const id of x.lines) {
     const t = p.types.find((y) => y.id === id);
     if (!t) continue;
@@ -411,14 +458,36 @@ export function codaCaptions(p: ScenePlan, x: CodaExtra): Finding[] {
   return out;
 }
 
+/* ---------------------------------------------------------------- the light ----------------------------------- */
+
+/** The night ground sits within this ΔE (CIE76) of the site's dark --bg (POSTCREDIT_DESIGN §3.5). */
+export const CODA_LIGHT_MAX_DE = 5;
+
+/**
+ * The night ground's light: the plate's measured median (coda.ts CODA_PLATE.median) at its exposure, under the light the
+ * coda's shot is drawn in (its light cue, under the breath), sits within ΔE 5 of the dark --bg (#191E1B) the site's
+ * footer sits on, so the film's last frame is the site's footer at night (POSTCREDIT_DESIGN §3.9); never black. The
+ * renders of 28 Oct drew the plate as it comes, and the last frame's ground measured ΔE 8.0–9.4 away.
+ */
+export function codaLight(p: ScenePlan, x: CodaExtra): Finding[] {
+  const coda = p.shots.find((s) => s.id === "coda");
+  if (!coda) return [];
+  const c = plateUnder(gradeAt(coda.from, p.lightInitial, p.lightCues), x.ground);
+  const bg = hexToRgb(COLOR.nightPage);
+  const dE = deltaE(c, bg);
+  if (dE <= CODA_LIGHT_MAX_DE) return [];
+  const how = relLuminance(c) < relLuminance(bg) ? "darker, toward black (night green, never black)" : "lighter";
+  return [{ check: "codaLight", level: "error", message: `the night ground's median under the coda's light is ${rgbToHex(c)}, ΔE ${dE.toFixed(1)} from the dark --bg ${COLOR.nightPage} the site's footer sits on, ${how}: at most ${CODA_LIGHT_MAX_DE}`, frame: coda.from }];
+}
+
 /* ---------------------------------------------------------------- all of them --------------------------------- */
 
 /** The coda's checks, by name (for reports). */
-export const CODA_CHECKS = ["codaWords", "codaHolds", "codaStone", "codaCamera", "codaPose", "codaNoUi", "codaLockup", "codaFlashes", "codaSound", "codaCaptions"] as const;
+export const CODA_CHECKS = ["codaWords", "codaHolds", "codaStone", "codaCamera", "codaPose", "codaNoUi", "codaLockup", "codaFlashes", "codaSound", "codaCaptions", "codaLight"] as const;
 
 /** Every coda check on a plan (none on a plan that is not the coda). */
 export function codaChecks(p: ScenePlan): Finding[] {
   const x = codaOf(p);
   if (!x) return [];
-  return [...codaWords(p, x), ...codaHolds(p, x), ...codaStone(p, x), ...codaCamera(p, x), ...codaPose(p, x), ...codaNoUi(p), ...codaLockup(p, x), ...codaFlashes(p), ...codaSound(p, x), ...codaCaptions(p, x)];
+  return [...codaWords(p, x), ...codaHolds(p, x), ...codaStone(p, x), ...codaCamera(p, x), ...codaPose(p, x), ...codaNoUi(p), ...codaLockup(p, x), ...codaFlashes(p), ...codaSound(p, x), ...codaCaptions(p, x), ...codaLight(p, x)];
 }

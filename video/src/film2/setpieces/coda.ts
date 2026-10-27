@@ -45,7 +45,7 @@ import { COLOR, RING, f60, type Aspect } from "../tokens";
 import { VelocityCamera, worldToFrame, type CamSample, type Pose } from "../motion/camera";
 import { radiusToCorners, type Point, type Rect } from "../motion/geometry";
 import { E_ARRIVE, E_MOVE, clamp01 } from "../motion/ease";
-import { GRADES, gradeAt, gradeColor, hexToRgb, relLuminance, type Grade, type LightCue } from "../light/grades";
+import { GRADES, applyGroundLight, gradeAt, gradeColor, hexToRgb, relLuminance, type Grade, type LightCue, type RGB } from "../light/grades";
 import { IRIS_DRAWN, irisRadius } from "../transitions/kinds";
 import type { Finding } from "../qa/checks";
 import { luminanceTransitions, maxFlashesPerSecond } from "../qa/luma";
@@ -128,10 +128,9 @@ export interface CodaTiming {
 /* ---------------------------------------------------------------- the light, the ground, the sound -------------- */
 
 /**
- * The coda's light: the night riverbed as the site draws it, neutral gains on the dark plate (POSTCREDIT_DESIGN §3.5;
- * the night grade would darken the plate toward black), no key light of the film's own (the plate's own pool, from
- * above left, is the only light) and the night grade's shade-green vignette. The measurement that confirms it (the
- * ground's median within ΔE 5 of the site's dark footer ground) waits for a render.
+ * The coda's light: the night riverbed as the site draws it, neutral on the dark plate (POSTCREDIT_DESIGN §3.5; the
+ * night grade would darken the stone with it, and its cool wash would tint the page's dark palette), no key light of the
+ * film's own (the plate's own pool, from above left, is the only light) and the night grade's shade-green vignette.
  */
 export const CODA_GRADE: Grade = { ...GRADES.page, name: "night riverbed", keyLight: 0, vignette: GRADES.night.vignette };
 
@@ -140,8 +139,19 @@ export const CODA_GRADE: Grade = { ...GRADES.page, name: "night riverbed", keyLi
  * capture/riverbed-plate.mjs renders it (video/public/desktop/riverbed-dark@3x.png, gitignored), then a 2400-px JPEG
  * beside the light one (`sips -s format jpeg -s formatOptions 88 -Z 2400 …`). Until it exists the view draws the
  * wallpaper's own mid tone (#1D2520, the site's dark --wallpaper-tint), never black.
+ *   median    the plate's measured median (a 160 × 100 area-scaled sample of the JPEG, 28 Oct): the light check and
+ *             the flash model read it
+ *   exposure  the plate's exposure, a neutral linear-light gain the view multiplies into the ground's light, constant
+ *             through the shot, by measurement: the renders of 28 Oct drew the plate as it comes and left the last
+ *             frame's ground median #272F2A–#29322D, ΔE 8.0–9.4 from the dark --bg (#191E1B) the site's footer sits on;
+ *             at 0.55 the plate's median becomes #1D2520, exactly the site's dark --wallpaper-tint (its riverbed's
+ *             ground), and the ground's within ΔE 5 of the --bg (codaChecks.ts codaLight)
  */
-export const CODA_PLATE = { src: "desktop/riverbed-dark-2400.jpg", fallback: "#1D2520" } as const;
+export const CODA_PLATE = { src: "desktop/riverbed-dark-2400.jpg", fallback: "#1D2520", median: "#29332D", exposure: 0.55 } as const;
+
+/** The night plate's median as a frame shows it: its exposure, then the light `g` (the ground's gains, the filter, the washes). */
+export const plateUnder = (g: Grade, plate: { median: string; exposure: number } = CODA_PLATE): RGB =>
+  gradeColor(applyGroundLight(hexToRgb(plate.median), { ground: [plate.exposure, plate.exposure, plate.exposure] }), g, 0.5, true);
 
 /** The sound layer the score lane builds (POSTCREDIT_DESIGN §3.7): room tone throughout, one CC0 tap; no music. */
 export const CODA_SOUND = {
@@ -214,7 +224,7 @@ export interface CodaExtra {
   lastBreath: { from: number; to: number };
   push: { px: number; lz: number; from: number; ease: number; still: number };
   stone: { palette: "dark"; initialPose: "sleepy"; colors: typeof CODA_STONE_COLORS; blink: { target: number; keepClear: FrameSpan[]; clockOffset: number } };
-  ground: typeof CODA_PLATE;
+  ground: { src: string; fallback: string; median: string; exposure: number };
   grade: Grade;
   sound: { roomTone: { from: number; to: number } & (typeof CODA_SOUND)["roomTone"]; tap: { at: number } & (typeof CODA_SOUND)["tap"] };
   /** the main film's captions for the coda (local frames; X's captions carry none) */
@@ -261,6 +271,26 @@ const LAYOUT: Record<Aspect, CodaLayout> = {
   "9:16": { stonePx: 400, gap: 56, side: false },
 };
 
+/**
+ * The coda's lines as the browser sets them (Fraunces 350, SOFT 100, WONK 0, −0.022 em, the bundled variable font, in
+ * Chrome 145's headless shell), measured on the 16:9 renders of 28 Oct (L257 and L464 agree within 2 px): the distance
+ * from a line's box edge to its ink's far edge, in em of the 16:9 size (72 px). approxLineWidth's 0.48 em a character
+ * is 24–33 % wider for them (L-C2: 1,175 px estimated, 884 drawn), which set the 16:9 lockup 150 px left of the frame's
+ * centre. Used where the layout depends on a width (16:9, the lines beside the stone) and by the checks there
+ * (TypeBox.inkWidth); a text not in the table falls back to the estimate. Re-measure if the lines or the font change.
+ */
+export const CODA_INK_EM_16x9: Readonly<Record<string, number>> = {
+  "Pebble rests.": 5.03,
+  "Soon, it will learn while it does.": 12.28,
+  "Not built yet.": 5.13,
+};
+
+/** A coda line's width for the 16:9 layout: measured when the table has it, else approxLineWidth's estimate. */
+const sideLineWidth = (text: string, f: FrameBox): number => {
+  const em = CODA_INK_EM_16x9[text];
+  return em !== undefined ? em * typeSizePx("expressive", f.w, f.h, 0) : approxLineWidth(text, "expressive", f.w, f.h, 0);
+};
+
 /** The z's top, viewBox units (avatarMotion's sleep cue: `M 52 −77 …`, drawn outside the body's lean). */
 const Z_TOP = -77;
 /** The film pebble's foot below the stone's centre at 148 px (setpieces/views/PieceView.tsx, video/src/film/timeline.ts PET). */
@@ -290,14 +320,17 @@ export function codaLayout(f: FrameBox, texts: { rests: string; soon: string; st
   const ext = stoneExtent({ x: 0, y: 0 }, px);
   const gap = L.gap * f.unit;
   if (L.side) {
-    // the lockup centred on the frame: the stone left, the lines right, the block's middle on the stone's middle
-    const W = ext.w + gap + blockW;
+    // the lockup centred on the frame: the stone left, the lines right, the block's middle on the stone's middle; the
+    // lines' widths are the ones the browser draws (CODA_INK_EM_16x9), so the drawn lockup is centred, not an estimate
+    // of it, and the checks read the same widths (TypeBox.inkWidth)
+    const widths = lines.map((t) => sideLineWidth(t, f));
+    const W = ext.w + gap + Math.max(...widths);
     const left = f.w / 2 - W / 2;
     const stone = { x: left - ext.x, y: f.h / 2 - (BODY.top + BODY.bottom) * 0.5 * (px / VIEWBOX_SIZE) };
     const linesLeft = left + ext.w + gap;
     const top = f.h / 2 - blockH / 2;
     const tops = [top, top + counts[0]! * lh, top + (counts[0]! + counts[1]!) * lh];
-    const boxes = tops.map((t) => ({ left: linesLeft, top: t, align: "left" as const })) as [TypeBox, TypeBox, TypeBox];
+    const boxes = tops.map((t, i) => ({ left: linesLeft, top: t, align: "left" as const, ...(CODA_INK_EM_16x9[lines[i]!] !== undefined ? { inkWidth: widths[i]! } : {}) })) as [TypeBox, TypeBox, TypeBox];
     return { stone, stonePx: px, boxes, lockup: { x: left, y: Math.min(top, stone.y + ext.y), w: W, h: Math.max(top + blockH, stone.y + ext.y + ext.h) - Math.min(top, stone.y + ext.y) } };
   }
   // stacked: the stone above, the lines centred beneath, the whole lockup centred on the frame
@@ -313,15 +346,38 @@ export function codaLayout(f: FrameBox, texts: { rests: string; soon: string; st
 
 /* ---------------------------------------------------------------- the irises, as the view draws them ---------- */
 
-/** The half-opaque radius of a feathered hole of radius R (the mask is clear inside max(0, R − feather), opaque at R). */
-const halfRadius = (R: number, feather: number) => (R >= feather ? R - feather / 2 : R / 2);
+/**
+ * The share of its radius a coda iris's feather may take. The film's iris is feathered 36 px at 1080 (IRIS_DRAWN), which
+ * no other seam shows (it opens light on light); on the night green the feather is the coda's whole look at a small
+ * hole, and the renders of 28 Oct showed it: a hole no wider than its feather read as a glowing dot (the closing iris
+ * on L31) and a halo round the hairline (the opening iris's first frames), not as a face. So the feather narrows to
+ * this share of the radius while the hole is small, and is the film's 36 px from 120 px on.
+ */
+export const IRIS_FEATHER_SHARE = 0.3;
+
+/** The feather a coda iris draws at radius R (px of the frame): the film's feather, narrowed while the hole is small. */
+export const codaFeather = (R: number, feather: number): number => Math.max(0, Math.min(feather, IRIS_FEATHER_SHARE * R));
+
+/** A coda iris on a frame: its centre, radius, feather (the mask is clear inside R − feather, opaque at R), half-opaque radius (the checks' boundary and the hairline's) and progress. */
+export interface CodaIrisFrame {
+  c: Point;
+  R: number;
+  feather: number;
+  edge: number;
+  u: number;
+}
+
+const irisFrame = (c: Point, R: number, featherMax: number, u: number): CodaIrisFrame => {
+  const feather = codaFeather(R, featherMax);
+  return { c, R, feather, edge: R - feather / 2, u };
+};
 
 /**
  * The closing iris on a local frame (B): centred on the end card's stone where the page's camera has it on that frame,
- * its radius falling on E-move from past the frame's farthest corner to nothing; null outside it. `edge` is the
- * half-opaque radius (the checks' boundary); the view draws R and the feather.
+ * its radius falling on E-move from past the frame's farthest corner to nothing; null outside it. The view draws R and
+ * the feather; `edge` is the half-opaque radius.
  */
-export function codaIrisOut(p: ScenePlan, fr: number): { c: Point; R: number; edge: number; u: number } | null {
+export function codaIrisOut(p: ScenePlan, fr: number): CodaIrisFrame | null {
   const x = codaOf(p);
   if (!x) return null;
   const o = x.irisOut;
@@ -333,15 +389,16 @@ export function codaIrisOut(p: ScenePlan, fr: number): { c: Point; R: number; ed
   const Rmax = radiusToCorners(c0, p.frame.w, p.frame.h) + o.feather;
   const u = (fr - o.at) / o.frames;
   const R = Rmax * (1 - E_MOVE(clamp01(u)));
-  return { c, R, edge: halfRadius(R, o.feather), u };
+  return irisFrame(c, R, o.feather, u);
 }
 
 /**
- * The opening iris on a local frame (D), exactly as transitions/presentations.tsx ringIris() draws it and
- * setpieces/qa.ts irisOnFrame() models it: centred where the coda's stone is on the shot's first frame, from the
- * stone's face (IRIS_DRAWN's start radius) past the farthest corner on E-move; null outside it.
+ * The opening iris on a local frame (D), with the centre and radius transitions/presentations.tsx ringIris() draws and
+ * setpieces/qa.ts irisOnFrame() models: centred where the coda's stone is on the shot's first frame, from the stone's
+ * face (IRIS_DRAWN's start radius) past the farthest corner on E-move; its feather narrowed while the hole is small
+ * (codaFeather; the same as ringIris's from 120 px on); null outside it.
  */
-export function codaIrisIn(p: ScenePlan, fr: number): { c: Point; R: number; edge: number; u: number } | null {
+export function codaIrisIn(p: ScenePlan, fr: number): CodaIrisFrame | null {
   const x = codaOf(p);
   if (!x) return null;
   const o = x.irisIn;
@@ -351,7 +408,7 @@ export function codaIrisIn(p: ScenePlan, fr: number): { c: Point; R: number; edg
   const Rmax = radiusToCorners(c, p.frame.w, p.frame.h) + o.feather;
   const u = (fr - o.at) / o.frames;
   const R = irisRadius(u, o.startRadius, Rmax, o.ease);
-  return { c, R, edge: halfRadius(R, o.feather), u };
+  return irisFrame(c, R, o.feather, u);
 }
 
 /* ---------------------------------------------------------------- the plan ------------------------------------ */
@@ -525,13 +582,14 @@ function buildCoda(o: CodaOptions, irisInAt: number, flashWait: number): ScenePl
 
 /**
  * The relative luminances the model uses (WCAG), from the palette: the page under its grade, the night green, the
- * night plate (its mid tone until a render measures it), the two stones, the two inks. A line's glyphs cover about a
- * fifth of its box.
+ * night plate (its measured median at its exposure), the two stones, the two inks. A line's glyphs cover about a fifth
+ * of its box.
  */
 export const CODA_LUMA = {
   page: relLuminance(gradeColor(hexToRgb(COLOR.page), GRADES.page)),
   night: relLuminance(hexToRgb(COLOR.nightPage)),
-  plate: relLuminance(hexToRgb(CODA_PLATE.fallback)),
+  /** the plate's measured median at its exposure, under the coda's light */
+  plate: relLuminance(plateUnder(CODA_GRADE)),
   endStone: relLuminance(hexToRgb(COLOR.pebble)),
   stone: relLuminance(hexToRgb(CODA_STONE_COLORS.body)),
   inkOnPage: relLuminance(hexToRgb(COLOR.ink)),
