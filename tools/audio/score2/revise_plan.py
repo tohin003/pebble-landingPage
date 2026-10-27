@@ -331,13 +331,23 @@ def revise_cues(path, decision=None):
          "length_s": r4(db(A4, 82) - db(A4, 76)), "bars_measured": bar_rows(A4, 76, 83),
          "why": "a cadence, not a crescendo: bar levels -10.7 to -12.5 LUFS raw while the harmony moves to V and resolves "
                 "to vi on the title (R4 §0.6)"}]
+    prev = (cj.get("revision") or {}).get("retired_scenes", {})
+    for sc in removed:  # run again, the file has nothing left to remove: keep the first run's counts
+        if not removed[sc] and prev.get(sc):
+            removed[sc] = int(str(prev[sc]).split()[0])
+    keep = ("g1_side", "title_variant", "title_variant_b", "title_variant_for_the_chosen_side")
     cj["revision"] = {
         "date": "2026-10-27", "by": "score2, the supervisor's revision for the Return (MONTAGE_DESIGN §5.6)",
         "retired_scenes": {"the_wall": f"{removed['the_wall']} windows removed", "convergence": f"{removed['convergence']} windows removed",
                            "why": "the person chose the montage at the end only (OVERRIDES §61): the Return replaces the "
                                   "wall and the convergence; 22:13's copy of this file is in cuesheet/archive-2026-10-26-2213/"},
         "added": "the_return: B2 bars 48-51 (side A, R0-R480) and A4 bars 80-81 (side A, R480-R720); A4 bars 76-81 (G1's B side)",
-        "decision": decision}
+        "decision": {**{k: (decision or {}).get(k) for k in keep},
+                     "m2_splice": ((decision or {}).get("m2") or {}).get("chosen"),
+                     "m3_splice": ((decision or {}).get("m3") or {}).get("chosen"),
+                     "record": "cuesheet/r2/g1_decision.json"},
+        "note": "the ring_groove windows' 'fits' notes describe 22:13's block lengths (cascades 1-4 in); the cue sheet's "
+                "plans are the timing source"}
     with open(path, "w") as fh:
         json.dump(cj, fh, indent=1)  # as cue_windows.py writes it
     return removed

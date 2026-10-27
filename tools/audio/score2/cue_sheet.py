@@ -417,14 +417,18 @@ def beat_sheet(sheet, plan):
                      "start_frame": round(b["start_s"] * FPS), "end_frame": round(b["end_s"] * FPS), "dur_s": b["dur_s"],
                      "start_pct": b["start_pct"], "music": b["music"],
                      "on_22_13": f"{o['start']}-{o['end']}" if o else None})
-    for name in ("Cascade 1", "Cascade 2", "Cascade 3", "Convergence"):
+    gone = []
+    for name, why in (("Cascade 1", "out of the main film (§61: 35 readable features); its features are in the Return's "
+                                    "outer ring, the tour and their short"),
+                      ("Cascade 2", "out, as Cascade 1"), ("Cascade 3", "out, as Cascade 1"),
+                      ("Convergence", "replaced by the Return (§61), which also replaces the wall")):
         o = old.get(name)
         if o:
-            rows.append({"block": name, "on_22_13": f"{o['start']}-{o['end']}", "now": "out",
-                         "why": "§61: Cascades 1-3 leave the main film (35 readable features); the Return replaces the wall and the convergence"})
+            gone.append({"block": "22:13's S25 (the convergence)" if name == "Convergence" else name,
+                         "on_22_13": f"{o['start']}-{o['end']}", "now": why})
     out = {"title": "Ripples: the picture beat sheet (revision 2, the Return)", "version": sheet["version"],
            "frame_rate": FPS, "film_length_s": m["film_length_s"], "film_length": m["film_length"],
-           "film_length_frames": m["film_length_frames"], "blocks": rows, "return": m.get("return"),
+           "film_length_frames": m["film_length_frames"], "blocks": rows, "left_the_film": gone, "return": m.get("return"),
            "shots": m["shots"], "sync_points": m["sync_points"],
            "rule": "every time is a source time on a cue (film = cue film_in + (src - src_in)); the incoming shot's first "
                    "readable frame lands on a beat, a half bar or a phrase line; a reading hold is never shortened; only "
@@ -438,11 +442,12 @@ def beat_sheet(sheet, plan):
          "## The blocks (MONTAGE_DESIGN §5.2, moved to the revised music)", "",
          "| Block | Film (frames) | Length, s | % | Music | On 22:13 |", "|---|---|---|---|---|---|"]
     for r_ in rows:
-        if r_.get("now") == "out":
-            L.append(f"| {r_['block']} | **out** | | | | {r_['on_22_13']} |")
-        else:
-            L.append(f"| {r_['block']} | {r_['start']}-{r_['end']} ({r_['start_frame']}-{r_['end_frame']}) | {r_['dur_s']:.2f} | "
-                     f"{r_['start_pct']} | {', '.join(r_['music'])} | {r_['on_22_13'] or 'new'} |")
+        L.append(f"| {r_['block']} | {r_['start']}-{r_['end']} ({r_['start_frame']}-{r_['end_frame']}) | {r_['dur_s']:.2f} | "
+                 f"{r_['start_pct']} | {', '.join(r_['music'])} | {r_['on_22_13'] or 'new'} |")
+    L += ["", "Left the film since 22:13:", ""] + [f"- {g['block']} ({g['on_22_13']}): {g['now']}." for g in gone]
+    L += ["", "After the end card (OVERRIDES §62, D157): a breath of room tone, then the post-credit sneak peek, its own "
+              "scene with its own small sound. It is not timed here; its length counts against X's 2:20 cap "
+              f"({140.0 - m['film_length_s']:.2f} s left), and if it doesn't fit, the X version ends at the end card."]
     rt = m.get("return")
     if rt:
         L += ["", "## The Return in R-frames (MONTAGE_DESIGN §2.3)", "",

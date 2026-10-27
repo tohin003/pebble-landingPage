@@ -3,9 +3,8 @@
 Every measurement is made on music assembled in memory with the build's measured source-time corrections (B2 -30.0 ms,
 B4 -42.2 ms: score_common.apply_corrections, as score_build.py builds the masters). No audio file is written, with one
 exception: the classifier (Apple SoundAnalysis through .work/audio/sound_tags) reads a temporary WAV, so `title` writes
-short stretches of Born Of The Sky (CC BY 4.0) with the kit's sounds (CC0 and designed; in one variant the build's temp
-hit, the Mixkit sound effect drop_impact_a), never Mixkit music, each deleted as soon as it has been read. Mixkit music is
-never in a written file (OVERRIDES §51).
+short stretches of Born Of The Sky (CC BY 4.0) with the kit's CC0 and designed sounds, never Mixkit music and never a
+Mixkit take, each deleted as soon as it has been read. Mixkit music is never in a written file (OVERRIDES §51).
 
 Subcommands (audio venv, through scripts/heavy.sh, one at a time):
   probe CANDIDATES.json OUT_PREFIX LAYERS.json
@@ -17,9 +16,9 @@ Subcommands (audio venv, through scripts/heavy.sh, one at a time):
       spectral step's percentile and the second-difference click ratio; onsets against the beats per cue; per film bar
       of the Return its loudness, density and air; the title's arrival; the Return against the climax
   title PLAN.json METRICS.json OUT_PREFIX LAYERS.json
-      the title composite (the one-bar swell, the stone tap as its attack, the hit, sub 3, the duck) at the master's
-      gain, and the classifier's reading of every 3 s window from J5 to 6 s after the title on a 0.5 s grid, for each
-      variant (the music alone, each layer added, the temp hits, and the remedies if any)
+      the title composite (the one-bar swell, the stone tap as its attack, the CC0 hit, sub 3, the duck) at the
+      master's gain, and the classifier's reading of every 3 s window from J5 to 5.5 s after the title on a 0.5 s grid,
+      for each variant (the music alone, each layer added, the whole composite, and the remedies in VARIANTS.json)
   x40mask PLAN_X40.json OUT_PREFIX LAYERS.json
       the 40-s cut's XJ2 mask (a reverse swell from impact_body_cc0's room tail), measured in memory with and without it
 """
@@ -329,7 +328,7 @@ def probe(cand_path, out, layers_path):
                                    "p95": r(np.percentile(v, 95))} for k, v in own.items()}
     half = 6.0
     want_m2 = [c for c in cands["M2"] if c["out_bar"] is not None][:8]
-    for extra in ((17, 21), (17, 19), (22, 26)):
+    for extra in ((17, 19), (17, 21), (17, 23), (22, 26)):  # the three splices on Ring 2's arrival, and the cheapest
         if not any(c["out_bar"] == extra[0] and c["in_bar"] == extra[1] for c in want_m2):
             want_m2 += [c for c in cands["M2"] if c["out_bar"] == extra[0] and c["in_bar"] == extra[1]]
     for key, track, y, lst in (("M2", b2, yb2, want_m2), ("M3", b4, yb4, cands["M3"])):
@@ -351,7 +350,7 @@ def probe(cand_path, out, layers_path):
     # J2's out-points: B2 at the end of bar e-1 (gain -5.5) into B4's riser bar 47 (gain -5.0)
     d2, d4 = corr.get(b2, 0.0), corr.get(b4, 0.0)
     in_s = tmap(b4)["downbeats_s"][47] + d4
-    for e in (24, 26, 28):
+    for e in (24, 26, 28, 30):  # the out-points of 17:19, 17:21 and 17:23, and the no-splice exit
         o_s = tmap(b2)["downbeats_s"][e] + d2
         ed = splice_edit(yb2, o_s, in_s, half, y_in=yb4, g_out=-5.5, g_in=-5.0)
         m = seam_metrics(ed, half, yb2, o_s, yb4, in_s, b2, b4, d2, d4, own[b4])  # steps and distances: gain-free
@@ -390,6 +389,7 @@ def plan_measure(plan_path, out, layers_path):
     plan, corr = cp.load_plan(plan_path, layers_path)
     mel_fb = cp.mel_filterbank()
     bed, snips, info, tracks = cp.assemble(plan, keep_tracks=True)
+    _tracks.update({k: np.ascontiguousarray(v[:, :2]) for k, v in tracks.items()})  # decode each track once
     res, npz = cp.measure(plan, bed, snips, mel_fb)
     cues = {c["id"]: c for c in plan["cues"]}
     mono = bed.mean(1)
@@ -528,18 +528,26 @@ def classify_grid(mix_g, t_first, t_last, tmp_dir):
 
 
 def summarise(rows, label="foghorn"):
+    """The build's gates (score_build.classify_master): a voice or alarm label fails at 0.30 or in a window's top 3;
+    a phone or foghorn label fails at 0.30 and warns from 0.25."""
     ps = [(rw["t"], rw["labels"].get(label, 0.0)) for rw in rows]
     mx = max(ps, key=lambda x: x[1]) if ps else (None, 0.0)
-    watched = {}
+    watched, top3_hits = {}, []
     for rw in rows:
+        top3 = [k for k, _ in sorted(rw["labels"].items(), key=lambda kv: -kv[1])[:3]]
         for lab, p in rw["labels"].items():
-            if al.label_kind(lab) in ("voice", "alarm", "phone", "foghorn"):
+            kind = al.label_kind(lab)
+            if kind in ("voice", "alarm", "phone", "foghorn"):
                 watched[lab] = max(watched.get(lab, 0.0), p)
+            if kind in ("voice", "alarm") and lab in top3:
+                top3_hits.append({"t": rw["t"], "label": lab, "p": r(p, 3)})
+    fail = any(p >= 0.30 for _, p in ps) or any(v >= 0.30 for v in watched.values()) or bool(top3_hits)
+    warn = any(p >= 0.25 for _, p in ps) or any(v >= 0.25 for v in watched.values())
     return {f"{label}_max": r(mx[1], 3), f"{label}_max_at": mx[0], "windows": len(rows),
             "windows_ge_0.30": sum(1 for _, p in ps if p >= 0.30), "windows_ge_0.25": sum(1 for _, p in ps if p >= 0.25),
             "watched_max": {k: r(v, 3) for k, v in sorted(watched.items(), key=lambda kv: -kv[1])},
-            "verdict": "fail" if any(p >= 0.30 for _, p in ps) or any(v >= 0.30 for v in watched.values()) else
-                       ("warn" if any(p >= 0.25 for _, p in ps) or any(v >= 0.25 for v in watched.values()) else "ok")}
+            "voice_or_alarm_in_top3": top3_hits,
+            "verdict": "fail" if fail else ("warn" if warn else "ok")}
 
 
 def title_check(plan_path, metrics_path, out, layers_path, variants_path=None):
@@ -562,9 +570,7 @@ def title_check(plan_path, metrics_path, out, layers_path, variants_path=None):
                   "highpass_hz": 150.0},
         "tap": {"id": "title_tap", "take": "standin_tap_a", "t": title, "align": "peak", "tune": {"to_note": "E"},
                 "level": {"mode": "rel", "ref": [title, title + 3.0], "offset_db": -3.0}},
-        "hit_a": {"id": "title_hit", "take": "drop_impact_a", "t": title, "align": "peak",
-                  "level": {"mode": "rel", "ref": [title, title + 3.0], "offset_db": 3.0}, "prelimit_db": 4.0, "highpass_hz": 70.0},
-        "hit_cc0": {"id": "title_hit", "take": "impact_body_cc0", "t": title, "align": "peak",
+        "hit_cc0": {"id": "title_hit", "take": "impact_body_cc0", "t": title, "align": "peak", "tune": {"to_note": "G#"},
                     "level": {"mode": "rel", "ref": [title, title + 3.0], "offset_db": 3.0}, "prelimit_db": 4.0, "highpass_hz": 70.0},
         "sub": {"id": "title_sub", "designed": {"base": "sub_drop_b", "params": {"f0": 69.3, "f1": 34.65}}, "t": title,
                 "align": "start", "level": {"mode": "rel", "ref": [title, title + 3.0], "offset_db": -4.0}},
@@ -574,12 +580,9 @@ def title_check(plan_path, metrics_path, out, layers_path, variants_path=None):
         {"id": "music_swell", "layers": ["swell"], "what": "+ the one-bar reverse swell"},
         {"id": "music_swell_tap", "layers": ["swell", "tap"], "what": "+ the stone tap (standin_tap_a, CC0, tuned to E)"},
         {"id": "music_swell_tap_sub", "layers": ["swell", "tap", "sub"], "what": "+ sub 3 (69.3 -> 34.65 Hz)"},
-        {"id": "composite_temp_a", "layers": ["swell", "tap", "hit_a", "sub"],
-         "what": "the whole title composite with the build's temp hit (drop_impact_a, Mixkit, hand-download before any deliverable)"},
         {"id": "composite_cc0", "layers": ["swell", "tap", "hit_cc0", "sub"],
-         "what": "the whole title composite with the CC0 hit (impact_body_cc0)"},
-        {"id": "composite_no_tap", "layers": ["swell", "hit_a", "sub"], "what": "22:13's composite (no tap), for comparison"},
-    ]
+         "what": "the whole title composite with the CC0 hit (impact_body_cc0, tuned to G#2, the title chord's fifth)"},
+    ]  # no variant uses a script-fetched Mixkit take (OVERRIDES §55 CR-13): the CC0 hit stands in for the Sonniss boom
     if variants_path:
         variants += json.load(open(variants_path))
     tracks48 = {TRACK_OF["A4"]: a4}
@@ -639,9 +642,8 @@ def title_check(plan_path, metrics_path, out, layers_path, variants_path=None):
         pass
     res["secs"] = round(time.perf_counter() - T0, 1)
     res["peak_rss_mb"] = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1048576, 1)
-    res["audio_written"] = ("temporary WAVs of Born Of The Sky (CC BY 4.0) with kit sounds only (no Mixkit music; the "
-                            "Mixkit sound effect drop_impact_a in the composite_temp_a and composite_no_tap variants), each "
-                            "deleted as soon as the classifier read it")
+    res["audio_written"] = ("temporary WAVs of Born Of The Sky (CC BY 4.0) with the kit's CC0 and designed sounds only "
+                            "(no Mixkit music, no Mixkit take), each deleted as soon as the classifier read it")
     json.dump(res, open(out + ".json", "w"), indent=1)
     print(json.dumps({"secs": res["secs"], "rss_mb": res["peak_rss_mb"]}))
 
