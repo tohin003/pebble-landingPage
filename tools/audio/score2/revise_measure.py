@@ -19,8 +19,9 @@ Subcommands (audio venv, through scripts/heavy.sh, one at a time):
       the title composite (the one-bar swell, the stone tap as its attack, the CC0 hit, sub 3, the duck) at the
       master's gain, and the classifier's reading of every 3 s window from J5 to 5.5 s after the title on a 0.5 s grid,
       for each variant (the music alone, each layer added, the whole composite, and the remedies in VARIANTS.json)
-  x40mask PLAN_X40.json OUT_PREFIX LAYERS.json
-      the 40-s cut's XJ2 mask (a reverse swell from impact_body_cc0's room tail), measured in memory with and without it
+  x40mask PLAN_X40.json OUT_PREFIX LAYERS.json [SEMITONES]
+      the 40-s cut's XJ2 mask (a reverse swell from impact_body_cc0's room tail), measured in memory with and without it;
+      SEMITONES (default: the plan's tune_semitones) shifts the tail for a diagnostic
 """
 import json
 import math
@@ -695,15 +696,17 @@ def title_check(plan_path, metrics_path, out, layers_path, variants_path=None):
 
 
 # ------------------------------------------------------------------------------------------------ the x40 mask
-def make_mask(spec, kit):
-    """A reverse swell from impact_body_cc0's own room tail: from its peak + 0.08 s, tuned by varispeed, cut to the
-    mask's length, reversed, with a fade-in at its quiet start and a 4 ms fade at its loud end."""
+def make_mask(spec, kit, semis=None):
+    """A reverse swell from impact_body_cc0's own room tail: from its peak + 0.08 s, tuned by varispeed (the plan's
+    tune_semitones, +1 when it names none; a diagnostic may pass another shift), cut to the mask's length, reversed,
+    with a fade-in at its quiet start and a 4 ms fade at its loud end."""
+    if semis is None:
+        semis = float(spec.get("tune_semitones", 1.0))
     k = kit[spec["take"]]
     y, sr = sf.read(os.path.join(sb.KITDIR, k["file"]), dtype="float32", always_2d=True)
     y = sb.stereo(y)
     pk = int(np.argmax(np.abs(y).max(1)))
     tail = y[pk + int(0.08 * SR):]
-    semis = 1.0
     ratio = 2 ** (semis / 12)
     tail = ss.resample_poly(tail, 1000, int(round(1000 * ratio)), axis=0, window=("kaiser", 9.0)).astype(np.float32)
     n = int(round(spec["length_s"] * SR))
@@ -718,7 +721,7 @@ def make_mask(spec, kit):
                                    "length_s": r(n / SR, 4), "how": "varispeed (polyphase), reversed"}
 
 
-def x40_mask(plan_path, out, layers_path):
+def x40_mask(plan_path, out, layers_path, semis=None):
     T0 = time.perf_counter()
     plan, corr = cp.load_plan(plan_path, layers_path)
     kit, _ = sb.load_kit()
@@ -726,7 +729,7 @@ def x40_mask(plan_path, out, layers_path):
     xj2 = next(s for s in plan["seams"] if s["id"] == "XJ2")
     spec = xj2["mask"]
     t = xj2["t"]
-    sw, how = make_mask(spec, kit)
+    sw, how = make_mask(spec, kit, semis)
     ref = lufs(bed, spec["level"]["ref"][0], spec["level"]["ref"][1])
     gain = ref + spec["level"]["offset_db"] - sb.mmax_lufs(sw)
     swg = sw * 10 ** (gain / 20)
@@ -773,8 +776,8 @@ def main():
         plan_measure(a[0], a[1], a[2])
     elif cmd == "title":
         title_check(a[0], a[1], a[2], a[3], a[4] if len(a) > 4 else None)
-    elif cmd == "x40mask":
-        x40_mask(a[0], a[1], a[2])
+    elif cmd == "x40mask":  # an optional 4th argument: the mask's shift in semitones (a diagnostic)
+        x40_mask(a[0], a[1], a[2], float(a[3]) if len(a) > 3 else None)
     else:
         raise SystemExit(__doc__)
 

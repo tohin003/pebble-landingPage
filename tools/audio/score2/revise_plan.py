@@ -280,9 +280,13 @@ def x40_plan(path):
                         "covered XJ2 on 22:13, which stays out (CR-13)",
                 "take": "impact_body_cc0", "licence": "CC0 (Kenney); the reverb that made the room is pedalboard's "
                                                       "(GPL-3.0), run here and never shipped",
-                "made": "the take's own tail after its direct sound (from its peak + 0.08 s), tuned +1 semitone to G "
-                        "(B2's lift and B4's last bar are both G-centred) by varispeed, then cut to half a bar of B2 "
-                        "(1.0001 s), reversed, a 30-ms fade-in at its quiet start and a 4-ms fade at its loud end",
+                "made": "the take's own tail after its direct sound (from its peak + 0.08 s), tuned +13 semitones from "
+                        "F#2 to G3 (B2's lift and B4's last bar are both G-centred) by varispeed, then cut to half a bar "
+                        "of B2 (1.0001 s), reversed, a 30-ms fade-in at its quiet start and a 4-ms fade at its loud end",
+                "tune_semitones": 13.0,
+                "tuning_why": "first planned +1 semitone (G2), which measured almost all below 150 Hz (share above 150 Hz "
+                              "0.012), so a phone would not hear it; an octave higher (G3) carries 0.80 above 150 Hz and "
+                              "passes the same rule (CUE_SHEET.md §6; decided 28 Oct after both measurements)",
                 "align": "end", "t": s["t"], "length_s": 1.0001, "beats": 2, "bpm": 119.994,
                 "level": {"mode": "rel", "ref": [round(s["t"] - 1.0, 4), round(s["t"], 4)], "offset_db": -3.0,
                           "rule": "its loudest 400 ms 3 dB under the music over its own second, as the title's swell"},

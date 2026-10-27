@@ -349,8 +349,8 @@ x["joins"]["XJ2"] = {
     "name": "The 40-s Return",
     "methods": ["a reverse swell into a downbeat (CC0, from the kit)", "a hard cut on a downbeat"],
     "how": "B2's lift cuts to B4's last bar (2:02.00) on the downbeat; a half-bar reverse swell made from the room tail "
-           "of impact_body_cc0 (Kenney, CC0), tuned to G, rises into it; its energy lies almost all below 150 Hz, so "
-           "it masks the cut on full-range playback only (§6). B4 stops one bar later on the title. Level-matched (B4 at -2.0 dB). The Mixkit ring sweep that covered it on 22:13 stays out (CR-13).",
+           "of impact_body_cc0 (Kenney, CC0), tuned to G3, rises into it: it lifts 150-300 Hz, so laptops hear it "
+           "and phone speakers only partly (§6). B4 stops one bar later on the title. Level-matched (B4 at -2.0 dB). The Mixkit ring sweep that covered it on 22:13 stays out (CR-13).",
     "motivation": "the 40-s Return: 4-6 recall cells on one ring return into the stone, and the title lands on the stop",
     "tempo": "120 to 124 BPM: the Return accelerates into the stop",
     "key": "both G-centred; the swell is tuned to G"}

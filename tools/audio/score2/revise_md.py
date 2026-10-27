@@ -41,6 +41,7 @@ TB = load(os.path.join(R2, "title_B.json")) if os.path.exists(os.path.join(R2, "
 TA2 = load(os.path.join(R2, "title_A_r2.json")) if os.path.exists(os.path.join(R2, "title_A_r2.json")) else None
 TB2 = load(os.path.join(R2, "title_B_r2.json")) if os.path.exists(os.path.join(R2, "title_B_r2.json")) else None
 XM = load(os.path.join(R2, "x40mask.json")) if os.path.exists(os.path.join(R2, "x40mask.json")) else None
+XM2 = load(os.path.join(R2, "x40mask_g2.json")) if os.path.exists(os.path.join(R2, "x40mask_g2.json")) else None
 GB = load(os.path.join(R2, "main_g1b.metrics.json")) if os.path.exists(os.path.join(R2, "main_g1b.metrics.json")) else None
 DEC = load(os.path.join(R2, "g1_decision.json")) if os.path.exists(os.path.join(R2, "g1_decision.json")) else {}
 MET = load(os.path.join(W, "main.metrics.json"))
@@ -290,7 +291,7 @@ TABLES = {"cues": t_cues, "joins": t_joins, "arc": t_arc, "blocks": t_blocks, "s
 for jid in J:
     TABLES[f"seam_{jid}"] = (lambda jid_: (lambda: t_seamdetail(jid_)))(jid)
 V = {"CS": CS, "M": M, "X": X, "J": J, "XJ": XJ, "C": C, "B": B, "OJ": OJ, "OB": OB, "PROBE": PROBE, "TA": TA, "TB": TB,
-     "TA2": TA2, "TB2": TB2,
+     "TA2": TA2, "TB2": TB2, "XM2": XM2,
      "XM": XM, "GB": GB, "DEC": DEC, "MET": MET, "f": f, "mm": mm, "keyline": keyline, "onl": onl, "BS": BS,
      "ordinal": ordinal}
 
