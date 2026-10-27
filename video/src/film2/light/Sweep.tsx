@@ -1,3 +1,4 @@
+// Portions Copyright 2026 HeyGen, Inc., Apache-2.0; modified for Pebble's film (film2/THIRD_PARTY_NOTICES.md).
 // Motivated light on Pebble's own surfaces (TREATMENT §5.4; CRAFT T08, R02, U10). Both need the lead's ruling L3a
 // (PHILOSOPHY lists "glow" among the never-items), so they are opt-in per use and never decorative:
 //

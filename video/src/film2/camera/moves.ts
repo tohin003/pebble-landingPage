@@ -1,3 +1,4 @@
+// Portions Copyright 2026 HeyGen, Inc., Apache-2.0; modified for Pebble's film (film2/THIRD_PARTY_NOTICES.md).
 // The camera's moves over the UI (TREATMENT §5.3, §5.1 kind 4), as builders on a VelocityCamera. Each move starts
 // with the shot (never late, never a slow creep added at the end: HyperFrames lists that as a generated tell), carries
 // velocity in and out, and settles into a glide drifting ≤ 1 px a frame while the UI acts.

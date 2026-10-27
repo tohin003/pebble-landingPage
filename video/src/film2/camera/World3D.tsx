@@ -1,3 +1,4 @@
+// Portions Copyright 2026 HeyGen, Inc., Apache-2.0; modified for Pebble's film (film2/THIRD_PARTY_NOTICES.md).
 // <World3D> and <Plane>: one world, with windows as planes in it (TREATMENT §5.3, CRAFT U01, U04, T07).
 //
 // - The desktop is one large plane; windows are places on it. The camera travels between them (motion/camera.ts).

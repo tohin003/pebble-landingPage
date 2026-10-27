@@ -1,3 +1,4 @@
+// Portions Copyright 2026 HeyGen, Inc., Apache-2.0; modified for Pebble's film (film2/THIRD_PARTY_NOTICES.md).
 // HyperFrames registry moves ported as GSAP code (Apache-2.0; heygen-com/hyperframes at tag v0.8.202, read as source:
 // the files and their git blob hashes are in .work/film2/hf-registry@v0.8.202/MANIFEST.json; see film2/README.md).
 // Each port keeps the move's mechanic and drops what Pebble's rules forbid. All run inside useGsapTimeline (fromTo at

@@ -1,3 +1,4 @@
+// Portions Copyright 2026 HeyGen, Inc., Apache-2.0; modified for Pebble's film (film2/THIRD_PARTY_NOTICES.md).
 // Code light leaks (TREATMENT §5.4 asks for light made in code; stock light-leak clips are on §5.1's banned list).
 // Use at most once or twice in a film, and only where light motivates it (the Drop's warming): CRAFT T08 prefers sweeps,
 // and the lab films' sources report no leaks. qa/checks.ts counts them.

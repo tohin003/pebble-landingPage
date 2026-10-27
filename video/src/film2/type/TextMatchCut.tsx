@@ -1,3 +1,4 @@
+// Portions Copyright 2026 HeyGen, Inc., Apache-2.0; modified for Pebble's film (film2/THIRD_PARTY_NOTICES.md).
 // <TextMatchCut>: one line becomes another in the middle of a move (a match cut on type). Port of HyperFrames'
 // text-match-cut (Apache-2.0, heygen-com/hyperframes v0.8.202, registry/components/text-match-cut, git blob
 // c8c116a7af; read as source): both lines ride ONE value curve, cubic-bezier(.85, 0, .15, 1) (After Effects easy-ease at

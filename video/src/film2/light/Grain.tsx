@@ -1,3 +1,4 @@
+// Portions Copyright 2026 HeyGen, Inc., Apache-2.0; modified for Pebble's film (film2/THIRD_PARTY_NOTICES.md).
 // <FilmGrain>: film grain made in code, deterministic, OFF unless a shot asks for it (TREATMENT §5.4 and OVERRIDES §8
 // H8: no baked grain by default; it fights the web encodes). If the lead keeps it: about 2 % at 24 Hz, in the master
 // only, never on a single layer. Ported in spirit from HyperFrames' grain-overlay (Apache-2.0, v0.8.202): a fractal
