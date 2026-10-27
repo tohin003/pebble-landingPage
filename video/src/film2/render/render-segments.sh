@@ -18,6 +18,9 @@
 # - Memory is the other limit: a render that pushes this 8 GB Mac into swap makes macOS add a 1 GiB swap file on the
 #   same disk (measured on 26 Oct: a 60-frame test with CameraMotionBlur over the whole world, riverbed included, took
 #   free disk from 2.72 to 1.57 GiB that way). Keep CameraMotionBlur on the foreground windows only, and short.
+#   Renders use one browser tab by default (RENDER_CONCURRENCY=1; frames are identical at any concurrency, only slower):
+#   on 27 Oct, with other sessions using the memory, half-size segments at concurrency 2 made macOS add swap files twice
+#   (free disk 2.43 to 1.07 GiB, then 2.73 to 1.71 GiB). Set RENDER_CONCURRENCY=2 only when memory is plentiful.
 set -euo pipefail
 
 COMP="${1:?composition id}"
@@ -68,7 +71,7 @@ while [ "$from" -lt "$TOTAL" ]; do
   t0=$(date +%s)
   npx remotion render src/index.ts "$COMP" "$seg" --frames="$from-$to" --scale="$SCALE" --codec=h264 --crf=18 \
     --image-format=jpeg --jpeg-quality=90 --x264-preset=medium --pixel-format=yuv420p --color-space=bt709 \
-    --browser-executable="$SHELL145" --chrome-mode=headless-shell --gl=angle --concurrency=2 --log=error
+    --browser-executable="$SHELL145" --chrome-mode=headless-shell --gl=angle --concurrency="${RENDER_CONCURRENCY:-1}" --log=error
   t1=$(date +%s)
   kill "$SAMPLER" 2>/dev/null || true
   wait "$SAMPLER" 2>/dev/null || true
