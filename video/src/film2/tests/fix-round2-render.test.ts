@@ -58,7 +58,30 @@ describe("film type never sits on the stone (typeOverStone)", () => {
     expect(found.some((f) => /^"Hidden from screen capture/.test(f.message))).toBe(true);
   });
   test("the title's wordmark sits beside its stone, not on it (the check sees the stone's own bounds)", () => {
-    for (const a of ASPECTS) expect(errorsOf(typeOverStone(piece(a, "finale")))).toEqual([]);
+    // (the piece that sets the title: the finale, or the Return that replaces the wall and the convergence before it)
+    for (const a of ASPECTS) expect(errorsOf(typeOverStone(demoPlans(a).find((e) => e.plan.types.some((t) => t.id === "L26"))!.plan))).toEqual([]);
+  });
+});
+
+describe("Ring 4 reaches its receipt on one frame in every aspect (RingTiming.receiptArrive)", () => {
+  // the reads above the receipt (the answer, 6 words, and the act, 13) at the reading pace or slower, and the receipt
+  // (7 words) held no more than half a second past its reading time (0.5 + 0.3 s a word)
+  const pace = (readsS: number, receiptS: number): string[] => [
+    ...(19 / readsS > 3.14 ? [`the reads at ${(19 / readsS).toFixed(2)} words a second`] : []),
+    ...(receiptS > 0.5 + 0.3 * 7 + 0.5 ? [`the receipt held ${receiptS.toFixed(2)} s`] : []),
+  ];
+  const spans = (p: ScenePlan) => {
+    const x = p.extra as Record<string, number>;
+    const readsFrom = x.clickAt + Math.round((x.dollyTo - x.clickAt) * 0.5);
+    return { arrive: x.receiptArrive, readsS: (x.glideStart - readsFrom) / p.fps, receiptS: (x.cut - 19 - x.receiptArrive) / p.fps };
+  };
+  test("one arrival, the reads at the reading pace, the receipt held for its own time, in every aspect", () => {
+    const all = ASPECTS.map((a) => spans(piece(a, "ring4")));
+    expect(new Set(all.map((s) => s.arrive)).size).toBe(1);
+    for (const [i, s] of all.entries()) expect(`${ASPECTS[i]} ${pace(s.readsS, s.receiptS).join("; ")}`).toBe(`${ASPECTS[i]} `);
+  });
+  test("the canary: 16:9 as rendered on 28 Oct (reads 510–760, receipt 836–1142) fails both ways", () => {
+    expect(pace((760 - 510) / 60, (1142 - 836) / 60).length).toBe(2);
   });
 });
 

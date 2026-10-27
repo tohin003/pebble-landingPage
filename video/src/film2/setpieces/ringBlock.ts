@@ -95,6 +95,13 @@ export interface RingTiming {
   linesExit: number;
   linesGone: number;
   receiptAt: number;
+  /**
+   * the frame the camera reaches the receipt, one frame in every aspect: a wide frame reads the ask and the act in one
+   * framing, quicker than the tall frame's two, and the time it gains goes to those reads, not to the receipt held on
+   * its own (28 Oct's render: 16:9 held its 7-word Verified line 5.1 s on a nearly empty slot while 9:16 held it 2.6 s,
+   * and read the 19 words above it at 4.4 words a second)
+   */
+  receiptArrive: number;
   cut: number;
   end: number;
 }
@@ -386,7 +393,8 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   const actReadFrom = twoReads ? Math.max(askReadEnd, actAt) + easeBackF : Math.max(readsFrom, actAt);
   // (with two reads the act's sentence reads from the ease's middle: its zoom changes by a few per cent)
   const readsEnd = Math.max(askReadEnd, actReadFrom - (twoReads ? Math.round(easeBackF / 2) : 0) + actReadF);
-  const glideStart = Math.max(readsEnd, receiptAt - glideDownF);
+  // (the camera reaches the receipt on one frame in every aspect: RingTiming.receiptArrive)
+  const glideStart = Math.max(readsEnd, receiptAt - glideDownF, (al.receiptArrive ?? -Infinity) - glideF);
   const receiptArrive = glideStart + glideF;
   const receiptReadEnd = receiptArrive + sec(readS(c.receipt.words), fps);
 
@@ -580,7 +588,7 @@ export function planRingBlock(o: RingOptions): ScenePlan {
     ],
     exit: { pose: exitSample.pose, vel: exitSample.vel, shot: lastShot.id, ref: lastShot.ref, grade: "day" },
     extra: {
-      timing: { arriveAt, chapterLand: specC.at + landFrames(specC, fps), limitLand: specL ? specL.at + landFrames(specL, fps) : specC.at + landFrames(specC, fps), linesExit: exitAt, linesGone, receiptAt, cut, end: duration } satisfies RingTiming,
+      timing: { arriveAt, chapterLand: specC.at + landFrames(specC, fps), limitLand: specL ? specL.at + landFrames(specL, fps) : specC.at + landFrames(specC, fps), linesExit: exitAt, linesGone, receiptAt, receiptArrive, cut, end: duration } satisfies RingTiming,
       arriveAt,
       linesGone,
       dollyFrom,
