@@ -9,10 +9,14 @@
 #     HEAVY_WAIT_SECS, default 3600 s). A stale lock (its runner and its job are both dead) is taken over.
 #   - Disk: refuses to start below 1.7 GiB free on /System/Volumes/Data, and stops the job if free space falls below the
 #     1.5 GiB floor while it runs.
-#   - Memory: refuses to start when memory_pressure reports less than 20 % free. When swap has less than 0.75 GiB
-#     left, macOS is likely to add another 1 GiB swap file to the same disk, so a job then needs 1 GiB more free.
+#   - Memory: refuses to start when memory_pressure reports less than 20 % free. When swap has less than 1.5 GiB
+#     left, macOS is likely to add another 1 GiB swap file to the same disk, so a job then needs 1 GiB more free (on
+#     27 Oct a half-size render that started with 1 GiB of swap left made macOS add one and took free disk from 2.43
+#     to 1.07 GiB in two minutes). While a job runs, it is stopped when swap falls under 0.35 GiB left, before the
+#     next swap file is made.
 #   - Log: start, end, exit code, duration and free disk go to $REPO/.work/heavy.log.
-# Exit status: the job's own; or 64 usage, 73 too little disk to start, 74 stopped at the disk floor, 75 lock wait timed out.
+# Exit status: the job's own; or 64 usage, 73 too little disk to start, 74 stopped at the disk floor, 75 lock wait timed out,
+# 76 stopped because swap ran low.
 # Example, from the repo root: source scripts/env.sh && scripts/heavy.sh next-build npm run build
 set -u
 
@@ -23,6 +27,8 @@ source "$HERE/env.sh"
 VOLUME=/System/Volumes/Data
 START_MIN_KB=${HEAVY_START_MIN_KB:-1782580} # 1.7 GiB
 FLOOR_KB=${HEAVY_FLOOR_KB:-1572864}         # 1.5 GiB
+SWAP_SURCHARGE_BELOW_KB=${HEAVY_SWAP_SURCHARGE_BELOW_KB:-1572864} # 1.5 GiB of swap left
+SWAP_STOP_KB=${HEAVY_SWAP_STOP_KB:-367002}  # 0.35 GiB of swap left
 WAIT_SECS=${HEAVY_WAIT_SECS:-3600}
 LOCK="$REPO/.work/heavy.lock"
 LOG="$REPO/.work/heavy.log"
@@ -132,7 +138,7 @@ refuse_if_low_disk() {
     exit 73
   fi
   sw="$(swap_free_kb)"
-  if [ -n "$sw" ] && [ "$sw" -lt 786432 ]; then
+  if [ -n "$sw" ] && [ "$sw" -lt "$SWAP_SURCHARGE_BELOW_KB" ]; then
     need=$((need + 1048576)) # room for the next 1 GiB swap file
   fi
   f="$(free_kb)"
@@ -209,10 +215,20 @@ JOB=$!
 echo "$JOB" >"$LOCK/job"
 proc_start "$JOB" >"$LOCK/jobstart"
 
-# Watchdog: stop the job if free disk drops below the floor.
+# Watchdog: stop the job if free disk drops below the floor, or swap nearly runs out (the next swap file is 1 GiB of disk).
 (
   while kill -0 "$JOB" 2>/dev/null; do
     sleep 5
+    sw="$(swap_free_kb)"
+    if [ -n "$sw" ] && [ "$sw" -lt "$SWAP_STOP_KB" ]; then
+      echo "$sw" >"$LOCK/swap-hit"
+      log "SWAP label=$LABEL swap_free=$(human "$sw") free=$(human "$(free_kb)") -> stopping the job"
+      say "swap has only $(human "$sw") left, so macOS would soon add a 1 GiB swap file: stopping '$LABEL'"
+      kill_tree "$JOB" TERM
+      sleep 10
+      kill_tree "$JOB" KILL
+      break
+    fi
     f="$(free_kb)"
     if [ -n "$f" ] && [ "$f" -lt "$FLOOR_KB" ]; then
       echo "$f" >"$LOCK/floor-hit"
@@ -243,6 +259,7 @@ kill_tree "$WATCH" TERM
 wait "$WATCH" 2>/dev/null
 
 [ -f "$LOCK/floor-hit" ] && RC=74
+[ -f "$LOCK/swap-hit" ] && RC=76
 FREE1="$(free_kb)"
 log "END label=$LABEL pid=$$ exit=$RC secs=$(($(date +%s) - T0)) free=$(human "$FREE1")"
 say "end '$LABEL': exit $RC after $(($(date +%s) - T0)) s; $(human "$FREE1") free"
