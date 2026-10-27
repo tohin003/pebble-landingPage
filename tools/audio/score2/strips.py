@@ -38,7 +38,9 @@ def load(name):
 
 
 def fmt_t(t):
-    return f"{int(t // 60)}:{t % 60:04.1f}"
+    s = "-" if t < 0 else ""  # a time before a seam reads -0:04.5, not -1:55.5
+    t = abs(t)
+    return f"{s}{int(t // 60)}:{t % 60:04.1f}"
 
 
 def tx(t, t0, t1):
