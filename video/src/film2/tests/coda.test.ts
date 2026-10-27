@@ -7,7 +7,8 @@ import { VelocityCamera, type CamSample } from "../motion/camera";
 import type { Aspect } from "../tokens";
 import { checkAll, copy, type Finding } from "../qa/checks";
 import type { FilmTimelineQa } from "../qa/timeline";
-import { checkPlan, irisOnFrame, planQa, stoneCount } from "../setpieces/qa";
+import { checkPlan, groundCoverage, irisOnFrame, planQa, stoneCount } from "../setpieces/qa";
+import { groundView } from "../setpieces/ground";
 import { demoPlans } from "../setpieces/demo/plans";
 import { timelineDiffs } from "../setpieces/align";
 import { checkJoins } from "../setpieces/joins";
@@ -471,6 +472,22 @@ describe("C8: no flash (no opposing pair of large luminance changes within a sec
     const bad = plan("9:16", { irisIn: 70 });
     expect(errorsOf(codaFlashModel(bad).findings)).not.toEqual([]);
     expect(X(coda("9:16")).irisIn.at).toBeGreaterThan(70);
+  });
+});
+
+describe("C8's light and C9's ground", () => {
+  test("the canary: a 6-frame light cue (a step of light under the breath) fails the film's flash rule", () => {
+    const p = coda("16:9");
+    const bad = { ...p, lightCues: p.lightCues.map((c) => ({ ...c, frames: 6 })) };
+    expect(errorsOf(checkPlan(bad, CODA_GRID).errors, "flashes")).not.toEqual([]);
+  });
+  test("the night riverbed covers the frame's corners on every frame; the canary (sized from the push's last pose only) fails", () => {
+    for (const a of ASPECTS) {
+      const p = coda(a);
+      expect(errorsOf(groundCoverage(p))).toEqual([]);
+      const bad = withShot(p, "coda", (s) => ({ ...s, groundRect: groundView(s.camera, s.ref, s.to - s.from - 1, p.frame.w, p.frame.h) }));
+      expect(errorsOf(groundCoverage(bad))).not.toEqual([]);
+    }
   });
 });
 
