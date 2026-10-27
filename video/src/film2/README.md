@@ -536,6 +536,16 @@ that it is centred), flashes, the sound and captions it hands on, and the night 
   from the iris-in on, in all three aspects, and the end card's stone through the closing iris until the night touches
   it (then none, as the scan reads any stone joined to a large dark area).
 
+**The coda rendered alone** (b5f5baf; `F2-SP-coda-<aspect>` at half size through `render-segments.sh`, about 35 s each,
+then `qa/luma-scan.ts --marks` with the reel's marks cut to the coda) passes the pixel checks in every aspect: no dead
+second, pop, tile pop or dip; one stone, never two, on every frame its marks give a stone, except L29–L30, where the
+night touches the end card's stone, and L84 in 16:9, as the sleeping stone first shows (the scan reads none there,
+which it does not flag); and its lines' ink held to the last frame. It counts one flash in 16:9 and 1:1, within WCAG
+2.3.1's three a second and the scan's rule, and none in 9:16: page 2's lines leaving lift the middle tiles' luminance
+by 0.10–0.15 just before the iris-out darkens them, a rise and a fall within a second. The coda's flash model reads
+the page's ink at a fifth of each line's box and sees no rise there; the design's C8 asks for no opposing pair at all,
+so this one is the lead's call (the lane's report).
+
 ### The demo and the checks
 
 `F2-SetPieces-Demo` (16:9), `F2-SetPieces-Demo-1x1` and `-9x16` play the six pieces in the film's order, each fitted to
