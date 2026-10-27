@@ -8,8 +8,10 @@
 //   cutVelocity()   the screen velocity a piece's last frame leaves with (px a frame, at the frame's centre)
 //   shareGround()   two shots that join without a cut share one riverbed rect (setpieces/ground.ts), so it never jumps
 //   checkJoins()    the join check the review asked for: a continued join is continuous (pose and velocity); a cut is
-//                   velocity-matched (speeds within ±25 %, directions within 30°) and never between two rests; and the
-//                   incoming piece's first readable frame comes at most 6 frames after the join
+//                   velocity-matched (speeds within ±25 %, directions within 30°) and never between two rests; a "frame"
+//                   join opens on the previous piece's own last frame as its first cell (the Return, MONTAGE_DESIGN
+//                   §2.12), held by joinPose; and the incoming piece's first readable frame comes at most 6 frames after
+//                   the join
 // Pure.
 import { TRANSITION } from "../tokens";
 import { screenVelocity, worldToFrame, type CamSample } from "../motion/camera";
@@ -17,6 +19,7 @@ import { angleBetweenDeg, len, type Vec } from "../motion/geometry";
 import type { Finding } from "../qa/checks";
 import { groundNeed, riverbedCovering, unionOf } from "./ground";
 import { firstReadableFrom } from "./qa";
+import { joinPose, returnOf } from "./returnChecks";
 import type { ScenePlan, ShotSpec } from "./scene";
 
 /** The centre's screen velocity under a camera sample (px a frame). */
@@ -47,7 +50,11 @@ export function shareGround(a: ScenePlan, b: ScenePlan): void {
   (sb as ShotSpec).groundRect = r;
 }
 
-export type JoinKind = "continue" | "cut";
+/**
+ * "continue": the same world, one shot across the join; "cut": a momentum cut into another world; "frame": the next
+ * piece's first cell IS this piece's last frame, its camera continuing this one's motion on screen (the Return after S24)
+ */
+export type JoinKind = "continue" | "cut" | "frame";
 
 /**
  * The first frame of a piece that shows something to read (setpieces/qa.ts readableOn: a line landed, the stone, a read
@@ -79,6 +86,14 @@ export function checkJoins(plans: readonly ScenePlan[], kinds: readonly JoinKind
     const exitS = sa.camera.sample(a.duration - sa.from);
     const first = sb.camera.sample(0);
     const name = `${a.id} → ${b.id}`;
+    if (kind === "frame") {
+      // the incoming piece shows the outgoing one's last frame, filling the frame and moving as it left: joinPose
+      // measures exactly that (edges, zoom, velocity, no stone inside), and that frame was readable as it left
+      const ret = returnOf(b);
+      if (!ret?.join || ret.join.from !== a.id) out.push({ check: "joins", level: "error", message: `${name}: a "frame" join needs ${b.id} to open on ${a.id}'s last frame (it continues ${ret?.join?.from ?? "nothing"})`, frame: 0 });
+      else for (const f of joinPose(b).filter((x) => x.level === "error")) out.push({ check: "joins", level: "error", message: `${name}: ${f.message}`, frame: 0 });
+      continue;
+    }
     if (kind === "continue") {
       const unit = a.frame.unit;
       const dx = (Math.hypot(first.pose.x - exitS.pose.x, first.pose.y - exitS.pose.y) * first.pose.zoom) / unit;

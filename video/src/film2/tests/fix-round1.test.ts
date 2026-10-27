@@ -184,7 +184,7 @@ describe("readPx is the measured truth (OVERRIDES §58)", () => {
 describe("the title and the end card glide; only the last breath is still (OVERRIDES §58)", () => {
   for (const a of ASPECTS) {
     test(`${a}: one rigid page pushing in at the floor or more from the iris to the last breath, which follows the decay`, () => {
-      const p = demoPlans(a).find((e) => e.plan.id === "finale")!.plan;
+      const p = demoPlans(a).find((e) => e.plan.id === "return")!.plan;
       const x = p.extra as Record<string, number>;
       const title = p.shots.find((s) => s.id === "title")!;
       // the only declared wait is the room tone at the very end, after the music's decay
@@ -215,7 +215,7 @@ describe("the title and the end card glide; only the last breath is still (OVERR
     });
   }
   test("the canary: the old title (a breath of 0.08 px a frame, declared a wait to the end) is what the floor refuses", () => {
-    const p = demoPlans("16:9").find((e) => e.plan.id === "finale")!.plan;
+    const p = demoPlans("16:9").find((e) => e.plan.id === "return")!.plan;
     const title = p.shots.find((s) => s.id === "title")!;
     const old = new VelocityCamera({ x: p.frame.w / 2, y: p.frame.h / 2, zoom: 1 }, { lz: 0.00007 });
     const q = planQa({ ...p, shots: p.shots.map((s) => (s === title ? { ...s, camera: old, waits: [{ from: p.duration - 45, to: p.duration }] } : s)) } as ScenePlan);
@@ -276,7 +276,7 @@ describe("every join between the pieces is designed (CR-06)", () => {
 describe("the end card's facts are separate spans with a margin (CR-20)", () => {
   test("never one string with spaces: each fact its own line, rows with FACT_GAP_EM between their facts", () => {
     for (const a of ASPECTS) {
-      const p = demoPlans(a).find((e) => e.plan.id === "finale")!.plan;
+      const p = demoPlans(a).find((e) => e.plan.id === "return")!.plan;
       const facts = p.types.filter((t) => /^L28-\d/.test(t.id));
       for (const t of facts) expect(t.text).not.toMatch(/\s{2,}/);
       const byRow = new Map<number, typeof facts>();

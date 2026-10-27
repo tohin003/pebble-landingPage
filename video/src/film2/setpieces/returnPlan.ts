@@ -36,6 +36,7 @@ import { stonesOnFrame } from "./qa";
 import { offsetForBlink, type FrameSpan } from "./blink";
 import { RETURN_GEOMETRY, buildReturnField, localOfR, rOfLocal, type ReturnField, type ReturnFieldOptions, type ReturnGeometry } from "./returnField";
 import type { Aspect } from "../tokens";
+import type { DemoStretch } from "./demo/grids";
 
 /* ---------------------------------------------------------------- the music (§2.10, §5.2) ---------------------- */
 
@@ -59,6 +60,16 @@ export const RETURN_MUSIC = {
  * (B2's bar is 120.006 frames), which rounds to the same frame.
  */
 export const RETURN_FILM_S = { start: 105.0333, r0: 106.0333, j5: 114.0337, title: 118.0332 } as const;
+
+/** The Return's music, as the demo reel names a piece's stretch (setpieces/demo/grids.ts): the real cue, not an audition stretch. */
+export const RETURN_STRETCH: DemoStretch = {
+  track: "Your Breath, run on, then Born Of The Sky",
+  label: "B2 → A4",
+  licence: "Mixkit Stock Music Free License (B2); CC BY 4.0 (A4)",
+  bpm: RETURN_MUSIC.b2.bpm,
+  anchorS: RETURN_MUSIC.b2.r0S,
+  anchor: "R0 on B2's bar 48; J5 onto A4's bar 80 at R480; the title on bar 82 at R720",
+};
 
 /** The film frame of an R-frame at `fps` (the piece's local frame 0 is R−60, on RETURN_FILM_S.start). */
 export const filmFrameOfR = (r: number, fps: number): number => Math.round(RETURN_FILM_S.start * fps) + localOfR(r, fps);
@@ -212,7 +223,20 @@ export interface ReturnJoin {
   /** the stones S24's last frame shows (an avatar there would be a second stone in the first cell) */
   stonesOnLastFrame: number;
   fps: number;
+  /** S24's plan itself: the view draws its last frame as the first cell (views/ReturnView.tsx), so it is S24's own frame */
+  source?: ScenePlan;
 }
+
+/**
+ * How the cells merge into the stone (MONTAGE_DESIGN §2.7): "behind" (the default) the stone's own opaque silhouette,
+ * drawn above every cell, takes each cell; "toned" (R4's toned matte, a G1 alternative, lead ruling R4: only if it wins
+ * G1 on measured contrast) draws each cell's part inside the outline above the body and under the eyes, toned toward
+ * the stone's sage (#536B54) over 7 frames from its first contact, and lets it shrink on toward the centre, so its
+ * continued inward travel clears it (never a fade)
+ */
+export type ReturnMerge = "behind" | "toned";
+/** The toned matte's cells shrink to this share of the body's width at the centre (the default merge's is 0.55). */
+export const TONED_W_END = 0.03;
 
 export interface ReturnExtra {
   field: ReturnField;
@@ -225,6 +249,7 @@ export interface ReturnExtra {
   join: ReturnJoin | null;
   /** the landing: the title stone on `landAt` (frame px), and the R-frame */
   landing: { landAt: number; landR: number; titleStone: Point; titleStonePx: number; irisAt: number };
+  merge: ReturnMerge;
 }
 
 export interface ReturnOptions {
@@ -242,6 +267,8 @@ export interface ReturnOptions {
   musicCredit?: string;
   trademarks?: readonly string[];
   align?: Partial<FinaleTiming>;
+  /** the merge (default "behind"; "toned" is R4's toned matte, the G1 alternative) */
+  merge?: ReturnMerge;
   /** canaries: the field's options, a fresh field (a cut, no pull-back), a stone clock */
   field?: ReturnFieldOptions;
   fresh?: boolean;
@@ -272,6 +299,7 @@ export function planReturn(o: ReturnOptions): ScenePlan {
         frame: { w: o.climax.frame.w, h: o.climax.frame.h, unit: o.climax.frame.unit },
         stonesOnLastFrame: stonesOnFrame(o.climax, o.climax.duration - 1).length,
         fps: o.climax.fps,
+        source: o.climax,
       }
     : null;
 
@@ -282,7 +310,10 @@ export function planReturn(o: ReturnOptions): ScenePlan {
     const landR = rOfLocal(landAt, fps);
     if (landR < RETURN_BLINK_R) throw new Error(`the Return lands its stone on R${landR.toFixed(1)}: it needs the merge and the blink first (R${RETURN_BLINK_R})`);
     // the field is built at the title stone's size on the landing, so the landing is a pan only (§2.6)
-    const field = buildReturnField(f.aspect, { stonePx: titleStonePx / unit, holdInner: true, ...(o.field ?? {}) }, fps);
+    const merge: ReturnMerge = o.merge ?? "behind";
+    const fieldO: ReturnFieldOptions = { stonePx: titleStonePx / unit, holdInner: true, ...(o.field ?? {}) };
+    if (merge === "toned") fieldO.timing = { wEnd: TONED_W_END, ...(fieldO.timing ?? {}) };
+    const field = buildReturnField(f.aspect, fieldO, fps);
     const geometry = field.geometry;
     const zCard = Math.min(geometry.W / geometry.hero.w, geometry.H / geometry.hero.h);
     const entry = join ? { ...entryFromS24(join, zCard * unit), tau: 20 } : undefined;
@@ -334,6 +365,7 @@ export function planReturn(o: ReturnOptions): ScenePlan {
       blink: { at: blinkAt, keepClear, clockOffset },
       join,
       landing: { landAt, landR, titleStone, titleStonePx, irisAt },
+      merge,
     };
     return { shot, lightInitial: "evening", lightCues, music, moves, extra: { return: extra }, stone: { clockOffset, layer: "film" } };
   };
@@ -352,6 +384,6 @@ export function planReturn(o: ReturnOptions): ScenePlan {
     align: o.align,
     head,
   });
-  return { ...plan, id: "return", name: `The Return, title, end ${plan.aspect}` };
+  return { ...plan, id: "return", name: `The Return${o.merge === "toned" ? " (the toned matte)" : ""}, title, end ${plan.aspect}` };
 }
 

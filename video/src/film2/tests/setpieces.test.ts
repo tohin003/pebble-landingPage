@@ -22,6 +22,7 @@ import { FINALE_TEXT, planFinale } from "../setpieces/finale";
 import { SAGE_SWEEP, sweepAlphaMax, sweepLift } from "../setpieces/sweep";
 import { CELL_SOURCES, STEALTH_FEATURES } from "../setpieces/standins";
 import { demoPlans } from "../setpieces/demo/plans";
+import { STRETCH, demoGrid } from "../setpieces/demo/grids";
 import { alignAspects, timelineDiffs } from "../setpieces/align";
 import type { RingTiming } from "../setpieces/ringBlock";
 import type { DropTiming } from "../setpieces/drop";
@@ -338,9 +339,9 @@ describe("the convergence, the title and the end card", () => {
       }
     }
   });
-  test("one stone through the iris: the convergence lands the wall's stone where, and as large as, the title's", () => {
+  test("one stone through the iris: the Return lands its stone where, and as large as, the title's", () => {
     for (const a of ["16:9", "1:1", "9:16"] as const) {
-      const p = demoPlans(a).find((e) => e.plan.id === "finale")!.plan;
+      const p = demoPlans(a).find((e) => e.plan.id === "return")!.plan;
       const conv = p.shots[0]!;
       const title = p.shots[1]!;
       const seam = p.seams[0]!;
@@ -386,10 +387,11 @@ describe("one timeline for all three aspects (§3.12)", () => {
 
 describe("hand-offs between pieces", () => {
   test("the wall hands the convergence its camera, its parallax ref and its orbit clock: nothing jumps at the join", () => {
+    // the two pieces left the demo on 28 Oct (OVERRIDES §61: the Return replaces them); planned here as the demo had them
     for (const a of ["16:9", "1:1", "9:16"] as const) {
-      const plans = demoPlans(a);
-      const wall = plans.find((e) => e.plan.id === "wall")!.plan;
-      const fin = plans.find((e) => e.plan.id === "finale")!.plan;
+      const wall = planWall({ ...SIZE[a], fps: FPS, grid: demoGrid(STRETCH.wall, 0, 6000, FPS), cutIn: { vScreen: { x: 3, y: 0 } } });
+      const ex = wall.exit!;
+      const fin = planFinale({ ...SIZE[a], fps: FPS, grid: demoGrid(STRETCH.finale, 300, 6000, FPS), hit: 300, lastNote: 540, decayS: 6.6, roomToneS: 0.75, entry: { pose: ex.pose, vel: ex.vel, ref: ex.ref }, wallElapsed: wall.duration });
       const ws = wall.shots[0]!;
       const fs = fin.shots[0]!;
       const pw = ws.camera.pose(wall.duration - 1);

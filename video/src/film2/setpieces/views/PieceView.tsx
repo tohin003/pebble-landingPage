@@ -42,9 +42,28 @@ import { ImageContent, SetPiecesSlate, StandInView, TakeViewContent } from "./St
 import { SageTextSweep } from "./SageSweep";
 import { VeilCast } from "./VeilCast";
 import { WallCells } from "./WallView";
+import { ReturnFieldView } from "./ReturnView";
 
 /** The film pebble's foot sits this far below the stone's centre at 148 px (video/src/film/timeline.ts PET). */
 const CENTRE_TO_FOOT_148 = 38.2;
+
+/**
+ * A seam whose two shots both show a "film"-layer stone (StoneSpec.layer, CR-01): ONE stone is drawn above both shots
+ * while it runs (FilmSeamStone), so the iris's edge never slices it and the two never double.
+ */
+const filmSeam = (plan: ScenePlan, x: ScenePlan["seams"][number]): boolean => {
+  if (!(x.frames > 0)) return false;
+  const a = plan.shots.find((s) => s.id === x.out)?.stone;
+  const b = plan.shots.find((s) => s.id === x.in)?.stone;
+  return a?.layer === "film" && b?.layer === "film";
+};
+const inFilmSeam = (plan: ScenePlan, shot: ShotSpec, frame: number): boolean =>
+  plan.seams.some((x) => (x.out === shot.id || x.in === shot.id) && frame >= x.at && frame < x.at + x.frames && filmSeam(plan, x));
+/** The stone's cues on its engine clock: (the piece's local frame + clockOffset) ÷ fps (StoneSpec.clockOffset). */
+const clockCues = (st: NonNullable<ShotSpec["stone"]>, fps: number) => {
+  const off = st.clockOffset ?? 0;
+  return off ? st.cues.map((c) => ({ ...c, at: c.at + off / fps })) : st.cues;
+};
 
 const dimFilter = (d: number): string | undefined => (d > 0.002 ? `brightness(${(1 - 0.24 * d).toFixed(4)}) saturate(${(1 - 0.3 * d).toFixed(4)})` : undefined);
 
@@ -144,6 +163,9 @@ export const ShotView: React.FC<{ plan: ScenePlan; shot: ShotSpec }> = ({ plan, 
   // the light lives in the ground (CR-14): the grade's linear-light gains on the riverbed, a few per cent on the windows
   const gradeNow = gradeAt(frame, plan.lightInitial, plan.lightCues);
   const gains = gradeNow.ground;
+  // a "film" stone steps aside while a seam draws the one stone above both shots
+  const stoneAside = st?.layer === "film" && inFilmSeam(plan, shot, frame);
+  const off = st?.clockOffset ?? 0;
   return (
     <AbsoluteFill style={{ backgroundColor: ground }}>
       <GroundLight gains={shot.ground === "riverbed" ? gains : [1, 1, 1]}>
@@ -159,6 +181,8 @@ export const ShotView: React.FC<{ plan: ScenePlan; shot: ShotSpec }> = ({ plan, 
           <RingLayer specs={shot.rings} pose={s.pose} layer="ground" offset={shot.from} poseAt={poseAt} />
         </World3D>
       </GroundLight>
+      {/* the Return's field (setpieces/returnField.ts): its hairlines, its cells and its stone above them (views/ReturnView.tsx) */}
+      {shot.returnField ? <ReturnFieldView plan={plan} shot={shot} frame={frame} sample={s} grade={gradeNow} hideStone={stoneAside} renderS24={(p, x) => <ShotView plan={p} shot={x} />} /> : null}
       <GroundLight gains={gradeNow.ui}>
       <ForegroundMotionBlur windows={shot.blur ?? []}>
         <World3D cam={cam} dofScale={shot.dofScale ?? 14} focus={focus} background="transparent">
@@ -198,12 +222,12 @@ export const ShotView: React.FC<{ plan: ScenePlan; shot: ShotSpec }> = ({ plan, 
                 });
               })()
             : null}
-          {st ? (
+          {st && !shot.returnField && !stoneAside ? (
             <Plane kind="film">
               {st.veil ? (
                 <VeilCast at={st.at} size={st.size} cues={st.cues} veil={st.veil} offsetFrames={shot.from} />
               ) : (
-                <PebbleOnFilm cues={st.cues} size={st.size} x={st.at.x} y={st.at.y + CENTRE_TO_FOOT_148 * (st.size / 148)} offsetFrames={shot.from} />
+                <PebbleOnFilm cues={clockCues(st, plan.fps)} size={st.size} x={st.at.x} y={st.at.y + CENTRE_TO_FOOT_148 * (st.size / 148)} offsetFrames={shot.from + off} />
               )}
             </Plane>
           ) : null}
@@ -212,6 +236,31 @@ export const ShotView: React.FC<{ plan: ScenePlan; shot: ShotSpec }> = ({ plan, 
       </GroundLight>
       <RingLayer specs={shot.rings} pose={s.pose} layer="front" offset={shot.from} poseAt={poseAt} />
       {shot.aperture ? <Aperture open={shot.aperture.open(frame)} centerY={shot.aperture.centerY} color={shot.aperture.band} /> : null}
+    </AbsoluteFill>
+  );
+};
+
+/**
+ * The one stone above a seam whose two shots both show a "film" stone (CR-01): the incoming shot's, on its engine clock
+ * and camera, in the UI's light. The plan lands the outgoing shot's stone on that pose before the seam (stoneCount).
+ */
+const FilmSeamStone: React.FC<{ plan: ScenePlan }> = ({ plan }) => {
+  const frame = useCurrentFrame();
+  const seam = plan.seams.find((x) => frame >= x.at && frame < x.at + x.frames && filmSeam(plan, x));
+  if (!seam) return null;
+  const shot = plan.shots.find((x) => x.id === seam.in)!;
+  const st = shot.stone!;
+  const s = shot.camera.sample(frame - shot.from);
+  const grade = gradeAt(frame, plan.lightInitial, plan.lightCues);
+  return (
+    <AbsoluteFill>
+      <GroundLight gains={grade.ui}>
+        <World3D cam={{ pose: s.pose, ref: shot.ref, vel: s.vel }} dofScale={shot.dofScale ?? 14} focus={shot.focus ? shot.focus(frame) : 1} background="transparent">
+          <Plane kind="film">
+            <PebbleOnFilm cues={clockCues(st, plan.fps)} size={st.size} x={st.at.x} y={st.at.y + CENTRE_TO_FOOT_148 * (st.size / 148)} offsetFrames={st.clockOffset ?? 0} />
+          </Plane>
+        </World3D>
+      </GroundLight>
     </AbsoluteFill>
   );
 };
@@ -241,7 +290,12 @@ const Shots: React.FC<{ plan: ScenePlan }> = ({ plan }) => {
       items.push(<TransitionSeries.Transition key={`t${i}`} timing={linearTiming({ durationInFrames: T })} presentation={presentation as never} />);
     }
   });
-  return <TransitionSeries>{items}</TransitionSeries>;
+  return (
+    <>
+      <TransitionSeries>{items}</TransitionSeries>
+      {plan.seams.some((x) => filmSeam(plan, x)) ? <FilmSeamStone plan={plan} /> : null}
+    </>
+  );
 };
 
 /**

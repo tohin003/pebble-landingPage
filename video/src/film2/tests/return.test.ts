@@ -40,6 +40,10 @@ import {
 } from "../setpieces/returnChecks";
 import type { Finding } from "../qa/checks";
 import type { ScenePlan, TypeSpec } from "../setpieces/scene";
+import { cellScreenAt, cellsOnScreen, firstContactR, rOfLocal, tonedMatteK } from "../setpieces/returnField";
+import { RETURN_THUMB_LONG, drawnLive, returnThumbJobs, returnThumbPath, ringOfWave, thumbSlug } from "../setpieces/returnThumbs";
+import { TONED_W_END } from "../setpieces/returnPlan";
+import { DEMO_JOINS, demoPlans, demoReturnVariant } from "../setpieces/demo/plans";
 
 const SIZE: Record<Aspect, { w: number; h: number }> = { "16:9": { w: 1920, h: 1080 }, "1:1": { w: 1080, h: 1080 }, "9:16": { w: 1080, h: 1920 } };
 const ASPECTS: readonly Aspect[] = ["16:9", "1:1", "9:16"];
@@ -541,5 +545,162 @@ describe("R2: the Return's span is exempt from cutRate, holds and readingLoad, a
   test("a plan with no Return keeps every rule (the climax with 30 extra cuts fails cutRate)", () => {
     const c = climaxFor("16:9");
     expect(errs(checkPlan({ ...c, seams: [...c.seams, ...seams(100)] }), "cutRate").length).toBeGreaterThan(0);
+  });
+});
+
+/* ---------------------------------------------------------------- what the view draws (views/ReturnView.tsx) ---- */
+
+describe("the view's model: cells on screen, from thumbnails, the first cell S24's own frame", () => {
+  test("the first cell fills the frame on the Return's first frame, in the frame's own px (the view's side of joinPose)", () => {
+    for (const a of ASPECTS) {
+      const p = planOf(a);
+      const field = returnOf(p)!.field;
+      const hero = field.cells.find((c) => c.spec.hero)!;
+      const s = cellScreenAt(hero, 0, field)!;
+      const { w, h } = p.frame;
+      expect(Math.max(Math.abs(s.rect.x), Math.abs(s.rect.y), Math.abs(s.rect.x + s.rect.w - w), Math.abs(s.rect.y + s.rect.h - h))).toBeLessThan(1);
+      // it is S24's own frame: the view draws S24's plan, whose last frame shows no stone
+      expect(returnOf(p)!.join?.source?.id).toBe("climax");
+      expect(returnOf(p)!.join?.stonesOnLastFrame).toBe(0);
+    }
+  });
+  test("at most 46 cells are drawn on any frame, back to front by their order, each with a box in the frame", () => {
+    for (const a of ASPECTS) {
+      const p = planOf(a);
+      const field = returnOf(p)!.field;
+      let most = 0;
+      for (let fr = 0; fr < returnOf(p)!.span.to; fr += 3) {
+        const cs = cellsOnScreen(field, fr);
+        most = Math.max(most, cs.length);
+        for (let i = 1; i < cs.length; i++) expect(cs[i]!.z).toBeGreaterThanOrEqual(cs[i - 1]!.z);
+        for (const c of cs) expect(c.rect.w > 0 && c.rect.h > 0 && c.share > 0).toBe(true);
+      }
+      expect(most).toBeLessThanOrEqual(46);
+      expect(most).toBeGreaterThan(40);
+    }
+  });
+  test("a cell's blur is the swap's (round) or its own travel's (σ = travel ÷ 7 above 4.6 px a frame), never more", () => {
+    const p = planOf("16:9");
+    const field = returnOf(p)!.field;
+    let swaps = 0;
+    let moving = 0;
+    for (let fr = 0; fr < returnOf(p)!.span.to; fr += 2)
+      for (const c of cellsOnScreen(field, fr)) {
+        const speed = Math.hypot(c.vel.x, c.vel.y);
+        const sigma = Math.hypot(c.blur.sx, c.blur.sy);
+        if (c.state === "swapIn" || c.state === "swapOut") swaps++;
+        else if (speed > 4.6) {
+          moving++;
+          expect(sigma).toBeCloseTo(speed / 7, 6);
+        } else expect(sigma).toBe(0);
+      }
+    expect(swaps).toBeGreaterThan(0);
+    expect(moving).toBeGreaterThan(0);
+  });
+  test("every cell has its image but the two Pebble's code draws (S24's frame and the engine), each at its ring's size", () => {
+    const jobs = returnThumbJobs();
+    expect(jobs.length).toBe(RETURN_CELLS.length - 2);
+    expect(RETURN_CELLS.filter((c) => drawnLive(c)).map((c) => c.id)).toEqual(["G3", "A3"]);
+    for (const c of RETURN_CELLS) expect(returnThumbPath(c) === null).toBe(drawnLive(c));
+    expect(new Set(jobs.map((j) => j.out)).size).toBe(jobs.length);
+    expect(thumbSlug("J1*")).toBe("J1-kit");
+    for (const j of jobs) {
+      const c = RETURN_CELLS.find((x) => x.id === j.id)!;
+      const L = RETURN_THUMB_LONG[ringOfWave(c.wave)];
+      expect(Math.abs(j.h - j.w * 0.75)).toBeLessThanOrEqual(0.5);
+      if (j.kind === "slot") expect(j.w).toBe(L);
+      // a still never above its capture's own pixels
+      else expect(j.w).toBeLessThanOrEqual(Math.min(L, Math.round(Math.max(j.crop.w * j.scale, (j.crop.h * j.scale * 4) / 3))));
+    }
+  });
+  test("each ring's image is at least as large as its slots are ever drawn at 1080 (no slot is drawn above its image)", () => {
+    for (const a of ASPECTS) {
+      const t = planTrace(planOf(a))!;
+      for (const fr of t.frames)
+        for (const x of fr.cells) {
+          if (x.c.spec.standIn.kind !== "slot") continue;
+          if (x.s.x + x.s.w <= 0 || x.s.x >= t.W || x.s.y + x.s.h <= 0 || x.s.y >= t.H) continue;
+          expect(x.s.w).toBeLessThanOrEqual(RETURN_THUMB_LONG[x.c.ring]);
+        }
+    }
+  });
+});
+
+describe("the toned matte (R4's alternative for G1, views/ReturnView.tsx merge \"toned\")", () => {
+  const toned = (a: Aspect) => planFor(a, { merge: "toned" });
+  test("it plans on the same timeline and passes every check in every aspect; its cells shrink on toward the centre", () => {
+    for (const a of ASPECTS) {
+      const p = toned(a);
+      expect(returnOf(p)!.merge).toBe("toned");
+      expect(returnOf(p)!.field.timing.wEnd).toBe(TONED_W_END);
+      expect(p.duration).toBe(planOf(a).duration);
+      expect(errs(checkPlan(p, returnGrid(FPS))).map((e) => `${a} ${e.check}: ${e.message}`)).toEqual([]);
+    }
+    expect(returnOf(planOf("16:9"))!.merge).toBe("behind");
+  });
+  test("a cell's tone is 0 until its first contact and 1 seven frames after it, rising without a step", () => {
+    const field = returnOf(toned("16:9"))!.field;
+    const c = field.cells.find((x) => x.ring === 2 && x.retStart !== null)!;
+    const at = firstContactR(field, c)!;
+    expect(at).toBeGreaterThan(c.retStart!);
+    expect(tonedMatteK(field, c, at - 1)).toBe(0);
+    expect(tonedMatteK(field, c, at + 7)).toBe(1);
+    let prev = 0;
+    for (let r = at; r <= at + 7; r += 0.5) {
+      const k = tonedMatteK(field, c, r);
+      expect(k).toBeGreaterThanOrEqual(prev);
+      expect(k - prev).toBeLessThan(0.25);
+      prev = k;
+    }
+  });
+  test("the demo's toned variant shares the demo Return's climax and timeline", () => {
+    const v = demoReturnVariant("16:9", { merge: "toned" });
+    const d = demoPlans("16:9").find((e) => e.plan.id === "return")!.plan;
+    expect(timelineDiffs({ "16:9": v, "1:1": d, "9:16": d })).toEqual([]);
+    expect(returnOf(v)!.join?.source).toBe(returnOf(d)!.join?.source);
+  });
+});
+
+describe("the film's sequence: the Return in place of the wall and the convergence (OVERRIDES §61)", () => {
+  test("the demo plays the Drop, Ring 4, Dusk, the climax, the Return (with the title and the end card) and the coda", () => {
+    for (const a of ASPECTS) expect(demoPlans(a).map((e) => e.plan.id)).toEqual(["drop", "ring4", "dusk", "climax", "return", "coda"]);
+    expect(DEMO_JOINS).toEqual(["continue", "cut", "cut", "frame", "continue"]);
+  });
+  test("the climax ends into the Return, and the Return opens on its last frame: every join holds, joinPose with no error", () => {
+    for (const a of ASPECTS) {
+      const ps = demoPlans(a).map((e) => e.plan);
+      expect(checkJoins(ps, DEMO_JOINS).map((f) => `${a} ${f.message}`)).toEqual([]);
+      const c = ps.find((x) => x.id === "climax")!;
+      expect((c.extra as { into: string }).into).toBe("return");
+      const r = ps.find((x) => x.id === "return")!;
+      expect(errs(joinPose(r))).toEqual([]);
+      expect(returnOf(r)!.join!.source).toBe(c);
+    }
+  });
+  test("the canaries: a \"frame\" join into a piece that opens on nothing, or on another piece's frame, fails", () => {
+    const ps = demoPlans("16:9").map((e) => e.plan);
+    const climax = ps.find((x) => x.id === "climax")!;
+    const dusk = ps.find((x) => x.id === "dusk")!;
+    const ret = ps.find((x) => x.id === "return")!;
+    expect(checkJoins([climax, dusk], ["frame"]).length).toBeGreaterThan(0);
+    expect(checkJoins([dusk, ret], ["frame"]).some((f) => /opens? on dusk/.test(f.message) || /continues climax/.test(f.message))).toBe(true);
+  });
+  test("the demo's Return passes every check in every aspect on its own cue, one timeline", () => {
+    const by = Object.fromEntries(ASPECTS.map((a) => [a, demoPlans(a).find((e) => e.plan.id === "return")!])) as Record<Aspect, ReturnType<typeof demoPlans>[number]>;
+    for (const a of ASPECTS) expect(errs(checkPlan(by[a].plan, by[a].grid)).map((e) => `${a} ${e.check}: ${e.message}`)).toEqual([]);
+    expect(timelineDiffs({ "16:9": by["16:9"].plan, "1:1": by["1:1"].plan, "9:16": by["9:16"].plan })).toEqual([]);
+  });
+  test("one stone through the iris: the field's stone and the title's share one clock and the film layer", () => {
+    for (const a of ASPECTS) {
+      const p = demoPlans(a).find((e) => e.plan.id === "return")!.plan;
+      const [field, title] = p.shots;
+      expect(field!.stone!.layer).toBe("film");
+      expect(title!.stone!.layer).toBe("film");
+      expect(title!.stone!.clockOffset).toBe(field!.stone!.clockOffset);
+      expect(field!.stone!.clockOffset).toBe(710);
+      const seam = p.seams.find((x) => x.out === field!.id && x.in === title!.id)!;
+      expect(seam.presentation).toBe("iris");
+      expect(rOfLocal(seam.at, p.fps)).toBeGreaterThan(RETURN_BLINK_R + 0.18 * 60);
+    }
   });
 });

@@ -59,7 +59,7 @@ describe("the content floor: what the viewer looks at glides, not only the frame
   });
   test("title pages keep the corners' floor (OVERRIDES §58) and are not judged on their content", () => {
     for (const a of ASPECTS) {
-      const p = piece(a, "finale");
+      const p = piece(a, "return");
       const title = p.shots.find((s) => s.id === "title")!;
       expect(errorsOf(contentFloor(p)).filter((f) => f.frame! >= title.from)).toEqual([]);
     }

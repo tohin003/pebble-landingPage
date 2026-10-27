@@ -629,3 +629,98 @@ export function hairlineAt(ring: number, frame: number, field: ReturnField): Hai
   return { ring, a: inner + (a0 - inner) * k, b: inner + (b0 - inner) * k, drawn: 1, opacity: 1 - clamp01((u - 0.8) / 0.2), depth: d0 + (1 - d0) * E_MOVE(clamp01(u / 0.5)), widthPx: 1.75 };
 }
 
+
+/* ---------------------------------------------------------------- what the view draws ---------------------------- */
+
+/**
+ * A cell on screen on a piece-local frame, as the view draws it (views/ReturnView.tsx): its rect in the frame's own px
+ * (the plan's camera at the cell's parallax depth), its screen velocity (frame px a frame) and its blur as the σx and σy
+ * of one SVG feGaussianBlur (frame px): the swap's, round, or the motion's along its own travel (σ = travel ÷ 7 above
+ * the reading speed, 4.6 px a frame at 1080), whichever is larger. Null when the cell is not drawn on that frame.
+ */
+export interface CellScreen {
+  cell: FieldCell;
+  rect: Rect;
+  vel: Point;
+  blur: { sx: number; sy: number };
+  /** the draw order among the cells (higher on top); the stone is drawn above every cell */
+  z: number;
+  /** the share of it the stone leaves visible (0: wholly behind it) */
+  share: number;
+  state: CellState;
+  depth: number;
+  /** the return's progress, 0–1 (only while returning) */
+  u?: number;
+}
+
+export function cellScreenAt(cell: FieldCell, frame: number, field: ReturnField): CellScreen | null {
+  const v = field.view;
+  if (!v) throw new Error("cellScreenAt needs the plan's camera (field.view): plan the Return with planReturn()");
+  const fps = field.fps;
+  const p = cellPoseR(field, cell, rOfLocal(frame, fps));
+  if (!p) return null;
+  const q = p.rect;
+  const share = visibleFraction(q.x, q.y, q.x + q.w, q.y + q.h, field.stone.px);
+  const toScreen = (f: number, c: Point, depth: number): Point => {
+    const pose = planePose(v.camera.pose(f), v.ref, depth);
+    return { x: v.w / 2 + (c.x - pose.x) * pose.zoom, y: v.h / 2 + (c.y - pose.y) * pose.zoom };
+  };
+  const pose = planePose(v.camera.pose(frame), v.ref, p.depth);
+  const rect: Rect = { x: v.w / 2 + (q.x - pose.x) * pose.zoom, y: v.h / 2 + (q.y - pose.y) * pose.zoom, w: q.w * pose.zoom, h: q.h * pose.zoom };
+  // the cell's own travel over a frame (its motion and the camera's), as cellPoseAt measures it
+  const a = cellPoseR(field, cell, rOfLocal(frame - 0.5, fps));
+  const b = cellPoseR(field, cell, rOfLocal(frame + 0.5, fps));
+  let vel: Point = { x: 0, y: 0 };
+  if (a && b) {
+    const sa = toScreen(frame - 0.5, a.c, a.depth);
+    const sb = toScreen(frame + 0.5, b.c, b.depth);
+    vel = { x: sb.x - sa.x, y: sb.y - sa.y };
+  }
+  const speed1080 = Math.hypot(vel.x, vel.y) / v.unit;
+  const motion = speed1080 > 4.6 ? (speed1080 / 7) * v.unit : 0;
+  const swap = p.swapBlur * v.unit;
+  const blur = swap >= motion ? { sx: swap, sy: swap } : { sx: (motion * Math.abs(vel.x)) / Math.hypot(vel.x, vel.y), sy: (motion * Math.abs(vel.y)) / Math.hypot(vel.x, vel.y) };
+  return { cell, rect, vel, blur, z: cell.zOrder, share, state: p.state, depth: p.depth, u: p.u };
+}
+
+/** The cells the view draws on a frame, back to front (the stone is drawn above all of them). */
+export const cellsOnScreen = (field: ReturnField, frame: number): CellScreen[] =>
+  field.cells
+    .map((c) => cellScreenAt(c, frame, field))
+    .filter((x): x is CellScreen => x !== null && x.share > 0 && x.rect.x + x.rect.w > 0 && x.rect.y + x.rect.h > 0 && x.rect.x < field.view!.w && x.rect.y < field.view!.h)
+    .sort((a, b) => a.z - b.z);
+
+const contactCache = new WeakMap<ReturnField, Map<FieldCell, number | null>>();
+
+/**
+ * The R-frame a returning cell first touches the stone's body (to a quarter of a frame), or null if it never does:
+ * the toned matte (MONTAGE_DESIGN §2.7, R4) tones a cell toward the stone's sage from this frame on.
+ */
+export function firstContactR(field: ReturnField, c: FieldCell): number | null {
+  let m = contactCache.get(field);
+  if (!m) {
+    m = new Map();
+    contactCache.set(field, m);
+  }
+  if (m.has(c)) return m.get(c)!;
+  let at: number | null = null;
+  if (c.retStart !== null && c.retT !== null) {
+    for (let r = c.retStart; r <= c.retStart + c.retT; r += 0.25) {
+      const p = cellPoseR(field, c, r);
+      if (!p) continue;
+      const q = p.rect;
+      if (rectTouchesBody(q.x, q.y, q.x + q.w, q.y + q.h, field.stone.px)) {
+        at = r;
+        break;
+      }
+    }
+  }
+  m.set(c, at);
+  return at;
+}
+
+/** The toned matte's tone on an R-frame: 0 until first contact, reaching 1 over `frames` (6–8) on E-move. */
+export const tonedMatteK = (field: ReturnField, c: FieldCell, r: number, frames = 7): number => {
+  const at = firstContactR(field, c);
+  return at === null ? 0 : E_MOVE(clamp01((r - at) / frames));
+};

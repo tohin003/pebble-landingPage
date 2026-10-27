@@ -28,7 +28,8 @@ const ASPECTS: readonly Aspect[] = ["16:9", "1:1", "9:16"];
 const SIZE: Record<Aspect, { w: number; h: number }> = { "16:9": { w: 1920, h: 1080 }, "1:1": { w: 1080, h: 1080 }, "9:16": { w: 1080, h: 1920 } };
 const piece = (a: Aspect, id: string): ScenePlan => demoPlans(a).find((e) => e.plan.id === id)!.plan;
 const coda = (a: Aspect) => piece(a, "coda");
-const endCard = (a: Aspect) => piece(a, "finale");
+// the end card: the Return's (OVERRIDES §61: the Return, the title and the end card replace the wall and the convergence)
+const endCard = (a: Aspect) => piece(a, "return");
 const X = (p: ScenePlan): CodaExtra => codaOf(p)!;
 const errorsOf = (xs: readonly Finding[], check?: string) => xs.filter((x) => x.level === "error" && (!check || x.check === check));
 const msgs = (xs: readonly Finding[]) => xs.map((x) => `[${x.check}] ${x.message}`);
@@ -630,7 +631,7 @@ describe("C11 and C12: the sound layer and the captions the plan hands on", () =
 describe("the registry", () => {
   test("checkPlan runs every coda check on the coda only", () => {
     expect(CODA_CHECKS.length).toBe(11);
-    for (const id of ["drop", "finale"]) expect(codaChecks(piece("16:9", id))).toEqual([]);
+    for (const id of ["drop", "return"]) expect(codaChecks(piece("16:9", id))).toEqual([]);
   });
 });
 
@@ -654,7 +655,7 @@ describe("the stones reel-marks.ts hands the render's scan (codaMarkStones)", ()
       expect(lastPage).toBeGreaterThan(20);
       expect(lastPage).toBeLessThan(shut);
       expect(stonesOnFrame(p, 20).length).toBe(0);
-      expect(codaMarkStones(piece(a, "finale"), 0)).toBeNull();
+      expect(codaMarkStones(piece(a, "return"), 0)).toBeNull();
     }
   });
 });

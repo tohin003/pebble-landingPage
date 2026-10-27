@@ -103,7 +103,9 @@ function sectionsOf(p: ScenePlan): { section: ArcSection; from: number; to: numb
       return [{ section: "dusk", from: settled("dusk") + 20, to: p.duration - 10 }];
     case "climax":
       return [{ section: "evening", from: settled("evening") + 20, to: p.duration - 10 }];
-    case "finale": {
+    case "finale":
+    case "return": {
+      // the title and the end card (the Return carries the finale's, OVERRIDES §61)
       const x = p.extra as Record<string, number>;
       return [{ section: "page", from: x.irisEnd + 20, to: p.duration - 10 }];
     }
