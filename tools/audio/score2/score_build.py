@@ -295,6 +295,34 @@ def make_take(L, kit, kplan, tracks48):
                          f"{length:.5f} s), reversed", licence="from the cue's own track (CC BY 4.0, edited)",
                    status="primary", final_allowed=True)
         pitch_hz = None
+    elif "tail_swell" in L:
+        # a reverse swell from a kit take's own room tail (the 40-s cut's XJ2 mask), made exactly as
+        # revise_measure.make_mask measured it: from the take's peak + from_peak_s, tuned by varispeed, cut to
+        # length_s, reversed, a 30 ms fade-in at its quiet start and a 4 ms fade at its loud end
+        s = L["tail_swell"]
+        k = kit[s["take"]]
+        path = os.path.join(KITDIR, k["file"])
+        y, sr = sf.read(path, dtype="float32", always_2d=True)
+        assert sr == SR, (path, sr)
+        y = stereo(y)
+        pk = int(np.argmax(np.abs(y).max(1)))
+        a0 = pk + int(s.get("from_peak_s", 0.08) * SR)
+        ratio = 2 ** (float(s["tune_semitones"]) / 12)
+        tail = ss.resample_poly(y[a0:], 1000, int(round(1000 * ratio)), axis=0, window=("kaiser", 9.0)).astype(np.float32)
+        n = int(round(s["length_s"] * SR))
+        seg = tail[:n].copy()
+        if len(seg) < n:
+            seg = np.vstack([seg, np.zeros((n - len(seg), 2), dtype=np.float32)])
+        y = seg[::-1].copy()
+        fi, fo = int(0.03 * SR), int(0.004 * SR)
+        y[:fi] *= (0.5 - 0.5 * np.cos(np.linspace(0, np.pi, fi)))[:, None]
+        y[-fo:] *= (0.5 + 0.5 * np.cos(np.linspace(0, np.pi, fo)))[:, None]
+        rec.update(take=s["take"], file=rel(path), sha256=sha256(path), licence=k["licence"], status=k["status"],
+                   final_allowed=k["final_allowed"], source=k["source"].get("source_page") or k["source"].get("provider"),
+                   tail_swell={"tail_from_s": r(a0 / SR, 4), "tuned_semitones": float(s["tune_semitones"]),
+                               "length_s": r(n / SR, 4), "how": "the take's own room tail, varispeed (polyphase), "
+                                                                "reversed (as revise_measure.make_mask)"})
+        pitch_hz = None
     else:
         raise ValueError(L["id"])
     y = stereo(y)
@@ -338,6 +366,8 @@ def make_take(L, kit, kplan, tracks48):
                                            "lookahead, 50 ms release), ceiling its own peak minus this",
                            "peak_dbfs": [r(before_pk), r(peak_db(z))], "loudest_400ms_lufs": [r(before_m), r(mmax_lufs(z))]}
         y = z.astype(np.float32)
+    if L.get("tail"):  # a hit shortened (CUE_SHEET §4.1 C7): whole to keep_s_after_peak after its peak, then a fade
+        y, rec = tail_fade(y, rec, L["tail"])
     if "excerpt" in L:  # a bed: dur_s from from_s, with raised-cosine fades
         ex = L["excerpt"]
         a = int(ex.get("from_s", 0.0) * SR)
@@ -358,6 +388,22 @@ def make_take(L, kit, kplan, tracks48):
                               "first_ms_rms": r(20 * np.log10(np.sqrt((y[:ms1] ** 2).mean()) / pk + 1e-12)),
                               "last_ms_rms": r(20 * np.log10(np.sqrt((y[-ms1:] ** 2).mean()) / pk + 1e-12))}
     return y.astype(np.float32), rec
+
+
+def tail_fade(y, rec, spec):
+    """Shorten a hit as revise_measure.tail_fade did for the cue sheet's measurements: keep it whole to
+    keep_s_after_peak after its peak, then a raised-cosine fade over fade_s, then nothing."""
+    pk = int(np.argmax(np.abs(y).max(1)))
+    a = pk + int(round(spec["keep_s_after_peak"] * SR))
+    n = int(round(spec["fade_s"] * SR))
+    if a >= len(y):
+        return y, rec
+    z = y[:min(len(y), a + n)].copy()
+    m = len(z) - a
+    z[a:] *= (0.5 + 0.5 * np.cos(np.linspace(0, np.pi, m)))[:, None]
+    rec = {**rec, "tail": {"keep_s_after_peak": spec["keep_s_after_peak"], "fade_s": spec["fade_s"],
+                           "len_s": [r(len(y) / SR, 4), r(len(z) / SR, 4)], "how": "raised-cosine fade, then cut"}}
+    return z.astype(np.float32), rec
 
 
 def place_index(y, t, align):
@@ -635,7 +681,7 @@ def main():
     end = plan["end_film_s"]
     N = int(round(end * SR))
     bed = np.zeros((N, 2), dtype=np.float32)
-    bed_cs = np.zeros((N, 2), dtype=np.float32)  # the cue sheet's own bed (no corrections, no EQ), like for like
+    bed_cs = np.zeros((N, 2), dtype=np.float32)  # the cue sheet lane's bed (the corrections, no EQ), like for like
     mel_fb = cp.mel_filterbank()
     corr = sheet.get("source_time_correction_s", {})
     res = {"plan": rel(plan_path), "plan_sha256": sha256(plan_path), "layers": rel(layers_path),
@@ -672,8 +718,8 @@ def main():
             else:
                 res["cues"][c["id"]] = lay(bed, c, ye)
             y_eq[c["id"]] = ye
-            lay(bed_cs, next(x for x in plan_cs["cues"] if x["id"] == c["id"]) | {
-                "src_in_cue_sheet": None, "src_out_cue_sheet": None, "src_correction_s": 0.0}, y48)
+            # like for like with the cue sheet lane (revision 2 measured as built: the corrections, and no EQ)
+            lay(bed_cs, c, y48)
         for s in plan["seams"]:
             for side, cid in (("out", s["from"]), ("in", s["to"])):
                 c = cues[cid]
@@ -807,8 +853,9 @@ def main():
         "cue_sheet_as_planned": {"integrated_lufs": r(cp.integrated(ms_cs, 0, N / SR)), "lra_lu": r(cp.lra(ms_cs, 0, N / SR)),
                                  "sample_peak_dbfs": r(peak_db(bed_cs)), "st_max": r(cp.curves(ms_cs)[1].max())},
         "cue_sheet_lane": lane_m["bed"] if lane_m else None,
-        "note": "'cue_sheet_as_planned' re-assembles the plan exactly as the cue sheet lane did (no source-time "
-                "corrections, no EQ) and must match 'cue_sheet_lane'; 'built' is what the masters are made from"}
+        "note": "'cue_sheet_as_planned' re-assembles the plan exactly as the cue sheet lane measured revision 2 (with "
+                "the source-time corrections, without the EQ) and must match 'cue_sheet_lane'; 'built' adds the EQ and "
+                "is what the masters are made from"}
     res["translation_bed"] = translation(bed)
     del bed_cs
     # ---------------------------------------------------------------- masters
@@ -958,9 +1005,56 @@ def main():
                                                            "extra_lsd_db", "extra_hf_db")}
         seams.append(out)
     res["seams"] = seams
+    # ---------------------------------------------------------------- harmony, key and the grid across every seam
+    # the cue sheet lane's own measures (revise_measure.py), on the music bed and on the web master as heard
+    import revise_measure as rm  # noqa: E402  imported here: it imports this module for its layers and levels
+    own_lsd = {}
+
+    def film_beats(c):
+        bt = np.array(maps[c["track"]]["beats_s"])  # already moved by the track's correction
+        bt = bt[(bt >= c["src_in"] - 1e-3) & (bt <= c["src_out"] + 1e-3)]
+        return bt - c["src_in"] + c["film_in"]
+    for out in seams:
+        s = next(x for x in plan["seams"] if x["id"] == out["id"])
+        ts, tin = s["t"], s.get("in_film", s["t"])
+        cin, cout = cues[s["to"]], cues[s["from"]]
+        bo, bi = film_beats(cout), film_beats(cin)
+        bo, bi = bo[bo < ts - 0.02], bi[bi >= tin - 0.02]
+        a0 = max(0.0, ts - 6.0)
+        ex = {}
+        for nm, X in (("bed", monob), ("master_web", mono)):
+            seg = X[int(a0 * SR):int((tin + 6.0) * SR)]
+            e = {}
+            if cin["head"]["mode"] != "fade" and len(bo) >= 2 and len(bi) >= 2:
+                e["harmony"] = rm.harmony_across(seg, a0, ts - a0, list(bo[-9:] - a0), list(bi[:9] - a0))
+                e["onsets_around_seam"] = rm.onsets_on_grid(seg, a0, list(bo[-4:]) + list(bi[:4]))
+            # fixed windows either side, for every seam (the fade-ins and the stop too, which share no beat grid):
+            # the chroma cosine and the key of the 2 s and 4 s before the crossfade against the same after the in-point
+            C_, tt_, E_ = rm.harmonic_chroma(seg)
+            w = {}
+            for L_ in (2.0, 4.0):
+                cb = rm.span_chroma(C_, tt_, E_, ts - a0 - out["xfade_s"] - L_, ts - a0 - out["xfade_s"])
+                ca = rm.span_chroma(C_, tt_, E_, tin - a0, tin - a0 + L_)
+                if cb is not None and ca is not None:
+                    kb, ka = rm.key_of(cb), rm.key_of(ca)
+                    st_, letter = rm.camelot_steps(kb["camelot"], ka["camelot"])
+                    w[f"{L_:g}s"] = {"chroma_cos": rm.cosv(cb, ca), "key_before": kb, "key_after": ka,
+                                     "camelot_steps": st_, "mode_change": letter}
+            e["windows"] = w
+            ex[nm] = e
+        if len(bo) and len(bi):
+            ex["beat_interval_across_ms"] = r((bi[0] - bo[-1]) * 1000, 1)
+        tr_in = cin["track"]
+        if tr_in not in own_lsd:
+            own_lsd[tr_in] = rm.own_lsd_at_downbeats(tr_in, corr.get(tr_in, 0.0))
+        ex["lsd_percentile_of_incoming_own_downbeats"] = rm.pct(own_lsd[tr_in], out["bed"]["lsd_db"])
+        ex["incoming_own_downbeat_lsd_p50_p95"] = [r(np.percentile(own_lsd[tr_in], 50)),
+                                                   r(np.percentile(own_lsd[tr_in], 95))]
+        out["continuity"] = ex
+    rm._tracks.clear()
     # ---------------------------------------------------------------- onsets in the master against the audible beats
     grid = {}
-    hits = [Ly["t"] for Ly in layers_out if Ly.get("role") in ("hit", "sub", "plunk", "tick", "soft_hit")]
+    hits = [Ly["t"] for Ly in layers_out if Ly.get("role") in ("hit", "sub", "plunk", "tick", "soft_hit", "tap")]
     for c in plan["cues"]:
         f0, f1, fout = cp.cue_extent(c)
         lo, hi = c["film_in"] + 0.25, min(fout, f1) - 0.25
@@ -1025,6 +1119,18 @@ def main():
     flags_web = [f for f in res["classifier"]["web"]["flags"]]
     res["classifier"]["web"]["attribution"] = attribute_flags(flags_web, (mix * g_w).astype(np.float32),
                                                               (music * g_w).astype(np.float32), groups_g, tmp_dir)
+    # the title's windows on the cue sheet's stricter 0.5-s grid (CUE_SHEET §4.1: every 3 s window from J5 + 2 ms to
+    # 5.5 s after the title), on the web master as built and on the music alone at its gain: Born Of The Sky and the
+    # kit's CC0 and designed sounds only (B2 ends on J5), so no temporary WAV holds Mixkit music
+    if "return" in plan:
+        j5 = next(s["t"] for s in plan["seams"] if s["id"] == "J5")
+        title = plan["return"]["R720_film_s"]
+        tg = {"windows": "every 3 s window starting from J5 + 2 ms to the title + 5.5 s, on a 0.5 s grid",
+              "j5_film_s": j5, "title_film_s": title}
+        for nm, X in (("web_master", web), ("music_alone_at_web_gain", (music * g_w).astype(np.float32))):
+            rows = rm.classify_grid(X, j5 + 0.002, title + 5.5, tmp_dir)
+            tg[nm] = {**rm.summarise(rows), "rows": rows}
+        res["classifier"]["title_grid"] = tg
     try:
         os.rmdir(tmp_dir)
     except OSError:
