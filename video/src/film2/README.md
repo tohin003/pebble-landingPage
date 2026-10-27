@@ -634,8 +634,9 @@ and camera sweeps over 4 px a frame are not judged).
 **On the reels** (27 Oct, the fix's last renders: 16:9, 1:1 and 9:16 at half size, 60 fps, 5,919 frames each, 192–200 s
 each through heavy.sh; `luma-scan.ts --marks` and `ground-light.ts`; gitignored evidence in `.work/film2/sp3/demo*/`
 (`scan.json`, `ground-light.json`, `marks.json`), the sheets in the lane's scratchpad;
-16:9 from round 5, the code as committed but for the Dusk's slot labels: its round-6 render waits
-for disk room, the renderer's preflight refusing it at 2.29 GiB free, and the labels' change was checked on the plans):
+16:9 from round 5, the code as committed but for the Dusk's slot labels: its whole round-6 render waits
+for disk room, the renderer's preflight refusing it at 2.29 GiB free, so the labels' change was checked on the plans
+and on a round-6 render of the Dusk's opening, reel frames 2280–2519):
 
 | Check | 16:9 | 1:1 | 9:16 |
 |---|---|---|---|
