@@ -2,8 +2,8 @@
 //   S23  "Glaze", evening light: the shot opens ON ITS TAKE (CR-06: it opened on 16 blank frames of its slot), HS-G's
 //        ask card already arriving with the entrance every ask shares, "Keep this tool in Pebble's Toolbox?" with
 //        Discard and Keep (G4); the camera comes in with the cut's momentum and pushes in to meet it, never at rest;
-//        "Its own tools." (L24) lands on a beat and leaves with a drawn blur exit that is over before the cut (CR-03: its
-//        "camera" exit drew nothing, and it vanished 6 frames before the cut)
+//        "Its own tools." (L24) lands on a beat and lifts out through its mask, as it rose, over before the cut (CR-03:
+//        its "camera" exit drew nothing, and it vanished 6 frames before the cut)
 //   S24  a momentum cut into "Kiln", on the last beat at least 0.75 s before the peak: ONE continuous 1× take (RS-W)
 //        whose in-point is SOLVED so the kept card lands on the peak's first strong downbeat (`peak`): "Kept in
 //        Pebble's Toolbox · kiln_ramp_time", "Pebble kept this tested calculation on its own. Remove it if you don't
@@ -23,7 +23,7 @@ import { momentumCut } from "../transitions/momentum";
 import type { Rect, Vec } from "../motion/geometry";
 import type { Grade, GradeName, LightCue } from "../light/grades";
 import { halfBars, place, prevPoint, type MusicGrid } from "./music";
-import { breakLines, fitPose, frameBox, glideLz, holdGlide, rectInFrame, type FrameBox, type TypeBox } from "./frame";
+import { breakLines, exitFramesOf, fitPose, frameBox, glideLz, holdGlide, rectInFrame, type FrameBox, type TypeBox } from "./frame";
 import { SLOT } from "./standins";
 import { TAKE_HSG, TAKE_RSW, eventFrame, solveInPoint, type TakeManifest, type TakeUse } from "./take";
 import { CLIMAX_CUES } from "./pieces.cues";
@@ -138,7 +138,8 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
   // (the glide lands its framing after five time constants: what is left of the cut's speed then is under 1 %)
   const camA = o.entry ? new VelocityCamera(o.entry.pose, o.entry.vel) : arriveWithMomentum({ target: askHold.from, frames: f60(80, fps), vScreen: vIn, mode: "glide", tau: f60(16, fps), drift: pushA });
   const chapterText = breakLines(CLIMAX_TEXT.chapter, "expressive", f, f.w - 2 * f.safe, 0.3);
-  const chapter: TypeSpec = { id: "L24", text: chapterText, tier: "expressive", at: 0, sizeT: 0.3, box: L.chapter(f), kind: "film", key: true, exit: "blur" };
+  // (it rose through its mask: it leaves through it with a lift, as it came; fix round 2: it blurred away)
+  const chapter: TypeSpec = { id: "L24", text: chapterText, tier: "expressive", at: 0, sizeT: 0.3, box: L.chapter(f), kind: "film", key: true, exit: "lift" };
   const landC = place(f60(30, fps) + landFrames(chapter, fps), g, { level: "beat", frames: landFrames(chapter, fps) });
   chapter.at = landC.at;
   music.push(musicHit("\"Its own tools.\" lands", landC));
@@ -150,9 +151,9 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
   const cut = cutCandidate !== undefined && cutCandidate >= minCut && peak - cutCandidate <= f60(75, fps) ? cutCandidate : peak - f60(60, fps);
   if (cut < minCut) throw new Error(`the climax needs ${minCut - cut} more frames before its peak (the ask must be read first)`);
   music.push({ event: "the cut into Kiln", frame: cut, point: g?.beats.includes(cut) ? cut : null, level: g?.beats.includes(cut) ? "beat" : null, waited: 0 });
-  // L24 leaves with the camera's E-leave: a drawn blur exit, over 2 frames before the cut (CR-03)
+  // L24 leaves with the camera's E-leave: a drawn lift through its mask, over 2 frames before the cut (CR-03)
   const leaveStart = cut - 1 - leaveF;
-  chapter.exitAt = leaveStart;
+  chapter.exitAt = Math.min(leaveStart, cut - 2 - exitFramesOf("lineRise", "lift", chapterText, fps));
   camA.glide(leaveStart, f60(30, fps), pushA);
   const hsgUse: TakeUse = { manifest: hsg, at: 0, inPoint: cardSrc - askAt, until: cut };
 

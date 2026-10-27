@@ -293,12 +293,13 @@ export function planRingBlock(o: RingOptions): ScenePlan {
     layer: "ground",
   });
   const probeRing = ringWith(provisionalEnd + sec(10, fps));
-  const specC: TypeSpec = { id: `${c.id}-chapter`, text: chapter, tier: "expressive", at: 0, sizeT: L.sizeT, box: boxC, kind: "film", key: true, pairWith: limit ? `${c.id}-limit` : undefined };
+  // (it rose through its mask, so it leaves through it, as it came: a lift; fix round 2: it blurred away)
+  const specC: TypeSpec = { id: `${c.id}-chapter`, text: chapter, tier: "expressive", at: 0, sizeT: L.sizeT, box: boxC, kind: "film", key: true, pairWith: limit ? `${c.id}-limit` : undefined, exit: "lift" };
   const rectC = lineRect(chapter, "expressive", f, boxC, L.sizeT);
   const clearC = ringClearFrame([probeRing], [rectC], fps, poseAt, f, 0, provisionalEnd);
   // and once the camera's travel has carried every capture with text out from under its band, for its whole hold
   // (fix round 2, NF-05: in 9:16 it landed mid-travel over the companion and the Toolbox)
-  const holdC = sec(linesHoldS.chapter, fps) + exitFramesOf("lineRise", "blur", chapter, fps);
+  const holdC = sec(linesHoldS.chapter, fps) + exitFramesOf("lineRise", "lift", chapter, fps);
   const planesC = planesClearFrame(c.context ?? [], rectC, poseAt, ref, f, 0, provisionalEnd, holdC);
   const landC = place(Math.max(f60(30, fps) + landFrames(specC, fps), clearC, planesC, al.chapterLand ?? -Infinity), g, { level: "beat", frames: landFrames(specC, fps) });
   specC.at = landC.at;
@@ -320,7 +321,7 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   exitAt = Math.max(exitAt, al.linesExit ?? 0);
   specC.exitAt = exitAt;
   if (specL) specL.exitAt = exitAt;
-  const linesGone = Math.max(exitAt + Math.max(exitFramesOf("lineRise", "blur", chapter, fps), limit ? exitFramesOf("lineBlur", "blur", limit, fps) : 0), al.linesGone ?? 0);
+  const linesGone = Math.max(exitAt + Math.max(exitFramesOf("lineRise", "lift", chapter, fps), limit ? exitFramesOf("lineBlur", "blur", limit, fps) : 0), al.linesGone ?? 0);
   if (linesGone > provisionalEnd) throw new Error(`${c.id}: the lines run to ${linesGone}, past the arrival glide (${provisionalEnd})`);
 
   /* ------------------------------------------------ the take's timing ------------------------------------------ */
@@ -460,7 +461,8 @@ export function planRingBlock(o: RingOptions): ScenePlan {
     // the fixed line, then the items, each swap landing 2–3 frames before a beat (local frames of the piece)
     const fixedBox = L.fixedBox(f);
     const fixedText = breakLines(c.cascade.fixed, "expressive", f, f.w - 2 * f.safe, 0.3);
-    const fixed: TypeSpec = { id: `${c.id}-fixed`, text: fixedText, tier: "expressive", at: cut + f60(6, fps), sizeT: 0.3, box: fixedBox, kind: "cascade", exit: "blur" };
+    // (the fixed line rose through its mask: it leaves through it with a lift, as it came)
+    const fixed: TypeSpec = { id: `${c.id}-fixed`, text: fixedText, tier: "expressive", at: cut + f60(6, fps), sizeT: 0.3, box: fixedBox, kind: "cascade", exit: "lift" };
     const items = c.cascade.items.map((it, i) => ({ text: it.text, holdS: it.holdS ?? (i === 0 ? 1.1 : 0.85) }));
     const beats = g ? pointsOf(g, "beat").filter((b) => b > cut) : undefined;
     const itemsStart = cut + f60(6, fps) + enterFramesOf("lineRise", fixedText, fps) + f60(6, fps);
@@ -474,7 +476,8 @@ export function planRingBlock(o: RingOptions): ScenePlan {
     music.push(musicHit("the cascade ends (the next block)", endP));
     for (const w of cascadeSchedule(itemsStart, items, fps, beats)) music.push({ event: `swap "${w.text}" lands`, frame: w.inEnd, point: null, level: null, waited: 0 });
     const leaveAt = duration - 1 - leaveF;
-    fixed.exitAt = leaveAt;
+    // (a lift of two lines takes longer than the leave: it starts early enough to be gone 2 frames before the cut)
+    fixed.exitAt = Math.min(leaveAt, duration - 2 - exitFramesOf("lineRise", "lift", fixedText, fps));
     const cards: PlaneSpec[] = c.cascade.items.map((it, i) => {
       // each card at a uniform scale that fits the stage (never stretched), centred on it
       const k = Math.min(stageWorld.w / it.card.w, stageWorld.h / it.card.h);

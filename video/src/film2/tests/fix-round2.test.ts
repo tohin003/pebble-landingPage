@@ -7,7 +7,7 @@ import type { Finding } from "../qa/checks";
 import { cascadeSchedule, swapLook } from "../type/Cascade";
 import { BODY } from "../../../../shared/pebble";
 import { demoPlans } from "../setpieces/demo/plans";
-import { CONTENT_FLOOR_PX, READ_AFTER_CUT_60, contentFloor, cutsReadable, slotLabels, sway, typeOverPlanes, typeOverType, typeTracks } from "../setpieces/qa";
+import { CONTENT_FLOOR_PX, READ_AFTER_CUT_60, contentFloor, cutsReadable, slotLabels, sway, typeExitKind, typeExits, typeOverPlanes, typeOverType, typeTracks } from "../setpieces/qa";
 import { contentMotion } from "../setpieces/motion-qa";
 import { LABEL_FADE_FRAMES, drawnSlots, labelClear, labelOpacityOn } from "../setpieces/labels";
 import { carriedRect, planesClearFrame } from "../setpieces/kit";
@@ -209,6 +209,35 @@ describe("type never sits on type", () => {
     const label = p.types.find((t) => t.id === "L22")!;
     const moved: ScenePlan = { ...p, types: p.types.map((t) => (t.id === "L21" ? { ...t, box: { ...t.box, top: label.box.top } } : t)) };
     expect(errorsOf(typeOverType(moved)).length).toBeGreaterThan(0);
+  });
+});
+
+/* ---------------------------------------------------------------- type leaves the way it came ------------------- */
+
+describe("type leaves the way it came: a rise through a mask lifts out through it, a blur-in blurs out", () => {
+  test("every line in every piece and aspect leaves with its entrance's own kind", () => {
+    for (const a of ASPECTS) for (const { plan } of demoPlans(a)) expect(errorsOf(typeExitKind(plan)).map((f) => `${a} ${plan.id}: ${f.message}`)).toEqual([]);
+  });
+  test("the lines that rose and blurred away (round 2 as the verifier saw it) are lifts now, gone before their cuts", () => {
+    for (const a of ASPECTS) {
+      const lines = [...piece(a, "drop").types.filter((t) => t.id === "L05" || t.id === "L06"), piece(a, "ring4").types.find((t) => t.id === "ring4-chapter")!, piece(a, "climax").types.find((t) => t.id === "L24")!];
+      const fixed = piece(a, "ring4").shots.find((s) => s.cascade)!.cascade!.fixed;
+      for (const t of [...lines, fixed]) expect(`${a} ${t.id} ${t.exit}`).toBe(`${a} ${t.id} lift`);
+      for (const p of [piece(a, "ring4"), piece(a, "climax")]) expect(errorsOf(typeExits(p)).map((f) => `${a} ${f.message}`)).toEqual([]);
+    }
+  });
+  test("the canary: a rise that blurs out, and a blur-in that lifts out, are refused; a line carried by its world is not judged", () => {
+    const p = piece("16:9", "climax");
+    const blurred: ScenePlan = { ...p, types: p.types.map((t) => (t.id === "L24" ? { ...t, exit: "blur" as const } : t)) };
+    expect(errorsOf(typeExitKind(blurred)).map((f) => f.message).join()).toMatch(/L24 .* lineRise .* blur/);
+    const lifted: ScenePlan = { ...p, types: p.types.map((t) => (t.id === "L25" ? { ...t, exit: "lift" as const } : t)) };
+    expect(errorsOf(typeExitKind(lifted)).map((f) => f.message).join()).toMatch(/L25 .* lineBlur .* lift/);
+    const ring = piece("9:16", "ring4");
+    const fixedBlur: ScenePlan = { ...ring, shots: ring.shots.map((s) => (s.cascade ? { ...s, cascade: { ...s.cascade, fixed: { ...s.cascade.fixed, exit: "blur" as const } } } : s)) };
+    expect(errorsOf(typeExitKind(fixedBlur)).map((f) => f.message).join()).toMatch(/ring4-fixed/);
+    // the Veil's label blurs in and leaves with the render's world ("camera"): not this check's
+    expect(piece("16:9", "dusk").types.find((t) => t.id === "L22")!.exit).toBe("camera");
+    expect(errorsOf(typeExitKind(piece("16:9", "dusk")))).toEqual([]);
   });
 });
 

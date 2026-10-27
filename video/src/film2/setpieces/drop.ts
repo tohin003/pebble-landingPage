@@ -31,7 +31,7 @@ import { apertureRect } from "../carrier/apertureMath";
 import type { LightCue } from "../light/grades";
 import { typeSizePx } from "../type/scale";
 import { place, type MusicGrid } from "./music";
-import { breakLines, cornerSpeedOf, exitFramesOf, fitPose, frameBox, glideLz, lineHeightOf, lineRect, unionRect, zoomAbout, type FrameBox, type TypeBox } from "./frame";
+import { breakLines, cornerSpeedOf, exitFramesOf, exitPlanOf, fitPose, frameBox, glideLz, lineHeightOf, lineRect, unionRect, zoomAbout, type FrameBox, type TypeBox } from "./frame";
 import { SLOT, STILL } from "./standins";
 import { TAKE_RS9, eventFrame, solveInPoint, type TakeManifest } from "./take";
 import { STONE_R, STONE_SIZE, WORLD, worldRects } from "./world";
@@ -276,8 +276,10 @@ export function planDrop(o: DropOptions): ScenePlan {
   const boxP: TypeBox = { left: pos.left, top: pos.top, align: "left" };
   const boxL: TypeBox = { left: pos.left, top: pos.top + nP * lhE + gap, align: "left" };
   const types: TypeSpec[] = [];
-  const specP: TypeSpec = { id: "L05", text: promise, tier: "expressive", at: 0, sizeT: L.sizeT, box: boxP, kind: "film", key: true, pairWith: "L06" };
-  const specL: TypeSpec = { id: "L06", text: limit, tier: "expressive", at: 0, sizeT: L.sizeT, box: boxL, kind: "film", key: true };
+  // (they rose through their masks, so they leave through them: a lift, the block's lines one after another from the top,
+  // as they came; fix round 2: they blurred away)
+  const specP: TypeSpec = { id: "L05", text: promise, tier: "expressive", at: 0, sizeT: L.sizeT, box: boxP, kind: "film", key: true, pairWith: "L06", exit: "lift" };
+  const specL: TypeSpec = { id: "L06", text: limit, tier: "expressive", at: 0, sizeT: L.sizeT, box: boxL, kind: "film", key: true, exit: "lift" };
   const rectP = lineRect(promise, "expressive", f, boxP, L.sizeT);
   const rectL = lineRect(limit, "expressive", f, boxL, L.sizeT);
   // each line is read only once the burst (and its echoes) has left its rect and the bands have cleared; on a beat
@@ -294,10 +296,11 @@ export function planDrop(o: DropOptions): ScenePlan {
   // 4.8 and 4.3 s would keep them on screen while the reveal ring passes, and a ring never crosses a line being read
   const exitAt = Math.max(specP.at + sec(3.6, fps), specL.at + sec(3.0, fps), al.linesExit ?? 0);
   specP.exitAt = exitAt;
-  specL.exitAt = exitAt;
+  // (L06 lifts as the promise's last line has started to: the wave runs down the block)
+  specL.exitAt = exitAt + nP * exitPlanOf("lineRise", "lift", promise, fps).stagger;
   if (exitAt > built.revealStart) built = buildCam(exitAt);
   const { cam, revealStart, revealEnd, meanLz } = built;
-  const linesGone = exitAt + Math.max(exitFramesOf("lineRise", "blur", promise, fps), exitFramesOf("lineRise", "blur", limit, fps));
+  const linesGone = Math.max(exitAt + exitFramesOf("lineRise", "lift", promise, fps), specL.exitAt + exitFramesOf("lineRise", "lift", limit, fps));
   types.push(specP, specL);
 
   // the lead-in (S05's L04) in a band on the night green, gone before the bands move on the hit

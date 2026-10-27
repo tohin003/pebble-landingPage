@@ -1067,6 +1067,27 @@ export function typeExits(p: ScenePlan): Finding[] {
 }
 
 /**
+ * Type leaves the way it came (TREATMENT §5.2: an exit is its entrance's own kind, 40–50 % shorter): a line that rose
+ * through a mask (lineRise, wordRise) leaves through it with a lift, a line that blurred in leaves with a blur, a line
+ * set in the world leaves with its world ("camera", judged by typeExits) and a cascade's items swap. Fix round 2: the
+ * Drop's pair, the chapter lines, the cascade's fixed line and "Its own tools." rose through their masks and blurred
+ * away, two motions in one line.
+ */
+export function typeExitKind(p: ScenePlan): Finding[] {
+  const out: Finding[] = [];
+  const judge = (t: TypeSpec) => {
+    const exit = t.exit ?? "blur";
+    if (t.exitAt === undefined || exit === "camera") return;
+    const ent = t.entrance ?? defaultEntranceOf(t.tier);
+    const want = ent === "lineRise" || ent === "wordRise" ? "lift" : "blur";
+    if (exit !== want) out.push({ check: "typeExitKind", level: "error", message: `${t.id} "${t.text.replace(/\n/g, " ").slice(0, 40)}" enters with a ${ent} and leaves with a ${exit}: a line leaves the way it came (a ${want})`, frame: t.exitAt });
+  };
+  for (const t of p.types) judge(t);
+  for (const s of p.shots) if (s.cascade) judge(s.cascade.fixed);
+  return out;
+}
+
+/**
  * Type never sits on type (fix round 2: in 1:1 the Veil's label, set under the render, ran into the honest line's band
  * as the camera pushed in): two lines drawn on the same frame never overlap, a line set in the world where its world
  * carries it. A cascade's items share one stage by design (they swap in place) and are not judged against each other.
@@ -1480,7 +1501,7 @@ export function sway(p: ScenePlan, step = 2): Finding[] {
 }
 
 /** The checks added in fix round 2, by name (the verifier's findings after fix round 1). */
-export const ROUND2_CHECKS = ["contentFloor", "sway", "cutsReadable", "slotLabels", "typeOverType"] as const;
+export const ROUND2_CHECKS = ["contentFloor", "sway", "cutsReadable", "slotLabels", "typeOverType", "typeExitKind"] as const;
 
 /** The checks added after the craft review, by name (CR-15). */
 export const REVIEW_CHECKS = ["cameraFloor", "irisEase", "groundCoverage", "stoneCount", "planesInFrame", "legibleWords", "hitSync", "smallPrintHolds", "askActClock", "typeExits"] as const;
@@ -1518,6 +1539,7 @@ export function checkPlan(p: ScenePlan, grid?: MusicGrid, extraMoves: readonly Q
     ...sway(p),
     ...cutsReadable(p),
     ...typeOverType(p),
+    ...typeExitKind(p),
     // the Return (OVERRIDES §61 R2: returnSchedule, returnWindows, returnContent, returnMerge, returnRadius, cellText,
     // blinkPlaced, joinPose; setpieces/returnChecks.ts)
     ...returnChecks(p),
