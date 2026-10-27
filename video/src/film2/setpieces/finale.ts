@@ -24,19 +24,23 @@
 //              the film's last breath, the room tone after the music's decay, settles to a still (a declared wait)
 //   The track's real ending decays across page 2; the piece ends 0.5–1 s of room tone after the decay (never a fade).
 // It works for any title downbeat: the convergence and the iris are placed back from `hit`.
+// `head` replaces the convergence with another shot before the iris (OVERRIDES §61: the Return, setpieces/returnPlan.ts),
+// which lands its stone on the title stone's pose and velocity on `landAt`; the convergence stays the default until the
+// film's sequence switches to the Return.
 // Pure data.
 import { f60, sec } from "../tokens";
 import { VelocityCamera, worldToFrame, type CamVel, type Pose } from "../motion/camera";
 import type { Point } from "../motion/geometry";
 import type { RingSpec } from "../carrier/ring";
-import type { LightCue } from "../light/grades";
+import type { Grade, GradeName, LightCue } from "../light/grades";
+import type { QaMove } from "../qa/checks";
 import { approxLineWidth, typeSizePx } from "../type/scale";
 import { STEALTH_HONEST } from "../../../../shared/pebble/stealthVeil";
 import { place, type MusicGrid } from "./music";
 import { breakLines, enterFramesOf, exitFramesOf, frameBox, glideLz, lineHeightOf, type FrameBox, type TypeBox } from "./frame";
 import { TITLE_CUES, WALL_CUES } from "./pieces.cues";
 import { anchored, musicHit } from "./kit";
-import { move, type MusicHit, type ScenePlan, type TypeSpec } from "./scene";
+import { move, type MusicHit, type ScenePlan, type ShotSpec, type StoneSpec, type TypeSpec } from "./scene";
 import { WALL_GEOMETRY, wallCells, wallFramings, type WallSpec } from "./wall";
 import { SAGE_SWEEP } from "./sweep";
 
@@ -89,6 +93,39 @@ export interface FinaleOptions {
   wallElapsed?: number;
   /** one timeline for every aspect (setpieces/align.ts) */
   align?: Partial<FinaleTiming>;
+  /**
+   * the shot before the iris, in place of the convergence (OVERRIDES §61: the Return replaces the wall and the
+   * convergence; setpieces/returnPlan.ts): given where the title's stone is on `landAt`, it returns its shot [0, irisAt),
+   * which must land its stone there with the page's velocity, and its light, music and moves
+   */
+  head?: (ctx: FinaleHeadContext) => FinaleHead;
+}
+
+/** What a head is given: the title's camera and where the title's stone is on `landAt` (CR-01: one stone through the iris). */
+export interface FinaleHeadContext {
+  f: FrameBox;
+  fps: number;
+  hit: number;
+  irisAt: number;
+  irisF: number;
+  landAt: number;
+  /** the title's camera, local to the title shot (0 = irisAt): a pure zoom about the frame's centre at `lzPage` */
+  camT: VelocityCamera;
+  lzPage: number;
+  /** the title stone on `landAt`: its centre and its drawn size, frame px */
+  titleStone: Point;
+  titleStonePx: number;
+}
+
+/** A head's shot and what goes with it; `stone` is given to the title's stone too, so one stone runs through the iris. */
+export interface FinaleHead {
+  shot: ShotSpec;
+  lightInitial?: GradeName | Grade;
+  lightCues?: readonly LightCue[];
+  music?: readonly MusicHit[];
+  moves?: readonly QaMove[];
+  extra?: Record<string, unknown>;
+  stone?: Pick<StoneSpec, "clockOffset" | "layer">;
 }
 
 /** The frames the finale's timeline is made of (the same in every aspect once aligned). */
@@ -168,7 +205,7 @@ export function planFinale(o: FinaleOptions): ScenePlan {
   const convergeEnd = irisAt + f60(12, fps); // the last cells reach the stone as the iris opens
   const convergeFrames = Math.min(f60(150, fps), Math.max(f60(90, fps), convergeEnd - f60(10, fps)));
   const convergeAt = convergeEnd - convergeFrames;
-  if (convergeAt < 0) throw new Error(`the finale needs ${-convergeAt} more frames before the title's downbeat (hit ${hit})`);
+  if (convergeAt < 0 && !o.head) throw new Error(`the finale needs ${-convergeAt} more frames before the title's downbeat (hit ${hit})`);
 
   /* ------------------------------------------------ the title (layout at its page's anchor) -------------------- */
   const stonePx = L.stonePx * unit;
@@ -266,46 +303,61 @@ export function planFinale(o: FinaleOptions): ScenePlan {
   for (const t of page2Types) t.carry = { shot: "title", at: anchor2 };
   types.push(...page1, ...page2Types);
 
-  /* ------------------------------------------------ the convergence --------------------------------------------- */
-  const centre = o.centre ?? { x: 0, y: 0 };
-  const cells = wallCells();
-  const wall: WallSpec = { centre, cells, radii: WALL_GEOMETRY.radii, orbit: WALL_GEOMETRY.orbit, depth: WALL_GEOMETRY.depth, converge: { at: convergeAt, frames: convergeFrames, turnDeg: 50 }, t0: o.wallElapsed ?? 0 };
-  const { far } = wallFramings(f, centre);
-  // the camera keeps the wall's drift until the cells turn inward, pushes in with them, and lands the world's stone
-  // exactly where, as large as and moving as the title's stone is on `landAt` (a match through the iris): the title's
-  // camera is a pure zoom about the frame's centre, so the convergence's holds its x, y and moves its log zoom alike
+  /* ------------------------------------------------ the convergence, or the head that replaces it -------------- */
+  // the world's stone lands exactly where, as large as and moving as the title's stone is on `landAt` (a match through
+  // the iris): the title's camera is a pure zoom about the frame's centre, so the world's camera holds its x, y there and
+  // moves its log zoom alike
   const tPose = camT.pose(landAt - irisAt);
   const titleStone = worldToFrame(stoneAt, tPose, f.w, f.h);
-  const zLand = ((L.stonePx * unit) / 148) * tPose.zoom;
-  const pushTo: Pose = { x: centre.x - (titleStone.x - f.w / 2) / zLand, y: centre.y - (titleStone.y - f.h / 2) / zLand, zoom: zLand };
-  const wallDrift: CamVel = o.entry?.vel ?? { x: 0, y: 0, lz: -lzHold };
-  const camC = new VelocityCamera(o.entry?.pose ?? far, wallDrift);
-  camC.glide(convergeAt, f60(40, fps), wallDrift);
-  camC.hermite(convergeAt + Math.round(convergeFrames * 0.2), { ...far, zoom: far.zoom * 1.04, x: centre.x, y: centre.y }, { lz: 0.0036 });
-  camC.hermite(landAt, pushTo, { x: 0, y: 0, lz: lzPage });
-  // then exactly the title's own glide, through the iris (the two cameras then show one stone on every frame)
-  camC.glide(irisAt, 1e9, { lz: lzPage });
-  const ring: RingSpec = {
-    id: "converge",
-    start: convergeAt,
-    source: centre,
-    stoneRadius: 44,
-    phases: [
-      { kind: "appear", frames: f60(14, fps), radius: WALL_GEOMETRY.radii[2] + 260 },
-      { kind: "return", frames: convergeFrames - f60(14, fps) },
-    ],
-    echoes: 2,
-    echoGap: f60(8, fps),
-    echoFade: 0.6,
-    echoMode: "all",
-    ripple: false,
-    layer: "ground",
+  const convergence = (): FinaleHead => {
+    const centre = o.centre ?? { x: 0, y: 0 };
+    const cells = wallCells();
+    const wall: WallSpec = { centre, cells, radii: WALL_GEOMETRY.radii, orbit: WALL_GEOMETRY.orbit, depth: WALL_GEOMETRY.depth, converge: { at: convergeAt, frames: convergeFrames, turnDeg: 50 }, t0: o.wallElapsed ?? 0 };
+    const { far } = wallFramings(f, centre);
+    // the camera keeps the wall's drift until the cells turn inward, pushes in with them, and lands the world's stone
+    const zLand = ((L.stonePx * unit) / 148) * tPose.zoom;
+    const pushTo: Pose = { x: centre.x - (titleStone.x - f.w / 2) / zLand, y: centre.y - (titleStone.y - f.h / 2) / zLand, zoom: zLand };
+    const wallDrift: CamVel = o.entry?.vel ?? { x: 0, y: 0, lz: -lzHold };
+    const camC = new VelocityCamera(o.entry?.pose ?? far, wallDrift);
+    camC.glide(convergeAt, f60(40, fps), wallDrift);
+    camC.hermite(convergeAt + Math.round(convergeFrames * 0.2), { ...far, zoom: far.zoom * 1.04, x: centre.x, y: centre.y }, { lz: 0.0036 });
+    camC.hermite(landAt, pushTo, { x: 0, y: 0, lz: lzPage });
+    // then exactly the title's own glide, through the iris (the two cameras then show one stone on every frame)
+    camC.glide(irisAt, 1e9, { lz: lzPage });
+    const ring: RingSpec = {
+      id: "converge",
+      start: convergeAt,
+      source: centre,
+      stoneRadius: 44,
+      phases: [
+        { kind: "appear", frames: f60(14, fps), radius: WALL_GEOMETRY.radii[2] + 260 },
+        { kind: "return", frames: convergeFrames - f60(14, fps) },
+      ],
+      echoes: 2,
+      echoGap: f60(8, fps),
+      echoFade: 0.6,
+      echoMode: "all",
+      ripple: false,
+      layer: "ground",
+    };
+    const lightCues: LightCue[] = [{ at: convergeAt + Math.round(convergeFrames * 0.4), to: "page", frames: Math.max(f60(60, fps), irisEnd - (convergeAt + Math.round(convergeFrames * 0.4))) }];
+    return {
+      shot: { id: "converge", from: 0, to: irisAt, kind: "cutscene", camera: camC, ref: o.entry?.ref ?? o.entry?.pose ?? far, ground: "riverbed", planes: [], wall, stone: { at: centre, r: 44, size: 148, cues: anchored(WALL_CUES, 0, "the convergence's cues") }, rings: [ring], dofScale: 8 },
+      lightInitial: "evening",
+      lightCues,
+      moves: [
+        move("ring", convergeAt, convergeFrames > f60(90, fps) ? f60(90, fps) : convergeFrames, "the convergence: the rings return to the stone"),
+        move("light", lightCues[0]!.at, lightCues[0]!.frames, "evening to the page"),
+      ],
+      extra: { convergeAt, convergeFrames },
+    };
   };
+  const first = o.head ? o.head({ f, fps, hit, irisAt, irisF, landAt, camT, lzPage, titleStone, titleStonePx: stonePx * tPose.zoom }) : convergence();
+  if (first.shot.from !== 0 || first.shot.to !== irisAt) throw new Error(`the finale's first shot must run [0, ${irisAt}) (it runs [${first.shot.from}, ${first.shot.to}))`);
+  music.push(...(first.music ?? []));
 
-  /* ------------------------------------------------ light ------------------------------------------------------- */
-  const lightCues: LightCue[] = [{ at: convergeAt + Math.round(convergeFrames * 0.4), to: "page", frames: Math.max(f60(60, fps), irisEnd - (convergeAt + Math.round(convergeFrames * 0.4))) }];
-  // the stone on the page (world = frame px on the anchor): its size and its cues
-  const stonePage = { at: stoneAt, r: stonePx * 0.3, size: stonePx, cues: anchored(TITLE_CUES, 0, "the title's cues") };
+  // the stone on the page (world = frame px on the anchor): its size and its cues, on the head's clock and layer
+  const stonePage = { at: stoneAt, r: stonePx * 0.3, size: stonePx, cues: anchored(TITLE_CUES, 0, "the title's cues"), ...(first.stone ?? {}) };
   const sweepT = types.find((t) => t.sweep)!;
 
   return {
@@ -316,7 +368,7 @@ export function planFinale(o: FinaleOptions): ScenePlan {
     fps,
     duration: end,
     shots: [
-      { id: "converge", from: 0, to: irisAt, kind: "cutscene", camera: camC, ref: o.entry?.ref ?? o.entry?.pose ?? far, ground: "riverbed", planes: [], wall, stone: { at: centre, r: 44, size: 148, cues: anchored(WALL_CUES, 0, "the convergence's cues") }, rings: [ring], dofScale: 8 },
+      first.shot,
       // the page glides to the film's last breath (OVERRIDES §58), the room tone after the decay: the one declared still
       { id: "title", from: irisAt, to: end, kind: "title", camera: camT, ref: pageRef, ground: "page", planes: [], stone: stonePage, rings: [], waits: [{ from: breathFrom, to: end }] },
     ],
@@ -325,7 +377,7 @@ export function planFinale(o: FinaleOptions): ScenePlan {
         at: irisAt,
         kind: "ring",
         frames: irisF,
-        out: "converge",
+        out: first.shot.id,
         in: "title",
         presentation: "iris",
         // an iris between places: E-move (lead ruling §52); PieceView draws exactly this ease
@@ -336,22 +388,18 @@ export function planFinale(o: FinaleOptions): ScenePlan {
       },
     ],
     types,
-    lightInitial: "evening",
-    lightCues,
+    lightInitial: first.lightInitial ?? "evening",
+    lightCues: [...(first.lightCues ?? [])],
     leaks: [],
     hits: [hit],
     takes: [],
     music,
     // the end card is the film's last frame: its type may stay to the end (anywhere else that would vanish on a cut)
     endsFilm: true,
-    moves: [
-      move("ring", convergeAt, convergeFrames > f60(90, fps) ? f60(90, fps) : convergeFrames, "the convergence: the rings return to the stone"),
-      move("light", lightCues[0]!.at, lightCues[0]!.frames, "evening to the page"),
-    ],
+    moves: [...(first.moves ?? [])],
     extra: {
       timing: { factsLand, page2, end } satisfies FinaleTiming,
-      convergeAt,
-      convergeFrames,
+      ...(first.extra ?? {}),
       irisAt,
       irisEnd,
       landAt,

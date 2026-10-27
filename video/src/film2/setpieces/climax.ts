@@ -11,7 +11,9 @@
 //        landing, pushes in until the card reads at ≥ 28 px, and keeps gliding across the whole hold (CR-04: it froze
 //        for 6.2 s on the card: the peak was the reel's most static frame); "Kept on its own only after an independent
 //        check." (L25) lands on a beat beside it and holds 6.5 s. Nothing inside the take is cut or sped up.
-//   end  on a bar line, leaving on an E-leave into the next piece's cut.
+//   end  on a bar line, leaving on an E-leave into the next piece's cut; or, into the Return (`into: "return"`), on the
+//        middle of a bar, still on the hold's glide: S24's last frame becomes the Return's first cell and the Return's
+//        pull-back continues its motion (MONTAGE_DESIGN §2.12; setpieces/returnPlan.ts, joinPose).
 // PLACEHOLDERS: the Workshop's cards and conversations were never published (1.7.0), so they are labelled slots at the
 // 2.0.0 cards' sizes (CR-05: the 1.0.x approval and command cards stood in with 82 and 78 legible words).
 // Pure data.
@@ -20,7 +22,7 @@ import { VelocityCamera, arriveWithMomentum, type CamVel, type Pose } from "../m
 import { momentumCut } from "../transitions/momentum";
 import type { Rect, Vec } from "../motion/geometry";
 import type { Grade, GradeName, LightCue } from "../light/grades";
-import { place, prevPoint, type MusicGrid } from "./music";
+import { halfBars, place, prevPoint, type MusicGrid } from "./music";
 import { breakLines, fitPose, frameBox, glideLz, holdGlide, rectInFrame, type FrameBox, type TypeBox } from "./frame";
 import { SLOT } from "./standins";
 import { TAKE_HSG, TAKE_RSW, eventFrame, solveInPoint, type TakeManifest, type TakeUse } from "./take";
@@ -51,6 +53,8 @@ export interface ClimaxOptions {
   cutIn?: { vScreen: Vec; grade?: GradeName | Grade };
   /** continue a camera instead (the same world) */
   entry?: { pose: Pose; vel: CamVel };
+  /** "cut" (default): an E-leave into the next piece's cut; "return": end on the hold's glide, into the Return */
+  into?: "cut" | "return";
 }
 
 /** The climax's world: "Glaze" and "Kiln", east of it (the cut travels east). PLACEHOLDERS: slots. */
@@ -169,9 +173,13 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
   music.push(musicHit("\"Kept on its own only after an independent check.\" lands", landK));
   // the card is read once the push-in has reached reading size (12 words: 4.1 s), and the check line held 6.5 s
   const readEnd = Math.max(check.at + landFrames(check, fps) + sec(6.5, fps), cut + pushTo + sec(4.1, fps));
-  const endP = place(readEnd + leaveF + f60(12, fps), g, { level: "bar", maxWait: sec(2.2, fps) });
-  const end = endP.point ?? readEnd + leaveF + f60(12, fps);
-  music.push(musicHit("the climax ends (the convergence)", endP));
+  const minEnd = readEnd + leaveF + f60(12, fps);
+  const toReturn = o.into === "return";
+  // into the Return: on the middle of a bar, so the Return's release (R0, half a bar later) lands on the next downbeat
+  const mid = toReturn && g ? halfBars(g).find((x) => x >= minEnd && !g.downbeats.includes(x)) : undefined;
+  const endP = toReturn ? (mid !== undefined ? { at: mid, point: mid, level: "half" as const, waited: mid - minEnd } : { at: minEnd, point: null, level: null, waited: 0 }) : place(minEnd, g, { level: "bar", maxWait: sec(2.2, fps) });
+  const end = endP.point ?? minEnd;
+  music.push(musicHit(toReturn ? "the climax ends: S24's last frame becomes the Return's first cell" : "the climax ends (the convergence)", endP));
   const exitStart = end - 1 - leaveF;
   check.exitAt = exitStart;
   types.push(chapter, check);
@@ -197,8 +205,11 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
   // the push-in for reading, carrying the pan; then the hold's own glide to the E-leave: the push never stops (CR-04)
   camB.hermite(pushTo, holdFrom, vHold);
   camB.glide(exitStart - cut, f60(30, fps), vHold);
-  const pEnd = camB.pose(exitStart - cut);
-  camB.ease(end - cut - 1, { x: pEnd.x - ((L.travel.x / tl) * 118 * f.unit) / pEnd.zoom, y: pEnd.y - ((L.travel.y / tl) * 118 * f.unit) / pEnd.zoom, zoom: pEnd.zoom * Math.exp(vHold.lz * leaveF) }, "E-leave");
+  if (toReturn) camB.glide(end - cut, f60(30, fps), vHold);
+  else {
+    const pEnd = camB.pose(exitStart - cut);
+    camB.ease(end - cut - 1, { x: pEnd.x - ((L.travel.x / tl) * 118 * f.unit) / pEnd.zoom, y: pEnd.y - ((L.travel.y / tl) * 118 * f.unit) / pEnd.zoom, zoom: pEnd.zoom * Math.exp(vHold.lz * leaveF) }, "E-leave");
+  }
 
   const use = solveInPoint(take, "cardLands", peak, cut, end, fps);
   const happyAt = eventFrame(use, "happy", fps);
@@ -245,6 +256,6 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
       move("light", 0, sec(4.6, fps), "dusk to evening"),
     ],
     exit: { pose: camB.pose(end - cut), vel: camB.sample(end - cut).vel, shot: "kiln", ref: landPose, grade: "evening" },
-    extra: { cut, peak, happyAt, cardLands: eventFrame(use, "cardLands", fps), pushFrom: pushFrom + cut, pushTo: pushTo + cut, end, readZoom: keptRead.zoom, holdKind: "pan", keptOnScreen: rectInFrame(KEPT, keptRead, f) },
+    extra: { cut, peak, happyAt, cardLands: eventFrame(use, "cardLands", fps), pushFrom: pushFrom + cut, pushTo: pushTo + cut, end, readZoom: keptRead.zoom, holdKind: "pan", keptOnScreen: rectInFrame(KEPT, keptRead, f), into: toReturn ? "return" : "cut" },
   };
 }

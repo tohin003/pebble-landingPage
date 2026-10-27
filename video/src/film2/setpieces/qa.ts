@@ -23,6 +23,9 @@
 //   slotLabels       a frame of slots always shows a slot's label whole, and a slot being read shows its own
 //                    (PLACEHOLDERS: each slot names what it stands for; the Dusk's palette and workspace had theirs
 //                    outside the frame in 1:1 and 9:16)
+// Added for the Return (OVERRIDES §61 R2; setpieces/returnChecks.ts, each with a canary in tests/return.test.ts):
+//   returnSchedule, returnWindows, returnContent, returnMerge, returnRadius, cellText, blinkPlaced, joinPose; and the
+//   Return's span exempt from cutRate, holds and readingLoad there only (exemptReturnSpan)
 // Pure; no React. setpieces/tests run checkPlan() on every piece, every aspect and many music grids.
 import { CAMERA, COLOR } from "../tokens";
 import { checkAll, type Finding, type QaMove, type Report } from "../qa/checks";
@@ -47,6 +50,7 @@ import { shotOf, type PlaneSpec, type ScenePlan, type ShotSpec, type TypeSpec } 
 import { contentMotion, planeOpacityAt, probeGrid } from "./motion-qa";
 import { drawnSlots, labelOpacityOn, labelRectOn, visibleFrameOn, type DrawnSlot } from "./labels";
 import { apertureRect } from "../carrier/apertureMath";
+import { exemptReturnSpan, returnChecks } from "./returnChecks";
 
 const at = (p: ScenePlan, s: ShotSpec, fr: number) => s.camera.pose(fr - s.from);
 
@@ -75,8 +79,8 @@ const activityOf = (p: ScenePlan, s: ShotSpec) => (fr: number): boolean => {
     }
   }
   if (s.stone?.veil?.some((v) => fr >= v.at * p.fps && fr < (v.at + 1.3) * p.fps)) return true;
-  // the wall's cells orbit on every frame (and, in the film, play their loops at 1×)
-  if (s.wall) return true;
+  // the wall's cells orbit on every frame (and, in the film, play their loops at 1×); so do the Return's
+  if (s.wall || s.returnField) return true;
   return false;
 };
 
@@ -1483,7 +1487,9 @@ export const REVIEW_CHECKS = ["cameraFloor", "irisEase", "groundCoverage", "ston
 
 /** Every check: the foundation's, then the set pieces'. */
 export function checkPlan(p: ScenePlan, grid?: MusicGrid, extraMoves: readonly QaMove[] = []): Report {
-  const r = checkAll(planQa(p), [...p.moves, ...extraMoves]);
+  // the Return's span is a montage act (lead ruling R2): exempt from cutRate, holds and readingLoad there only
+  const qa = planQa(p);
+  const r = exemptReturnSpan(p, qa, checkAll(qa, [...p.moves, ...extraMoves]));
   const more = [
     ...bandContrast(p),
     ...takes(p),
@@ -1512,6 +1518,9 @@ export function checkPlan(p: ScenePlan, grid?: MusicGrid, extraMoves: readonly Q
     ...sway(p),
     ...cutsReadable(p),
     ...typeOverType(p),
+    // the Return (OVERRIDES §61 R2: returnSchedule, returnWindows, returnContent, returnMerge, returnRadius, cellText,
+    // blinkPlaced, joinPose; setpieces/returnChecks.ts)
+    ...returnChecks(p),
   ];
   const errors = [...r.errors, ...more.filter((x) => x.level === "error")];
   return {

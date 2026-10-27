@@ -20,6 +20,7 @@ import type { TakeUse } from "./take";
 import type { FrameBox, TypeBox } from "./frame";
 import type { MusicalLevel } from "./music";
 import type { WallSpec } from "./wall";
+import type { ReturnField } from "./returnField";
 
 /* ---------------------------------------------------------------- planes ------------------------------------- */
 
@@ -141,6 +142,19 @@ export interface StoneSpec {
   cues: readonly PebbleCue[];
   /** the Veil (Stealth Lockdown's look) switches, seconds of local time: the Dusk passage's render only */
   veil?: readonly { at: number; on: boolean }[];
+  /**
+   * the engine's clock: its time is (the piece's local frame + clockOffset) ÷ fps (default 0, the piece's own clock), and
+   * the cues shift with it. A stone's idle blinks are the engine's own, on a fixed schedule of that time, so the offset
+   * chooses which of them falls where (setpieces/blink.ts: 710 puts one on the Return's R646). Shots of one piece that
+   * show one stone give it one offset, so its clock runs on through an iris
+   */
+  clockOffset?: number;
+  /**
+   * "world" (default): drawn in its shot, under that shot's transition mask. "film": ONE stone above the shots of a
+   * transition (CR-01): where the outgoing and the incoming shot both show a "film" stone at one pose (stoneCount), it is
+   * drawn once, above the iris, so its edge never slices it and the two never double
+   */
+  layer?: "world" | "film";
 }
 
 /* ---------------------------------------------------------------- shots, seams and the plan -------------------- */
@@ -177,6 +191,8 @@ export interface ShotSpec {
   cascade?: CascadeSpec;
   /** the wall's cells on their rings (setpieces/wall.ts), orbiting, and converging into the stone */
   wall?: WallSpec;
+  /** the Return's field (setpieces/returnField.ts): its cells on three rings, their swaps, their returns into the stone */
+  returnField?: ReturnField;
 }
 
 /** A music event: which grid point an event landed on (null without a grid), and how long it waited for it. */
