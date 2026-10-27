@@ -1,7 +1,9 @@
 // The Return (MONTAGE_DESIGN revision 2; OVERRIDES §61): its data, plan and checks. Every Return check is proved on a
-// planted canary that FAILS on the bad case the design names, and passes the Return as planned in all three aspects;
-// cameraFloor, stoneCount and groundCoverage are shown to cover the Return's shot; R2's exemption from cutRate, holds and
-// readingLoad is shown to hold inside the Return's span only.
+// planted canary that FAILS on the bad case the design names, and passes the Return as planned in all three aspects
+// (one named case is caught elsewhere: the bloom run at twice its speed fails returnSchedule's 30-px travel limit, while
+// returnWindows' model gives it IRIS's warning level only, as it gives the design's own bloom in 16:9); cameraFloor,
+// stoneCount and groundCoverage are shown to cover the Return's shot; R2's exemption from cutRate, holds and readingLoad
+// is shown to hold inside the Return's span only; and the post-credit scene (D157) plans after the Return's end card.
 import { describe, expect, test } from "bun:test";
 import { VelocityCamera } from "../motion/camera";
 import { E_MOVE } from "../motion/ease";
@@ -12,6 +14,8 @@ import { STRETCH, demoGrid } from "../setpieces/demo/grids";
 import { halfBars } from "../setpieces/music";
 import { alignAspects, timelineDiffs } from "../setpieces/align";
 import type { FinaleTiming } from "../setpieces/finale";
+import { CODA_GRID, codaOf, codaPlacement, planCoda, type CodaTiming } from "../setpieces/coda";
+import { checkJoins } from "../setpieces/joins";
 import { BLINK_S, blinkStartsFor, offsetForBlink } from "../setpieces/blink";
 import { RETURN_CELLS, RETURN_WAVES, manifestProblems, refuseBadManifest, type ReturnCellSpec } from "../setpieces/returnCells";
 import { RETURN_GEOMETRY, RETURN_TIMING, buildReturnField, cellPoseAt, hairlineAt, localOfR, slotOrder, type FieldCell, type ReturnFieldOptions } from "../setpieces/returnField";
@@ -262,6 +266,18 @@ describe("the Return, planned and joined to S24, passes every check in every asp
       expect(m.maxCornerPx).toBeLessThanOrEqual(30);
       expect(m.minCornerPx1s).toBeGreaterThanOrEqual(0.25);
       expect(Object.values(m.newImagesPerHalfBar)).toEqual([0, 0, 13, 13, 17, 14, 15, 5, 0, 0, 0, 0]);
+    }
+  });
+  test("the post-credit scene (D157) follows the Return's end card as it follows the finale's: one timeline, every check, the join, its place", () => {
+    const rets = alignAspects<FinaleTiming>((a, align) => planFor(a, { align }));
+    const codas = alignAspects<CodaTiming>((a, align) => planCoda({ ...SIZE[a], fps: FPS, endCard: rets[a], align }));
+    expect(timelineDiffs(codas)).toEqual([]);
+    for (const a of ASPECTS) {
+      const x = codaOf(codas[a])!;
+      expect([x.endCard.id, x.endCard.end, x.endCard.shot]).toEqual(["return", rets[a].duration, "title"]);
+      expect(errs(checkPlan(codas[a], CODA_GRID)).map((e) => `${a} [${e.check}] ${e.message}`)).toEqual([]);
+      expect(checkJoins([rets[a], codas[a]], ["continue"]).map((f) => `${a} ${f.message}`)).toEqual([]);
+      expect(errs(codaPlacement([climaxFor(a), rets[a], codas[a]]).findings).map((f) => `${a} ${f.message}`)).toEqual([]);
     }
   });
 });
