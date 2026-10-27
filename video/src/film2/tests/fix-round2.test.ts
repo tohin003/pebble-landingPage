@@ -311,4 +311,16 @@ describe("the Veil's label leaves the frame with the render, and the cut follows
       expect(s.to - Math.max(label, body)).toBeLessThanOrEqual(3);
     }
   });
+  test("the render's body is 40–55 % of the frame's height through its hold in every aspect, and pushes in (CR-19)", () => {
+    for (const a of ASPECTS) {
+      const p = piece(a, "dusk");
+      const s = p.shots.find((x) => x.id === "dusk-veil")!;
+      const share = (fr: number) => (BODY.height * s.stone!.size * s.camera.pose(fr - s.from).zoom) / 220 / p.frame.h;
+      const mid = Math.round((s.from + s.to) / 2);
+      expect(share(s.from)).toBeGreaterThanOrEqual(0.398);
+      expect(share(mid)).toBeGreaterThanOrEqual(0.4);
+      expect(share(mid)).toBeLessThanOrEqual(0.55);
+      expect(share(mid)).toBeGreaterThan(share(s.from));
+    }
+  });
 });

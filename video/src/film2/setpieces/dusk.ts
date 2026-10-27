@@ -60,7 +60,7 @@ interface DuskLayout {
   palette: (f: FrameBox) => Rect;
   /** the Veil's centre (frame px) and the label's box beside it, given the body's half-width and half-height (px) */
   veil: (f: FrameBox) => { x: number; y: number };
-  label: (f: FrameBox, c: { x: number; y: number }, hw: number, hh: number) => TypeBox;
+  label: (f: FrameBox, c: { x: number; y: number }, hw: number, hh: number, inset?: number) => TypeBox;
   /** the way the camera carries the render and its label out of the frame (screen direction of the content): never
    * through the honest line's band */
   craneOut: { x: number; y: number };
@@ -76,7 +76,7 @@ interface DuskLayout {
  * edge is exact (CSS aligns the drawn text, whatever its advance widths), 12 px inside the body's (the rim's soft
  * edge; under half a frame at the crane's exit speed), so the render's last pixel and the label's leave together.
  */
-const labelUnder = (f: FrameBox, c: { x: number; y: number }, hw: number, hh: number): TypeBox => ({ left: c.x + hw - 12 * f.unit - f.w * 0.6, width: f.w * 0.6, top: c.y + hh + 28 * f.unit, align: "right" });
+const labelUnder = (f: FrameBox, c: { x: number; y: number }, hw: number, hh: number, inset = 12 * f.unit): TypeBox => ({ left: c.x + hw - inset - f.w * 0.6, width: f.w * 0.6, top: c.y + hh + 28 * f.unit, align: "right" });
 
 const LAYOUT: Record<FrameBox["aspect"], DuskLayout> = {
   "16:9": {
@@ -120,9 +120,10 @@ export const VEIL_ORBIT_PX = 0.36;
 
 /**
  * The Veil's drawn size (px of its 220-unit viewBox) for a frame: its body 47 % of the height (42 % in the square, where
- * its label under it must clear the honest line's band below), at most 78 % of the width (CR-19: 40–55 %).
+ * its label under it must clear the honest line's band below), at most 82 % of the width, which in the tall frame makes
+ * it 40.5 % of the height (CR-19: 40–55 %; at 78 % of the width it was 38.6 %).
  */
-export const veilSizeFor = (f: FrameBox): number => Math.min(((f.aspect === "1:1" ? 0.42 : 0.47) * f.h) / (BODY.height / 220), (0.78 * f.w) / (BODY.width / 220));
+export const veilSizeFor = (f: FrameBox): number => Math.min(((f.aspect === "1:1" ? 0.42 : 0.47) * f.h) / (BODY.height / 220), (0.82 * f.w) / (BODY.width / 220));
 
 /** The plan of the Dusk passage for one aspect. */
 export function planDusk(o: DuskOptions): ScenePlan {
@@ -209,7 +210,10 @@ export function planDusk(o: DuskOptions): ScenePlan {
   // the label: beside the render, in its world (TypeSpec.carry): it is on screen exactly as long as the render is
   const labelAt = rackAt + Math.round(rackF * 0.36);
   const labelLand = labelAt + landFrames({ text: DUSK_TEXT.label, tier: "label" }, fps);
-  const labelBox = L.label(f, vc, hw, hh);
+  // (further inside the body's edge where the push would grow it out of the safe area: the tall frame's render fills
+  // its width; set below)
+  let labelInset = 12 * f.unit;
+  let labelBox = L.label(f, vc, hw, hh, labelInset);
 
   /* ------------------------------------------------ the crane out of the render, into RS-13 --------------------- */
   const cutP = place(veilShotAt + veilShotFrames, g, { level: "bar" });
@@ -247,19 +251,35 @@ export function planDusk(o: DuskOptions): ScenePlan {
   };
   // the label is read from its landing until the crane carries it out: in the safe area all that time, while the push
   // grows it about the frame's centre (CR-19's label beside the render, never in the frame's margin)
-  const inSafeUntil = (labelR: Rect, untilLocal: number): boolean => {
+  // (how far past the safe area's left and right edges it reaches, at most, px)
+  const overflowUntil = (labelR: Rect, untilLocal: number): { left: number; right: number; outside: boolean } => {
+    const o = { left: 0, right: 0, outside: false };
     for (let fr = labelLand; fr < veilShotAt + untilLocal; fr += 3) {
       const m = carryWith(camB, veilShotAt, labelLand, fr, f.w, f.h);
-      if (!insideFrame({ x: labelR.x * m.k + m.tx, y: labelR.y * m.k + m.ty, w: labelR.w * m.k, h: labelR.h * m.k }, f, f.safe)) return false;
+      const r = { x: labelR.x * m.k + m.tx, y: labelR.y * m.k + m.ty, w: labelR.w * m.k, h: labelR.h * m.k };
+      o.left = Math.max(o.left, f.safe - r.x);
+      o.right = Math.max(o.right, r.x + r.w - (f.w - f.safe));
+      o.outside ||= !insideFrame(r, f, f.safe);
     }
-    return true;
+    return o;
   };
   let labelMaxW = A === "9:16" ? f.w - 2 * f.safe : f.w - labelBox.left - f.safe;
   let label = breakLines(DUSK_TEXT.label, "label", f, labelMaxW, 0.4);
   let crane = craneFor(lineRect(label, "label", f, labelBox, 0.4));
-  for (let i = 0; i < 8 && !inSafeUntil(lineRect(label, "label", f, labelBox, 0.4), crane.craneFrom); i++) {
-    labelMaxW *= 0.88;
-    label = breakLines(DUSK_TEXT.label, "label", f, labelMaxW, 0.4);
+  for (let i = 0; i < 8; i++) {
+    const o = overflowUntil(lineRect(label, "label", f, labelBox, 0.4), crane.craneFrom);
+    if (!o.outside) break;
+    // past the right edge: further inside the body's edge (the push grows it outward, so moving it by the overflow is
+    // enough); past the left: narrower
+    if (o.right > 0) {
+      labelInset += o.right + 2 * f.unit;
+      labelBox = L.label(f, vc, hw, hh, labelInset);
+    }
+    if (o.left > 0) {
+      labelMaxW *= 0.88;
+      label = breakLines(DUSK_TEXT.label, "label", f, labelMaxW, 0.4);
+    }
+    if (o.right <= 0 && o.left <= 0) break;
     crane = craneFor(lineRect(label, "label", f, labelBox, 0.4));
   }
   const { craneOut, craneFrom } = crane;
