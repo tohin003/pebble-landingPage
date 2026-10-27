@@ -28,6 +28,38 @@ export interface OpenFinding {
 export const OPEN_FINDINGS: readonly OpenFinding[] = [
   // ---- the foundation demo (qa/checks.ts on demo/timeline.ts): the motion foundation's own demo reel, not a set piece
   { piece: "F2-Foundation-Demo", check: "cameraFloor", cr: "CR-04", note: "S2's reading hold (371–459: its momentum cut lands on E-arrive at rest) and the title before its wait (1367–1536) glide under 0.25 px a frame; the fix is the set pieces' (a glide in, the title set in its page's world, setpieces/finale.ts), for the foundation lane's demo" },
+  // ---- fix round 2's checks on the wall and the convergence. OVERRIDES §61 (27 Oct ~12:35): the person put the montage
+  // (the Return) at the end only, and it REPLACES the wall and the convergence; CR-08, the wall's parts of CR-02 and
+  // CR-16 and CR-06's S24 → S25 pull-back close by replacement, and the fix lane no longer touches them. The Return lane
+  // takes these entries out as it replaces the two pieces (its own checks: joinPose, returnMerge, cameraFloor …)
+  {
+    piece: "wall",
+    check: "contentFloor",
+    cr: "CR-04",
+    waitsForMontage: true,
+    note: "the wall pulls back about the stone and drifts out about it, the cells orbiting at 0.8–1.6° a second: its content (the cells and the stone) moves 0.14–0.22 px a frame at its median, while the corners move 0.4 (cameraFloor passes). CR-16's wall part (a readable 4–6° a second orbit) would lift it; if the wall stays, give its drift a lateral pan too, as every other hold has",
+  },
+  {
+    piece: "wall",
+    check: "sway",
+    cr: "CR-06",
+    waitsForMontage: true,
+    note: "9:16: the climax leaves downward into the cut and the wall's pull-back about its centre turns the content back up through a stop; the join into the wall is CR-06's S24 → S25 pull-back, which waits for the montage",
+  },
+  {
+    piece: "finale",
+    check: "contentFloor",
+    cr: "CR-08",
+    waitsForMontage: true,
+    note: "the convergence's first 1.8 s keep the wall's drift about the stone (0.14–0.21 px a frame at the content's median) until the cells turn inward; its look waits for the montage (CR-08). The title and the end card are held to the corners' floor (OVERRIDES §58) and pass",
+  },
+  {
+    piece: "finale",
+    check: "sway",
+    cr: "CR-08",
+    waitsForMontage: true,
+    note: "9:16: the wall's slow drift turns into the convergence's push toward the stone through a stop; the convergence waits for the montage (CR-08)",
+  },
 ];
 
 /**

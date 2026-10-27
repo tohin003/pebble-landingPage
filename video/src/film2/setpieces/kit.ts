@@ -1,12 +1,12 @@
 // Helpers every set-piece plan shares: type events for the reading checks, anchored cues, ring geometry against the
 // frame, and the music report. Pure; no React.
-import { worldToFrame, type Pose, type VelocityCamera } from "../motion/camera";
+import { planePose, worldToFrame, type Pose, type VelocityCamera } from "../motion/camera";
 import { annulusHitsRect, radiusToCorners, type Point, type Rect } from "../motion/geometry";
 import { ringStates, type RingSpec } from "../carrier/ring";
 import { checkCues, type PebbleCue } from "../../../../shared/pebble/cues";
 import type { TextEvent } from "../type/reading";
-import { defaultEntranceOf, enterFramesOf, exitFramesOf, lineRect, type FrameBox } from "./frame";
-import type { MusicHit, ScenePlan, TypeSpec } from "./scene";
+import { defaultEntranceOf, enterFramesOf, exitFramesOf, lineRect, rectInFrame, type FrameBox } from "./frame";
+import type { MusicHit, PlaneSpec, ScenePlan, TypeSpec } from "./scene";
 import type { Placement } from "./music";
 
 /** A type spec's time on screen, as the reading checks see it. Small print is legal text, not a reading requirement. */
@@ -77,6 +77,28 @@ export function ringClearFrame(specs: readonly RingSpec[], rects: readonly Rect[
       }
     }
   }
+  return clear;
+}
+
+/**
+ * The first frame from which a line set in a fixed band can hold for `hold` frames without sitting over a capture
+ * with text (TREATMENT §5.2: "never over the UI's own text"; fix round 2, the verifier's NF-05: in 9:16 Ring 4's
+ * chapter line landed while the camera still travelled, over the companion and the Toolbox's real stills). `planes`
+ * are the world's planes; only published stills and images carry text here (slots are placeholders, noted by the
+ * checks for the 2.0.0 capture). Frames are the piece's local frames; `poseAt` is the shot's camera; `ref` its
+ * parallax ref. Returns `from` when nothing ever sits under it, `to` when no such frame exists before `to`.
+ */
+export function planesClearFrame(planes: readonly PlaneSpec[], rect: Rect, poseAt: (frame: number) => Pose, ref: Pose, f: FrameBox, from: number, to: number, hold: number): number {
+  const margin = 8 * f.unit;
+  const textPlanes = planes.filter((pl) => !pl.textless && ((pl.content.kind === "standIn" && pl.content.standIn.kind === "still" && (pl.content.standIn.words ?? 1) > 0) || pl.content.kind === "image"));
+  const over = (fr: number) =>
+    textPlanes.some((pl) => {
+      if (fr < (pl.from ?? -Infinity) || fr >= (pl.to ?? Infinity)) return false;
+      const r = rectInFrame(pl.rect, planePose(poseAt(fr), ref, pl.depth ?? 1), f);
+      return r.x < rect.x + rect.w + margin && r.x + r.w > rect.x - margin && r.y < rect.y + rect.h + margin && r.y + r.h > rect.y - margin;
+    });
+  let clear = from;
+  for (let fr = from; fr < to && fr < clear + hold; fr++) if (over(fr)) clear = fr + 1;
   return clear;
 }
 

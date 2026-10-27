@@ -25,7 +25,7 @@ export const StillImage: React.FC<{ standIn: Extract<StandIn, { kind: "still" }>
  * The label sits at the slot's `focus` (where the shot looks: the menu bar's status icons, a card inside a window),
  * and a take view's `state` names what the take shows at that moment (a placeholder's caption, never drawn UI).
  */
-export const SlotPanel: React.FC<{ slot: SlotStandIn; w: number; h: number; px: number; timecode?: string; state?: string }> = ({ slot, w, h, px, timecode, state }) => {
+export const SlotPanel: React.FC<{ slot: SlotStandIn; w: number; h: number; px: number; timecode?: string; state?: string; labelOpacity?: number }> = ({ slot, w, h, px, timecode, state, labelOpacity = 1 }) => {
   const u = 1 / Math.max(0.05, px); // world units per frame px
   // (its size and corner as the checks read them: standins.ts slotLabelLayout)
   const { fs, left, top } = slotLabelLayout(slot, w, h, px, state, timecode);
@@ -34,7 +34,7 @@ export const SlotPanel: React.FC<{ slot: SlotStandIn; w: number; h: number; px: 
   const hatch = `repeating-linear-gradient(135deg, ${COLOR.line} 0px, ${COLOR.line} ${(1.2 * u).toFixed(5)}px, transparent ${(1.2 * u).toFixed(5)}px, transparent ${(14 * u).toFixed(5)}px)`;
   return (
     <div style={{ position: "absolute", inset: 0, background: `${hatch}, ${COLOR.fill}`, border: `${(1.5 * u).toFixed(2)}px solid ${COLOR.line}`, boxSizing: "border-box", overflow: "hidden" }}>
-      <div style={{ position: "absolute", left, top, right: fs * 0.9, fontFamily: `"${FAMILY.mono}"`, fontSize: fs, color: COLOR.ink2, lineHeight: 1.35 }}>
+      <div style={{ position: "absolute", left, top, right: fs * 0.9, fontFamily: `"${FAMILY.mono}"`, fontSize: fs, color: COLOR.ink2, lineHeight: 1.35, opacity: labelOpacity, display: labelOpacity <= 0.001 ? "none" : undefined }}>
         <div style={{ fontWeight: 500, color: COLOR.ink }}>{slot.captureId}</div>
         <div style={{ fontFamily: `"${FAMILY.sans}"`, fontSize: fs * 0.92 }}>{slot.label}</div>
         {state ? <div style={{ fontFamily: `"${FAMILY.sans}"`, fontSize: fs * 0.92, color: COLOR.ink }}>{state}</div> : null}
@@ -45,8 +45,8 @@ export const SlotPanel: React.FC<{ slot: SlotStandIn; w: number; h: number; px: 
   );
 };
 
-export const StandInView: React.FC<{ standIn: StandIn; w: number; h: number; px: number }> = ({ standIn, w, h, px }) =>
-  standIn.kind === "still" ? <StillImage standIn={standIn} w={w} h={h} /> : <SlotPanel slot={standIn} w={w} h={h} px={px} />;
+export const StandInView: React.FC<{ standIn: StandIn; w: number; h: number; px: number; labelOpacity?: number }> = ({ standIn, w, h, px, labelOpacity }) =>
+  standIn.kind === "still" ? <StillImage standIn={standIn} w={w} h={h} /> : <SlotPanel slot={standIn} w={w} h={h} px={px} labelOpacity={labelOpacity} />;
 
 /**
  * The card entrance on a still inside a view (rise 24 px and an 8 px blur clearing over 24 frames on E-arrive, the
@@ -63,7 +63,7 @@ const entranceStyle = (frameSinceFrom: number, fps: number, px: number): React.C
  * One view of a take, at 1×: the real frame sequence (cropped to the view) when the take has one; otherwise its
  * placeholder stills and slot. `px`: frame px per world unit (for the slot's label and the entrance's rise).
  */
-export const TakeViewContent: React.FC<{ use: TakeUse; view: string; w: number; h: number; px: number; offset?: number; planeEntrance?: boolean }> = ({ use, view, w, h, px, offset = 0, planeEntrance = false }) => {
+export const TakeViewContent: React.FC<{ use: TakeUse; view: string; w: number; h: number; px: number; offset?: number; planeEntrance?: boolean; labelOpacity?: (key: string) => number }> = ({ use, view, w, h, px, offset = 0, planeEntrance = false, labelOpacity = () => 1 }) => {
   const frame = useCurrentFrame() + offset;
   const { fps } = useVideoConfig();
   const m = use.manifest;
@@ -80,9 +80,11 @@ export const TakeViewContent: React.FC<{ use: TakeUse; view: string; w: number; 
   const kx = w / v.w;
   const ky = h / v.h;
   const state = [...(v.slotStates ?? [])].reverse().find((x) => src >= x.from)?.label;
+  // (each label's opacity is the plan's: whole or not drawn near the frame's edge, handed to a slot entering over it:
+  // setpieces/labels.ts, NF-08)
   return (
     <>
-      {v.slot ? <SlotPanel slot={v.slot} w={w} h={h} px={px} timecode={sourceTimecode(src, m.fps)} state={state} /> : null}
+      {v.slot ? <SlotPanel slot={v.slot} w={w} h={h} px={px} timecode={sourceTimecode(src, m.fps)} state={state} labelOpacity={labelOpacity("self")} /> : null}
       {stillsAt(v, src).map((s: ViewStill, i) => {
         const r = s.rect ?? { x: 0, y: 0, w: v.w, h: v.h };
         // the frame on which this still first showed, for its entrance; a still with no entrance switches in with a
@@ -93,7 +95,7 @@ export const TakeViewContent: React.FC<{ use: TakeUse; view: string; w: number; 
         if (look === null) return null;
         return (
           <div key={i} style={{ position: "absolute", left: r.x * kx, top: r.y * ky, width: r.w * kx, height: r.h * ky, ...look }}>
-            {s.standIn.kind === "still" ? <StillImage standIn={s.standIn} w={r.w * kx} h={r.h * ky} /> : <SlotPanel slot={s.standIn} w={r.w * kx} h={r.h * ky} px={px} timecode={sourceTimecode(src, m.fps)} state={state} />}
+            {s.standIn.kind === "still" ? <StillImage standIn={s.standIn} w={r.w * kx} h={r.h * ky} /> : <SlotPanel slot={s.standIn} w={r.w * kx} h={r.h * ky} px={px} timecode={sourceTimecode(src, m.fps)} state={state} labelOpacity={labelOpacity(`still:${(v.stills ?? []).indexOf(s)}`)} />}
           </div>
         );
       })}

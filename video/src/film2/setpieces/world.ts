@@ -42,9 +42,12 @@ const companionAt = (x: number, y: number) => ({
   stone: { x: x + COMPANION_PANEL.stone.x, y: y + COMPANION_PANEL.stone.y },
 });
 
-/** HS-F's window at (x, y), and the views Ring 4 reads inside it: the conversation's column, past its sidebar. */
+/**
+ * HS-F's window at (x, y), and the views Ring 4 reads inside it: the conversation's column, past its sidebar (the held
+ * card, the whole 1.0.x card while it asks, then the run below it).
+ */
 const projectAt = (x: number, y: number) => {
-  const held = { x: x + 330, y: y + 250, w: HSF_VIEWS.held.w, h: HSF_VIEWS.held.h };
+  const held = { x: x + 330, y: y + 150, w: HSF_VIEWS.held.w, h: HSF_VIEWS.held.h };
   return { project: { window: { x, y, w: 1160, h: 800 }, held, run: { x: held.x, y: held.y + held.h + 28, w: HSF_VIEWS.run.w, h: HSF_VIEWS.run.h } } };
 };
 
@@ -52,7 +55,8 @@ export const WORLD: Record<Aspect, WorldLayout> = {
   "16:9": {
     browser: { x: 0, y: 0, w: 1440, h: 900 },
     ...companionAt(1230, 452),
-    calculator: { x: -150, y: 470, w: 232, h: 372 },
+    // wholly off the frame's left edge at the hold, so its slot's label is never cut by it (NF-08)
+    calculator: { x: -330, y: 470, w: 232, h: 372 },
     finder: { x: 1180, y: -380, w: 820, h: 500 },
     ...projectAt(-1010, -480),
     toolbox: { x: 700, y: 990, w: 1160, h: 800 },
@@ -71,9 +75,12 @@ export const WORLD: Record<Aspect, WorldLayout> = {
     browser: { x: 40, y: -120, w: 1440, h: 900 },
     ...companionAt(1060, 500),
     calculator: { x: -60, y: 700, w: 232, h: 372 },
-    finder: { x: 560, y: -1100, w: 820, h: 500 },
+    // (right of the held card: at x 560 it covered the card's right half, drawn in front of the place)
+    finder: { x: 990, y: -1100, w: 820, h: 500 },
     ...projectAt(-80, -960),
-    toolbox: { x: 200, y: 1180, w: 1160, h: 800 },
+    // below the type's band at the Drop's hold (fix round 2, NF-05: L05 and L06 sat over its Settings still, the band
+    // spanning world y 1085–1537 at its depth), so the lines sit on the ground
+    toolbox: { x: 200, y: 1580, w: 1160, h: 800 },
     depth: { calculator: 1.06, finder: 0.93, toolbox: 0.95 },
   },
 };

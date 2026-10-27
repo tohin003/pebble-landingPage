@@ -15,11 +15,8 @@ import { TRANSITION } from "../tokens";
 import { screenVelocity, worldToFrame, type CamSample } from "../motion/camera";
 import { angleBetweenDeg, len, type Vec } from "../motion/geometry";
 import type { Finding } from "../qa/checks";
-import { cascadeSchedule } from "../type/Cascade";
 import { groundNeed, riverbedCovering, unionOf } from "./ground";
-import { drawnSpan, planeRectAt, stonesOnFrame } from "./qa";
-import { stillsAt, sourceFrameAt } from "./take";
-import { askCardLook } from "../transitions/entrances";
+import { firstReadableFrom } from "./qa";
 import type { ScenePlan, ShotSpec } from "./scene";
 
 /** The centre's screen velocity under a camera sample (px a frame). */
@@ -53,73 +50,14 @@ export function shareGround(a: ScenePlan, b: ScenePlan): void {
 export type JoinKind = "continue" | "cut";
 
 /**
- * The first frame of a piece that shows something to read: a line landed, the stone at a quarter or more, a plane the
- * piece reads (its `read`, or a cascade's card) at 85 % opacity or more and at least half in frame, or a recorded
- * take's own window filling a third of the frame or more while the take plays (the recording itself is on screen:
- * CR-06's fix opens Dusk "on the HS-B3 frame that already shows the workspace"). Blank ground, a still slot with
- * nothing read on it and a palette still fading in are not (CR-06: Dusk opened on 12 blank frames of bare ground, the
- * climax on 16 frames of its slot before its take began).
+ * The first frame of a piece that shows something to read (setpieces/qa.ts readableOn: a line landed, the stone, a read
+ * plane, a capture filling an eighth of the frame, or a slot with its label whole in frame). Blank ground, a slot with
+ * its label out of frame and a palette still fading in are not (CR-06: Dusk opened on 12 blank frames of bare ground,
+ * the climax on 16 frames of its slot before its take began; NF-07: the cut into Kiln on 62 frames of unlabelled slot).
  */
 export function firstReadableFrame(p: ScenePlan, within = 60): number | null {
-  for (let fr = 0; fr < Math.min(p.duration, within); fr++) {
-    for (const t of p.types) {
-      const d = drawnSpan(t, p.fps, p.duration);
-      if (fr >= d.landed && fr < d.exitAt) return fr;
-    }
-    if (stonesOnFrame(p, fr).length) return fr;
-    const s = p.shots.find((x) => fr >= x.from && fr < x.to);
-    if (!s) continue;
-    for (const pl of s.planes) {
-      if (fr < (pl.from ?? -Infinity) || fr >= (pl.to ?? Infinity)) continue;
-      if (pl.read) {
-        if (visibleShare(p, s, pl, fr) >= 0.5 && planeOpacity(p, pl, fr) >= 0.85) return fr;
-        continue;
-      }
-      // a take's window, playing, filling a third of the frame: the recording is what the shot opens on
-      if (pl.content.kind === "take" && fr >= pl.content.use.at && fr < pl.content.use.until && planeOpacity(p, pl, fr) >= 0.85 && frameCover(p, s, pl, fr) >= 1 / 3) return fr;
-    }
-    if (s.cascade) {
-      const sched = cascadeSchedule(s.cascade.start, s.cascade.items, p.fps, s.cascade.beats, undefined, s.cascade.endAt);
-      if (sched.length && fr >= s.from) return fr; // the first card is on the stage from the cut
-    }
-  }
-  return null;
+  return firstReadableFrom(p, 0, within);
 }
-
-/** The share of the frame a plane covers on a frame. */
-const frameCover = (p: ScenePlan, s: ShotSpec, pl: ShotSpec["planes"][number], fr: number): number => {
-  const r = planeRectAt(p, s, pl, fr);
-  const ix = Math.max(0, Math.min(r.x + r.w, p.frame.w) - Math.max(r.x, 0));
-  const iy = Math.max(0, Math.min(r.y + r.h, p.frame.h) - Math.max(r.y, 0));
-  return (ix * iy) / (p.frame.w * p.frame.h);
-};
-
-/** The share of a plane's rect inside the frame on a frame. */
-const visibleShare = (p: ScenePlan, s: ShotSpec, pl: ShotSpec["planes"][number], fr: number): number => {
-  const r = planeRectAt(p, s, pl, fr);
-  const ix = Math.max(0, Math.min(r.x + r.w, p.frame.w) - Math.max(r.x, 0));
-  const iy = Math.max(0, Math.min(r.y + r.h, p.frame.h) - Math.max(r.y, 0));
-  return (ix * iy) / Math.max(1, r.w * r.h);
-};
-
-/** A plane's opacity on a frame: its own entrance, or the entrance of the still its take view shows. */
-const planeOpacity = (p: ScenePlan, pl: ShotSpec["planes"][number], fr: number): number => {
-  let o = 1;
-  if (pl.enterAt !== undefined) o *= pl.enterKind === "fade" ? Math.min(1, Math.max(0, (fr - pl.enterAt) / 20)) : askCardLook(fr, pl.enterAt, p.fps).opacity;
-  const c = pl.content;
-  if (c.kind === "take") {
-    const u = c.use;
-    if (fr < u.at || fr >= u.until) return 0;
-    const v = u.manifest.views[c.view];
-    if (!v) return 0;
-    if (u.manifest.pattern || v.slot) return o;
-    const src = sourceFrameAt(fr, u.at, p.fps, u.manifest, u.inPoint);
-    const shown = stillsAt(v, src);
-    if (!shown.length) return 0;
-    o *= Math.max(...shown.map((x) => (x.entrance ? askCardLook(Math.floor(((src - x.from) * p.fps) / u.manifest.fps), 0, p.fps).opacity : 1)));
-  }
-  return o;
-};
 
 /**
  * The join check (CR-06). `kinds[i]` says how piece i + 1 starts: "continue" (the same world: its first shot's pose

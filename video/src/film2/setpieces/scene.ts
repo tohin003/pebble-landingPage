@@ -102,6 +102,13 @@ export interface TypeSpec {
    * `outFrom` is the frame its world starts carrying it out of the frame (the crane): it is read until then
    */
   carry?: { shot: string; at: number; outFrom?: number };
+  /**
+   * the line is one span of a row laid out by the browser (fix round 2, NF-04): every span with the same row `id` sits
+   * in one flex row centred at `box.top`, `gapEm` of its size apart, in `index` order, so every gap is exact whatever
+   * the glyphs' advance widths (the plan's `box.left` is the estimate the checks use; the end card's facts placed by
+   * estimated widths came out 62–165 px apart)
+   */
+  row?: { id: string; gapEm: number; index: number };
 }
 
 /** A cascade (kind 5): one fixed line, one swapping item and its UI card, swapped in place. */

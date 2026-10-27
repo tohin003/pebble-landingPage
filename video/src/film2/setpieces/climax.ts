@@ -36,6 +36,9 @@ export const CLIMAX_TEXT = {
 /** The 2.0.0 cards' must-read words and text (CSS px): the ask's question and buttons, the kept card's two lines. */
 export const CLIMAX_CARDS = { ask: { words: 7, textPx: 13 }, kept: { words: 12, textPx: 13 } } as const;
 
+/** The kept card's pan through its hold, px a frame at 1080 on screen (OVERRIDES §55: 0.3–0.6). */
+export const KEPT_PAN_PX = 0.42;
+
 export interface ClimaxOptions {
   w: number;
   h: number;
@@ -60,46 +63,43 @@ const STONE = { x: 2600 + 1160 + 120, y: 720 };
 interface ClimaxLayout {
   /** where the ask sits on screen (the chapter line owns the rest) */
   ask: (f: FrameBox) => Rect;
-  /** the ask's glide: a push where it has room, else a pan away from the chapter line */
-  askPan: { x: number; y: number };
   chapter: (f: FrameBox) => TypeBox;
   /** the kept card's reading region, and the check line's box beside it */
   kept: (f: FrameBox) => Rect;
   check: (f: FrameBox) => { box: TypeBox; maxW: number };
-  /** the hold's glide on the kept card: a push where the card has room, else a pan away from the check line */
-  keptPan: { x: number; y: number };
-  keptPreferPan: boolean;
+  /**
+   * the one way the climax's content travels on screen (fix round 2, NF-02): the ask's pan, the cut into Kiln, the
+   * landing's glide, the hold's pan on the kept card and the leave, all one direction, away from the check line (the
+   * Kiln hold used to turn back on itself twice in 3 s, through two stops)
+   */
+  travel: { x: number; y: number };
 }
 
 const LAYOUT: Record<FrameBox["aspect"], ClimaxLayout> = {
   "16:9": {
     ask: (f) => ({ x: f.w * 0.42, y: f.h * 0.14, w: f.w * 0.55, h: f.h * 0.72 }),
-    askPan: { x: 1, y: 0 },
     chapter: (f) => ({ left: f.safe * 2, top: f.h * 0.42, align: "left" }),
     kept: (f) => ({ x: f.w * 0.4, y: f.h * 0.16, w: f.w * 0.57, h: f.h * 0.68 }),
     check: (f) => ({ box: { left: f.safe * 2, top: f.h * 0.42, align: "left" }, maxW: f.w * 0.33 }),
-    keptPan: { x: -1, y: 0 },
-    keptPreferPan: false,
+    // right, away from the chapter line and the check line on the left
+    travel: { x: 1, y: 0 },
   },
   "1:1": {
     ask: (f) => ({ x: f.safe * 0.4, y: f.h * 0.3, w: f.w - f.safe * 0.8, h: f.h * 0.6 }),
-    askPan: { x: 0, y: 1 },
     chapter: (f) => ({ left: f.safe * 1.2, top: f.safe * 1.2, align: "left" }),
     kept: (f) => ({ x: f.safe * 0.4, y: f.h * 0.36, w: f.w - f.safe * 0.8, h: f.h * 0.5 }),
     check: (f) => ({ box: { left: f.safe * 1.2, top: f.safe * 1.1, align: "left" }, maxW: f.w - f.safe * 2.4 }),
-    // the card fills the square's width at reading size: the hold drifts down, away from the check line at the top
-    keptPan: { x: 0, y: 1 },
-    keptPreferPan: true,
+    // the cards fill the square's width at reading size: down, away from the lines at the top
+    travel: { x: 0, y: 1 },
   },
   "9:16": {
     ask: (f) => ({ x: f.safe * 0.4, y: f.h * 0.3, w: f.w - f.safe * 0.8, h: f.h * 0.4 }),
-    askPan: { x: 0, y: 1 },
     chapter: (f) => ({ left: 0, top: f.h * 0.15, width: f.w, align: "center" }),
     kept: (f) => ({ x: f.safe * 0.4, y: f.h * 0.3, w: f.w - f.safe * 0.8, h: f.h * 0.4 }),
     check: (f) => ({ box: { left: f.safe * 1.2, top: f.h * 0.8, align: "left" }, maxW: f.w - f.safe * 2.4 }),
-    // the card fills the frame's width at reading size: the hold drifts up, away from the check line below it
-    keptPan: { x: 0, y: -1 },
-    keptPreferPan: true,
+    // the cards fill the frame's width at reading size: down, away from the chapter line at the top (the check line
+    // below the kept card stays 170 px clear of it at the hold's end)
+    travel: { x: 0, y: 1 },
   },
 };
 
@@ -124,11 +124,12 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
   const askAt = -4; // the card's entrance starts 4 frames before the cut (local frames)
   const askFit = fitPose(ASK, L.ask(f), f, 0.94);
   const askPose: Pose = { ...askFit, zoom: Math.max(readZoom(CLIMAX_CARDS.ask.textPx), Math.min(askFit.zoom, readZoom(CLIMAX_CARDS.ask.textPx) * 1.05)) };
-  const vIn: Vec = o.cutIn?.vScreen ?? { x: -3 * f.unit, y: 0 };
-  // the shot's glide: a push that meets the card where it has room (16:9), a slow pan away from the chapter line where
-  // the card fills the frame's width at reading size (1:1, 9:16); estimated over the shot's usual length
-  const askHold = holdGlide(f, ASK, askPose, Math.max(1, peak - f60(60, fps)), { pan: L.askPan, px: 0.45 });
-  const pushA = askHold.vel;
+  // (cut into from another piece: that piece's leave; on its own, a cut arriving the climax's way)
+  const vIn: Vec = o.cutIn?.vScreen ?? { x: 3 * f.unit * L.travel.x, y: 3 * f.unit * L.travel.y };
+  // the shot's glide: a pan the climax's way at 0.45 px a frame with a slight push, centred on the card's framing
+  // (estimated over the shot's usual length; fix round 2: the push alone about the card moved it 0.24 px a frame)
+  const askHold = holdGlide(f, ASK, askPose, Math.max(1, peak - f60(60, fps)), { pan: L.travel, px: 0.45, preferPan: true });
+  const pushA = { ...askHold.vel, lz: lzHold * 0.25 };
   // in with the cut's momentum, gliding into that glide (never from rest, never landing at rest)
   // (the glide lands its framing after five time constants: what is left of the cut's speed then is under 1 %)
   const camA = o.entry ? new VelocityCamera(o.entry.pose, o.entry.vel) : arriveWithMomentum({ target: askHold.from, frames: f60(80, fps), vScreen: vIn, mode: "glide", tau: f60(16, fps), drift: pushA });
@@ -156,17 +157,10 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
   const keptRead: Pose = { ...keptFit, zoom: Math.max(readZoom(CLIMAX_CARDS.kept.textPx), Math.min(keptFit.zoom, readZoom(CLIMAX_CARDS.kept.textPx) * 1.06)) };
   // the landing framing: the card a little wide, so the push-in that follows reads as the climax's breath
   const landPose: Pose = { ...keptRead, zoom: keptRead.zoom / 1.1 };
-  // the incoming glide runs 72 frames (τ 24): it is still gliding as the card lands on the peak
-  const inF = f60(120, fps);
-  const seam = momentumCut({ out: camA, cutFrame: cut, dir: { x: -1, y: 0 }, dPx: 118 * f.unit, leaveFrames: leaveF, target: landPose, inFrames: inF, mode: "glide", tau: f60(24, fps), drift: { x: (0.3 * f.unit * 60) / fps / landPose.zoom, y: 0, lz: lzHold * 0.6 }, frameW: f.w, frameH: f.h, fps });
-  const camB = seam.inCam;
-  // through the landing without a freeze: the glide drifts on, then a push-in (a Hermite carried from the drift) for
-  // reading, and from there the hold's own glide to the end: the push never stops (CR-04)
-  const pushFrom = Math.max(peak - cut + f60(30, fps), inF + 1);
-  camB.glide(pushFrom, f60(24, fps), { x: (0.3 * f.unit * 60) / fps / landPose.zoom, lz: lzHold * 0.6 });
+  // the timing first: the incoming glide lands on the reading push's start, half a second after the card lands on
+  // the peak; the push runs 160 frames; the check line lands on a beat after the card and holds 6.5 s
+  const pushFrom = peak - cut + f60(30, fps);
   const pushTo = pushFrom + f60(160, fps);
-
-  // the check line lands on a beat after the card, beside it
   const ck = L.check(f);
   const checkText = breakLines(CLIMAX_TEXT.check, "functional", f, ck.maxW, 0.3);
   const check: TypeSpec = { id: "L25", text: checkText, tier: "functional", at: 0, sizeT: 0.3, box: ck.box, kind: "film" };
@@ -181,13 +175,30 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
   const exitStart = end - 1 - leaveF;
   check.exitAt = exitStart;
   types.push(chapter, check);
-  // the hold on the card: a push about it where it has room, else a pan away from the check line; it starts as the
-  // reading push lands and runs to the E-leave
-  const hold = holdGlide(f, KEPT, keptRead, exitStart - cut - pushTo, { pan: L.keptPan, preferPan: L.keptPreferPan, px: 0.42 });
-  camB.hermite(pushTo, hold.from, hold.vel);
-  camB.glide(exitStart - cut, f60(30, fps), hold.vel);
+  // ONE direction from Glaze's leave to Kiln's (NF-02): the cut carries the content the climax's way; the incoming
+  // glide decays that speed straight into the hold's pan (KEPT_PAN_PX, the same way), through the reading push, to the
+  // E-leave the same way again. The hold's pan is centred on the card's reading framing, so the card drifts through
+  // it; the push and the landing are placed back along the pan from there (the glide lands exactly on the push's start)
+  const holdF = exitStart - cut - pushTo;
+  const tl = Math.hypot(L.travel.x, L.travel.y) || 1;
+  const panAt = (zoom: number) => ({ x: (-(L.travel.x / tl) * KEPT_PAN_PX * f.unit) / zoom, y: (-(L.travel.y / tl) * KEPT_PAN_PX * f.unit) / zoom });
+  const vHold = { ...panAt(keptRead.zoom), lz: lzHold * 0.2 };
+  const holdFrom: Pose = { x: keptRead.x - (vHold.x * holdF) / 2, y: keptRead.y - (vHold.y * holdF) / 2, zoom: keptRead.zoom / Math.exp((vHold.lz * holdF) / 2) };
+  const pushF = pushTo - pushFrom;
+  // the push grows the card about its trailing edge (its left edge as it travels right, its top as it travels down),
+  // so that edge keeps the pan's pace through the push (pushing about the card's middle held its left edge still for
+  // 1.5 s, as the verifier measured the sway on that edge)
+  const anchor = { x: L.travel.x > 0 ? KEPT.x : L.travel.x < 0 ? KEPT.x + KEPT.w : KEPT.x + KEPT.w / 2, y: L.travel.y > 0 ? KEPT.y : L.travel.y < 0 ? KEPT.y + KEPT.h : KEPT.y + KEPT.h / 2 };
+  const anchorAt1 = { x: f.w / 2 + (anchor.x - holdFrom.x) * holdFrom.zoom, y: f.h / 2 + (anchor.y - holdFrom.y) * holdFrom.zoom };
+  const anchorAt0 = { x: anchorAt1.x - ((L.travel.x / tl) * KEPT_PAN_PX * f.unit * pushF), y: anchorAt1.y - ((L.travel.y / tl) * KEPT_PAN_PX * f.unit * pushF) };
+  const pushFromPose: Pose = { x: anchor.x - (anchorAt0.x - f.w / 2) / landPose.zoom, y: anchor.y - (anchorAt0.y - f.h / 2) / landPose.zoom, zoom: landPose.zoom };
+  const seam = momentumCut({ out: camA, cutFrame: cut, dir: L.travel, dPx: 118 * f.unit, leaveFrames: leaveF, target: pushFromPose, inFrames: pushFrom, mode: "glide", tau: f60(24, fps), drift: { ...vHold, lz: 0 }, frameW: f.w, frameH: f.h, fps });
+  const camB = seam.inCam;
+  // the push-in for reading, carrying the pan; then the hold's own glide to the E-leave: the push never stops (CR-04)
+  camB.hermite(pushTo, holdFrom, vHold);
+  camB.glide(exitStart - cut, f60(30, fps), vHold);
   const pEnd = camB.pose(exitStart - cut);
-  camB.ease(end - cut - 1, { x: pEnd.x + (118 * f.unit) / pEnd.zoom, y: pEnd.y, zoom: pEnd.zoom * Math.exp(hold.vel.lz * leaveF) }, "E-leave");
+  camB.ease(end - cut - 1, { x: pEnd.x - ((L.travel.x / tl) * 118 * f.unit) / pEnd.zoom, y: pEnd.y - ((L.travel.y / tl) * 118 * f.unit) / pEnd.zoom, zoom: pEnd.zoom * Math.exp(vHold.lz * leaveF) }, "E-leave");
 
   const use = solveInPoint(take, "cardLands", peak, cut, end, fps);
   const happyAt = eventFrame(use, "happy", fps);
@@ -234,6 +245,6 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
       move("light", 0, sec(4.6, fps), "dusk to evening"),
     ],
     exit: { pose: camB.pose(end - cut), vel: camB.sample(end - cut).vel, shot: "kiln", ref: landPose, grade: "evening" },
-    extra: { cut, peak, happyAt, cardLands: eventFrame(use, "cardLands", fps), pushFrom: pushFrom + cut, pushTo: pushTo + cut, end, readZoom: keptRead.zoom, holdKind: hold.kind, keptOnScreen: rectInFrame(KEPT, keptRead, f) },
+    extra: { cut, peak, happyAt, cardLands: eventFrame(use, "cardLands", fps), pushFrom: pushFrom + cut, pushTo: pushTo + cut, end, readZoom: keptRead.zoom, holdKind: "pan", keptOnScreen: rectInFrame(KEPT, keptRead, f) },
   };
 }

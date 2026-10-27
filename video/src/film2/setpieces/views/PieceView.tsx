@@ -37,6 +37,7 @@ import { RIVERBED, groundRectOf } from "../ground";
 import { PebbleOnFilm } from "../../../pebble/PebbleOnFilm";
 import type { PlaneSpec, ScenePlan, ShotSpec, TypeSpec } from "../scene";
 import { frameOfSource, sourceFrameAt, stillsAt } from "../take";
+import { drawnSlots, labelOpacityOn } from "../labels";
 import { ImageContent, SetPiecesSlate, StandInView, TakeViewContent } from "./StandInViews";
 import { SageTextSweep } from "./SageSweep";
 import { VeilCast } from "./VeilCast";
@@ -48,7 +49,7 @@ const CENTRE_TO_FOOT_148 = 38.2;
 const dimFilter = (d: number): string | undefined => (d > 0.002 ? `brightness(${(1 - 0.24 * d).toFixed(4)}) saturate(${(1 - 0.3 * d).toFixed(4)})` : undefined);
 
 /** One plane of a shot: its entrance, swaps, dimming and tilt, around its content. */
-const PlaneView: React.FC<{ shot: ShotSpec; pl: PlaneSpec; frame: number; zoom: number }> = ({ shot, pl, frame, zoom }) => {
+const PlaneView: React.FC<{ plan: ScenePlan; shot: ShotSpec; pl: PlaneSpec; frame: number; zoom: number }> = ({ plan, shot, pl, frame, zoom }) => {
   const { fps, width, height } = useVideoConfig();
   if (frame < (pl.from ?? -Infinity) || frame >= (pl.to ?? Infinity)) return null;
   const unit = Math.min(width, height) / 1080;
@@ -107,12 +108,18 @@ const PlaneView: React.FC<{ shot: ShotSpec; pl: PlaneSpec; frame: number; zoom: 
   const tilt = pl.kind === "pebble" && (pl.tiltRx || pl.tiltRy) ? { rx: pl.tiltRx ? new ScalarTrack(pl.tiltRx).at(frame) : 0, ry: pl.tiltRy ? new ScalarTrack(pl.tiltRy).at(frame) : 0 } : undefined;
   const reading = !!pl.read && frame >= pl.read.from && frame < pl.read.to;
   const c = pl.content;
+  // each slot's label as the plan has it: whole or not drawn (setpieces/labels.ts, NF-08)
+  const slots = drawnSlots(plan, shot, pl);
+  const labelOpacity = (key: string) => {
+    const d = slots.find((x) => x.key === key);
+    return d ? labelOpacityOn(plan, shot, d, frame) : 1;
+  };
   return (
     <Plane kind={pl.kind} rect={pl.rect} depth={pl.depth ?? 1} tilt={tilt} reading={reading} opacity={opacity} shadow={pl.shadow} radius={pl.radius} style={style}>
       {c.kind === "standIn" ? (
-        <StandInView standIn={c.standIn} w={pl.rect.w} h={pl.rect.h} px={zoom} />
+        <StandInView standIn={c.standIn} w={pl.rect.w} h={pl.rect.h} px={zoom} labelOpacity={labelOpacity("self")} />
       ) : c.kind === "take" ? (
-        <TakeViewContent use={c.use} view={c.view} w={pl.rect.w} h={pl.rect.h} px={zoom} offset={shot.from} planeEntrance={planeEntrance} />
+        <TakeViewContent use={c.use} view={c.view} w={pl.rect.w} h={pl.rect.h} px={zoom} offset={shot.from} planeEntrance={planeEntrance} labelOpacity={labelOpacity} />
       ) : (
         <ImageContent src={c.src} w={pl.rect.w} h={pl.rect.h} />
       )}
@@ -156,7 +163,7 @@ export const ShotView: React.FC<{ plan: ScenePlan; shot: ShotSpec }> = ({ plan, 
       <ForegroundMotionBlur windows={shot.blur ?? []}>
         <World3D cam={cam} dofScale={shot.dofScale ?? 14} focus={focus} background="transparent">
           {shot.planes.map((pl) => (
-            <PlaneView key={pl.id} shot={shot} pl={pl} frame={frame} zoom={s.pose.zoom} />
+            <PlaneView key={pl.id} plan={plan} shot={shot} pl={pl} frame={frame} zoom={s.pose.zoom} />
           ))}
           {shot.wall ? <WallCells spec={shot.wall} frame={frame} /> : null}
           {shot.cascade
@@ -177,7 +184,15 @@ export const ShotView: React.FC<{ plan: ScenePlan; shot: ShotSpec }> = ({ plan, 
                   const fx = [look.blur > 0.05 ? `blur(${(look.blur * k).toFixed(2)}px)` : "", ""].filter(Boolean).join(" ");
                   return (
                     <Plane key={`card${i}`} kind={card.kind} rect={card.rect} opacity={look.opacity} shadow={card.shadow} radius={card.radius} reading={look.opacity > 0.99} style={{ filter: fx || undefined, transform: Math.abs(dx) > 0.01 ? `translateX(${dx.toFixed(2)}px)` : undefined }}>
-                      {card.content.kind === "standIn" ? <StandInView standIn={card.content.standIn} w={card.rect.w} h={card.rect.h} px={s.pose.zoom} /> : null}
+                      {card.content.kind === "standIn" ? (
+                        <StandInView
+                          standIn={card.content.standIn}
+                          w={card.rect.w}
+                          h={card.rect.h}
+                          px={s.pose.zoom}
+                          labelOpacity={card.content.standIn.kind === "slot" ? labelOpacityOn(plan, shot, { id: card.id, key: "self", slot: card.content.standIn, box: card.rect, depth: 1, from: shot.from, to: shot.to, state: () => undefined, timecode: () => undefined }, frame) : 1}
+                        />
+                      ) : null}
                     </Plane>
                   );
                 });
@@ -236,7 +251,7 @@ const Shots: React.FC<{ plan: ScenePlan }> = ({ plan }) => {
  * a line set in the world (`carry`) moves with its shot's camera and is drawn until that shot ends (it leaves with the
  * world: the plans carry it out of frame first, setpieces/qa.ts typeExits).
  */
-const TypeLines: React.FC<{ t: TypeSpec; plan: ScenePlan }> = ({ t, plan }) => {
+const TypeLines: React.FC<{ t: TypeSpec; plan: ScenePlan; inRow?: boolean }> = ({ t, plan, inRow = false }) => {
   const { fps, width, height } = useVideoConfig();
   const frame = useCurrentFrame();
   const pieceEnd = plan.duration;
@@ -268,12 +283,14 @@ const TypeLines: React.FC<{ t: TypeSpec; plan: ScenePlan }> = ({ t, plan }) => {
           sizeT={t.sizeT ?? 0.5}
           color={t.color ?? COLOR.ink}
           align={t.box.align}
-          style={{ left: t.box.left, top: t.box.top + i * lh, width: t.box.width }}
+          style={inRow ? { position: "relative" } : { left: t.box.left, top: t.box.top + i * lh, width: t.box.width }}
         />
       ))}
       {t.sweep ? <SageTextSweep spec={t} /> : null}
     </>
   );
+  // a span of a row (TypeSpec.row): the row places it, and carries it with its world
+  if (inRow) return <Sequence durationInFrames={Math.max(1, end)} layout="none" name={t.id}>{body}</Sequence>;
   return (
     <Sequence durationInFrames={Math.max(1, end)} layout="none" name={t.id}>
       {m ? (
@@ -288,11 +305,37 @@ const TypeLines: React.FC<{ t: TypeSpec; plan: ScenePlan }> = ({ t, plan }) => {
   );
 };
 
-/** The type layer: every line of the plan, the cascades' fixed lines and items, the title's sweep. */
+/**
+ * One row of spans (TypeSpec.row, NF-04): a flex row across the frame, centred, its spans `gapEm` of their size apart in
+ * `index` order, at the first span's top; set in the world like its spans (they share one carry), so the whole row
+ * moves as one. The browser lays out the glyphs, so every gap is exact.
+ */
+const TypeRow: React.FC<{ specs: readonly TypeSpec[]; plan: ScenePlan }> = ({ specs, plan }) => {
+  const { width, height } = useVideoConfig();
+  const frame = useCurrentFrame();
+  const first = specs[0]!;
+  const size = typeSizePx(first.tier, width, height, first.sizeT ?? 0.5);
+  const m = carryTransform(plan, first, frame);
+  const row = (
+    <div style={{ position: "absolute", left: 0, top: first.box.top, width, display: "flex", justifyContent: "center", alignItems: "flex-start", columnGap: (first.row?.gapEm ?? 1) * size }}>
+      {[...specs].sort((a, b) => (a.row?.index ?? 0) - (b.row?.index ?? 0)).map((t) => (
+        <div key={t.id} style={{ position: "relative" }}>
+          <TypeLines t={t} plan={plan} inRow />
+        </div>
+      ))}
+    </div>
+  );
+  return m ? <AbsoluteFill style={{ transformOrigin: "0 0", transform: `matrix(${m.k.toFixed(6)}, 0, 0, ${m.k.toFixed(6)}, ${m.tx.toFixed(3)}, ${m.ty.toFixed(3)})`, willChange: "transform" }}>{row}</AbsoluteFill> : row;
+};
+
+/** The type layer: every line of the plan, the rows of spans, the cascades' fixed lines and items, the title's sweep. */
 export const TypeView: React.FC<{ plan: ScenePlan }> = ({ plan }) => (
   <FontGate>
-    {plan.types.map((t) => (
+    {plan.types.filter((t) => !t.row).map((t) => (
       <TypeLines key={t.id} t={t} plan={plan} />
+    ))}
+    {[...new Set(plan.types.filter((t) => t.row).map((t) => t.row!.id))].map((id) => (
+      <TypeRow key={id} specs={plan.types.filter((t) => t.row?.id === id)} plan={plan} />
     ))}
     {plan.shots.map((s) =>
       s.cascade ? (

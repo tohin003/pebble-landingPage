@@ -15,7 +15,8 @@
 //   transitions  each iris, rack or swap's frames, and the Veil's own cast, which tile pops do not judge (a designed
 //              change, as a cut is)
 //   entrances  each plane's card entrance and each placeholder still's entrance inside a take view, to name a tile pop
-//   gaps       the end card's margins between facts, which must stay empty while the facts are held (CR-20)
+//   rows       the end card's rows of facts: each row's band while its facts are held, how many facts it holds and
+//              the gap between them, so the scan finds the gaps in the ink and holds them even and empty (CR-20, NF-04)
 //   states     a take's placeholder stills switching with a hard cut on their source frames (CR-18): not judged as pops
 import { writeFileSync } from "node:fs";
 import { hexToRgb } from "../../light/grades";
@@ -42,7 +43,7 @@ const stones: { from: number; to: number; count: number; rMin: number; rMax: num
 const stoneAt: Record<number, [number, number, number][]> = {};
 const apertures: { piece: string; hit: number; planOpen: number; rest: { from: number; to: number } }[] = [];
 const entrances: { id: string; from: number; to: number; kind: string }[] = [];
-const gaps: { id: string; from: number; to: number; rect: { x: number; y: number; w: number; h: number }; inkLuma: number; rectAt?: Record<number, number[]> }[] = [];
+const rows: { id: string; from: number; to: number; rect: { x: number; y: number; w: number; h: number }; facts: number; gapPx: number; size: number; inkLuma: number; rectAt?: Record<number, number[]> }[] = [];
 const states: { frame: number; id: string }[] = [];
 const entries = demoPlans(a);
 const first = entries[0]!.plan;
@@ -113,20 +114,22 @@ for (const e of entries) {
           if (at >= u.at && at < u.until) entrances.push({ id: `${p.id}/${pl.id}:${vs.standIn.id}`, from: off + at, to: off + at + 24, kind: "card entrance (a placeholder of the recording's own)" });
         }
       }
-    // the end card's gaps between facts (CR-20): empty while both facts are held, wherever the page carries them
-    for (const gp of ((p.extra as { factGaps?: { id: string; left: string; right: string; rect: { x: number; y: number; w: number; h: number } }[] } | undefined)?.factGaps ?? [])) {
-      const left = p.types.find((t) => t.id === gp.left);
-      const right = p.types.find((t) => t.id === gp.right);
-      if (!left || !right) continue;
-      const from = Math.max(drawnSpan(left, p.fps, p.duration).landed, drawnSpan(right, p.fps, p.duration).landed);
-      const to = Math.min(left.exitAt ?? p.duration, right.exitAt ?? p.duration);
+    // the end card's rows of facts (CR-20, NF-04): while every fact of a row is held, the row's band (wherever the page
+    // carries it), how many facts it holds and the gap the browser sets between them; the scan finds the gaps in the
+    // ink and holds them even and empty
+    for (const row of ((p.extra as { factRows?: { id: string; ids: string[]; top: number; height: number; size: number; gapPx: number }[] } | undefined)?.factRows ?? [])) {
+      const specs = row.ids.map((id) => p.types.find((t) => t.id === id)).filter((t): t is NonNullable<typeof t> => !!t);
+      if (specs.length < 2) continue;
+      const from = Math.max(...specs.map((t) => drawnSpan(t, p.fps, p.duration).landed));
+      const to = Math.min(...specs.map((t) => t.exitAt ?? p.duration));
+      const band = { x: 0, y: row.top, w: p.frame.w, h: row.height };
       const rectAt: Record<number, number[]> = {};
-      if (right.carry) for (let fr = from; fr < to; fr++) {
-        const r = carriedRect(p, right, gp.rect, fr);
+      if (specs[0]!.carry) for (let fr = from; fr < to; fr++) {
+        const r = carriedRect(p, specs[0]!, band, fr);
         rectAt[off + fr] = [r.x, r.y, r.w, r.h].map((v) => Math.round(v * 10) / 10);
       }
-      const [r, g, b] = hexToRgb(right.color ?? COLOR.ink);
-      gaps.push({ id: `${p.id}/${gp.id}`, from: off + from, to: off + to, rect: gp.rect, inkLuma: Math.round(255 * (0.299 * r! + 0.587 * g! + 0.114 * b!)), ...(right.carry ? { rectAt } : {}) });
+      const [r, g, b] = hexToRgb(specs[0]!.color ?? COLOR.ink);
+      rows.push({ id: `${p.id}/${row.id}`, from: off + from, to: off + to, rect: band, facts: specs.length, gapPx: row.gapPx, size: row.size, inkLuma: Math.round(255 * (0.299 * r! + 0.587 * g! + 0.114 * b!)), ...(specs[0]!.carry ? { rectAt } : {}) });
     }
     // the Veil's own cast (Pebble's code, stealthVeil.ts: the dusk colour sweeps down the pebble in about 10 frames)
     for (const sh of p.shots) for (const v of sh.stone?.veil ?? []) transitions.push({ from: off + Math.round(v.at * p.fps), to: off + Math.round((v.at + ACTIVATE) * p.fps) + 2 });
@@ -142,6 +145,6 @@ for (const e of entries) {
 }
 const marks = { aspect: a, fps: first.fps, width: first.frame.w, height: first.frame.h, total: off, starts, seams, cuts: [...starts.slice(1), ...seams].sort((x, y) => x - y), waits, hits };
 if (out) {
-  writeFileSync(out, JSON.stringify({ ...marks, transitions, entrances, states, types, stones, stoneAt, apertures, gaps }));
-  console.log(JSON.stringify({ ...marks, types: types.length, stones: stones.length, apertures, gaps: gaps.length, states }));
+  writeFileSync(out, JSON.stringify({ ...marks, transitions, entrances, states, types, stones, stoneAt, apertures, rows }));
+  console.log(JSON.stringify({ ...marks, types: types.length, stones: stones.length, apertures, rows: rows.length, states }));
 } else console.log(JSON.stringify(marks));

@@ -200,21 +200,25 @@ export function planFinale(o: FinaleOptions): ScenePlan {
   const factsLand = landFacts.point ?? landFacts.at;
   music.push(musicHit("the facts land with the last strong note", landFacts));
   const factsHoldEnd = factsLand + sec(5.7, fps);
-  // each fact its own span, a row centred with FACT_GAP_EM between its facts (CR-20); the rows rise 8 frames apart
+  // each fact its own span, a row centred with FACT_GAP_EM between its facts (CR-20), laid out by the browser as one
+  // flex row (TypeSpec.row, NF-04: placed by estimated advance widths, the gaps came out 62–165 px), so every gap is
+  // exact; the plan keeps the estimate of each span's place for the checks. The rows rise 8 frames apart
   const gapPx = FACT_GAP_EM * fSize;
-  const factRows = [...L.facts.map((r) => [...r]), [FINALE_TEXT.url]];
-  const factGaps: { id: string; left: string; right: string; rect: { x: number; y: number; w: number; h: number } }[] = [];
-  factRows.forEach((row, i) => {
+  const factLines = [...L.facts.map((r) => [...r]), [FINALE_TEXT.url]];
+  const factRows: { id: string; ids: string[]; top: number; height: number; size: number; gapPx: number }[] = [];
+  factLines.forEach((row, i) => {
     const widths = row.map((t) => approxLineWidth(t, "functional", f.w, f.h, fT));
     const total = widths.reduce((a, b) => a + b, 0) + gapPx * (row.length - 1);
     let x = (f.w - total) / 2;
     const top = factsTop + i * fLine;
+    const ids: string[] = [];
     row.forEach((text, j) => {
-      const id = i === factRows.length - 1 ? "L28-url" : `L28-${i}-${j}`;
-      page1.push({ id, text, tier: "functional", entrance: "lineRise", exit: "lift", at: factsLand - riseF + i * f60(8, fps) + j * f60(3, fps), exitAt: factsHoldEnd, sizeT: fT, box: { left: x, top, align: "left" }, kind: "end" });
-      if (j > 0) factGaps.push({ id: `${id}-gap`, left: `L28-${i}-${j - 1}`, right: id, rect: { x: x - gapPx * 0.75, y: top + fLine * 0.15, w: gapPx * 0.5, h: fLine * 0.7 } });
+      const id = i === factLines.length - 1 ? "L28-url" : `L28-${i}-${j}`;
+      ids.push(id);
+      page1.push({ id, text, tier: "functional", entrance: "lineRise", exit: "lift", at: factsLand - riseF + i * f60(8, fps) + j * f60(3, fps), exitAt: factsHoldEnd, sizeT: fT, box: { left: x, top, align: "left" }, kind: "end", row: { id: `facts-${i}`, gapEm: FACT_GAP_EM, index: j } });
       x += widths[j]! + gapPx;
     });
+    factRows.push({ id: `facts-${i}`, ids, top, height: fLine, size: fSize, gapPx });
   });
   // the title and the line leave with page 1
   for (const t of page1) if (t.exitAt === undefined) {
@@ -362,7 +366,7 @@ export function planFinale(o: FinaleOptions): ScenePlan {
       sweepFrames: SAGE_SWEEP.frames,
       lastNote,
       decayEnd,
-      factGaps,
+      factRows,
       credits: FILM_CREDITS({ musicCredits: o.musicCredit ? [o.musicCredit] : [], trademarks: o.trademarks }),
       honestLine: STEALTH_HONEST,
     },

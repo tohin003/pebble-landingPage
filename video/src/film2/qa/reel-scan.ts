@@ -43,11 +43,10 @@ export interface ReelMarks {
   entrances?: { id: string; from: number; to: number; kind: string }[];
   apertures: { piece: string; hit: number; planOpen: number; rest: { from: number; to: number } }[];
   /**
-   * the gaps that must stay empty while their neighbours are held (CR-20: the end card's facts, each its own span with
-   * a margin): the middle of the margin between two facts, its frames, its ink's grey level, where it moves (a page set
-   * in the world)
+   * the end card's rows of facts (CR-20, NF-04): each row's band while its facts are held (where the page carries it),
+   * how many facts it holds, the gap the browser sets between them (px of the plans) and its ink's grey level
    */
-  gaps?: { id: string; from: number; to: number; rect: Rect; inkLuma: number; rectAt?: Record<number, [number, number, number, number]> }[];
+  rows?: { id: string; from: number; to: number; rect: Rect; facts: number; gapPx: number; size: number; inkLuma: number; rectAt?: Record<number, [number, number, number, number]> }[];
 }
 
 export interface ReelScanReport {
@@ -59,13 +58,69 @@ export interface ReelScanReport {
   settles: number;
   popCauses: { frame: number; tile: number; cause: string; mad: number }[];
   apertures: { piece: string; hit: number; planOpen: number; renderOpen: number | null; framesFromHit: number | null; trace: Record<number, BandHeights> }[];
-  /** each gap's worst share of inked pixels while its facts are held (CR-20) */
-  gaps: { id: string; worstShare: number; at: number }[];
+  /**
+   * the end card's rows of facts (CR-20, NF-04): each row's gaps between facts as the ink shows them (px at 1080, their
+   * medians over the frames the facts are held), the narrowest against the gap the browser sets, and the card's
+   * evenness (its largest gap over its smallest on any frame)
+   */
+  rows: { id: string; gaps1080: number[]; narrowestShare: number; at: number }[];
+  /** the card's worst evenness: its largest fact gap over its smallest, on the frame it is worst */
+  factsEvenness: { worst: number; at: number } | null;
   problems: string[];
 }
 
-/** A gap holds ink when more than this share of its pixels are on the ink's side (CR-20: two facts running together). */
-export const GAP_INK_SHARE = 0.04;
+/** The card's fact gaps are even when its largest is at most this many times its smallest (NF-04). */
+export const FACT_GAPS_EVEN = 1.2;
+/** A fact gap narrower than this share of the gap the browser sets means two facts run together (CR-20). */
+export const FACT_GAP_LEAST = 0.6;
+
+/**
+ * The gaps between the facts of a row on one grey frame: the runs of columns with no ink between the row's first and
+ * last ink, the widest `facts − 1` of them (word spaces are about a quarter of an em, the facts' gaps 1.25 em). Ink is
+ * a pixel on the ink's side of the midpoint between the band's ground (its 85th percentile) and the ink's grey level.
+ */
+export function factGapsIn(frame: Uint8Array, W: number, H: number, band: Rect, facts: number, inkLuma: number, noise = INK.noise): number[] {
+  const x0 = Math.max(0, Math.floor(band.x));
+  const y0 = Math.max(0, Math.floor(band.y));
+  const x1 = Math.min(W, Math.ceil(band.x + band.w));
+  const y1 = Math.min(H, Math.ceil(band.y + band.h));
+  if (x1 <= x0 || y1 <= y0 || facts < 2) return [];
+  const hist = new Uint32Array(256);
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) hist[frame[y * W + x]!]!++;
+  const total = (x1 - x0) * (y1 - y0);
+  let acc = 0;
+  let ground = 255;
+  for (let v = 0; v < 256; v++) {
+    acc += hist[v]!;
+    if (acc >= INK.groundPercentile * total) {
+      ground = v;
+      break;
+    }
+  }
+  const mid = (ground + inkLuma) / 2;
+  const inked: boolean[] = [];
+  for (let x = x0; x < x1; x++) {
+    let on = false;
+    for (let y = y0; y < y1 && !on; y++) {
+      const v = frame[y * W + x]!;
+      if (Math.abs(ground - v) >= noise && (inkLuma < ground ? v <= mid : v >= mid)) on = true;
+    }
+    inked.push(on);
+  }
+  const first = inked.indexOf(true);
+  const last = inked.lastIndexOf(true);
+  if (first < 0) return [];
+  const runs: number[] = [];
+  let run = 0;
+  for (let i = first; i <= last; i++) {
+    if (!inked[i]) run++;
+    else if (run > 0) {
+      runs.push(run);
+      run = 0;
+    }
+  }
+  return runs.sort((a, b) => b - a).slice(0, facts - 1);
+}
 
 export const parseWaits = (s: string) =>
   s
@@ -88,8 +143,8 @@ export class ReelScan {
   private ink: (number | undefined)[][];
   private stoneAt: ReelScanReport["stones"]["frames"] = [];
   private bands: (BandHeights | undefined)[] = [];
-  private gapInk = new Map<string, { worst: number; at: number; over: number; runStart: number; longest: number }>();
-  private gaps: { id: string; from: number; to: number; rect: Rect; inkLuma: number; rectAt?: Record<number, Rect> }[];
+  private rowGaps = new Map<string, Map<number, number[]>>();
+  private rows: { id: string; from: number; to: number; rect: Rect; facts: number; gapPx: number; inkLuma: number; rectAt?: Record<number, Rect> }[];
   private prevFull: Uint8Array | null = null;
   private prevSmall: Uint8Array | null = null;
   private tileOf: Uint16Array;
@@ -116,8 +171,9 @@ export class ReelScan {
       rectAt: t.rectAt ? Object.fromEntries(Object.entries(t.rectAt).map(([fr, [x, y, w, h]]) => [Number(fr), scale({ x, y, w, h })])) : undefined,
     }));
     this.ink = this.tracks.map(() => []);
-    this.gaps = (marks.gaps ?? []).map((g) => ({
+    this.rows = (marks.rows ?? []).map((g) => ({
       ...g,
+      gapPx: g.gapPx * s,
       rect: scale(g.rect),
       rectAt: g.rectAt ? Object.fromEntries(Object.entries(g.rectAt).map(([fr, [x, y, w, h]]) => [Number(fr), scale({ x, y, w, h })])) : undefined,
     }));
@@ -242,21 +298,12 @@ export class ReelScan {
       });
     }
     if (marks.apertures.some((a) => f >= a.rest.from && f < a.hit + 90)) this.bands[f] = bandHeights(px, W, H);
-    for (const g of this.gaps) {
-      if (f < g.from || f >= g.to) continue;
-      const r = g.rectAt?.[f] ?? g.rect;
-      const n = Math.max(1, Math.round(r.w) * Math.round(r.h));
-      const share = inkIn(px, W, H, r, "dark", INK.noise, g.inkLuma) / n;
-      const st = this.gapInk.get(g.id) ?? { worst: 0, at: f, over: 0, runStart: -1, longest: 0 };
-      if (share > st.worst) {
-        st.worst = share;
-        st.at = f;
-      }
-      if (share > GAP_INK_SHARE) {
-        if (st.runStart < 0) st.runStart = f;
-        st.longest = Math.max(st.longest, f - st.runStart + 1);
-      } else st.runStart = -1;
-      this.gapInk.set(g.id, st);
+    for (const row of this.rows) {
+      if (f < row.from || f >= row.to) continue;
+      const gaps = factGapsIn(px, W, H, row.rectAt?.[f] ?? row.rect, row.facts, row.inkLuma);
+      const m = this.rowGaps.get(row.id) ?? new Map<number, number[]>();
+      m.set(f, gaps);
+      this.rowGaps.set(row.id, m);
     }
   }
 
@@ -309,13 +356,48 @@ export class ReelScan {
       for (let f = a.rest.from; f < a.hit + 90; f++) if (this.bands[f]) trace[f] = this.bands[f]!;
       return { ...a, renderOpen: open, framesFromHit: late, trace };
     });
-    const gaps = this.gaps.map((g) => {
-      const st = this.gapInk.get(g.id);
-      if (st && st.longest >= 3) problems.push(`gap: ${g.id} holds ink on ${st.longest} frames in a row (up to ${(100 * st.worst).toFixed(1)} % of it on frame ${st.at}): two facts run together (CR-20)`);
-      return { id: g.id, worstShare: st ? Math.round(st.worst * 1000) / 1000 : 0, at: st?.at ?? g.from };
+    // the end card's rows of facts: each gap wide enough (two facts never run together, CR-20), and the card's gaps
+    // even on every frame (its largest at most FACT_GAPS_EVEN times its smallest, NF-04)
+    const unit1080 = (this.S * Math.min(this.marks.width, this.marks.height)) / 1080;
+    const rows = this.rows.map((row) => {
+      const byFrame = this.rowGaps.get(row.id) ?? new Map<number, number[]>();
+      let narrowest = Infinity;
+      let at = row.from;
+      let tight = 0;
+      let longest = 0;
+      const cols: number[][] = Array.from({ length: Math.max(0, row.facts - 1) }, () => []);
+      for (const [fr, gaps] of [...byFrame.entries()].sort((a, b) => a[0] - b[0])) {
+        const least = gaps.length < row.facts - 1 ? 0 : Math.min(...gaps);
+        if (least / row.gapPx < narrowest) {
+          narrowest = least / row.gapPx;
+          at = fr;
+        }
+        if (least < FACT_GAP_LEAST * row.gapPx) longest = Math.max(longest, ++tight);
+        else tight = 0;
+        gaps.forEach((g, i) => cols[i]!.push(g));
+      }
+      if (longest >= 3) problems.push(`facts: ${row.id} shows a gap under ${Math.round(FACT_GAP_LEAST * 100)} % of its ${(row.gapPx / unit1080).toFixed(0)} px for ${longest} frames in a row (the narrowest ${Math.round(narrowest * 100)} % on frame ${at}): two facts run together (CR-20)`);
+      const med = (xs: number[]) => (xs.length ? [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)]! : 0);
+      return { id: row.id, gaps1080: cols.map((c) => Math.round((med(c) / unit1080) * 10) / 10), narrowestShare: Number.isFinite(narrowest) ? Math.round(narrowest * 1000) / 1000 : 0, at };
     });
+    let factsEvenness: { worst: number; at: number } | null = null;
+    {
+      const frames = new Set<number>();
+      for (const m of this.rowGaps.values()) for (const fr of m.keys()) frames.add(fr);
+      let run = 0;
+      let longest = 0;
+      for (const fr of [...frames].sort((a, b) => a - b)) {
+        const all = [...this.rowGaps.values()].flatMap((m) => m.get(fr) ?? []);
+        if (all.length < 2 || Math.min(...all) <= 0) continue;
+        const ratio = Math.max(...all) / Math.min(...all);
+        if (!factsEvenness || ratio > factsEvenness.worst) factsEvenness = { worst: Math.round(ratio * 1000) / 1000, at: fr };
+        if (ratio > FACT_GAPS_EVEN) longest = Math.max(longest, ++run);
+        else run = 0;
+      }
+      if (factsEvenness && longest >= 3) problems.push(`facts: the end card's gaps between facts are uneven, the largest ${factsEvenness.worst.toFixed(2)}× the smallest on frame ${factsEvenness.at} (at most ${FACT_GAPS_EVEN}×; NF-04: placed by estimated widths they were 62–165 px)`);
+    }
     const inkSeries = Object.fromEntries(this.tracks.map((t, i) => [t.id, Object.fromEntries(Object.entries(this.ink[i]!).map(([f, v]) => [Number(f), Math.round(v! * 10) / 10]))]));
-    return { luma, ink, inkSeries, stones: { framesChecked: this.stoneAt.length, twoStoneRuns: runs, frames: this.stoneAt }, apertures, gaps, settles, popCauses, problems };
+    return { luma, ink, inkSeries, stones: { framesChecked: this.stoneAt.length, twoStoneRuns: runs, frames: this.stoneAt }, apertures, rows, factsEvenness, settles, popCauses, problems };
   }
 
   /** What a tile shows on a frame, per the plan's lines: an exit, an entrance, a line that stops being drawn … */

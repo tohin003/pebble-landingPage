@@ -44,11 +44,19 @@ export const ring4 = (A: Aspect): RingContent => {
     context: worldContext(A),
     take: TAKE_HSF,
     window: { view: "window", rect: W.project.window },
-    // "Blocked · Pebble's change isn't verified yet." (6 words), the history's sentence that persists after the click
-    ask: { view: "held", rect: held, words: STILL.heldNote.words!, textPx: STILL.heldNote.textPx! },
+    // the held card asking, framed whole with its buttons until the person's click on Run the tests; then its answered
+    // sentence, "Blocked · Pebble's change isn't verified yet." (6 words), is read (NF-01)
+    ask: {
+      view: "held",
+      rect: held,
+      words: STILL.heldNote.words!,
+      textPx: STILL.heldNote.textPx!,
+      readRect: { x: held.x + HSF_VIEWS.held.answered.x, y: held.y + HSF_VIEWS.held.answered.y, w: HSF_VIEWS.held.answered.w, h: HSF_VIEWS.held.answered.h },
+      asking: { until: "click", textPx: STILL.held.textPx! },
+    },
     // the test card's sentence: "Runs the project's tests in a temporary copy. Your project files don't change." (13)
     act: { view: "run", rect: run, startEvent: "running", words: STILL.testsLine.words!, textPx: STILL.testsLine.textPx!, readRect: { x: run.x + HSF_VIEWS.run.tests.x, y: run.y + HSF_VIEWS.run.tests.y, w: HSF_VIEWS.run.tests.w, h: HSF_VIEWS.run.tests.h } },
-    // "Verified · pytest … passed on current files" and "Done, and verified:" (10 words)
+    // "Verified · pytest … passed on current files" (7 words)
     receipt: { event: "verified", rect: HSF_VIEWS.run.receipt, words: STILL.verifiedTop.words!, textPx: STILL.verifiedTop.textPx! },
     lines: { chapter: "AgentGuard, built in.", limit: "Reliability, not security." },
     cascade: {

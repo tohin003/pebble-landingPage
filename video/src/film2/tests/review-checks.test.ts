@@ -17,7 +17,7 @@ import { IRIS_DEFAULT_EASE } from "../transitions/kinds";
 import { STILL } from "../setpieces/standins";
 import { TAKE_HSF } from "../setpieces/take";
 import { STEALTH_HONEST } from "../../../../shared/pebble/stealthVeil";
-import { REVIEW_CHECKS, apertureOpenStart, askActClock, checkPlan, groundCoverage, hitSync, legibleWords, planesInFrame, smallPrintHolds, stoneCount, typeExits } from "../setpieces/qa";
+import { REVIEW_CHECKS, ROUND2_CHECKS, apertureOpenStart, askActClock, checkPlan, groundCoverage, hitSync, legibleWords, planesInFrame, smallPrintHolds, stoneCount, typeExits } from "../setpieces/qa";
 import { demoPlans } from "../setpieces/demo/plans";
 import { CLOSED_FINDINGS, OPEN_FINDINGS, isOpen } from "../setpieces/review-ledger";
 import { demoQa, MOVES } from "../demo/timeline";
@@ -472,9 +472,15 @@ describe("no line vanishes (CR-03)", () => {
 /* ---------------------------------------------------------------- on the current plans ------------------------- */
 
 const ASPECTS: readonly Aspect[] = ["16:9", "1:1", "9:16"];
+const reports = new Map<string, ReturnType<typeof checkPlan>>();
 const reportOf = (a: Aspect, piece: string) => {
+  const key = `${a}/${piece}`;
+  const hit = reports.get(key);
+  if (hit) return hit;
   const e = demoPlans(a).find((x) => x.plan.id === piece)!;
-  return checkPlan(e.plan, e.grid);
+  const r = checkPlan(e.plan, e.grid);
+  reports.set(key, r);
+  return r;
 };
 const foundationErrors = () => checkAll(demoQa(), MOVES).errors;
 
@@ -516,14 +522,14 @@ describe("the craft review's findings, caught on the current plans (CR-15)", () 
   test("the whole-frame checks the review cited still pass these plans: the new checks are what sees the defects", () => {
     for (const a of ASPECTS)
       for (const e of demoPlans(a)) {
-        const old = checkPlan(e.plan, e.grid).errors.filter((x) => !(REVIEW_CHECKS as readonly string[]).includes(x.check));
+        const old = reportOf(a, e.plan.id).errors.filter((x) => !(REVIEW_CHECKS as readonly string[]).includes(x.check) && !(ROUND2_CHECKS as readonly string[]).includes(x.check));
         expect(old).toEqual([]);
       }
   });
   test("every error on the current plans is an open finding in the ledger", () => {
     for (const a of ASPECTS)
       for (const e of demoPlans(a)) {
-        const rest = checkPlan(e.plan, e.grid).errors.filter((x) => !isOpen(e.plan.id, x.check));
+        const rest = reportOf(a, e.plan.id).errors.filter((x) => !isOpen(e.plan.id, x.check));
         expect(rest).toEqual([]);
       }
     expect(foundationErrors().filter((x) => !isOpen("F2-Foundation-Demo", x.check))).toEqual([]);

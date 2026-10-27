@@ -20,7 +20,7 @@ import { planClimax } from "../setpieces/climax";
 import { worldToFrame } from "../motion/camera";
 import { approxLineWidth, typeSizePx } from "../type/scale";
 import type { ScenePlan } from "../setpieces/scene";
-import { GAP_INK_SHARE, ReelScan } from "../qa/reel-scan";
+import { FACT_GAPS_EVEN, ReelScan, factGapsIn } from "../qa/reel-scan";
 
 const errorsOf = (xs: readonly Finding[], check?: string) => xs.filter((x) => x.level === "error" && (!check || x.check === check));
 const ASPECTS = ["16:9", "1:1", "9:16"] as const;
@@ -290,11 +290,13 @@ describe("the end card's facts are separate spans with a margin (CR-20)", () => 
           expect(gap / size).toBeCloseTo(FACT_GAP_EM, 6);
         }
       }
-      // and the plan names each gap, for the render's check (9:16 sets one fact a line: no gaps)
-      const gaps = ((p.extra as { factGaps: unknown[] }).factGaps ?? []).length;
-      const multi = [...byRow.values()].filter((r) => r.length > 1).reduce((n, r) => n + r.length - 1, 0);
-      expect(gaps).toBe(multi);
-      if (a !== "9:16") expect(gaps).toBeGreaterThan(0);
+      // and the plan names each row, for the render's check (9:16 sets one fact a line: no row of two); each span of a
+      // row is laid out by the browser in one flex row with FACT_GAP_EM between its facts (fix round 2, NF-04)
+      const rows = (p.extra as { factRows: { ids: string[] }[] }).factRows ?? [];
+      const multi = [...byRow.values()].filter((r) => r.length > 1).length;
+      expect(rows.filter((r) => r.ids.length > 1).length).toBe(multi);
+      if (a !== "9:16") expect(multi).toBeGreaterThan(0);
+      for (const t of facts) expect(t.row?.gapEm).toBe(FACT_GAP_EM);
     }
   });
 });
@@ -347,24 +349,37 @@ describe("the reel scan's checks for the fixes (CR-18, CR-20, carried type)", ()
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) px[y * w + x] = 214 + ((x * 7 + y * 3) % 9);
     return px;
   };
-  test("CR-20: two facts that run into their margin are caught; an empty margin passes", () => {
-    const marks = { ...base, types: [], gaps: [{ id: "finale/L28-0-1-gap", from: 10, to: 50, rect: { x: 300, y: 100, w: 24, h: 30 }, inkLuma: 40 }] };
-    const run = (ink: boolean) => {
+  test("CR-20, NF-04: the facts' gaps are found in the ink; uneven gaps and facts that run together are caught, even ones pass", () => {
+    // a row of three facts at half size: ink blocks with word spaces of 3 px inside them, gaps of `gaps` px between them
+    const run = (gaps: [number, number], rows = 1) => {
+      const marks = { ...base, types: [], rows: Array.from({ length: rows }, (_, k) => ({ id: `finale/facts-${k}`, from: 10, to: 50, rect: { x: 0, y: 200 + k * 60, w: 640, h: 40 }, facts: 3, gapPx: 40, size: 32, inkLuma: 40 })) };
       const scan = new ReelScan(w, h, marks);
       for (let f = 0; f < 60; f++) {
         const px = ground();
-        // the right-hand fact's first glyph 6 px into the margin (half size: the gap is 150–162 × 50–65)
-        if (ink) for (let y = 52; y < 64; y++) for (let x = 150; x < 156; x++) px[y * w + x] = 40;
+        for (let k = 0; k < rows; k++) {
+          let x = 40;
+          for (let j = 0; j < 3; j++) {
+            // a fact: two words of 24 px with a 3 px space
+            for (const [a, b] of [[x, x + 24], [x + 27, x + 51]]) for (let y = 104 + k * 30; y < 114 + k * 30; y++) for (let xx = a; xx < b; xx++) px[y * w + xx] = 40;
+            x += 51 + (gaps[j] ?? 0);
+          }
+        }
         scan.push(px);
       }
       return scan.finish();
     };
-    // (a still synthetic reel is a dead second too: only the gap's own finding is looked at here)
-    expect(run(false).problems.filter((p) => p.startsWith("gap:"))).toEqual([]);
-    expect(run(false).gaps[0]!.worstShare).toBe(0);
-    const bad = run(true);
-    expect(bad.problems.filter((p) => p.startsWith("gap:")).some((p) => /two facts run together/.test(p))).toBe(true);
-    expect(bad.gaps[0]!.worstShare).toBeGreaterThan(GAP_INK_SHARE);
+    // (a still synthetic reel is a dead second too: only the facts' own findings are looked at here)
+    const facts = (r: ReturnType<typeof run>) => r.problems.filter((p) => p.startsWith("facts:"));
+    expect(facts(run([20, 20]))).toEqual([]);
+    expect(run([20, 20]).rows[0]!.gaps1080.length).toBe(2);
+    // NF-04: 20 px against 31 px (×1.55) is uneven
+    expect(facts(run([20, 31])).some((p) => /uneven/.test(p))).toBe(true);
+    // CR-20: two facts 4 px apart run together
+    expect(facts(run([20, 4])).some((p) => /run together/.test(p))).toBe(true);
+    // and the evenness holds across the card's rows
+    expect(facts(run([20, 20], 2))).toEqual([]);
+    expect(factGapsIn(new Uint8Array(w * h).fill(200), w, h, { x: 0, y: 0, w, h }, 3, 40)).toEqual([]);
+    expect(FACT_GAPS_EVEN).toBe(1.2);
   });
   test("CR-18: a placeholder's hard cut on its event frame is listed as the take's state change, not judged as a pop", () => {
     const run = (states?: { frame: number; id: string }[]) => {

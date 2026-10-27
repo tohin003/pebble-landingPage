@@ -64,41 +64,65 @@ interface DuskLayout {
   /** the way the camera carries the render and its label out of the frame (screen direction of the content): never
    * through the honest line's band */
   craneOut: { x: number; y: number };
+  /** the way the render drifts through its hold (screen direction of the content): the crane's way where the frame is
+   * wide enough, down in the tall frame (its render fills the width) */
+  orbit: { x: number; y: number };
 }
+
+/**
+ * "A render, not a screen recording." under the render, right-aligned with its body's right edge (NF-03: set beside it
+ * on the right, it was the last thing out as the camera carried the render out of the left edge, and labelled bare
+ * ground for 24 frames; CR-19: it must stay whole on screen until the render's last frame). Right-aligned, its right
+ * edge is exact (CSS aligns the drawn text, whatever its advance widths), 12 px inside the body's (the rim's soft
+ * edge; under half a frame at the crane's exit speed), so the render's last pixel and the label's leave together.
+ */
+const labelUnder = (f: FrameBox, c: { x: number; y: number }, hw: number, hh: number): TypeBox => ({ left: c.x + hw - 12 * f.unit - f.w * 0.6, width: f.w * 0.6, top: c.y + hh + 28 * f.unit, align: "right" });
 
 const LAYOUT: Record<FrameBox["aspect"], DuskLayout> = {
   "16:9": {
     honest: (f) => ({ left: f.safe * 2, bottom: f.h - f.safe * 1.4, maxW: f.w - f.safe * 4, align: "left" }),
     stage: (f, b) => ({ x: f.safe, y: f.safe, w: f.w - 2 * f.safe, h: b.top - f.safe * 1.6 }),
     palette: (f) => ({ x: f.w * 0.2, y: f.h * 0.08, w: f.w * 0.6, h: f.h * 0.58 }),
-    veil: (f) => ({ x: f.w * 0.34, y: f.h * 0.4 }),
-    label: (f, c, hw) => ({ left: c.x + hw + 48 * f.unit, top: c.y - 22 * f.unit, align: "left" }),
+    // (right of the frame's middle: the render drifts left through its hold, the way the crane then carries it out)
+    veil: (f) => ({ x: f.w * 0.46, y: f.h * 0.4 }),
+    label: labelUnder,
     // out of the left edge: the render and its label stay above the honest line's band all the way out
     craneOut: { x: -1, y: 0 },
+    orbit: { x: -1, y: 0 },
   },
   "1:1": {
     honest: (f) => ({ left: f.safe * 1.2, bottom: f.h - f.safe * 1.2, maxW: f.w - f.safe * 2.4, align: "left" }),
     stage: (f, b) => ({ x: f.safe, y: f.safe, w: f.w - 2 * f.safe, h: b.top - f.safe * 1.6 }),
     palette: (f) => ({ x: f.w * 0.06, y: f.h * 0.07, w: f.w * 0.88, h: f.h * 0.44 }),
-    veil: (f) => ({ x: f.w * 0.36, y: f.h * 0.36 }),
-    label: (f, c, hw) => ({ left: c.x + hw + 30 * f.unit, top: c.y - 40 * f.unit, align: "left" }),
+    veil: (f) => ({ x: f.w * 0.5, y: f.h * 0.3 }),
+    label: labelUnder,
     craneOut: { x: -1, y: 0 },
+    orbit: { x: -1, y: 0 },
   },
-  // the tall frame: the honest line in the top band, so the render and its label crane out of the foot without
-  // ever crossing it; RS-13 is framed below the band
+  // the tall frame: the honest line in the top band; the render and its label leave by the left edge too, below it
+  // (they left by the foot, the label below the render first, so the render showed without it); RS-13 is framed below
+  // the band
   "9:16": {
     honest: (f) => ({ left: f.safe * 1.2, top: f.safe * 2, maxW: f.w - f.safe * 2.4, align: "left" }),
     stage: (f, b) => ({ x: f.safe, y: b.bottom + f.safe, w: f.w - 2 * f.safe, h: f.h - b.bottom - 2.2 * f.safe }),
     palette: (f) => ({ x: f.safe * 0.5, y: f.h * 0.24, w: f.w - f.safe, h: f.h * 0.32 }),
-    veil: (f) => ({ x: f.w * 0.5, y: f.h * 0.46 }),
-    label: (f, c, _hw, hh) => ({ left: 0, top: c.y + hh + 40 * f.unit, width: f.w, align: "center" }),
-    // a crane up: down and out of the foot (the honest line is in the top band)
-    craneOut: { x: 0, y: 1 },
+    veil: (f) => ({ x: f.w * 0.5, y: f.h * 0.44 }),
+    label: labelUnder,
+    craneOut: { x: -1, y: 0 },
+    orbit: { x: 0, y: 1 },
   },
 };
 
-/** The Veil's drawn size (px of its 220-unit viewBox) for a frame: its body 47 % of the height, at most 78 % of the width. */
-export const veilSizeFor = (f: FrameBox): number => Math.min((0.47 * f.h) / (BODY.height / 220), (0.78 * f.w) / (BODY.width / 220));
+/** The palette's pan, px a frame at 1080, on top of its push (fix round 2: the content floor). */
+export const PALETTE_PAN_PX = 0.28;
+/** The Veil's lateral orbit, px a frame at 1080, on top of its push (fix round 2: the content floor). */
+export const VEIL_ORBIT_PX = 0.36;
+
+/**
+ * The Veil's drawn size (px of its 220-unit viewBox) for a frame: its body 47 % of the height (42 % in the square, where
+ * its label under it must clear the honest line's band below), at most 78 % of the width (CR-19: 40–55 %).
+ */
+export const veilSizeFor = (f: FrameBox): number => Math.min(((f.aspect === "1:1" ? 0.42 : 0.47) * f.h) / (BODY.height / 220), (0.78 * f.w) / (BODY.width / 220));
 
 /** The plan of the Dusk passage for one aspect. */
 export function planDusk(o: DuskOptions): ScenePlan {
@@ -137,11 +161,18 @@ export function planDusk(o: DuskOptions): ScenePlan {
   const p0: Pose = { ...p0fit, zoom: Math.max(p0fit.zoom, needZoom) };
   const rackAt = enter + f60(48, fps);
   const rackF = f60(36, fps);
-  // in with the cut's momentum (a glide, never landing at rest), then the slow push toward the palette
+  // in with the cut's momentum (a glide, never landing at rest), then the slow push toward the palette, panning on in
+  // the cut's direction (fix round 2: the push about the palette alone moved it 0.27 px a frame at its median)
   const vIn: Vec = o.cutIn?.vScreen ?? { x: -3 * f.unit, y: 0 };
-  const pushV = zoomAbout(p0, { x: f.w / 2, y: (L.palette(f).y + L.palette(f).h / 2) }, lzHold * 1.2, f);
+  const push0 = zoomAbout(p0, { x: f.w / 2, y: (L.palette(f).y + L.palette(f).h / 2) }, lzHold * 1.2, f);
+  const panDir = Math.hypot(vIn.x, vIn.y) > 1e-6 ? { x: vIn.x / Math.hypot(vIn.x, vIn.y), y: vIn.y / Math.hypot(vIn.x, vIn.y) } : { x: -1, y: 0 };
+  // (the content pans the way the cut moved it: the camera the other way)
+  const pushV = { x: push0.x - (panDir.x * PALETTE_PAN_PX * f.unit) / p0.zoom, y: push0.y - (panDir.y * PALETTE_PAN_PX * f.unit) / p0.zoom, lz: push0.lz };
+  // the pan is centred on the palette's read: the framing lands half the pan early (the glide lands it on frame 80)
+  const readMid = Math.round((src("opens") + src("enter")) / 2);
+  const p0From: Pose = { x: p0.x - (pushV.x - push0.x) * (readMid - f60(80, fps)), y: p0.y - (pushV.y - push0.y) * (readMid - f60(80, fps)), zoom: p0.zoom };
   // (the glide lands its framing after five time constants: what is left of the cut's speed then is under 1 %)
-  const camA = arriveWithMomentum({ target: p0, frames: f60(80, fps), vScreen: vIn, mode: "glide", tau: f60(16, fps), drift: pushV });
+  const camA = arriveWithMomentum({ target: p0From, frames: f60(80, fps), vScreen: vIn, mode: "glide", tau: f60(16, fps), drift: pushV });
   camA.glide(rackAt + rackF, f60(30, fps), pushV);
 
   /* ------------------------------------------------ the honest line, from just after the Enter ------------------ */
@@ -160,14 +191,20 @@ export function planDusk(o: DuskOptions): ScenePlan {
   const veilSize = veilSizeFor(f);
   const hw = (BODY.width / 220) * veilSize * 0.5;
   const hh = (BODY.height / 220) * veilSize * 0.5;
-  const vc = L.veil(f);
+  // where the render sits at its hold's middle; it starts half its orbit's drift back, so it drifts through that place
+  // (its hold is about 7 s: the orbit moves it about 150 px at 1080)
+  const vcMid = L.veil(f);
+  const halfDrift = (VEIL_ORBIT_PX * f.unit * sec(7.0, fps)) / 2;
+  const vc = { x: vcMid.x - L.orbit.x * halfDrift, y: vcMid.y - L.orbit.y * halfDrift };
   // the render lives in its own small world: the pebble at the origin, drawn at veilSize; the camera's pose puts it at `vc`
   const veilCentreWorld = { x: 0, y: 0 };
   const veilPose: Pose = { x: veilCentreWorld.x - (vc.x - f.w / 2), y: veilCentreWorld.y - (vc.y - f.h / 2), zoom: 1 };
   const castAt = veilShotAt + rackF + f60(12, fps); // the cast plays once the render is in focus
   const veilShotFrames = sec(7.0, fps);
-  // the push in on the render, about its centre, with a slow lateral orbit (2D: a drift with the ground's parallax)
-  const orbit = { ...zoomAbout(veilPose, vc, lzHold, f), x: zoomAbout(veilPose, vc, lzHold, f).x + (0.12 * f.unit * 60) / fps };
+  // the push in on the render, about its centre, with a lateral orbit at VEIL_ORBIT_PX (2D: a drift with the ground's
+  // parallax), the way the crane then carries it out (fix round 2: at 0.12 px a frame the render, the frame's subject,
+  // moved 0.14 at its median: a zoom anchored on the subject leaves it still)
+  const orbit = { ...zoomAbout(veilPose, vc, lzHold, f), x: zoomAbout(veilPose, vc, lzHold, f).x - (L.orbit.x * VEIL_ORBIT_PX * f.unit * 60) / fps, y: zoomAbout(veilPose, vc, lzHold, f).y - (L.orbit.y * VEIL_ORBIT_PX * f.unit * 60) / fps };
   const camB = new VelocityCamera({ ...veilPose, zoom: 0.985 }, orbit);
   // the label: beside the render, in its world (TypeSpec.carry): it is on screen exactly as long as the render is
   const labelAt = rackAt + Math.round(rackF * 0.36);
@@ -282,7 +319,10 @@ export function planDusk(o: DuskOptions): ScenePlan {
   const pC = camC.pose(upFrom);
   camC.hermite(lastLocal, { x: pC.x, y: pC.y - ((upV * upF) / 2) / pC.zoom, zoom: pC.zoom }, { x: 0, y: -upV / pC.zoom, lz: 0 });
   const vOut2 = centreV(camC, cut2 - cut - 1);
-  const camD = arriveWithMomentum({ target: menuPose, frames: f60(80, fps), vScreen: vOut2, mode: "glide", tau: f60(16, fps), drift: { x: (0.4 * f.unit * 60) / fps / menuZoom, y: 0, lz: lzHold * 0.3 } });
+  // (the menu bar drifts right and the passage leaves to the right: the climax glides on that way, so the cut into it
+  // never turns its content back through a stop: the sway check, NF-02)
+  const menuDrift = { x: (-0.4 * f.unit * 60) / fps / menuZoom, y: 0, lz: lzHold * 0.3 };
+  const camD = arriveWithMomentum({ target: menuPose, frames: f60(80, fps), vScreen: vOut2, mode: "glide", tau: f60(16, fps), drift: menuDrift });
   const arriveMenu = cut2 + f60(80, fps);
 
   /* ------------------------------------------------ the honest line's hold, and the end ------------------------- */
@@ -302,10 +342,9 @@ export function planDusk(o: DuskOptions): ScenePlan {
     types.push({ id: "L23", text: breakLines(focus.text, "functional", f, hb.maxW, 0.15), tier: "functional", at: arriveMenu + sec(1.6, fps), exitAt: arriveMenu + sec(3.6, fps), sizeT: 0.15, box: { left: honestBox.left, top: honestBox.top - hSize * 2.4, align: "left" }, kind: "film" });
   }
   // the menu bar's hold drifts on, then leaves on an E-leave into the climax's cut
-  const menuDrift = { x: (0.4 * f.unit * 60) / fps / menuZoom, y: 0, lz: lzHold * 0.3 };
   camD.glide(honestExit - cut2, f60(30, fps), menuDrift);
   const pD = camD.pose(honestExit - cut2);
-  camD.ease(end - cut2 - 1, { x: pD.x + (118 * f.unit) / pD.zoom, y: pD.y, zoom: pD.zoom }, "E-leave");
+  camD.ease(end - cut2 - 1, { x: pD.x - (118 * f.unit) / pD.zoom, y: pD.y, zoom: pD.zoom }, "E-leave");
 
   /* ------------------------------------------------ planes ----------------------------------------------------- */
   const paletteUseAll = solveInPoint(palette, "enter", enter, 0, rackAt + rackF, fps);

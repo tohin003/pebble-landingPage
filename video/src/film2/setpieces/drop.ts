@@ -61,6 +61,11 @@ export interface DropOptions {
   align?: Partial<DropTiming>;
 }
 
+/** The least speed (px a frame at 1080) the card drifts at while it is read in the pre-roll (fix round 2). */
+export const READ_DRIFT_PX = 0.36;
+/** The hold's pan after the frame opens, px a frame at 1080 on screen (fix round 2; §55: 0.3–0.6). */
+export const HOLD_PAN_PX = 0.42;
+
 /** The frames the Drop's timeline is made of (the same in every aspect once aligned). */
 export interface DropTiming {
   /** the frames the pair's lines LAND (their entrances start earlier by their own length) */
@@ -158,16 +163,24 @@ export function planDrop(o: DropOptions): ScenePlan {
   const zMax = Math.max(zStart, (readFit.zoom / 0.96) * 0.995);
   const cardC = rectCenter(W.card);
   const regionC = rectCenter(readRegion);
-  // the pose that puts the card's centre on frame point (regionC.x, sy) at `zoom`
-  const cardPose = (zoom: number, sy: number): Pose => ({ x: cardC.x - (regionC.x - f.w / 2) / zoom, y: cardC.y - (sy - f.h / 2) / zoom, zoom });
-  // the read over its last T frames before the hit: the push and the drift that fill the room in T frames
+  // the pose that puts the card's centre on frame point (sx, sy) at `zoom`
+  const cardPose = (zoom: number, sy: number, sx = regionC.x): Pose => ({ x: cardC.x - (sx - f.w / 2) / zoom, y: cardC.y - (sy - f.h / 2) / zoom, zoom });
+  // the read over its last T frames before the hit: the push and the drift that fill the room in T frames; where the
+  // aperture leaves the card little room to rise (1:1's 16:9 aperture), it drifts sideways too, inside the frame, so
+  // the card itself moves at READ_DRIFT_PX or more (fix round 2: its content moved 0.19 px a frame in 1:1)
   const readOver = (T: number) => {
     const lz = Math.min(lzHold * 1.25, Math.log(zMax / zStart) / Math.max(1, T));
     const zHit = zStart * Math.exp(lz * T);
     const roomY = Math.max(0, readRegion.h - W.card.h * zHit - 4 * f.unit);
     const travelY = Math.min(roomY * 0.9, 0.5 * f.unit * T);
-    const from = cardPose(zStart, regionC.y + travelY / 2);
-    const to = cardPose(zHit, regionC.y - travelY / 2);
+    const vy = travelY / Math.max(1, T);
+    const vx = Math.sqrt(Math.max(0, (READ_DRIFT_PX * f.unit) ** 2 - vy * vy));
+    const roomX = Math.max(0, f.w - W.card.w * zHit - 48 * f.unit);
+    const travelX = Math.min(roomX * 0.9, vx * T);
+    // (the card drifts left, toward the frame's middle in 16:9, centred on its framing so it never nears an edge)
+    const sx = Math.min(regionC.x, f.w - 24 * f.unit - (W.card.w * zHit) / 2 - travelX / 2);
+    const from = cardPose(zStart, regionC.y + travelY / 2, sx + travelX / 2);
+    const to = cardPose(zHit, regionC.y - travelY / 2, sx - travelX / 2);
     const v = { x: (to.x - from.x) / Math.max(1, T), y: (to.y - from.y) / Math.max(1, T), lz: Math.log(zHit / zStart) / Math.max(1, T) };
     return { from, to, v, corner: cornerSpeedOf(from, v, f) / f.unit };
   };
@@ -184,37 +197,50 @@ export function planDrop(o: DropOptions): ScenePlan {
   const wide = fitPose(unionRect(...worldRects(W)), full, f, 0.98);
 
   /* ------------------------------------------------ the camera, never at rest (CR-04) -------------------------- */
-  const revealStart = hit + sec(4.0, fps);
-  const revealEnd = revealStart + f60(160, fps);
   const openFrames = f60(90, fps);
-  // the pre-roll: at reading size from `readFrom` (its first frame, unless the pre-roll is longer than the read can
-  // glide), pushing in and drifting at one velocity; before it, a faster push-in from wider brings the card to it
-  let cam: VelocityCamera;
-  if (readFrom > 0) {
-    const lzIn = glideLz(f, 0.6);
-    const sy = f.h / 2 + (cardC.y - read0.y) * read0.zoom;
-    const z0 = read0.zoom * Math.exp(-lzIn * readFrom);
-    const approach0 = cardPose(z0, sy);
-    cam = new VelocityCamera(approach0, zoomAbout(approach0, { x: regionC.x, y: sy }, lzIn, f));
-    cam.hermite(readFrom, read0, vPre);
-  } else cam = new VelocityCamera(read0, vPre);
-  cam.hermite(hit, read, vPre);
-  // the hand-off on the burst: out to the opened framing as the frame opens, then drifting out through the pair
-  const driftOut = zoomAbout(opened, { x: L.companionX * f.w, y: f.h / 2 }, -lzHold * 1.1, f);
-  cam.hermite(hit + openFrames, opened, driftOut);
-  cam.glide(revealStart, f60(30, fps), driftOut);
-  const atReveal = cam.pose(revealStart);
   const browserC = rectCenter(W.browser);
   const toward = { x: browserC.x - wide.x, y: browserC.y - wide.y };
   const tl = Math.hypot(toward.x, toward.y) || 1;
   // the glide drifts toward the browser (Ring 1), 0.45 px a frame on screen at the wide zoom
   const driftSpeed = (0.45 * f.unit * 60) / fps / wide.zoom;
   const drift = { x: (toward.x / tl) * driftSpeed, y: (toward.y / tl) * driftSpeed, lz: 0 };
-  // the pull-back in log space (pullBack()'s Hermite: it lands still moving out, then glides)
-  const factor = (wide.zoom * 1.05) / atReveal.zoom;
-  const meanLz = Math.log(factor) / (revealEnd - revealStart);
-  cam.hermite(revealEnd, { x: wide.x, y: wide.y, zoom: atReveal.zoom * factor }, { lz: meanLz * 0.35, x: drift.x, y: drift.y });
-  const poseAt = (fr: number): Pose => cam.pose(fr);
+  // the camera up to the whole Mac's framing, for a reveal starting on `revealStart` (it starts at hit + 4 s, or as the
+  // pair's exit starts if that is later: the pull-back never brings a capture under a line still read, NF-05)
+  const buildCam = (revealStart: number) => {
+    const revealEnd = revealStart + f60(160, fps);
+    // the pre-roll: at reading size from `readFrom` (its first frame, unless the pre-roll is longer than the read can
+    // glide), pushing in and drifting at one velocity; before it, a faster push-in from wider brings the card to it
+    let cam: VelocityCamera;
+    if (readFrom > 0) {
+      const lzIn = glideLz(f, 0.6);
+      const sy = f.h / 2 + (cardC.y - read0.y) * read0.zoom;
+      const z0 = read0.zoom * Math.exp(-lzIn * readFrom);
+      const approach0 = cardPose(z0, sy);
+      cam = new VelocityCamera(approach0, zoomAbout(approach0, { x: regionC.x, y: sy }, lzIn, f));
+      cam.hermite(readFrom, read0, vPre);
+    } else cam = new VelocityCamera(read0, vPre);
+    cam.hermite(hit, read, vPre);
+    // the hand-off on the burst: out to the opened framing as the frame opens, then drifting out through the pair and
+    // travelling the way the reveal's glide goes (toward the browser from the whole Mac's middle): the pull-back about
+    // the companion alone left the companion, the frame's subject, still (the verifier's CR-04: 0.04–0.09 px a frame
+    // while the corners moved 0.4–0.6), so the hold also pans at HOLD_PAN_PX on screen, in the direction the whole
+    // passage keeps to the end of the piece
+    const pullOut = zoomAbout(opened, { x: L.companionX * f.w, y: f.h / 2 }, -lzHold * 1.1, f);
+    const driftOut = { x: pullOut.x + ((toward.x / tl) * HOLD_PAN_PX * f.unit) / opened.zoom, y: pullOut.y + ((toward.y / tl) * HOLD_PAN_PX * f.unit) / opened.zoom, lz: pullOut.lz };
+    // (the opened framing is where the hold is centred: it lands half its pan early, so the hold drifts through it)
+    const holdSpan = revealStart - (hit + openFrames);
+    const openedFrom: Pose = { x: opened.x - (driftOut.x - pullOut.x) * holdSpan * 0.5, y: opened.y - (driftOut.y - pullOut.y) * holdSpan * 0.5, zoom: opened.zoom };
+    cam.hermite(hit + openFrames, openedFrom, driftOut);
+    cam.glide(revealStart, f60(30, fps), driftOut);
+    const atReveal = cam.pose(revealStart);
+    // the pull-back in log space (pullBack()'s Hermite: it lands still moving out, then glides)
+    const factor = (wide.zoom * 1.05) / atReveal.zoom;
+    const meanLz = Math.log(factor) / (revealEnd - revealStart);
+    cam.hermite(revealEnd, { x: wide.x, y: wide.y, zoom: atReveal.zoom * factor }, { lz: meanLz * 0.35, x: drift.x, y: drift.y });
+    return { cam, revealStart, revealEnd, meanLz };
+  };
+  let built = buildCam(Math.max(hit + sec(4.0, fps), al.linesExit ?? 0));
+  const poseAt = (fr: number): Pose => built.cam.pose(fr);
 
   /* ------------------------------------------------ the burst and the aperture, on the hit --------------------- */
   const burst: RingSpec = {
@@ -269,6 +295,8 @@ export function planDrop(o: DropOptions): ScenePlan {
   const exitAt = Math.max(specP.at + sec(3.6, fps), specL.at + sec(3.0, fps), al.linesExit ?? 0);
   specP.exitAt = exitAt;
   specL.exitAt = exitAt;
+  if (exitAt > built.revealStart) built = buildCam(exitAt);
+  const { cam, revealStart, revealEnd, meanLz } = built;
   const linesGone = exitAt + Math.max(exitFramesOf("lineRise", "blur", promise, fps), exitFramesOf("lineRise", "blur", limit, fps));
   types.push(specP, specL);
 
@@ -344,7 +372,8 @@ export function planDrop(o: DropOptions): ScenePlan {
   const slotOf = (s: (typeof SLOT)[keyof typeof SLOT], r: Rect): PlaneSpec["content"] => ({ kind: "standIn", standIn: { ...s, w: r.w, h: r.h } });
   const planes: PlaneSpec[] = [
     { id: "project-window", kind: "pebble", rect: W.project.window, content: slotOf(SLOT.project, W.project.window), dim: lift(W.project.window), shadow: true },
-    { id: "project-held", kind: "pebble", rect: W.project.held, content: { kind: "standIn", standIn: STILL.heldNote }, dim: lift(W.project.window), radius: 4, shadow: false },
+    // (the held card as Ring 4 opens on it, asking with its buttons: the world Ring 4 continues is the same, NF-01)
+    { id: "project-held", kind: "pebble", rect: W.project.held, content: { kind: "standIn", standIn: STILL.held }, dim: lift(W.project.window), radius: 4, shadow: false },
     { id: "toolbox", kind: "pebble", rect: W.toolbox, depth: W.depth.toolbox, content: { kind: "standIn", standIn: STILL.settings }, dim: lift(W.toolbox), shadow: true },
     { id: "finder", kind: "apple", rect: W.finder, depth: W.depth.finder, content: slotOf(SLOT.finder, W.finder), dim: lift(W.finder), shadow: true },
     { id: "calculator", kind: "apple", rect: W.calculator, depth: W.depth.calculator, content: slotOf(SLOT.calculator, W.calculator), dim: lift(W.calculator), shadow: true },

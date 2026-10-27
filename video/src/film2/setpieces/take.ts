@@ -40,6 +40,12 @@ export interface TakeView {
   slot?: SlotStandIn;
   /** a slot's caption of what the take shows from source frame `from` (the menu-bar icon's new state …) */
   slotStates?: readonly { from: number; label: string }[];
+  /**
+   * the source frame from which the view's own slot hands its label to a slot entering over it (the palette over the
+   * workspace): the label fades out over LABEL_HANDOFF_FRAMES while the incoming slot arrives, so two labels never
+   * stack (NF-08: "HS-B3 ⌘K, typed, Enter" was drawn over the workspace's label during the palette's entrance)
+   */
+  labelOut?: number;
   /** the real window the view shows: a still of the same window never shares a frame with it (CR-11) */
   place?: string;
   /** real takes: the view's body text (CSS px) and its legible words, for the legibility checks (CR-05) */
@@ -121,6 +127,9 @@ export function checkTakeManifest(m: TakeManifest): string[] {
   }
   return out;
 }
+
+/** Frames (at 60 fps) over which a slot's label fades as it hands the frame's naming to a slot entering over it. */
+export const LABEL_HANDOFF_FRAMES = 8;
 
 /** The source frame a composition frame shows: 1×, from `inPoint` at frame `at`. */
 export const sourceFrameAt = (frame: number, at: number, fps: number, m: TakeManifest, inPoint: number): number =>
@@ -274,24 +283,33 @@ export const TAKE_RS9: TakeManifest = {
   note: "placeholder timings; the 2.0.0 recording's event log replaces them",
 };
 
-/** Ring 4's views inside HS-F's picture (the conversation "studio-bookings"), view px: the history and the run. */
+/**
+ * Ring 4's views inside HS-F's picture (the conversation "studio-bookings"), view px: the held card (asking: the whole
+ * card with its buttons; answered: its sentence, at `answered` inside it) and the run.
+ */
 export const HSF_VIEWS = {
-  held: { w: 253, h: 66 },
+  held: { w: 726, h: 134, answered: { x: 0, y: 2, w: 253, h: 66 } },
   /**
    * the test card's sentence, and further down the conversation the receipt (the resumed turn's own row), far enough
    * below that the camera's glide down to it carries the sentence out of frame before it reads the receipt closer
    */
-  run: { w: 424, h: 312, tests: { x: 0, y: 0, w: 424, h: 43 }, receipt: { x: 0, y: 260, w: 250, h: 52 } },
+  // (the receipt far enough below the test card that the reads never show it cut by the frame's foot: it lands while
+  // the act is still read, Pebble's 4.7 s from the click being shorter than the two reads)
+  run: { w: 424, h: 370, tests: { x: 0, y: 0, w: 424, h: 43 }, receipt: { x: 0, y: 330, w: 250, h: 28 } },
 } as const;
 
 /**
- * HS-F, Ring 4's AgentGuard run (F3, F12): the conversation "studio-bookings", the held card in its history, the test
- * card reading Running, then Done, then "Verified" after the resumed turn. 1.5.0's real span was 4.63 s from the click
- * (TREATMENT §3.6 chain 9); the take rolls 15 s before Running (the person's own time, the click in the history).
- * Every plane of the place is a VIEW of this one take, on one clock (CR-11): the window (a slot: no published capture
- * shows the 2.0.0 conversation), the history (the held card's sentence) and the run (the test card's sentence, then
- * the receipt). PLACEHOLDER: 1.0.x stills cropped to what persists whatever the state (no buttons, no review badge),
- * so no frame shows a live button beside a verified run; the run's parts arrive with the card entrance on their events.
+ * HS-F, Ring 4's AgentGuard run (F3, F12): the conversation "studio-bookings"; the held card ASKS ("Blocked · Pebble's
+ * change isn't verified yet." with Run the tests, Ask Pebble to finish, Accept as unverified) and the person clicks
+ * Run the tests; the card is answered; the test card reads Running, then Done, then "Verified" after the resumed turn.
+ * 1.5.0's real span was 4.63 s from the click (TREATMENT §3.6 chain 9); the take rolls 15 s before the click (the
+ * person's own time, reading the card). The verifier's NF-01 (fix round 2): the take used to start with the click in
+ * the history, so Ring 4 never framed a decision; it now rolls from the card asking, all on one clock (CR-11).
+ * Every plane of the place is a VIEW of this one take: the window (a slot: no published capture shows the 2.0.0
+ * conversation), the held card (the 1.0.x card with its buttons while it asks; from the click, its answered sentence,
+ * cropped at the sentence's end) and the run (the test card's sentence from Running, then the receipt's Verified line).
+ * So no frame shows a live button beside a run in progress or verified. PLACEHOLDER: 1.0.x stills; the run's parts
+ * arrive with the card entrance on their events, the held card's states switch with a hard cut on the click (CR-18).
  */
 export const TAKE_HSF: TakeManifest = {
   id: "HS-F",
@@ -299,10 +317,18 @@ export const TAKE_HSF: TakeManifest = {
   frames: 2400,
   w: 1160,
   h: 800,
-  events: { history: 0, running: 900, done: 1068, verified: 1178 },
+  events: { history: 0, click: 894, running: 900, done: 1068, verified: 1178 },
   views: {
     window: { w: SLOT.project.w, h: SLOT.project.h, slot: SLOT.project, place: "studio-bookings" },
-    held: { w: HSF_VIEWS.held.w, h: HSF_VIEWS.held.h, place: "studio-bookings", stills: [{ from: 0, standIn: STILL.heldNote }] },
+    held: {
+      w: HSF_VIEWS.held.w,
+      h: HSF_VIEWS.held.h,
+      place: "studio-bookings",
+      stills: [
+        { from: 0, to: 894, standIn: STILL.held },
+        { from: 894, standIn: STILL.heldNote, rect: HSF_VIEWS.held.answered },
+      ],
+    },
     run: {
       w: HSF_VIEWS.run.w,
       h: HSF_VIEWS.run.h,
@@ -317,7 +343,12 @@ export const TAKE_HSF: TakeManifest = {
   note: "placeholder: 1.0.x stills cropped to persistent text; the 2.0.0 harness playback (timings from its event log) replaces them",
 };
 
-/** The slot for the climax's conversation "Kiln" (no published capture shows it). */
+/**
+ * The slot for the climax's conversation "Kiln" (no published capture shows it). Its label sits under where the kept card
+ * lands, at the card's left edge: the cut into Kiln carries the content the climax's way, so on the cut's first frames
+ * the frame shows that part of the conversation, and the label says what fills it (NF-07: at its top left corner it was
+ * out of frame, and the cut into the film's peak landed on 62 frames of unlabelled hatching).
+ */
 const KILN_SLOT: SlotStandIn = {
   kind: "slot",
   id: "kiln",
@@ -327,6 +358,7 @@ const KILN_SLOT: SlotStandIn = {
   h: 800,
   window: "pebble",
   standsFor: "G1, G2, B5",
+  focus: { x: 0.34, y: 0.64 },
 };
 
 /**
@@ -381,7 +413,9 @@ export const TAKE_HSB3: TakeManifest = {
   // the take rolls on the workspace before ⌘K, so the passage opens on it (CR-06: it opened on bare ground)
   events: { workspace: 0, opens: 120, typed: 204, lit: 216, enter: 246 },
   views: {
-    workspace: { w: SLOT.workspace.w, h: SLOT.workspace.h, slot: SLOT.workspace, place: "workspace" },
+    // (the workspace hands its label to the palette as the palette opens over it: NF-08, the two labels were drawn one
+    // over the other through the palette's entrance)
+    workspace: { w: SLOT.workspace.w, h: SLOT.workspace.h, slot: SLOT.workspace, place: "workspace", labelOut: 120 },
     palette: { w: SLOT.palette.w, h: SLOT.palette.h, place: "workspace", stills: [{ from: 120, standIn: SLOT.palette, entrance: true }], slotStates: [{ from: 0, label: "" }, { from: 204, label: "typed: stealth" }, { from: 216, label: "Turn Stealth Lockdown on" }, { from: 246, label: "Enter" }] },
   },
   placeholder: true,

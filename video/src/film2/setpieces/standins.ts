@@ -113,8 +113,12 @@ const still = (id: string, src: string, w: number, h: number, standsFor: string,
 });
 
 export const STILL = {
-  /** "Blocked · Pebble's change isn't verified yet" with Run the tests: cropped below its usage line */
-  held: still("held", "ui/crop-held@2x.png", 726, 256, "Ring 4's ask: the held card with Run the tests (F11, F12), from the 2.0.0 run", {
+  /**
+   * "Blocked · Pebble's change isn't verified yet" with Run the tests: cropped below its usage line. Ring 4's ask while
+   * it asks (fix round 2, NF-01), framed whole: every text in it (the body, "Blocked", the buttons) has a cap height of
+   * 8.0 CSS px on the 3× capture, so it is all one size
+   */
+  held: still("held", "ui/crop-held@3x.png", 726, 256, "Ring 4's ask: the held card with Run the tests (F11, F12), from the 2.0.0 run", {
     crop: { x: 0, y: 122, w: 726, h: 134 },
     readPx: 11.7,
     words: 43,
@@ -166,11 +170,17 @@ export const STILL = {
     textPx: 12.4,
     place: "studio-bookings",
   }),
-  /** Ring 4's receipt: "Verified · pytest 42 passed on current files" and "Done, and verified:", below the timing line */
+  /**
+   * Ring 4's receipt: "Verified · pytest 42 passed on current files", the line the treatment names (H6, S18), below the
+   * timing line and above the reply (fix round 2, NF-01: the crop ended on "Done, and verified:" with its list cut away;
+   * measured 27 Oct on the 3× capture: the timing line's ink ends at 27.7 CSS px, the Verified line runs 42.7–52.7, the
+   * reply's "Done, and verified:" starts at 68.7). The reply's list is not read here: its 41 words at reading size
+   * would take the ring shot past 3.14 words a second
+   */
   verifiedTop: still("verifiedTop", "ui/crop-done-receipt@3x.png", 684, 278, "Ring 4's receipt: \"Verified · pytest … passed on current files\" (F12)", {
-    crop: { x: 12, y: 33, w: 250, h: 52 },
+    crop: { x: 12, y: 33, w: 250, h: 28 },
     readPx: 11.0,
-    words: 10,
+    words: 7,
     textPx: 11.0,
     place: "studio-bookings",
   }),
@@ -192,11 +202,15 @@ const slot = (id: string, captureId: string, label: string, w: number, h: number
 });
 
 export const SLOT = {
-  browser: slot("browser", "RS-9", "the browser take: Pebble's own tab, at 1×", 1440, 900, "thirdParty", "J2, J1, J6, F14: Pebble's tab, the results, the video starting"),
+  // (its label right of its middle: whole in the whole Mac's framings, wholly off-frame as Ring 4 reads the project
+  // left of it; at its top left corner it sat cut by the frame's edge for 2–4 s: the verifier's NF-08)
+  browser: { ...slot("browser", "RS-9", "the browser take: Pebble's own tab, at 1×", 1440, 900, "thirdParty", "J2, J1, J6, F14: Pebble's tab, the results, the video starting"), focus: { x: 0.62, y: 0.5 } },
   /** no published capture shows the companion holding a card: its card and its sites, before the Allow (CR-18) */
   companionCard: { ...slot("companionCard", "RS-9", "the companion's card \"Use youtube.com\": its sites, Allow", 384, 456, "pebble", "A9, J3: the card answered in the companion"), focus: { x: 0.08, y: 0.18 }, place: "companion" },
   /** Ring 4's conversation window: the take's full frame, around the views the film reads */
-  project: { ...slot("project", "HS-F", "the conversation \"studio-bookings\"", 1160, 800, "pebble", "F1, F11: the project conversation"), focus: { x: 0.05, y: 0.06 }, place: "studio-bookings" },
+  // (its label between the held card's answered sentence and the run, where Ring 4 reads: until HS-F exists the frame
+  // says what fills it while it is read; the card asking covers it until the click: the verifier's NF-01)
+  project: { ...slot("project", "HS-F", "the conversation \"studio-bookings\"", 1160, 800, "pebble", "F1, F11: the project conversation"), focus: { x: 0.285, y: 0.285 }, place: "studio-bookings" },
   /** the Workshop's cards (1.7.0, never published): the ask and the kept card, at the sizes the 2.0.0 cards take */
   glazeCard: { ...slot("glazeCard", "HS-G", "\"Keep this tool in Pebble's Toolbox?\" Discard · Keep", 440, 220, "pebble", "G4: the Workshop's ask"), place: "glaze" },
   keptCard: { ...slot("keptCard", "RS-W", "\"Kept in Pebble's Toolbox · kiln_ramp_time\" View code · Remove", 440, 240, "pebble", "G3: the kept tool, told"), place: "kiln" },

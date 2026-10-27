@@ -29,21 +29,24 @@ import { checkAll, type Finding, type QaMove, type Report } from "../qa/checks";
 import type { FilmTimelineQa, QaReadable, QaShot } from "../qa/timeline";
 import { GRADES, gradeColor, gradeLuminance, hexToRgb, relLuminance, type Grade } from "../light/grades";
 import { radiusToCorners, rectsIntersect, type Point, type Rect } from "../motion/geometry";
-import { planePose, worldToFrame } from "../motion/camera";
+import { planePose, worldToFrame, type Pose } from "../motion/camera";
 import { E_MOVE, clamp01, smoothstep } from "../motion/ease";
 import { readingLoad, requiredHoldS, wordCount, type TextEvent } from "../type/reading";
-import { cascadeSchedule } from "../type/Cascade";
+import { cascadeSchedule, swapLook } from "../type/Cascade";
 import { IRIS_DEFAULT_EASE, IRIS_DRAWN, irisRadius } from "../transitions/kinds";
 import { checkCues } from "../../../../shared/pebble/cues";
 import { STEALTH_HONEST } from "../../../../shared/pebble/stealthVeil";
 import { defaultEntranceOf, enterFramesOf, exitFramesOf, insideFrame, lineRect, rectInFrame } from "./frame";
 import { carriedRect, typeEvent } from "./kit";
 import { onGrid, pointsOf, type MusicGrid } from "./music";
-import { STEALTH_FEATURES, shownSize, slotLabelLayout, type SlotStandIn, type StandIn, type StillStandIn } from "./standins";
+import { STEALTH_FEATURES, shownSize, type StandIn, type StillStandIn } from "./standins";
 import { cellAt, cellTextPx } from "./wall";
-import { COMPANION_PANEL, checkTakeManifest, checkTakeUse, frameOfSource, sourceFrameAt, sourceTimecode, stillsAt, type TakeUse } from "./take";
+import { COMPANION_PANEL, checkTakeManifest, checkTakeUse, frameOfSource, sourceFrameAt, stillsAt, type TakeUse } from "./take";
 import { RIVERBED, groundRectOf } from "./ground";
 import { shotOf, type PlaneSpec, type ScenePlan, type ShotSpec, type TypeSpec } from "./scene";
+import { contentMotion, planeOpacityAt, probeGrid } from "./motion-qa";
+import { drawnSlots, labelOpacityOn, labelRectOn, visibleFrameOn, type DrawnSlot } from "./labels";
+import { apertureRect } from "../carrier/apertureMath";
 
 const at = (p: ScenePlan, s: ShotSpec, fr: number) => s.camera.pose(fr - s.from);
 
@@ -95,14 +98,16 @@ export function planQa(p: ScenePlan): FilmTimelineQa {
     if (!c) continue;
     const fixed = typeEvent(c.fixed, p.frame, p.fps, p.duration);
     if (fixed) texts.push({ ...fixed, kind: "cascade" });
-    const sched = cascadeSchedule(c.start, c.items, p.fps, c.beats);
+    // the schedule the view draws, the cascade's end included (NF-06: without `endAt` the marks gave the last item a
+    // swap exit 80 frames before the one the render drew)
+    const sched = cascadeSchedule(c.start, c.items, p.fps, c.beats, undefined, c.endAt);
     sched.forEach((w, i) => {
       const last = i === sched.length - 1;
       texts.push({
         id: `${s.id}-item${i}`,
         text: w.text,
         from: w.inStart,
-        to: last && c.holdLast ? s.to : w.outEnd,
+        to: last && c.holdLast && c.endAt === undefined ? s.to : w.outEnd,
         enterFrames: w.inEnd - w.inStart,
         cascadeItem: true,
         kind: "cascade",
@@ -263,30 +268,88 @@ export function cues(p: ScenePlan): Finding[] {
   return p.shots.flatMap((s) => (s.stone ? checkCues(s.stone.cues, `${p.id}/${s.id}`).map((m) => ({ check: "cues", level: "error" as const, message: m })) : []));
 }
 
+/** The parts of a plane on a local frame, frame px at the plane's own depth: the text-bearing ones and the slots. */
+const planePartsAt = (p: ScenePlan, s: ShotSpec, pl: PlaneSpec, fr: number): { rect: Rect; kind: "text" | "slot" | "plain"; id: string }[] => {
+  if (planeOpacityAt(p, pl, fr) < 0.5) return [];
+  const pose = planePose(at(p, s, fr), s.ref, pl.depth ?? 1);
+  const toFrame = (r: Rect) => rectInFrame(r, pose, p.frame);
+  const c = pl.content;
+  if (c.kind === "standIn") {
+    if (c.standIn.kind === "slot") return [{ rect: toFrame(pl.rect), kind: "slot", id: pl.id }];
+    const d = stillIn(c.standIn, pl.rect);
+    return [{ rect: toFrame(d.rect), kind: (c.standIn.words ?? 1) > 0 ? "text" : "plain", id: pl.id }];
+  }
+  if (c.kind === "image") return [{ rect: toFrame(pl.rect), kind: (c.words ?? IMAGE_TEXT[c.src]?.words ?? 1) > 0 ? "text" : "plain", id: pl.id }];
+  const u = c.use;
+  const m = u.manifest;
+  const v = m.views[c.view];
+  if (!v) return [];
+  if (m.pattern) return [{ rect: toFrame(pl.rect), kind: (v.words ?? 1) > 0 ? "text" : "plain", id: pl.id }];
+  const out: { rect: Rect; kind: "text" | "slot" | "plain"; id: string }[] = v.slot ? [{ rect: toFrame(pl.rect), kind: "slot", id: `${pl.id}:${v.slot.id}` }] : [];
+  const kx = pl.rect.w / v.w;
+  const ky = pl.rect.h / v.h;
+  for (const vs of stillsAt(v, Math.min(m.frames - 1, sourceFrameAt(fr, u.at, p.fps, m, u.inPoint)))) {
+    const r = vs.rect ?? { x: 0, y: 0, w: v.w, h: v.h };
+    const box = { x: pl.rect.x + r.x * kx, y: pl.rect.y + r.y * ky, w: r.w * kx, h: r.h * ky };
+    if (vs.standIn.kind === "slot") out.push({ rect: toFrame(box), kind: "slot", id: `${pl.id}:${vs.standIn.id}` });
+    else out.push({ rect: toFrame(stillIn(vs.standIn, box).rect), kind: (vs.standIn.words ?? 1) > 0 ? "text" : "plain", id: `${pl.id}:${vs.standIn.id}` });
+  }
+  return out;
+};
+
+/** A rect clipped to another (null when they do not overlap). */
+const clipTo = (r: Rect, c: Rect): Rect | null => {
+  const x0 = Math.max(r.x, c.x);
+  const y0 = Math.max(r.y, c.y);
+  const x1 = Math.min(r.x + r.w, c.x + c.w);
+  const y1 = Math.min(r.y + r.h, c.y + c.h);
+  return x1 > x0 && y1 > y0 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : null;
+};
+
 /**
- * Film type over any other UI plane while the line is read (sampled every 6 frames): a warning for the edit lane, since
- * type must never sit over the UI's own text (§5.2) and only the 2.0.0 capture shows where its text is. Over a published
- * still it is a warning; over a slot (no capture yet) it is noted.
+ * Film type over any other UI plane while the line is read (sampled every 3 frames; TREATMENT §5.2: "never over the
+ * UI's own text"). Over a published still, an image or a real take with text it is an ERROR (fix round 2, the
+ * verifier's NF-05: in 9:16, L05, L06 and the chapter line sat in dark Fraunces on the dimmed Settings still for the
+ * whole hold, and the check only warned); over a slot (no capture yet) it is noted for the 2.0.0 capture (G4, §53).
+ * What the aperture's opaque bands cover is not under the type (the Drop's L04 sits in the band).
  */
 export function typeOverPlanes(p: ScenePlan): Finding[] {
   const out: Finding[] = [];
   const q = planQa(p);
-  const seen = new Set<string>();
+  const step = Math.max(1, Math.round((3 * p.fps) / 60));
+  const glimpse = Math.round((GLIMPSE_FRAMES_60 * p.fps) / 60);
+  // each line's read span: from its landing until its exit starts (a line blurring out as the camera moves on is leaving)
+  const readUntil = new Map<string, number>();
+  for (const t of p.types) if (t.exitAt !== undefined) readUntil.set(t.id, t.exitAt);
+  for (const s of p.shots) if (s.cascade?.fixed.exitAt !== undefined) readUntil.set(s.cascade.fixed.id, s.cascade.fixed.exitAt);
   for (const t of q.texts) {
     if (!t.rect || typeof t.rect === "function") continue;
-    for (let fr = t.from + (t.enterFrames ?? 0); fr < t.to; fr += 6) {
+    const tr = t.rect;
+    const until = Math.min(t.to, readUntil.get(t.id) ?? t.to);
+    // frames each part sits under the line (text-bearing, or a slot), by the part's id
+    const hits = new Map<string, { kind: "text" | "slot"; frames: number[] }>();
+    for (let fr = t.from + (t.enterFrames ?? 0); fr < until; fr += step) {
       const s = p.shots.find((x) => fr >= x.from && fr < x.to);
       if (!s) continue;
+      const ap = s.aperture ? apertureRect(p.frame.w, p.frame.h, s.aperture.open(fr), s.aperture.centerY) : null;
       for (const pl of s.planes) {
-        if (pl.textless || fr < (pl.from ?? -Infinity) || fr >= (pl.to ?? Infinity) || (pl.content.kind === "take" && fr < pl.content.use.at)) continue;
-        const r = planeRectAt(p, s, pl, fr);
-        const x = rectsIntersect(t.rect, r);
-        if (!x || seen.has(`${t.id}:${pl.id}`)) continue;
-        seen.add(`${t.id}:${pl.id}`);
-        const c = pl.content;
-        const slot = (c.kind === "standIn" && c.standIn.kind === "slot") || (c.kind === "take" && !c.use.manifest.pattern && !!c.use.manifest.views[c.view]?.slot);
-        out.push({ check: "typeOverPlanes", level: slot ? "info" : "warn", message: `"${t.text.replace(/\n/g, " ").slice(0, 40)}" sits over ${pl.id}${slot ? " (a slot: check the 2.0.0 capture has no text there)" : ""} (frame ${fr})`, frame: fr });
+        if (pl.textless) continue;
+        for (const part of planePartsAt(p, s, pl, fr)) {
+          if (part.kind === "plain") continue;
+          const shown = ap ? clipTo(part.rect, ap) : part.rect;
+          if (!shown || !rectsIntersect(tr, shown)) continue;
+          const h = hits.get(part.id) ?? { kind: part.kind, frames: [] };
+          h.frames.push(fr);
+          hits.set(part.id, h);
+        }
       }
+    }
+    for (const [id, h] of hits) {
+      const n = h.frames.length * step;
+      const line = `"${t.text.replace(/\n/g, " ").slice(0, 40)}"`;
+      if (h.kind === "slot") out.push({ check: "typeOverPlanes", level: "info", message: `${line} sits over ${id} (a slot: check the 2.0.0 capture has no text there) (frame ${h.frames[0]})`, frame: h.frames[0] });
+      else if (n >= Math.min(glimpse, Math.max(step, until - t.from - (t.enterFrames ?? 0))) / 2)
+        out.push({ check: "typeOverPlanes", level: "error", message: `${line} sits over ${id}, a capture with text, for about ${(n / p.fps).toFixed(2)} s from frame ${h.frames[0]}: type never sits over the UI's own text (§5.2, NF-05); move the plane or the line's band`, frame: h.frames[0], to: h.frames[h.frames.length - 1]! + step });
     }
   }
   return out;
@@ -564,7 +627,7 @@ export function textItems(p: ScenePlan): TextItem[] {
   for (const s of p.shots) {
     const planes: PlaneSpec[] = [...s.planes];
     if (s.cascade) {
-      const sched = cascadeSchedule(s.cascade.start, s.cascade.items, p.fps, s.cascade.beats);
+      const sched = cascadeSchedule(s.cascade.start, s.cascade.items, p.fps, s.cascade.beats, undefined, s.cascade.endAt);
       s.cascade.cards.forEach((card, i) => {
         const w = sched[i];
         if (!w) return;
@@ -966,9 +1029,11 @@ export function typeTracks(p: ScenePlan): TypeTrack[] {
     const c = s.cascade;
     if (!c) continue;
     out.push(track(c.fixed));
-    const sched = cascadeSchedule(c.start, c.items, p.fps, c.beats);
+    // the schedule the view draws (<Cascade endAt>): the last item leaves with a drawn blur exit from the cascade's end
+    const sched = cascadeSchedule(c.start, c.items, p.fps, c.beats, undefined, c.endAt);
     sched.forEach((w, i) => {
-      const last = c.holdLast && i === sched.length - 1;
+      const final = i === sched.length - 1;
+      const held = c.holdLast && c.endAt === undefined && final;
       out.push({
         id: `${s.id}-item${i}`,
         text: w.text,
@@ -976,9 +1041,9 @@ export function typeTracks(p: ScenePlan): TypeTrack[] {
         color: COLOR.ink,
         from: w.inStart,
         landed: w.inEnd,
-        until: last ? end : w.outEnd,
-        exits: last ? [] : [{ from: w.outStart, to: w.outEnd, kind: "swap" }],
-        vanishes: last && !p.endsFilm ? `the cascade's last item is held to the piece's end with no exit: it vanishes on the cut at ${end}` : undefined,
+        until: held ? end : w.outEnd,
+        exits: held ? [] : [{ from: w.outStart, to: w.outEnd, kind: final && c.endAt !== undefined ? "blur" : "swap" }],
+        vanishes: held && !p.endsFilm ? `the cascade's last item is held to the piece's end with no exit: it vanishes on the cut at ${end}` : !held && w.outEnd > end && !p.endsFilm ? `its exit runs past the piece's end (${end}): the cut takes it mid-exit` : undefined,
       });
     });
   }
@@ -997,50 +1062,42 @@ export function typeExits(p: ScenePlan): Finding[] {
     .map((t) => ({ check: "typeExits", level: "error" as const, message: `${t.id} "${t.text.replace(/\n/g, " ").slice(0, 40)}": ${t.vanishes} (give it a drawn exit that ends by the cut, CR-03)`, frame: Math.min(t.until, p.duration) - 1 }));
 }
 
+/**
+ * Type never sits on type (fix round 2: in 1:1 the Veil's label, set under the render, ran into the honest line's band
+ * as the camera pushed in): two lines drawn on the same frame never overlap, a line set in the world where its world
+ * carries it. A cascade's items share one stage by design (they swap in place) and are not judged against each other.
+ */
+export function typeOverType(p: ScenePlan): Finding[] {
+  const out: Finding[] = [];
+  const tracks = typeTracks(p);
+  const rectOf = (t: TypeTrack, fr: number) => t.rects?.[fr] ?? t.rect;
+  const pad = 2 * p.frame.unit;
+  for (let i = 0; i < tracks.length; i++)
+    for (let j = i + 1; j < tracks.length; j++) {
+      const a = tracks[i]!;
+      const b = tracks[j]!;
+      const cascade = (t: TypeTrack) => /-item\d+$/.test(t.id);
+      if (cascade(a) && cascade(b)) continue;
+      const from = Math.max(a.from, b.from);
+      const to = Math.min(a.until, b.until);
+      for (let fr = from; fr < to; fr += 2) {
+        const ra = rectOf(a, fr);
+        const rb = rectOf(b, fr);
+        if (ra.x < rb.x + rb.w - pad && rb.x < ra.x + ra.w - pad && ra.y < rb.y + rb.h - pad && rb.y < ra.y + ra.h - pad) {
+          out.push({ check: "typeOverType", level: "error", message: `"${a.text.replace(/\n/g, " ").slice(0, 30)}" and "${b.text.replace(/\n/g, " ").slice(0, 30)}" overlap on frame ${fr}: two lines never sit on each other`, frame: fr });
+          break;
+        }
+      }
+    }
+  return out;
+}
+
 /** The least share of the frame a slot fills before its label must be wholly in frame. */
 export const SLOT_LABEL_MIN_SHARE = 0.1;
 /** Frames where the camera moves a point of the frame faster than this (px a frame at 1080) are a sweep, not read. */
 export const SLOT_LABEL_SWEEP_PX = 4;
 /** A published still or image covering this share of the frame is something to read besides the slots. */
 const OTHER_CONTENT_SHARE = 0.02;
-
-/** A slot as a plane draws it: the slot, its box in world units, its frames, and its caption's state and source time. */
-interface DrawnSlot {
-  id: string;
-  slot: SlotStandIn;
-  box: Rect;
-  from: number;
-  to: number;
-  state: (fr: number) => string | undefined;
-  timecode: (fr: number) => string | undefined;
-}
-
-/** Every slot a shot's planes draw (a slot stand-in; a take view's own slot; a slot among a view's stills). */
-const drawnSlots = (p: ScenePlan, s: ShotSpec, pl: PlaneSpec): DrawnSlot[] => {
-  const c = pl.content;
-  if (c.kind === "standIn") return c.standIn.kind === "slot" ? [{ id: pl.id, slot: c.standIn, box: pl.rect, from: s.from, to: s.to, state: () => undefined, timecode: () => undefined }] : [];
-  if (c.kind !== "take" || c.use.manifest.pattern) return [];
-  const u = c.use;
-  const m = u.manifest;
-  const v = m.views[c.view];
-  if (!v) return [];
-  const src = (fr: number) => Math.min(m.frames - 1, sourceFrameAt(fr, u.at, p.fps, m, u.inPoint));
-  const state = (fr: number) => [...(v.slotStates ?? [])].reverse().find((x) => src(fr) >= x.from)?.label;
-  const timecode = (fr: number) => sourceTimecode(src(fr), m.fps);
-  const from = Math.max(s.from, u.at);
-  const to = Math.min(s.to, u.until);
-  const out: DrawnSlot[] = v.slot ? [{ id: `${pl.id}:${v.slot.id}`, slot: v.slot, box: pl.rect, from, to, state, timecode }] : [];
-  const kx = pl.rect.w / v.w;
-  const ky = pl.rect.h / v.h;
-  (v.stills ?? []).forEach((vs, i) => {
-    if (vs.standIn.kind !== "slot") return;
-    const r = vs.rect ?? { x: 0, y: 0, w: v.w, h: v.h };
-    const a = Math.max(from, frameOfSource(vs.from, u.at, p.fps, m, u.inPoint));
-    const b = Math.min(to, vs.to === undefined ? Infinity : frameOfSource(vs.to, u.at, p.fps, m, u.inPoint));
-    out.push({ id: `${pl.id}:${vs.standIn.id}${i ? `#${i}` : ""}`, slot: vs.standIn, box: { x: pl.rect.x + r.x * kx, y: pl.rect.y + r.y * ky, w: r.w * kx, h: r.h * ky }, from: a, to: b, state, timecode });
-  });
-  return out;
-};
 
 /** The fastest any of the frame's corners or its centre moves on screen from `fr` to `fr + 1`, px at 1080. */
 const sweepPx = (p: ScenePlan, s: ShotSpec, fr: number): number => {
@@ -1113,11 +1170,8 @@ export function slotLabels(p: ScenePlan): Finding[] {
       const r = rectInFrame(d.box, at(p, s, fr), p.frame);
       return Math.max(0, Math.min(r.x + r.w, w) - Math.max(r.x, 0)) * Math.max(0, Math.min(r.y + r.h, h) - Math.max(r.y, 0)) >= SLOT_LABEL_MIN_SHARE * w * h;
     };
-    const labelIn = ({ d }: (typeof slots)[number], fr: number) => {
-      const pose = at(p, s, fr);
-      const L = slotLabelLayout(d.slot, d.box.w, d.box.h, pose.zoom, d.state(fr), d.timecode(fr)).rect;
-      return insideFrame(rectInFrame({ x: d.box.x + L.x, y: d.box.y + L.y, w: L.w, h: L.h }, pose, p.frame), p.frame, -0.5);
-    };
+    // (a label is drawn whole or not at all: labels.ts fades it out before it would reach the frame's edge)
+    const labelIn = ({ d }: (typeof slots)[number], fr: number) => labelOpacityOn(p, s, d, fr) >= 0.99;
     const unlabelled = (fr: number) => {
       const xs = slots.filter((x) => shown(x, fr));
       return xs.some((x) => big(x, fr)) && !xs.some((x) => labelIn(x, fr)) && sweepPx(p, s, fr) <= SLOT_LABEL_SWEEP_PX && !otherContent(p, s, fr);
@@ -1140,9 +1194,289 @@ export function slotLabels(p: ScenePlan): Finding[] {
         out.push({ check: "slotLabels", level: "error", message: `${s.id}/${x.d.id}: read with its label cut by the frame for ${((run.to - run.from) / p.fps).toFixed(2)} s, frames ${run.from}–${run.to} (its label carries the take's state): set its focus where the camera reads it`, frame: run.from, to: run.to });
       }
     }
+    // fix round 2 (the verifier's NF-08): a label is whole or wholly off-frame on every frame, whatever else the frame
+    // holds (the 9:16 receipt showed "n tab, at 1×" of the browser slot's label at the frame's left edge for 4 s): the
+    // label as drawn (labels.ts labelOpacityOn), never cut by the frame the viewer sees (the aperture's open part)
+    for (const x of slots) {
+      const partial = (fr: number) => {
+        if (!shown(x, fr) || labelOpacityOn(p, s, x.d, fr) <= 0.02 || sweepPx(p, s, fr) > SLOT_LABEL_SWEEP_PX) return false;
+        const r = labelRectOn(p, s, x.d, fr);
+        const vis = clipTo(r, visibleFrameOn(p, s, fr));
+        return vis !== null && (vis.w < r.w - 0.5 || vis.h < r.h - 0.5);
+      };
+      for (const run of runsOf(Math.max(x.d.from, s.from), Math.min(x.d.to, s.to), partial)) {
+        if (run.to - run.from < glimpse) continue;
+        out.push({ check: "slotLabels", level: "error", message: `${s.id}/${x.d.id}: its label is cut by the frame's edge for ${((run.to - run.from) / p.fps).toFixed(2)} s, frames ${run.from}–${run.to}: a slot's label is whole or wholly off-frame (NF-08)`, frame: run.from, to: run.to });
+      }
+    }
   }
   return out;
 }
+
+
+/* ---------------------------------------------------------------- fix round 2: every cut reads at once (NF-07) ---- */
+
+/** A share of the frame a world rect covers under a pose. */
+const coverOf = (p: ScenePlan, r: Rect, pose: Pose): number => {
+  const q = rectInFrame(r, pose, p.frame);
+  const { w, h } = p.frame;
+  return (Math.max(0, Math.min(q.x + q.w, w) - Math.max(q.x, 0)) * Math.max(0, Math.min(q.y + q.h, h) - Math.max(q.y, 0))) / (w * h);
+};
+
+/**
+ * What a local frame gives the viewer to read, or null (fix round 2; CR-06's rule, extended to every cut by the
+ * verifier's NF-07): a line of type landed and on screen; the stone; a plane the plan reads, at 85 % opacity or more
+ * and at least half in frame; a real take's window or a published still filling an eighth of the frame or more; or a
+ * slot filling a tenth or more WITH its label whole in frame (a placeholder names what fills it: a hatched slot with
+ * its label out of frame is a blank frame, as the cut into Kiln was for 62 frames).
+ */
+export function readableOn(p: ScenePlan, fr: number): string | null {
+  for (const t of p.types) {
+    const d = drawnSpan(t, p.fps, p.duration);
+    if (fr < d.landed || fr >= d.exitAt) continue;
+    const r = carriedRect(p, t, lineRect(t.text, t.tier, p.frame, t.box, t.sizeT ?? 0.5), fr);
+    if (inFrameShare(r, p.frame.w, p.frame.h) >= 0.5) return `the line ${t.id}`;
+  }
+  if (stonesOnFrame(p, fr).length) return "the stone";
+  const s = shotOf(p, fr);
+  if (!s) return null;
+  const pose = at(p, s, fr);
+  for (const pl of s.planes) {
+    const o = planeOpacityAt(p, pl, fr);
+    if (o < 0.85) continue;
+    const r = rectInFrame(pl.read?.rect ?? pl.rect, planePose(pose, s.ref, pl.depth ?? 1), p.frame);
+    if (pl.read && inFrameShare(r, p.frame.w, p.frame.h) >= 0.5) return `the read ${pl.id}`;
+    const c = pl.content;
+    const still = c.kind === "image" || (c.kind === "standIn" && c.standIn.kind === "still") || (c.kind === "take" && !!c.use.manifest.pattern);
+    if (still && coverOf(p, pl.rect, planePose(pose, s.ref, pl.depth ?? 1)) >= 1 / 8) return `the capture ${pl.id}`;
+    if (c.kind === "take" && !c.use.manifest.pattern) {
+      const v = c.use.manifest.views[c.view];
+      if (!v) continue;
+      const kx = pl.rect.w / v.w;
+      const ky = pl.rect.h / v.h;
+      for (const vs of stillsAt(v, Math.min(c.use.manifest.frames - 1, sourceFrameAt(fr, c.use.at, p.fps, c.use.manifest, c.use.inPoint)))) {
+        if (vs.standIn.kind !== "still") continue;
+        const r0 = vs.rect ?? { x: 0, y: 0, w: v.w, h: v.h };
+        if (coverOf(p, { x: pl.rect.x + r0.x * kx, y: pl.rect.y + r0.y * ky, w: r0.w * kx, h: r0.h * ky }, pose) >= 1 / 8) return `the capture ${pl.id}:${vs.standIn.id}`;
+      }
+    }
+  }
+  // the slots: the planes' and the cascade's cards
+  const slots: DrawnSlot[] = s.planes.flatMap((pl) => (planeOpacityAt(p, pl, fr) >= 0.85 ? drawnSlots(p, s, pl) : []));
+  if (s.cascade) {
+    const c = s.cascade;
+    const sched = cascadeSchedule(c.start, c.items, p.fps, c.beats, undefined, c.endAt);
+    c.cards.forEach((card, i) => {
+      const win = sched[i];
+      if (!win || card.content.kind !== "standIn" || card.content.standIn.kind !== "slot") return;
+      const look = i === 0 && fr < win.inEnd ? { opacity: 1 } : swapLook(win, fr, i === sched.length - 1);
+      if (!look || look.opacity < 0.85) return;
+      slots.push({ id: card.id, key: "self", slot: card.content.standIn, box: card.rect, depth: 1, from: s.from, to: s.to, state: () => undefined, timecode: () => undefined });
+    });
+  }
+  for (const d of slots) {
+    if (fr < d.from || fr >= d.to || coverOf(p, d.box, pose) < SLOT_LABEL_MIN_SHARE) continue;
+    if (labelOpacityOn(p, s, d, fr) >= 0.99) return `the label of ${d.id}`;
+  }
+  return null;
+}
+
+/** The first frame at or after `from` (within `within` frames) that gives the viewer something to read. */
+export function firstReadableFrom(p: ScenePlan, from: number, within = 60): number | null {
+  for (let fr = from; fr < Math.min(p.duration, from + within); fr++) if (readableOn(p, fr) !== null) return fr;
+  return null;
+}
+
+/** The most frames after a cut before something reads (CR-06's 6 frames at 60 fps). */
+export const READ_AFTER_CUT_60 = 6;
+
+/**
+ * Every hard cut inside a piece reads within 6 frames (fix round 2; the verifier's NF-07: the join check held only the
+ * cuts between pieces, and the cut into Kiln, the film's peak, landed on about 62 frames of hatched slot with no label
+ * in view). The joins between pieces keep their own check (setpieces/joins.ts checkJoins), on the same rule.
+ */
+export function cutsReadable(p: ScenePlan): Finding[] {
+  const out: Finding[] = [];
+  const most = Math.round((READ_AFTER_CUT_60 * p.fps) / 60);
+  for (const seam of p.seams) {
+    if (seam.frames > 0) continue;
+    const r = firstReadableFrom(p, seam.at, 90);
+    if (r === null || r - seam.at > most)
+      out.push({ check: "cutsReadable", level: "error", message: `the cut at ${seam.at} (${seam.out} → ${seam.in}) shows nothing to read until frame ${r ?? `≥ ${seam.at + 90}`} (${r === null ? "90+" : r - seam.at} frames; at most ${most}): keep a line, a capture or a slot's label in frame from the cut (NF-07)`, frame: seam.at, to: r ?? seam.at + 90 });
+  }
+  return out;
+}
+
+/* ---------------------------------------------------------------- fix round 2: what the content does (CR-04, NF-02) */
+
+/** The content floor, px a frame at 1080: the median content speed over every second (the corners' floor, §55). */
+export const CONTENT_FLOOR_PX = 0.25;
+
+/** The frames a check of the content's motion skips: declared waits, title pages (§58), transitions (two shots render). */
+const motionExempt = (p: ScenePlan): Uint8Array => {
+  const ex = new Uint8Array(p.duration);
+  for (const s of p.shots) {
+    for (let fr = s.from; fr < s.to; fr++) if (s.kind === "title" || (s.waits ?? []).some((w) => fr >= w.from && fr < w.to)) ex[fr] = 1;
+  }
+  for (const seam of p.seams) if (seam.frames > 0) for (let fr = Math.max(0, seam.at); fr < Math.min(p.duration, seam.at + seam.frames); fr++) ex[fr] = 1;
+  return ex;
+};
+
+/** The content's motion on every `step`-th local frame (filled forward): median speed, its mean velocity (cached). */
+const contentTracks = new WeakMap<ScenePlan, Map<number, { med: Float64Array; vx: Float64Array; vy: Float64Array }>>();
+const contentTrack = (p: ScenePlan, step: number) => {
+  const byStep = contentTracks.get(p) ?? new Map<number, { med: Float64Array; vx: Float64Array; vy: Float64Array }>();
+  contentTracks.set(p, byStep);
+  const hit = byStep.get(step);
+  if (hit) return hit;
+  const t = contentTrackOf(p, step);
+  byStep.set(step, t);
+  return t;
+};
+const contentTrackOf = (p: ScenePlan, step: number) => {
+  const n = p.duration;
+  const med = new Float64Array(n).fill(Number.NaN);
+  const vx = new Float64Array(n).fill(Number.NaN);
+  const vy = new Float64Array(n).fill(Number.NaN);
+  const grid = probeGrid(p.frame.w, p.frame.h);
+  for (let fr = 0; fr < n; fr += step) {
+    const m = contentMotion(p, fr, grid);
+    // a frame whose content covers under 4 % of it shows no subject (bare ground, type alone)
+    if (m.median === null || m.cover < 0.04) continue;
+    for (let k = fr; k < Math.min(n, fr + step); k++) {
+      med[k] = m.median;
+      vx[k] = m.mean.x;
+      vy[k] = m.mean.y;
+    }
+  }
+  return { med, vx, vy };
+};
+
+/**
+ * The content floor (fix round 2; the verifier's CR-04): over every second outside declared waits, title pages and
+ * transitions, the content the frame shows (the planes, the cascade's cards, the wall's cells, the stone, each at its
+ * own depth, topmost first, on a grid of the frame: setpieces/motion-qa.ts) moves at least CONTENT_FLOOR_PX px a frame
+ * at 1080 at its median. cameraFloor measures the frame's corners, and a zoom anchored on the subject passed it with the
+ * subject still: the Drop's L05/L06 hold moved its corners 0.6 px a frame while the companion moved 0.04–0.09 (the
+ * verifier's block fit read 0.074, the reviewer's half-frame phase correlation 0.07–0.15). Title pages keep the
+ * corners' floor (the lead's ruling, OVERRIDES §58); the ground and type in a fixed band are not the subject.
+ */
+export function contentFloor(p: ScenePlan, step = 2): Finding[] {
+  const out: Finding[] = [];
+  const n = p.duration;
+  const win = Math.max(2, Math.round(p.fps));
+  const ex = motionExempt(p);
+  const { med } = contentTrack(p, step);
+  const slow = new Uint8Array(n);
+  const meanAt = new Float64Array(n).fill(Number.NaN);
+  for (let f = 0; f + win <= n; f++) {
+    let sum = 0;
+    let k = 0;
+    let exempt = false;
+    for (let g = f; g < f + win; g++) {
+      if (ex[g]) {
+        exempt = true;
+        break;
+      }
+      if (!Number.isNaN(med[g]!)) {
+        sum += med[g]!;
+        k++;
+      }
+    }
+    // a second with an exempt frame, or with content on under half its frames, is not judged
+    if (exempt || k < win / 2) continue;
+    meanAt[f] = sum / k;
+    if (meanAt[f]! < CONTENT_FLOOR_PX - 1e-9) for (let g = f; g < f + win; g++) slow[g] = 1;
+  }
+  for (const run of runsOf(0, n, (f) => slow[f] === 1)) {
+    let at = -1;
+    for (let f = run.from; f + win <= run.to; f++) if (!Number.isNaN(meanAt[f]!) && (at < 0 || meanAt[f]! < meanAt[at]!)) at = f;
+    const where = [...new Set(p.shots.filter((s) => s.from < run.to && s.to > run.from).map((s) => s.id))].join(", ");
+    out.push({
+      check: "contentFloor",
+      level: "error",
+      message: `the content barely moves for ${((run.to - run.from) / p.fps).toFixed(2)} s, frames ${run.from}–${run.to} (${where}): its slowest second (from frame ${at}) moves the frame's content ${at >= 0 ? meanAt[at]!.toFixed(3) : "?"} px a frame at 1080 at its median, under the ${CONTENT_FLOOR_PX} floor (a glide moves what the viewer looks at, not only the frame's corners: a zoom anchored on the subject leaves it still)`,
+      frame: run.from,
+      to: run.to,
+    });
+  }
+  return out;
+}
+
+/** The least content speed (px a frame at 1080) at which a direction is a direction, for the sway check. */
+export const SWAY_MIN_PX = 0.15;
+
+/**
+ * No sway (fix round 2; the verifier's NF-02): inside a shot, outside waits and transitions, the content's mean
+ * velocity (its pan) never turns back on itself: two moments within 3 s, each moving at SWAY_MIN_PX or more, whose
+ * directions differ by more than 120°, with the content slowing to under SWAY_MIN_PX between them (a stop). The
+ * Kiln hold moved left after the cut, stopped, drifted right about 70 px, stopped and panned left again: a hold that
+ * passes through zero speed twice. A pure zoom has no mean velocity and is not judged here (contentFloor is).
+ */
+export function sway(p: ScenePlan, step = 2): Finding[] {
+  const out: Finding[] = [];
+  const ex = motionExempt(p);
+  const { vx, vy, med } = contentTrack(p, step);
+  const span = Math.round(3 * p.fps);
+  const smooth = Math.max(1, Math.round((20 * p.fps) / 60));
+  const stride = Math.max(1, Math.round((5 * p.fps) / 60));
+  for (const s of p.shots) {
+    // the mean pan and the median speed, smoothed over 20 frames, every 5 frames
+    const at: number[] = [];
+    const vs: { x: number; y: number }[] = [];
+    const sp: number[] = [];
+    for (let fr = s.from; fr + smooth <= s.to; fr += stride) {
+      let x = 0;
+      let y = 0;
+      let m = 0;
+      let k = 0;
+      let skip = false;
+      for (let g = fr; g < fr + smooth; g++) {
+        if (ex[g]) skip = true;
+        if (!Number.isNaN(vx[g]!)) {
+          x += vx[g]!;
+          y += vy[g]!;
+          m += med[g]!;
+          k++;
+        }
+      }
+      if (skip || k < smooth / 2) continue;
+      at.push(fr);
+      vs.push({ x: x / k, y: y / k });
+      sp.push(m / k);
+    }
+    let reported = -Infinity;
+    for (let i = 0; i < at.length; i++) {
+      const a = vs[i]!;
+      const sa = Math.hypot(a.x, a.y);
+      if (sa < SWAY_MIN_PX || at[i]! < reported) continue;
+      for (let j = i + 1; j < at.length && at[j]! - at[i]! <= span; j++) {
+        const b = vs[j]!;
+        const sb = Math.hypot(b.x, b.y);
+        if (sb < SWAY_MIN_PX) continue;
+        if ((a.x * b.x + a.y * b.y) / (sa * sb) > Math.cos((120 * Math.PI) / 180)) continue;
+        // through a stop of the pan (the subject's own travel, as the verifier measured the kept card's edge): its
+        // speed under SWAY_MIN_PX between them; two moves in different directions with a glide between are a new move
+        let low = Infinity;
+        for (let k = i + 1; k < j; k++) low = Math.min(low, Math.hypot(vs[k]!.x, vs[k]!.y));
+        if (!(low < SWAY_MIN_PX)) continue;
+        out.push({
+          check: "sway",
+          level: "error",
+          message: `${s.id}: the content turns back on itself, moving (${a.x.toFixed(2)}, ${a.y.toFixed(2)}) px a frame at ${at[i]} and (${b.x.toFixed(2)}, ${b.y.toFixed(2)}) at ${at[j]}, slowing to ${low.toFixed(2)} between: a hold that sways through zero speed; carry the landing's velocity into the hold's own direction (NF-02)`,
+          frame: at[i],
+          to: at[j]! + smooth,
+        });
+        reported = at[j]! + smooth;
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+/** The checks added in fix round 2, by name (the verifier's findings after fix round 1). */
+export const ROUND2_CHECKS = ["contentFloor", "sway", "cutsReadable", "slotLabels", "typeOverType"] as const;
 
 /** The checks added after the craft review, by name (CR-15). */
 export const REVIEW_CHECKS = ["cameraFloor", "irisEase", "groundCoverage", "stoneCount", "planesInFrame", "legibleWords", "hitSync", "smallPrintHolds", "askActClock", "typeExits"] as const;
@@ -1173,6 +1507,11 @@ export function checkPlan(p: ScenePlan, grid?: MusicGrid, extraMoves: readonly Q
     ...typeExits(p),
     // added in fix round 1
     ...slotLabels(p),
+    // added in fix round 2 (the verifier's findings after round 1)
+    ...contentFloor(p),
+    ...sway(p),
+    ...cutsReadable(p),
+    ...typeOverType(p),
   ];
   const errors = [...r.errors, ...more.filter((x) => x.level === "error")];
   return {
