@@ -318,8 +318,9 @@ def revise_cues(path, decision=None):
         "side": "A", "chosen": chosen == "A", "start_s": r4(db(B2, 48)), "end_s": r4(db(B2, 52)), "start_bar": 48,
         "end_bar": 52, "bars": 4, "length_s": r4(db(B2, 52) - db(B2, 48)), "bars_measured": bar_rows(B2, 48, 52),
         "why": "the gather and the rush are the film's most feature-heavy 6 s (§51 gives them to B2 and B4); 2.75-3.5 "
-               "onsets a beat and an air share of 0.011-0.015 hold the climax's density and level without a new peak "
-               "(MONTAGE_DESIGN §2.10)"}]
+               "onsets a beat and an air share of 0.011-0.015 hold the climax's density and level (MONTAGE_DESIGN "
+               "§2.10); as built, the run-on's short-term maximum is level with the climax's, inside the 0.5 LU that "
+               "g1_rule.json allows (CUE_SHEET.md §0, §10)"}]
     cj["tracks"][A4]["cue_windows"]["the_return"] = [
         {"scene": "the_return", "part": "the merge (R480-R720), on V, dipped 2.5 dB, into the title on bar 82", "side": "A",
          "chosen": chosen == "A", "start_s": r4(db(A4, 80)), "end_s": r4(db(A4, 82)), "start_bar": 80, "end_bar": 82,
@@ -337,7 +338,7 @@ def revise_cues(path, decision=None):
             removed[sc] = int(str(prev[sc]).split()[0])
     keep = ("g1_side", "title_variant", "title_variant_b", "title_variant_for_the_chosen_side")
     cj["revision"] = {
-        "date": "2026-10-27", "by": "score2, the supervisor's revision for the Return (MONTAGE_DESIGN §5.6)",
+        "date": "2026-10-28", "by": "score2, the supervisor's revision for the Return (MONTAGE_DESIGN §5.6)",
         "retired_scenes": {"the_wall": f"{removed['the_wall']} windows removed", "convergence": f"{removed['convergence']} windows removed",
                            "why": "the person chose the montage at the end only (OVERRIDES §61): the Return replaces the "
                                   "wall and the convergence; 22:13's copy of this file is in cuesheet/archive-2026-10-26-2213/"},

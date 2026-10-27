@@ -49,6 +49,8 @@ MET = load(os.path.join(W, "main.metrics.json"))
 def f(v, d=2, sign=False):
     if v is None:
         return "n/a"
+    if round(v, d) == 0:
+        v = 0.0  # never print a minus zero
     s = f"{v:+.{d}f}" if sign else f"{v:.{d}f}"
     return s.replace("-", "−")
 
@@ -207,12 +209,13 @@ def t_g1():
     return L
 
 
-def t_title(T):
+def t_title(T, side="A"):
     L = ["| Variant | What | Foghorn max (at, s) | Windows ≥ 0.30 / ≥ 0.25 of all | Other watched labels (max) | Verdict |",
          "|---|---|---|---|---|---|"]
     for v in T["variants"]:
         w = ", ".join(f"{k} {f(x, 3)}" for k, x in v["watched_max"].items() if k != "foghorn") or "none"
-        L.append(f"| `{v['id']}` | {v['what']} | {f(v['foghorn_max'], 3)} ({f(v['foghorn_max_at'], 2)}) | "
+        what = v["what"] if side == "A" else v["what"].replace("(the dip as planned)", "(no dip on this side: M6 flat)")
+        L.append(f"| `{v['id']}` | {what} | {f(v['foghorn_max'], 3)} ({f(v['foghorn_max_at'], 2)}) | "
                  f"{v['windows_ge_0.30']} / {v['windows_ge_0.25']} of {v['windows']} | {w} | {v['verdict']} |")
     return L
 
@@ -281,8 +284,8 @@ def t_seamdetail(jid):
 
 TABLES = {"cues": t_cues, "joins": t_joins, "arc": t_arc, "blocks": t_blocks, "shots": t_shots, "rframes": t_rframes,
           "returnbars": t_returnbars, "g1": t_g1, "probe": t_probe, "j2": t_j2, "checks": t_checks,
-          "title_A": lambda: t_title(TA), "title_B": lambda: t_title(TB),
-          "title_A_r2": lambda: t_title(TA2), "title_B_r2": lambda: t_title(TB2),
+          "title_A": lambda: t_title(TA), "title_B": lambda: t_title(TB, "B"),
+          "title_A_r2": lambda: t_title(TA2), "title_B_r2": lambda: t_title(TB2, "B"),
           "returnbars_B": lambda: t_returnbars(GB)}
 for jid in J:
     TABLES[f"seam_{jid}"] = (lambda jid_: (lambda: t_seamdetail(jid_)))(jid)

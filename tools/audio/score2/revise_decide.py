@@ -161,8 +161,8 @@ NO_EQ_ALL_LAYERS = [f"C{k}" for k in range(1, 8)]  # C1-C7: every layer of the d
 def decide_title_r2(T, t1):
     """Round 2 (r2/title_round2_rule.json, written 04:04 on 28 Oct before its measurement): the first of C1-C12 with no
     fail. When round 1 already chose, round 2 is only recorded. When nothing passes in either round, the sheet carries
-    the supervisor's choice (written 04:20, after round 2's numbers, and labelled so): among C1-C7, which keep every
-    layer and leave A4 un-EQ'd, the lowest worst-window reading, then the fewest windows at 0.30 or more."""
+    the supervisor's choice (written at about 04:13, after round 2's numbers, and labelled so): among C1-C7, which keep
+    every layer and leave A4 un-EQ'd, the lowest worst-window reading, then the fewest windows at 0.30 or more."""
     if not T:
         return None
     by = {v["id"]: v for v in T["variants"]}
