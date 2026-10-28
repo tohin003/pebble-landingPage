@@ -3,8 +3,11 @@
 // composed ending and its room tone), a breath of night green, then the same stone asleep on the riverbed at night, and
 // three lines, one beat at a time:
 //     Pebble rests.
-//     Soon, it will learn while it does.
+//     Soon, it may learn while it does.
 //     Not built yet.
+// ("may", not §62's starting "will": the feature comes only if measurement shows it helps (D157), and the page says so
+// beside its hint (src/content/next.ts), so the film's promise carries the same condition; the post-credit review's
+// P1-2, 28 Oct, within §62's "the lead may change them", which the lead's brief hands this lane.)
 // A coming feature, never part of 2.0.0: no version, no date, no number, no mock screen, no model or company name, and
 // none of §62's four phrases (setpieces/codaChecks.ts holds every rule, each with a canary in tests/coda.test.ts). The
 // material is the Companion's real resting pose (`sleepy`, priority row 17) drawn by Pebble's own engine (bloub by
@@ -18,18 +21,21 @@
 //                lead's ruling (POSTCREDIT_DESIGN §7 item 3), and E-move is the ruling the film already has (§52)
 //   C  L34–      the breath: flat night green (COLOR.nightPage, the dark --bg, never black), with no camera: a declared
 //                wait. Room tone only
-//   D  irisIn    an iris opens from the sleeping stone's face (E-move, 36 frames, the dark sage hairline): the face, the
-//                stone, then the riverbed at night. irisIn is the design's L70 unless the flash model needs it later
+//   D  irisIn    an iris opens from the sleeping stone's face (E-move, 36 frames, with NO hairline: in this film a ring
+//                means Pebble is acting, and a sage ring opening from the sleeping stone read as the unbuilt feature at
+//                work, POSTCREDIT_DESIGN §6; the review's P1-1): the stone comes out of the dark through the feathered
+//                mask alone, then the riverbed at night. irisIn is the design's L70 unless the flash model needs it later
 //                (codaIrisInNeed: no tile the iris-out darkened brightens again within a second, so nothing in the
 //                scene makes an opposing pair, POSTCREDIT_DESIGN §5 C8)
 //   E  +30       "Pebble rests." rises from its mask; it lands 60 frames after the iris starts
-//   G  +100      "Soon, it will learn while it does." lands, with the scene's one sound (the score lane's): the title's
-//                own stone tap at a whisper, its peak on this frame
+//   G  +100      "Soon, it may learn while it does." lands, with the scene's one sound: the title's own stone tap at a
+//                whisper, its peak on this frame (CODA_SOUND: the layer is planned here and not built yet; who builds it
+//                is the lead's to assign, the review's P1-3)
 //   H  +8        "Not built yet." lands beneath it, in the dark muted ink: the limit beside the promise
 //   I  +170      the lockup holds; the push carries on (0.35 px a frame at the corners, 0.30 in 1:1)
 //   J  +18       the push eases to rest (its speed falls linearly to zero)
 //   K  +30       the film's last breath: the camera still, the stone still alive (sway, breath, z's); a declared wait
-// At L70 that is 456 frames (7.60 s).
+// From the design's L70 that is 456 frames (7.60 s); the flash model opens the iris-in on L82, so it is 468 (7.80 s).
 //
 // What it continues. Frames L0–L33 ARE the end card's page, carried on: its camera (settled in the end card's own last
 // breath, the room tone after the music's decay, and left as it is: the X cut ends there, so it cannot change), its
@@ -44,7 +50,7 @@
 import { COLOR, RING, f60, type Aspect } from "../tokens";
 import { VelocityCamera, worldToFrame, type CamSample, type Pose } from "../motion/camera";
 import { radiusToCorners, type Point, type Rect } from "../motion/geometry";
-import { E_ARRIVE, E_MOVE, clamp01 } from "../motion/ease";
+import { E_ARRIVE, E_MOVE, clamp01, smoothstep } from "../motion/ease";
 import { GRADES, applyGroundLight, gradeAt, gradeColor, hexToRgb, relLuminance, type Grade, type LightCue, type RGB } from "../light/grades";
 import { IRIS_DRAWN, irisRadius } from "../transitions/kinds";
 import type { Finding } from "../qa/checks";
@@ -67,9 +73,9 @@ import type { DemoStretch } from "./demo/grids";
  */
 export const CODA_TEXT = {
   rests: "Pebble rests.",
-  soon: "Soon, it will learn while it does.",
+  soon: "Soon, it may learn while it does.",
   /** 1:1 and 9:16 break it after "learn" */
-  soonBroken: "Soon, it will learn\nwhile it does.",
+  soonBroken: "Soon, it may learn\nwhile it does.",
   status: "Not built yet.",
   /** the description of every post with the main film and of the site's film page (never X's: the X cut has no coda) */
   description: "After the end card: a planned feature, learning while resting. It isn't built yet, and it comes only if measurement shows it helps.",
@@ -153,11 +159,28 @@ export const CODA_PLATE = { src: "desktop/riverbed-dark-2400.jpg", fallback: "#1
 export const plateUnder = (g: Grade, plate: { median: string; exposure: number } = CODA_PLATE): RGB =>
   gradeColor(applyGroundLight(hexToRgb(plate.median), { ground: [plate.exposure, plate.exposure, plate.exposure] }), g, 0.5, true);
 
-/** The sound layer the score lane builds (POSTCREDIT_DESIGN §3.7): room tone throughout, one CC0 tap; no music. */
+/**
+ * The scene's own small sound (§62; POSTCREDIT_DESIGN §3.7): room tone throughout, one CC0 tap; no music. Planned here and
+ * NOT BUILT: this plan said the score lane builds it, and the score lane's cue sheet says the scene's lane times it
+ * (.work/score2/CUE_SHEET.md, "After the end card"), so no lane builds it; the master's room tone stops at the master's
+ * end, so the coda as it stands would play digital silence. `builtBy` stays null until the lead assigns the layer (the
+ * post-credit review's P1-3), and codaSound reports it while it is. For whoever builds it, the plan's own timing: the end
+ * card's room tone carried on without a restart to the coda's last frame (extra.timing.end), and the tap's peak on
+ * L-C2's landing (extra.timing.line2), about −30 LUFS.
+ */
 export const CODA_SOUND = {
-  roomTone: { take: "room_tone_b", licence: "ours (designed air, .work/sfx2/KIT.md)", lufs: -52 },
-  tap: { take: "standin_tap_a", licence: "CC0 (Kenney impactWood_light_002)", lufs: -30, note: "the title's own stone tap; its peak on L-C2's landing" },
+  builtBy: null as string | null,
+  roomTone: { kind: "bed", take: "room_tone_b", licence: "ours (designed air, .work/sfx2/KIT.md)", lufs: -52, note: "the end card's room tone carried on without a restart, to the coda's last frame" },
+  tap: { kind: "oneShot", take: "standin_tap_a", licence: "CC0 (Kenney impactWood_light_002)", lufs: -30, note: "the title's own stone tap; its peak on L-C2's landing" },
 } as const;
+
+/** One layer of the coda's sound, local frames: a bed under frames [from, to), or a one-shot whose peak is on `at`. */
+export type CodaSoundLayer =
+  | { kind: "bed"; take: string; licence: string; lufs: number; note: string; from: number; to: number }
+  | { kind: "oneShot"; take: string; licence: string; lufs: number; note: string; at: number };
+
+/** The coda's one-shots (the plan has one: the tap). */
+export const codaOneShots = (x: CodaExtra): Extract<CodaSoundLayer, { kind: "oneShot" }>[] => x.sound.layers.filter((l): l is Extract<CodaSoundLayer, { kind: "oneShot" }> => l.kind === "oneShot");
 
 /** The coda has no music: an empty grid (the end card's ending is the music's real ending). */
 export const CODA_GRID: MusicGrid = { beats: [], downbeats: [], phrases: [], beatsPerBar: 4, hits: [] };
@@ -205,14 +228,21 @@ export interface CodaIris {
   frames: number;
   /** px (frame), the feather the view draws */
   feather: number;
-  /** the hairline on its edge */
-  hairline: string;
+  /**
+   * the hairline on its edge, or null for none: the closing iris keeps the film's (the night green coming in round the
+   * end card's stone, the film's iris grammar); the opening one has none, since a ring-coloured circle opening from the
+   * sleeping stone is the film's ring, Pebble acting (codaChecks.ts codaNoUi refuses it)
+   */
+  hairline: string | null;
   ease: "move";
 }
 
 export interface CodaExtra {
-  /** the end card it follows: its id, its true ending (this piece's L0, in its own frames) and the plan the view plays */
-  endCard: { id: string; end: number; shot: string; extended: ScenePlan };
+  /**
+   * the end card it follows: its id, its true ending (this piece's L0, in its own frames), the plan the view plays, and
+   * the still wait it declares at its end (its own frames; the film's last breath in the X cut, not in the main cut)
+   */
+  endCard: { id: string; end: number; shot: string; extended: ScenePlan; lastBreath: { from: number; to: number } | null };
   /** the end card's lines carried in and leaving on L0 (page 2's) */
   carried: readonly string[];
   /** the coda's own lines */
@@ -226,7 +256,8 @@ export interface CodaExtra {
   stone: { palette: "dark"; initialPose: "sleepy"; colors: typeof CODA_STONE_COLORS; blink: { target: number; keepClear: FrameSpan[]; clockOffset: number } };
   ground: { src: string; fallback: string; median: string; exposure: number };
   grade: Grade;
-  sound: { roomTone: { from: number; to: number } & (typeof CODA_SOUND)["roomTone"]; tap: { at: number } & (typeof CODA_SOUND)["tap"] };
+  /** the scene's sound as layers (codaSound counts them: one bed under every frame, one one-shot), and who builds it */
+  sound: { builtBy: string | null; layers: readonly CodaSoundLayer[] };
   /** the main film's captions for the coda (local frames; X's captions carry none) */
   captions: readonly { from: number; to: number; text: string }[];
   text: typeof CODA_TEXT;
@@ -275,13 +306,16 @@ const LAYOUT: Record<Aspect, CodaLayout> = {
  * The coda's lines as the browser sets them (Fraunces 350, SOFT 100, WONK 0, −0.022 em, the bundled variable font, in
  * Chrome 145's headless shell), measured on the 16:9 renders of 28 Oct (L257 and L464 agree within 2 px): the distance
  * from a line's box edge to its ink's far edge, in em of the 16:9 size (72 px). approxLineWidth's 0.48 em a character
- * is 24–33 % wider for them (L-C2: 1,175 px estimated, 884 drawn), which set the 16:9 lockup 150 px left of the frame's
- * centre. Used where the layout depends on a width (16:9, the lines beside the stone) and by the checks there
- * (TypeBox.inkWidth); a text not in the table falls back to the estimate. Re-measure if the lines or the font change.
+ * is 24–33 % wider for them (L-C2 as "will": 1,175 px estimated, 884 drawn), which set the 16:9 lockup 150 px left of
+ * the frame's centre. L-C2 as "may" was measured the same way on a full-size still of L467 (28 Oct 05:38: 1,011 px of
+ * ink from its box's edge at zoom 1.117, so 12.58 em; L-C1 and L-C3 on that still agree with the rows below within
+ * 1.3 px; the estimate is 1,140 px, 26 % wider). Used where the layout depends on a width (16:9, the lines beside the
+ * stone) and by the checks there (TypeBox.inkWidth); a text not in the table falls back to the estimate. Re-measure if
+ * the lines or the font change.
  */
 export const CODA_INK_EM_16x9: Readonly<Record<string, number>> = {
   "Pebble rests.": 5.03,
-  "Soon, it will learn while it does.": 12.28,
+  "Soon, it may learn while it does.": 12.58,
   "Not built yet.": 5.13,
 };
 
@@ -411,6 +445,34 @@ export function codaIrisIn(p: ScenePlan, fr: number): CodaIrisFrame | null {
   return irisFrame(c, R, o.feather, u);
 }
 
+/** A stroke the coda draws on a frame: a circle (frame px) in `color` at `opacity`, `widthPx` wide. */
+export interface CodaStroke {
+  iris: "out" | "in";
+  c: Point;
+  r: number;
+  color: string;
+  opacity: number;
+  widthPx: number;
+}
+
+/**
+ * The hairline the view (CodaView's NightCover) draws on a local frame, exactly: on the half-opaque radius of the iris
+ * in flight, in its colour, fading in over its first 8 % and out over its last 15 %; null when that iris has none (the
+ * opening one: CodaIris.hairline) or none is in flight. The checks read this, so what they judge is what is drawn.
+ */
+export function codaHairline(p: ScenePlan, fr: number): CodaStroke | null {
+  const x = codaOf(p);
+  if (!x) return null;
+  const out = codaIrisOut(p, fr);
+  const inn = out ? null : codaIrisIn(p, fr);
+  const hole = out ?? inn;
+  const iris = out ? x.irisOut : x.irisIn;
+  if (!hole || !iris.hairline) return null;
+  const opacity = smoothstep(0, 0.08, hole.u) * (1 - smoothstep(0.85, 1, hole.u));
+  if (opacity <= 0.002) return null;
+  return { iris: out ? "out" : "in", c: hole.c, r: Math.max(0.5, hole.edge), color: iris.hairline, opacity, widthPx: RING.hairlinePx * p.frame.unit };
+}
+
 /* ---------------------------------------------------------------- the plan ------------------------------------ */
 
 /** The coda, for one aspect. */
@@ -526,18 +588,21 @@ function buildCoda(o: CodaOptions, irisInAt: number, flashWait: number): ScenePl
   const feather = IRIS_DRAWN.featherPx * f.unit;
 
   const extra: CodaExtra = {
-    endCard: { id: ec.id, end: end0, shot: title.id, extended },
+    endCard: { id: ec.id, end: end0, shot: title.id, extended, lastBreath: (title.waits ?? []).find((w) => w.to >= end0) ?? null },
     carried: carried.map((t) => t.id),
     lines: [...CODA_LINES],
     irisOut: { at: irisOutAt, frames: irisOutF, feather, hairline: RING.color.light, ease: "move" },
-    irisIn: { at: irisIn, frames: irisInF, feather, hairline: RING.color.dark, ease: "move", startRadius: IRIS_DRAWN.startRadiusPx * f.unit },
+    // no hairline on the opening iris: the renders of 28 Oct showed a lone sage ring (the film's ring colour and width,
+    // over the 36 frames of a ring's emit) leaving the sleeping stone, since the plate's inside sits within ΔE 2–4 of
+    // the night green outside and the hairline was the only edge; the design rules that image out (§6)
+    irisIn: { at: irisIn, frames: irisInF, feather, hairline: null, ease: "move", startRadius: IRIS_DRAWN.startRadiusPx * f.unit },
     breath: { from: irisOutEnd, to: irisIn },
     lastBreath: { from: still, to: end },
     push: { px: CODA_PUSH_PX[A], lz, from: irisIn, ease, still },
     stone: { palette: "dark", initialPose: "sleepy", colors: CODA_STONE_COLORS, blink: { target: blinkTarget, keepClear, clockOffset } },
     ground: CODA_PLATE,
     grade: CODA_GRADE,
-    sound: { roomTone: { from: 0, to: end, ...CODA_SOUND.roomTone }, tap: { at: line2, ...CODA_SOUND.tap } },
+    sound: { builtBy: CODA_SOUND.builtBy, layers: [{ ...CODA_SOUND.roomTone, from: 0, to: end }, { ...CODA_SOUND.tap, at: line2 }] },
     captions: [
       { from: 0, to: line1 - rise(texts.rests), text: "[Silence]" },
       { from: line1 - rise(texts.rests), to: line2, text: CODA_TEXT.rests },
@@ -731,7 +796,11 @@ export function codaIrisInNeed(p: ScenePlan): number {
 
 /* ---------------------------------------------------------------- the film: the X cut (C10) --------------------- */
 
-/** X's cap for a standard account: 140 s (help.x.com; OVERRIDES §14), 8,400 frames at 60 fps; past 8,370 the score's flex rule F4 comes first. */
+/**
+ * X's cap for a standard account: 140 s (help.x.com; OVERRIDES §14), 8,400 frames at 60 fps. The master runs 8,102
+ * frames (2:15.03) on the score lane's cue sheet, revision 2, whose flex rule F4 (its one shortening splice) is already on,
+ * so past 139.5 s what gives is the lead's call.
+ */
 export const X_CAP_S = 140;
 export const X_AIM_S = 139.5;
 
@@ -751,7 +820,7 @@ export const xCutFrames = (pieces: readonly FilmPiece[]): number => {
 /**
  * The coda's place in a film (POSTCREDIT_DESIGN §3.10, C10): it is the film's last piece, right after the end card it
  * was planned against and starting on that end card's true ending (so the X version, the master cut there, holds no
- * coda frame), and the X version fits X's 140 s (8,400 frames at 60 fps; a warning past 139.5 s, where F4 comes first).
+ * coda frame), and the X version fits X's 140 s (8,400 frames at 60 fps; a warning past 139.5 s, the lead's call).
  */
 export function codaPlacement(pieces: readonly FilmPiece[]): { findings: Finding[]; xFrames: number } {
   const out: Finding[] = [];
@@ -772,7 +841,7 @@ export function codaPlacement(pieces: readonly FilmPiece[]): { findings: Finding
   const cap = Math.round(X_CAP_S * fps);
   const aim = Math.round(X_AIM_S * fps);
   if (xFrames > cap) out.push({ check: "codaPlacement", level: "error", message: `the X version runs ${xFrames} frames (${(xFrames / fps).toFixed(2)} s): over X's ${X_CAP_S} s (${cap} frames)` });
-  else if (xFrames > aim) out.push({ check: "codaPlacement", level: "warn", message: `the X version runs ${(xFrames / fps).toFixed(2)} s, within ${((cap - xFrames) / fps).toFixed(2)} s of X's cap: the score's flex rule F4 comes first` });
+  else if (xFrames > aim) out.push({ check: "codaPlacement", level: "warn", message: `the X version runs ${(xFrames / fps).toFixed(2)} s, within ${((cap - xFrames) / fps).toFixed(2)} s of X's cap: what gives is the lead's call (the score's flex rule F4, its one shortening splice, is already on)` });
   else out.push({ check: "codaPlacement", level: "info", message: `the X version is the master's first ${xFrames} frames (${(xFrames / fps).toFixed(2)} s); the main film runs ${pieces.reduce((n, p) => n + p.duration, 0)}` });
   return { findings: out, xFrames };
 }

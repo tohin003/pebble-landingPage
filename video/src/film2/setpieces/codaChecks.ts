@@ -17,12 +17,12 @@
 //                 the dark palette; shown for less than the app's 8-s hold; the planned blink where the plan puts it,
 //                 none in the keep-clear spans, never mid-blink on the last frame
 //   codaNoUi      C6: no mock screen: no planes, takes, cascades, walls, fields or rings; only the ground, the stone, the
-//                 lines and the two irises
+//                 lines and the two irises; and no hairline the view draws round the sleeping stone (a ring leaving it)
 //   codaLockup    the lines never sit on the stone or its z's while they are on screen
 //   codaFlashes   C8: no flash: no tile of the frame (6 × 6, WCAG's area) and not the whole frame makes an opposing pair
 //                 of large luminance changes within a second (the iris-out's fall is the one large change)
 //   codaSound     C11, the plan's half: one one-shot (the tap, CC0, never Mixkit) within a frame of L-C2's landing, and
-//                 room tone over every frame; no music
+//                 room tone over every frame; no music; a warning while no lane builds the layer (the review's P1-3)
 //   codaCaptions  C12, the plan's half: each caption cue 1.2 s or more, carrying each line's words exactly
 //   codaLight     the night ground (POSTCREDIT_DESIGN §3.5, §3.9): the plate's measured median at its exposure, under
 //                 the coda's light, within ΔE 5 of the site's dark --bg, which the footer sits on; never black
@@ -31,46 +31,32 @@
 // sleeping stone light on the night ground, which qa/reel-scan.ts finds on the inverted frame).
 // Pure; no React.
 import { CAMERA_FLOOR_PX_PER_FRAME_1080, type Finding } from "../qa/checks";
-import { COLOR, READING, f60 } from "../tokens";
-import { screenVelocity } from "../motion/camera";
+import { COLOR, READING, RING, f60 } from "../tokens";
+import { screenVelocity, worldToFrame } from "../motion/camera";
 import type { Point } from "../motion/geometry";
 import { deltaE, gradeAt, hexToRgb, relLuminance, rgbToHex } from "../light/grades";
 import { requiredHoldS, wordCount } from "../type/reading";
+import { COMING_NEVER, COMING_NEVER_PHRASES } from "../../../../shared/coming/never";
 import { HOLD_SECONDS } from "../../../../shared/pebble/character";
 import { checkCues } from "../../../../shared/pebble/cues";
 import { BLINK_S, blinkStartsFor, blinkTouches } from "./blink";
 import { carriedRect } from "./kit";
 import { defaultEntranceOf, enterFramesOf, lineRect } from "./frame";
-import { CODA_STONE_COLORS, codaFlashModel, codaIrisIn, codaIrisOut, codaOf, plateUnder, stoneExtent, type CodaExtra } from "./coda";
+import { CODA_STONE_COLORS, codaFlashModel, codaHairline, codaIrisIn, codaIrisOut, codaOf, codaOneShots, plateUnder, stoneExtent, type CodaExtra } from "./coda";
 import type { ScenePlan, ShotSpec, TypeSpec } from "./scene";
 
 /* ---------------------------------------------------------------- C1: the words ------------------------------- */
 
 /** §62's four phrases and their forms (the same expressions as the site's copy lint and src/content/next.ts). */
-export const CODA_NEVER_PHRASES: readonly RegExp[] = [/\brewr[io]t\w*\b.{0,20}\bmemor/i, /\bnever forget/i, /\blearn\w*\s+everything/i, /\bsmarter\b/i, /\bevery night\b/i];
+export const CODA_NEVER_PHRASES: readonly RegExp[] = COMING_NEVER_PHRASES;
 
 /**
- * Everything the coda may never say (OVERRIDES §62; POSTCREDIT_DESIGN §5, C1's list), each with why: the page's hint is
- * held to the same rules (src/content/next.ts NEXT_NEVER), so the film and the page say the coming feature one way.
+ * Everything the coda may never say (OVERRIDES §62; POSTCREDIT_DESIGN §5, C1's list), each with why: ONE rule set with
+ * the page's hint (shared/coming/never.ts, which src/content/next.ts NEXT_NEVER reads too), so the film and the page say
+ * the coming feature one way. (The two lists differed until the post-credit review's P2-3: plurals, "shipping", "a
+ * build", the month abbreviations and "season" on one side or the other, and overclaims of memory on neither.)
  */
-export const CODA_NEVER: readonly { re: RegExp; why: string }[] = [
-  ...CODA_NEVER_PHRASES.map((re) => ({ re, why: "one of §62's four phrases" })),
-  { re: /\d/, why: "a number (a version, a date, a price, a rate)" },
-  { re: /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twice|double|half|percent)\b/i, why: "a number word" },
-  { re: /[%×]/, why: "a number sign" },
-  { re: /\bv\d|\bversion\b|\brelease\b|\bupdate\b/i, why: "a version or a release" },
-  { re: /\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec)\b/, why: "a month" },
-  { re: /\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/, why: "a weekday" },
-  { re: /\b(today|tomorrow|tonight|weekend|spring|summer|autumn|fall|winter|quarter)\b/i, why: "a time word" },
-  { re: /\b(next|this)\s+(week|month|year|season)\b/i, why: "a date" },
-  { re: /\blater this\b|\bcoming (days|weeks|months)\b|\b(in|by) (early|mid|late)\b/i, why: "a window" },
-  { re: /\b(available|out now|now|included|includes|ships|shipped|in this release)\b/i, why: "says it is out or part of a release" },
-  { re: /\b(better|faster|cheaper|more accurate)\b/i, why: "a comparison" },
-  { re: /\b(OpenAI|ChatGPT|GPT|Anthropic|Claude|Codex|Cursor|Copilot|Devin|Windsurf|Aider|Cline|Google|Gemini|Meta|Llama|Mistral|Qwen|DeepSeek|xAI|Grok|Microsoft|Apple)\b/i, why: "a model or company name" },
-  { re: /[!·•]/, why: "the never-list's marks" },
-  { re: /\b[A-Z]{2,}\b/, why: "a word in capitals" },
-  { re: /\p{Extended_Pictographic}/u, why: "an emoji" },
-];
+export const CODA_NEVER: readonly { re: RegExp; why: string }[] = COMING_NEVER;
 
 /** Why a text breaks the coda's word rules (empty when it passes). */
 export const forbiddenIn = (text: string): string[] => CODA_NEVER.filter((x) => x.re.test(text)).map((x) => `"${text.match(x.re)![0]}" (${x.why})`);
@@ -269,7 +255,13 @@ const cornerPx = (p: ScenePlan, s: ShotSpec, fr: number): number => {
  * eased, the camera dead still). The coda's push moves from its first frame and never drops under the floor before its
  * ease (no arrive and hold), and the ease only slows. The end card's page carries on under the iris-out exactly as the
  * end card left it: settled in its own declared last breath (finale.ts: the X cut ends there, so nothing before L0 may
- * change), it never starts moving again (every second there overlaps the breath, so the floor does not judge it).
+ * change), it never starts moving again.
+ * The main cut's span before the push is reported, not excused: the end card's declared last breath (the film's last
+ * breath in the X cut only), L0 onward under the iris-out while the carried page stays under the floor, and the breath
+ * hold the picture still as one span (2.12 s as planned on 28 Oct). Every one-second window there overlaps a declared
+ * wait, so the foundation's floor never judged it; §58 lets only the film's last breath be still. Until the lead rules
+ * (the post-credit review's P1-4: (a) the span is §62's one breath of silence, declared as such, or (b) the end card
+ * glides to its last frame in both cuts) it is a warning with its frames.
  */
 export function codaCamera(p: ScenePlan, x: CodaExtra): Finding[] {
   const out: Finding[] = [];
@@ -332,8 +324,35 @@ export function codaCamera(p: ScenePlan, x: CodaExtra): Finding[] {
         out.push({ check: "codaCamera", level: "error", message: `the end card's page starts moving again under the iris-out (L${fr}: ${cornerPx(p, page, fr).toFixed(3)} px a frame, from ${settled.toFixed(3)}): it carries on as the end card left it`, frame: fr });
         break;
       }
+    const still = codaStillBeforePush(p, x);
+    if (still.frames > f60(60, p.fps)) {
+      const parts = [
+        still.endCard ? `the end card's declared last breath (${(still.endCard / p.fps).toFixed(2)} s; the film's last breath only in the X cut)` : "",
+        still.page ? `L0–L${still.page} under the iris-out (the end card's page carried on settled, ${settled.toFixed(3)} px a frame at its corners)` : "",
+        still.breath ? `the breath (L${x.breath.from}–L${x.breath.to})` : "",
+      ].filter(Boolean);
+      out.push({ check: "codaCamera", level: "warn", message: `in the main cut the picture holds still for ${(still.frames / p.fps).toFixed(2)} s before the coda's push: ${parts.join(", then ")}. §58 lets only the film's last breath be still; the lead rules on the span as one (the post-credit review's P1-4): (a) it is §62's one breath of silence, declared as such, or (b) the end card glides to its last frame in both cuts`, frame: 0, to: still.page && still.breath ? x.breath.to : still.page });
+    }
   }
   return out;
+}
+
+/**
+ * The main cut's still span before the coda's push, in frames: the end card's declared still at its end, then L0 onward
+ * while the carried page's corners move under the floor (to the iris-out's end at most), then, if the page was still to
+ * the iris-out's end, the breath.
+ */
+export function codaStillBeforePush(p: ScenePlan, x: CodaExtra): { frames: number; endCard: number; page: number; breath: number } {
+  const page = p.shots.find((s) => s.id === "page");
+  const shut = x.irisOut.at + x.irisOut.frames;
+  const lb = x.endCard.lastBreath;
+  const endCard = lb && lb.to >= x.endCard.end ? x.endCard.end - lb.from : 0;
+  let still = 0;
+  if (page) while (still < shut && cornerPx(p, page, still) < CAMERA_FLOOR_PX_PER_FRAME_1080) still++;
+  const breath = still >= shut ? x.breath.to - x.breath.from : 0;
+  // a span counts from the join only if it touches it: a page moving on L0 breaks it there
+  const frames = still > 0 ? endCard + still + breath : endCard;
+  return { frames, endCard, page: still, breath };
 }
 
 /* ---------------------------------------------------------------- C5: the pose -------------------------------- */
@@ -366,13 +385,34 @@ export function codaPose(p: ScenePlan, x: CodaExtra): Finding[] {
 
 /* ---------------------------------------------------------------- C6: no mock screen -------------------------- */
 
-/** C6: the coda draws no interface at all: no planes, takes, cascades, walls, fields or rings. */
+/**
+ * C6: the coda draws no interface at all: no planes, takes, cascades, walls, fields or rings; and no ring drawn as a seam:
+ * no stroke the view draws (coda.ts codaHairline) is concentric with the sleeping stone (its centre on the stone's disc)
+ * on any frame of the coda's shot. In this film a ring means Pebble is acting, so a ring opening from the sleeping stone
+ * would show the unbuilt feature at work (POSTCREDIT_DESIGN §6). The shots' rings alone missed one: the opening iris's
+ * sage hairline (the film's ring colour and width, over a ring's 36 emit frames) read as a ring leaving the stone on the
+ * renders of 28 Oct (the post-credit review's P1-1).
+ */
 export function codaNoUi(p: ScenePlan): Finding[] {
   const out: Finding[] = [];
   if (p.takes.length) out.push({ check: "codaNoUi", level: "error", message: `the coda uses ${p.takes.length} take(s): no screen of the feature (§62: its interface isn't designed yet)` });
   for (const s of p.shots) {
     const what = [s.planes.length ? `${s.planes.length} plane(s)` : "", s.cascade ? "a cascade" : "", s.wall ? "a wall" : "", s.returnField ? "a field of screens" : "", s.rings.length ? `${s.rings.length} ring(s)` : "", s.reads?.length ? "reads" : "", s.aperture ? "an aperture" : ""].filter(Boolean);
     if (what.length) out.push({ check: "codaNoUi", level: "error", message: `${s.id} draws ${what.join(", ")}: the coda shows only the ground, the stone, its lines and the two irises (no mock screen, §62)`, frame: s.from });
+  }
+  const coda = p.shots.find((s) => s.id === "coda");
+  if (coda?.stone && codaOf(p)) {
+    const ringColours = new Set([RING.color.light, RING.color.dark].map((c) => c.toUpperCase()));
+    for (let fr = coda.from; fr < p.duration; fr++) {
+      const line = codaHairline(p, fr);
+      if (!line) continue;
+      const pose = coda.camera.pose(fr - coda.from);
+      const c = worldToFrame(coda.stone.at, pose, p.frame.w, p.frame.h);
+      if (Math.hypot(line.c.x - c.x, line.c.y - c.y) > coda.stone.r * pose.zoom) continue;
+      const what = `${ringColours.has(line.color.toUpperCase()) ? "a ring-coloured" : "a"} hairline (${line.color}, ${(line.widthPx / p.frame.unit).toFixed(2)} px at 1080)`;
+      out.push({ check: "codaNoUi", level: "error", message: `the ${line.iris === "in" ? "opening" : "closing"} iris draws ${what} round the sleeping stone from L${fr}: a ring opening from the sleeping stone is the film's ring, Pebble acting, so it shows the unbuilt feature at work (POSTCREDIT_DESIGN §6); the stone comes out of the dark through the feathered mask alone`, frame: fr });
+      break;
+    }
   }
   return out;
 }
@@ -433,16 +473,37 @@ export function codaLockup(p: ScenePlan, x: CodaExtra): Finding[] {
 /** C8: no flash anywhere in the coda (coda.ts codaFlashModel: the irises and the scene, tile by tile). */
 export const codaFlashes = (p: ScenePlan): Finding[] => codaFlashModel(p).findings;
 
-/** C11, the plan's half (the score lane's layer check measures the mix): room tone everywhere, one CC0 tap on L-C2. */
+/**
+ * C11, the plan's half (the mix's half needs the layer built: see CODA_SOUND), over every layer the plan hands on: room
+ * tone (the beds) under every frame, never digital silence; exactly one one-shot, the tap, within a frame of L-C2's
+ * landing (a second one-shot is a second sound, and §62 asks for the scene's one small sound); no Mixkit take and every
+ * licence CC0 or ours; no music. A warning while no lane builds the layer (CODA_SOUND.builtBy: the review's P1-3).
+ */
 export function codaSound(p: ScenePlan, x: CodaExtra): Finding[] {
   const out: Finding[] = [];
-  const s = x.sound;
-  if (s.roomTone.from > 0 || s.roomTone.to < p.duration) out.push({ check: "codaSound", level: "error", message: `room tone covers ${s.roomTone.from}–${s.roomTone.to}, not every frame (never digital silence)` });
+  const layers = x.sound.layers;
+  const beds = layers.filter((l) => l.kind === "bed");
+  // the frames no bed covers, as runs
+  const covered = new Uint8Array(p.duration);
+  for (const b of beds) for (let fr = Math.max(0, b.from); fr < Math.min(p.duration, b.to); fr++) covered[fr] = 1;
+  const gaps: string[] = [];
+  for (let fr = 0; fr < p.duration; fr++) {
+    if (covered[fr]) continue;
+    const from = fr;
+    while (fr < p.duration && !covered[fr]) fr++;
+    gaps.push(`L${from}–L${fr}`);
+  }
+  if (gaps.length) out.push({ check: "codaSound", level: "error", message: `no room tone under ${gaps.join(", ")} (${beds.map((b) => `${b.take} L${b.from}–L${b.to}`).join(", ") || "no bed"}): every frame has room tone, never digital silence` });
+  const shots = codaOneShots(x);
+  if (shots.length !== 1) out.push({ check: "codaSound", level: "error", message: `the coda's sound has ${shots.length} one-shot${shots.length === 1 ? "" : "s"} (${shots.map((s) => `${s.take} on L${s.at}`).join(", ") || "none"}): one, the tap, the scene's one small sound (§62; POSTCREDIT_DESIGN §3.7)` });
   const l2 = p.types.find((t) => t.id === "L-C2");
-  if (l2 && Math.abs(s.tap.at - spanOf(l2, p).landed) > 1) out.push({ check: "codaSound", level: "error", message: `the tap peaks on L${s.tap.at}, not within a frame of L-C2's landing (L${spanOf(l2, p).landed})` });
-  if (/mixkit/i.test(`${s.tap.take} ${s.tap.licence} ${s.roomTone.take} ${s.roomTone.licence}`)) out.push({ check: "codaSound", level: "error", message: "a Mixkit take: the coda's sound is CC0 or ours (OVERRIDES §55, §60)" });
-  if (!/\bCC0\b|\bours\b/.test(s.tap.licence)) out.push({ check: "codaSound", level: "error", message: `the tap's licence is "${s.tap.licence}": CC0 or ours only` });
+  for (const s of shots) if (l2 && Math.abs(s.at - spanOf(l2, p).landed) > 1) out.push({ check: "codaSound", level: "error", message: `the tap (${s.take}) peaks on L${s.at}, not within a frame of L-C2's landing (L${spanOf(l2, p).landed})` });
+  for (const l of layers) {
+    if (/mixkit/i.test(`${l.take} ${l.licence}`)) out.push({ check: "codaSound", level: "error", message: `a Mixkit take (${l.take}, "${l.licence}"): the coda's sound is CC0 or ours (OVERRIDES §55, §60)` });
+    else if (!/\bCC0\b|\bours\b/.test(l.licence)) out.push({ check: "codaSound", level: "error", message: `${l.take}'s licence is "${l.licence}": CC0 or ours only` });
+  }
   if (p.music.length || p.hits.length) out.push({ check: "codaSound", level: "error", message: "the coda places music events: the music's ending is a real ending (§62)" });
+  if (!x.sound.builtBy) out.push({ check: "codaSound", level: "warn", message: "the coda's sound is planned here and built by no lane: the master's room tone stops at its end, so the coda would play digital silence; the lead assigns the layer (the post-credit review's P1-3), with this plan's timing (the room tone to the last frame, the tap's peak on L-C2's landing)" });
   return out;
 }
 

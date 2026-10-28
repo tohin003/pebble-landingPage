@@ -11,14 +11,14 @@
 //     sleeping stone (Pebble's own engine, the Companion's `sleepy` pose, the page's dark palette, on its own clock),
 //     moving with the push;
 //   the night cover (outside the grade, so it is exactly the dark --bg): night green outside the closing iris, over the
-//     whole breath, and outside the opening iris, each iris with the sage hairline on its edge (codaIrisOut and
-//     codaIrisIn: the circles the checks read);
+//     whole breath, and outside the opening iris (codaIrisOut and codaIrisIn: the circles the checks read); the closing
+//     iris with the sage hairline on its edge, the opening one with none (codaHairline: what is drawn, which codaNoUi
+//     reads; a sage ring opening from the sleeping stone is the film's ring, Pebble acting);
 //   the coda's own lines (one FontGate, outside the grade, set in the coda's world: TypeSpec.carry);
 //   the placeholder slate (the demo reels only).
 import { useMemo } from "react";
 import { AbsoluteFill, Img, Sequence, getStaticFiles, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { COLOR, RING } from "../../tokens";
-import { smoothstep } from "../../motion/ease";
+import { COLOR } from "../../tokens";
 import type { Rect } from "../../motion/geometry";
 import { World3D, Plane } from "../../camera/World3D";
 import { GradeLayer, GroundLight } from "../../light/Grade";
@@ -26,7 +26,7 @@ import { gradeAt } from "../../light/grades";
 import { PebbleOnFilm } from "../../../pebble/PebbleOnFilm";
 import { PEBBLE_DARK } from "../../../pebble/PebbleSvg";
 import { RIVERBED, groundRectOf } from "../ground";
-import { CENTRE_TO_FOOT_148, codaIrisIn, codaIrisOut, codaOf } from "../coda";
+import { CENTRE_TO_FOOT_148, codaHairline, codaIrisIn, codaIrisOut, codaOf } from "../coda";
 import type { ScenePlan, ShotSpec } from "../scene";
 import { PieceView, TypeView } from "./PieceView";
 import { SetPiecesSlate } from "./StandInViews";
@@ -93,24 +93,23 @@ const NightCover: React.FC<{ plan: ScenePlan }> = ({ plan }) => {
   const fr = useCurrentFrame();
   const { width, height } = useVideoConfig();
   const x = codaOf(plan)!;
-  const unit = Math.min(width, height) / 1080;
   const out = codaIrisOut(plan, fr);
   const inn = codaIrisIn(plan, fr);
   const hole = out ?? inn;
   const shut = fr >= x.irisOut.at + x.irisOut.frames && fr < x.irisIn.at;
   if (!hole) return shut ? <AbsoluteFill style={{ backgroundColor: COLOR.nightPage }} /> : null;
-  const iris = out ? x.irisOut : x.irisIn;
   // clear inside max(0, R − feather), night green from R: ringIris()'s feathered edge, its feather narrowed while the
   // hole is small (coda.ts codaFeather), so the face shows and no halo rings it
   const inner = Math.max(0, hole.R - hole.feather);
   const mask = `radial-gradient(circle at ${hole.c.x.toFixed(1)}px ${hole.c.y.toFixed(1)}px, transparent ${inner.toFixed(1)}px, #000 ${Math.max(hole.R, inner + 0.01).toFixed(2)}px)`;
-  const lineOpacity = smoothstep(0, 0.08, hole.u) * (1 - smoothstep(0.85, 1, hole.u));
+  // the hairline, exactly as the checks read it (the closing iris's only; none on the opening iris)
+  const line = codaHairline(plan, fr);
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
       <AbsoluteFill style={{ backgroundColor: COLOR.nightPage, WebkitMaskImage: mask, maskImage: mask }} />
-      {lineOpacity > 0.002 ? (
+      {line ? (
         <svg width={width} height={height} style={{ position: "absolute", inset: 0 }}>
-          <circle cx={hole.c.x} cy={hole.c.y} r={Math.max(0.5, hole.edge)} fill="none" stroke={iris.hairline} strokeWidth={RING.hairlinePx * unit} opacity={lineOpacity} />
+          <circle cx={line.c.x} cy={line.c.y} r={line.r} fill="none" stroke={line.color} strokeWidth={line.widthPx} opacity={line.opacity} />
         </svg>
       ) : null}
     </AbsoluteFill>

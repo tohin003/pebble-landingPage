@@ -5,8 +5,10 @@
 // stills of 28 Oct showed: an off-centre lockup, a night ground too light, irises that glowed, and the render's stone
 // scan, blind to a light stone on a night frame.
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { VelocityCamera, type CamSample } from "../motion/camera";
-import type { Aspect } from "../tokens";
+import { RING, type Aspect } from "../tokens";
 import { checkAll, copy, type Finding } from "../qa/checks";
 import type { FilmTimelineQa } from "../qa/timeline";
 import { ReelScan, type ReelMarks } from "../qa/reel-scan";
@@ -20,8 +22,9 @@ import { checkJoins } from "../setpieces/joins";
 import { blinkStartsFor, offsetForBlink } from "../setpieces/blink";
 import { checkCues } from "../../../../shared/pebble/cues";
 import { CODA_CUES } from "../setpieces/coda.cues";
-import { CODA_GRADE, CODA_GRID, CODA_INK_EM_16x9, CODA_PLATE, CODA_TEXT, IRIS_FEATHER_SHARE, codaFeather, codaFlashModel, codaIrisIn, codaIrisOut, codaOf, codaPlacement, planCoda, plateUnder, xCutFrames, type CodaExtra, type FilmPiece } from "../setpieces/coda";
-import { CODA_CHECKS, codaCamera, codaCaptions, codaChecks, codaHolds, codaLight, codaLockup, codaMarkStones, codaNoUi, codaPose, codaSound, codaStone, codaStonesOn, codaWords, forbiddenIn } from "../setpieces/codaChecks";
+import { CODA_GRADE, CODA_GRID, CODA_INK_EM_16x9, CODA_PLATE, CODA_TEXT, IRIS_FEATHER_SHARE, codaFeather, codaFlashModel, codaHairline, codaIrisIn, codaIrisOut, codaOf, codaOneShots, codaPlacement, planCoda, plateUnder, xCutFrames, type CodaExtra, type CodaSoundLayer, type FilmPiece } from "../setpieces/coda";
+import { CODA_CHECKS, CODA_NEVER, CODA_NEVER_PHRASES, codaCamera, codaCaptions, codaChecks, codaHolds, codaLight, codaLockup, codaMarkStones, codaNoUi, codaPose, codaSound, codaStillBeforePush, codaStone, codaStonesOn, codaWords, forbiddenIn } from "../setpieces/codaChecks";
+import { COMING_NEVER, COMING_NEVER_PHRASES } from "../../../../shared/coming/never";
 import type { ScenePlan, ShotSpec, TypeSpec } from "../setpieces/scene";
 
 const ASPECTS: readonly Aspect[] = ["16:9", "1:1", "9:16"];
@@ -60,7 +63,7 @@ describe("the coda, as planned (POSTCREDIT_DESIGN §3)", () => {
     const lands = ASPECTS.map((a) => ["L-C1", "L-C2", "L-C3"].map((id) => landed(coda(a).types.find((t) => t.id === id)!)));
     expect(lands[1]).toEqual(lands[0]!);
     expect(lands[2]).toEqual(lands[0]!);
-    for (const a of ASPECTS) expect(X(coda(a)).sound.tap.at).toBe(lands[0]![1]!);
+    for (const a of ASPECTS) expect(codaOneShots(X(coda(a))).map((s) => s.at)).toEqual([lands[0]![1]!]);
   });
   test("the beats: the iris-out L4–L33, a breath of 0.6 s or more, the iris-in from the stone, three lines, the last breath", () => {
     for (const a of ASPECTS) {
@@ -85,7 +88,11 @@ describe("the coda, as planned (POSTCREDIT_DESIGN §3)", () => {
   });
   test("its words: the pose's own, the release session's line, the status; L-C2 breaks after \"learn\" in 1:1 and 9:16", () => {
     expect(coda("16:9").types.filter((t) => t.id.startsWith("L-C")).map((t) => t.text)).toEqual([CODA_TEXT.rests, CODA_TEXT.soon, CODA_TEXT.status]);
-    for (const a of ["1:1", "9:16"] as const) expect(coda(a).types.find((t) => t.id === "L-C2")!.text).toBe("Soon, it will learn\nwhile it does.");
+    for (const a of ["1:1", "9:16"] as const) expect(coda(a).types.find((t) => t.id === "L-C2")!.text).toBe("Soon, it may learn\nwhile it does.");
+    // the promise carries the feature's condition, as the page's hint does (D157: it comes only if measurement shows it
+    // helps; the review's P1-2): "may", never §62's unconditional starting "will"
+    expect(CODA_TEXT.soon).toBe("Soon, it may learn while it does.");
+    expect(CODA_TEXT.soon).not.toMatch(/\bwill\b/);
     for (const a of ASPECTS) {
       const p = coda(a);
       expect(p.types.find((t) => t.id === "L-C1")!.color).toBe("#E8EEE6");
@@ -180,7 +187,18 @@ describe("C1: the coda never says §62's four phrases, a number, a name or that 
       }
   });
   test("what the coda and the page say passes: the three lines, the page's two sentences, the description", () => {
-    for (const s of [CODA_TEXT.rests, CODA_TEXT.soon, CODA_TEXT.status, CODA_TEXT.description, CODA_TEXT.transcript, "Coming next: learning while resting.", "Not built yet. It comes only if measurement shows it helps."]) expect(forbiddenIn(s)).toEqual([]);
+    for (const s of [CODA_TEXT.rests, CODA_TEXT.soon, CODA_TEXT.soonBroken, CODA_TEXT.status, CODA_TEXT.description, CODA_TEXT.transcript, "Coming next: learning while resting.", "Not built yet. It comes only if measurement shows it helps."]) expect(forbiddenIn(s)).toEqual([]);
+  });
+  test("one rule set with the page's hint (shared/coming/never.ts, which src/content/next.ts reads too), and the gaps the review's probe passed now fail", () => {
+    expect(CODA_NEVER).toBe(COMING_NEVER);
+    expect(CODA_NEVER_PHRASES).toBe(COMING_NEVER_PHRASES);
+    const gaps = ["Coming in future releases.", "Coming with the next updates.", "Coming in later versions.", "Learning while resting, shipping soon.", "Shipping soon.", "Coming in a future build.", "It learns from all your work.", "It remembers everything.", "It always learns.", "Coming in Oct.", "Coming next season."];
+    expect(gaps.filter((s) => forbiddenIn(s).length === 0)).toEqual([]);
+    // and as a line of the coda, in every aspect
+    for (const a of ASPECTS) {
+      const p = plan(a, { text: { status: "It remembers everything." } });
+      expect(errorsOf(codaWords(p, X(p))).some((f) => /overclaim/.test(f.message))).toBe(true);
+    }
   });
   test("the description and the captions are held to it too (a canary in each)", () => {
     const p = coda("16:9");
@@ -411,6 +429,33 @@ describe("C7: the camera never fully stops, but for the breath and the film's la
     const bad = withShot(p, "page", (s) => ({ ...s, camera: new RestartCamera(s.camera, 10) }));
     expect(errorsOf(codaCamera(bad, X(bad))).some((f) => /starts moving again/.test(f.message))).toBe(true);
   });
+  test("the main cut's still span before the push is reported, not excused (a warning for the lead's ruling, the review's P1-4): the end card's last breath, L0–L33 and the breath", () => {
+    for (const a of ASPECTS) {
+      const p = coda(a);
+      const x = X(p);
+      const s = codaStillBeforePush(p, x);
+      // the end card declares its last 0.75 s still (the X cut's last breath), the page carried on settled to the
+      // iris-out's end, then the breath: one span of about 2.1 s, which the floor's one-second windows never judged
+      expect(x.endCard.lastBreath).not.toBeNull();
+      expect(s.endCard).toBe(x.endCard.end - x.endCard.lastBreath!.from);
+      expect(s.page).toBe(x.irisOut.at + x.irisOut.frames);
+      expect(s.breath).toBe(x.breath.to - x.breath.from);
+      expect(s.frames).toBe(s.endCard + s.page + s.breath);
+      expect(s.frames / 60).toBeGreaterThan(2);
+      expect(errorsOf(checkAll(planQa(p)).errors, "cameraFloor")).toEqual([]);
+      const warns = codaCamera(p, x).filter((f) => f.level === "warn").map((f) => f.message);
+      expect(warns.some((m) => /holds still for 2\.\d\d s before the coda's push/.test(m) && /\(a\).*\(b\)/.test(m))).toBe(true);
+    }
+  });
+  test("the canary for ruling (b): an end card that glides to its last frame (no still at its end, the carried page moving) leaves no span to report", () => {
+    const p = coda("16:9");
+    const glides = withCoda(
+      withShot(p, "page", (s) => ({ ...s, camera: new VelocityCamera(s.camera.pose(0), { x: 0, y: 0, lz: 0.0004 }) })),
+      (x) => ({ ...x, endCard: { ...x.endCard, lastBreath: null } }),
+    );
+    expect(codaStillBeforePush(glides, X(glides)).frames).toBe(0);
+    expect(codaCamera(glides, X(glides))).toEqual([]);
+  });
 });
 
 /* ---------------------------------------------------------------- C5: the pose -------------------------------- */
@@ -474,6 +519,43 @@ describe("C6: no mock screen", () => {
     const bad = withShot(p, "coda", (s) => ({ ...s, rings: [{ id: "learn", start: 200, source: s.stone!.at, stoneRadius: 40, phases: [{ kind: "emit", frames: 36, radius: 300 }] }] }));
     expect(errorsOf(codaNoUi(bad))).not.toEqual([]);
   });
+  test("as planned: no hairline round the sleeping stone (the opening iris has none); the closing iris keeps the film's", () => {
+    for (const a of ASPECTS) {
+      const p = coda(a);
+      const x = X(p);
+      expect(x.irisIn.hairline).toBeNull();
+      for (let fr = x.irisIn.at; fr < p.duration; fr++) expect(codaHairline(p, fr)).toBeNull();
+      // the closing iris: the sage hairline round the end card's stone, in flight on L4–L33
+      const drawn = Array.from({ length: x.irisOut.frames }, (_, i) => codaHairline(p, x.irisOut.at + i)).filter((s) => s !== null);
+      expect(drawn.length).toBeGreaterThan(x.irisOut.frames / 2);
+      expect(drawn.every((s) => s!.iris === "out" && s!.color === RING.color.light)).toBe(true);
+    }
+  });
+  test("the canary, the view as it was (a dark sage hairline on the opening iris): a ring leaving the sleeping stone fails, in every aspect", () => {
+    for (const a of ASPECTS) {
+      const p = coda(a);
+      const was = withCoda(p, (x) => ({ ...x, irisIn: { ...x.irisIn, hairline: RING.color.dark } }));
+      const xs = errorsOf(codaNoUi(was));
+      expect(xs.some((f) => /ring-coloured hairline .* round the sleeping stone/.test(f.message))).toBe(true);
+      expect(checkPlan(was, CODA_GRID).ok).toBe(false);
+      // the stroke the old view drew: on the iris's half-opaque radius, the ring's width, centred on the stone
+      const s = codaHairline(was, X(was).irisIn.at + 10)!;
+      const i = codaIrisIn(was, X(was).irisIn.at + 10)!;
+      expect([s.iris, s.color, s.r, s.c.x, s.c.y]).toEqual(["in", RING.color.dark, i.edge, i.c.x, i.c.y]);
+      expect(s.widthPx).toBeCloseTo(RING.hairlinePx * p.frame.unit, 9);
+      // any colour round it is refused too (it is still a ring there); one off the stone is not this check's
+      const grey = withCoda(p, (x) => ({ ...x, irisIn: { ...x.irisIn, hairline: "#888888" } }));
+      expect(errorsOf(codaNoUi(grey)).some((f) => /hairline \(#888888/.test(f.message))).toBe(true);
+    }
+  });
+  test("the view draws no stroke but codaHairline's (so what codaNoUi reads is what is drawn)", () => {
+    const src = readFileSync(path.join(import.meta.dir, "../setpieces/views/CodaView.tsx"), "utf8");
+    expect(src.match(/<circle\b/g)?.length).toBe(1);
+    expect(src).toContain("const line = codaHairline(plan, fr);");
+    expect(src).toMatch(/<circle cx=\{line\.c\.x\} cy=\{line\.c\.y\} r=\{line\.r\} fill="none" stroke=\{line\.color\} strokeWidth=\{line\.widthPx\} opacity=\{line\.opacity\} \/>/);
+    // the view as it was drew the iris's own hairline colour, whichever iris was in flight
+    expect(src).not.toContain("stroke={iris.");
+  });
 });
 
 /* ---------------------------------------------------------------- the lockup, the flashes ---------------------- */
@@ -489,13 +571,16 @@ describe("the lockup: no line on the stone or its z's", () => {
   test("centred on the frame, the 16:9 lines at the widths the browser draws (measured on the 28 Oct renders); the canary (the lockup 150 px left, where the 0.48-em estimate set it) fails", () => {
     const p = coda("16:9");
     const x = X(p);
-    // the layout and the checks read the measured widths, not approxLineWidth's (1,175 px for L-C2; 884 drawn)
+    // the layout and the checks read the measured widths, not approxLineWidth's (L-C2: 1,140 px estimated, 906 drawn)
     for (const id of x.lines) {
       const t = p.types.find((y) => y.id === id)!;
       expect(t.box.inkWidth).toBeCloseTo(CODA_INK_EM_16x9[t.text]! * 72, 6);
       expect(lineRect(t.text, t.tier, p.frame, t.box, t.sizeT ?? 0.5).w).toBe(t.box.inkWidth!);
     }
-    expect(lineRect(CODA_TEXT.soon, "expressive", p.frame, { left: 0, top: 0, align: "left" }, 0).w).toBeGreaterThan(1.3 * CODA_INK_EM_16x9[CODA_TEXT.soon]! * 72);
+    expect(lineRect(CODA_TEXT.soon, "expressive", p.frame, { left: 0, top: 0, align: "left" }, 0).w).toBeGreaterThan(1.2 * CODA_INK_EM_16x9[CODA_TEXT.soon]! * 72);
+    // every 16:9 line has its measured width: a changed line without one falls back to the estimate, which sets the
+    // lockup off centre in the render while the checks (reading the same estimate) pass, so the table must follow
+    for (const t of [CODA_TEXT.rests, CODA_TEXT.soon, CODA_TEXT.status]) expect(CODA_INK_EM_16x9[t]).toBeGreaterThan(0);
     // 1:1 and 9:16 centre their lines across the frame (the browser does), so they keep the estimate
     for (const a of ["1:1", "9:16"] as const) for (const t of coda(a).types.filter((y) => X(coda(a)).lines.includes(y.id))) expect(t.box.inkWidth).toBeUndefined();
     const shift = 150;
@@ -585,22 +670,33 @@ describe("C10: the X version is the main master cut at the coda's first frame, u
       fake("coda", c.duration, { extra: c.extra, ...(o.coda ?? {}) }),
     ];
   };
-  test("the cue sheet's film: 8,334 frames before the coda is 2:18.90 on X (under 2:20)", () => {
-    const r = codaPlacement(film(8334));
+  // the score lane's cue sheet, revision 2 (F4 on): the master runs 8,102 frames, 2:15.03 (it was 8,334, 2:18.90, on
+  // the 22:13 sheet the coda was designed against); with the coda the main film runs 8,570 frames, 2:22.83
+  test("the cue sheet's film: 8,102 frames before the coda is 2:15.03 on X (under 2:20), and the main film with the coda 8,570", () => {
+    const r = codaPlacement(film(8102));
     expect(errorsOf(r.findings)).toEqual([]);
-    expect(r.xFrames).toBe(8334);
+    expect(r.xFrames).toBe(8102);
+    expect(r.findings.map((f) => f.message).join("\n")).toContain("the main film runs 8570");
+    // within 4.97 s of X's cap: no warning (the warning starts past 139.5 s)
+    expect(r.findings.filter((f) => f.level === "warn")).toEqual([]);
+  });
+  test("past 139.5 s the warning leaves what gives to the lead (F4, the cue sheet's one shortening splice, is already on)", () => {
+    const w = codaPlacement(film(8380)).findings.filter((f) => f.level === "warn");
+    expect(w.length).toBe(1);
+    expect(w[0]!.message).toMatch(/the lead's call/);
+    expect(w[0]!.message).not.toMatch(/F4 comes first/);
   });
   test("the canary: an X version of 8,401 frames fails", () => {
     expect(errorsOf(codaPlacement(film(8401)).findings).some((f) => /over X's/.test(f.message))).toBe(true);
   });
   test("the canary: a coda that does not start on the end card's true ending fails (an X cut ending at end + 1)", () => {
     const end = X(coda("16:9")).endCard.end;
-    expect(errorsOf(codaPlacement(film(8334, { endCardEnd: end + 1 })).findings)).not.toEqual([]);
-    expect(errorsOf(codaPlacement(film(8334, { endCardEnd: end - 1 })).findings)).not.toEqual([]);
+    expect(errorsOf(codaPlacement(film(8102, { endCardEnd: end + 1 })).findings)).not.toEqual([]);
+    expect(errorsOf(codaPlacement(film(8102, { endCardEnd: end - 1 })).findings)).not.toEqual([]);
   });
   test("the canary: anything after the coda, or a coda after a piece that is not its end card, fails", () => {
-    expect(errorsOf(codaPlacement([...film(8334), fake("tail", 60)]).findings)).not.toEqual([]);
-    const f = film(8334);
+    expect(errorsOf(codaPlacement([...film(8102), fake("tail", 60)]).findings)).not.toEqual([]);
+    const f = film(8102);
     expect(errorsOf(codaPlacement([f[0]!, f[2]!]).findings)).not.toEqual([]);
   });
 });
@@ -608,18 +704,41 @@ describe("C10: the X version is the main master cut at the coda's first frame, u
 /* ---------------------------------------------------------------- C11, C12 (the plan's halves) ----------------- */
 
 describe("C11 and C12: the sound layer and the captions the plan hands on", () => {
+  /** A copy of a plan with its sound layers changed. */
+  const withLayers = (p: ScenePlan, f: (ls: readonly CodaSoundLayer[]) => CodaSoundLayer[]) => withCoda(p, (x) => ({ ...x, sound: { ...x.sound, layers: f(x.sound.layers) } }));
   test("as planned: room tone on every frame, one CC0 tap on L-C2's landing; captions of 1.2 s or more carrying every line", () => {
     for (const a of ASPECTS) {
       const p = coda(a);
       expect(errorsOf(codaSound(p, X(p)))).toEqual([]);
       expect(errorsOf(codaCaptions(p, X(p)))).toEqual([]);
+      expect(X(p).sound.layers.map((l) => `${l.kind} ${l.take}`)).toEqual(["bed room_tone_b", "oneShot standin_tap_a"]);
     }
+  });
+  test("while no lane builds the layer, codaSound says so (a warning: the coda would play digital silence); with a builder, it does not", () => {
+    const p = coda("16:9");
+    expect(X(p).sound.builtBy).toBeNull();
+    expect(codaSound(p, X(p)).filter((f) => f.level === "warn").map((f) => f.message).join("\n")).toMatch(/built by no lane.*digital silence/);
+    const built = withCoda(p, (x) => ({ ...x, sound: { ...x.sound, builtBy: "a lane the lead names" } }));
+    expect(codaSound(built, X(built))).toEqual([]);
+  });
+  test("the canaries the review's probe passed: a second one-shot, a room tone that stops before the end, a Mixkit bed", () => {
+    const p = coda("16:9");
+    const tap = codaOneShots(X(p))[0]!;
+    const two = withLayers(p, (ls) => [...ls, { ...tap, take: "standin_tap_b", at: tap.at + 90 }]);
+    expect(errorsOf(codaSound(two, X(two))).some((f) => /2 one-shots/.test(f.message))).toBe(true);
+    expect(checkPlan(two, CODA_GRID).ok).toBe(false);
+    const none = withLayers(p, (ls) => ls.filter((l) => l.kind !== "oneShot"));
+    expect(errorsOf(codaSound(none, X(none))).some((f) => /0 one-shots/.test(f.message))).toBe(true);
+    const short = withLayers(p, (ls) => ls.map((l) => (l.kind === "bed" ? { ...l, to: l.to - 60 } : l)));
+    expect(errorsOf(codaSound(short, X(short))).some((f) => /no room tone under L408–L468/.test(f.message))).toBe(true);
+    const mixBed = withLayers(p, (ls) => ls.map((l) => (l.kind === "bed" ? { ...l, take: "mixkit_room_air", licence: "Mixkit Sound Effects Free License" } : l)));
+    expect(errorsOf(codaSound(mixBed, X(mixBed))).some((f) => /Mixkit/.test(f.message))).toBe(true);
   });
   test("the canaries: a Mixkit tap, a tap off its line, a short caption, a caption missing the limit", () => {
     const p = coda("16:9");
-    const mix = withCoda(p, (x) => ({ ...x, sound: { ...x.sound, tap: { ...x.sound.tap, take: "standin_plunk_b", licence: "Mixkit Sound Effects Free License" as never } } }));
+    const mix = withLayers(p, (ls) => ls.map((l) => (l.kind === "oneShot" ? { ...l, take: "standin_plunk_b", licence: "Mixkit Sound Effects Free License" } : l)));
     expect(errorsOf(codaSound(mix, X(mix)))).not.toEqual([]);
-    const off = withCoda(p, (x) => ({ ...x, sound: { ...x.sound, tap: { ...x.sound.tap, at: x.sound.tap.at + 6 } } }));
+    const off = withLayers(p, (ls) => ls.map((l) => (l.kind === "oneShot" ? { ...l, at: l.at + 6 } : l)));
     expect(errorsOf(codaSound(off, X(off)))).not.toEqual([]);
     const short = withCoda(p, (x) => ({ ...x, captions: [{ ...x.captions[0]!, to: 40 }, ...x.captions.slice(1)] }));
     expect(errorsOf(codaCaptions(short, X(short)))).not.toEqual([]);

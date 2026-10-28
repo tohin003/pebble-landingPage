@@ -506,10 +506,10 @@ The person's sneak peek of a coming feature (D157, OVERRIDES §62; the design la
 film only (not the tour cut, the 40-s cut or the shorts), after the end card's true ending: page 2's lines leave, a ring
 iris (E-move) closes onto the end card's stone, a breath of night green (the dark --bg, a declared wait), an iris opens
 from the same stone asleep on the riverbed at night (the Companion's own `sleepy` pose, created asleep, in the page's
-dark palette, one engine blink placed alone in line 1's hold), and "Pebble rests." / "Soon, it will learn while it
+dark palette, one engine blink placed alone in line 1's hold), and "Pebble rests." / "Soon, it may learn while it
 does." / "Not built yet." land one at a time (1:1 and 9:16 break the second after "learn"), the scene's one sound (the
-score lane's: the title's CC0 stone tap at a whisper) on the second; a push at 0.35 px a frame (0.30 in 1:1) eases to
-the film's last breath. Its frames 0–33 ARE the end card, played on past its end by `CodaView`
+title's CC0 stone tap at a whisper; planned, not built: see below) on the second; a push at 0.35 px a frame (0.30 in
+1:1) eases to the film's last breath. Its frames 0–33 ARE the end card, played on past its end by `CodaView`
 (`extra.coda.endCard.extended`): the end card's plan is untouched, so the X version (the main film with the coda is
 over X's 140 s) is the master cut at the coda's first frame (`codaPlacement`, `xCutFrames`). A flash model (6 × 6 tiles, qa/luma.ts's rule)
 lengthens the breath until no tile the iris-out darkened brightens again within a second (12 frames in 16:9: 7.80 s in
@@ -551,6 +551,29 @@ which it does not flag); and its lines' ink held to the last frame. It counts on
 by 0.10–0.15 just before the iris-out darkens them, a rise and a fall within a second. The coda's flash model reads
 the page's ink at a fifth of each line's box and sees no rise there; the design's C8 asks for no opposing pair at all,
 so this one is the lead's call (the lane's report).
+
+**What the post-credit review of 28 Oct changed** (its P1s and the cheap P2s; each check has its canary in
+`tests/coda.test.ts`):
+- **No ring leaves the sleeping stone.** The opening iris drew the film's ring (the sage hairline, its width, over a
+  ring's 36 emit frames) round the sleeping stone, and on the night plate it was the only visible edge: a ring leaving
+  the stone, Pebble acting, which the design rules out. The opening iris has no hairline (`CodaIris.hairline` null; the
+  closing iris keeps the film's); the view draws only `codaHairline()`'s stroke, and `codaNoUi` refuses any hairline
+  round the sleeping stone (its canary is the view as it was).
+- **The promise carries its condition.** L-C2 is "Soon, it may learn while it does." (same seven words and timing): the
+  feature comes only if measurement shows it helps, as the page's hint says. Its 16:9 width is measured again
+  (`CODA_INK_EM_16x9`: 12.58 em, on a full-size still of L467).
+- **The sound is planned, not built.** The plan said the score lane builds it; the score lane's cue sheet says the
+  scene's lane times it; so no lane builds it, and the master's room tone stops at its end. The layers are a list
+  (`extra.coda.sound.layers`: a second one-shot now fails `codaSound`), and `codaSound` warns while
+  `CODA_SOUND.builtBy` is null: the lead assigns the layer, with the plan's timing.
+- **The main cut's still span is reported.** The end card's declared last breath (0.75 s), L0–L33 under the iris-out and
+  the breath hold the picture still for 2.12 s before the push, and the floor's one-second windows never judged it
+  (each overlaps a declared wait). `codaCamera` reports the span as a warning (`codaStillBeforePush`) until the lead
+  rules: (a) it is §62's one breath of silence, declared as such, or (b) the end card glides to its last frame.
+- **One never-list.** The film's and the page's lists differed; both now read `shared/coming/never.ts` (plurals,
+  "shipping", "a build", the month abbreviations, "season" and overclaims such as "remembers everything" added).
+- **The X figures** follow the cue sheet's revision 2 (8,102 frames, 2:15.03; 8,570 with the coda), and the placement
+  warning past 139.5 s leaves what gives to the lead (F4 is already on).
 
 ### 8. The Return — `planReturn({ w, h, fps, climax, grid?, lastNote?, decayS?, roomToneS?, musicCredit?, merge?, align? })`
 
