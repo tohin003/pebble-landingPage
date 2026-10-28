@@ -474,7 +474,7 @@ card lands). The take's frames fill the slots from a frame sequence (`TakeManife
 
 **OVERRIDES §61 (27 Oct ~12:35):** the person put the montage, the Return, at the end only, and it **replaces the wall
 and the convergence**; the Return lane owns that replacement (`setpieces/return*.ts`, `blink.ts`), and CR-08, the
-wall's parts of CR-02 and CR-16 and CR-06's S24 → S25 pull-back close with it. Since 28 Oct the demo plays the Return
+wall's parts of CR-02 and CR-16 (but CR-16's cell size, open until G1: §8) and CR-06's S24 → S25 pull-back close with it. Since 28 Oct the demo plays the Return
 in their place (§8 below); what follows describes the convergence, whose code stays: the Return's title and end card
 are this piece's (`planFinale`'s `head`).
 
@@ -583,8 +583,10 @@ to 85 cells of real features on three counter-rotating rings round the stone (a 
 place or by a 36-px slide); then each cell returns along its own radius into the stone's opaque silhouette, the kept
 card last, the stone's own idle blink falls on R646, the finale's iris opens the page from the one stone and the title
 lands on A4's bar 82. Frames are R-frames at 60 fps (a local frame is R + 60): 12 s from R0, 13 with the lead-in.
-- **Files.** `returnCells.ts` (the manifest: take, moment, card, red, stand-in, text size; no Stealth cell, refused at
-  load), `returnField.ts` (geometry per aspect, the schedule, `cellPoseAt`, `cellScreenAt`, the hairlines),
+- **Files.** `returnCells.ts` (the manifest: take, moment, card, red, stand-in, text size, the avatar a capture pictures;
+  no Stealth cell and no must-not-appear word in a drawn label, refused at load), `returnLum.ts` (GENERATED: each image's
+  luminance and red share as drawn), `returnField.ts` (geometry per aspect, the schedule with its swap waves paired by
+  luminance, `cellPoseAt`, `cellScreenAt`, the hairlines, the swaps' marks),
   `returnPlan.ts` (the camera, the music on `returnGrid()`, the plan: `planFinale` with the field's shot as its `head`),
   `blink.ts` (the stone's clock offset, 710), `returnChecks.ts` (returnSchedule, returnWindows, returnContent,
   returnMerge with returnRadius, cellText, blinkPlaced, joinPose, all in `checkPlan()`, and R2's exemption from cutRate,
@@ -599,22 +601,77 @@ lands on A4's bar 82. Frames are R-frames at 60 fps (a local frame is R + 60): 1
 - **The view.** ShotView calls `ReturnFieldView` between its ground and its foreground: the hairlines on the ground;
   the cells in the frame's own px (`cellScreenAt`: the plan's camera at each cell's parallax depth), each from one
   image, its blur one SVG filter on its own box (never CameraMotionBlur round the field, never a frame-sized layer per
-  cell); the first cell drawn live by S24's own view in S24's light (its corners round in over the lead-in), A3 by
-  Pebble's engine; the stone above every cell on its engine clock (`StoneSpec.clockOffset`, which PieceView now applies
+  cell), drawn while its shadow or blur reaches into the frame (`cellReachPx`), not only its rect; the first cell drawn
+  live by S24's own view in S24's light (its corners round in over the lead-in); each hairline blurred by its own travel
+  (`hairlineScreenAt`); the stone above every cell on its engine clock (`StoneSpec.clockOffset`, which PieceView now applies
   to every stone). Through the iris, a seam whose two shots both show a `layer: "film"` stone draws ONE stone above
   both (CR-01). `merge: "toned"` is R4's toned matte, G1's alternative: each returning cell's part inside the outline is
   drawn again above the body and under the eyes, toned toward #536B54 over 7 frames from its first contact
   (`F2-SP-return-toned-<aspect>`).
-- **The images** (gitignored, like every capture; until they are made the view draws flat panels):
+- **The images** (gitignored, like every capture; a missing one stops a render, and is a loud MISSING slate in Studio):
   `scripts/heavy.sh f2-return-thumbs /usr/sbin/taskpolicy -c utility bun video/src/film2/setpieces/tools/return-thumbs.ts`
-  makes 83 (18 published stills cropped and scaled, 65 labelled slots) into `video/public/ui/f2-cells/return`, 960, 320
-  and 192 px on the long side per ring, at or above the largest each ring is drawn at 1080. The 2.0.0 crops replace the
-  stand-ins through the manifest and the same tool.
+  makes 84 (16 published stills cropped and scaled, 68 labelled slots) into `video/public/ui/f2-cells/return`, 960, 320
+  and 192 px on the long side per ring, at or above the largest each ring is drawn at 1080. Each file's name carries a
+  signature of what it shows (`returnThumbSig`), so a changed stand-in names a new file and the tool removes the old:
+  nothing stale is drawn. `--check` lists the images not made (run it before a render); `--measure` also rewrites
+  `returnLum.ts`, which the light rule, the red rule and the luminance pairing read (commit it). The slots draw on the
+  page's sage-white with the hairline hatch ("light-1"), at a light crop's luminance (0.90–0.92; the published stills
+  measure 0.83–0.93). The 2.0.0 crops replace the stand-ins through the manifest and the same tool.
 - **Looked at on 28 Oct** (half-size stills in every aspect: the join, the bloom, the rush, the first contact, the kept
   card's return, the title; the toned matte in 16:9): the Return's first frame is S24's last frame, the same image but
   for the demo's slate; at most 46 cells and the stone on any frame; cells pass behind the silhouette, and in the toned
   matte show toned inside it under the eyes. Open for the lead: A3 (Pebble's engine) and A2 (a picture of the pebble)
   read as second pebbles beside the one stone; the slots read pale until the 2.0.0 crops fill them.
+- **The review of 28 Oct** (RV-01 to RV-11; the canaries are in `tests/return.test.ts`):
+  - **One stone (RV-01).** `returnContent` refuses a cell that pictures the pebble over 6 px at 1080 (a still's
+    `avatarPx`, or Pebble's engine drawn in a cell), and warns by name on the 8 cells whose 2.0.0 captures are expected
+    to picture the companion (A6, A3, A10*, X3, A5, A12, A13, A2: each crop leaves the avatar out, or the cell leaves).
+    A2 (its stand-in was the pebble itself) and A3 (the engine, blinking on its own clock) are labelled slots until the
+    lead rules: their features are the companion.
+  - **Swaps (RV-02).** Each swap wave is paired by luminance within the card rule (MONTAGE_DESIGN §2.4: `pairWave`, the
+    Hungarian method, steps within 0.02 counting equal so the families stand; 6 of the outer ring's 19 swaps move), and
+    `returnContent` holds every swap's step in mean relative luminance to 0.05 (A2's pebble into B7's slot was 0.21 and
+    snapped 3.4–5.8 levels in its tile; E1+E2's still into I1*'s darker slot, 0.057, 3.29 in 1:1's). With the slots
+    at a light crop's luminance the largest step is 0.025 (0.046 unpaired). The reel's marks then declare each swap over
+    its two cells' rects only (`swapMarks`; `transitions[].rect`, which `qa/reel-scan.ts` maps to its tiles and
+    `qa/luma.ts` exempts alone), so the scan still judges every other tile. 1:1's ground step on R84 was A6's shadow:
+    culled by its rect, the cell brought 140 px of shadow in at the frame's right edge on one frame (216 px of reach at
+    that zoom); cells are now drawn while their reach is in frame.
+  - **The window counter (RV-03).** A coverage swing counts from the running minimum and maximum until its first
+    transition (`coverageSwings`; a gradual swing of 0.25–0.5 went uncounted), a slide swap on its outgoing and
+    incoming cells as one union, IRIS's extended rule as `irisExtended`. The planned windows are unchanged (16:9 4 and
+    4, 1:1 2 and 3, 9:16 2; from R240 at most 3). The design's model (`schedule_r2.py`, kept as pinned) has the same
+    flaw and models no slide: a corrected copy (the Return lane's scratch, `fix/schedule_r2_rv03.py`) re-derives the
+    same windows but one number, 16:9's 256 × 192 swaps (0 → 2, the slides' union), and `return-sheet.ts --reference`
+    against its JSON passes; against the design's own JSON that one number differs.
+  - **Hairlines (RV-04).** A hairline's return fades as the carrier's (full to 60 %, gone by 95 %; it was opaque to 80 %
+    at 30 px a frame and more), and each is blurred σ = travel ÷ 7 wherever the frame shows it moving over 4.6 px a
+    frame, in the bloom (up to 20 px a frame) as in its return.
+  - **Drawn, not declared (RV-05).** The light and red rules hold on each image as drawn (`returnLum.ts`) until the
+    2.0.0 crops carry their own values; the red cells' budgets for their crops are reported, for the capture lane
+    (J1* shows at most 1.04, 1.24 and 1.18 % of the 16:9, 1:1 and 9:16 frames in frame and unhidden, so its crop may
+    hold under 48 %, 81 % and 100 % saturated red; the review's 6.2 % counted its whole area while it entered from
+    out of frame at the bloom's zoom). F11*'s published held
+    card was the same conversation as F12's Verified at another moment, beside it for 4.5 s (CR-11): a slot now. The
+    other stills of one published conversation (E3 and F2 asking, F7's Git plan, beside F12) are open (see below).
+  - **Must-not-appear text (RV-06).** B9's slot no longer prints "Privacy & Stealth"; a label drawn into an image is
+    scanned for the never-list's words; the models still is cropped below its "4,096-token window" and left of Rest
+    model.
+  - **CR-16 (RV-07).** Its readability part closed with the hairline orbits and the faster orbits; its cell size did
+    not: the inner cells are 144, 116 and 128 px at z = 1 against CR-16's 150–250 px, open until G1 judges grand, busy
+    or sparse (MONTAGE_DESIGN §9 item 7; `review-ledger.ts` `OPEN_BY_EYE`).
+  - **The blink (RV-08).** The field's stone is built at the title stone's size on the landing (172.5, 147.9 and 172.5
+    px, not the design's 190, 170 and 190), because the title page glides on after the landing (OVERRIDES §58), so the
+    kept card hid on R638, R641 and R641 and the blink fell 8.1, 5.1 and 5.1 frames after it (§2.7 asks 6–8). Its
+    return runs 93, 90 and 90 frames from R566 (`RETURN_TIMING.returns.hero.byAspect`): hidden on R639 in every
+    aspect, the blink 7.1 frames after; `blinkPlaced` holds the gap (the toned matte's is reported, for G1).
+  - **Nothing silent (RV-10).** A missing image or S24 shot stops a render; `joinPose` checks the first cell's shot is
+    S24's last; the images carry their content's signature.
+  - **Slices (RV-11).** `returnContent` holds each slice to 1×, played once forward, ending on its moment as its cell
+    settles (a recall present from the start: as it first shows half in frame) and wholly while the cell is drawn
+    (`sliceWindowR`): J6+F14 R124–R135 (R122 in 9:16), A5 R224–R235, X5 R459–R466 (8 frames: it slides in 8 frames
+    before it settles, so 12 would start before it is drawn). No slice exists before the 2.0.0 takes, so the view
+    draws the stand-in; their player comes with them, held by the same window.
 
 ### The demo and the checks
 
@@ -855,7 +912,7 @@ barely moved its content (CR-04, partly), five blind spots in the checks (CR-15,
 then renders the three reels and fixes what only their frames showed (`tests/fix-round2-render.test.ts`). CR-13
 (Mixkit) and CR-22 (the pre-push guard) stay the lead's. OVERRIDES §61 put the montage, the Return, at the end only: it
 replaces the wall and the convergence, so CR-08, the wall's parts of CR-02 and CR-16 and CR-06's S24 → S25 pull-back
-close with that replacement, which the Return lane has built (§8 above).
+close with that replacement, which the Return lane has built (§8 above); CR-16's cell size stays open until G1 (§8).
 
 | Finding | What changed | Held by |
 |---|---|---|

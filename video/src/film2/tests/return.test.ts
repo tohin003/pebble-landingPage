@@ -43,7 +43,9 @@ import {
 } from "../setpieces/returnChecks";
 import type { Finding } from "../qa/checks";
 import type { ScenePlan, TypeSpec } from "../setpieces/scene";
-import { cellScreenAt, cellsOnScreen, firstContactR, rOfLocal, tonedMatteK } from "../setpieces/returnField";
+import { cellReachPx, cellScreenAt, cellsOnScreen, firstContactR, hairlineReturnStart, hairlineScreenAt, rOfLocal, swapMarks, tonedMatteK } from "../setpieces/returnField";
+import { findTilePops } from "../qa/luma";
+import { ReelScan } from "../qa/reel-scan";
 import { RETURN_THUMB_LONG, drawnLive, drawnLumOf, missingReturnThumbs, returnThumbJobs, returnThumbPath, returnThumbSigOf, ringOfWave, thumbSlug } from "../setpieces/returnThumbs";
 import { TONED_W_END } from "../setpieces/returnPlan";
 import { DEMO_JOINS, demoPlans, demoReturnVariant } from "../setpieces/demo/plans";
@@ -167,10 +169,10 @@ describe("the cell manifest (returnCells.ts)", () => {
     const ways = RETURN_CELLS.find((c) => c.id === "B2+C1-C3")!.standIn;
     expect(ways.kind === "still" && ways.crop.y >= 97 && ways.crop.x + ways.crop.w <= 306).toBe(true);
   });
-  test("the first cell is S24's own last frame; the slices are 6–12 frames at 1× (J6+F14, A5, X5)", () => {
+  test("the first cell is S24's own last frame; the slices are 6–12 frames at 1× (J6+F14, A5, X5: 8, RV-11)", () => {
     expect(RETURN_CELLS[0]!.id).toBe("G3");
     expect(RETURN_CELLS[0]!.standIn.kind).toBe("frame");
-    expect(RETURN_CELLS.filter((c) => c.slice).map((c) => `${c.id}:${c.slice!.frames}`)).toEqual(["J6+F14:12", "X5:12", "A5:12"]);
+    expect(RETURN_CELLS.filter((c) => c.slice).map((c) => `${c.id}:${c.slice!.frames}`)).toEqual(["J6+F14:12", "X5:8", "A5:12"]);
   });
 });
 
@@ -228,11 +230,13 @@ describe("the field's schedule (returnField.ts)", () => {
     // an unmeasured cell: the manifest's order, named
     expect(pairWave([{ ...mk("u", false, 0.9), meanLum: undefined }], [mk("x", false, 0.9)], [0], lum)).toEqual({ order: [0], paired: false, unmeasured: ["u"] });
   });
-  test("the merge: outer from R430 + 3.3j, middle R494 + 3.4j, inner R540 + 4.2j, the kept card on R566 over 92 frames", () => {
+  test("the merge: outer from R430 + 3.3j, middle R494 + 3.4j, inner R540 + 4.2j, the kept card on R566 over 90–93 frames", () => {
     const rets = field.cells.filter((c) => c.retStart !== null);
     expect(rets.length).toBe(46);
     expect(Math.min(...rets.map((c) => c.retStart!))).toBe(430);
-    expect([byId.get("G3")!.retStart, byId.get("G3")!.retT]).toEqual([566, 92]);
+    // (the kept card's return is 93, 90 and 90 frames in 16:9, 1:1 and 9:16: hidden on R639 in each, RV-08)
+    expect([byId.get("G3")!.retStart, byId.get("G3")!.retT]).toEqual([566, 93]);
+    expect(["1:1", "9:16"].map((a) => buildReturnField(a as Aspect).cells.find((c) => c.spec.hero)!.retT)).toEqual([90, 90]);
     expect(Math.max(...rets.filter((c) => !c.spec.hero).map((c) => c.retStart!))).toBeCloseTo(540 + 4.2 * 6, 6);
   });
   test("cellPoseAt: opacity 1, visibility from the stone's silhouette, the swap's blur at its crossing, a draw order", () => {
@@ -280,7 +284,8 @@ describe("the Return, planned and joined to S24, passes every check in every asp
       for (const c of RETURN_CHECKS) expect(r.infos.some((x) => x.check === c)).toBe(true);
       // only IRIS's warning level (the model's bloom in 16:9), the 2.0.0 crops not measured yet (red, luminance) and the
       // captures expected to picture the companion (RV-01) warn
-      expect(r.warnings.filter((w) => !((w.check === "returnWindows" && /IRIS's warning level/.test(w.message)) || (w.check === "returnContent" && /not measured|expected to picture the companion/.test(w.message))))).toEqual([]);
+      // and the stand-ins cropped from one published conversation at two moments (RV-05: placeholders, the lead's call)
+      expect(r.warnings.filter((w) => !((w.check === "returnWindows" && /IRIS's warning level/.test(w.message)) || (w.check === "returnContent" && /not measured|expected to picture the companion|pairs of stand-ins show two moments/.test(w.message))))).toEqual([]);
     });
   }
   test("every music event lands on the point the design gives it (no event waited)", () => {
@@ -563,6 +568,16 @@ describe("returnContent: its canaries fail", () => {
     expect(w.length).toBe(1);
     expect(w[0]!.message).toMatch(/8 cells' 2\.0\.0 captures .*\(A6, A3, A10\*, X3, A5, A12, A13, A2\)/);
   });
+  test("RV-11: a slice plays at 1×, ending on its moment as its cell settles, wholly while it is drawn (canaries: 2×, X5's 12 frames)", () => {
+    for (const a of ASPECTS) {
+      const info = returnContentOf(modelTrace(a)).find((x) => x.level === "info" && /the slices at 1×/.test(x.message))!;
+      expect(info.message).toMatch(/J6\+F14 R-?\d+–R-?\d+, X5 R459–R466, A5 R224–R235/);
+    }
+    const twice = errs(returnContentOf(modelTrace("16:9", { waves: swapCell("out1", "A5", { slice: { frames: 12, rate: 2 } }) })));
+    expect(twice.some((e) => /A5's slice plays at 2× \(1× only/.test(e.message))).toBe(true);
+    const long = errs(returnContentOf(modelTrace("16:9", { waves: swapCell("mid3", "X5", { slice: { frames: 12 } }) })));
+    expect(long.some((e) => /X5's slice of 12 frames would start on R455, before the cell is drawn \(R458\).*at most 9 frames fit/.test(e.message))).toBe(true);
+  });
   test("RV-02: a swap's luminance step over 0.05 fails: A2's pebble as it was, into B7's slot (the reels' tile pop)", () => {
     const waves = swapCell("out2", "A2", { standIn: SI.gaze });
     const a2 = waves.out2.find((c) => c.id === "A2")!;
@@ -580,6 +595,15 @@ describe("returnContent: its canaries fail", () => {
     const old = Object.fromEntries(Object.entries(RETURN_LUM).map(([k, v]) => [k, RETURN_CELLS.find((c) => c.id === v.id)?.standIn.kind === "slot" ? { ...v, mean: 0.8445 } : v]));
     const f = errs(returnContentOf(modelTrace("16:9", { lum: old })));
     expect(f.filter((e) => /a step of 0\.\d+ in mean relative luminance/.test(e.message)).length).toBeGreaterThan(0);
+  });
+  test("RV-05: CR-11 on what is drawn: F11*'s published held card as it was sits beside F12's Verified, one conversation at two moments", () => {
+    const pairs = (fo: ReturnFieldOptions) => returnContentOf(modelTrace("16:9", fo)).find((x) => x.level === "warn" && /pairs of stand-ins show two moments/.test(x.message))?.message ?? "";
+    expect(pairs({ waves: swapCell("mid2", "F11*", { standIn: SI.heldCard }) })).toMatch(/F12\+F3\+F1 \(done, verified\) and F11\* \(held, not verified\)/);
+    // D3's records as they were (after a forget) beside D1's Settings › Memory (before it)
+    const forgotten = { ...SI.forgetRecords, src: "ui/crop-memory-records-forgotten@2x.png", source: { take: SI.forgetRecords.source.take, moment: "a record forgotten" } };
+    expect(pairs({ waves: swapCell("out1", "D3", { standIn: forgotten }) })).toMatch(/D3 \(a record forgotten\) and D1 \(before a forget\)|D1 \(before a forget\) and D3 \(a record forgotten\)/);
+    // as planned: F11* is a slot and D3 shows the records before the forget: neither is listed
+    expect(pairs({})).not.toMatch(/F11\*|D3/);
   });
   test("RV-01/RV-05: A2's stand-in as it was, measured as drawn (0.694 on the page ground), fails the light rule", () => {
     const waves = swapCell("out2", "A2", { standIn: SI.gaze });
@@ -649,6 +673,16 @@ describe("blinkPlaced: its canaries fail", () => {
   test("revision 1's offset of 230 (a blink on R481, as the merge begins)", () => {
     const f = errs(blinkPlaced(planFor("16:9", { clockOffset: 230 })));
     expect(f.some((e) => /a blink on R48[01]\.\d falls in R430–R496/.test(e.message))).toBe(true);
+  });
+  test("RV-08: the kept card's return at the design's 92 frames in every aspect (hidden R638, R641, R641: the blink 8.1 and 5.1 frames after)", () => {
+    const flat = { field: { timing: { returns: { ...RETURN_TIMING.returns, hero: { s0: 566, T: 92 } } } } };
+    for (const a of ["1:1", "9:16"] as const) expect(errs(blinkPlaced(planFor(a, flat))).some((e) => /falls 5\.1 frames after the kept card is hidden \(R641\): 6–8/.test(e.message))).toBe(true);
+    expect(errs(blinkPlaced(planFor("16:9", flat))).some((e) => /falls 8\.1 frames after the kept card is hidden \(R638\)/.test(e.message))).toBe(true);
+    // as planned: hidden on R639 in every aspect, the blink 7.1 frames after; the card still the last to return
+    for (const a of ASPECTS) {
+      expect(errs(blinkPlaced(planOf(a)))).toEqual([]);
+      expect(blinkPlaced(planOf(a)).find((x) => x.level === "info")!.message).toMatch(/the planned blink 7\.1 frames after the kept card is hidden \(R639\)/);
+    }
   });
   test("an offset of 0 (no blink on R646)", () => {
     expect(errs(blinkPlaced(planFor("16:9", { clockOffset: 0 }))).some((e) => /no blink starts within a frame of R646/.test(e.message))).toBe(true);
@@ -777,6 +811,47 @@ describe("the view's model: cells on screen, from thumbnails, the first cell S24
       expect(most).toBeGreaterThan(40);
     }
   });
+  test("RV-04: a hairline moving over 4.6 px a frame where the frame shows it is blurred σ = travel ÷ 7, and its return fades as the carrier's", () => {
+    for (const a of ASPECTS) {
+      const field = returnOf(planOf(a))!.field;
+      const unit = field.view!.unit;
+      let blurred = 0;
+      for (let f = 0; f < returnOf(planOf(a))!.span.to; f += 2)
+        for (const ring of [0, 1, 2]) {
+          const h = hairlineScreenAt(ring, f, field);
+          if (!h) continue;
+          if (h.speed1080 > 4.6) {
+            blurred++;
+            expect(h.blurPx / unit).toBeCloseTo(h.speed1080 / 7, 6);
+          } else expect(h.blurPx).toBe(0);
+        }
+      expect(blurred).toBeGreaterThan(100);
+    }
+    // the return's fade: full to 60 % of it, gone by 95 % (it was wholly opaque to 80 %, while moving 30 px a frame and more)
+    const field = returnOf(planOf("16:9"))!.field;
+    const s = hairlineReturnStart(field, 2);
+    const at = (u: number) => hairlineAt(2, localOfR(s + u * RETURN_TIMING.hairlineReturnFrames, FPS), field)!.opacity;
+    expect(at(0.5)).toBe(1);
+    expect(at(0.8)).toBeLessThan(0.5);
+    expect(at(0.95)).toBeCloseTo(0, 6);
+  });
+  test("RV-02: a cell is drawn while its shadow reaches into the frame, not only its rect (A6 entering 1:1's right edge on R84)", () => {
+    const field = returnOf(planOf("1:1"))!.field;
+    const a6 = field.cells.find((c) => c.id === "A6")!;
+    let enter = -1;
+    for (let f = 0; f < 400 && enter < 0; f++) {
+      const s = cellScreenAt(a6, f, field);
+      if (s && s.rect.x < field.view!.w) enter = f;
+    }
+    expect(Math.round(rOfLocal(enter, FPS))).toBe(84);
+    // its shadow reaches 200 px or more into the ground there: drawn before its rect enters, so it never steps in
+    expect(cellReachPx(cellScreenAt(a6, enter, field)!)).toBeGreaterThan(200);
+    expect(cellsOnScreen(field, enter - 5).some((c) => c.cell.id === "A6")).toBe(true);
+    // the canary: culled by its rect alone (as before), A6 and its shadow would appear on R84 at once
+    const byRect = (f: number) => field.cells.map((c) => cellScreenAt(c, f, field)).filter((x) => !!x && x.share > 0 && x.rect.x < field.view!.w && x.rect.x + x.rect.w > 0 && x.rect.y < field.view!.h && x.rect.y + x.rect.h > 0);
+    expect(byRect(enter - 1).some((c) => c!.cell.id === "A6")).toBe(false);
+    expect(byRect(enter).some((c) => c!.cell.id === "A6")).toBe(true);
+  });
   test("a cell's blur is the swap's (round) or its own travel's (σ = travel ÷ 7 above 4.6 px a frame), never more", () => {
     const p = planOf("16:9");
     const field = returnOf(p)!.field;
@@ -832,6 +907,31 @@ describe("the view's model: cells on screen, from thumbnails, the first cell S24
           expect(x.s.w).toBeLessThanOrEqual(RETURN_THUMB_LONG[x.c.ring]);
         }
     }
+  });
+});
+
+describe("RV-02: the reel's marks declare each swap over its own cells only", () => {
+  test("findTilePops exempts a transition's tiles only: a pop elsewhere on the same frame is still judged", () => {
+    const series = (pop: number) => Array.from({ length: 30 }, (_, f) => (f === 15 ? pop : 0.4));
+    const tiles = Array.from({ length: 36 }, (_, t) => series(t === 5 || t === 7 ? 6 : 0.4));
+    expect(findTilePops(tiles, 6).map((p) => p.tile)).toEqual([5, 7]);
+    expect(findTilePops(tiles, 6, [], {}, [{ from: 13, to: 17, tiles: [5] }]).map((p) => p.tile)).toEqual([7]);
+    expect(findTilePops(tiles, 6, [], {}, [{ from: 13, to: 17 }])).toEqual([]);
+  });
+  test("every swap of the Return is marked over its two cells' rects, in each aspect, and the scan maps a rect to its tiles", () => {
+    for (const a of ASPECTS) {
+      const p = demoPlans(a).find((e) => e.plan.id === "return")!.plan;
+      const marks = swapMarks(p.shots[0]!.returnField!);
+      expect(marks.length).toBe(39);
+      for (const m of marks) {
+        expect(m.to - m.from).toBe(16);
+        expect(m.rect.w * m.rect.h).toBeLessThan(0.1 * p.frame.w * p.frame.h);
+      }
+    }
+    const scan = new ReelScan(960, 540, { aspect: "16:9", fps: 60, width: 1920, height: 1080, total: 10, cuts: [], waits: [], hits: [], types: [], stones: [], apertures: [] });
+    // a rect in the frame's top-left corner, 300 × 150 px of the plans' 1920 × 1080: tile 0 only (tiles are 320 × 180)
+    expect(scan.tilesOf({ x: 10, y: 10, w: 300, h: 150 })).toEqual([0]);
+    expect(scan.tilesOf({ x: 300, y: 170, w: 40, h: 20 })).toEqual([0, 1, 6, 7]);
   });
 });
 

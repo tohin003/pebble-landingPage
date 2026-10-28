@@ -61,6 +61,11 @@ export type CellStandIn =
       note: string;
       /** the companion's avatar pictured in the crop: its body's width, CSS px of the crop (absent: none) */
       avatarPx?: number;
+      /**
+       * the published capture's own conversation and moment (capture/capture.mjs's scene): returnContent lists two
+       * stand-ins of one conversation at different moments on screen together (CR-11 on what is drawn; RV-05)
+       */
+      source?: { take: string; moment: string };
     }
   | {
       kind: "slot";
@@ -92,8 +97,13 @@ export interface ReturnCellSpec {
   shown: boolean;
   /** the kept card: S24's last frame, the first cell and the last to return */
   hero?: boolean;
-  /** a 6–12-frame 1× slice ending on its moment (only where the moment is motion), else a still */
-  slice?: { frames: number };
+  /**
+   * a 6–12-frame slice of its take at 1× (`rate` 1: one recorded frame a film frame), played once, forward, ending on
+   * its moment (only where the moment is motion), else a still. returnContent holds it (RV-11): 1× only, ending on its
+   * moment as the cell settles (a recall present from the start: as it first shows at least half in frame), every
+   * frame while the cell is drawn. No slice exists before the 2.0.0 takes: the view draws the stand-in until then
+   */
+  slice?: { frames: number; rate?: number };
   /** the capture route (R4 §1.1): V renders now; H+ the 2.0.0 snapshot; H a 1.5.0-era screen re-captured; R a real recording */
   capture: string;
   standIn: CellStandIn;
@@ -120,30 +130,45 @@ export type SlotStandIn = Extract<CellStandIn, { kind: "slot" }>;
 const still = (src: string, w: number, h: number, crop: Rect, note: string, fit: CellFit = "cover", version = "1.0.x"): StillStandIn => ({ kind: "still", src, w, h, crop, fit, version, note });
 const slot = (captureId: string, label: string, w = 480, h = 360): SlotStandIn => ({ kind: "slot", captureId, label, w, h });
 
+/** The published captures' conversations (capture/mock/fixtures.js, by the scene capture/capture.mjs shot them in). */
+const PUB = {
+  coding: "published: \"Fix month-end due dates\" (invoice-kit)",
+  pet: "published: the companion's quick chat",
+  settings: "published: Settings",
+  challenge: "published: the scope challenge",
+  forget: "published: \"Forget my Lisbon trip plans.\"",
+  welcome: "published: a new conversation",
+  trip: "published: \"Lisbon trip budget\"",
+  quiz: "published: \"Python datetime check-in\"",
+  command: "published: the export request",
+} as const;
+const from = (take: keyof typeof PUB, moment: string) => ({ source: { take: PUB[take], moment } });
+
 /** The published stills (exported for the canaries, which plant a stand-in as it was). */
 export const SI = {
-  verified: still("ui/crop-done-receipt@2x.png", 684, 278, { x: 6, y: 33, w: 327, h: 245 }, "\"Verified · pytest … passed on current files\" and \"Done, and verified:\", below the \"Worked for\" line"),
-  quickChat: still("ui/pet-chat@2x.png", 384, 456, { x: 8, y: 8, w: 296, h: 222 }, "the quick chat: a question and the reply's first lines, above the usage line and the avatar"),
-  whatChanges: still("ui/crop-approval-card@2x.png", 495, 482, { x: 14, y: 8, w: 420, h: 315 }, "a card's first line: \"Changes this file in your project. You can undo it afterwards.\""),
-  heldCard: still("ui/held-unverified@2x.png", 1160, 800, { x: 342, y: 455, w: 240, h: 180 }, "\"Blocked · Pebble's change isn't verified yet.\" with Run the tests, between the usage line and the composer"),
-  modes: still("ui/crop-permissions-modes@2x.png", 504, 443, { x: 0, y: 0, w: 504, h: 378 }, "Settings › Permissions: the modes, each with its two lines"),
+  verified: { ...still("ui/crop-done-receipt@2x.png", 684, 278, { x: 6, y: 33, w: 327, h: 245 }, "\"Verified · pytest … passed on current files\" and \"Done, and verified:\", below the \"Worked for\" line"), ...from("coding", "done, verified") },
+  quickChat: { ...still("ui/pet-chat@2x.png", 384, 456, { x: 8, y: 8, w: 296, h: 222 }, "the quick chat: a question and the reply's first lines, above the usage line and the avatar"), ...from("pet", "a question answered") },
+  whatChanges: { ...still("ui/crop-approval-card@2x.png", 495, 482, { x: 14, y: 8, w: 420, h: 315 }, "a card's first line: \"Changes this file in your project. You can undo it afterwards.\""), ...from("coding", "an approval waiting") },
+  heldCard: { ...still("ui/held-unverified@2x.png", 1160, 800, { x: 342, y: 455, w: 240, h: 180 }, "\"Blocked · Pebble's change isn't verified yet.\" with Run the tests, between the usage line and the composer"), ...from("coding", "held, not verified") },
+  modes: { ...still("ui/crop-permissions-modes@2x.png", 504, 443, { x: 0, y: 0, w: 504, h: 378 }, "Settings › Permissions: the modes, each with its two lines"), ...from("settings", "before a forget") },
   // (cropped below the model's row, whose details line prints its "4,096-token window" (§4 bars token counts), and left
   // of its Rest model button: RV-06)
-  waysIn: still("ui/crop-models-ways-in@2x.png", 504, 227, { x: 0, y: 100, w: 302, h: 127 }, "the three ways in: Add a model file, Connect provider, Continue with ChatGPT", "contain"),
-  refused: still("ui/crop-challenge-step@2x.png", 497, 329, { x: 0, y: 0, w: 436, h: 327 }, "a refused step in Activity with AgentGuard's words, left of its step time"),
-  sidebar: still("ui/pet-sidebar@2x.png", 744, 576, { x: 8, y: 8, w: 344, h: 258 }, "the companion's sidebar: Chats, Activity, Views"),
-  forgetRecords: still("ui/crop-memory-records-forgotten@2x.png", 504, 516, { x: 0, y: 138, w: 504, h: 378 }, "memory records, each with its Forget"),
-  memoryKinds: still("ui/settings-memory@2x.png", 1160, 800, { x: 342, y: 200, w: 476, h: 357 }, "Settings › Memory: the six kinds, the switches"),
-  forgetCard: still("ui/main-forget-card@2x.png", 1160, 800, { x: 371, y: 87, w: 667, h: 500 }, "\"Forget my … plans.\" and the card listing the matching memories (the avatar left of the crop)"),
-  home: still("ui/v150/main-welcome@2x.png", 1160, 800, { x: 371, y: 232, w: 635, h: 476 }, "the home: \"Good to see you.\" and the starter cards, below the avatar", "cover", "1.5.0"),
-  chart: still("ui/crop-dashboard-chart@2x.png", 783, 493, { x: 16, y: 6, w: 640, h: 480 }, "a view's chart in the canvas (sample data)"),
-  quiz: still("ui/main-quiz@2x.png", 1160, 800, { x: 728, y: 215, w: 423, h: 317 }, "a quiz with its timer (sample data)"),
-  editCard: still("ui/crop-approval-card@2x.png", 495, 482, { x: 13, y: 130, w: 469, h: 352 }, "an edit card's diff and its buttons"),
-  commandCard: still("ui/crop-command-card@2x.png", 495, 474, { x: 14, y: 6, w: 460, h: 345 }, "the command card: \"Pebble can't undo a command.\""),
-  gitPlan: still("ui/git-plan@2x.png", 1440, 900, { x: 958, y: 395, w: 464, h: 348 }, "the Git plan card's paths, message and effects, below the line with the sample e-mail address"),
+  waysIn: { ...still("ui/crop-models-ways-in@2x.png", 504, 227, { x: 0, y: 100, w: 302, h: 127 }, "the three ways in: Add a model file, Connect provider, Continue with ChatGPT", "contain"), ...from("settings", "before a forget") },
+  refused: { ...still("ui/crop-challenge-step@2x.png", 497, 329, { x: 0, y: 0, w: 436, h: 327 }, "a refused step in Activity with AgentGuard's words, left of its step time"), ...from("challenge", "a step refused") },
+  sidebar: { ...still("ui/pet-sidebar@2x.png", 744, 576, { x: 8, y: 8, w: 344, h: 258 }, "the companion's sidebar: Chats, Activity, Views"), ...from("pet", "a question answered, the sidebar open") },
+  // (the records before a forget, as D1's Settings › Memory shows them: the forgotten crop was a later moment beside it, RV-05)
+  forgetRecords: { ...still("ui/crop-memory-records@2x.png", 504, 516, { x: 0, y: 138, w: 504, h: 378 }, "memory records, each with its Forget"), ...from("settings", "before a forget") },
+  memoryKinds: { ...still("ui/settings-memory@2x.png", 1160, 800, { x: 342, y: 200, w: 476, h: 357 }, "Settings › Memory: the six kinds, the switches"), ...from("settings", "before a forget") },
+  forgetCard: { ...still("ui/main-forget-card@2x.png", 1160, 800, { x: 371, y: 87, w: 667, h: 500 }, "\"Forget my … plans.\" and the card listing the matching memories (the avatar left of the crop)"), ...from("forget", "the card asking") },
+  home: { ...still("ui/v150/main-welcome@2x.png", 1160, 800, { x: 371, y: 232, w: 635, h: 476 }, "the home: \"Good to see you.\" and the starter cards, below the avatar", "cover", "1.5.0"), ...from("welcome", "welcome") },
+  chart: { ...still("ui/crop-dashboard-chart@2x.png", 783, 493, { x: 16, y: 6, w: 640, h: 480 }, "a view's chart in the canvas (sample data)"), ...from("trip", "the dashboard open") },
+  quiz: { ...still("ui/main-quiz@2x.png", 1160, 800, { x: 728, y: 215, w: 423, h: 317 }, "a quiz with its timer (sample data)"), ...from("quiz", "the quiz started") },
+  editCard: { ...still("ui/crop-approval-card@2x.png", 495, 482, { x: 13, y: 130, w: 469, h: 352 }, "an edit card's diff and its buttons"), ...from("coding", "an approval waiting") },
+  commandCard: { ...still("ui/crop-command-card@2x.png", 495, 474, { x: 14, y: 6, w: 460, h: 345 }, "the command card: \"Pebble can't undo a command.\""), ...from("command", "a command waiting") },
+  gitPlan: { ...still("ui/git-plan@2x.png", 1440, 900, { x: 958, y: 395, w: 464, h: 348 }, "the Git plan card's paths, message and effects, below the line with the sample e-mail address"), ...from("coding", "a Git plan waiting") },
   // A2's stand-in until 28 Oct: the companion's pebble itself, 87 CSS px wide in its 112-px crop (a second stone in the
   // Return: RV-01). No cell uses it now; the canaries plant it
-  gaze: { ...still("ui/pet-collapsed-gaze@2x.png", 112, 112, { x: 0, y: 0, w: 112, h: 112 }, "the pebble with its eyes turned (the pointer is the 2.0.0 recording's)", "contain"), avatarPx: 87 },
+  gaze: { ...still("ui/pet-collapsed-gaze@2x.png", 112, 112, { x: 0, y: 0, w: 112, h: 112 }, "the pebble with its eyes turned (the pointer is the 2.0.0 recording's)", "contain"), avatarPx: 87, ...from("pet", "collapsed, its eyes turned") },
 } as const;
 
 /* ---------------------------------------------------------------- the cells --------------------------------------- */
@@ -221,7 +246,9 @@ const MID_W3: ReturnCellSpec[] = [
   cell("mid3", false, { id: "E1+E2", features: ["E1", "E2"], family: "E", take: "kit E modes", moment: "-", capture: "H, H+", standIn: SI.modes, label: "Three modes" }),
   cell("mid3", false, { id: "E9", features: ["E9"], family: "E", take: "kit E windows", moment: "-", capture: "H+", standIn: slot("kit-E9", "windows Pebble can use, with End access"), label: "End access" }),
   cell("mid3", false, { id: "X3", features: ["X3"], family: "X", take: "kit X3", moment: "-", capture: "R", standIn: slot("kit-X3", "the companion stepping out of the way of the spot Pebble must click"), label: "Steps aside", note: "1.9.15: confirm in 2.0.0; the companion it moves is a second stone (RV-01)", avatar: "expected" }),
-  cell("mid3", false, { id: "X5", features: ["X5"], family: "X", take: "kit X5", moment: "-", slice: { frames: 12 }, capture: "R", standIn: slot("kit-X5", "a drag inside an allowed window: a picture cropped in Preview"), label: "Drags too", note: "1.9.18: confirm in 2.0.0; show the result, never a review it skipped" }),
+  // (its slice is 8 frames: it swaps in by a slide, drawn from the crossing 8 frames before it settles; 12 would start
+  // before the cell is drawn, RV-11)
+  cell("mid3", false, { id: "X5", features: ["X5"], family: "X", take: "kit X5", moment: "-", slice: { frames: 8 }, capture: "R", standIn: slot("kit-X5", "a drag inside an allowed window: a picture cropped in Preview"), label: "Drags too", note: "1.9.18: confirm in 2.0.0; show the result, never a review it skipped" }),
 ];
 
 /** O1: 24 entries on the outer ring, R150 + 7.5 i, in family groups (models, research, workspace, memory, views). */

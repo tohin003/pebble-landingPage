@@ -88,6 +88,19 @@ export const CLOSED_FINDINGS: readonly { piece: string; check: string; cr: strin
   { piece: "climax", check: "typeExitKind", cr: "CR-03", how: "\"Its own tools.\" lifts out through its mask, gone 2 frames before the cut into Kiln" },
 ];
 
+/**
+ * Open findings no check holds: judged by eye at G1 (MONTAGE_DESIGN §9). Listed so that nothing reads as closed that is
+ * not (the review of 28 Oct, RV-07: the README said CR-16's wall part closed with the wall, while its size target is
+ * unmet).
+ */
+export const OPEN_BY_EYE: readonly { piece: string; cr: string; note: string }[] = [
+  {
+    piece: "return",
+    cr: "CR-16",
+    note: "the cell size: CR-16 asked inner cells of 150–250 px at 1080; the Return's inner cells are 144, 116 and 128 px at z = 1 (16:9, 1:1, 9:16; RETURN_GEOMETRY), smaller than revision 1's so three counter-rotating rings never overlap (MONTAGE_DESIGN §2.6, §10). Its readability part (visible orbits, 5–7° a second) closed with the hairlines. G1 judges grand, busy or sparse (§9 item 7); the remedies cost density (fewer outer slots, or two rings)",
+  },
+];
+
 /** Is a finding one of the open findings of this piece? */
 /**
  * The findings on the two pieces the Return replaced (OVERRIDES §61, 28 Oct): the wall and the convergence left the

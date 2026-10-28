@@ -15,7 +15,7 @@ export interface DrawnLum {
 }
 
 /** When the images were made and measured. */
-export const RETURN_LUM_MADE: string | null = "2026-10-28T03:57:18.932Z";
+export const RETURN_LUM_MADE: string | null = "2026-10-28T04:16:57.519Z";
 
 export const RETURN_LUM: Readonly<Record<string, DrawnLum>> = {
   "a67bad52": { id: "A10*", mean: 0.9109, red: 0 },
@@ -46,7 +46,7 @@ export const RETURN_LUM: Readonly<Record<string, DrawnLum>> = {
   "671f77df": { id: "C6", mean: 0.904, red: 0 },
   "1862dd47": { id: "D1", mean: 0.9245, red: 0 },
   "02fdd0db": { id: "D2", mean: 0.9044, red: 0 },
-  "b9e1f0b4": { id: "D3", mean: 0.9335, red: 0 },
+  "5636aa3f": { id: "D3", mean: 0.9341, red: 0 },
   "6018d94e": { id: "D4", mean: 0.9191, red: 0 },
   "48c4d7ac": { id: "D6+P1", mean: 0.9025, red: 0 },
   "9d31c0d1": { id: "E1+E2", mean: 0.9009, red: 0 },

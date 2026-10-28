@@ -10,7 +10,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import type { Aspect } from "../../tokens";
 import { ASPECTS } from "../align";
-import { RETURN_GEOMETRY, buildReturnField, slotOrder, type ReturnField } from "../returnField";
+import { RETURN_GEOMETRY, RETURN_TIMING, buildReturnField, slotOrder, type ReturnField } from "../returnField";
 import { planReturn, returnCameraAt, returnCameraSpec, type ReturnCameraSpec } from "../returnPlan";
 import { cornerSpeedR, mergeMetrics, planTrace, scheduleMetrics, traceReturn, windowLoads, type ReturnTrace } from "../returnChecks";
 import { planClimax } from "../climax";
@@ -36,7 +36,8 @@ const REFERENCE_GEOMETRY: Record<Aspect, { hero: { w: number; h: number }; title
 /** The reference mode's field, camera and trace. */
 function referenceTrace(a: Aspect): { field: ReturnField; cam: ReturnCameraSpec; trace: ReturnTrace } {
   const g = { ...RETURN_GEOMETRY[a], ...REFERENCE_GEOMETRY[a] };
-  const field = buildReturnField(a, { geometry: g, depth: [1, 1, 1], holdInner: false });
+  // (the design's model never paired the waves by luminance, nor lengthened the kept card's return per aspect: RV-02, RV-08)
+  const field = buildReturnField(a, { geometry: g, depth: [1, 1, 1], holdInner: false, pair: false, timing: { returns: { ...RETURN_TIMING.returns, hero: { s0: RETURN_TIMING.returns.hero.s0, T: RETURN_TIMING.returns.hero.T } } } });
   const cam = returnCameraSpec(a, { geometry: g });
   const poseAt = (r: number) => {
     const c = returnCameraAt(cam, r);

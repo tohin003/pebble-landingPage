@@ -36,8 +36,11 @@ export interface LumaOptions {
   grid?: number;
   /** a tile pop: its frame-to-frame difference above `minLevels` and above `ratio` × the median of its own neighbours */
   tilePop?: { minLevels?: number; ratio?: number };
-  /** transitions (an iris, a rack, a swap): designed changes whose frames tile pops do not judge, as cuts are not judged */
-  transitions?: readonly { from: number; to: number }[];
+  /**
+   * transitions (an iris, a rack, a swap): designed changes whose frames tile pops do not judge, as cuts are not judged;
+   * one with `tiles` (a Return cell's swap, RV-02) exempts only those tiles of the grid, everywhere else is judged
+   */
+  transitions?: readonly { from: number; to: number; tiles?: readonly number[] }[];
   /**
    * a take's own state changes: a placeholder still switching in or out with a hard cut on its event frame, as the
    * recording changes (CR-18: placeholder states never dissolve). Pops are not judged on them (±1 frame), as on a cut;
@@ -79,17 +82,24 @@ export const TILE_POP = { minLevels: 3, ratio: 3 } as const;
  * away from the cuts (±1 frame) and the transitions. A change of one or two frames stands above both sides; the start
  * of a motion that goes on does not. Pure: analyseLuma() and qa/reel-scan.ts call it.
  */
-export function findTilePops(tileMad: readonly (readonly number[])[], grid: number, cuts: readonly number[] = [], o: { minLevels?: number; ratio?: number } = {}, transitions: readonly { from: number; to: number }[] = []): TilePop[] {
+export function findTilePops(tileMad: readonly (readonly number[])[], grid: number, cuts: readonly number[] = [], o: { minLevels?: number; ratio?: number } = {}, transitions: readonly { from: number; to: number; tiles?: readonly number[] }[] = []): TilePop[] {
   const minLevels = o.minLevels ?? TILE_POP.minLevels;
   const ratio = o.ratio ?? TILE_POP.ratio;
   const near = new Set<number>();
   for (const c of cuts) for (let k = -1; k <= 1; k++) near.add(c + k);
-  for (const t of transitions) for (let f = t.from - 1; f <= t.to; f++) near.add(f);
+  // a transition over the whole frame, or over some tiles only (each tile's own exempt frames)
+  const nearTile = new Map<number, Set<number>>();
+  for (const t of transitions)
+    for (let f = t.from - 1; f <= t.to; f++) {
+      if (!t.tiles) near.add(f);
+      else for (const tile of t.tiles) (nearTile.get(tile) ?? nearTile.set(tile, new Set()).get(tile)!).add(f);
+    }
   const out: TilePop[] = [];
   tileMad.forEach((series, tile) => {
     const n = series.length;
+    const mine = nearTile.get(tile);
     for (let f = 3; f < n - 3; f++) {
-      if (near.has(f)) continue;
+      if (near.has(f) || mine?.has(f)) continue;
       const v = series[f]!;
       if (v <= minLevels) continue;
       const m = Math.max(median([series[f - 3]!, series[f - 2]!, series[f - 1]!]), median([series[f + 1]!, series[f + 2]!, series[f + 3]!]));

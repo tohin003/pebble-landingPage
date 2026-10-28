@@ -30,8 +30,11 @@ export interface ReelMarks {
   height: number;
   total: number;
   cuts: number[];
-  /** transitions' frames [from, to): designed changes tile pops do not judge */
-  transitions?: { from: number; to: number }[];
+  /**
+   * transitions' frames [from, to): designed changes tile pops do not judge; one with a `rect` (the plans' frame px: a
+   * Return cell's swap, RV-02) only in the tiles that rect covers
+   */
+  transitions?: { from: number; to: number; rect?: Rect; id?: string }[];
   /** a take's placeholder state changes (hard cuts on its event frames, CR-18): not judged as pops, listed */
   states?: { frame: number; id: string }[];
   waits: string[];
@@ -206,6 +209,18 @@ export class ReelScan {
     return t.rectAt[k]!;
   }
 
+  /** The tiles a rect of the plans' frame px covers. */
+  tilesOf(r: Rect): number[] {
+    const s = this.S;
+    const q = { x: r.x * s, y: r.y * s, w: r.w * s, h: r.h * s };
+    const out: number[] = [];
+    for (let t = 0; t < TILE_GRID * TILE_GRID; t++) {
+      const a = this.tileRect(t);
+      if (q.x < a.x + a.w && q.x + q.w > a.x && q.y < a.y + a.h && q.y + q.h > a.y) out.push(t);
+    }
+    return out;
+  }
+
   /** A tile's rect at full size (the small frame's tile, scaled back by K). */
   private tileRect(t: number): Rect {
     const G = TILE_GRID;
@@ -323,7 +338,9 @@ export class ReelScan {
   }
 
   finish(fps = this.marks.fps): ReelScanReport {
-    const lumaAll = analyseLuma(this.small, { fps, width: this.smallW, height: this.smallH, cuts: this.marks.cuts, transitions: this.marks.transitions ?? [], states: (this.marks.states ?? []).map((x) => x.frame), waits: parseWaits(this.marks.waits.join(",")), tilePop: TILE_POP_REEL });
+    // a transition with a rect exempts only the tiles it covers (at the render's size)
+    const transitions = (this.marks.transitions ?? []).map((t) => (t.rect ? { from: t.from, to: t.to, tiles: this.tilesOf(t.rect) } : { from: t.from, to: t.to }));
+    const lumaAll = analyseLuma(this.small, { fps, width: this.smallW, height: this.smallH, cuts: this.marks.cuts, transitions, states: (this.marks.states ?? []).map((x) => x.frame), waits: parseWaits(this.marks.waits.join(",")), tilePop: TILE_POP_REEL });
     // a change that a small shift explains, or that keeps the tile's mean, is a move (glyphs settling, the camera), not a pop
     const tilePops = lumaAll.tilePops.filter((p) => {
       const m = this.moveTest.get(`${p.frame}:${p.tile}`) ?? { shiftRatio: 1, meanShare: 1 };

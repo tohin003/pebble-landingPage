@@ -15,7 +15,7 @@
 //   apertures  the Drop's hit, the frame its bands start to open in the plan, and a resting stretch before it
 //              (qa/bands.ts measures the bands)
 //   transitions  each iris, rack or swap's frames, and the Veil's own cast, which tile pops do not judge (a designed
-//              change, as a cut is)
+//              change, as a cut is); the Return's cell swaps over their cells' rects only (RV-02)
 //   entrances  each plane's card entrance and each placeholder still's entrance inside a take view, to name a tile pop
 //   rows       the end card's rows of facts: each row's band while its facts are held, how many facts it holds and
 //              the gap between them, so the scan finds the gaps in the ink and holds them even and empty (CR-20, NF-04)
@@ -29,6 +29,7 @@ import { codaMarkStones } from "../codaChecks";
 import { carriedRect } from "../kit";
 import { ACTIVATE } from "../../../../../shared/pebble/veil";
 import { frameOfSource } from "../take";
+import { swapMarks } from "../returnField";
 
 const args = process.argv.slice(2);
 const a = (args.find((x) => /^(16:9|1:1|9:16)$/.test(x)) ?? "16:9") as "16:9" | "1:1" | "9:16";
@@ -38,7 +39,7 @@ const out = outAt >= 0 ? args[outAt + 1] : undefined;
 let off = 0;
 const starts: number[] = [];
 const seams: number[] = [];
-const transitions: { from: number; to: number }[] = [];
+const transitions: { from: number; to: number; rect?: { x: number; y: number; w: number; h: number }; id?: string }[] = [];
 const waits: string[] = [];
 const hits: number[] = [];
 const types: unknown[] = [];
@@ -138,6 +139,9 @@ for (const e of entries) {
     }
     // the Veil's own cast (Pebble's code, stealthVeil.ts: the dusk colour sweeps down the pebble in about 10 frames)
     for (const sh of p.shots) for (const v of sh.stone?.veil ?? []) transitions.push({ from: off + Math.round(v.at * p.fps), to: off + Math.round((v.at + ACTIVATE) * p.fps) + 2 });
+    // the Return's swaps (RV-02): each over its two cells' rects only, a designed change there; their luminance steps
+    // are held on the plan (returnContent), so the scan still judges every other tile, and these after the swap
+    for (const sh of p.shots) if (sh.returnField) for (const m of swapMarks(sh.returnField)) transitions.push({ from: off + m.from, to: off + m.to, rect: m.rect, id: `${p.id}/${m.id}` });
     const open = apertureOpenStart(p);
     if (open !== null && p.hits.length) {
       const hit = p.hits[0]!;

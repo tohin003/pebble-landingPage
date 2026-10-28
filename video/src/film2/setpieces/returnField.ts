@@ -17,7 +17,7 @@
 //   hairlineAt        a ring's hairline orbit: drawn on in the release, returning into the stone after its last cell
 // Pure; no React.
 import type { Aspect } from "../tokens";
-import { E_LEAVE, E_MOVE, clamp01 } from "../motion/ease";
+import { E_LEAVE, E_MOVE, clamp01, smoothstep } from "../motion/ease";
 import { planePose, type Pose, type VelocityCamera } from "../motion/camera";
 import type { Point, Rect } from "../motion/geometry";
 import { GALET, PEBBLE_SCALE, VIEWBOX_SIZE } from "../../../../shared/pebble/character";
@@ -127,7 +127,7 @@ export interface ReturnTiming {
   slidePx: number;
   waves: Record<Exclude<ReturnWave, "inner">, { t0: number; dt: number }>;
   /** the returns: each ring's first start, the step between its cells, the length; the kept card last */
-  returns: { outer: { s0: number; ds: number; T: number }; middle: { s0: number; ds: number; T: number }; inner: { s0: number; ds: number; T: number }; hero: { s0: number; T: number } };
+  returns: { outer: { s0: number; ds: number; T: number }; middle: { s0: number; ds: number; T: number }; inner: { s0: number; ds: number; T: number }; hero: { s0: number; T: number; byAspect?: Partial<Record<Aspect, number>> } };
   /** a cell's long side at first contact and when centred behind the stone, × the body's width */
   wContact: number;
   wEnd: number;
@@ -156,7 +156,11 @@ export const RETURN_TIMING: ReturnTiming = {
     out1: { t0: 150, dt: 7.5 },
     out2: { t0: 321, dt: 6 },
   },
-  returns: { outer: { s0: 430, ds: 3.3, T: 72 }, middle: { s0: 494, ds: 3.4, T: 78 }, inner: { s0: 540, ds: 4.2, T: 74 }, hero: { s0: 566, T: 92 } },
+  // the kept card's return: from R566 on every aspect, its length per aspect (RV-08): the field's stone is built at the
+  // title stone's size on the landing (172.5, 147.9 and 172.5 px, not the design's 190, 170 and 190), which hid the card
+  // on R638, R641 and R641 at the design's 92 frames, so the blink on R646 fell 8.1, 5.1 and 5.1 frames after it (§2.7
+  // asks 6–8); at 93, 90 and 90 frames it is hidden on R639 in every aspect, 7.1 frames before the blink
+  returns: { outer: { s0: 430, ds: 3.3, T: 72 }, middle: { s0: 494, ds: 3.4, T: 78 }, inner: { s0: 540, ds: 4.2, T: 74 }, hero: { s0: 566, T: 92, byAspect: { "16:9": 93, "1:1": 90, "9:16": 90 } } },
   wContact: 0.75,
   wEnd: 0.55,
   curlShare: 0.4,
@@ -514,7 +518,7 @@ export function buildReturnField(aspect: Aspect, o: ReturnFieldOptions = {}, fps
   for (const c of cells)
     if (c.spec.hero) {
       c.retStart = T.returns.hero.s0;
-      c.retT = T.returns.hero.T;
+      c.retT = T.returns.hero.byAspect?.[aspect] ?? T.returns.hero.T;
     }
   // the draw order: the outer ring nearest, later arrivals above earlier ones in a ring, the kept card above its ring
   cells.forEach((c) => (c.zOrder = c.ring * 1000 + (c.spec.hero ? 999 : Math.round(c.settle - T.span.from))));
@@ -720,7 +724,8 @@ export const hairlineReturnStart = (field: ReturnField, ring: number): number =>
 /**
  * A ring's hairline orbit (1.5–2 px in sage #506E54 along its ellipse): drawn on over 30 frames from R0; once its last
  * cell has started home it returns into the stone on E-leave over 40 frames (the carrier's own return), gone before
- * contact. Null when not drawn.
+ * contact: like the carrier (carrier/ring.ts), full until 60 % of its return and gone by 95 % (the review's RV-04: it
+ * faded only over its last fifth, so it was wholly opaque at 30 px a frame and more). Null when not drawn.
  */
 export function hairlineAt(ring: number, frame: number, field: ReturnField): HairlinePose | null {
   const r = rOfLocal(frame, field.fps);
@@ -735,9 +740,55 @@ export function hairlineAt(ring: number, frame: number, field: ReturnField): Hai
   const e = E_LEAVE(u);
   const k = 1 - e;
   const inner = field.stone.body.max * 1.1;
-  // gone before contact: it fades over the last fifth of its travel, while still outside the stone
   const d0 = field.depth[ring]!;
-  return { ring, a: inner + (a0 - inner) * k, b: inner + (b0 - inner) * k, drawn: 1, opacity: 1 - clamp01((u - 0.8) / 0.2), depth: d0 + (1 - d0) * E_MOVE(clamp01(u / 0.5)), widthPx: 1.75 };
+  return { ring, a: inner + (a0 - inner) * k, b: inner + (b0 - inner) * k, drawn: 1, opacity: 1 - smoothstep(0.6, 0.95, u), depth: d0 + (1 - d0) * E_MOVE(clamp01(u / 0.5)), widthPx: 1.75 };
+}
+
+/** A hairline as the view draws it: its ellipse in the frame's own px, its stroke, and its blur (frame px). */
+export interface HairlineScreen {
+  pose: HairlinePose;
+  cx: number;
+  cy: number;
+  a: number;
+  b: number;
+  /** its fastest point's travel over a frame, px at 1080 */
+  speed1080: number;
+  /** σ of its blur, frame px: travel ÷ 7 above the reading speed (4.6 px a frame at 1080), as a cell's (RV-04) */
+  blurPx: number;
+}
+
+/**
+ * A ring's hairline on screen on a piece-local frame (the plan's camera at its parallax depth), with the blur its own
+ * travel asks for: the review's RV-04 found the 1.75-px rings drawn crisp while they moved up to 20.8 px a frame in the
+ * bloom and 30-40 px in their return. Null when not drawn.
+ */
+export function hairlineScreenAt(ring: number, frame: number, field: ReturnField): HairlineScreen | null {
+  const v = field.view;
+  if (!v) throw new Error("hairlineScreenAt needs the plan's camera (field.view): plan the Return with planReturn()");
+  const at = (f: number) => {
+    const hl = hairlineAt(ring, f, field);
+    if (!hl) return null;
+    const pp = planePose(v.camera.pose(f), v.ref, hl.depth);
+    return { hl, cx: v.w / 2 + (0 - pp.x) * pp.zoom, cy: v.h / 2 + (0 - pp.y) * pp.zoom, a: hl.a * pp.zoom, b: hl.b * pp.zoom };
+  };
+  const now = at(frame);
+  if (!now) return null;
+  // the fastest travel, between the half frames around it, of the points of its ellipse that the frame shows (the
+  // parts far out of frame move fastest in a zoom and are never seen)
+  const p0 = at(frame - 0.5);
+  const p1 = at(frame + 0.5);
+  let travel = 0;
+  if (p0 && p1)
+    for (let k = 0; k < 96; k++) {
+      const t = (2 * Math.PI * k) / 96;
+      const [c, sn] = [Math.cos(t), Math.sin(t)];
+      const x = now.cx + c * now.a;
+      const y = now.cy + sn * now.b;
+      if (x < -8 || y < -8 || x > v.w + 8 || y > v.h + 8) continue;
+      travel = Math.max(travel, Math.hypot(p1.cx + c * p1.a - (p0.cx + c * p0.a), p1.cy + sn * p1.b - (p0.cy + sn * p0.b)));
+    }
+  const speed1080 = travel / v.unit;
+  return { pose: now.hl, cx: now.cx, cy: now.cy, a: now.a, b: now.b, speed1080, blurPx: speed1080 > 4.6 ? (speed1080 / 7) * v.unit : 0 };
 }
 
 
@@ -794,12 +845,60 @@ export function cellScreenAt(cell: FieldCell, frame: number, field: ReturnField)
   return { cell, rect, vel, blur, z: cell.zOrder, share, state: p.state, depth: p.depth, u: p.u };
 }
 
+/**
+ * How far a drawn cell reaches beyond its rect, frame px: its window shadow (views/ReturnView.tsx: 0 14k 36k −10k, so
+ * 40k below, 26k at the sides, 12k above, k the cell's frame px a world px; 40k all round) or its blur's halo (3σ),
+ * whichever is wider. A cell is drawn while that reach is in frame, not only its rect: culled by its rect, a large cell
+ * entering at the frame's edge brought its whole shadow in on one frame (the review's RV-02: A6 entering 1:1's right
+ * edge on R84 stepped a 140-px band of ground by 3.85 levels in its tile; 216 px of reach at the bloom's zoom).
+ */
+export const cellReachPx = (c: CellScreen): number => Math.max(40 * (c.rect.w / c.cell.w0), 3 * Math.max(c.blur.sx, c.blur.sy));
+
 /** The cells the view draws on a frame, back to front (the stone is drawn above all of them). */
 export const cellsOnScreen = (field: ReturnField, frame: number): CellScreen[] =>
   field.cells
     .map((c) => cellScreenAt(c, frame, field))
-    .filter((x): x is CellScreen => x !== null && x.share > 0 && x.rect.x + x.rect.w > 0 && x.rect.y + x.rect.h > 0 && x.rect.x < field.view!.w && x.rect.y < field.view!.h)
+    .filter((x): x is CellScreen => {
+      if (x === null || !(x.share > 0)) return false;
+      const m = cellReachPx(x);
+      return x.rect.x + x.rect.w + m > 0 && x.rect.y + x.rect.h + m > 0 && x.rect.x - m < field.view!.w && x.rect.y - m < field.view!.h;
+    })
     .sort((a, b) => a.z - b.z);
+
+/**
+ * Each swap as the reel's marks give it (setpieces/tools/reel-marks.ts): its piece-local frames (the swap's 16, from the
+ * outgoing cell blurring up to the incoming one settled) and the frame rect it changes (both cells' rects over those
+ * frames, with their blur's halo), frame px. A swap is a designed change, as a cut is, so the render's tile pops are
+ * not judged in the tiles it covers while it runs; its luminance step is held on the plan instead (returnContent,
+ * SWAP_LUM_STEP), so declaring it hides no snap (the review's RV-02).
+ */
+export function swapMarks(field: ReturnField): { id: string; from: number; to: number; rect: Rect }[] {
+  const fps = field.fps;
+  const out: { id: string; from: number; to: number; rect: Rect }[] = [];
+  for (const c of field.cells) {
+    if (c.swapIn === null) continue;
+    const prev = field.cells.find((x) => x.ring === c.ring && x.slot === c.slot && x.swappedOutAt === c.swapIn) ?? null;
+    const from = Math.floor(localOfR(c.swapIn, fps));
+    const to = Math.ceil(localOfR(c.swapIn + field.timing.swapFrames, fps));
+    let x0 = Infinity;
+    let y0 = Infinity;
+    let x1 = -Infinity;
+    let y1 = -Infinity;
+    for (let f = from; f <= to; f++)
+      for (const cell of [c, prev]) {
+        if (!cell) continue;
+        const sc = cellScreenAt(cell, f, field);
+        if (!sc || !(sc.share > 0)) continue;
+        const m = 3 * Math.max(sc.blur.sx, sc.blur.sy);
+        x0 = Math.min(x0, sc.rect.x - m);
+        y0 = Math.min(y0, sc.rect.y - m);
+        x1 = Math.max(x1, sc.rect.x + sc.rect.w + m);
+        y1 = Math.max(y1, sc.rect.y + sc.rect.h + m);
+      }
+    if (x1 > x0 && y1 > y0) out.push({ id: `${prev?.id ?? "(none)"} → ${c.id}`, from, to, rect: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } });
+  }
+  return out;
+}
 
 const contactCache = new WeakMap<ReturnField, Map<FieldCell, number | null>>();
 

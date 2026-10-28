@@ -23,7 +23,8 @@
 //   returnRadius    CR-08's check: each cell's screen radius from the stone falls 70 % or more on average from its
 //                   return's start to its first contact, and 50 % or more for each cell (no push cancels it)
 //   cellText        a cell's largest text stays under 16 px at 1080 on every frame it shows, except the inner recalls
-//   blinkPlaced     the stone's idle blink starts within a frame of its plan (R646), none other in the keep-clear spans
+//   blinkPlaced     the stone's idle blink starts within a frame of its plan (R646), none other in the keep-clear spans,
+//                   and 6–8 frames after the kept card is hidden in every aspect (§2.7: RV-08)
 //   joinPose        S24's exit pose and velocity equal the Return's entry: its first frame shows the first cell (S24's
 //                   last frame) filling the frame within 1 px and 1 % of zoom, moving as S24 left within 0.5 px a frame;
 //                   no stone in S24's last frame (one stone, CR-01)
@@ -494,6 +495,24 @@ const lumRange = (cells: readonly FieldCell[], table?: Readonly<Record<string, D
   return v.length ? `${Math.min(...v).toFixed(3)}–${Math.max(...v).toFixed(3)} (${v.length} measured)` : "not measured";
 };
 
+/**
+ * A slice's R-frames (RV-11): its frames at 1×, the last (its moment) on the frame the cell settles, or, for a recall
+ * present from the start, the first frame it shows at least half in frame and unhidden; null when it never does.
+ */
+export function sliceWindowR(t: ReturnTrace, c: FieldCell): { from: number; to: number } | null {
+  const n = c.spec.slice?.frames ?? 1;
+  let end: number | null = c.enter !== null || c.swapIn !== null ? c.settle : null;
+  if (end === null)
+    for (const fr of t.frames) {
+      const x = fr.cells.find((y) => y.c === c);
+      if (x && inFrameShare(x.s, t.W, t.H) * x.share >= 0.5) {
+        end = fr.r;
+        break;
+      }
+    }
+  return end === null ? null : { from: end - n + 1, to: end };
+}
+
 export function returnContentOf(t: ReturnTrace, name = "the Return"): Finding[] {
   const out: Finding[] = [];
   const field = t.field;
@@ -574,6 +593,21 @@ export function returnContentOf(t: ReturnTrace, name = "the Return"): Finding[] 
   if (unpaired.length) out.push({ check: "returnContent", level: "warn", message: `${name}: ${unpaired.length} swaps' luminance is not measured (${unpaired.slice(0, 6).join(", ")}${unpaired.length > 6 ? " …" : ""}): their step is unchecked and their wave keeps the manifest's order` });
   const worstStep = steps.reduce<(typeof steps)[number] | null>((a, b) => (!a || b.d > a.d ? b : a), null);
   out.push({ check: "returnContent", level: "info", message: `${name}: ${steps.length} swaps; the largest step in mean relative luminance ${worstStep ? `${worstStep.d.toFixed(3)} (${worstStep.prev.id} → ${worstStep.c.id} on R${worstStep.c.swapIn})` : "—"}, the mean ${steps.length ? (steps.reduce((a, b) => a + b.d, 0) / steps.length).toFixed(4) : "—"} (${SWAP_LUM_STEP} or less); waves paired by luminance: ${field.pairing.map((w) => `${w.wave} ${w.paired ? `paired, ${w.moved} moved` : "in the manifest's order"}`).join(", ")}` });
+  // the slices (RV-11): at 1×, played once, forward, ending on the moment as the cell settles (a recall present from the
+  // start: as it first shows at least half in frame), every frame while the cell is drawn
+  const slices: string[] = [];
+  for (const c of field.cells) {
+    const sl = c.spec.slice;
+    if (!sl) continue;
+    if ((sl.rate ?? 1) !== 1) e(`${c.id}'s slice plays at ${sl.rate}× (1× only: nothing Pebble does is sped up, the method line L4)`);
+    const w = sliceWindowR(t, c);
+    const drawn = presence(c, field.timing.swapFrames)[0];
+    const first = Number.isFinite(drawn) ? drawn : field.timing.span.from;
+    if (w === null) e(`${c.id}'s slice has no moment to end on: the cell never shows at least half in frame`);
+    else if (w.from < first) e(`${c.id}'s slice of ${sl.frames} frames would start on R${w.from}, before the cell is drawn (R${first}): ending on its moment as it settles (R${w.to}), at most ${Math.floor(w.to - first + 1)} frames fit`);
+    else slices.push(`${c.id} R${w.from}–R${w.to}`);
+  }
+  if (slices.length) out.push({ check: "returnContent", level: "info", message: `${name}: the slices at 1×, each ending on its moment: ${slices.join(", ")}` });
   // one take, one moment (CR-11): two moments of one take never on screen together
   for (let i = 0; i < field.cells.length; i++)
     for (let j = i + 1; j < field.cells.length; j++) {
@@ -584,6 +618,23 @@ export function returnContentOf(t: ReturnTrace, name = "the Return"): Finding[] 
       const [s2, e2] = presence(b, field.timing.swapFrames);
       if (s1 < e2 && s2 < e1) e(`${a.id} (${a.spec.moment}) and ${b.id} (${b.spec.moment}) show two moments of "${a.spec.take}" on screen together (R${Math.max(s1, s2)}–R${Math.min(e1, e2)}): one take, one moment (CR-11)`);
     }
+  // the same on what is drawn (RV-05): two stand-ins cropped from one published conversation at different moments, on
+  // screen together. Placeholders only (the 2.0.0 crops come from the takes the manifest names, held above): listed for
+  // the lead, who decides whether they become slots (F11*'s did: it sat 4.5 s beside F12's Verified)
+  const srcOf = (c: FieldCell) => (c.spec.standIn.kind === "still" ? (c.spec.standIn.source ?? null) : null);
+  const drawnClash: string[] = [];
+  for (let i = 0; i < field.cells.length; i++)
+    for (let j = i + 1; j < field.cells.length; j++) {
+      const a = field.cells[i]!;
+      const b = field.cells[j]!;
+      const sa = srcOf(a);
+      const sb = srcOf(b);
+      if (!sa || !sb || sa.take !== sb.take || sa.moment === sb.moment) continue;
+      const [s1, e1] = presence(a, field.timing.swapFrames);
+      const [s2, e2] = presence(b, field.timing.swapFrames);
+      if (s1 < e2 && s2 < e1) drawnClash.push(`${a.id} (${sa.moment}) and ${b.id} (${sb.moment}) of ${sa.take}, R${Math.max(s1, s2)}–R${Math.min(e1, e2)}`);
+    }
+  if (drawnClash.length) out.push({ check: "returnContent", level: "warn", message: `${name}: ${drawnClash.length} pairs of stand-ins show two moments of one published conversation on screen together: ${drawnClash.join("; ")}. Placeholders only (the cells' own takes hold CR-11); the lead decides whether they become slots (RV-05)` });
   // no two cards side by side on a ring
   let adjacent: string | null = null;
   for (const fr of t.frames) {
@@ -823,7 +874,20 @@ export function blinkPlaced(p: ScenePlan): Finding[] {
     const k = keepClear.find((x) => blinkTouches(s, p.fps, x));
     if (k) out.push({ check: "blinkPlaced", level: "error", message: `${p.id} ${p.aspect}: a blink on R${R(s).toFixed(1)} falls in R${R(k.from).toFixed(0)}–R${R(k.to).toFixed(0)}, ${k.why ?? "a span kept clear"}` });
   }
-  out.push({ check: "blinkPlaced", level: "info", message: `${p.id} ${p.aspect}: clock offset ${offset}: blinks on ${starts.map((s) => `R${R(s).toFixed(1)}`).join(", ")}` });
+  // the planned blink falls 6–8 frames after the kept card is hidden, in every aspect (§2.7; the review's RV-08: 8.1,
+  // 5.1 and 5.1 with the field's stone at the landing size, until the card's return was retimed per aspect)
+  const t = planTrace(p);
+  const hidden = t ? mergeMetrics(t).heroHidden : null;
+  let gapNote = "";
+  if (planned !== undefined && hidden !== null) {
+    const gap = R(planned) - hidden;
+    gapNote = `; the planned blink ${gap.toFixed(1)} frames after the kept card is hidden (R${hidden})`;
+    // (the toned matte, G1's alternative, draws the card inside the outline after the body hides it: its gap is G1's to
+    // judge, so it is reported, not held; RV-08 binds the default merge)
+    if (ret.merge !== "behind") gapNote += ` (the toned matte draws it inside the outline until its return ends on R${(ret.field.cells.find((c) => c.spec.hero)?.retStart ?? 0) + (ret.field.cells.find((c) => c.spec.hero)?.retT ?? 0)}: G1 judges that gap)`;
+    else if (gap < 6 || gap > 8) out.push({ check: "blinkPlaced", level: "error", message: `${p.id} ${p.aspect}: the blink on R${R(planned).toFixed(1)} falls ${gap.toFixed(1)} frames after the kept card is hidden (R${hidden}): 6–8 (MONTAGE_DESIGN §2.7; retime the card's return in this aspect, RETURN_TIMING.returns.hero.byAspect)` });
+  }
+  out.push({ check: "blinkPlaced", level: "info", message: `${p.id} ${p.aspect}: clock offset ${offset}: blinks on ${starts.map((s) => `R${R(s).toFixed(1)}`).join(", ")}${gapNote}` });
   return out;
 }
 

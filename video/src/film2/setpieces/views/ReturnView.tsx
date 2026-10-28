@@ -30,14 +30,14 @@ import { useMemo } from "react";
 import { AbsoluteFill, Freeze, Img, getRemotionEnvironment, getStaticFiles, staticFile, useCurrentFrame } from "remotion";
 import { COLOR } from "../../tokens";
 import { smoothstep } from "../../motion/ease";
-import { planePose, type CamSample } from "../../motion/camera";
+import type { CamSample } from "../../motion/camera";
 import { World3D, Plane } from "../../camera/World3D";
 import { GroundLight } from "../../light/Grade";
 import type { Grade } from "../../light/grades";
 import { PebbleOnFilm } from "../../../pebble/PebbleOnFilm";
 import { BODY, VIEWBOX_SIZE, pebbleAt, type PebbleCue } from "../../../../../shared/pebble";
 import { PEBBLE_LIGHT } from "../../../pebble/PebbleSvg";
-import { cellScreenAt, cellsOnScreen, hairlineAt, rOfLocal, tonedMatteK, type CellScreen, type ReturnField } from "../returnField";
+import { cellScreenAt, cellsOnScreen, hairlineScreenAt, rOfLocal, tonedMatteK, type CellScreen, type ReturnField } from "../returnField";
 import { ENGINE_CELL_SIZE } from "../returnCells";
 import { RETURN_THUMBS_HOWTO, returnThumbPath } from "../returnThumbs";
 import type { ReturnExtra } from "../returnPlan";
@@ -240,25 +240,29 @@ export const ReturnFieldView: React.FC<ReturnFieldViewProps> = ({ plan, shot, fr
   // (every returning cell past its first contact, including those wholly inside the outline: the matte shows them)
   const matte = toned && st ? field.cells.map((c) => cellScreenAt(c, frame, field)).filter((x): x is CellScreen => !!x && x.state === "return" && tonedMatteK(field, x.cell, r) > 0).sort((a, b) => a.z - b.z) : [];
   const sm = toned && st && matte.length ? stoneMap(st, sample, w, h, plan.fps, frame, off) : null;
-  const hairlines = [0, 1, 2].map((ring) => hairlineAt(ring, frame, field)).filter((x) => x !== null);
+  const hairlines = [0, 1, 2].map((ring) => hairlineScreenAt(ring, frame, field)).filter((x) => x !== null);
   const cam = { pose: sample.pose, ref: shot.ref, vel: sample.vel };
   const common = { plan, renderS24, extra, frame };
   return (
     <AbsoluteFill>
-      {/* the hairlines, on the ground, in the ground's light */}
+      {/* the hairlines, on the ground, in the ground's light; each blurred by its own travel (σ = travel ÷ 7, RV-04) */}
       {hairlines.length ? (
         <GroundLight gains={grade.ground}>
           <svg width={w} height={h} style={{ position: "absolute", inset: 0 }} aria-hidden>
-            {hairlines.map((hl) => {
-              const pp = planePose(sample.pose, shot.ref, hl.depth);
-              const cx = w / 2 + (0 - pp.x) * pp.zoom;
-              const cy = h / 2 + (0 - pp.y) * pp.zoom;
-              const a = hl.a * pp.zoom;
-              const b = hl.b * pp.zoom;
+            <defs>
+              {hairlines
+                .filter((x) => x.blurPx > 0.05)
+                .map((x) => (
+                  <filter key={x.pose.ring} id={`rh-${x.pose.ring}`} x="-20%" y="-20%" width="140%" height="140%" colorInterpolationFilters="sRGB">
+                    <feGaussianBlur stdDeviation={x.blurPx.toFixed(2)} />
+                  </filter>
+                ))}
+            </defs>
+            {hairlines.map(({ pose: hl, cx, cy, a, b, blurPx }) => {
               // from 12 o'clock, the way its ring orbits (the middle ring counter-rotates)
               const sweep = hl.ring === 1 ? 0 : 1;
               const d = `M ${cx.toFixed(2)} ${(cy - b).toFixed(2)} A ${a.toFixed(2)} ${b.toFixed(2)} 0 1 ${sweep} ${cx.toFixed(2)} ${(cy + b).toFixed(2)} A ${a.toFixed(2)} ${b.toFixed(2)} 0 1 ${sweep} ${cx.toFixed(2)} ${(cy - b).toFixed(2)}`;
-              return <path key={hl.ring} d={d} pathLength={1} fill="none" stroke={COLOR.accent} strokeWidth={hl.widthPx * unit} strokeDasharray={hl.drawn >= 0.999 ? undefined : `${hl.drawn.toFixed(4)} ${(1 - hl.drawn + 0.001).toFixed(4)}`} opacity={hl.opacity} />;
+              return <path key={hl.ring} d={d} pathLength={1} fill="none" stroke={COLOR.accent} strokeWidth={hl.widthPx * unit} strokeDasharray={hl.drawn >= 0.999 ? undefined : `${hl.drawn.toFixed(4)} ${(1 - hl.drawn + 0.001).toFixed(4)}`} opacity={hl.opacity} filter={blurPx > 0.05 ? `url(#rh-${hl.ring})` : undefined} />;
             })}
           </svg>
         </GroundLight>
