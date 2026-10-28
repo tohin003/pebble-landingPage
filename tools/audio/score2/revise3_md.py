@@ -371,9 +371,12 @@ def main():
           "1. **The evening's heavy steps** (§9.3): the plan's measurement, the layers and both builds, the masters on both "
           "AAC encoders, the seam, loudness and coda checks, the strips, the two previews, the README and the provenance. "
           "If any revision 3 gate fails on audio, the rule's next candidate is planned and the lead is told first.",
-          "2. **CODA_SOUND.builtBy** (coda.ts) stays null: the coda lane's round 2 is editing coda.ts, and "
-          "tests/coda.test.ts pins builtBy null, so the flip goes through the coda lane once the evening's build passes the "
-          "coda's mix-side checks.",
+          "2. **CODA_SOUND.builtBy** (coda.ts) stays null for now: tests/coda.test.ts pins it null, so the flip is a "
+          "two-file change in the coda lane's files, and made before the evening's build it would silence codaSound's "
+          "warning while the masters still lack the layer. The patch is ready (`cuesheet/r3/coda-builtBy.patch`: the "
+          "builtBy line and its comment in coda.ts, the test turned round to null the builder itself; `git apply --check` "
+          "passes on e944b5b): apply it once `score_coda.py check` passes on the evening's masters, with the coda lane's or "
+          "the lead's agreement.",
           "3. **The set pieces' ledger:** with these rows `cueLengths` passes for Ring 4 (639 frames against 638.8) and "
           "Cascade 4 (290 against 290.3) in all three aspects, so TRIM-R4 and TRIM-C4 close in setpieces/review-ledger.ts "
           "(the set-piece lane's file); until then tests/fix-round3.test.ts 'the open findings fire' fails by design.",
