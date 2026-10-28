@@ -866,15 +866,17 @@ def main():
         ceiling, tries = spec["ceiling_dbtp"], []
         gate = spec.get("aac_tp_max_dbtp", spec["ceiling_dbtp"] + 0.5)
         refenc = spec.get("aac_reference_encoder", "apple_audiotoolbox_cbr")
+        refencs = refenc if isinstance(refenc, list) else [refenc]  # every encoder the master must pass on
         path = os.path.join(out_dir, f"{name}.{mname}.wav")
-        for _ in range(4):
+        for _ in range(5):
             y, rec, gr = master(mix, spec["lufs"], ceiling, spec.get("release_ms", 100.0))
             sf.write(path, y, SR, subtype="PCM_24")
-            ref = aac_check(path, spec["aac_kbps"], gate, only=refenc)[refenc]
-            tries.append({"ceiling_dbtp": r(ceiling, 2), "encoded_true_peak_dbtp": ref["true_peak_dbtp"]})
-            if ref["true_peak_dbtp"] <= gate:
+            tps = {e: aac_check(path, spec["aac_kbps"], gate, only=e)[e]["true_peak_dbtp"] for e in refencs}
+            worst = max(tps.values())
+            tries.append({"ceiling_dbtp": r(ceiling, 2), "encoded_true_peak_dbtp": tps})
+            if worst <= gate:
                 break
-            ceiling -= (ref["true_peak_dbtp"] - gate) + 0.1
+            ceiling -= (worst - gate) + 0.1
         ms_y = cp.kweighted_ms(y, SR)
         rec.update(file=rel(path), integrated_lufs=r(integrated_lufs(y), 2), lra_lu=r(cp.lra(ms_y, 0, N / SR)),
                    true_peak_dbtp=r(true_peak_db(y), 2), sample_peak_dbfs=r(peak_db(y)), target=spec,

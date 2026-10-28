@@ -24,11 +24,15 @@ import sys
 
 FR = 60.0  # the film's frame rate: "12 frames early" is 0.2 s
 
+# the gate is on the encoded file (TREATMENT §4.8): every master must pass on FFmpeg's native AAC encoder (what
+# tools/encode/encode.sh delivers with: '-c:a aac') and on Apple's (the score previews'); the build lowers a ceiling only
+# by what the worse of the two exceeds its gate
+ENCODERS = ["native_default", "apple_audiotoolbox_cbr"]
 MASTERS = {
     "web": {"lufs": -16.0, "ceiling_dbtp": -2.0, "aac_kbps": 160, "release_ms": 100.0, "aac_tp_max_dbtp": -1.5,
-            "aac_reference_encoder": "apple_audiotoolbox_cbr"},
+            "aac_reference_encoder": ENCODERS},
     "social": {"lufs": -14.0, "ceiling_dbtp": -1.5, "aac_kbps": 192, "release_ms": 100.0, "aac_tp_max_dbtp": -1.0,
-               "aac_reference_encoder": "apple_audiotoolbox_cbr"},
+               "aac_reference_encoder": ENCODERS},
 }
 BUDGETS = [["drop_sub", 1.0], ["climax_sub", 1.0], ["title_sub", 1.0], ["swell", 1.0], ["mask", 1.0], ["drop", 2.5],
            ["climax", 2.5], ["title", 2.5], ["name", 0.5], ["slide", 0.5], ["tick1", 0.5], ["tick2", 0.5], ["tick3", 0.5],

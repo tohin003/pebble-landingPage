@@ -25,6 +25,7 @@ FONTS = os.path.join(REPO, "src", "fonts")
 FFMPEG = os.environ.get("FFMPEG", "/opt/homebrew/bin/ffmpeg")
 W, H, FPS = 1920, 1080, 30
 X0, X1 = 120, 1800
+BAR_Y = 990  # the progress bar
 C = {"bg": (0x19, 0x1E, 0x1B), "fill": (0x21, 0x28, 0x22), "ink": (0xE8, 0xEE, 0xE6), "ink2": (0xAD, 0xB9, 0xAB),
      "line": (0x2B, 0x34, 0x2C), "sage": (0xA6, 0xC7, 0x95), "sand": (0xD9, 0xC7, 0xA0), "dim": (0x6E, 0x7A, 0x6D)}
 
@@ -59,48 +60,66 @@ F = {
     "count": font("GeistMono-Medium-latin.woff2", 30),
 }
 
-# What the film's scenes are, in plain words (TREATMENT §3.5, CUE_SHEET §5)
+# What the film's scenes are, in plain words (TREATMENT §3.5, CUE_SHEET §5, the Return revision of 28 Oct)
 BLOCK_SUB = {
-    "Act I": "Ask: the live question, “Pebble 2.0”, the companion everywhere, the card",
+    "Act I": "the live question, “Pebble 2.0”, the companion everywhere, the card",
     "The Drop": "your Allow; the frame opens on the whole Mac",
-    "Ring 1": "your browser", "Cascade 1": "“Answered by …”", "Ring 2": "your apps",
-    "Cascade 2": "“Fixed actions in …”", "Ring 3": "your files and the terminal",
-    "Cascade 3": "“Memory you control”", "Ring 4": "your project, and AgentGuard's Verified",
-    "Cascade 4": "“Bigger tasks”", "Quiet passage": "⌘K, Stealth Lockdown, the Veil, the menu bar",
-    "Climax": "Pebble keeps a tool it made", "Convergence": "every ring folds back into the stone",
+    "Ring 1": "your browser", "Ring 2": "your apps", "Ring 3": "your files and the terminal",
+    "Ring 4": "your project, and AgentGuard's Verified", "Cascade 4": "“Bigger tasks”",
+    "Quiet passage": "⌘K, Stealth Lockdown, the Veil, the menu bar",
+    "Climax": "Pebble keeps a tool it made", "The Return": "every feature returns into the stone",
     "Title": "Pebble 2.0", "End card": "the facts, then the small print",
     "open": "the question, “Pebble 2.0”, the card", "Drop": "your Allow; the frame opens on the whole Mac",
     "= and browser": "Calculator's “=”, then the browser", "kept card": "Pebble keeps a tool it made",
-    "conv.": "every ring folds back into the stone", "title, facts": "Pebble 2.0, the facts, the small print",
+    "Return": "a ring of features returns into the stone",
+    "title, facts": "Pebble 2.0, then the facts",
 }
 BLOCK_NAME = {"open": "The open", "Drop": "The Drop", "= and browser": "Your apps, your browser",
-              "kept card": "The kept card", "conv.": "The convergence", "title, facts": "The title"}
+              "kept card": "The kept card", "Return": "The Return", "title, facts": "The title"}
 
 # How each cue change is made, and what to listen for (CUE_SHEET §2 and §6, in plain words)
 JOINS = {
-    "J1": ("Born Of The Sky's own crescendo is the riser. On the downbeat where its orchestra would come in, a hard "
-           "cut lands on Your Breath's drop, with the Drop hit: the plunk two frames ahead, the hit, the first sub.",
-           "a clean arrival exactly on the beat; the strings' F# lifting a semitone into the groove's G."),
-    "J2": ("Your Breath drops its hi-hats for its last two beats, its own breath. The cut lands on Techno Fest Vibes' "
-           "riser bar, and a ring sweep tuned to G carries across. 120 to 124 BPM: a cut, never an overlap.",
-           "the lift into a harder, brighter groove, with nothing stumbling on the first beat."),
-    "J3": ("Techno Fest Vibes' own real ending stops on the downbeat as Enter is pressed. One soft tick sits in the "
-           "hush; the chord rings out, and Starfire's pad fades in under it from 1:36.40.",
+    "J1": ("Born Of The Sky's own crescendo is the riser. On the downbeat, a hard cut lands on Your Breath's drop "
+           "with the Drop hit: the plunk two frames ahead, the hit and the first sub. The music ducks 3 dB under it.",
+           "an arrival exactly on the beat: the strings turn into the groove (B minor into G major)."),
+    "M2s": ("A splice inside Your Breath: bars 17 and 18 are taken out, so bar 16 runs into bar 19 through a 60 ms "
+            "crossfade that ends on bar 19's downbeat. The track keeps its own order. Ring 2's sweep carries across.",
+            "nothing at all: the groove just carries on, and bar 19's own entrance lands on the beat."),
+    "J2": ("Your Breath's last beat of hi-hats leads into a hard cut onto Techno Fest Vibes' riser bar, under Ring 3's "
+           "sweep, tuned to G. 120 into 124 BPM, so a cut, never an overlap; both tracks sit on G.",
+           "the lift into a harder, brighter groove, with no stumble on the first beat."),
+    "M3s": ("A splice inside Techno Fest Vibes: bars 50 and 51 are taken out, so bar 49 runs into bar 52 through a 60 ms "
+            "crossfade that ends on the downbeat, on the picture's cut to the flyer.",
+            "nothing at all: the figure runs straight across, and its own fill still leads into Ring 4."),
+    "J3": ("Techno Fest Vibes' own real ending: it stops on the downbeat as Enter is pressed. One soft Enter tick sits "
+           "in the hush while the chord rings out, then Starfire's pad fades in from 1:24.53 over 2 seconds.",
            "a true stop, not a fade; the hush; the pad arriving without a bump."),
-    "J4": ("A 1-second crossfade that ends exactly on Your Breath's downbeat: sound leads picture. Its breakdown "
-           "builds, takes its own one-beat stop, and its biggest lift lands the kept card at 1:49.90.",
-           "a smooth hand-over from the pad; the stop and the lift as the peak of the film."),
-    "J5": ("A beat cut, 120 into 120 BPM, back into Born Of The Sky: the pulse never breaks. One bar on its dominant, "
-           "then a reverse swell made from its own chord rises into the title at 1:59.90.",
-           "the boldest harmonic move in the film (G into B major): homecoming, or a jolt?"),
-    "XJ1": ("One forward splice inside Your Breath, at bar lines on both sides (0:31.53 to 1:28.53, the track's own "
-            "order): its build lands straight on its biggest lift, the peak of the cut. No hit covers it: it needs none.",
+    "J4": ("A 1-second crossfade from Starfire's pad that ends exactly on Your Breath's downbeat, into its breakdown. "
+           "It builds, takes its own one-beat stop, and its biggest lift lands the kept card at 1:38.03, with the hit.",
+           "a smooth hand-over; then the held breath and the lift, the film's peak."),
+    "J5": ("A beat cut, 120 into 120 BPM: Your Breath, running on under the Return, cuts on the downbeat to Born Of The "
+           "Sky's dominant, 2.5 dB lower while the screens return into the stone. A one-bar swell made from its own "
+           "title chord rises into the title.",
+           "the pulse never breaking; G major opening into B major; the title louder than the bar before it."),
+    "F4": ("A splice inside Born Of The Sky: the second bar of its held IV chord is taken out, with a 200 ms crossfade "
+           "onto bar 86's I chord, under the end card's first page.",
+           "nothing at all: the chord resolves as the composer wrote it, one bar sooner."),
+    "XJ1": ("One forward splice inside Your Breath at bar lines (0:31.53 to 1:28.53, in the track's own order): its "
+            "build lands straight on its biggest lift, under the kept card. No hit covers it: it needs none.",
             "the beat staying on the grid through the splice; the lift arriving as the peak."),
-    "XJ2": ("A hard cut on the downbeat into Techno Fest Vibes' last bar, carried by an inward ring sweep. The title "
-            "lands on its real stop at 0:33.94, and the chord rings out under the facts.",
-            "the faster tempo as a push into the end; a true stop under the title."),
+    "XJ2": ("A hard cut on the downbeat into Techno Fest Vibes' last bar, under a reverse swell (Kenney, CC0) tuned to "
+            "G that rises into it. 120 into 124 BPM: a cut, never an overlap. The title lands on its real stop.",
+            "the push into the faster last bar; then a true stop under the title, with the tap and the hit."),
 }
-LAST = {"main": "Born Of The Sky's composed ending carries the title and the end card, down to room tone.",
+SHORT = {"J1": "cut on the hit", "M2s": "splice", "J2": "cut after a breath", "M3s": "splice", "J3": "its own stop",
+         "J4": "1-s crossfade", "J5": "beat cut", "F4": "splice", "XJ1": "splice into the lift",
+         "XJ2": "cut under a swell"}
+# the shots whose cue-sheet notes are the lanes' shorthand, in plain words for the person
+PLAIN = {"S25": "one continuous shot: the camera pulls back from the kept card, real 2.0 screens rush in around the "
+                "stone, then each returns into it; the swell, then the blink",
+         "x8": "a ring of features as the camera leaves the kept card; each returns into the stone, the kept card last"}
+LAST = {"main": "Born Of The Sky's composed ending carries the title and the end card and dies away by itself; only its "
+                "last 0.3 s, already near silence, is faded into room tone at 2:15.03.",
         "x40": "Techno Fest Vibes' stop chord rings out under the facts, then room tone."}
 
 
@@ -109,6 +128,8 @@ def clean(text):
     line-register IDs (L04 ...) mean nothing outside the lanes."""
     text = text.replace("\u2318K", "Command-K").replace("\u2318", "Command-").replace("\u2192", "to")
     text = re.sub(r"(;\s*)?\bL\d\d(\s*(,|and)\s*L\d\d)*\b", "", text)
+    text = re.sub(r"\s*\((MONTAGE_DESIGN|TREATMENT|CUE_SHEET)[^)]*\)", "", text)
+    text = re.sub(r"\s*\(R\d+\)", "", text)
     text = re.sub(r"\s+([;,.])", r"\1", text)
     text = re.sub(r"[;,]\s*$", "", text.strip())
     return re.sub(r"\s{2,}", " ", text)
@@ -160,11 +181,11 @@ def load(film, sheet_path, build_path, layers_path):
     end = f["film_length_s"]
     if film == "main":
         blocks = [(x["start_s"], x["end_s"], x["block"], BLOCK_SUB.get(x["block"], "")) for x in f["blocks"]]
-        shots = [(x["start_s"], x["end_s"], x["id"], x["what"]) for x in f["shots"]]
+        shots = [(x["start_s"], x["end_s"], x["id"], PLAIN.get(x["id"], x["what"])) for x in f["shots"]]
     else:
         plan = json.load(open(os.path.join(os.path.dirname(sheet_path), "cuesheet", "plan_x40.json")))
         blocks = [(a, bb, BLOCK_NAME.get(lab, lab), BLOCK_SUB.get(lab, "")) for a, bb, lab in plan["blocks"]]
-        shots = [(x["start_s"], x["end_s"], x["id"], x["what"]) for x in f["slots"]]
+        shots = [(x["start_s"], x["end_s"], x["id"], PLAIN.get(x["id"], x["what"])) for x in f["slots"]]
     cues = []
     for c in f["cues"]:
         tr = c["track"]
@@ -217,9 +238,9 @@ def make_base(film, D):
     tracked(d, (X0, 146), "SCENE", F["label"], C["sage"], 2.0)
     tracked(d, (X0, 486), "MUSIC", F["label"], C["sage"], 2.0)
     tracked(d, (1200, 146), "TIME", F["label"], C["sage"], 2.0)
-    tracked(d, (X0, 838), "SOUND DESIGN NOW", F["label"], C["sage"], 2.0)
-    # the progress bar: cue segments, change markers, labels
-    y = 962
+    tracked(d, (X0, 822), "SOUND DESIGN NOW", F["label"], C["sage"], 2.0)
+    # the progress bar: cue segments; a marker at every cue change, with how it is made; labels
+    y = BAR_Y
     d.rounded_rectangle([X0, y - 4, X1, y + 4], radius=4, fill=C["line"])
     end = D["end"]
     xt = lambda t: X0 + (X1 - X0) * t / end  # noqa: E731
@@ -230,15 +251,19 @@ def make_base(film, D):
         lab = f"{c['id']} · {c['label']}"
         if b - a > d.textlength(lab, font=F["mono_s"]) + 4:
             d.text((a, y + 14), lab, font=F["mono_s"], fill=col)
-    for j in D["joins"]:
+    for k, j in enumerate(D["joins"]):  # two rows of labels, alternating, so neighbours never collide
         x = xt(j["t"])
-        d.line([(x, y - 18), (x, y + 10)], fill=C["ink"], width=2)
-        d.text((x - d.textlength(j["id"], font=F["mono_s"]) / 2, y - 42), j["id"], font=F["mono_s"], fill=C["ink"])
-    d.text((X0, 1018), "0:00", font=F["mono_s"], fill=C["dim"])
+        ty = y - 64 if k % 2 == 0 else y - 40
+        d.line([(x, ty + 20), (x, y + 10)], fill=C["ink"], width=2)
+        lab = f"{j['id']} · {SHORT.get(j['id'], '')}"
+        wl = d.textlength(lab, font=F["mono_s"])
+        lx = x + 6 if x + 6 + wl <= X1 else x - 6 - wl
+        d.text((lx, ty), lab, font=F["mono_s"], fill=C["ink"])
+    d.text((X0, 1036), "0:00", font=F["mono_s"], fill=C["dim"])
     e = fmt(end)
-    d.text((X1 - d.textlength(e, font=F["mono_s"]), 1018), e, font=F["mono_s"], fill=C["dim"])
-    leg = "sand = A, Scott Buckley (cinematic)    sage = B, Mixkit (energetic)    white ticks = cue changes"
-    d.text(((X0 + X1) / 2 - d.textlength(leg, font=F["mono_s"]) / 2, 1018), leg, font=F["mono_s"], fill=C["dim"])
+    d.text((X1 - d.textlength(e, font=F["mono_s"]), 1036), e, font=F["mono_s"], fill=C["dim"])
+    leg = "sand = A, Scott Buckley (cinematic)    sage = B, Mixkit (energetic)    white lines = cue changes, and how"
+    d.text(((X0 + X1) / 2 - d.textlength(leg, font=F["mono_s"]) / 2, 1036), leg, font=F["mono_s"], fill=C["dim"])
     return im
 
 
@@ -283,8 +308,9 @@ def change_card(state, j, sub, D, film):
         d.text((32, 56), f"{j['id']} · {j['name']}", font=F["card_t"], fill=C["ink"])
         d.text((32, 108), sub, font=F["count"], fill=C["sage"])
         frm, to = j["from"], j["to"]
-        d.text((32, 152), wrap(d, f"from {frm['title']} to {to['title']}", F["card_m"], w - 64, 1)[0], font=F["card_m"],
-               fill=C["ink"])
+        what = (f"inside {frm['title']}: shortened at bar lines" if frm["title"] == to["title"]
+                else f"from {frm['title']} to {to['title']}")
+        d.text((32, 152), wrap(d, what, F["card_m"], w - 64, 1)[0], font=F["card_m"], fill=C["ink"])
         how, listen = JOINS[j["id"]]
         y = 194
         for ln in wrap(d, how, F["card"], w - 64, 6):
@@ -352,13 +378,13 @@ def main():
             card = cached(("w", nxt["id"]), lambda: change_card("now", nxt, sub, D, film))
         im.paste(card, (1180, 346))
         labs = tuple(dict.fromkeys(lab for a, b, lab in D["spans"] if a <= t < b))
-        im.paste(cached(("l", labs), lambda: sound_line(list(labs))), (X0, 868))
+        im.paste(cached(("l", labs), lambda: sound_line(list(labs))), (X0, 852))
         d = ImageDraw.Draw(im)
         d.text((1196, 168), fmt(t), font=F["tc"], fill=C["ink"])
         d.text((1200, 290), f"of {fmt(end)} · frame {int(round(t * 60))} at 60 fps", font=F["mono"], fill=C["ink2"])
         x = xt(t)
-        d.line([(x, 944), (x, 980)], fill=C["ink"], width=2)
-        d.ellipse([x - 8, 954, x + 8, 970], fill=C["ink"], outline=C["sage"], width=3)
+        d.line([(x, BAR_Y - 16), (x, BAR_Y + 16)], fill=C["ink"], width=2)
+        d.ellipse([x - 8, BAR_Y - 8, x + 8, BAR_Y + 8], fill=C["ink"], outline=C["sage"], width=3)
         if stills:
             im.save(os.path.join(os.path.dirname(out), f"still-{film}-{t:07.2f}.png"))
             continue
