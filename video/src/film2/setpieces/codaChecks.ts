@@ -328,8 +328,8 @@ export function codaCamera(p: ScenePlan, x: CodaExtra): Finding[] {
     if (still.frames > f60(60, p.fps)) {
       const parts = [
         still.endCard ? `the end card's declared last breath (${(still.endCard / p.fps).toFixed(2)} s; the film's last breath only in the X cut)` : "",
-        still.page ? `L0–L${still.page} under the iris-out (the end card's page carried on settled, ${settled.toFixed(3)} px a frame at its corners)` : "",
-        still.breath ? `the breath (L${x.breath.from}–L${x.breath.to})` : "",
+        still.page ? `L0–L${still.page - 1} under the iris-out (the end card's page carried on settled, ${settled.toFixed(3)} px a frame at its corners)` : "",
+        still.breath ? `the breath (L${x.breath.from}–L${x.breath.to - 1})` : "",
       ].filter(Boolean);
       out.push({ check: "codaCamera", level: "warn", message: `in the main cut the picture holds still for ${(still.frames / p.fps).toFixed(2)} s before the coda's push: ${parts.join(", then ")}. §58 lets only the film's last breath be still; the lead rules on the span as one (the post-credit review's P1-4): (a) it is §62's one breath of silence, declared as such, or (b) the end card glides to its last frame in both cuts`, frame: 0, to: still.page && still.breath ? x.breath.to : still.page });
     }
