@@ -71,9 +71,11 @@ run() { # <step>
     if [ -d "$A" ]; then say "archive: $A exists, skipped"; return 0; fi
     mkdir -p "$A/preview" || return 1
     for f in "$M"/main.build.json "$M"/x40.build.json "$M"/main.preview.json "$M"/x40.preview.json "$M"/main.arc.json \
-             "$M"/x40.arc.json "$M"/layers_main.json "$M"/layers_x40.json "$M"/title_probe*.json "$M"/*.png; do
+             "$M"/x40.arc.json "$M"/layers_main.json "$M"/layers_x40.json "$M"/*.png; do
       [ -e "$f" ] && mv "$f" "$A/"
     done
+    # the title probes stay (copied): the README quotes them as R-07's evidence, and the title's audio is unchanged
+    for f in "$M"/title_probe*.json; do [ -e "$f" ] && cp -p "$f" "$A/"; done
     for f in "$P"/Pebble-2.0-score-preview.mp4 "$P"/Pebble-2.0-40s-score-preview.mp4 "$P"/README.txt; do
       [ -e "$f" ] && mv "$f" "$A/preview/"
     done
