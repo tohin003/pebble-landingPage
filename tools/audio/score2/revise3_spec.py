@@ -19,6 +19,9 @@ R3 = os.path.join(W, "r3")
 OLD = json.load(open(os.path.join(W, "archive-2026-10-28-r2", "sheet_spec.json")))
 PLAN = json.load(open(os.path.join(W, "plan_main.json")))
 BARS = json.load(open(os.path.join(R3, "bars_decision.json")))
+ROWS = json.load(open(os.path.join(R3, "bars_candidates.json")))["rows"]
+BOTH = [r for r in ROWS if r["lift_on_S15"] and abs(r["cascade4_bars_over_phrase_C"] - 2.5) < 1e-9]
+BOTH_PASS = [r for r in BOTH if r["passes_every_gate"]]
 R04 = json.load(open(os.path.join(R3, "r04_decision.json")))
 TAP = json.load(open(os.path.join(R3, "coda_tap_decision.json")))
 # the coda's timing as coda_timing.ts read it: at build time (master/) once the evening has run, else as planned (r3/planned/)
@@ -98,8 +101,10 @@ c["M3"] = {
             "50-51 come back in, in place of revision 2's splice, so B4 plays bars 47-63 whole with no seam, by the rule "
             f"written before the measurement (r3/decision_rules.json BARS): of {BARS['candidates']} edits, "
             f"{BARS['passing_every_gate']} stay within B4's own bar changes on the maps, and this is the only one with no "
-            "seam that a measurement has not confirmed, and one of the two that keep both the lift on S15 and Cascade 4 "
-            "over phrase C (r3/bars_decision.json)",
+            f"seam that a measurement has not confirmed; of the {len(BOTH)} edits that keep both the lift on S15 and Cascade "
+            f"4 over phrase C, it is the {'only one' if len(BOTH_PASS) == 1 else str(len(BOTH_PASS)) + ' that are'} within "
+            "B4's own bar changes (the others enter J2 a few bars early and jump straight to phrase B, past the riser) "
+            "(r3/bars_candidates.json, bars_decision.json)",
             f"Ring 4 leaves on bar 54 ({T(EV['Ring 4'])}, a 2-bar line), not on a phrase line. With B4's real stop on Enter "
             "and 10 bars after the landing, a run of B4's own bars puts the landing there; a phrase line for Ring 4 "
             "needs a splice after the landing, J2 off the riser bar and the lift off Ring 3 (the best such edit, "

@@ -39,6 +39,9 @@ PLAN = load(os.path.join(W, "plan_main.json"))
 M = CS["main_film"]
 RULES = load(os.path.join(R3, "decision_rules.json"))
 BD = load(os.path.join(R3, "bars_decision.json"))
+ROWS = load(os.path.join(R3, "bars_candidates.json"))["rows"]
+BOTH = [r for r in ROWS if r["lift_on_S15"] and abs(r["cascade4_bars_over_phrase_C"] - 2.5) < 1e-9]
+BOTH_PASS = [r for r in BOTH if r["passes_every_gate"]]
 R04 = load(os.path.join(R3, "r04_decision.json"))
 TAP = load(os.path.join(R3, "coda_tap_decision.json"))
 CAN = opt(os.path.join(R3, "coda_canaries.json"))
@@ -430,10 +433,13 @@ def main():
           f"{BD['scale']['one_bar_jump_cost_p90']}, and its chroma cosines at or above B4's consecutive bars' p10, "
           f"{BD['scale']['consecutive_chroma_cos_p10']}). The chosen edit, the next five by the rule, and the two the lead "
           "named:", ""] + t_candidates()
+    both = (f"Of the {len(BOTH)} edits that keep both, it is the only one within B4's own bar changes"
+            if len(BOTH_PASS) == 1 else f"{len(BOTH_PASS)} of the {len(BOTH)} edits that keep both are within B4's own bar changes")
     L += ["", f"**The choice: {CH['label']}.** It is the only candidate with no seam that a measurement has not confirmed "
           f"(R1: {rk['R1_unconfirmed_seams']} unconfirmed, {rk['R1_splices']} splices: it removes revision 2's M3s), and it keeps "
           "both of the treatment's block needs (R2): the lift (B4's phrase B, bar 48) on S15's second ring arrival, and "
-          "Cascade 4 over phrase C, the drive thinning toward the quiet passage.", "",
+          "Cascade 4 over phrase C, the drive thinning toward the quiet passage. " + both
+          + " (the others enter J2 a few bars early and jump straight to phrase B, past the riser bar).", "",
           "**What it costs, and why Ring 4 is not on a phrase line (§67):** Ring 4 leaves on bar 54, a 2-bar line, and "
           "B4's phrase C arrives two bars into it, while the act is read. With B4's real stop on Enter and 10 bars after "
           "the landing, B4's own bars put the landing on bar 54. A phrase line for Ring 4 needs a splice after the landing, "
