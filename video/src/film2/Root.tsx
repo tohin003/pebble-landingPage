@@ -7,7 +7,7 @@ import { GRADES_SHEET, GradesSheet } from "./demo/GradesSheet";
 import { TypeSpecimen } from "./demo/TypeSpecimen";
 import { SetPiecesDemo, DEMO_SIZE, demoLength } from "./setpieces/demo/SetPiecesDemo";
 import { demoPlans } from "./setpieces/demo/plans";
-import { ReturnTonedDemo } from "./setpieces/demo/ReturnVariantDemo";
+import { RETURN_G1_VARIANTS, ReturnVariantDemo } from "./setpieces/demo/ReturnVariantDemo";
 import type { Aspect } from "./tokens";
 
 const ASPECTS: readonly [Aspect, string][] = [
@@ -51,19 +51,21 @@ export const Film2Compositions: React.FC = () => (
           />
         )),
       )}
-      {/* the Return with R4's toned matte, for G1's A/B against F2-SP-return-<aspect> (MONTAGE_DESIGN §9) */}
-      {ASPECTS.map(([a, tag]) => (
-        <Composition
-          key={`return-toned-${tag}`}
-          id={`F2-SP-return-toned-${tag}`}
-          component={ReturnTonedDemo}
-          defaultProps={{ aspect: a }}
-          durationInFrames={demoPlans(a).find((e) => e.plan.id === "return")!.plan.duration}
-          fps={60}
-          width={DEMO_SIZE[a].w}
-          height={DEMO_SIZE[a].h}
-        />
-      ))}
+      {/* G1's variants of the Return (toned matte, revision 1's curve, the labels), each against F2-SP-return-<aspect> (MONTAGE_DESIGN §9) */}
+      {RETURN_G1_VARIANTS.flatMap((v) =>
+        ASPECTS.map(([a, tag]) => (
+          <Composition
+            key={`return-${v.tag}-${tag}`}
+            id={`F2-SP-return-${v.tag}-${tag}`}
+            component={ReturnVariantDemo}
+            defaultProps={{ aspect: a, variant: v.tag }}
+            durationInFrames={demoPlans(a).find((e) => e.plan.id === "return")!.plan.duration}
+            fps={60}
+            width={DEMO_SIZE[a].w}
+            height={DEMO_SIZE[a].h}
+          />
+        )),
+      )}
     </Folder>
   </Folder>
 );

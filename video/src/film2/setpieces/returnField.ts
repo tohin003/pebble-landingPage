@@ -109,6 +109,13 @@ export const RETURN_GOLD: Readonly<Record<number, number>> = { 8: 3, 14: 5, 24: 
 export const RETURN_START = [-90, -90 + 360 / 28, -90 + 360 / 48] as const;
 /** The orbits at full speed, degrees a second (the middle ring counter-rotates; F03). */
 export const RETURN_OMEGA = [5, -7, 7] as const;
+/**
+ * Revision 1's orbits (MONTAGE_DESIGN.r1 §2.3: "The rings orbit at 5, −4 and 3° a second"), for G1's curve A/B only
+ * (MONTAGE_DESIGN §2.3 and §9 item 2: revision 2's travel against revision 1's): the plan's `curve: "r1"`.
+ */
+export const RETURN_OMEGA_R1 = [5, -4, 3] as const;
+/** The orbits a field runs: its options' (G1's revision-1 curve) or the design's. */
+const omegaTable = (o: ReturnFieldOptions): readonly number[] => o.omega ?? RETURN_OMEGA;
 /** Parallax depth per ring (the outer ring nearest), flattening to 1 as a cell returns. */
 export const RETURN_DEPTH = [1, 1.025, 1.06] as const;
 
@@ -290,6 +297,8 @@ export interface ReturnFieldOptions {
   lum?: Readonly<Record<string, DrawnLum>>;
   /** pair each swap wave by luminance (MONTAGE_DESIGN §2.4; default true); false keeps the manifest's order (the design's reference model, schedule_r2.py, never paired) */
   pair?: boolean;
+  /** the orbits at full speed, degrees a second per ring (default RETURN_OMEGA; G1's revision-1 curve: RETURN_OMEGA_R1); their signs must stay the design's */
+  omega?: readonly [number, number, number];
 }
 
 export interface ReturnField {
@@ -336,7 +345,7 @@ export const omegaOf = (field: Pick<ReturnField, "timing" | "options">, ring: nu
   const t = field.timing.orbitRamp;
   let k = 0.5 + 0.5 * E_MOVE((r - t.from) / t.frames);
   if (ring === 0 && field.options.holdInner) k *= E_MOVE(clamp01(r / 60));
-  return RETURN_OMEGA[ring]! * k;
+  return omegaTable(field.options)[ring]! * k;
 };
 
 /** The ring's cumulative orbit angle (deg) on an R-frame (fractional frames interpolate). */
@@ -446,12 +455,14 @@ export function buildReturnField(aspect: Aspect, o: ReturnFieldOptions = {}, fps
   const stride = o.stride ?? RETURN_GOLD;
   const stonePx = o.stonePx ?? geometry.stone;
   const depth = o.depth ?? RETURN_DEPTH;
+  const omega = omegaTable(o);
+  if (omega.some((w, i) => Math.sign(w) !== Math.sign(RETURN_OMEGA[i]!))) throw new Error(`the Return's orbits ${omega.join(", ")}° a second must turn as the design's (${RETURN_OMEGA.join(", ")}): a slide swap and an entry follow each ring's direction`);
   const T = timing;
   const cells: FieldCell[] = [];
   const size = (ring: number, spec: ReturnCellSpec) => (spec.hero ? { w: geometry.hero.w, h: geometry.hero.h } : { w: geometry.cell[ring]!, h: 0.75 * geometry.cell[ring]! });
   const mk = (spec: ReturnCellSpec, ring: ReturnRing, slot: number, kind: CellKind, enter: number | null, settle: number, swapIn: number | null): FieldCell => {
     const s = size(ring, spec);
-    return { spec, id: spec.id, ring, slot, wave: spec.wave, kind, enter, settle, swapIn, swappedOutAt: null, leave: null, retStart: null, retT: null, w0: s.w, h0: s.h, slideSign: kind === "slide" ? Math.sign(RETURN_OMEGA[ring]!) : 0, zOrder: 0 };
+    return { spec, id: spec.id, ring, slot, wave: spec.wave, kind, enter, settle, swapIn, swappedOutAt: null, leave: null, retStart: null, retT: null, w0: s.w, h0: s.h, slideSign: kind === "slide" ? Math.sign(omega[ring]!) : 0, zOrder: 0 };
   };
   waves.inner.forEach((spec, i) => cells.push(mk(spec, 0, i, "inner", null, T.span.from, null)));
   const m1 = slotOrder(14, stride[14]);
@@ -619,7 +630,7 @@ export function cellPoseR(field: ReturnField, c: FieldCell, r: number): CellPose
   if (c.enter !== null && r < c.enter + T.entryFrames) {
     const k = E_MOVE((r - c.enter) / T.entryFrames);
     const rho = Math.hypot(p.x, p.y) * (1 + (c.entryOut ?? T.entryOut) * (1 - k));
-    const phi = Math.atan2(p.y, p.x) - Math.sign(RETURN_OMEGA[c.ring]!) * T.entryBehindDeg * DEG * (1 - k);
+    const phi = Math.atan2(p.y, p.x) - Math.sign(omegaTable(o)[c.ring]!) * T.entryBehindDeg * DEG * (1 - k);
     const x = rho * Math.cos(phi);
     const y = rho * Math.sin(phi);
     return { cell: c, rect: rect(x, y, c.w0, c.h0), c: { x, y }, state: "entry", depth: d0, swapBlur: 0, opacity: 1 };

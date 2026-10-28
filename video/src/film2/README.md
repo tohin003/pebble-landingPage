@@ -699,6 +699,21 @@ lands on A4's bar 82. Frames are R-frames at 60 fps (a local frame is R + 60): 1
     (`sliceWindowR`): J6+F14 R124–R135 (R122 in 9:16), A5 R224–R235, X5 R459–R466 (8 frames: it slides in 8 frames
     before it settles, so 12 would start before it is drawn). No slice exists before the 2.0.0 takes, so the view
     draws the stand-in; their player comes with them, held by the same window.
+- **G1 (28 Oct; MONTAGE_DESIGN §9, decided by measurement and by looking, OVERRIDES §61; the record and its evidence are
+  in the Return lane's scratch, `g1/G1.md`).** Each A/B's other side is a plan option and a composition,
+  `F2-SP-return-<tag>-<aspect>` (`demo/ReturnVariantDemo.tsx` `RETURN_G1_VARIANTS`), on the demo Return's climax and
+  timeline, never in a film unless G1 picks it: `toned` (`merge: "toned"`), `curve1` (`curve: "r1"`: revision 1's orbits
+  of 5, −4 and 3° a second, every swap in place, a 0.33-px-a-frame pull-back in place of the push), `labels`
+  (`labels: true`: "Models", "Memory", "Your workspace" in one band, the camera at 0.90 or less to R354) and `large`
+  (`fieldScale: 1.1`: the rings and cells 10 % larger about the stone). Decided: **behind the silhouette** (the eyes hold
+  ≥ 5.42:1 on every open-eye frame; the toned matte falls to 1.39–1.50:1, under 3:1 on 16–20 frames an aspect, so R4
+  keeps the default); **revision 2's curve** (its settled cells move 1.07 px a frame in the rush against revision 1's
+  0.56, the reading hold's glide; the same flash load); **no labels** (cells sit under "Models" and "Your workspace" in
+  16:9 and 1:1 even at z 0.90, and in one band "Memory" can hold 38 frames at most, under R3's 48); **sparse** as
+  designed (cells cover 22, 26 and 18 % of the frame in the rush; inner cells 143, 114 and 127 px, under CR-16's 150), the
+  field ×1.1 the remedy G1 chooses once its 9:16 render passes (every plan check passes in every aspect; coverage 26, 31
+  and 21 %). The rush is the calmest stretch on the stand-ins (5.6–6.5 % of pixels change a frame): judge it again on
+  the 2.0.0 crops.
 
 ### The demo and the checks
 

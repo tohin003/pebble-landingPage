@@ -22,19 +22,21 @@
 // move (R1: "all in one continuous shot"), declared to no §5.1 push range; it is held to the camera floor and to the
 // travel limit (30 px a frame at the corners) instead.
 // Pure; no React.
-import { f60 } from "../tokens";
+import { COLOR, f60 } from "../tokens";
+import { typeSizePx } from "../type/scale";
+import { lineHeightOf } from "./frame";
 import { E_MOVE, smoothstep } from "../motion/ease";
 import { VelocityCamera, type CamVel, type Pose } from "../motion/camera";
 import type { Point } from "../motion/geometry";
 import type { LightCue } from "../light/grades";
 import type { PebbleCue } from "../../../../shared/pebble/cues";
 import { place, steadyGrid, type MusicGrid, type MusicalLevel } from "./music";
-import { anchored, musicHit } from "./kit";
-import { move, type MusicHit, type ScenePlan, type ShotSpec } from "./scene";
+import { anchored, landFrames, musicHit } from "./kit";
+import { move, type MusicHit, type ScenePlan, type ShotSpec, type TypeSpec } from "./scene";
 import { planFinale, type FinaleHead, type FinaleHeadContext, type FinaleTiming } from "./finale";
 import { stonesOnFrame } from "./qa";
 import { offsetForBlink, type FrameSpan } from "./blink";
-import { RETURN_GEOMETRY, buildReturnField, fitEntries, localOfR, rOfLocal, type ReturnField, type ReturnFieldOptions, type ReturnGeometry } from "./returnField";
+import { RETURN_GEOMETRY, RETURN_OMEGA_R1, buildReturnField, fitEntries, localOfR, rOfLocal, type ReturnField, type ReturnFieldOptions, type ReturnGeometry } from "./returnField";
 import type { Aspect } from "../tokens";
 import type { DemoStretch } from "./demo/grids";
 
@@ -127,7 +129,60 @@ export interface ReturnCameraSpec {
   panFrames: number;
   /** canary only: a cut into a fresh field (no pull-back from S24's frame) */
   fresh?: boolean;
+  /**
+   * What follows the pull-back (G1's A/Bs, MONTAGE_DESIGN §9): "push" (the design: a 12 % push from R200 to R480);
+   * "pullback" (revision 1's travel, item 2: the pull-back ends tighter and a slow pull-back at `pullCornerPx` a frame at
+   * the frame's corners carries the zoom to 1 at R480); "labels" (item 3, §2.8: the zoom held at 0.90 or less until R354,
+   * then the push)
+   */
+  after?: "push" | "pullback" | "labels";
+  /** revision 1's slow pull-back, px a frame at the frame's corners (0.33, MONTAGE_DESIGN.r1 §2.6) */
+  pullCornerPx?: number;
 }
+
+/** ∫ smoothstep(a, b, t) dt from −∞ to q: 0 before a, (b − a)(x³ − x⁴ ⁄ 2) across it, then (b − a) ⁄ 2 + (q − b). */
+export const rampInt = (q: number, a: number, b: number): number => {
+  if (q <= a) return 0;
+  if (q >= b) return (b - a) / 2 + (q - b);
+  const x = (q - a) / (b - a);
+  return (b - a) * (x ** 3 - x ** 4 / 2);
+};
+
+/** G1's labels variant (MONTAGE_DESIGN §2.8): the zoom stays at or under this until R354 (so the band clears the outer ring). */
+export const LABELS_MAX_Z = 0.9;
+export const LABELS_HOLD_R = 354;
+
+/**
+ * The zoom (log) the camera adds after the pull-back, on an R-frame (the pull-back's target `Ll` is the field's
+ * framing it ends on): the design's push; revision 1's slow pull-back; or the labels variant's held push.
+ */
+function afterBloom(s: ReturnCameraSpec, r: number, Ll: number): number {
+  const { W, H } = s.geometry;
+  if (s.after === "pullback") {
+    // a constant rate (eased in over R200–R260, out over R440–R480), so the zoom reaches 1 at R480 as the push's does
+    const rate = (s.pullCornerPx ?? 0.33) / Math.hypot(W / 2, H / 2);
+    return -rate * (rampInt(r, 200, 260) - rampInt(r, 440, 480));
+  }
+  if (s.after === "labels") {
+    // a slow push at a constant rate (eased in over R200–R260) reaching LABELS_MAX_Z on R354, then the push to 1 by R480
+    // on E-move, the slow rate fading over its first 30 frames, so the velocity never jumps
+    const L90 = Math.log(LABELS_MAX_Z);
+    const h = LABELS_HOLD_R;
+    const A = (L90 - Ll) / rampInt(h, 200, 260);
+    if (r <= h) return A * rampInt(r, 200, 260);
+    // the slow rate after R354 fades as 1 − smoothstep(h, h + 30): it carries A × 15 more in all
+    const carried = A * (r - h - rampInt(r, h, h + 30));
+    return L90 - Ll + carried + (0 - L90 - A * 15) * E_MOVE((r - h) / (480 - h));
+  }
+  return (0 - Ll) * E_MOVE((r - 200) / 280);
+}
+
+/** The bloom's target zoom (log) for a camera: the design's zLow, or what the variant's after-bloom move needs to end on 1 at R480. */
+const bloomTarget = (s: ReturnCameraSpec): number => {
+  const Ll = Math.log(s.zLow);
+  if (s.after === "pullback") return -afterBloom(s, 480, Ll);
+  return Ll;
+};
 
 /** The camera spec for an aspect, as MONTAGE_DESIGN §2.6 and schedule_r2.py have it (`o` adds the plan's join and landing). */
 export function returnCameraSpec(aspect: Aspect, o: Partial<ReturnCameraSpec> = {}): ReturnCameraSpec {
@@ -148,8 +203,10 @@ export function returnCameraAt(s: ReturnCameraSpec, r: number): { x: number; y: 
     return { x: 0, y: 0, L: Ll + 0.0003 * (r - RS) };
   }
   const u = Math.max(0, (r - RS) / s.pullFrames);
-  // the log-space pull-back from S24's last frame (slow at first), and the 12 % push overlapping its end (F03)
-  let L = Lc + (Ll - Lc) * E_MOVE(u ** 1.3) + (0 - Ll) * E_MOVE((r - 200) / 280);
+  // the log-space pull-back from S24's last frame (slow at first), and the 12 % push overlapping its end (F03); G1's
+  // variants replace the push (afterBloom), and revision 1's travel ends the pull-back tighter
+  const Lb = bloomTarget(s);
+  let L = Lc + (Lb - Lc) * E_MOVE(u ** 1.3) + afterBloom(s, r, Lb);
   // the pan from the kept card to the stone, then the glide that lands the stone on the title stone's pose
   const k = 1 - E_MOVE((r - RS) / s.panFrames);
   const p = r > 420 ? smoothstep(0, 1, Math.max(0, (r - 420) / (s.landR - 420)) ** 1.5) : 0;
@@ -252,6 +309,9 @@ export interface ReturnExtra {
   /** the landing: the title stone on `landAt` (frame px), and the R-frame */
   landing: { landAt: number; landR: number; titleStone: Point; titleStonePx: number; irisAt: number };
   merge: ReturnMerge;
+  /** G1's variants: the travel, and whether the family labels are drawn */
+  curve: ReturnCurve;
+  labels: boolean;
 }
 
 export interface ReturnOptions {
@@ -276,7 +336,41 @@ export interface ReturnOptions {
   fresh?: boolean;
   clockOffset?: number;
   fitEntries?: boolean;
+  /** G1's curve A/B (MONTAGE_DESIGN §2.3, §9 item 2): the design's travel ("r2", the default) or revision 1's ("r1") */
+  curve?: ReturnCurve;
+  /** G1's labels A/B (MONTAGE_DESIGN §2.8, §9 item 3): the three family names in one band, the camera held to suit */
+  labels?: boolean;
+  /**
+   * G1's size test (MONTAGE_DESIGN §9 item 7, §10): the three rings and their cells scaled by this about the stone (the
+   * stone, the first cell and the camera as built), so the outer ring may pass the frame's edge while every cell stays
+   * half in frame for 60 frames or more (returnSchedule); default 1
+   */
+  fieldScale?: number;
 }
+
+/**
+ * The Return's travel for G1's curve A/B (MONTAGE_DESIGN §2.3: "G1 also plays revision 1's curve (orbits of 3–5° a
+ * second, a 0.33-px-a-frame pull-back, in-place swaps only) against this one"): "r2" is the design's (orbits of 5, −7
+ * and 7° a second; the rush's swaps slide 36 px along their rings; a 12 % push from R200 to R480 after the pull-back);
+ * "r1" is revision 1's travel on the same cells, waves, merge and landing (orbits of 5, −4 and 3° a second; every swap in
+ * place; the pull-back ends tighter and a slow pull-back at 0.33 px a frame at the frame's corners carries the zoom to 1
+ * at R480). Never in a film unless G1 picks it.
+ */
+export type ReturnCurve = "r2" | "r1";
+
+/**
+ * G1's labels A/B (MONTAGE_DESIGN §2.8): three family names the film no longer names, one at a time in one fixed band in
+ * the lower safe area, each landing on a beat as its family's outer-ring cells arrive (R-frames: lands, exit starts).
+ * Each needs a CLAIMS row before it may be drawn in a film; drawn only in the G1 variant. The design's "Memory" ran to
+ * R294, but in one band its 12-frame blur exit then overlaps "Your workspace"'s 8-frame entrance (typeOverType, R292–R306):
+ * two labels 60 frames apart leave room for a 38-frame hold at most, under R3 §3.4's 48, so "Memory" leaves on R278 here
+ * (G1 records it).
+ */
+export const RETURN_LABELS: readonly { id: string; text: string; land: number; exit: number }[] = [
+  { id: "RL1", text: "Models", land: 150, exit: 216 },
+  { id: "RL2", text: "Memory", land: 240, exit: 278 },
+  { id: "RL3", text: "Your workspace", land: 300, exit: 354 },
+];
 
 /**
  * S24's exit as a velocity of the Return's camera at R−60 (world px and log zoom per R-frame), with the same screen
@@ -314,13 +408,25 @@ export function planReturn(o: ReturnOptions): ScenePlan {
     if (landR < RETURN_BLINK_R) throw new Error(`the Return lands its stone on R${landR.toFixed(1)}: it needs the merge and the blink first (R${RETURN_BLINK_R})`);
     // the field is built at the title stone's size on the landing, so the landing is a pan only (§2.6)
     const merge: ReturnMerge = o.merge ?? "behind";
-    const fieldO: ReturnFieldOptions = { stonePx: titleStonePx / unit, holdInner: true, ...(o.field ?? {}) };
+    const curve: ReturnCurve = o.curve ?? "r2";
+    const fieldO: ReturnFieldOptions = { stonePx: titleStonePx / unit, holdInner: true, ...(curve === "r1" ? { omega: RETURN_OMEGA_R1 } : {}), ...(o.field ?? {}) };
     if (merge === "toned") fieldO.timing = { wEnd: TONED_W_END, ...(fieldO.timing ?? {}) };
+    // revision 1's swaps are all in place (no 36-px slide along the ring)
+    if (curve === "r1") fieldO.timing = { slidePx: 0, ...(fieldO.timing ?? {}) };
+    // G1's size test: the rings and their cells larger about the stone (the first cell keeps S24's frame's size)
+    const k = o.fieldScale ?? 1;
+    if (k !== 1) {
+      const g = RETURN_GEOMETRY[f.aspect];
+      fieldO.geometry = { ell: g.ell.map(([x, y]) => [x * k, y * k] as const) as unknown as ReturnGeometry["ell"], cell: g.cell.map((c) => c * k) as unknown as ReturnGeometry["cell"], ...(fieldO.geometry ?? {}) };
+    }
     const field = buildReturnField(f.aspect, fieldO, fps);
     const geometry = field.geometry;
     const zCard = Math.min(geometry.W / geometry.hero.w, geometry.H / geometry.hero.h);
     const entry = join ? { ...entryFromS24(join, zCard * unit), tau: 20, lead: 60 / fps } : undefined;
-    const camSpec = returnCameraSpec(f.aspect, { geometry, title: { x: titleStone.x / unit, y: titleStone.y / unit }, landR, landLz: (lzPage * fps) / 60, entry, fresh: o.fresh });
+    // G1's variants change what follows the pull-back: revision 1's slow pull-back, or the labels' held push (from a
+    // slightly wider framing, 0.85, so the held push still moves the corners 0.35 px a frame or more: the camera floor)
+    const after = curve === "r1" ? ("pullback" as const) : o.labels ? ("labels" as const) : ("push" as const);
+    const camSpec = returnCameraSpec(f.aspect, { geometry, title: { x: titleStone.x / unit, y: titleStone.y / unit }, landR, landLz: (lzPage * fps) / 60, entry, fresh: o.fresh, after, ...(after === "labels" ? { zLow: 0.85 } : {}) });
     const camera = returnCamera(camSpec, fps, unit, landAt);
     camera.glide(irisAt, 1e9, { lz: lzPage });
     const ref = camera.pose(Math.round(localOfR(480, fps)));
@@ -371,6 +477,8 @@ export function planReturn(o: ReturnOptions): ScenePlan {
       join,
       landing: { landAt, landR, titleStone, titleStonePx, irisAt },
       merge,
+      curve,
+      labels: !!o.labels,
     };
     return { shot, lightInitial: "evening", lightCues, music, moves, extra: { return: extra }, stone: { clockOffset, layer: "film" } };
   };
@@ -389,6 +497,22 @@ export function planReturn(o: ReturnOptions): ScenePlan {
     align: o.align,
     head,
   });
-  return { ...plan, id: "return", name: `The Return${o.merge === "toned" ? " (the toned matte)" : ""}, title, end ${plan.aspect}` };
+  const variant = [o.merge === "toned" ? "the toned matte" : "", o.curve === "r1" ? "revision 1's curve" : "", o.labels ? "the family labels" : "", o.fieldScale && o.fieldScale !== 1 ? `the field ×${o.fieldScale}` : ""].filter(Boolean).join(", ");
+  return { ...plan, id: "return", name: `The Return${variant ? ` (${variant})` : ""}, title, end ${plan.aspect}`, ...(o.labels ? { types: [...plan.types, ...returnLabelTypes(plan, fps)] } : {}) };
+}
+
+/**
+ * G1's family labels as the plan's lines (MONTAGE_DESIGN §2.8): the label tier (Inter 500, 28–34 px at 1080) in ink,
+ * centred in one band whose foot is the safe margin, each landing on its beat (a line blur in) and leaving on a blur.
+ */
+export function returnLabelTypes(plan: Pick<ScenePlan, "frame">, fps: number): TypeSpec[] {
+  const f = plan.frame;
+  const sizeT = 0.5;
+  const top = f.h - f.safe - typeSizePx("label", f.w, f.h, sizeT) * lineHeightOf("label");
+  return RETURN_LABELS.map((l) => {
+    const land = Math.round(localOfR(l.land, fps));
+    const t: TypeSpec = { id: l.id, text: l.text, tier: "label", at: 0, exitAt: Math.round(localOfR(l.exit, fps)), sizeT, box: { left: 0, top, width: f.w, align: "center" }, kind: "label", color: COLOR.ink, exit: "blur" };
+    return { ...t, at: land - landFrames(t, fps) };
+  });
 }
 

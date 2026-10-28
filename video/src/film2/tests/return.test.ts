@@ -43,7 +43,7 @@ import {
 } from "../setpieces/returnChecks";
 import type { Finding } from "../qa/checks";
 import type { ScenePlan, TypeSpec } from "../setpieces/scene";
-import { cellReachPx, cellScreenAt, cellsOnScreen, firstContactR, hairlineReturnStart, hairlineScreenAt, rOfLocal, swapMarks, tonedMatteK } from "../setpieces/returnField";
+import { cellPoseR, cellReachPx, cellScreenAt, cellsOnScreen, firstContactR, hairlineReturnStart, hairlineScreenAt, rOfLocal, slotXY, swapMarks, tonedMatteK } from "../setpieces/returnField";
 import { findTilePops } from "../qa/luma";
 import { FlashRgb, flashFails } from "../qa/flash-rgb";
 import { ReelScan } from "../qa/reel-scan";
@@ -1037,6 +1037,99 @@ describe("the toned matte (R4's alternative for G1, views/ReturnView.tsx merge \
     const d = demoPlans("16:9").find((e) => e.plan.id === "return")!.plan;
     expect(timelineDiffs({ "16:9": v, "1:1": d, "9:16": d })).toEqual([]);
     expect(returnOf(v)!.join?.source).toBe(returnOf(d)!.join?.source);
+  });
+});
+
+describe("G1's variants (MONTAGE_DESIGN §9): revision 1's curve, the family labels, the field ×1.1", () => {
+  const corner = (p: ScenePlan, r0: number, r1: number) => {
+    const t = planTrace(p)!;
+    const v: number[] = [];
+    for (let r = r0; r < r1; r++) {
+      const a = t.poseAt(r);
+      const b = t.poseAt(r + 1);
+      // the zoom's share of the corners' travel (no pan between R260 and R440)
+      v.push(Math.abs(Math.log(b.zoom / a.zoom)) * Math.hypot(t.W / 2, t.H / 2));
+    }
+    return v;
+  };
+  test("each plans with no error in every aspect, on the demo Return's timeline and climax", () => {
+    for (const o of [{ curve: "r1" as const }, { labels: true }, { fieldScale: 1.1 }])
+      for (const a of ASPECTS) {
+        const v = demoReturnVariant(a, o);
+        const d = demoPlans(a).find((e) => e.plan.id === "return")!.plan;
+        expect(errs(checkPlan(v, returnGrid(FPS))).map((e) => `${JSON.stringify(o)} ${a} ${e.check}: ${e.message}`)).toEqual([]);
+        expect(v.duration).toBe(d.duration);
+        expect(returnOf(v)!.join?.source).toBe(returnOf(d)!.join?.source);
+      }
+  });
+  test("the design's camera is unchanged: the push from R200 to R480, as before the variants", () => {
+    for (const a of ASPECTS) {
+      const s = returnCameraSpec(a);
+      for (const r of [-60, 0, 120, 200, 250, 300, 400, 480, 600]) {
+        const u = Math.max(0, (r + 60) / s.pullFrames);
+        const Lc = Math.log(s.zCard);
+        const Ll = Math.log(s.zLow);
+        expect(returnCameraAt(s, r).L).toBeCloseTo(Lc + (Ll - Lc) * E_MOVE(u ** 1.3) + (0 - Ll) * E_MOVE((r - 200) / 280), 12);
+      }
+    }
+  });
+  test("revision 1's curve: orbits of 5, −4 and 3° a second, every swap in place, a 0.33-px pull-back to zoom 1 at R480", () => {
+    for (const a of ASPECTS) {
+      const p = planFor(a, { curve: "r1" });
+      const ret = returnOf(p)!;
+      expect(ret.curve).toBe("r1");
+      expect(ret.field.options.omega).toEqual([5, -4, 3]);
+      expect(ret.field.timing.slidePx).toBe(0);
+      // a slide swap's incoming cell sits on its slot just after the crossing (in place); the design's slides it there
+      const des = planFor(a);
+      const dfield = returnOf(des)!.field;
+      const sl = ret.field.cells.find((c) => c.kind === "slide")!;
+      const r = sl.swapIn! + 10;
+      const q = cellPoseR(ret.field, sl, r)!;
+      const s = slotXY(ret.field, sl.ring, sl.slot, r);
+      expect(Math.hypot(q.c.x - s.x, q.c.y - s.y)).toBeLessThan(1e-6);
+      const dsl = dfield.cells.find((c) => c.id === sl.id)!;
+      expect(dsl.kind).toBe("slide");
+      const dq = cellPoseR(dfield, dsl, dsl.swapIn! + 10)!;
+      const ds = slotXY(dfield, dsl.ring, dsl.slot, dsl.swapIn! + 10);
+      expect(Math.hypot(dq.c.x - ds.x, dq.c.y - ds.y)).toBeGreaterThan(1);
+      // the zoom falls at 0.33 px a frame at the corners from R260 to R440 (±3 %), and is 1 from R480
+      for (const v of corner(p, 262, 438)) expect(Math.abs(v - 0.33) / 0.33).toBeLessThan(0.03);
+      expect(returnCameraAt(ret.camera, 480).L).toBeCloseTo(0, 9);
+      expect(returnCameraAt(ret.camera, 250).L).toBeGreaterThan(0);
+      // against the design's push, whose corners move faster through the gather and the rush
+      expect(Math.max(...corner(des, 300, 440))).toBeGreaterThan(Math.max(...corner(p, 300, 440)));
+    }
+  });
+  test("an orbit that turns the other way is refused (a slide and an entry follow each ring's direction)", () => {
+    expect(() => buildReturnField("16:9", { omega: [5, 7, 7] })).toThrow(/turn as the design's/);
+  });
+  test("the labels: three lines in one band, landing on the design's beats, never two at once, the camera at 0.90 or less to R354", () => {
+    for (const a of ASPECTS) {
+      const p = planFor(a, { labels: true });
+      const ls = p.types.filter((t: TypeSpec) => /^RL/.test(t.id));
+      expect(ls.map((t) => t.text)).toEqual(["Models", "Memory", "Your workspace"]);
+      expect(new Set(ls.map((t) => t.box.top)).size).toBe(1);
+      expect(ls[0]!.box.top + 31 * p.frame.unit * 1.3).toBeLessThanOrEqual(p.frame.h - p.frame.safe + 1);
+      expect(errs(checkPlan(p, returnGrid(FPS)), "typeOverType")).toEqual([]);
+      const t = planTrace(p)!;
+      for (let r = 240; r <= 354; r++) expect(t.poseAt(r).zoom).toBeLessThanOrEqual(0.9 + 1e-6);
+      expect(t.poseAt(480).zoom).toBeCloseTo(1, 6);
+      // the default draws none
+      expect(planOf(a).types.some((x) => /^RL/.test(x.id))).toBe(false);
+    }
+  });
+  test("the field ×1.1: the rings and cells 10 % larger about the stone, the first cell and the stone as built; ×1.2 fails returnSchedule in 16:9", () => {
+    for (const a of ASPECTS) {
+      const f = returnOf(planFor(a, { fieldScale: 1.1 }))!.field;
+      const d = returnOf(planOf(a))!.field;
+      expect(f.geometry.cell[0]).toBeCloseTo(RETURN_GEOMETRY[a].cell[0] * 1.1, 9);
+      expect(f.geometry.ell[2][1]).toBeCloseTo(RETURN_GEOMETRY[a].ell[2][1] * 1.1, 9);
+      expect(f.geometry.hero).toEqual(d.geometry.hero);
+      expect(f.stone.px).toBe(d.stone.px);
+    }
+    const big = planFor("16:9", { fieldScale: 1.2 });
+    expect(errs(checkPlan(big, returnGrid(FPS)), "returnSchedule").map((e) => e.message).join(" ")).toMatch(/under 60 frames/);
   });
 });
 
