@@ -19,6 +19,8 @@ import { lineRect, rectInFrame } from "../setpieces/frame";
 import { halfBars } from "../setpieces/music";
 import { returnOf } from "../setpieces/returnChecks";
 import type { ScenePlan } from "../setpieces/scene";
+import { ReelScan } from "../qa/reel-scan";
+import { PICTURED_BLOB } from "../qa/stones";
 
 const ASPECTS = ["16:9", "1:1", "9:16"] as const;
 const errorsOf = (xs: readonly Finding[], check?: string) => xs.filter((x) => x.level === "error" && (!check || x.check === check));
@@ -173,6 +175,52 @@ describe("a pebble pictured in a Return cell counts as a stone (stoneCount; the 
       expect(xs[0]!.share).toBeGreaterThanOrEqual(PICTURED_STONE_SHARE);
       expect(stonesOnFrame(old, fr).length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("the stones scan counts a pebble from 10 % of the stone's area, inside the Return's cells too (qa/reel-scan.ts; VF-01)", () => {
+  // a synthetic reel at half size (the plans' px are twice the render's): the stone, r 40 plan px, at (500, 240), as large
+  // as the Return's stone at half size (about 47 px across)
+  const W = 320;
+  const H = 180;
+  const run = (draw: (px: Uint8Array, f: number) => void, cells: boolean) => {
+    const stoneAt: Record<number, number[][]> = {};
+    const cellsAt: Record<number, number[][]> = {};
+    for (let f = 0; f < 60; f++) {
+      stoneAt[f] = [[500, 240, 40]];
+      if (cells) cellsAt[f] = [[40, 40, 160, 120], [220, 220, 120, 90]];
+    }
+    const marks = { aspect: "16:9", fps: 60, width: 640, height: 360, total: 60, cuts: [], waits: [], hits: [], types: [], stones: [{ from: 0, to: 60, count: 1, rMin: 40, rMax: 40 }], stoneAt, ...(cells ? { cellsAt } : {}), apertures: [] };
+    const scan = new ReelScan(W, H, marks);
+    for (let f = 0; f < 60; f++) {
+      const px = new Uint8Array(W * H).fill(214);
+      const disc = (cx: number, cy: number, r: number) => {
+        for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) if ((x - cx) ** 2 + (y - cy) ** 2 <= r * r) px[y * W + x] = 92;
+      };
+      disc(250, 120, 20); // the stone (render px)
+      draw(px, f);
+      scan.push(px);
+    }
+    return scan.finish().stones.twoStoneRuns;
+  };
+  const disc = (px: Uint8Array, cx: number, cy: number, r: number) => {
+    for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) if ((x - cx) ** 2 + (y - cy) ** 2 <= r * r) px[y * W + x] = 92;
+  };
+  test("a pebble of 15 % of the stone's area inside a cell far from the stone is a second stone (A3 in the field on r4)", () => {
+    expect(run((px, f) => f >= 20 && f < 30 && disc(px, 60, 50, 20 * Math.sqrt(0.15)), true)).toEqual([{ from: 20, to: 30, most: 2 }]);
+  });
+  test("the same pebble beside the stone at the merge is a second stone without the cells too (r4 4818–4830)", () => {
+    expect(run((px, f) => f >= 20 && f < 30 && disc(px, 200, 120, 20 * Math.sqrt(0.15)), false)).toEqual([{ from: 20, to: 30, most: 2 }]);
+  });
+  test("under 10 % of the stone's area, or a bar (a button), is not a pebble; the scan as it was passed the 15 % pebble", () => {
+    expect(run((px, f) => f >= 20 && f < 30 && disc(px, 60, 50, 20 * Math.sqrt(0.06)), true)).toEqual([]);
+    expect(run((px) => {
+      for (let y = 45; y < 52; y++) for (let x = 40; x < 80; x++) px[y * W + x] = 80;
+    }, true)).toEqual([]);
+    // the old floor: blobs from half the stone's radius (25 % of its area)
+    const s15 = 20 * Math.sqrt(0.15);
+    expect(s15).toBeLessThan(20 * 0.5);
+    expect(Math.sqrt(PICTURED_BLOB.share)).toBeLessThan(Math.sqrt(0.15));
   });
 });
 

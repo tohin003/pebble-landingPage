@@ -19,7 +19,7 @@
 import type { Rect } from "../motion/geometry";
 import { analyseLuma, type LumaReport } from "./luma";
 import { INK, inkIn, judgeInk, type InkFinding, type InkTrack } from "./ink";
-import { shrink, stoneBlobs } from "./stones";
+import { PICTURED_BLOB, shrink, stoneBlobs } from "./stones";
 import { bandHeights, openingStart, type BandHeights } from "./bands";
 
 /** What reel-marks.ts writes: reel frames, and rects and radii in the plans' frame px. */
@@ -46,6 +46,11 @@ export interface ReelMarks {
    * for a stone drawn light on a dark ground (the post-credit scene's sleeping stone, in the page's dark palette)
    */
   stoneAt?: Record<number, number[][]>;
+  /**
+   * each frame's Return cells as the plan draws them: [x, y, w, h], the plans' frame px (fix round 3, VF-01): a round
+   * dark blob inside a cell, PICTURED_BLOB.share of the stone's area or more, is a pebble the cell pictures, a second stone
+   */
+  cellsAt?: Record<number, number[][]>;
   /** planes' card entrances and placeholder stills' entrances, to name what a tile pop shows */
   entrances?: { id: string; from: number; to: number; kind: string }[];
   apertures: { piece: string; hit: number; planOpen: number; rest: { from: number; to: number } }[];
@@ -309,10 +314,25 @@ export class ReelScan {
         const rs = set.map((s) => s[2]!);
         const rMin = rs.length ? Math.min(...rs) : run.rMin;
         const rMax = rs.length ? Math.max(...rs) : run.rMax;
-        return stoneBlobs(light ? h2.px.map((v) => 255 - v) : h2.px, h2.w, h2.h, { minR: Math.max(3, rMin * k * 0.5), maxR: rMax * k * 1.6 }).filter(
+        // (fix round 3, VF-01: blobs from 10 % of the stone's area, not 25 %: a pictured pebble of 15 % passed)
+        return stoneBlobs(light ? h2.px.map((v) => 255 - v) : h2.px, h2.w, h2.h, { minR: Math.max(3, rMin * k * Math.sqrt(PICTURED_BLOB.share)), maxR: rMax * k * 1.6 }).filter(
           (b) => !typeRects.some((r) => b.cx >= r.x && b.cx < r.x + r.w && b.cy >= r.y && b.cy < r.y + r.h) && (!marks.stoneAt || near.some((n) => Math.hypot(b.cx - n.x, b.cy - n.y) <= n.R)),
         );
       });
+      // (fix round 3, VF-01) inside the Return's cells too: a round dark blob of 10 % of the stone's area or more is a
+      // pebble the cell pictures, wherever the cell is (A3's engine pebble sat in the field, far from the stone, before
+      // the merge brought it beside it)
+      const cells = marks.cellsAt?.[f] ?? [];
+      if (cells.length) {
+        const rs = here.map((s) => s[2]!);
+        const rMin = rs.length ? Math.min(...rs) : run.rMin;
+        const rMax = rs.length ? Math.max(...rs) : run.rMax;
+        for (const [x, y, w, h] of cells) {
+          const region = { x: x! * k, y: y! * k, w: w! * k, h: h! * k };
+          for (const b of stoneBlobs(h2.px, h2.w, h2.h, { minR: Math.max(3, rMin * k * Math.sqrt(PICTURED_BLOB.share)), maxR: rMax * k * 1.6, minFill: PICTURED_BLOB.minFill, maxAspect: PICTURED_BLOB.maxAspect, region }))
+            if (!blobs.some((o) => Math.hypot(o.cx - b.cx, o.cy - b.cy) < Math.max(o.r, b.r))) blobs.push(b);
+        }
+      }
       // each blob's diameter and centre in px at 1080: shrunk px → render px (×2) → the plans' px (÷S) → at 1080
       const unit1080 = Math.min(marks.width, marks.height) / 1080;
       this.stoneAt.push({

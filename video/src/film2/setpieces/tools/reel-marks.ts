@@ -29,7 +29,8 @@ import { codaMarkStones } from "../codaChecks";
 import { carriedRect } from "../kit";
 import { ACTIVATE } from "../../../../../shared/pebble/veil";
 import { frameOfSource } from "../take";
-import { swapMarks } from "../returnField";
+import { localOfR, swapMarks } from "../returnField";
+import { planTrace } from "../returnChecks";
 
 const args = process.argv.slice(2);
 const a = (args.find((x) => /^(16:9|1:1|9:16)$/.test(x)) ?? "16:9") as "16:9" | "1:1" | "9:16";
@@ -50,6 +51,9 @@ const apertures: { piece: string; hit: number; planOpen: number; rest: { from: n
 const entrances: { id: string; from: number; to: number; kind: string }[] = [];
 const rows: { id: string; from: number; to: number; rect: { x: number; y: number; w: number; h: number }; facts: number; gapPx: number; size: number; inkLuma: number; rectAt?: Record<number, number[]> }[] = [];
 const states: { frame: number; id: string }[] = [];
+// (fix round 3, VF-01) the Return's cells on every frame, [x, y, w, h] in the plans' frame px: the scan counts a round
+// dark blob inside one (a pebble the cell pictures) as a stone
+const cellsAt: Record<number, number[][]> = {};
 const entries = demoPlans(a);
 const first = entries[0]!.plan;
 for (const e of entries) {
@@ -96,6 +100,15 @@ for (const e of entries) {
       }
     }
     if (run && run.count > 0) stones.push(run);
+    const trace = planTrace(p);
+    if (trace)
+      for (const tf of trace.frames) {
+        const fr = Math.round(localOfR(tf.r, p.fps));
+        if (fr < 0 || fr >= p.duration) continue;
+        const u = p.frame.unit;
+        const inFrame = tf.cells.filter((x) => x.share > 0 && x.s.x < trace.W && x.s.y < trace.H && x.s.x + x.s.w > 0 && x.s.y + x.s.h > 0);
+        if (inFrame.length) cellsAt[off + fr] = inFrame.map((x) => [x.s.x * u, x.s.y * u, x.s.w * u, x.s.h * u].map((v) => Math.round(v * 10) / 10));
+      }
     for (const s of p.shots)
       for (const pl of s.planes) {
         if (pl.enterAt !== undefined) entrances.push({ id: `${p.id}/${pl.id}`, from: off + pl.enterAt, to: off + pl.enterAt + (pl.enterKind === "fade" ? 20 : 24), kind: pl.enterKind === "fade" ? "fade-in" : "card entrance" });
@@ -154,6 +167,6 @@ for (const e of entries) {
 }
 const marks = { aspect: a, fps: first.fps, width: first.frame.w, height: first.frame.h, total: off, starts, seams, cuts: [...starts.slice(1), ...seams].sort((x, y) => x - y), waits, hits };
 if (out) {
-  writeFileSync(out, JSON.stringify({ ...marks, transitions, entrances, states, types, stones, stoneAt, apertures, rows }));
+  writeFileSync(out, JSON.stringify({ ...marks, transitions, entrances, states, types, stones, stoneAt, cellsAt, apertures, rows }));
   console.log(JSON.stringify({ ...marks, types: types.length, stones: stones.length, apertures, rows: rows.length, states }));
 } else console.log(JSON.stringify(marks));

@@ -34,6 +34,14 @@ export interface BlobOptions {
 
 export const STONE_BLOB = { maxLuma: 140, minFill: 0.5, maxAspect: 1.8 } as const;
 
+/**
+ * The least area, a share of the stone's, at which a dark blob counts as a pebble (fix round 3; the verifier's VF-01):
+ * the Return's A3 cell drew Pebble's engine, a whole pebble about 15 % of the stone's area, beside the stone at the
+ * merge, and the old floor (blobs from half the stone's radius: 25 % of its area) passed it. Inside the Return's cells
+ * a blob also counts only when it is round, as a pebble is (PICTURED_BLOB.minFill), not a bar or a button.
+ */
+export const PICTURED_BLOB = { share: 0.1, minFill: 0.6, maxAspect: 1.6 } as const;
+
 /** The stone-like dark blobs of a grey frame. */
 export function stoneBlobs(frame: Uint8Array, W: number, H: number, o: BlobOptions): Blob[] {
   const maxLuma = o.maxLuma ?? STONE_BLOB.maxLuma;
