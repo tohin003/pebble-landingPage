@@ -914,7 +914,7 @@ deleted, with a record, as the next replaced it):
 | flashes a second (at most 3) | 1 | 2 | 2 |
 | placeholder state changes listed (CR-18) | 8 | 8 | 8 |
 
-**At the branch's head** (r4 at 2a6b8af, the Return in place of the wall and the convergence; 6,447 frames a reel, 410–428
+**At the branch's head** (r4 at 2a6b8af, the Return in place of the wall and the convergence; 6,447 frames a reel, 420–428
 s each) these pieces read the same: no line vanishes (0 of 30), no frame shows two stones (3,247, 3,239 and 3,262
 checked), the bands open on 181, the light as below (9:16's evening on 6 % ground, R − B +37), and the climax ends on its
 hold's glide into the Return's first frame, still travelling one way. Its scans fail only inside the Return, for the
