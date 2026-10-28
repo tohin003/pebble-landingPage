@@ -45,6 +45,7 @@ import type { Finding } from "../qa/checks";
 import type { ScenePlan, TypeSpec } from "../setpieces/scene";
 import { cellReachPx, cellScreenAt, cellsOnScreen, firstContactR, hairlineReturnStart, hairlineScreenAt, rOfLocal, swapMarks, tonedMatteK } from "../setpieces/returnField";
 import { findTilePops } from "../qa/luma";
+import { FlashRgb, flashFails } from "../qa/flash-rgb";
 import { ReelScan } from "../qa/reel-scan";
 import { RETURN_THUMB_LONG, drawnLive, drawnLumOf, missingReturnThumbs, returnThumbJobs, returnThumbPath, returnThumbSigOf, ringOfWave, thumbSlug } from "../setpieces/returnThumbs";
 import { TONED_W_END } from "../setpieces/returnPlan";
@@ -943,6 +944,64 @@ describe("RV-02: the reel's marks declare each swap over its own cells only", ()
     // a rect in the frame's top-left corner, 300 × 150 px of the plans' 1920 × 1080: tile 0 only (tiles are 320 × 180)
     expect(scan.tilesOf({ x: 10, y: 10, w: 300, h: 150 })).toEqual([0]);
     expect(scan.tilesOf({ x: 300, y: 170, w: 40, h: 20 })).toEqual([0, 1, 6, 7]);
+  });
+});
+
+describe("qa/flash-rgb.ts, the flash verdict (RV-03: a port of research3's flashref.py v2, equal to it on its 18 canaries and the reels)", () => {
+  /** A canary on the analysis grid: `colorAt(t, x, y)` gives each cell's sRGB colour on frame t. */
+  const canary = (w: number, h: number, n: number, colorAt: (t: number, x: number, y: number) => readonly [number, number, number], aspect?: "16:9" | "1:1" | "9:16") => {
+    const scan = new FlashRgb({ w, h, fps: 60, srcW: w * 10, name: "canary", aspect });
+    const f = new Uint8Array(w * h * 3);
+    for (let t = 0; t < n; t++) {
+      for (let y = 0; y < h; y++)
+        for (let x = 0; x < w; x++) {
+          const c = colorAt(t, x, y);
+          f.set(c, 3 * (y * w + x));
+        }
+      scan.push(f);
+    }
+    return scan.finish();
+  };
+  const RED = [255, 0, 0] as const;
+  const BLACK = [0, 0, 0] as const;
+  const six = (t: number) => t % 10 < 5; // 6 Hz: 5 frames on, 5 off (12 transitions a second)
+  test("c01 red ↔ black, full frame, 6 Hz: 12 transitions a second, general and red, every window", () => {
+    const r = canary(192, 108, 180, (t) => (six(t) ? RED : BLACK));
+    for (const k of ["desk27", "css2560", "tv"]) {
+      expect([r.general[k]!.maxTransitions1s, r.general[k]!.fail]).toEqual([12, true]);
+      expect([r.red[k]!.maxTransitions1s, r.red[k]!.fail]).toEqual([12, true]);
+    }
+    expect(flashFails(r).length).toBeGreaterThan(0);
+  });
+  test("c02 red ↔ grey of equal luminance: no general flash, a red flash (luma.ts read it the wrong way round)", () => {
+    const r = canary(192, 108, 180, (t) => (six(t) ? RED : ([127, 127, 127] as const)));
+    expect(r.general.desk27!.maxTransitions1s).toBe(0);
+    expect([r.red.desk27!.maxTransitions1s, r.red.desk27!.fail]).toEqual([12, true]);
+  });
+  test("c07 5 transitions a second for 6 s: under the count, the extended rule fails; c08's 7 in one second fail", () => {
+    const c07 = canary(192, 108, 360, (t) => (t % 24 < 12 ? ([122, 122, 122] as const) : BLACK));
+    expect([c07.general.tv!.maxTransitions1s, c07.general.tv!.warn, c07.general.tv!.extended]).toEqual([5, true, true]);
+    expect(flashFails(c07).some((x) => /extended/.test(x))).toBe(true);
+    const on = (t: number) => (8 <= t && t < 16) || (24 <= t && t < 32) || (40 <= t && t < 48) || t >= 56;
+    const c08 = canary(192, 108, 180, (t) => (on(t) ? ([255, 255, 255] as const) : BLACK));
+    expect([c08.general.tv!.maxTransitions1s, c08.general.tv!.fail]).toEqual([7, true]);
+  });
+  test("c17 one 2-frame white frame on the night ground: 2 transitions, no fail (its frame-mean step is reported)", () => {
+    const r = canary(192, 108, 180, (t) => (t >= 90 && t < 92 ? ([248, 249, 246] as const) : ([25, 30, 27] as const)));
+    expect(r.general.tv!.maxTransitions1s).toBe(2);
+    expect(flashFails(r)).toEqual([]);
+    expect(r.steps.frameMeanStep1).toBeGreaterThan(0.9);
+  });
+  test("the windows bind by aspect: a small square at 6 Hz fails the 16:9 CSS reading, not 9:16's (R3 §1.7)", () => {
+    // 12 × 12 cells (120 px square): 29 % of the 256 × 192 window, 9 % of 9:16's 400 × 400 and 455 × 341 windows
+    const sq = (x0: number, y0: number) => (t: number, x: number, y: number) => (six(t) && x >= x0 && x < x0 + 12 && y >= y0 && y < y0 + 12 ? ([188, 188, 188] as const) : BLACK);
+    const wide = canary(192, 108, 180, sq(90, 48));
+    expect([wide.binding, wide.general.css2560!.fail]).toEqual([["desk27", "css2560", "tv"], true]);
+    expect(flashFails(wide).some((x) => /general css2560/.test(x))).toBe(true);
+    const tall = canary(108, 192, 180, sq(48, 90));
+    expect(tall.binding).toEqual(["w400", "css9x16", "tv"]);
+    expect([tall.general.css2560!.fail, tall.general.w400!.fail, tall.general.css9x16!.fail]).toEqual([true, false, false]);
+    expect(flashFails(tall)).toEqual([]);
   });
 });
 

@@ -250,6 +250,16 @@ differences cannot see a drift too slow for the eye); pops away from cuts; and l
 pixel check agree on the demo: both flagged its first reading holds as stills (a drift of 0.05–0.1 px a frame), and
 both pass since the holds drift about 0.3 px a frame (§5.3 allows up to 1).
 
+The flash verdict is `qa/flash-rgb-scan.ts` (FFmpeg: a heavy job) with `qa/flash-rgb.ts`, a port of the R3 lane's
+reference (research3 `tools/flashref.py` v2; MONTAGE_DESIGN §3.3): relative luminance from linear RGB per 10-px cell, a
+window's transition when same-way cell changes within 2 frames cover a quarter of it, the red rule in u′v′, IRIS's
+extended rule, scene changes, IRIS's frame-mean test, the pattern screen and the film's own step targets. Its windows
+bind by aspect (R3 §1.7: 16:9 and 1:1 the 10° field and the 256 × 192 px CSS reading, 9:16 400 × 400 and 455 × 341 px,
+the whole frame always); it exits 2 when a binding window fails. It equals the reference field for field on the
+reference's 18 canaries and on the Return's span of the reels of 28 Oct in all three aspects (the Return lane's scratch,
+`fix/flash/`); its canaries in `tests/return.test.ts` (c01, c02, c07, c08, c17, and the windows by aspect).
+`bun video/src/film2/qa/flash-rgb-scan.ts <video> [--from a --to b] [--out report.json]`
+
 ## The compositions (folder "Film2" in Studio)
 
 | Id | What |
@@ -647,7 +657,8 @@ lands on A4's bar 82. Frames are R-frames at 60 fps (a local frame is R + 60): 1
     4, 1:1 2 and 3, 9:16 2; from R240 at most 3). The design's model (`schedule_r2.py`, kept as pinned) has the same
     flaw and models no slide: a corrected copy (the Return lane's scratch, `fix/schedule_r2_rv03.py`) re-derives the
     same windows but one number, 16:9's 256 × 192 swaps (0 → 2, the slides' union), and `return-sheet.ts --reference`
-    against its JSON passes; against the design's own JSON that one number differs.
+    against its JSON passes; against the design's own JSON that one number differs. The design's verdict on renders,
+    `qa/flash-rgb.ts`, is built (§ "The smoothness checks" above): run it on every Return render.
   - **Hairlines (RV-04).** A hairline's return fades as the carrier's (full to 60 %, gone by 95 %; it was opaque to 80 %
     at 30 px a frame and more), and each is blurred σ = travel ÷ 7 wherever the frame shows it moving over 4.6 px a
     frame, in the bloom (up to 20 px a frame) as in its return.
