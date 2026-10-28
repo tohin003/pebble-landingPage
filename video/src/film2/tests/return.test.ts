@@ -17,14 +17,17 @@ import type { FinaleTiming } from "../setpieces/finale";
 import { CODA_GRID, codaOf, codaPlacement, planCoda, type CodaTiming } from "../setpieces/coda";
 import { checkJoins } from "../setpieces/joins";
 import { BLINK_S, blinkStartsFor, offsetForBlink } from "../setpieces/blink";
-import { RETURN_CELLS, RETURN_WAVES, manifestProblems, refuseBadManifest, type ReturnCellSpec } from "../setpieces/returnCells";
-import { RETURN_GEOMETRY, RETURN_TIMING, buildReturnField, cellPoseAt, hairlineAt, localOfR, slotOrder, type FieldCell, type ReturnFieldOptions } from "../setpieces/returnField";
+import { RETURN_CELLS, RETURN_WAVES, SI, manifestProblems, refuseBadManifest, type ReturnCellSpec } from "../setpieces/returnCells";
+import { RETURN_LUM } from "../setpieces/returnLum";
+import { RETURN_GEOMETRY, RETURN_TIMING, buildReturnField, cellPoseAt, hairlineAt, hungarian, localOfR, pairWave, slotOrder, type FieldCell, type ReturnFieldOptions } from "../setpieces/returnField";
 import { RETURN_BLINK_R, RETURN_EVENTS, RETURN_FILM_S, RETURN_MUSIC, blinkKeepClear, filmFrameOfR, planReturn, returnCameraAt, returnCameraSpec, returnGrid, type ReturnCameraSpec, type ReturnOptions } from "../setpieces/returnPlan";
 import {
   R2_EXEMPT,
   RETURN_CHECKS,
   blinkPlaced,
   cellTextOf,
+  coverageSwings,
+  irisExtended,
   joinPose,
   planTrace,
   returnContentOf,
@@ -41,7 +44,7 @@ import {
 import type { Finding } from "../qa/checks";
 import type { ScenePlan, TypeSpec } from "../setpieces/scene";
 import { cellScreenAt, cellsOnScreen, firstContactR, rOfLocal, tonedMatteK } from "../setpieces/returnField";
-import { RETURN_THUMB_LONG, drawnLive, returnThumbJobs, returnThumbPath, ringOfWave, thumbSlug } from "../setpieces/returnThumbs";
+import { RETURN_THUMB_LONG, drawnLive, drawnLumOf, missingReturnThumbs, returnThumbJobs, returnThumbPath, returnThumbSigOf, ringOfWave, thumbSlug } from "../setpieces/returnThumbs";
 import { TONED_W_END } from "../setpieces/returnPlan";
 import { DEMO_JOINS, demoPlans, demoReturnVariant } from "../setpieces/demo/plans";
 
@@ -146,7 +149,23 @@ describe("the cell manifest (returnCells.ts)", () => {
       expect(s.crop.x >= 0 && s.crop.y >= 0 && s.crop.x + s.crop.w <= s.w + 1e-9 && s.crop.y + s.crop.h <= s.h + 1e-9).toBe(true);
       if (s.fit === "cover") expect(Math.abs(s.crop.w / s.crop.h - 4 / 3)).toBeLessThan(0.02);
     }
-    expect(RETURN_CELLS.filter((c) => c.standIn.kind === "still").length).toBe(18);
+    // 16: A2's (the pebble itself, RV-01) and F11*'s (the same conversation as F12's Verified, RV-05) are slots now
+    expect(RETURN_CELLS.filter((c) => c.standIn.kind === "still").length).toBe(16);
+  });
+  test("RV-01: the cells whose 2.0.0 captures picture the companion are marked; none is drawn as the pebble now", () => {
+    expect(RETURN_CELLS.filter((c) => c.avatar === "expected").map((c) => c.id)).toEqual(["A6", "A3", "A10*", "X3", "A5", "A12", "A13", "A2"]);
+    for (const id of ["A2", "A3"]) expect(RETURN_CELLS.find((c) => c.id === id)!.standIn.kind).toBe("slot");
+    expect(RETURN_CELLS.some((c) => c.standIn.kind === "engine" || (c.standIn.kind === "still" && !!c.standIn.avatarPx))).toBe(false);
+  });
+  test("RV-06: no label drawn into a cell's image names Stealth (the canary: B9's label as it was); the models crop leaves out the token window", () => {
+    const b9 = RETURN_CELLS.find((c) => c.id === "B9")!;
+    const old = { ...b9, standIn: { kind: "slot" as const, captureId: "kit-B9", label: "the Settings sidebar, cropped above Privacy & Stealth", w: 480, h: 360 } };
+    expect(() => refuseBadManifest(RETURN_CELLS.map((c) => (c.id === "B9" ? old : c)))).toThrow(/B9's image would draw "Stealth"/);
+    expect(manifestProblems([{ ...b9, standIn: { kind: "slot", captureId: "kit-X", label: "a 4,096-token window", w: 480, h: 360 } }])).toEqual([expect.stringMatching(/would draw "token"/)]);
+    // B2+C1-C3: the published Settings › Models crop, below the model's row (its details line, "4,096-token window",
+    // ends at 97 CSS px) and left of its Rest model button (from 306)
+    const ways = RETURN_CELLS.find((c) => c.id === "B2+C1-C3")!.standIn;
+    expect(ways.kind === "still" && ways.crop.y >= 97 && ways.crop.x + ways.crop.w <= 306).toBe(true);
   });
   test("the first cell is S24's own last frame; the slices are 6–12 frames at 1× (J6+F14, A5, X5)", () => {
     expect(RETURN_CELLS[0]!.id).toBe("G3");
@@ -166,12 +185,48 @@ describe("the field's schedule (returnField.ts)", () => {
     expect(slotOrder(24).slice(0, 4)).toEqual([0, 7, 14, 21]);
   });
   test("the waves' frames: M1 R120 + 7i, O1 R150 + 7.5i, M2 R240 + 7i, O2 R321 + 6i, M3 R366 + 12i", () => {
-    expect([byId.get("J1*")!.enter, byId.get("J1*")!.settle, byId.get("J1*")!.slot]).toEqual([120, 160, 0]);
-    expect([byId.get("F9")!.enter, byId.get("F9")!.settle]).toEqual([172.5, 212.5]);
-    expect(byId.get("A14*")!.swapIn).toBe(240);
-    expect(byId.get("I6a")!.swapIn).toBe(321);
-    expect(byId.get("X5")!.swapIn).toBe(366 + 12 * 7);
+    // in the manifest's order (pairing off, as the design's reference model has it)
+    const declared = new Map(buildReturnField("16:9", { pair: false }).cells.map((c) => [c.id, c]));
+    expect([declared.get("J1*")!.enter, declared.get("J1*")!.settle, declared.get("J1*")!.slot]).toEqual([120, 160, 0]);
+    expect([declared.get("F9")!.enter, declared.get("F9")!.settle]).toEqual([172.5, 212.5]);
+    expect(declared.get("A14*")!.swapIn).toBe(240);
+    expect(declared.get("I6a")!.swapIn).toBe(321);
+    expect(declared.get("X5")!.swapIn).toBe(366 + 12 * 7);
     expect(Math.max(...field.cells.map((c) => c.swapIn ?? -1))).toBe(450);
+    // paired by luminance (§2.4), the swaps keep their frames and slots; only which cell takes each changes
+    const frames = (f: ReturnType<typeof buildReturnField>) => f.cells.filter((c) => c.swapIn !== null).map((c) => `${c.wave} ${c.ring}:${c.slot}@${c.swapIn}`).sort();
+    expect(frames(field)).toEqual(frames(buildReturnField("16:9", { pair: false })));
+  });
+  test("RV-02: each swap wave is paired by luminance within the card rule; the steps fall (largest 0.046 → 0.025), the waves' families mostly stand", () => {
+    const step = (f: ReturnType<typeof buildReturnField>) =>
+      f.cells
+        .filter((c) => c.swapIn !== null)
+        .map((c) => {
+          const prev = f.cells.find((x) => x.ring === c.ring && x.slot === c.slot && x.swappedOutAt === c.swapIn)!;
+          return Math.abs(drawnLumOf(c).mean! - drawnLumOf(prev).mean!);
+        });
+    const declared = buildReturnField("16:9", { pair: false });
+    expect(Math.max(...step(field))).toBeLessThan(Math.max(...step(declared)));
+    expect(Math.max(...step(field))).toBeLessThanOrEqual(0.03);
+    expect(field.pairing.map((w) => [w.wave, w.paired])).toEqual([["mid2", true], ["mid3", true], ["out2", true]]);
+    expect(field.pairing.reduce((a, w) => a + w.moved, 0)).toBeLessThanOrEqual(8);
+    // cards only on even slots, so never neighbours
+    for (const c of field.cells) if (c.spec.card && c.swapIn !== null) expect(c.slot % 2).toBe(0);
+  });
+  test("pairWave: the Hungarian assignment keeps the card rule, keeps the manifest's order where steps are within the dead band, and pairs nothing unmeasured", () => {
+    expect(hungarian([[4, 1, 3], [2, 0, 5], [3, 2, 2]])).toEqual([1, 0, 2]);
+    const mk = (id: string, card: boolean, mean: number) => ({ ...RETURN_CELLS[20]!, id, card, meanLum: mean });
+    const out = [mk("o0", false, 0.9), mk("o1", false, 0.8), mk("o2", false, 0.9)];
+    const lum = (c: ReturnCellSpec) => c.meanLum;
+    // a dark cell goes where a dark cell was; the card stays on its even slot
+    const r = pairWave([mk("i0", false, 0.8), mk("i1", true, 0.9), mk("i2", false, 0.9)], out, [0, 1, 2], lum);
+    expect(r.paired).toBe(true);
+    expect(r.order[1]).toBe(0); // the dark incoming cell (i0) takes slot 1, where the dark o1 was
+    expect(r.order.indexOf(1) % 2).toBe(0); // the card (i1) on an even slot
+    // within the dead band: the manifest's order
+    expect(pairWave([mk("a", false, 0.905), mk("b", false, 0.91)], [mk("x", false, 0.91), mk("y", false, 0.905)], [0, 2], lum).order).toEqual([0, 1]);
+    // an unmeasured cell: the manifest's order, named
+    expect(pairWave([{ ...mk("u", false, 0.9), meanLum: undefined }], [mk("x", false, 0.9)], [0], lum)).toEqual({ order: [0], paired: false, unmeasured: ["u"] });
   });
   test("the merge: outer from R430 + 3.3j, middle R494 + 3.4j, inner R540 + 4.2j, the kept card on R566 over 92 frames", () => {
     const rets = field.cells.filter((c) => c.retStart !== null);
@@ -223,8 +278,9 @@ describe("the Return, planned and joined to S24, passes every check in every asp
       if (r.errors.length) throw new Error(r.errors.map((e) => `[${e.check}] ${e.message}`).join("\n"));
       expect(r.errors).toEqual([]);
       for (const c of RETURN_CHECKS) expect(r.infos.some((x) => x.check === c)).toBe(true);
-      // only IRIS's warning level (the model's bloom in 16:9), the unmeasured red shares and the unmeasured luminance warn
-      expect(r.warnings.every((w) => (w.check === "returnWindows" && /IRIS's warning level/.test(w.message)) || (w.check === "returnContent" && /not measured/.test(w.message)))).toBe(true);
+      // only IRIS's warning level (the model's bloom in 16:9), the 2.0.0 crops not measured yet (red, luminance) and the
+      // captures expected to picture the companion (RV-01) warn
+      expect(r.warnings.filter((w) => !((w.check === "returnWindows" && /IRIS's warning level/.test(w.message)) || (w.check === "returnContent" && /not measured|expected to picture the companion/.test(w.message))))).toEqual([]);
     });
   }
   test("every music event lands on the point the design gives it (no event waited)", () => {
@@ -355,6 +411,89 @@ describe("returnWindows: its canaries fail", () => {
     expect(Math.max(...fast.map((w) => w.worst))).toBe(4);
     expect(returnWindowsOf(modelTrace("16:9", {}, { pullFrames: 155, panFrames: 150 })).some((x) => x.level === "warn")).toBe(true);
   });
+
+  // The review's RV-03: the motion path counted a swing only from the window's first value while the coverage stayed
+  // within 0.25 of it, so a gradual swing of 0.25–0.5 was never counted; nothing drove the motion path, IRIS's extended
+  // rule or a synchronous group to fail; and a slide swap was counted on its incoming cell alone.
+  /** A synthetic trace on the model's frames: `rectsAt(r)` are the cells drawn on R-frame r (settled, unhidden). */
+  const synthTrace = (rectsAt: (r: number) => { c?: FieldCell; s: { x: number; y: number; w: number; h: number } }[], cells?: FieldCell[]): ReturnTrace => {
+    const t = modelTrace("16:9");
+    const c0 = t.field.cells[5]!;
+    const frames = t.frames.map((fr) => ({
+      r: fr.r,
+      pose: fr.pose,
+      cells: rectsAt(fr.r).map(({ c, s }) => ({ c: c ?? c0, p: { cell: c ?? c0, rect: s, c: { x: 0, y: 0 }, state: "settled" as const, depth: 1, swapBlur: 0, opacity: 1 }, share: 1, s })),
+    }));
+    return { ...t, field: { ...t.field, cells: cells ?? [{ ...c0, swapIn: null }] }, frames, at: (r) => frames[Math.round(r) + 60] };
+  };
+  /** A 150 × 112 cell (34 % of a 256 × 192 window) sliding into the window at (40, 40) over `slide` frames, holding, sliding out, every `cycle` frames over [from, to). */
+  const sliding = (cycle: number, slide: number, from: number, to: number) => (r: number) => {
+    const W = 150;
+    const X0 = 40;
+    let x = X0 - W - 10;
+    if (r >= from && r < to) {
+      const k = (r - from) % cycle;
+      const hold = Math.floor((cycle - 2 * slide) / 2);
+      if (k < slide) x = X0 - W + (W * (k + 1)) / slide;
+      else if (k < slide + hold) x = X0;
+      else if (k < 2 * slide + hold) x = X0 - (W * (k - slide - hold + 1)) / slide;
+    }
+    return [{ s: { x, y: 40, w: W, h: 112 } }];
+  };
+  test("coverageSwings counts a gradual swing of 0.25–0.5 from a window's first value (the old counter missed it)", () => {
+    const rise = [0, 0.057, 0.114, 0.171, 0.228, 0.285, 0.342, 0.342];
+    expect(coverageSwings(rise)).toEqual([5]);
+    // down from a start, then up past it: one swing each way
+    expect(coverageSwings([0.3, 0.2, 0.1, 0.04, 0.1, 0.2, 0.31, 0.31])).toEqual([3, 6]);
+    // under 0.25 either way: none
+    expect(coverageSwings([0.1, 0.0, 0.2, 0.05, 0.24])).toEqual([]);
+  });
+  test("a cell sliding in and out of a window over 6 frames (and over 3), 4 times a second: 8 transitions, WCAG's fail", () => {
+    for (const slide of [6, 3]) {
+      const t = synthTrace(sliding(15, slide, 300, 360));
+      const w = windowLoads(t).find((x) => x.window === "256x192")!;
+      expect(w.motionWorst).toBe(8);
+      expect(errs(returnWindowsOf(t)).some((e) => /8 transitions in 60 frames in a 256x192 window/.test(e.message))).toBe(true);
+    }
+  });
+  test("5 transitions a second for 4.5 s: IRIS's extended failure; for 3.5 s: its warning level only", () => {
+    const long = synthTrace(sliding(24, 6, 0, 270));
+    // (5 or 6 in any 60 frames, by where a window sits: never WCAG's fail; only the extended rule fails it)
+    const worst = windowLoads(long).find((x) => x.window === "256x192")!.worst;
+    expect(worst >= 5 && worst <= 6).toBe(true);
+    expect(errs(returnWindowsOf(long)).map((e) => /IRIS's extended failure in a 256x192 window/.test(e.message))).toEqual([true]);
+    const short = synthTrace(sliding(24, 6, 0, 210));
+    expect(errs(returnWindowsOf(short))).toEqual([]);
+    expect(returnWindowsOf(short).some((x) => x.level === "warn" && /IRIS's warning level/.test(x.message))).toBe(true);
+    expect(irisExtended([], 0, 600)).toBe(false);
+  });
+  test("a synchronous pair: two swaps a frame apart, each under 25 % of a window, together over it, four times in a second", () => {
+    const base = modelTrace("16:9").field.cells.filter((c) => c.swapIn !== null);
+    // eight swapping cells on eight slots of their own (no predecessor), crossing in pairs at R300/301, R312/313 …
+    const cells: FieldCell[] = Array.from({ length: 8 }, (_, k) => ({ ...base[k]!, ring: 1, slot: 100 + k, swapIn: 292 + 12 * Math.floor(k / 2) + (k % 2), swappedOutAt: null }));
+    const rect = (k: number) => ({ x: 40 + (k % 2) * 100, y: 60, w: 90, h: 70 }); // 12.8 % of a 256 × 192 window each
+    const t = synthTrace((r) => cells.flatMap((c, k) => (r === c.swapIn! + 8 ? [{ c, s: rect(k) }] : [])), cells);
+    const w = windowLoads(t).find((x) => x.window === "256x192")!;
+    expect(w.motionWorst).toBe(0);
+    expect(w.swapWorst).toBe(8);
+    expect(errs(returnWindowsOf(t)).some((e) => /8 transitions in 60 frames in a 256x192 window .*swaps 8/.test(e.message))).toBe(true);
+  });
+  test("a slide swap counts its outgoing and incoming cells together: 22 % each, 29 % as one, four in a second fail", () => {
+    const base = modelTrace("16:9").field.cells.filter((c) => c.swapIn !== null);
+    const outs: FieldCell[] = Array.from({ length: 4 }, (_, k) => ({ ...base[k]!, id: `out${k}`, ring: 2, slot: 200 + k, swapIn: null, swappedOutAt: 300 + 12 * k }));
+    const ins: FieldCell[] = Array.from({ length: 4 }, (_, k) => ({ ...base[4 + k]!, id: `in${k}`, ring: 2, slot: 200 + k, swapIn: 300 + 12 * k, swappedOutAt: null }));
+    const at = (dx: number) => ({ x: 60 + dx, y: 60, w: 120, h: 90 }); // 10,800 px²: 22 % of a 256 × 192 window
+    const t = synthTrace(
+      (r) => [
+        ...outs.flatMap((c) => (r === c.swappedOutAt! + 7 ? [{ c, s: at(18) }] : [])),
+        ...ins.flatMap((c) => (r === c.swapIn! + 8 ? [{ c, s: at(-18) }] : [])),
+      ],
+      [...outs, ...ins],
+    );
+    const w = windowLoads(t).find((x) => x.window === "256x192")!;
+    expect(w.swapWorst).toBe(8);
+    expect(errs(returnWindowsOf(t)).length).toBeGreaterThan(0);
+  });
 });
 
 describe("returnContent: its canaries fail", () => {
@@ -372,7 +511,7 @@ describe("returnContent: its canaries fail", () => {
   });
   test("a red cell swapping in the rush", () => {
     const f = errs(returnContentOf(modelTrace("16:9", { waves: swapCell("out2", "I6a", { red: true }) })));
-    expect(f.some((e) => /the red cell I6a swaps in on R321/.test(e.message))).toBe(true);
+    expect(f.some((e) => /the red cell I6a swaps in on R3\d\d/.test(e.message))).toBe(true);
   });
   test("too much saturated red: J1* measured at 90 % red passes 0.5 % of the 16:9 frame and 1 % of the 1:1", () => {
     for (const a of ["16:9", "1:1"] as const) {
@@ -388,12 +527,65 @@ describe("returnContent: its canaries fail", () => {
     const f = errs(returnContentOf(modelTrace("16:9", { waves: swapCell("inner", "A6", { card: true }) })));
     expect(f.some((e) => /two card-type cells sit side by side: G3 and A6|A6 and G3/.test(e.message))).toBe(true);
   });
-  test("the light-theme rule warns while it is declared, not measured; measured light crops clear the warning", () => {
-    const warned = (fo: ReturnFieldOptions) => returnContentOf(modelTrace("16:9", fo)).filter((x) => x.level === "warn" && /light-theme rule is declared, not measured/.test(x.message));
-    expect(warned({}).map((x) => /(\d+) of 85 crops/.exec(x.message)?.[1])).toEqual(["84"]);
+  test("the light-theme rule holds on what is drawn: unmeasured images warn; measured stand-ins hold it; the 2.0.0 crops warn until measured", () => {
+    const warned = (fo: ReturnFieldOptions, re: RegExp) => returnContentOf(modelTrace("16:9", fo)).filter((x) => x.level === "warn" && re.test(x.message));
+    const declared = /light-theme rule is declared, not measured/;
+    const crops = /2\.0\.0 crops are not measured yet/;
+    // no image measured: all 84 drawn from an image (the first cell is S24's own frame)
+    expect(warned({ lum: {} }, declared).map((x) => /(\d+) of 84 drawn cells/.exec(x.message)?.[1])).toEqual(["84"]);
+    // every image measured light: the drawn rule holds; the 2.0.0 crops still warn
+    const lightTable = Object.fromEntries(RETURN_CELLS.map((c) => returnThumbSigOf(c)).filter((x): x is string => !!x).map((sig) => [sig, { id: sig, mean: 0.86, red: 0 }]));
+    expect(warned({ lum: lightTable }, declared)).toEqual([]);
+    expect(warned({ lum: lightTable }, crops).length).toBe(1);
+    expect(errs(returnContentOf(modelTrace("16:9", { lum: lightTable })))).toEqual([]);
+    // every 2.0.0 crop measured light: neither warns
     const lit = Object.fromEntries(Object.entries(RETURN_WAVES).map(([k, v]) => [k, v.map((c) => ({ ...c, meanLum: 0.86 }))])) as unknown as typeof RETURN_WAVES;
-    expect(warned({ waves: lit })).toEqual([]);
+    expect(warned({ waves: lit }, declared)).toEqual([]);
+    expect(warned({ waves: lit }, crops)).toEqual([]);
     expect(errs(returnContentOf(modelTrace("16:9", { waves: lit })))).toEqual([]);
+  });
+  // RV-01: one stone from the climax to the end card; both stone checks were blind to a pebble inside a cell's picture
+  test("RV-01: A2's stand-in as it was (the pebble itself, 87 CSS px of its 112-px crop) pictures a second stone", () => {
+    for (const a of ASPECTS) {
+      const f = errs(returnContentOf(modelTrace(a, { waves: swapCell("out2", "A2", { standIn: SI.gaze }) })));
+      expect(f.some((e) => /A2 pictures the pebble (\d+) px wide .*its image shows the companion's avatar/.test(e.message))).toBe(true);
+    }
+  });
+  test("RV-01: A3 as it was (Pebble's engine drawn in the cell, on its own clock) pictures a second stone", () => {
+    const f = errs(returnContentOf(modelTrace("16:9", { waves: swapCell("mid1", "A3", { standIn: { kind: "engine", pose: "testing", w: 480, h: 360 } }) })));
+    expect(f.some((e) => /A3 pictures the pebble (\d+) px wide .*Pebble's engine drawn in the cell/.test(e.message))).toBe(true);
+  });
+  test("RV-01: a crop whose avatar stays a speck (6 px or less at 1080 on every frame) passes; the expected ones warn by name", () => {
+    // an outer cell is at most 124 px at 1080 (RETURN_THUMB_LONG), so 4 CSS px of a 112-px crop stays under 6 px
+    const speck = { ...SI.gaze, avatarPx: 4 };
+    expect(errs(returnContentOf(modelTrace("16:9", { waves: swapCell("out2", "A2", { standIn: speck }) }))).filter((e) => /pictures the pebble/.test(e.message))).toEqual([]);
+    const w = returnContentOf(modelTrace("16:9")).filter((x) => x.level === "warn" && /expected to picture the companion's avatar/.test(x.message));
+    expect(w.length).toBe(1);
+    expect(w[0]!.message).toMatch(/8 cells' 2\.0\.0 captures .*\(A6, A3, A10\*, X3, A5, A12, A13, A2\)/);
+  });
+  test("RV-02: a swap's luminance step over 0.05 fails: A2's pebble as it was, into B7's slot (the reels' tile pop)", () => {
+    const waves = swapCell("out2", "A2", { standIn: SI.gaze });
+    const a2 = waves.out2.find((c) => c.id === "A2")!;
+    const lum = { ...RETURN_LUM, [returnThumbSigOf(a2)!]: { id: "A2", mean: 0.694, red: 0 } };
+    for (const pair of [false, true]) {
+      const f = errs(returnContentOf(modelTrace("16:9", { waves, lum, pair })));
+      // (in the manifest's order into B7's slot, 0.212; paired, into the darkest outgoing still's, still over 0.16)
+      expect(f.some((e) => /A2 swaps in for \S+ on R\d+: a step of 0\.[12]\d\d in mean relative luminance/.test(e.message))).toBe(true);
+    }
+    // the design as measured passes, paired: its largest step is reported
+    const info = returnContentOf(modelTrace("16:9")).find((x) => x.level === "info" && /swaps; the largest step/.test(x.message))!;
+    expect(info.message).toMatch(/the largest step in mean relative luminance 0\.0[0-4]\d/);
+  });
+  test("RV-02: the slots' old darker look (0.84 against the stills' 0.86–0.93) fails it, even paired", () => {
+    const old = Object.fromEntries(Object.entries(RETURN_LUM).map(([k, v]) => [k, RETURN_CELLS.find((c) => c.id === v.id)?.standIn.kind === "slot" ? { ...v, mean: 0.8445 } : v]));
+    const f = errs(returnContentOf(modelTrace("16:9", { lum: old })));
+    expect(f.filter((e) => /a step of 0\.\d+ in mean relative luminance/.test(e.message)).length).toBeGreaterThan(0);
+  });
+  test("RV-01/RV-05: A2's stand-in as it was, measured as drawn (0.694 on the page ground), fails the light rule", () => {
+    const waves = swapCell("out2", "A2", { standIn: SI.gaze });
+    const a2 = waves.out2.find((c) => c.id === "A2")!;
+    const lum = { [returnThumbSigOf(a2)!]: { id: "A2", mean: 0.694, red: 0 } };
+    expect(errs(returnContentOf(modelTrace("16:9", { waves, lum }))).some((e) => /A2's mean relative luminance is 0\.69 \(its stand-in, as drawn\)/.test(e.message))).toBe(true);
   });
 });
 
@@ -474,6 +666,12 @@ describe("joinPose: its canaries fail", () => {
     const at = c.exit!.pose;
     const withStone: ScenePlan = { ...c, shots: [c.shots[0]!, { ...kiln, stone: { ...kiln.stone!, at: { x: at.x, y: at.y } } }] };
     expect(errs(joinPose(planFor("16:9", { climax: withStone }))).some((e) => /a second stone/.test(e.message))).toBe(true);
+  });
+  test("RV-10: a renamed S24 shot (the first cell would draw a shot S24 no longer has)", () => {
+    const c = climaxFor("16:9");
+    const kiln = c.shots[c.shots.length - 1]!;
+    const renamed: ScenePlan = { ...c, shots: [...c.shots.slice(0, -1), { ...kiln, id: "kiln-2" }] };
+    expect(errs(joinPose(planFor("16:9", { climax: renamed }))).some((e) => /it draws the shot "kiln", and S24's last shot is "kiln-2"/.test(e.message))).toBe(true);
   });
   test("a Return planned with no S24 to continue", () => {
     expect(errs(joinPose(planFor("16:9", { climax: undefined }))).some((e) => /continues no S24/.test(e.message))).toBe(true);
@@ -597,10 +795,21 @@ describe("the view's model: cells on screen, from thumbnails, the first cell S24
     expect(swaps).toBeGreaterThan(0);
     expect(moving).toBeGreaterThan(0);
   });
-  test("every cell has its image but the two Pebble's code draws (S24's frame and the engine), each at its ring's size", () => {
+  test("RV-10: every image carries its content's signature; a missing or out-of-date image is named before a render", () => {
+    const all = returnThumbJobs().map((j) => j.out);
+    expect(missingReturnThumbs(all)).toEqual([]);
+    expect(missingReturnThumbs(all.slice(1))).toEqual([all[0]]);
+    // the canary: B9's slot label as it was (RV-06): the image made for it is not the one the manifest names now
+    const b9 = RETURN_CELLS.find((c) => c.id === "B9")!;
+    const before = returnThumbPath({ ...b9, standIn: { kind: "slot", captureId: "kit-B9", label: "the Settings sidebar, cropped above Privacy & Stealth", w: 480, h: 360 } })!;
+    expect(before).not.toBe(returnThumbPath(b9));
+    expect(missingReturnThumbs(all.map((p) => (p === returnThumbPath(b9) ? before : p)))).toEqual([returnThumbPath(b9)]);
+    expect(returnThumbPath(b9)).toMatch(/^ui\/f2-cells\/return\/B9-[0-9a-f]{8}\.jpg$/);
+  });
+  test("every cell has its image but the one Pebble's code draws (S24's frame), each at its ring's size", () => {
     const jobs = returnThumbJobs();
-    expect(jobs.length).toBe(RETURN_CELLS.length - 2);
-    expect(RETURN_CELLS.filter((c) => drawnLive(c)).map((c) => c.id)).toEqual(["G3", "A3"]);
+    expect(jobs.length).toBe(RETURN_CELLS.length - 1);
+    expect(RETURN_CELLS.filter((c) => drawnLive(c)).map((c) => c.id)).toEqual(["G3"]);
     for (const c of RETURN_CELLS) expect(returnThumbPath(c) === null).toBe(drawnLive(c));
     expect(new Set(jobs.map((j) => j.out)).size).toBe(jobs.length);
     expect(thumbSlug("J1*")).toBe("J1-kit");

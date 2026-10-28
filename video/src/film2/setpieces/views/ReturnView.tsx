@@ -14,7 +14,8 @@
 //                  The cells take the UI's share of the light (the grade's `ui` gains); the first cell does not: it is
 //                  S24's own last frame, drawn live by S24's own view with S24's light, so the pull-back starts on
 //                  exactly what S24 showed (MONTAGE_DESIGN §2.12, joinPose). Its corners round in over the lead-in
-//                  only (at R−60 it is the frame itself). A3 is Pebble's own engine in its testing pose, drawn live
+//                  only (at R−60 it is the frame itself). (A3 was Pebble's own engine drawn live: a second pebble, now a
+//                  slot, RV-01.) A missing image or S24 shot stops a render, and is a loud slate in Studio (RV-10)
 //   the stone      Pebble's own engine at the rings' centre, ABOVE every cell: its opaque, breathing silhouette is the
 //                  mask the cells pass behind (the default merge: nothing fades). Its clock runs (local + clockOffset)
 //                  ÷ fps, so the engine's own idle blink falls on R646 (setpieces/blink.ts); through the finale's iris
@@ -26,7 +27,7 @@
 // Every cell is a PLACEHOLDER until the 2.0.0 crops replace the stand-ins through the manifest (setpieces/returnCells.ts):
 // a published capture of the same feature, or a labelled slot. Nothing here draws Pebble's interface.
 import { useMemo } from "react";
-import { AbsoluteFill, Freeze, Img, getStaticFiles, staticFile, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Freeze, Img, getRemotionEnvironment, getStaticFiles, staticFile, useCurrentFrame } from "remotion";
 import { COLOR } from "../../tokens";
 import { smoothstep } from "../../motion/ease";
 import { planePose, type CamSample } from "../../motion/camera";
@@ -37,7 +38,8 @@ import { PebbleOnFilm } from "../../../pebble/PebbleOnFilm";
 import { BODY, VIEWBOX_SIZE, pebbleAt, type PebbleCue } from "../../../../../shared/pebble";
 import { PEBBLE_LIGHT } from "../../../pebble/PebbleSvg";
 import { cellScreenAt, cellsOnScreen, hairlineAt, rOfLocal, tonedMatteK, type CellScreen, type ReturnField } from "../returnField";
-import { returnThumbPath } from "../returnThumbs";
+import { ENGINE_CELL_SIZE } from "../returnCells";
+import { RETURN_THUMBS_HOWTO, returnThumbPath } from "../returnThumbs";
 import type { ReturnExtra } from "../returnPlan";
 import type { ScenePlan, ShotSpec, StoneSpec } from "../scene";
 
@@ -85,7 +87,21 @@ const BlurDefs: React.FC<{ cells: readonly CellScreen[]; tag: string }> = ({ cel
   );
 };
 
-/** What a cell shows: its image (or, for the two cells Pebble's code draws, that code). */
+/**
+ * A cell whose picture is missing (its image not made, or S24's shot renamed): never a quiet flat panel (the review's
+ * RV-10: a fresh tree, whose images are gitignored, rendered blank cells while every check stayed green). A render
+ * stops with the reason; Studio and the Player draw a loud slate naming what is missing.
+ */
+const Missing: React.FC<{ what: string }> = ({ what }) => {
+  if (getRemotionEnvironment().isRendering) throw new Error(`the Return draws ${what}, which is missing: ${RETURN_THUMBS_HOWTO}`);
+  return (
+    <div style={{ position: "absolute", inset: 0, backgroundColor: COLOR.ink, color: COLOR.page, font: "600 11px/1.2 ui-monospace, Menlo, monospace", padding: 6, overflow: "hidden" }}>
+      MISSING {what}
+    </div>
+  );
+};
+
+/** What a cell shows: its image (or, for the cells Pebble's code draws, that code). */
 const CellContent: React.FC<{ c: CellScreen; plan: ScenePlan; renderS24: S24Renderer; extra: ReturnExtra; frame: number }> = ({ c, plan, renderS24, extra, frame }) => {
   // the shot's own first frame (useCurrentFrame() is the shot's local frame inside its sequence)
   const shotFrom = frame - useCurrentFrame();
@@ -95,7 +111,7 @@ const CellContent: React.FC<{ c: CellScreen; plan: ScenePlan; renderS24: S24Rend
     // S24's own last frame, drawn by S24's own view at the frame's size and scaled into the cell
     const src = extra.join?.source;
     const shot = src?.shots.find((s) => s.id === si.shot);
-    if (!src || !shot) return <div style={{ position: "absolute", inset: 0, backgroundColor: COLOR.fill }} />;
+    if (!src || !shot) return <Missing what={src ? `S24's shot "${si.shot}" (the climax's last shot is "${src.shots[src.shots.length - 1]?.id}")` : "S24's plan (plan the Return with the climax)"} />;
     const k = c.rect.w / plan.frame.w;
     return (
       <div style={{ position: "absolute", left: 0, top: 0, width: plan.frame.w, height: plan.frame.h, transformOrigin: "0 0", transform: `scale(${k.toFixed(6)})` }}>
@@ -105,7 +121,8 @@ const CellContent: React.FC<{ c: CellScreen; plan: ScenePlan; renderS24: S24Rend
   }
   if (si.kind === "engine") {
     // Pebble's own engine in one of its poses, on the page's ground (V: it renders now), on the piece's clock at 1×
-    const size = c.rect.h * 0.78;
+    // (no cell is drawn this way now: it pictures a second pebble, which returnContent refuses, RV-01)
+    const size = c.rect.h * ENGINE_CELL_SIZE;
     const cues: PebbleCue[] = [{ at: 0, pose: si.pose, note: `${spec.id}: Pebble's own ${si.pose} pose, drawn by its engine` }];
     return (
       <div style={{ position: "absolute", inset: 0, backgroundColor: COLOR.page }}>
@@ -114,7 +131,7 @@ const CellContent: React.FC<{ c: CellScreen; plan: ScenePlan; renderS24: S24Rend
     );
   }
   const path = returnThumbPath(spec);
-  if (!path || !hasStatic(path)) return <div style={{ position: "absolute", inset: 0, backgroundColor: COLOR.fill }} />;
+  if (!path || !hasStatic(path)) return <Missing what={`${spec.id}'s image ${path ?? "(none)"}`} />;
   return <Img src={staticFile(path)} style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "100%", maxWidth: "none", display: "block" }} />;
 };
 

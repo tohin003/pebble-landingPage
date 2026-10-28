@@ -4,14 +4,19 @@
 //   returnSchedule  a slot changes at most once in 22 frames (designed 73); every image settled 60 frames or more before
 //                   it moves; no swap completes after R466; every cell at least half in frame and unhidden for 60 frames
 //                   or more; no two settled cells overlap; the frame's corners at most 30 px a frame (TREATMENT §5.3)
-//   returnWindows   the flash model per analysis window (R3 §1.7), frame by frame: each swap 2 transitions where its cell
-//                   covers 25 % of the window or more, swaps within 2 frames as one group, and the moving coverage's
-//                   swings of 25 % (one transition each); an error above 6 in 60 frames, a warning at 4; IRIS's
-//                   extended rule (4 or more in 240 of 300 one-second windows)
-//   returnContent   no Stealth feature; light-theme cells only (mean relative luminance 0.70 or more where measured);
-//                   saturated red under the aspect's limit of the frame; red cells settled before R240, never swapped,
+//   returnWindows   the flash model per analysis window (R3 §1.7), frame by frame: each swap 2 transitions where its
+//                   cells cover 25 % of the window or more (a slide's outgoing and incoming cells as one union), swaps
+//                   within 2 frames as one group, and the moving coverage's monotone swings of 25 % (one transition
+//                   each, measured from the running minimum and maximum until the first: coverageSwings); an error
+//                   above 6 in 60 frames, a warning at 4; IRIS's extended rule (4 or more in 240 of 300 one-second
+//                   windows: irisExtended)
+//   returnContent   no Stealth feature; light-theme cells only (mean relative luminance 0.70 or more); saturated red
+//                   under the aspect's limit of the frame; both held on what is drawn (each image measured, returnLum.ts,
+//                   until the 2.0.0 crops carry their own values: RV-05); red cells settled before R240, never swapped,
 //                   entries 30 frames or more apart; one take, one moment (CR-11); no two cards in neighbouring slots;
-//                   every cell carries its manifest
+//                   every cell carries its manifest; each swap's step in mean luminance SWAP_LUM_STEP or less (the waves
+//                   paired by luminance, §2.4: RV-02); no cell pictures the pebble over PICTURED_STONE_PX (one stone,
+//                   CR-01: RV-01), and the captures expected to picture it warn by name
 //   returnMerge     the median cell width at first contact at least half the body's; contacts spread over 120 frames or
 //                   more; the kept card last; no cell's angular velocity changes sign from 30 frames before its return
 //                   until it is hidden; no opacity below 1 before a cell is hidden (CR-08's fade)
@@ -31,8 +36,10 @@ import type { Rect } from "../motion/geometry";
 import type { ScenePlan } from "./scene";
 import type { ReturnExtra } from "./returnPlan";
 import { blinkStartsFor, blinkTouches } from "./blink";
-import { manifestProblems, type ReturnCellSpec } from "./returnCells";
-import { RETURN_SLOTS, bodyR, cellPoseR, localOfR, rOfLocal, rectTouchesBody, visibleFraction, type CellPoseR, type FieldCell, type ReturnField } from "./returnField";
+import { ENGINE_CELL_SIZE, manifestProblems, type ReturnCellSpec } from "./returnCells";
+import { RETURN_LUM, type DrawnLum } from "./returnLum";
+import { drawnLumOf } from "./returnThumbs";
+import { RETURN_SLOTS, bodyR, bodyStats, cellPoseR, localOfR, rOfLocal, rectTouchesBody, visibleFraction, type CellPoseR, type FieldCell, type ReturnField } from "./returnField";
 
 /** The Return's data on a plan (null when the plan has none). */
 export const returnOf = (p: ScenePlan): ReturnExtra | null => ((p.extra?.return as ReturnExtra | undefined) ?? null);
@@ -258,6 +265,89 @@ const max60 = (ts: readonly number[]): number => {
   return best;
 };
 
+/** A monotone swing of this share of a window's area counts as one transition (MONTAGE_DESIGN §3.2). */
+export const SWING = 0.25;
+
+/**
+ * The moving coverage's transitions in one window (MONTAGE_DESIGN §3.2): each monotone swing of SWING or more of the
+ * window's area counts one, on the frame it reaches SWING. Until the first transition the swing is measured from the
+ * running minimum AND maximum (the review's RV-03: measured from the window's first value only, while the coverage
+ * stayed within 0.25 of it, a gradual rise of 0.25–0.5 from below that value was never counted); after it, from the
+ * extreme of the current swing. `series[from + i]` is frame `r0 + i`, for `n` frames.
+ */
+export function coverageSwings(series: ArrayLike<number>, r0 = 0, from = 0, n = series.length - from): number[] {
+  const tr: number[] = [];
+  let lo = series[from]!;
+  let hi = lo;
+  let ext = lo;
+  let state = 0;
+  for (let i = 0; i < n; i++) {
+    const v = series[from + i]!;
+    if (state === 0) {
+      lo = Math.min(lo, v);
+      hi = Math.max(hi, v);
+      // (v is the new extreme on the side it moved to, so at most one of these holds)
+      if (v - lo >= SWING) {
+        tr.push(r0 + i);
+        state = 1;
+        ext = v;
+      } else if (hi - v >= SWING) {
+        tr.push(r0 + i);
+        state = -1;
+        ext = v;
+      }
+    } else if (state > 0) {
+      if (v <= ext - SWING) {
+        tr.push(r0 + i);
+        state = -1;
+        ext = v;
+      } else ext = Math.max(ext, v);
+    } else if (v >= ext + SWING) {
+      tr.push(r0 + i);
+      state = 1;
+      ext = v;
+    } else ext = Math.min(ext, v);
+  }
+  return tr;
+}
+
+/** The share of a window covered by the union of rects (a slide swap's outgoing and incoming cells at its crossing). */
+const unionShare = (rs: readonly Rect[], X: number, Y: number, ww: number, wh: number): number => {
+  const clip = rs.map((s) => ({ x0: Math.max(s.x, X), y0: Math.max(s.y, Y), x1: Math.min(s.x + s.w, X + ww), y1: Math.min(s.y + s.h, Y + wh) })).filter((q) => q.x1 > q.x0 && q.y1 > q.y0);
+  if (!clip.length) return 0;
+  const area = (q: { x0: number; y0: number; x1: number; y1: number }) => (q.x1 - q.x0) * (q.y1 - q.y0);
+  let a = clip.reduce((s, q) => s + area(q), 0);
+  // two rects at most (the outgoing and the incoming): take their overlap off once
+  if (clip.length === 2) {
+    const [p, q] = clip as [(typeof clip)[number], (typeof clip)[number]];
+    const o = { x0: Math.max(p.x0, q.x0), y0: Math.max(p.y0, q.y0), x1: Math.min(p.x1, q.x1), y1: Math.min(p.y1, q.y1) };
+    if (o.x1 > o.x0 && o.y1 > o.y0) a -= area(o);
+  }
+  return a / (ww * wh);
+};
+
+/**
+ * IRIS's extended rule on a window's transitions: 4 or more transitions in each of 240 of 300 consecutive one-second
+ * windows (4 s of any 5) over the frames r0 … r0 + nF − 1.
+ */
+export function irisExtended(all: readonly number[], r0: number, nF: number): boolean {
+  const counts: number[] = [];
+  let j0 = 0;
+  let j1 = 0;
+  for (let r = r0; r + 60 <= r0 + nF; r++) {
+    while (j0 < all.length && all[j0]! < r) j0++;
+    while (j1 < all.length && all[j1]! < r + 60) j1++;
+    counts.push(j1 - j0);
+  }
+  let n4 = 0;
+  for (let k = 0; k < counts.length; k++) {
+    if (counts[k]! >= 4) n4++;
+    if (k >= 300 && counts[k - 300]! >= 4) n4--;
+    if (k >= 299 && n4 >= 240) return true;
+  }
+  return false;
+}
+
 /** The flash model per window size (MONTAGE_DESIGN §3.2; schedule_r2.py's run_aspect, frame by frame). */
 export function windowLoads(t: ReturnTrace): WindowLoad[] {
   const out: WindowLoad[] = [];
@@ -296,43 +386,29 @@ export function windowLoads(t: ReturnTrace): WindowLoad[] {
         }
       }
     });
-    // each swap at its crossing: the incoming cell's rect on that frame
-    const swapEv: { t: number; s: Rect }[] = [];
+    // each swap at its crossing: what changes there is the outgoing cell (on its last frame, slid on) and the incoming
+    // one (on its first): for a slide swap their union, 36 px wider than either (the review's RV-03: the incoming alone
+    // undercounted a slide's area); for a blur swap in place, one rect
+    const swapEv: { t: number; s: Rect[] }[] = [];
     for (const c of field.cells) {
       if (c.swapIn === null) continue;
       const tc = c.swapIn + field.timing.swapFrames / 2;
       const hit = t.at(Math.floor(tc))?.cells.find((x) => x.c === c);
-      if (hit) swapEv.push({ t: tc, s: hit.s });
+      const prev = field.cells.find((x) => x.ring === c.ring && x.slot === c.slot && x.swappedOutAt === c.swapIn);
+      const out = prev ? t.at(Math.ceil(tc) - 1)?.cells.find((x) => x.c === prev) : undefined;
+      if (hit) swapEv.push({ t: tc, s: [hit.s, ...(out ? [out.s] : [])] });
     }
     const w: WindowLoad = { window: `${ww}x${wh}`, worst: 0, swapWorst: 0, motionWorst: 0, at: null, beforeR240: 0, fromR240: 0, atFromR240: null, extended: false };
     for (let wi = 0; wi < nW; wi++) {
       const X = xs[wi % nx]!;
       const Y = ys[Math.floor(wi / nx)]!;
       // the moving coverage's swings of 25 % (a conservative proxy: every cell differs from the ground by 0.1 or more)
-      const tr: number[] = [];
-      const base = wi * nF;
-      let ext = cov[base]!;
-      let state = 0;
-      for (let fi = 0; fi < nF; fi++) {
-        const v = cov[base + fi]!;
-        if (state >= 0 && v <= ext - 0.25) {
-          tr.push(R0 + fi);
-          state = -1;
-          ext = v;
-        } else if (state <= 0 && v >= ext + 0.25) {
-          tr.push(R0 + fi);
-          state = 1;
-          ext = v;
-        } else if (state > 0) ext = Math.max(ext, v);
-        else if (state < 0) ext = Math.min(ext, v);
-        else ext = Math.abs(v - cov[base]!) < 0.25 ? v : ext;
-      }
+      const tr = coverageSwings(cov, R0, wi * nF, nF);
       // swaps: 2 transitions where the cell covers 25 % of the window; groups within 2 frames adding up to 25 %
       const ev: { t: number; o: number }[] = [];
       for (const s of swapEv) {
-        const ox = Math.min(s.s.x + s.s.w, X + ww) - Math.max(s.s.x, X);
-        const oy = Math.min(s.s.y + s.s.h, Y + wh) - Math.max(s.s.y, Y);
-        if (ox > 0 && oy > 0) ev.push({ t: s.t, o: (ox * oy) / A });
+        const o = unionShare(s.s, X, Y, ww, wh);
+        if (o > 0) ev.push({ t: s.t, o });
       }
       ev.sort((a, b) => a.t - b.t);
       const st: number[] = [];
@@ -357,22 +433,7 @@ export function windowLoads(t: ReturnTrace): WindowLoad[] {
       w.swapWorst = Math.max(w.swapWorst, max60([...st].sort((a, b) => a - b)));
       w.motionWorst = Math.max(w.motionWorst, max60(tr));
       // IRIS's extended rule: 4 or more transitions in each of 240 of 300 consecutive one-second windows
-      if (mAll >= 4 && !w.extended) {
-        const counts: number[] = [];
-        let j0 = 0;
-        let j1 = 0;
-        for (let r = R0; r + 60 <= R0 + nF; r++) {
-          while (j0 < all.length && all[j0]! < r) j0++;
-          while (j1 < all.length && all[j1]! < r + 60) j1++;
-          counts.push(j1 - j0);
-        }
-        let n4 = 0;
-        for (let k = 0; k < counts.length; k++) {
-          if (counts[k]! >= 4) n4++;
-          if (k >= 300 && counts[k - 300]! >= 4) n4--;
-          if (k >= 299 && n4 >= 240) w.extended = true;
-        }
-      }
+      if (mAll >= 4 && !w.extended && irisExtended(all, R0, nF)) w.extended = true;
     }
     out.push(w);
   }
@@ -401,33 +462,89 @@ export function returnWindows(p: ScenePlan): Finding[] {
 /** When a cell is drawn: from its entry or its swap's crossing to its leave or the end of its return. */
 const presence = (c: FieldCell, swapFrames: number): [number, number] => [c.enter ?? (c.swapIn !== null ? c.swapIn + swapFrames / 2 : -Infinity), c.leave ?? (c.retStart !== null ? c.retStart + c.retT! : Infinity)];
 
+/**
+ * A swap's step in mean relative luminance may be at most this (outgoing to incoming, as drawn). The reels of 28 Oct
+ * calibrate it: A2's pebble into B7's slot (a step of about 0.15) snapped 3.4-5.8 levels in its tile in every aspect,
+ * and E1+E2's still into I1*'s slot (0.057, the darker slots of then) 3.29 in 1:1's; the outer ring's steps of up to
+ * 0.08 did not snap, the middle ring's larger cells did, so the limit sits under both snaps (the review's RV-02).
+ */
+export const SWAP_LUM_STEP = 0.05;
+
+/**
+ * A pictured pebble drawn wider than this (px at 1080) reads as a second stone: under it the body is a speck whose
+ * eyes (about a tenth of its width each) are under a pixel (the review's RV-01).
+ */
+export const PICTURED_STONE_PX = 6;
+
+/** The companion's pebble a cell pictures, its body's width in px at 1080 for the cell drawn screenW × screenH (0: none). */
+export const picturedStonePxOf = (c: Pick<FieldCell, "spec">, screenW: number, screenH: number): number => {
+  const si = c.spec.standIn;
+  // Pebble's engine in the cell (views/ReturnView.tsx draws it at ENGINE_CELL_SIZE of the cell's height)
+  if (si.kind === "engine") return bodyStats(ENGINE_CELL_SIZE * screenH).width;
+  if (si.kind !== "still" || !si.avatarPx) return 0;
+  const k = si.fit === "cover" ? Math.max(screenW / si.crop.w, screenH / si.crop.h) : Math.min(screenW / si.crop.w, screenH / si.crop.h);
+  return si.avatarPx * k;
+};
+
+
+
+/** The drawn images' mean relative luminance, least to greatest (for the report). */
+const lumRange = (cells: readonly FieldCell[], table?: Readonly<Record<string, DrawnLum>>): string => {
+  const v = cells.map((c) => drawnLumOf(c, table).mean).filter((x): x is number => x !== undefined);
+  return v.length ? `${Math.min(...v).toFixed(3)}–${Math.max(...v).toFixed(3)} (${v.length} measured)` : "not measured";
+};
+
 export function returnContentOf(t: ReturnTrace, name = "the Return"): Finding[] {
   const out: Finding[] = [];
   const field = t.field;
   const e = (message: string) => out.push({ check: "returnContent", level: "error", message: `${name}: ${message}` });
   const specs: ReturnCellSpec[] = field.cells.map((c) => c.spec);
   for (const m of manifestProblems(specs)) e(m);
-  // light-theme cells only
+  const lumTable = field.options.lum ?? RETURN_LUM;
+  // light-theme cells only: held on what is drawn (the stand-in's image now, the 2.0.0 crop once measured; RV-05)
   let unmeasured = 0;
+  let crops = 0;
   for (const c of field.cells) {
     if (c.spec.theme !== "light") e(`${c.id} is a ${c.spec.theme}-theme cell: light-theme captures only on the page ground (R3 §4.4)`);
-    if (c.spec.meanLum !== undefined && c.spec.meanLum < 0.7) e(`${c.id}'s mean relative luminance is ${c.spec.meanLum.toFixed(2)} (0.70 or more)`);
-    if (c.spec.meanLum === undefined && c.spec.standIn.kind !== "frame") unmeasured++;
+    const d = drawnLumOf(c, lumTable);
+    if (d.mean !== undefined && d.mean < 0.7) e(`${c.id}'s mean relative luminance is ${d.mean.toFixed(2)}${d.measuredOn === "stand-in" ? " (its stand-in, as drawn)" : ""} (0.70 or more)`);
+    if (d.mean === undefined && c.spec.standIn.kind !== "frame") unmeasured++;
+    if (c.spec.meanLum !== undefined) crops++;
   }
+  // one stone from the climax to the end card (CR-01; MONTAGE_DESIGN §2.12, §2.13; RV-01): no cell pictures the pebble
+  const pictured = new Map<FieldCell, { px: number; r: number }>();
+  for (const fr of t.frames)
+    for (const x of fr.cells) {
+      if (inFrameShare(x.s, t.W, t.H) <= 0) continue;
+      const px = picturedStonePxOf(x.c, x.s.w, x.s.h);
+      if (px > PICTURED_STONE_PX && (pictured.get(x.c)?.px ?? 0) < px) pictured.set(x.c, { px, r: fr.r });
+    }
+  for (const [c, w] of pictured) e(`${c.id} pictures the pebble ${w.px.toFixed(0)} px wide at 1080 on R${w.r} (${c.spec.standIn.kind === "engine" ? "Pebble's engine drawn in the cell" : "its image shows the companion's avatar"}): a second stone beside the stone, which is one from the climax to the end card (CR-01; MONTAGE_DESIGN §2.12, §2.13). Crop the avatar out (${PICTURED_STONE_PX} px or less), or the cell leaves the Return for the tour and the shorts`);
+  const expected = field.cells.filter((c) => c.spec.avatar === "expected" && !pictured.has(c) && !(c.spec.standIn.kind === "still" && c.spec.standIn.avatarPx !== undefined));
+  if (expected.length) out.push({ check: "returnContent", level: "warn", message: `${name}: ${expected.length} cells' 2.0.0 captures are expected to picture the companion's avatar (${expected.map((c) => c.id).join(", ")}): each crop must leave it out (${PICTURED_STONE_PX} px or less at 1080, measured as avatarPx), or the cell leaves the Return for the tour and the shorts (one stone, RV-01; A2 and A3, whose features are the companion itself, wait for the lead's ruling)` });
   // red: the share of the frame, settled before R240, never swapped, entries 30 frames apart
   const reds = field.cells.filter((c) => c.spec.red);
   const frameArea = t.W * t.H;
   for (const c of field.cells) {
-    if (c.spec.redShare === undefined) {
-      if (c.spec.red) out.push({ check: "returnContent", level: "warn", message: `${name}: ${c.id}'s saturated-red share is not measured yet (fill it from the 2.0.0 crop before the schedule freezes)` });
-      continue;
+    const red = drawnLumOf(c, lumTable).red;
+    if (red === undefined || (c.spec.red && c.spec.redShare === undefined)) {
+      if (c.spec.red) out.push({ check: "returnContent", level: "warn", message: `${name}: ${c.id}'s saturated-red share is not measured on its 2.0.0 crop yet (fill it before the schedule freezes; its budget: returnContent's info)` });
+      if (red === undefined) continue;
     }
     // the most of it the frame ever shows (its part inside the frame, less what the stone hides)
     let maxArea = 0;
     for (const fr of t.frames) for (const x of fr.cells) if (x.c === c) maxArea = Math.max(maxArea, x.s.w * x.s.h * inFrameShare(x.s, t.W, t.H) * x.share);
-    const share = (c.spec.redShare * maxArea) / frameArea;
+    const share = (red * maxArea) / frameArea;
     if (share >= field.geometry.redLimit) e(`${c.id}'s saturated red reaches ${(share * 100).toFixed(2)} % of the frame (under ${(field.geometry.redLimit * 100).toFixed(1)} %)`);
   }
+  // each red cell's budget for its 2.0.0 crop: the most saturated red its crop may hold, given the most of the frame it
+  // fills (for the capture lane: RV-05)
+  const budgets = reds.map((c) => {
+    let maxArea = 0;
+    for (const fr of t.frames) for (const x of fr.cells) if (x.c === c) maxArea = Math.max(maxArea, x.s.w * x.s.h * inFrameShare(x.s, t.W, t.H) * x.share);
+    return `${c.id} fills at most ${((maxArea / frameArea) * 100).toFixed(2)} % of the frame, so its crop may hold under ${Math.min(100, (field.geometry.redLimit * frameArea * 100) / Math.max(maxArea, 1e-9)).toFixed(0)} % saturated red`;
+  });
+  if (budgets.length) out.push({ check: "returnContent", level: "info", message: `${name}: the red cells' budgets: ${budgets.join("; ")}` });
   for (const c of reds) {
     if (c.settle >= 240) e(`the red cell ${c.id} settles on R${c.settle} (before R240, out of the fast phase)`);
     if (c.swappedOutAt !== null) e(`the red cell ${c.id} is swapped out on R${c.swappedOutAt} (red cells are never swapped)`);
@@ -439,6 +556,24 @@ export function returnContentOf(t: ReturnTrace, name = "the Return"): Finding[] 
       const b = reds[j]!.enter ?? reds[j]!.swapIn ?? -Infinity;
       if (Math.abs(a - b) < 30) e(`the red cells ${reds[i]!.id} and ${reds[j]!.id} enter ${Math.abs(a - b)} frames apart (30 or more)`);
     }
+  // each swap's step in mean relative luminance, outgoing to incoming (the review's RV-02: a swap crosses at mid-blur in
+  // one frame, so a step this large snaps, as A2's dark pebble did into B7's pale slot: 4.7-5.8 levels in its tile; the
+  // waves are paired by luminance to keep the steps small, MONTAGE_DESIGN §2.4)
+  const steps: { c: FieldCell; prev: FieldCell; d: number }[] = [];
+  const unpaired: string[] = [];
+  for (const c of field.cells) {
+    if (c.swapIn === null) continue;
+    const prev = field.cells.find((x) => x.ring === c.ring && x.slot === c.slot && x.swappedOutAt === c.swapIn);
+    if (!prev) continue;
+    const a = drawnLumOf(prev, lumTable).mean;
+    const b = drawnLumOf(c, lumTable).mean;
+    if (a === undefined || b === undefined) unpaired.push(`${prev.id}→${c.id}`);
+    else steps.push({ c, prev, d: Math.abs(a - b) });
+  }
+  for (const x of steps.filter((y) => y.d > SWAP_LUM_STEP)) e(`${x.c.id} swaps in for ${x.prev.id} on R${x.c.swapIn}: a step of ${x.d.toFixed(3)} in mean relative luminance (${SWAP_LUM_STEP} or less: a swap crosses at mid-blur on one frame, so a larger step snaps; pair the wave by luminance, MONTAGE_DESIGN §2.4)`);
+  if (unpaired.length) out.push({ check: "returnContent", level: "warn", message: `${name}: ${unpaired.length} swaps' luminance is not measured (${unpaired.slice(0, 6).join(", ")}${unpaired.length > 6 ? " …" : ""}): their step is unchecked and their wave keeps the manifest's order` });
+  const worstStep = steps.reduce<(typeof steps)[number] | null>((a, b) => (!a || b.d > a.d ? b : a), null);
+  out.push({ check: "returnContent", level: "info", message: `${name}: ${steps.length} swaps; the largest step in mean relative luminance ${worstStep ? `${worstStep.d.toFixed(3)} (${worstStep.prev.id} → ${worstStep.c.id} on R${worstStep.c.swapIn})` : "—"}, the mean ${steps.length ? (steps.reduce((a, b) => a + b.d, 0) / steps.length).toFixed(4) : "—"} (${SWAP_LUM_STEP} or less); waves paired by luminance: ${field.pairing.map((w) => `${w.wave} ${w.paired ? `paired, ${w.moved} moved` : "in the manifest's order"}`).join(", ")}` });
   // one take, one moment (CR-11): two moments of one take never on screen together
   for (let i = 0; i < field.cells.length; i++)
     for (let j = i + 1; j < field.cells.length; j++) {
@@ -466,8 +601,11 @@ export function returnContentOf(t: ReturnTrace, name = "the Return"): Finding[] 
   }
   if (adjacent) e(`two card-type cells sit side by side: ${adjacent} (cards go to every other slot)`);
   // the light-theme rule holds by declaration only until each crop's mean luminance is measured: say so, as for red
-  if (unmeasured) out.push({ check: "returnContent", level: "warn", message: `${name}: the light-theme rule is declared, not measured: ${unmeasured} of ${field.cells.length} crops have no mean relative luminance yet (0.70 or more; measure the 2.0.0 crops, through heavy.sh, before the schedule freezes)` });
-  out.push({ check: "returnContent", level: "info", message: `${name}: ${field.cells.length} cells, ${field.cells.filter((c) => c.spec.card).length} card-type, ${reds.length} red (${reds.map((c) => `${c.id} R${c.enter ?? c.swapIn}→R${c.settle}`).join(", ")}), ${field.cells.filter((c) => c.spec.shown).length} the film shows; ${unmeasured} crops' luminance not measured yet (light-theme stand-ins)` });
+  // the light rule holds on what is drawn; the 2.0.0 crops still have to be measured before the schedule freezes
+  const imaged = field.cells.filter((c) => c.spec.standIn.kind !== "frame").length;
+  if (unmeasured) out.push({ check: "returnContent", level: "warn", message: `${name}: the light-theme rule is declared, not measured: ${unmeasured} of ${imaged} drawn cells have no mean relative luminance (0.70 or more; measure the images, through heavy.sh: setpieces/tools/return-thumbs.ts --measure)` });
+  if (crops < imaged) out.push({ check: "returnContent", level: "warn", message: `${name}: the light-theme rule is held on the stand-ins as drawn; ${imaged - crops} of ${imaged} cells' 2.0.0 crops are not measured yet (0.70 or more; measure them, through heavy.sh, before the schedule freezes)` });
+  out.push({ check: "returnContent", level: "info", message: `${name}: ${field.cells.length} cells, ${field.cells.filter((c) => c.spec.card).length} card-type, ${reds.length} red (${reds.map((c) => `${c.id} R${c.enter ?? c.swapIn}→R${c.settle}`).join(", ")}), ${field.cells.filter((c) => c.spec.shown).length} the film shows; the drawn images' mean relative luminance ${lumRange(field.cells, lumTable)}; ${unmeasured} unmeasured; ${crops} 2.0.0 crops measured` });
   return out;
 }
 
@@ -700,6 +838,9 @@ export interface JoinMetrics {
   velPx: number;
   stones: number;
   firstCellIsS24: boolean;
+  /** the shot the first cell draws, and S24's last shot (the view draws the first, so they must be one: RV-10) */
+  firstCellShot: string | null;
+  s24LastShot: string | null;
 }
 
 export function joinMetrics(p: ScenePlan): JoinMetrics | null {
@@ -735,7 +876,18 @@ export function joinMetrics(p: ScenePlan): JoinMetrics | null {
     const b = screenVelocity(first, q, w, h, hero ? (cellPoseR(field, hero, -60)?.depth ?? 1) : 1);
     velPx = Math.max(velPx, Math.hypot((a.x * join.fps) / p.fps - b.x, (a.y * join.fps) / p.fps - b.y) / unit);
   }
-  return { edgePx, zoomRatio, velPx, stones: join.stonesOnLastFrame, firstCellIsS24: !!hero && hero.spec.standIn.kind === "frame" && hero.spec.standIn.piece === join.from.replace(/:.*$/, "") };
+  const firstCellShot = hero && hero.spec.standIn.kind === "frame" ? hero.spec.standIn.shot : null;
+  const src = join.source;
+  const s24LastShot = src ? (src.shots[src.shots.length - 1]?.id ?? null) : null;
+  return {
+    edgePx,
+    zoomRatio,
+    velPx,
+    stones: join.stonesOnLastFrame,
+    firstCellIsS24: !!hero && hero.spec.standIn.kind === "frame" && hero.spec.standIn.piece === join.from.replace(/:.*$/, "") && firstCellShot !== null && firstCellShot === s24LastShot,
+    firstCellShot,
+    s24LastShot,
+  };
 }
 
 export function joinPose(p: ScenePlan): Finding[] {
@@ -746,7 +898,7 @@ export function joinPose(p: ScenePlan): Finding[] {
   const m = joinMetrics(p)!;
   const out: Finding[] = [];
   const e = (message: string) => out.push({ check: "joinPose", level: "error", message: `${name}: ${message}` });
-  if (!m.firstCellIsS24) e(`the first cell is not S24's last frame (${ret.join.from})`);
+  if (!m.firstCellIsS24) e(`the first cell is not S24's last frame (${ret.join.from}): it draws the shot "${m.firstCellShot}", and S24's last shot is "${m.s24LastShot}" (the view would draw a missing frame: RV-10)`);
   if (!(m.edgePx <= 1)) e(`the first cell sits ${m.edgePx.toFixed(1)} px off the frame's edges on the Return's first frame (within 1 px: S24's last frame, exactly; a cut into a fresh field is not the join)`);
   if (!(Math.abs(m.zoomRatio - 1) <= 0.01)) e(`the first cell fills ${(m.zoomRatio * 100).toFixed(1)} % of the frame's width on the Return's first frame (within 1 %)`);
   if (!(m.velPx <= 0.5)) e(`the Return's first frame moves ${m.velPx.toFixed(2)} px a frame away from S24's exit velocity (within 0.5: the pull-back continues S24's glide)`);
@@ -803,5 +955,5 @@ export function exemptReturnSpan(p: ScenePlan, t: FilmTimelineQa, r: Report): Re
   };
 }
 
-/** For the sheet: the body's radius along a direction (re-exported for tools). */
-export { bodyR };
+/** For the sheet: the body's radius along a direction (re-exported for tools); what a cell draws, measured. */
+export { bodyR, drawnLumOf };

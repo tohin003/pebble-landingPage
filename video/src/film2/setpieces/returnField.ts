@@ -22,6 +22,8 @@ import { planePose, type Pose, type VelocityCamera } from "../motion/camera";
 import type { Point, Rect } from "../motion/geometry";
 import { GALET, PEBBLE_SCALE, VIEWBOX_SIZE } from "../../../../shared/pebble/character";
 import { RETURN_WAVES, type ReturnCellSpec, type ReturnRing, type ReturnWave } from "./returnCells";
+import { RETURN_LUM, type DrawnLum } from "./returnLum";
+import { drawnLumOf } from "./returnThumbs";
 
 /* ---------------------------------------------------------------- geometry (§2.6) ------------------------------ */
 
@@ -278,6 +280,10 @@ export interface ReturnFieldOptions {
   sizeLaw?: "contact" | "radius";
   /** canaries only: the slot stride per ring (default the golden interleave) */
   stride?: Readonly<Record<number, number>>;
+  /** the drawn images' measurements (default returnLum.ts RETURN_LUM; canaries pass their own) */
+  lum?: Readonly<Record<string, DrawnLum>>;
+  /** pair each swap wave by luminance (MONTAGE_DESIGN §2.4; default true); false keeps the manifest's order (the design's reference model, schedule_r2.py, never paired) */
+  pair?: boolean;
 }
 
 export interface ReturnField {
@@ -295,6 +301,18 @@ export interface ReturnField {
   fps: number;
   /** what the camera adds (the plan sets it): the camera, its parallax ref and the frame, for screen speeds and blur */
   view?: { camera: VelocityCamera; ref: Pose; w: number; h: number; unit: number };
+  /** how each swap wave was paired by luminance (§2.4): paired or kept in the manifest's order, and why */
+  pairing: readonly WavePairing[];
+}
+
+export interface WavePairing {
+  wave: "mid2" | "mid3" | "out2";
+  /** paired by luminance (false: the manifest's order, with pairing off or an image unmeasured) */
+  paired: boolean;
+  /** the cells whose luminance is not measured (the wave keeps the manifest's order until they are) */
+  unmeasured: string[];
+  /** how many of the wave's cells moved from the manifest's order */
+  moved: number;
 }
 
 /** A piece-local frame as an R-frame, and back. */
@@ -332,6 +350,88 @@ export function slotXY(field: ReturnField, ring: number, slot: number, r: number
   return { x: a * Math.cos(t), y: b * Math.sin(t) };
 }
 
+/* ---------------------------------------------------------------- luminance pairing (§2.4) ------------------- */
+
+/** Steps in mean relative luminance up to this pair as equal, so the manifest's order (its families) stands where pairing gains nothing. */
+export const PAIR_DEADBAND = 0.02;
+
+/**
+ * The assignment of rows to columns that minimises the total cost (the Hungarian method, O(n³)): `cost[i][j]` for row i
+ * and column j of a square matrix; returns each row's column.
+ */
+export function hungarian(cost: readonly (readonly number[])[]): number[] {
+  const n = cost.length;
+  const BIG = 1e18;
+  const u = new Array<number>(n + 1).fill(0);
+  const v = new Array<number>(n + 1).fill(0);
+  const p = new Array<number>(n + 1).fill(0);
+  const way = new Array<number>(n + 1).fill(0);
+  for (let i = 1; i <= n; i++) {
+    p[0] = i;
+    let j0 = 0;
+    const minv = new Array<number>(n + 1).fill(BIG);
+    const used = new Array<boolean>(n + 1).fill(false);
+    do {
+      used[j0] = true;
+      const i0 = p[j0]!;
+      let delta = BIG;
+      let j1 = 0;
+      for (let j = 1; j <= n; j++) {
+        if (used[j]) continue;
+        const cur = cost[i0 - 1]![j - 1]! - u[i0]! - v[j]!;
+        if (cur < minv[j]!) {
+          minv[j] = cur;
+          way[j] = j0;
+        }
+        if (minv[j]! < delta) {
+          delta = minv[j]!;
+          j1 = j;
+        }
+      }
+      for (let j = 0; j <= n; j++) {
+        if (used[j]) {
+          u[p[j]!] = u[p[j]!]! + delta;
+          v[j] = v[j]! - delta;
+        } else minv[j] = minv[j]! - delta;
+      }
+      j0 = j1;
+    } while (p[j0] !== 0);
+    do {
+      const j1 = way[j0]!;
+      p[j0] = p[j1]!;
+      j0 = j1;
+    } while (j0);
+  }
+  const ans = new Array<number>(n).fill(-1);
+  for (let j = 1; j <= n; j++) if (p[j]) ans[p[j]! - 1] = j - 1;
+  return ans;
+}
+
+/**
+ * A swap wave paired by luminance (MONTAGE_DESIGN §2.4: "in each wave, each slot's outgoing and incoming cells differ
+ * least in mean relative luminance (an assignment by the Hungarian method). Colour is never sorted."), within the card
+ * rule: a card-type cell goes to an even slot only, so no two cards are neighbours. Steps within PAIR_DEADBAND count as
+ * equal and a cell keeps its place in the manifest where pairing gains nothing, so the waves' family order stands.
+ * Returns the order of `incoming` for the wave's swaps (swap i takes incoming[order[i]]), or the manifest's order with
+ * `paired` false when a luminance is unmeasured or no assignment keeps the card rule.
+ */
+export function pairWave(incoming: readonly ReturnCellSpec[], outgoing: readonly ReturnCellSpec[], slots: readonly number[], lum: (c: ReturnCellSpec) => number | undefined): { order: number[]; paired: boolean; unmeasured: string[] } {
+  const n = incoming.length;
+  const keep = Array.from({ length: n }, (_, i) => i);
+  const unmeasured = [...new Set([...incoming, ...outgoing].filter((c) => lum(c) === undefined).map((c) => c.id))];
+  if (unmeasured.length || outgoing.length !== n || slots.length !== n) return { order: keep, paired: false, unmeasured };
+  const FORBIDDEN = 1e6;
+  const cost = slots.map((slot, i) =>
+    incoming.map((c, j) => {
+      const step = Math.max(0, Math.abs(lum(outgoing[i]!)! - lum(c)!) - PAIR_DEADBAND);
+      return (c.card && slot % 2 !== 0 ? FORBIDDEN : 0) + step + 1e-5 * Math.abs(i - j);
+    }),
+  );
+  const order = hungarian(cost);
+  if (order.some((j, i) => j < 0 || cost[i]![j]! >= FORBIDDEN)) return { order: keep, paired: false, unmeasured };
+  return { order, paired: true, unmeasured };
+}
+
 /** Builds the field: the cells on their slots, every entry, swap, leave and return. */
 export function buildReturnField(aspect: Aspect, o: ReturnFieldOptions = {}, fps = 60): ReturnField {
   const geometry: ReturnGeometry = { ...RETURN_GEOMETRY[aspect], ...(o.geometry ?? {}) };
@@ -353,14 +453,24 @@ export function buildReturnField(aspect: Aspect, o: ReturnFieldOptions = {}, fps
     const e = T.waves.mid1.t0 + T.waves.mid1.dt * i;
     cells.push(mk(spec, 1, m1[i]!, "entry", e, e + T.entryFrames, null));
   });
+  // the swap waves' incoming cells, each wave paired by luminance against what it replaces (§2.4; pairWave)
+  const lum = (spec: ReturnCellSpec) => drawnLumOf({ spec }, o.lum ?? RETURN_LUM).mean;
+  const pairing: WavePairing[] = [];
+  const paired = (wave: "mid2" | "mid3" | "out2", incoming: readonly ReturnCellSpec[], outgoing: readonly ReturnCellSpec[], slots: readonly number[]) => {
+    const r = o.pair === false ? null : pairWave(incoming, outgoing, slots, lum);
+    pairing.push({ wave, paired: !!r?.paired, unmeasured: r?.unmeasured ?? [], moved: r ? r.order.filter((k, i) => k !== i).length : 0 });
+    return r?.paired ? r.order.map((k) => incoming[k]!) : incoming;
+  };
   // M2 swaps the slots of M1's items 1–12, in entry order
-  waves.mid2.forEach((spec, i) => {
+  const mid2 = paired("mid2", waves.mid2, waves.mid1.slice(1, 1 + waves.mid2.length), Array.from({ length: waves.mid2.length }, (_, i) => m1[i + 1]!));
+  mid2.forEach((spec, i) => {
     const t = T.waves.mid2.t0 + T.waves.mid2.dt * i;
     cells.push(mk(spec, 1, m1[i + 1]!, "blur", null, t + T.swapFrames, t));
   });
   // M3: N2's slot (M1's last), then the first seven M2 slots
   const m3 = [m1[13]!, ...Array.from({ length: 7 }, (_, k) => m1[1 + k]!)];
-  waves.mid3.forEach((spec, i) => {
+  const mid3 = paired("mid3", waves.mid3, [waves.mid1[13]!, ...mid2.slice(0, 7)].slice(0, waves.mid3.length), m3.slice(0, waves.mid3.length));
+  mid3.forEach((spec, i) => {
     const t = T.waves.mid3.t0 + T.waves.mid3.dt * i;
     cells.push(mk(spec, 1, m3[i]!, "slide", null, t + T.swapFrames, t));
   });
@@ -371,7 +481,8 @@ export function buildReturnField(aspect: Aspect, o: ReturnFieldOptions = {}, fps
   });
   // O2 swaps O1's items 0–19 except F9's (item 3): a red cell is never swapped out
   const o2idx = [0, 1, 2, ...Array.from({ length: 16 }, (_, k) => 4 + k)];
-  waves.out2.forEach((spec, i) => {
+  const out2 = paired("out2", waves.out2, o2idx.slice(0, waves.out2.length).map((k) => waves.out1[k]!), o2idx.slice(0, waves.out2.length).map((k) => o1[k]!));
+  out2.forEach((spec, i) => {
     const t = T.waves.out2.t0 + T.waves.out2.dt * i;
     cells.push(mk(spec, 2, o1[o2idx[i]!]!, "slide", null, t + T.swapFrames, t));
   });
@@ -409,7 +520,7 @@ export function buildReturnField(aspect: Aspect, o: ReturnFieldOptions = {}, fps
   cells.forEach((c) => (c.zOrder = c.ring * 1000 + (c.spec.hero ? 999 : Math.round(c.settle - T.span.from))));
 
   const theta: Float64Array[] = [];
-  const field: ReturnField = { aspect, geometry, timing: T, cells, stone: { at: { x: 0, y: 0 }, px: stonePx, body: bodyStats(stonePx) }, options: o, depth, theta, fps };
+  const field: ReturnField = { aspect, geometry, timing: T, cells, stone: { at: { x: 0, y: 0 }, px: stonePx, body: bodyStats(stonePx) }, options: o, depth, theta, fps, pairing };
   for (let ring = 0; ring < 3; ring++) {
     const n = T.span.to - T.span.from + 1;
     const th = new Float64Array(n);

@@ -20,7 +20,20 @@
 //                 2.0.0 capture's expected largest text, until its crop is measured
 //   meanLum, redShare  measured on the crop (the light-theme rule: mean relative luminance 0.70 or more; the red rule);
 //                 unmeasured until the cells tool runs on the crops through heavy.sh
-// No Stealth Lockdown cell, ever: this file refuses STEALTH_FEATURES at load (a cell cannot hold the honest line, §4).
+//   (drawn)       what the view draws NOW is measured on the cell's image as made (setpieces/tools/return-thumbs.ts
+//                 writes returnLum.ts, keyed by each image's signature, so a changed stand-in is unmeasured until its
+//                 new image is): the light rule, the red rule and the swaps' luminance pairing hold on it until the
+//                 2.0.0 crop's own meanLum and redShare are filled (the review's RV-02, RV-05: rules held on declared
+//                 values only passed the stand-ins unseen)
+//   avatar        one stone from the climax to the end card (CR-01; MONTAGE_DESIGN §2.12, §2.13; the review's RV-01): a
+//                 crop that pictures the companion's avatar is a second stone beside the stone. A still's `avatarPx` is
+//                 the pictured pebble's body width in its crop (CSS px), and returnContent refuses any cell whose
+//                 pictured pebble is drawn over PICTURED_STONE_PX at 1080; Pebble's engine drawn in a cell always
+//                 pictures it. `avatar: "expected"` marks a feature whose 2.0.0 capture shows the companion: its crop
+//                 must leave the avatar out, or the cell leaves the Return (a warning until the crop is measured; the
+//                 lead rules on A2 and A3, whose features ARE the companion)
+// No Stealth Lockdown cell, ever: this file refuses STEALTH_FEATURES at load (a cell cannot hold the honest line, §4),
+// nor a Stealth word in any label drawn into a cell's image (RV-06).
 // Pure data; no React.
 import type { Rect } from "../motion/geometry";
 import { STEALTH_FEATURES } from "./standins";
@@ -46,6 +59,8 @@ export type CellStandIn =
       version: string;
       /** what it shows, in a few words (and what it must not) */
       note: string;
+      /** the companion's avatar pictured in the crop: its body's width, CSS px of the crop (absent: none) */
+      avatarPx?: number;
     }
   | {
       kind: "slot";
@@ -90,21 +105,31 @@ export interface ReturnCellSpec {
   /** R4's label (1–3 words): only for the G1 A/B of family names, never drawn by default (§2.8) */
   label: string;
   note?: string;
+  /** the feature's 2.0.0 capture shows the companion's avatar: its crop must leave it out, or the cell leaves (RV-01) */
+  avatar?: "expected";
 }
+
+/** Pebble's engine in a cell (standIn kind "engine") is drawn this size, a share of the cell's height (views/ReturnView.tsx). */
+export const ENGINE_CELL_SIZE = 0.78;
 
 /* ---------------------------------------------------------------- stand-ins ------------------------------------- */
 
 /** The published captures that show the same feature (R4_FIT §1.2's stand-in column, cropped to 4:3 where they can be). */
-const still = (src: string, w: number, h: number, crop: Rect, note: string, fit: CellFit = "cover", version = "1.0.x"): CellStandIn => ({ kind: "still", src, w, h, crop, fit, version, note });
-const slot = (captureId: string, label: string, w = 480, h = 360): CellStandIn => ({ kind: "slot", captureId, label, w, h });
+export type StillStandIn = Extract<CellStandIn, { kind: "still" }>;
+export type SlotStandIn = Extract<CellStandIn, { kind: "slot" }>;
+const still = (src: string, w: number, h: number, crop: Rect, note: string, fit: CellFit = "cover", version = "1.0.x"): StillStandIn => ({ kind: "still", src, w, h, crop, fit, version, note });
+const slot = (captureId: string, label: string, w = 480, h = 360): SlotStandIn => ({ kind: "slot", captureId, label, w, h });
 
-const SI = {
+/** The published stills (exported for the canaries, which plant a stand-in as it was). */
+export const SI = {
   verified: still("ui/crop-done-receipt@2x.png", 684, 278, { x: 6, y: 33, w: 327, h: 245 }, "\"Verified · pytest … passed on current files\" and \"Done, and verified:\", below the \"Worked for\" line"),
   quickChat: still("ui/pet-chat@2x.png", 384, 456, { x: 8, y: 8, w: 296, h: 222 }, "the quick chat: a question and the reply's first lines, above the usage line and the avatar"),
   whatChanges: still("ui/crop-approval-card@2x.png", 495, 482, { x: 14, y: 8, w: 420, h: 315 }, "a card's first line: \"Changes this file in your project. You can undo it afterwards.\""),
   heldCard: still("ui/held-unverified@2x.png", 1160, 800, { x: 342, y: 455, w: 240, h: 180 }, "\"Blocked · Pebble's change isn't verified yet.\" with Run the tests, between the usage line and the composer"),
   modes: still("ui/crop-permissions-modes@2x.png", 504, 443, { x: 0, y: 0, w: 504, h: 378 }, "Settings › Permissions: the modes, each with its two lines"),
-  waysIn: still("ui/crop-models-ways-in@2x.png", 504, 227, { x: 0, y: 0, w: 504, h: 227 }, "a local model file, a provider, ChatGPT: the three ways in", "contain"),
+  // (cropped below the model's row, whose details line prints its "4,096-token window" (§4 bars token counts), and left
+  // of its Rest model button: RV-06)
+  waysIn: still("ui/crop-models-ways-in@2x.png", 504, 227, { x: 0, y: 100, w: 302, h: 127 }, "the three ways in: Add a model file, Connect provider, Continue with ChatGPT", "contain"),
   refused: still("ui/crop-challenge-step@2x.png", 497, 329, { x: 0, y: 0, w: 436, h: 327 }, "a refused step in Activity with AgentGuard's words, left of its step time"),
   sidebar: still("ui/pet-sidebar@2x.png", 744, 576, { x: 8, y: 8, w: 344, h: 258 }, "the companion's sidebar: Chats, Activity, Views"),
   forgetRecords: still("ui/crop-memory-records-forgotten@2x.png", 504, 516, { x: 0, y: 138, w: 504, h: 378 }, "memory records, each with its Forget"),
@@ -116,12 +141,14 @@ const SI = {
   editCard: still("ui/crop-approval-card@2x.png", 495, 482, { x: 13, y: 130, w: 469, h: 352 }, "an edit card's diff and its buttons"),
   commandCard: still("ui/crop-command-card@2x.png", 495, 474, { x: 14, y: 6, w: 460, h: 345 }, "the command card: \"Pebble can't undo a command.\""),
   gitPlan: still("ui/git-plan@2x.png", 1440, 900, { x: 958, y: 395, w: 464, h: 348 }, "the Git plan card's paths, message and effects, below the line with the sample e-mail address"),
-  gaze: still("ui/pet-collapsed-gaze@2x.png", 112, 112, { x: 0, y: 0, w: 112, h: 112 }, "the pebble with its eyes turned (the pointer is the 2.0.0 recording's)", "contain"),
+  // A2's stand-in until 28 Oct: the companion's pebble itself, 87 CSS px wide in its 112-px crop (a second stone in the
+  // Return: RV-01). No cell uses it now; the canaries plant it
+  gaze: { ...still("ui/pet-collapsed-gaze@2x.png", 112, 112, { x: 0, y: 0, w: 112, h: 112 }, "the pebble with its eyes turned (the pointer is the 2.0.0 recording's)", "contain"), avatarPx: 87 },
 } as const;
 
 /* ---------------------------------------------------------------- the cells --------------------------------------- */
 
-type Base = Pick<ReturnCellSpec, "id" | "features" | "family" | "take" | "moment" | "capture" | "standIn" | "label"> & Partial<Pick<ReturnCellSpec, "kitTake" | "card" | "red" | "hero" | "slice" | "textPx" | "note" | "shown">>;
+type Base = Pick<ReturnCellSpec, "id" | "features" | "family" | "take" | "moment" | "capture" | "standIn" | "label"> & Partial<Pick<ReturnCellSpec, "kitTake" | "card" | "red" | "hero" | "slice" | "textPx" | "note" | "shown" | "avatar">>;
 
 const cell = (wave: ReturnWave, shown: boolean, b: Base): ReturnCellSpec => ({
   card: false,
@@ -136,7 +163,7 @@ const cell = (wave: ReturnWave, shown: boolean, b: Base): ReturnCellSpec => ({
 /** The inner ring, in slot order clockwise from 12 o'clock: the proofs the film read, recalled. G3 is S24's last frame. */
 const INNER: ReturnCellSpec[] = [
   cell("inner", true, { id: "G3", features: ["G3"], family: "G", take: "Kiln", moment: "kept", card: true, hero: true, capture: "H+, R", standIn: { kind: "frame", piece: "climax", shot: "kiln", w: 0, h: 0 }, textPx: 28, label: "Kept", note: "S24's last frame itself: the kept card at reading size; never the companion's avatar (one stone, CR-01)" }),
-  cell("inner", true, { id: "A6", features: ["A6"], family: "A", take: "RS-1", moment: "over-full-screen", capture: "R", standIn: slot("RS-1", "the pebble over the full-screen poster, the Space slide's last frames"), label: "Every Space", note: "no focus words near it" }),
+  cell("inner", true, { id: "A6", features: ["A6"], family: "A", take: "RS-1", moment: "over-full-screen", capture: "R", standIn: slot("RS-1", "the pebble over the full-screen poster, the Space slide's last frames"), label: "Every Space", note: "no focus words near it; its crop pictures the companion (about 3× in the bloom): RV-01", avatar: "expected" }),
   cell("inner", true, { id: "J2", features: ["J2"], family: "J", take: "RS-9 Open day", moment: "playing", capture: "R", standIn: slot("RS-9", "Pebble's own tab: the tab group, its border and status pill"), label: "Its own tab", note: "keep Chrome's bar" }),
   cell("inner", true, { id: "J6+F14", features: ["J6", "F14"], family: "J", take: "RS-9 Open day", moment: "playing", slice: { frames: 12 }, capture: "R", standIn: slot("RS-9", "the video's first moving frame beside the reply that says it plays"), label: "Checks it played", note: "a host check, not AgentGuard (R-AG)" }),
   cell("inner", true, { id: "I8+E6", features: ["I8", "E6"], family: "I", take: "RS-4 Tickets", moment: "after =", capture: "R", standIn: slot("RS-4", "Calculator just after \"=\", the press landing with no card"), label: "Keys, no card", note: "never the frame before \"=\"" }),
@@ -151,8 +178,11 @@ const MID_W1: ReturnCellSpec[] = [
   cell("mid1", true, { id: "A4", features: ["A4"], family: "A", take: "RS-15", moment: "reply", capture: "H+, R", standIn: SI.quickChat, textPx: 19, label: "Quick chat", note: "crop the usage line under the reply" }),
   cell("mid1", true, { id: "E3", features: ["E3"], family: "E", take: "RS-8 Notes", moment: "delete waits", card: true, capture: "H", standIn: SI.whatChanges, label: "What changes" }),
   cell("mid1", true, { id: "B14", features: ["B14"], family: "B", take: "RS-15", moment: "reply", capture: "R, H+", standIn: slot("RS-15", "\"What can you do now?\" and the first line of Pebble's own answer"), label: "It knows itself" }),
-  cell("mid1", true, { id: "A3", features: ["A3"], family: "A", take: "engine", moment: "-", capture: "V", standIn: { kind: "engine", pose: "testing", w: 480, h: 360 }, textPx: 0, label: "Reacts to work", note: "Pebble's own poses only; never the review \"!\" (D6)" }),
-  cell("mid1", true, { id: "A10*", features: ["A10"], family: "A", take: "HS-G Glaze", moment: "waiting", kitTake: "HS-G", capture: "H+, R", standIn: slot("HS-G", "the waiting pebble with its \"Waiting for your review\" pill"), label: "Waits for you" }),
+  // A3 was Pebble's engine drawn live in its testing pose: a second pebble beside the stone, blinking on its own clock
+  // (the review's RV-01). A labelled slot until the lead rules: its feature IS the companion, so any capture of it
+  // pictures the pebble (returnContent refuses an engine cell, and warns on its expected avatar)
+  cell("mid1", true, { id: "A3", features: ["A3"], family: "A", take: "engine", moment: "-", capture: "V", standIn: slot("engine", "the companion in one of its own working poses, reacting to work"), label: "Reacts to work", note: "Pebble's own poses only; never the review \"!\" (D6); it pictures the pebble: RV-01, the lead's ruling", avatar: "expected" }),
+  cell("mid1", true, { id: "A10*", features: ["A10"], family: "A", take: "HS-G Glaze", moment: "waiting", kitTake: "HS-G", capture: "H+, R", standIn: slot("HS-G", "the waiting pebble with its \"Waiting for your review\" pill"), label: "Waits for you", note: "crop to the pill: the avatar is a second stone (RV-01)", avatar: "expected" }),
   cell("mid1", true, { id: "G4", features: ["G4"], family: "G", take: "HS-G Glaze", moment: "waiting", card: true, capture: "H+", standIn: slot("HS-G", "\"Keep this tool in Pebble's Toolbox?\" Discard · Keep"), label: "Keep this tool?" }),
   cell("mid1", true, { id: "I2*", features: ["I2"], family: "I", take: "kit I typing", moment: "typing", kitTake: "kit-I2", capture: "R", standIn: slot("kit-I2", "text appearing in a field of the allowed window"), label: "Types and presses" }),
   cell("mid1", true, { id: "B5", features: ["B5"], family: "B", take: "RS-7 sample app", moment: "after click", capture: "H+", standIn: slot("RS-7", "Activity's rows in plain words, one \"with a screenshot\""), label: "Plain-words Activity" }),
@@ -174,7 +204,9 @@ const MID_W2: ReturnCellSpec[] = [
   cell("mid2", true, { id: "J9", features: ["J9"], family: "J", take: "RS-7 sample app", moment: "after click", capture: "R", standIn: slot("RS-7", "a click landing on a control Accessibility can't see; the window changing"), label: "Mouse and keyboard", note: "the pointer only as recorded" }),
   cell("mid2", true, { id: "H3*", features: ["H3"], family: "H", take: "kit H folder card", moment: "asking", kitTake: "kit-H3", card: true, capture: "H+", standIn: slot("kit-H3", "the folder card naming a folder, with Always allow"), label: "Asks first" }),
   cell("mid2", true, { id: "H2", features: ["H2"], family: "H", take: "RS-H Photos", moment: "after flyer", capture: "R, H+", standIn: slot("RS-H", "Finder at ~/Pebble Workbench with the resized copies"), label: "Pebble Workbench" }),
-  cell("mid2", true, { id: "F11*", features: ["F11"], family: "F", take: "kit F held card", moment: "held", kitTake: "kit-F11", card: true, capture: "H", standIn: SI.heldCard, textPx: 16, label: "Not verified yet", note: "below its usage line" }),
+  // (a slot until its kit take exists: the published held card is a crop of the same conversation as F12's Verified, at
+  // an earlier moment, and the two shared the screen R311–R582: the review's RV-05, CR-11 on what is drawn)
+  cell("mid2", true, { id: "F11*", features: ["F11"], family: "F", take: "kit F held card", moment: "held", kitTake: "kit-F11", card: true, capture: "H", standIn: slot("kit-F11", "\"Pebble's change isn't verified yet.\" and Run the tests, in a conversation of its own"), textPx: 16, label: "Not verified yet", note: "below its usage line" }),
   cell("mid2", true, { id: "O1", features: ["O1"], family: "O", take: "HS-O skills", moment: "-", capture: "H", standIn: slot("HS-O", "Settings › Skills & connectors: a skill off until reviewed"), label: "Skills" }),
   cell("mid2", true, { id: "O2", features: ["O2"], family: "O", take: "HS-O connector", moment: "asking", card: true, capture: "H+", standIn: slot("HS-O", "a connector's call, asking first"), label: "Connectors ask" }),
 ];
@@ -184,10 +216,11 @@ const MID_W3: ReturnCellSpec[] = [
   cell("mid3", false, { id: "B3", features: ["B3"], family: "B", take: "kit B status", moment: "-", capture: "H", standIn: slot("kit-B3", "the live status line naming the current action"), label: "Live status", note: "crop \"Worked for … · n steps\"" }),
   cell("mid3", false, { id: "B8", features: ["B8"], family: "B", take: "kit B slash", moment: "-", capture: "H", standIn: slot("kit-B8", "the / menu"), label: "Slash commands" }),
   cell("mid3", false, { id: "X4", features: ["X4"], family: "X", take: "kit X4", moment: "asking", card: true, capture: "H+", standIn: slot("kit-X4", "the \"Needs a check\" block with Done and End access"), label: "Needs a check", note: "1.9.15–1.9.17: confirm in 2.0.0" }),
-  cell("mid3", false, { id: "B9", features: ["B9"], family: "B", take: "kit B settings", moment: "-", capture: "H+", standIn: slot("kit-B9", "the Settings sidebar, cropped above Privacy & Stealth"), label: "Settings sidebar", note: "crop the Privacy & Stealth tab and its Lockdown line" }),
+  // (its slot's label is drawn into its image: it names no Stealth tab, RV-06; the crop still stops above that tab)
+  cell("mid3", false, { id: "B9", features: ["B9"], family: "B", take: "kit B settings", moment: "-", capture: "H+", standIn: slot("kit-B9", "the Settings sidebar, cropped above the privacy tab"), label: "Settings sidebar", note: "crop above the privacy tab and its Lockdown line" }),
   cell("mid3", false, { id: "E1+E2", features: ["E1", "E2"], family: "E", take: "kit E modes", moment: "-", capture: "H, H+", standIn: SI.modes, label: "Three modes" }),
   cell("mid3", false, { id: "E9", features: ["E9"], family: "E", take: "kit E windows", moment: "-", capture: "H+", standIn: slot("kit-E9", "windows Pebble can use, with End access"), label: "End access" }),
-  cell("mid3", false, { id: "X3", features: ["X3"], family: "X", take: "kit X3", moment: "-", capture: "R", standIn: slot("kit-X3", "the companion stepping out of the way of the spot Pebble must click"), label: "Steps aside", note: "1.9.15: confirm in 2.0.0" }),
+  cell("mid3", false, { id: "X3", features: ["X3"], family: "X", take: "kit X3", moment: "-", capture: "R", standIn: slot("kit-X3", "the companion stepping out of the way of the spot Pebble must click"), label: "Steps aside", note: "1.9.15: confirm in 2.0.0; the companion it moves is a second stone (RV-01)", avatar: "expected" }),
   cell("mid3", false, { id: "X5", features: ["X5"], family: "X", take: "kit X5", moment: "-", slice: { frames: 12 }, capture: "R", standIn: slot("kit-X5", "a drag inside an allowed window: a picture cropped in Preview"), label: "Drags too", note: "1.9.18: confirm in 2.0.0; show the result, never a review it skipped" }),
 ];
 
@@ -199,11 +232,11 @@ const OUT_W1: ReturnCellSpec[] = [
   cell("out1", false, { id: "F9", features: ["F9"], family: "F", take: "kit F refused step", moment: "-", red: true, capture: "H", standIn: SI.refused, textPx: 14, label: "Scope checked", note: "its red step under the red-area limit; settled before R240, never swapped" }),
   cell("out1", false, { id: "K1+K2", features: ["K1", "K2"], family: "K", take: "kit K search", moment: "-", capture: "H+", standIn: slot("kit-K1", "\"Searching the web\", then the sources under the reply"), label: "Searches the web" }),
   cell("out1", false, { id: "K3", features: ["K3"], family: "K", take: "kit K source", moment: "-", capture: "H+", standIn: slot("kit-K3", "a source marker clicked, and the page it names"), label: "Sources open" }),
-  cell("out1", false, { id: "A5", features: ["A5"], family: "A", take: "kit A workspace fill", moment: "-", slice: { frames: 12 }, capture: "R", standIn: slot("kit-A5", "the workspace mid-fill after the pebble's arrow"), label: "Full workspace" }),
+  cell("out1", false, { id: "A5", features: ["A5"], family: "A", take: "kit A workspace fill", moment: "-", slice: { frames: 12 }, capture: "R", standIn: slot("kit-A5", "the workspace mid-fill after the pebble's arrow"), label: "Full workspace", note: "crop the workspace, not the pebble (RV-01)", avatar: "expected" }),
   cell("out1", false, { id: "A8", features: ["A8"], family: "A", take: "kit A sidebar", moment: "-", capture: "H+", standIn: SI.sidebar, label: "Chats, Activity, Views" }),
   cell("out1", false, { id: "A11", features: ["A11"], family: "A", take: "kit A half-typed", moment: "-", capture: "R, H+", standIn: slot("kit-A11", "the same half-typed words waiting in the workspace's box"), label: "Words come along" }),
-  cell("out1", false, { id: "A12", features: ["A12"], family: "A", take: "kit A from any app", moment: "-", capture: "R", standIn: slot("kit-A12", "Pebble coming forward over another app"), label: "From any app", note: "no drawn keycaps" }),
-  cell("out1", false, { id: "A13", features: ["A13"], family: "A", take: "kit A drop a file", moment: "-", capture: "R", standIn: slot("kit-A13", "a PDF's drag image touching the pebble"), label: "Drop a file", note: "sample file only" }),
+  cell("out1", false, { id: "A12", features: ["A12"], family: "A", take: "kit A from any app", moment: "-", capture: "R", standIn: slot("kit-A12", "Pebble coming forward over another app"), label: "From any app", note: "no drawn keycaps; no avatar in the crop (RV-01)", avatar: "expected" }),
+  cell("out1", false, { id: "A13", features: ["A13"], family: "A", take: "kit A drop a file", moment: "-", capture: "R", standIn: slot("kit-A13", "a PDF's drag image touching the pebble"), label: "Drop a file", note: "sample file only; the pebble it touches is a second stone (RV-01)", avatar: "expected" }),
   cell("out1", false, { id: "B15", features: ["B15"], family: "B", take: "kit B appearance", moment: "-", capture: "H+", standIn: slot("kit-B15", "Settings › Appearance in the light theme"), label: "Light and dark", note: "never the light-dark flip itself; light cells only" }),
   cell("out1", false, { id: "D3", features: ["D3"], family: "D", take: "kit D forget", moment: "asking", card: true, capture: "H", standIn: SI.forgetRecords, label: "Forget" }),
   cell("out1", false, { id: "D1", features: ["D1"], family: "D", take: "kit D settings", moment: "-", capture: "H", standIn: SI.memoryKinds, label: "Six kinds" }),
@@ -240,7 +273,10 @@ const OUT_W2: ReturnCellSpec[] = [
   cell("out2", false, { id: "F7", features: ["F7"], family: "F", take: "kit F git plan", moment: "asking", card: true, capture: "H", standIn: SI.gitPlan, textPx: 14, label: "Git plans" }),
   cell("out2", false, { id: "I4", features: ["I4"], family: "I", take: "kit I your turn", moment: "-", capture: "R", standIn: slot("kit-I4", "Pebble's \"your turn\" line beside a sample app's field"), label: "Your turn", note: "never a sign-in screen: leave it out if the frame needs one" }),
   cell("out2", false, { id: "N3", features: ["N3"], family: "N", take: "kit N schedule", moment: "asking", card: true, capture: "H+", standIn: slot("kit-N3", "the schedule review in words: Once, Next hour, Tomorrow at 9:00"), label: "Schedules", note: "its limit stays in the tour" }),
-  cell("out2", false, { id: "A2", features: ["A2"], family: "A", take: "kit A gaze", moment: "-", capture: "V, H", standIn: SI.gaze, textPx: 0, label: "Eyes that follow", note: "off under Reduce motion" }),
+  // A2's stand-in was the pebble itself (SI.gaze): a second stone, and the darkest cell (0.694 on the page ground, under
+  // the light rule), whose swap into B7's pale slot was the reels' one tile pop (RV-01, RV-02). A labelled slot until the
+  // lead rules: its feature IS the companion's eyes
+  cell("out2", false, { id: "A2", features: ["A2"], family: "A", take: "kit A gaze", moment: "-", capture: "V, H", standIn: slot("kit-A2", "the companion's eyes following the pointer"), label: "Eyes that follow", note: "off under Reduce motion; it pictures the pebble: RV-01, the lead's ruling", avatar: "expected" }),
 ];
 
 /** Every cell, in the schedule's order. */
@@ -248,6 +284,17 @@ export const RETURN_WAVES: Readonly<Record<ReturnWave, readonly ReturnCellSpec[]
 
 /** The features a cell may never show: Stealth Lockdown (setpieces/standins.ts STEALTH_FEATURES). */
 export const stealthIn = (c: Pick<ReturnCellSpec, "features">): string[] => c.features.filter((f) => (STEALTH_FEATURES as readonly string[]).includes(f));
+
+/**
+ * Words a cell's image must never carry (MONTAGE_DESIGN §4's must-not-appear list; OVERRIDES §49): Stealth Lockdown in
+ * any form, token or usage counts, Context use, "Worked for", "undetectable", "Context Warping". A slot draws its id, its
+ * capture's id and its label into its image (setpieces/tools/return-thumbs.ts), so those are scanned (the review's
+ * RV-06: B9's slot printed "cropped above Privacy & Stealth"); a still's pixels are cropped by hand (its note says how).
+ */
+export const NEVER_DRAWN: readonly RegExp[] = [/stealth/i, /lock\s*down/i, /\bveil\b/i, /⌃⌥⌘H/, /\btokens?\b/i, /context (use|warping)/i, /worked for/i, /undetectable/i];
+
+/** The text a cell's image draws (a slot's id, capture id and label; nothing for a still, the frame or the engine). */
+export const drawnLabelText = (c: Pick<ReturnCellSpec, "id" | "standIn">): string => (c.standIn.kind === "slot" ? `${c.id} · ${c.standIn.captureId} · ${c.standIn.label}` : "");
 
 /** Every problem with a manifest's entries (the fields every cell must carry). */
 export function manifestProblems(cells: readonly ReturnCellSpec[]): string[] {
@@ -266,6 +313,8 @@ export function manifestProblems(cells: readonly ReturnCellSpec[]): string[] {
     if (c.standIn?.kind === "still" && c.standIn.fit === "cover" && Math.abs(c.standIn.crop.w / c.standIn.crop.h - 4 / 3) > 0.02) out.push(`${c.id}: a "cover" crop that is not 4:3 (${c.standIn.crop.w} × ${c.standIn.crop.h}): it would be stretched or cut`);
     if (c.slice && (c.slice.frames < 6 || c.slice.frames > 12)) out.push(`${c.id}: a slice of ${c.slice.frames} frames (6–12 at 1×)`);
     if (!(c.textPx >= 0)) out.push(`${c.id}: no text size`);
+    const drawn = drawnLabelText(c);
+    for (const re of NEVER_DRAWN) if (re.test(drawn)) out.push(`${c.id}'s image would draw "${drawn.match(re)![0]}" ("${drawn}"): the must-not-appear list (MONTAGE_DESIGN §4)`);
   }
   return out;
 }
