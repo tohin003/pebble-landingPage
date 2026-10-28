@@ -632,11 +632,15 @@ lands on A4's bar 82. Frames are R-frames at 60 fps (a local frame is R + 60): 1
     Hungarian method, steps within 0.02 counting equal so the families stand; 6 of the outer ring's 19 swaps move), and
     `returnContent` holds every swap's step in mean relative luminance to 0.05 (A2's pebble into B7's slot was 0.21 and
     snapped 3.4–5.8 levels in its tile; E1+E2's still into I1*'s darker slot, 0.057, 3.29 in 1:1's). With the slots
-    at a light crop's luminance the largest step is 0.025 (0.046 unpaired). The reel's marks then declare each swap over
+    at a light crop's luminance the largest step is 0.026 (0.046 unpaired). The reel's marks then declare each swap over
     its two cells' rects only (`swapMarks`; `transitions[].rect`, which `qa/reel-scan.ts` maps to its tiles and
     `qa/luma.ts` exempts alone), so the scan still judges every other tile. 1:1's ground step on R84 was A6's shadow:
     culled by its rect, the cell brought 140 px of shadow in at the frame's right edge on one frame (216 px of reach at
-    that zoom); cells are now drawn while their reach is in frame.
+    that zoom); cells are now drawn while their reach is in frame. The renders then showed one more: an entry spiralling
+    in from 1.7× its slot's radius could begin inside the frame (1:1's N1 on R204, 3.3 levels; 7, 8 and 7 entries an
+    aspect began with their rect or shadow in frame), so `fitEntries` starts each such entry further out along its
+    spiral on the plan's own camera (outward factors 0.75–1.65 against 0.7; their peak speeds within the other
+    entries'), and `returnSchedule` refuses an entry that begins in frame.
   - **The window counter (RV-03).** A coverage swing counts from the running minimum and maximum until its first
     transition (`coverageSwings`; a gradual swing of 0.25–0.5 went uncounted), a slide swap on its outgoing and
     incoming cells as one union, IRIS's extended rule as `irisExtended`. The planned windows are unchanged (16:9 4 and
@@ -665,6 +669,18 @@ lands on A4's bar 82. Frames are R-frames at 60 fps (a local frame is R + 60): 1
     kept card hid on R638, R641 and R641 and the blink fell 8.1, 5.1 and 5.1 frames after it (§2.7 asks 6–8). Its
     return runs 93, 90 and 90 frames from R566 (`RETURN_TIMING.returns.hero.byAspect`): hidden on R639 in every
     aspect, the blink 7.1 frames after; `blinkPlaced` holds the gap (the toned matte's is reported, for G1).
+  - **Rendered and scanned (28 Oct, 3644743, half size, frames R−60 to R720 in every aspect; from a snapshot of the
+    commit, `.work/film2/snap-return-fix`, as another lane's set pieces were mid-edit).** `qa/luma-scan.ts --marks`
+    with the reel's marks cut to the Return: no tile pop, pop, dip or dead second in any aspect (the reels of 28 Oct
+    had A2's pop on R437 in all three, and 1:1's on R84 and R422), at most 1 flash a second, one stone on every one of
+    639, 638 and 635 frames checked. The flash reference (research3's `flashref.py` v2) reads as on the reels before:
+    16:9 desk27 1 and css2560 4 (IRIS's warning level, R168), 1:1 1 and 1, 9:16 1 in its own windows (400 × 400 and
+    the 460 × 340 CSS reading; css2560, a 16:9 window, reads 8 on R150 there, as before); no red, no scene change, the
+    frame mean's step at most 0.021. Looked at: the cells pass behind the stone and the card is hidden by R639, the
+    blink shuts on R649–R652; the hairlines soften as they speed up and fade before the stone; 1:1's right edge on R84
+    and its entries on R204 come in without a step. Still to look at for the lead: the slots, now as light as the
+    stills, read paler still against the ground (G1's "grand, busy or sparse"); 9:16's warm top band and riverbed
+    stones (RV-09) are unchanged.
   - **Nothing silent (RV-10).** A missing image or S24 shot stops a render; `joinPose` checks the first cell's shot is
     S24's last; the images carry their content's signature.
   - **Slices (RV-11).** `returnContent` holds each slice to 1×, played once forward, ending on its moment as its cell
