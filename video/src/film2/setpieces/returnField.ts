@@ -265,6 +265,8 @@ export interface FieldCell {
   zOrder: number;
   /** its polar state at the return's start and its real angular velocity there (rad a second), per field */
   ret?: { rho: number; phi: number; wReal: number; phiSum: Float64Array };
+  /** an entry that starts further out than the timing's entryOut, so it begins out of frame (fitEntries, RV-02) */
+  entryOut?: number;
 }
 
 export interface ReturnFieldOptions {
@@ -616,7 +618,7 @@ export function cellPoseR(field: ReturnField, c: FieldCell, r: number): CellPose
   // an entry: a spiral in from 1.7× its slot's radius, 25° behind it
   if (c.enter !== null && r < c.enter + T.entryFrames) {
     const k = E_MOVE((r - c.enter) / T.entryFrames);
-    const rho = Math.hypot(p.x, p.y) * (1 + T.entryOut * (1 - k));
+    const rho = Math.hypot(p.x, p.y) * (1 + (c.entryOut ?? T.entryOut) * (1 - k));
     const phi = Math.atan2(p.y, p.x) - Math.sign(RETURN_OMEGA[c.ring]!) * T.entryBehindDeg * DEG * (1 - k);
     const x = rho * Math.cos(phi);
     const y = rho * Math.sin(phi);
@@ -896,6 +898,37 @@ export function swapMarks(field: ReturnField): { id: string; from: number; to: n
         y1 = Math.max(y1, sc.rect.y + sc.rect.h + m);
       }
     if (x1 > x0 && y1 > y0) out.push({ id: `${prev?.id ?? "(none)"} → ${c.id}`, from, to, rect: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } });
+  }
+  return out;
+}
+
+/**
+ * Every entry begins out of frame (the plan calls this once its camera is set): a cell spirals in from 1.7× its slot's
+ * radius (§2.3), which at some slots and zooms still lay inside the frame, so the cell appeared there from nothing on
+ * its first frame (the review's RV-02 scan: 1:1's N1 on R204 stepped 3.3 levels in its tile; 7 or 8 entries an aspect
+ * began in frame). Such an entry starts as much further out along the same spiral as puts its rect, with its shadow's
+ * reach, out of frame on its first drawn frame. Returns the cells it moved, with their new outward factor.
+ */
+export function fitEntries(field: ReturnField): { id: string; entryOut: number }[] {
+  const v = field.view;
+  if (!v) throw new Error("fitEntries needs the plan's camera (field.view)");
+  const out: { id: string; entryOut: number }[] = [];
+  for (const c of field.cells) {
+    if (c.enter === null) continue;
+    const f0 = Math.ceil(localOfR(c.enter, field.fps) - 1e-9);
+    const inFrame = () => {
+      const s = cellScreenAt(c, f0, field);
+      if (!s) return false;
+      const m = cellReachPx(s);
+      return s.rect.x - m < v.w && s.rect.y - m < v.h && s.rect.x + s.rect.w + m > 0 && s.rect.y + s.rect.h + m > 0;
+    };
+    let k = field.timing.entryOut;
+    c.entryOut = undefined;
+    while (inFrame() && k < 6) {
+      k += 0.05;
+      c.entryOut = k;
+    }
+    if (c.entryOut !== undefined) out.push({ id: c.id, entryOut: +k.toFixed(2) });
   }
   return out;
 }

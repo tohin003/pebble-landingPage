@@ -3,7 +3,8 @@
 // wholly inside the field's shot) and is held instead to these, each with a canary in tests/return.test.ts:
 //   returnSchedule  a slot changes at most once in 22 frames (designed 73); every image settled 60 frames or more before
 //                   it moves; no swap completes after R466; every cell at least half in frame and unhidden for 60 frames
-//                   or more; no two settled cells overlap; the frame's corners at most 30 px a frame (TREATMENT §5.3)
+//                   or more; no two settled cells overlap; the frame's corners at most 30 px a frame (TREATMENT §5.3);
+//                   every entry begins out of frame, its shadow too (RV-02)
 //   returnWindows   the flash model per analysis window (R3 §1.7), frame by frame: each swap 2 transitions where its
 //                   cells cover 25 % of the window or more (a slide's outgoing and incoming cells as one union), swaps
 //                   within 2 frames as one group, and the moving coverage's monotone swings of 25 % (one transition
@@ -155,6 +156,8 @@ export interface ScheduleMetrics {
   maxCornerPx: number;
   minCornerPx1s: number;
   newImagesPerHalfBar: Record<string, number>;
+  /** entries whose first drawn frame shows the cell, or its shadow's reach, inside the frame (appearing from nothing) */
+  entriesInFrame: string[];
 }
 
 /** The schedule's numbers (MONTAGE_DESIGN §2.3, §2.6). */
@@ -218,7 +221,17 @@ export function scheduleMetrics(t: ReturnTrace): ScheduleMetrics {
   const ev = [...field.cells.filter((c) => c.enter !== null).map((c) => c.enter!), ...field.cells.filter((c) => c.swapIn !== null).map((c) => c.swapIn!)];
   const newImagesPerHalfBar: Record<string, number> = {};
   for (let h = 0; h < 720; h += 60) newImagesPerHalfBar[`R${h}`] = ev.filter((x) => x >= h && x < h + 60).length;
-  return { minChangeGap, minSettled, lastSwapEnd, minOnScreen, shortOnScreen, maxOverlap, overlapAt, maxCornerPx, minCornerPx1s, newImagesPerHalfBar };
+  // every entry begins out of frame: on its first drawn frame neither its rect nor its window shadow's reach (40 × its
+  // scale) is in frame (RV-02: entries from 1.7× their slot's radius began inside the frame at some slots and zooms)
+  const entriesInFrame: string[] = [];
+  for (const c of field.cells) {
+    if (c.enter === null) continue;
+    const x = t.at(Math.ceil(c.enter - 1e-9))?.cells.find((y) => y.c === c);
+    if (!x) continue;
+    const m = 40 * (x.s.w / x.c.w0);
+    if (x.s.x - m < t.W && x.s.y - m < t.H && x.s.x + x.s.w + m > 0 && x.s.y + x.s.h + m > 0) entriesInFrame.push(`${c.id} on R${Math.ceil(c.enter - 1e-9)}`);
+  }
+  return { minChangeGap, minSettled, lastSwapEnd, minOnScreen, shortOnScreen, maxOverlap, overlapAt, maxCornerPx, minCornerPx1s, newImagesPerHalfBar, entriesInFrame };
 }
 
 /** The slot rule, the settle rule, the swaps' end, the cells on screen, no overlap, the travel limit. */
@@ -232,6 +245,7 @@ export function returnScheduleOf(t: ReturnTrace, name = "the Return"): Finding[]
   if (m.minOnScreen < 60) e(`cells at least half in frame and unhidden for under 60 frames: ${m.shortOnScreen.join(", ")}`);
   if (m.maxOverlap > 0) e(`two settled cells overlap (${(m.maxOverlap * 100).toFixed(1)} % of the smaller): ${m.overlapAt}`);
   if (m.maxCornerPx > 30) e(`the frame's corners travel ${m.maxCornerPx.toFixed(1)} px a frame (at most 30, TREATMENT §5.3)`);
+  if (m.entriesInFrame.length) e(`${m.entriesInFrame.length} entries begin inside the frame, appearing there from nothing: ${m.entriesInFrame.join(", ")} (an entry spirals in from out of frame: plan it with planReturn, whose fitEntries starts it further out)`);
   out.push({ check: "returnSchedule", level: "info", message: `${name}: slot changes ≥ ${m.minChangeGap} frames apart; settled ≥ ${m.minSettled.toFixed(1)} frames before moving; last swap ends R${m.lastSwapEnd}; every cell on screen ≥ ${m.minOnScreen} frames; settled overlap ${m.maxOverlap.toFixed(3)}; corners ≤ ${m.maxCornerPx.toFixed(2)} px a frame, ≥ ${m.minCornerPx1s.toFixed(3)} over every second; new images a half bar ${Object.values(m.newImagesPerHalfBar).join(", ")}` });
   return out;
 }

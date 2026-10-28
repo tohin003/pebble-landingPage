@@ -34,7 +34,7 @@ import { move, type MusicHit, type ScenePlan, type ShotSpec } from "./scene";
 import { planFinale, type FinaleHead, type FinaleHeadContext, type FinaleTiming } from "./finale";
 import { stonesOnFrame } from "./qa";
 import { offsetForBlink, type FrameSpan } from "./blink";
-import { RETURN_GEOMETRY, buildReturnField, localOfR, rOfLocal, type ReturnField, type ReturnFieldOptions, type ReturnGeometry } from "./returnField";
+import { RETURN_GEOMETRY, buildReturnField, fitEntries, localOfR, rOfLocal, type ReturnField, type ReturnFieldOptions, type ReturnGeometry } from "./returnField";
 import type { Aspect } from "../tokens";
 import type { DemoStretch } from "./demo/grids";
 
@@ -271,10 +271,11 @@ export interface ReturnOptions {
   align?: Partial<FinaleTiming>;
   /** the merge (default "behind"; "toned" is R4's toned matte, the G1 alternative) */
   merge?: ReturnMerge;
-  /** canaries: the field's options, a fresh field (a cut, no pull-back), a stone clock */
+  /** canaries: the field's options, a fresh field (a cut, no pull-back), a stone clock, entries left as the design has them */
   field?: ReturnFieldOptions;
   fresh?: boolean;
   clockOffset?: number;
+  fitEntries?: boolean;
 }
 
 /**
@@ -324,6 +325,8 @@ export function planReturn(o: ReturnOptions): ScenePlan {
     camera.glide(irisAt, 1e9, { lz: lzPage });
     const ref = camera.pose(Math.round(localOfR(480, fps)));
     field.view = { camera, ref, w: f.w, h: f.h, unit };
+    // every entry begins out of frame, on this aspect's camera (fitEntries; the review's RV-02 scan)
+    if (o.fitEntries !== false) fitEntries(field);
 
     // the music: every event on the point the design puts it, within a frame (the field is fitted to 120 BPM)
     const music: MusicHit[] = [];

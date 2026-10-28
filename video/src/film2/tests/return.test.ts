@@ -359,8 +359,16 @@ describe("the Return, planned and joined to S24, passes every check in every asp
 /* ---------------------------------------------------------------- the canaries --------------------------------- */
 
 describe("returnSchedule: its canaries fail", () => {
-  test("the design passes it in the model", () => {
-    for (const a of ASPECTS) expect(errs(returnScheduleOf(modelTrace(a)))).toEqual([]);
+  test("the design passes it in the model, but for its entries that begin inside the frame (RV-02: fitEntries' canary)", () => {
+    for (const a of ASPECTS) expect(errs(returnScheduleOf(modelTrace(a))).map((e) => /entries begin inside the frame/.test(e.message))).toEqual([true]);
+  });
+  test("RV-02: as planned, every entry begins out of frame, its shadow too (1:1's N1 began inside it on R204 and popped 3.3 levels)", () => {
+    for (const a of ASPECTS) {
+      expect(scheduleMetrics(planTrace(planOf(a))!).entriesInFrame).toEqual([]);
+      const unfit = scheduleMetrics(planTrace(planFor(a, { fitEntries: false }))!).entriesInFrame;
+      expect(unfit.length).toBeGreaterThanOrEqual(5);
+    }
+    expect(scheduleMetrics(planTrace(planFor("1:1", { fitEntries: false }))!).entriesInFrame).toContain("N1 on R204");
   });
   test("a slot changing twice in 20 frames", () => {
     const t = modelTrace("16:9");
