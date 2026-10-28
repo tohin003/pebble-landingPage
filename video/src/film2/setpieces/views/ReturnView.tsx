@@ -36,7 +36,7 @@ import type { Grade } from "../../light/grades";
 import { PebbleOnFilm } from "../../../pebble/PebbleOnFilm";
 import { BODY, VIEWBOX_SIZE, pebbleAt, type PebbleCue } from "../../../../../shared/pebble";
 import { PEBBLE_LIGHT } from "../../../pebble/PebbleSvg";
-import { cellsOnScreen, hairlineAt, rOfLocal, tonedMatteK, type CellScreen, type ReturnField } from "../returnField";
+import { cellScreenAt, cellsOnScreen, hairlineAt, rOfLocal, tonedMatteK, type CellScreen, type ReturnField } from "../returnField";
 import { returnThumbPath } from "../returnThumbs";
 import type { ReturnExtra } from "../returnPlan";
 import type { ScenePlan, ShotSpec, StoneSpec } from "../scene";
@@ -220,7 +220,8 @@ export const ReturnFieldView: React.FC<ReturnFieldViewProps> = ({ plan, shot, fr
   const outer = cells.filter((c) => c.cell.ring !== 0);
   const r = rOfLocal(frame, plan.fps);
   const toned = extra.merge === "toned";
-  const matte = toned && st ? cells.filter((c) => c.state === "return" && tonedMatteK(field, c.cell, r) > 0) : [];
+  // (every returning cell past its first contact, including those wholly inside the outline: the matte shows them)
+  const matte = toned && st ? field.cells.map((c) => cellScreenAt(c, frame, field)).filter((x): x is CellScreen => !!x && x.state === "return" && tonedMatteK(field, x.cell, r) > 0).sort((a, b) => a.z - b.z) : [];
   const sm = toned && st && matte.length ? stoneMap(st, sample, w, h, plan.fps, frame, off) : null;
   const hairlines = [0, 1, 2].map((ring) => hairlineAt(ring, frame, field)).filter((x) => x !== null);
   const cam = { pose: sample.pose, ref: shot.ref, vel: sample.vel };

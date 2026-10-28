@@ -469,8 +469,9 @@ card lands). The take's frames fill the slots from a frame sequence (`TakeManife
 
 **OVERRIDES §61 (27 Oct ~12:35):** the person put the montage, the Return, at the end only, and it **replaces the wall
 and the convergence**; the Return lane owns that replacement (`setpieces/return*.ts`, `blink.ts`), and CR-08, the
-wall's parts of CR-02 and CR-16 and CR-06's S24 → S25 pull-back close with it. What follows describes the convergence as
-it stands in the demo until then; the title and the end card stay.
+wall's parts of CR-02 and CR-16 and CR-06's S24 → S25 pull-back close with it. Since 28 Oct the demo plays the Return
+in their place (§8 below); what follows describes the convergence, whose code stays: the Return's title and end card
+are this piece's (`planFinale`'s `head`).
 
 The wall's cells travel inward along their rings and shrink into the stone (E-leave, accelerating) while rings return to
 the stone in a train and the camera pushes in (its look waits for the montage decision, OVERRIDES §54–§57: CR-08); the
@@ -546,9 +547,51 @@ by 0.10–0.15 just before the iris-out darkens them, a rise and a fall within a
 the page's ink at a fifth of each line's box and sees no rise there; the design's C8 asks for no opposing pair at all,
 so this one is the lead's call (the lane's report).
 
+### 8. The Return — `planReturn({ w, h, fps, climax, grid?, lastNote?, decayS?, roomToneS?, musicCredit?, merge?, align? })`
+
+The montage the person chose for the end only (OVERRIDES §61; MONTAGE_DESIGN revision 2, its option B), in place of the
+wall and the convergence: after the kept card the camera pulls back from S24's own last frame, which is the first cell,
+to 85 cells of real features on three counter-rotating rings round the stone (a still or a 1× slice each, swapping in
+place or by a 36-px slide); then each cell returns along its own radius into the stone's opaque silhouette, the kept
+card last, the stone's own idle blink falls on R646, the finale's iris opens the page from the one stone and the title
+lands on A4's bar 82. Frames are R-frames at 60 fps (a local frame is R + 60): 12 s from R0, 13 with the lead-in.
+- **Files.** `returnCells.ts` (the manifest: take, moment, card, red, stand-in, text size; no Stealth cell, refused at
+  load), `returnField.ts` (geometry per aspect, the schedule, `cellPoseAt`, `cellScreenAt`, the hairlines),
+  `returnPlan.ts` (the camera, the music on `returnGrid()`, the plan: `planFinale` with the field's shot as its `head`),
+  `blink.ts` (the stone's clock offset, 710), `returnChecks.ts` (returnSchedule, returnWindows, returnContent,
+  returnMerge with returnRadius, cellText, blinkPlaced, joinPose, all in `checkPlan()`, and R2's exemption from cutRate,
+  holds and readingLoad for the Return's span only), `returnThumbs.ts`, `views/ReturnView.tsx`, `tests/return.test.ts`
+  (a canary for every check), `tools/return-sheet.ts` (the schedule against the design's model).
+- **The join** (MONTAGE_DESIGN §2.12). Plan the climax with `into: "return"` (it ends on its hold's glide on a half bar)
+  and pass it as `climax`: the Return's first frame is S24's last frame, filling the frame and moving as it left
+  (`joinPose`; `joins.ts`'s "frame" join holds the demo to it). `ReturnJoin.source` is S24's plan, which the view draws.
+  The camera starts one film frame along S24's glide (`entry.lead`), so the still moves on the Return's first frame as
+  S24's next frame would have: the centre's content moves 0.426 px on S24's last frame and 0.426 px into the Return's
+  first, in every aspect (the first cell sits 0.5 px off the frame's edges then; joinPose allows 1).
+- **The view.** ShotView calls `ReturnFieldView` between its ground and its foreground: the hairlines on the ground;
+  the cells in the frame's own px (`cellScreenAt`: the plan's camera at each cell's parallax depth), each from one
+  image, its blur one SVG filter on its own box (never CameraMotionBlur round the field, never a frame-sized layer per
+  cell); the first cell drawn live by S24's own view in S24's light (its corners round in over the lead-in), A3 by
+  Pebble's engine; the stone above every cell on its engine clock (`StoneSpec.clockOffset`, which PieceView now applies
+  to every stone). Through the iris, a seam whose two shots both show a `layer: "film"` stone draws ONE stone above
+  both (CR-01). `merge: "toned"` is R4's toned matte, G1's alternative: each returning cell's part inside the outline is
+  drawn again above the body and under the eyes, toned toward #536B54 over 7 frames from its first contact
+  (`F2-SP-return-toned-<aspect>`).
+- **The images** (gitignored, like every capture; until they are made the view draws flat panels):
+  `scripts/heavy.sh f2-return-thumbs /usr/sbin/taskpolicy -c utility bun video/src/film2/setpieces/tools/return-thumbs.ts`
+  makes 83 (18 published stills cropped and scaled, 65 labelled slots) into `video/public/ui/f2-cells/return`, 960, 320
+  and 192 px on the long side per ring, at or above the largest each ring is drawn at 1080. The 2.0.0 crops replace the
+  stand-ins through the manifest and the same tool.
+- **Looked at on 28 Oct** (half-size stills in every aspect: the join, the bloom, the rush, the first contact, the kept
+  card's return, the title; the toned matte in 16:9): the Return's first frame is S24's last frame, the same image but
+  for the demo's slate; at most 46 cells and the stone on any frame; cells pass behind the silhouette, and in the toned
+  matte show toned inside it under the eyes. Open for the lead: A3 (Pebble's engine) and A2 (a picture of the pebble)
+  read as second pebbles beside the one stone; the slots read pale until the 2.0.0 crops fill them.
+
 ### The demo and the checks
 
-`F2-SetPieces-Demo` (16:9), `F2-SetPieces-Demo-1x1` and `-9x16` play the six pieces in the film's order, each fitted to
+`F2-SetPieces-Demo` (16:9), `F2-SetPieces-Demo-1x1` and `-9x16` play the pieces in the film's order (the Drop, Ring 4
+and its cascade, the Dusk passage, the climax, the Return with the title and the end card, the post-credit scene), each fitted to
 a real measured stretch of an audition track (`demo/grids.ts`, from the score lane's maps: no audio is used), with a slate
 on every frame saying the UI is a placeholder. `F2-SP-<piece>-<aspect>` renders one piece. `bun test video/src/film2`
 runs `checkPlan()` on every piece in every aspect, for the demo's stretches and for random tempos and hit times.

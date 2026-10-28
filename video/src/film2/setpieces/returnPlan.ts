@@ -118,7 +118,7 @@ export interface ReturnCameraSpec {
   /** the R-frame it lands (the finale's landAt) */
   landR: number;
   /** S24's exit velocity carried into the pull-back (world px and log zoom per R-frame), decaying over `tau` R-frames */
-  entry?: { x: number; y: number; lz: number; tau: number };
+  entry?: { x: number; y: number; lz: number; tau: number; lead?: number };
   /** the title page's glide (log zoom per R-frame), matched from `landBlendFrom` to `landR` */
   landLz: number;
   landBlendFrom: number;
@@ -158,7 +158,9 @@ export function returnCameraAt(s: ReturnCameraSpec, r: number): { x: number; y: 
   if (s.entry) {
     // S24's own glide carried across the join, decaying (no net offset: t·e^(−t/τ))
     const t = r - RS;
-    const g = t * Math.exp(-t / s.entry.tau);
+    // (`lead`: the camera starts one film frame along S24's motion, so the first cell, a still of S24's last frame, moves
+    // on the Return's first frame as S24's frame after it would have: no repeated frame at the join)
+    const g = (t + (s.entry.lead ?? 0)) * Math.exp(-t / s.entry.tau);
     x += s.entry.x * g;
     y += s.entry.y * g;
     L += s.entry.lz * g;
@@ -316,7 +318,7 @@ export function planReturn(o: ReturnOptions): ScenePlan {
     const field = buildReturnField(f.aspect, fieldO, fps);
     const geometry = field.geometry;
     const zCard = Math.min(geometry.W / geometry.hero.w, geometry.H / geometry.hero.h);
-    const entry = join ? { ...entryFromS24(join, zCard * unit), tau: 20 } : undefined;
+    const entry = join ? { ...entryFromS24(join, zCard * unit), tau: 20, lead: 60 / fps } : undefined;
     const camSpec = returnCameraSpec(f.aspect, { geometry, title: { x: titleStone.x / unit, y: titleStone.y / unit }, landR, landLz: (lzPage * fps) / 60, entry, fresh: o.fresh });
     const camera = returnCamera(camSpec, fps, unit, landAt);
     camera.glide(irisAt, 1e9, { lz: lzPage });

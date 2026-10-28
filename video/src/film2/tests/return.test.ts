@@ -5,7 +5,7 @@
 // stoneCount and groundCoverage are shown to cover the Return's shot; R2's exemption from cutRate, holds and readingLoad
 // is shown to hold inside the Return's span only; and the post-credit scene (D157) plans after the Return's end card.
 import { describe, expect, test } from "bun:test";
-import { VelocityCamera } from "../motion/camera";
+import { VelocityCamera, worldToFrame } from "../motion/camera";
 import { E_MOVE } from "../motion/ease";
 import type { Aspect } from "../tokens";
 import { checkPlan } from "../setpieces/qa";
@@ -675,6 +675,29 @@ describe("the film's sequence: the Return in place of the wall and the convergen
       const r = ps.find((x) => x.id === "return")!;
       expect(errs(joinPose(r))).toEqual([]);
       expect(returnOf(r)!.join!.source).toBe(c);
+    }
+  });
+  test("no frame repeats at the join: S24's content moves on the Return's first frame as on S24's last (the camera's lead)", () => {
+    for (const a of ASPECTS) {
+      const ps = demoPlans(a).map((e) => e.plan);
+      const c = ps.find((x) => x.id === "climax")!;
+      const r = ps.find((x) => x.id === "return")!;
+      const kiln = c.shots[c.shots.length - 1]!;
+      const N = c.duration;
+      const pose = (f: number) => kiln.camera.pose(f - kiln.from);
+      const ctr = pose(N - 1);
+      const onS = (f: number) => worldToFrame({ x: ctr.x, y: ctr.y }, pose(f), c.frame.w, c.frame.h);
+      const field = returnOf(r)!.field;
+      const hero = field.cells.find((x) => x.spec.hero)!;
+      const onR = (f: number) => {
+        const q = cellScreenAt(hero, f, field)!.rect;
+        return { x: q.x + q.w / 2, y: q.y + q.h / 2 };
+      };
+      const d = (p: { x: number; y: number }, q: { x: number; y: number }) => Math.hypot(p.x - q.x, p.y - q.y);
+      const last = d(onS(N - 2), onS(N - 1));
+      const across = d(onS(N - 1), onR(0));
+      expect(last).toBeGreaterThan(0.3);
+      expect(Math.abs(across - last) / last).toBeLessThan(0.05);
     }
   });
   test("the canaries: a \"frame\" join into a piece that opens on nothing, or on another piece's frame, fails", () => {
