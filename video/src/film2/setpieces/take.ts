@@ -364,7 +364,8 @@ const KILN_SLOT: SlotStandIn = {
   h: 800,
   window: "pebble",
   standsFor: "G1, G2, B5",
-  focus: { x: 0.34, y: 0.64 },
+  // (fix round 3, the peak: under the kept card's left edge, where it now lands, at the column's foot)
+  focus: { x: 0.06, y: 0.79 },
 };
 
 /**

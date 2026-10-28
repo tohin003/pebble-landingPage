@@ -18,20 +18,24 @@ describe("nothing sits in front of the frame's subject (subjectsCovered)", () =>
   test("no plane covers a read or a plane framed whole, in any piece or aspect", () => {
     for (const a of ASPECTS) for (const { plan } of demoPlans(a)) expect(errorsOf(subjectsCovered(plan)).map((f) => `${a} ${plan.id}: ${f.message}`)).toEqual([]);
   });
-  test("Ring 4 declares its card asking framed whole, from the first dolly's landing to the click, in every aspect", () => {
+  // (fix round 3: the lean Ring 4, MONTAGE_DESIGN §5.4's named cut, frames no card asking: its subjects are the act's
+  // read and the receipt; the Finder stays at x 1080, out of the frame while the act is read)
+  test("the lean Ring 4 frames no card asking: its act is read with nothing in front of it, in every aspect", () => {
     for (const a of ASPECTS) {
       const p = piece(a, "ring4");
-      const x = p.extra as Record<string, number>;
       const ask = p.shots[0]!.planes.find((pl) => pl.id === "ring4-ask")!;
-      expect(ask.framed).toEqual({ from: x.dolly1To, to: x.clickAt });
-      expect(x.clickAt - x.dolly1To).toBeGreaterThanOrEqual(60);
+      expect(ask.framed).toBeUndefined();
+      expect(p.shots[0]!.planes.find((pl) => pl.id === "ring4-act")!.read).toBeDefined();
+      expect(errorsOf(subjectsCovered(p))).toEqual([]);
     }
   });
-  test("the canary: the 9:16 Finder where it was rendered covers the held card's right end while it asks", () => {
+  test("the canary: the 9:16 Finder moved over the act's sentence while it is read is refused", () => {
     const p = piece("9:16", "ring4");
-    const old: ScenePlan = { ...p, shots: p.shots.map((s) => ({ ...s, planes: s.planes.map((pl) => (pl.id === "finder" ? { ...pl, rect: { ...pl.rect, x: 990 } } : pl)) })) };
+    const act = p.shots[0]!.planes.find((pl) => pl.id === "ring4-act")!;
+    const r = act.read!.rect!;
+    const old: ScenePlan = { ...p, shots: p.shots.map((s, i) => (i === 0 ? { ...s, planes: s.planes.map((pl) => (pl.id === "finder" ? { ...pl, depth: 1, rect: { ...pl.rect, x: r.x + r.w * 0.6, y: r.y - 20 } } : pl)) } : s)) };
     const found = errorsOf(subjectsCovered(old));
-    expect(found.some((f) => /^finder, drawn in front of ring4-ask/.test(f.message) && /framed whole/.test(f.message))).toBe(true);
+    expect(found.some((f) => /^finder, drawn in front of ring4-act/.test(f.message) && /while it is read/.test(f.message))).toBe(true);
     expect(WORLD["9:16"].finder.x).toBeGreaterThanOrEqual(1080);
   });
   test("the canary: a context window moved over the act's sentence while it is read is refused (16:9)", () => {
@@ -64,24 +68,24 @@ describe("film type never sits on the stone (typeOverStone)", () => {
 });
 
 describe("Ring 4 reaches its receipt on one frame in every aspect (RingTiming.receiptArrive)", () => {
-  // the reads above the receipt (the answer, 6 words, and the act, 13) at the reading pace or slower, and the receipt
-  // (7 words) held no more than half a second past its reading time (0.5 + 0.3 s a word)
-  const pace = (readsS: number, receiptS: number): string[] => [
-    ...(19 / readsS > 3.14 ? [`the reads at ${(19 / readsS).toFixed(2)} words a second`] : []),
-    ...(receiptS > 0.5 + 0.3 * 7 + 0.5 ? [`the receipt held ${receiptS.toFixed(2)} s`] : []),
+  // the reads above the receipt at the reading pace or slower (fix round 3, the lean ring: the act alone, 13 words; round
+  // 2 read the answer too, 19), and the receipt (7 words) held no more than a second past its reading time (0.5 + 0.3 s
+  // a word): the lean ring's cut waits for a half bar
+  const pace = (words: number, readsS: number, receiptS: number): string[] => [
+    ...(words / readsS > 3.14 ? [`the reads at ${(words / readsS).toFixed(2)} words a second`] : []),
+    ...(receiptS > 0.5 + 0.3 * 7 + 1.0 ? [`the receipt held ${receiptS.toFixed(2)} s`] : []),
   ];
   const spans = (p: ScenePlan) => {
     const x = p.extra as Record<string, number>;
-    const readsFrom = x.clickAt + Math.round((x.dollyTo - x.clickAt) * 0.5);
-    return { arrive: x.receiptArrive, readsS: (x.glideStart - readsFrom) / p.fps, receiptS: (x.cut - 19 - x.receiptArrive) / p.fps };
+    return { arrive: x.receiptArrive, words: x.lean ? 13 : 19, readsS: (x.glideStart - x.readsFrom) / p.fps, receiptS: (x.cut - 19 - x.receiptArrive) / p.fps };
   };
   test("one arrival, the reads at the reading pace, the receipt held for its own time, in every aspect", () => {
     const all = ASPECTS.map((a) => spans(piece(a, "ring4")));
     expect(new Set(all.map((s) => s.arrive)).size).toBe(1);
-    for (const [i, s] of all.entries()) expect(`${ASPECTS[i]} ${pace(s.readsS, s.receiptS).join("; ")}`).toBe(`${ASPECTS[i]} `);
+    for (const [i, s] of all.entries()) expect(`${ASPECTS[i]} ${pace(s.words, s.readsS, s.receiptS).join("; ")}`).toBe(`${ASPECTS[i]} `);
   });
   test("the canary: 16:9 as rendered on 28 Oct (reads 510–760, receipt 836–1142) fails both ways", () => {
-    expect(pace((760 - 510) / 60, (1142 - 836) / 60).length).toBe(2);
+    expect(pace(19, (760 - 510) / 60, (1142 - 836) / 60).length).toBe(2);
   });
 });
 

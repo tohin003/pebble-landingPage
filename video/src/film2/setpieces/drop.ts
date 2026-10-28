@@ -32,7 +32,7 @@ import type { LightCue } from "../light/grades";
 import { typeSizePx } from "../type/scale";
 import { place, type MusicGrid } from "./music";
 import { breakLines, cornerSpeedOf, exitFramesOf, exitPlanOf, fitPose, frameBox, glideLz, lineHeightOf, lineRect, unionRect, zoomAbout, type FrameBox, type TypeBox } from "./frame";
-import { SLOT, STILL } from "./standins";
+import { CARD_TEXT_INSET, SLOT, STILL, cardText } from "./standins";
 import { TAKE_RS9, eventFrame, solveInPoint, type TakeManifest } from "./take";
 import { STONE_R, STONE_SIZE, WORLD, worldRects } from "./world";
 import { DROP_CUES } from "./pieces.cues";
@@ -103,6 +103,13 @@ interface DropLayout {
   /** the pair's block: left, top (computed from its height), max width */
   pair: (f: FrameBox, blockH: number) => { left: number; top: number; maxW: number };
   sizeT: number;
+  /**
+   * the way the card drifts across the pre-roll where the aperture leaves it little room to rise: −1 left (toward the
+   * frame's middle in 16:9), +1 right, the way the frame's opening then pans (fix round 3: with its text kept the safe
+   * margin from the bands, 1:1's card rises less and drifts more, and a leftward drift turned back through a stop
+   * into the opening's pan right, sway)
+   */
+  driftX?: number;
 }
 
 const LAYOUT: Record<FrameBox["aspect"], DropLayout> = {
@@ -122,6 +129,7 @@ const LAYOUT: Record<FrameBox["aspect"], DropLayout> = {
     // one line each at the tier's smallest size, so the pair stays in the top band, clear of the companion
     pair: (f) => ({ left: f.safe * 1.2, top: f.safe, maxW: f.w - f.safe * 2.2 }),
     sizeT: 0,
+    driftX: 1,
   },
   // the aperture is 4:5; the card in its upper part, the type below it
   "9:16": {
@@ -153,7 +161,11 @@ export function planDrop(o: DropOptions): ScenePlan {
   const ap0 = apertureRect(f.w, f.h, 0, cy);
   // the card reads at 28 px or more (4 % over the floor), framed in the narrow aperture (CR-09)
   const readZoom = ((28 * f.unit) / DROP_CARD.textPx) * 1.04;
-  const readRegion = L.read(f, ap0);
+  // (the card's text keeps the safe margin from the aperture's edges, inside the card's padding: fix round 3, readEdges;
+  // in 1:1's 16:9 aperture the card drifting up through the whole aperture brought its text to 37 px of the bands)
+  const readRegion0 = L.read(f, ap0);
+  const padY = Math.max(0, f.safe - CARD_TEXT_INSET * readZoom - (readRegion0.y - ap0.y));
+  const readRegion: Rect = { x: readRegion0.x, y: readRegion0.y + padY, w: readRegion0.w, h: readRegion0.h - 2 * padY };
   const readFit = fitPose(W.card, readRegion, f, 0.96);
   // the pre-roll's push starts at the reading floor and grows from it, so the card reads at 28 px from frame 0; it never
   // grows the card past the aperture's read region (a long pre-roll pushes more slowly), and the card drifts up through
@@ -177,10 +189,12 @@ export function planDrop(o: DropOptions): ScenePlan {
     const vx = Math.sqrt(Math.max(0, (READ_DRIFT_PX * f.unit) ** 2 - vy * vy));
     const roomX = Math.max(0, f.w - W.card.w * zHit - 48 * f.unit);
     const travelX = Math.min(roomX * 0.9, vx * T);
-    // (the card drifts left, toward the frame's middle in 16:9, centred on its framing so it never nears an edge)
-    const sx = Math.min(regionC.x, f.w - 24 * f.unit - (W.card.w * zHit) / 2 - travelX / 2);
-    const from = cardPose(zStart, regionC.y + travelY / 2, sx + travelX / 2);
-    const to = cardPose(zHit, regionC.y - travelY / 2, sx - travelX / 2);
+    // (the card drifts left, toward the frame's middle in 16:9, or right in 1:1 (LAYOUT.driftX), centred on its framing
+    // so it never nears an edge)
+    const sgn = L.driftX ?? -1;
+    const sx = Math.max(24 * f.unit + (W.card.w * zHit) / 2 + travelX / 2, Math.min(regionC.x, f.w - 24 * f.unit - (W.card.w * zHit) / 2 - travelX / 2));
+    const from = cardPose(zStart, regionC.y + travelY / 2, sx - (sgn * travelX) / 2);
+    const to = cardPose(zHit, regionC.y - travelY / 2, sx + (sgn * travelX) / 2);
     const v = { x: (to.x - from.x) / Math.max(1, T), y: (to.y - from.y) / Math.max(1, T), lz: Math.log(zHit / zStart) / Math.max(1, T) };
     return { from, to, v, corner: cornerSpeedOf(from, v, f) / f.unit };
   };
@@ -381,8 +395,10 @@ export function planDrop(o: DropOptions): ScenePlan {
     { id: "finder", kind: "apple", rect: W.finder, depth: W.depth.finder, content: slotOf(SLOT.finder, W.finder), dim: lift(W.finder), shadow: true },
     { id: "calculator", kind: "apple", rect: W.calculator, depth: W.depth.calculator, content: slotOf(SLOT.calculator, W.calculator), dim: lift(W.calculator), shadow: true },
     { id: "browser", kind: "thirdParty", rect: W.browser, content: { kind: "take", use, view: "browser" }, shadow: true, radius: 10 },
-    // the companion: RS-9's view; the card the Allow answers reads at 28 px until the Allow (CR-09, CR-11)
-    { id: "companion", kind: "pebble", rect: W.companion, content: { kind: "take", use, view: "companion" }, shadow: true, radius: 14, read: { from: readFrom, to: hit, words: DROP_CARD.words, textPx: DROP_CARD.textPx, rect: W.card, seenFrom: 0 } },
+    // the companion: RS-9's view; the card the Allow answers reads at 28 px until the Allow (CR-09, CR-11); its text,
+    // inside the card's padding, keeps the safe margin from the aperture's edges (fix round 3, readEdges: in 1:1's 16:9
+    // aperture the card itself comes within 10 px of the bands at reading size)
+    { id: "companion", kind: "pebble", rect: W.companion, content: { kind: "take", use, view: "companion" }, shadow: true, radius: 14, read: { from: readFrom, to: hit, words: DROP_CARD.words, textPx: DROP_CARD.textPx, rect: cardText(W.card), seenFrom: 0 } },
   ];
 
   /* ------------------------------------------------ light, leak, cues ------------------------------------------ */

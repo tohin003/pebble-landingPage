@@ -18,7 +18,6 @@ import { STILL } from "../setpieces/standins";
 import { WORLD } from "../setpieces/world";
 import { HOLD_PAN_PX } from "../setpieces/drop";
 import { KEPT_PAN_PX } from "../setpieces/climax";
-import { SEEN_TEXT_PX } from "../setpieces/ringBlock";
 import type { ScenePlan, ShotSpec } from "../setpieces/scene";
 
 const ASPECTS = ["16:9", "1:1", "9:16"] as const;
@@ -109,17 +108,22 @@ describe("every hard cut reads within 6 frames, inside a piece as between pieces
     for (const a of ASPECTS) for (const { plan } of demoPlans(a)) expect(errorsOf(cutsReadable(plan)).map((f) => `${a} ${plan.id}: ${f.message}`)).toEqual([]);
     expect(READ_AFTER_CUT_60).toBe(6);
   });
-  test("the canary: the Kiln slot's label at its top left corner (as rendered before) leaves the cut unread for 60 frames", () => {
+  // (fix round 3: the cut into Kiln now lands wide, on the window's corner and the ground, so its slot's label is in
+  // frame wherever it sits; the canary is the conversation's view with no slot to name it, as a placeholder with its
+  // label out of frame was before: the cut lands on hatching with nothing to read)
+  test("the canary: the cut into Kiln landing on its conversation with no label to read is unread", () => {
     for (const a of ASPECTS) {
       const p = piece(a, "climax");
       const unfocused: ScenePlan = {
         ...p,
+        // (and no stone: the wide landing shows the stone beside the window in 1:1 and 9:16)
         shots: p.shots.map((s) => ({
           ...s,
+          stone: s.id === "kiln" ? undefined : s.stone,
           planes: s.planes.map((pl) => {
             if (pl.content.kind !== "take" || pl.id !== "kiln") return pl;
             const m = pl.content.use.manifest;
-            const views = { ...m.views, conversation: { ...m.views.conversation!, slot: { ...m.views.conversation!.slot!, focus: undefined } } };
+            const views = { ...m.views, conversation: { ...m.views.conversation!, slot: undefined } };
             return { ...pl, content: { ...pl.content, use: { ...pl.content.use, manifest: { ...m, views } } } };
           }),
         })),
@@ -222,8 +226,10 @@ describe("type leaves the way it came: a rise through a mask lifts out through i
   test("the lines that rose and blurred away (round 2 as the verifier saw it) are lifts now, gone before their cuts", () => {
     for (const a of ASPECTS) {
       const lines = [...piece(a, "drop").types.filter((t) => t.id === "L05" || t.id === "L06"), piece(a, "ring4").types.find((t) => t.id === "ring4-chapter")!, piece(a, "climax").types.find((t) => t.id === "L24")!];
+      for (const t of lines) expect(`${a} ${t.id} ${t.exit}`).toBe(`${a} ${t.id} lift`);
+      // (fix round 3, the lean cascade: its fixed line blurs in word by word on the cut, so it blurs out, as it came)
       const fixed = piece(a, "ring4").shots.find((s) => s.cascade)!.cascade!.fixed;
-      for (const t of [...lines, fixed]) expect(`${a} ${t.id} ${t.exit}`).toBe(`${a} ${t.id} lift`);
+      expect(`${a} ${fixed.entrance} ${fixed.exit}`).toBe(`${a} wordBlur blur`);
       for (const p of [piece(a, "ring4"), piece(a, "climax")]) expect(errorsOf(typeExits(p)).map((f) => `${a} ${f.message}`)).toEqual([]);
     }
   });
@@ -234,8 +240,8 @@ describe("type leaves the way it came: a rise through a mask lifts out through i
     const lifted: ScenePlan = { ...p, types: p.types.map((t) => (t.id === "L25" ? { ...t, exit: "lift" as const } : t)) };
     expect(errorsOf(typeExitKind(lifted)).map((f) => f.message).join()).toMatch(/L25 .* lineBlur .* lift/);
     const ring = piece("9:16", "ring4");
-    const fixedBlur: ScenePlan = { ...ring, shots: ring.shots.map((s) => (s.cascade ? { ...s, cascade: { ...s.cascade, fixed: { ...s.cascade.fixed, exit: "blur" as const } } } : s)) };
-    expect(errorsOf(typeExitKind(fixedBlur)).map((f) => f.message).join()).toMatch(/ring4-fixed/);
+    const fixedLift: ScenePlan = { ...ring, shots: ring.shots.map((s) => (s.cascade ? { ...s, cascade: { ...s.cascade, fixed: { ...s.cascade.fixed, exit: "lift" as const } } } : s)) };
+    expect(errorsOf(typeExitKind(fixedLift)).map((f) => f.message).join()).toMatch(/ring4-fixed/);
     // the Veil's label blurs in and leaves with the render's world ("camera"): not this check's
     expect(piece("16:9", "dusk").types.find((t) => t.id === "L22")!.exit).toBe("camera");
     expect(errorsOf(typeExitKind(piece("16:9", "dusk")))).toEqual([]);
@@ -271,7 +277,10 @@ describe("every type rect's frames and exits are what the view draws (NF-06)", (
 
 /* ---------------------------------------------------------------- NF-01: Ring 4 frames a decision --------------- */
 
-describe("Ring 4 frames the held card asking, then reads its answer (NF-01)", () => {
+// (fix round 3: NF-01's decision framing is superseded by MONTAGE_DESIGN §5.4's named cut, the trim to 35 readable
+// features (OVERRIDES §61): the held card is shown, not read, its decision in the take's history; the lean Ring 4 is held
+// in tests/fix-round3.test.ts. HS-F's manifest still rolls from the card asking, so the 2.0.0 take keeps the decision)
+describe("Ring 4's held card (NF-01, then the named cut of fix round 3)", () => {
   test("HS-F rolls from the card asking: the whole card with its buttons until the click, its sentence after, on one clock", () => {
     const held = TAKE_HSF.views.held!;
     const click = TAKE_HSF.events.click!;
@@ -282,24 +291,18 @@ describe("Ring 4 frames the held card asking, then reads its answer (NF-01)", ()
     expect(Math.abs((TAKE_HSF.events.verified! - click) / TAKE_HSF.fps - 4.63)).toBeLessThan(0.2);
     expect(HSF_VIEWS.held.w).toBe(STILL.held.crop!.w);
   });
-  test("in every aspect the asking card is framed whole, its text under the legibility size; its answer is read at 28 px", () => {
+  test("in every aspect the take enters after the click: the held card is answered from the first frame, shown and never read", () => {
     for (const a of ASPECTS) {
       const p = piece(a, "ring4");
       const s = p.shots[0]!;
-      const x = p.extra as Record<string, number>;
       const ask = s.planes.find((pl) => pl.id === "ring4-ask")!;
       const u = ask.content.kind === "take" ? ask.content.use : null;
-      const clickAt = frameOfSource(TAKE_HSF.events.click!, u!.at, p.fps, u!.manifest, u!.inPoint);
-      expect(clickAt).toBe(x.clickAt);
-      // framed whole for at least a second before the click, its text at most SEEN_TEXT_PX
-      for (let fr = x.dolly1To; fr < clickAt; fr += 4) {
-        const r = rectInFrame(ask.rect, s.camera.pose(fr), p.frame);
-        expect(r.x >= 0 && r.y >= 0 && r.x + r.w <= p.frame.w && r.y + r.h <= p.frame.h).toBe(true);
-        expect((STILL.held.textPx! * s.camera.pose(fr).zoom) / p.frame.unit).toBeLessThanOrEqual(SEEN_TEXT_PX + 1e-6);
-      }
-      expect(clickAt - x.dolly1To).toBeGreaterThanOrEqual(60);
-      // its answer read at 28 px or more
-      expect((STILL.heldNote.textPx! * s.camera.pose(x.dollyTo).zoom) / p.frame.unit).toBeGreaterThanOrEqual(28);
+      // the decision is in the take's history: the click comes before its first shown frame
+      expect(frameOfSource(TAKE_HSF.events.click!, u!.at, p.fps, u!.manifest, u!.inPoint)).toBeLessThanOrEqual(u!.at);
+      expect(stillsAt(TAKE_HSF.views.held!, u!.inPoint).map((x) => x.standIn.id)).toEqual(["heldNote"]);
+      // shown, not read: no read is declared on it, nor a framing of it as the frame's subject
+      expect(ask.read).toBeUndefined();
+      expect(ask.framed).toBeUndefined();
     }
   });
   test("the receipt is its Verified line, cropped at line boundaries: no timing line above it, no half-cut reply below", () => {

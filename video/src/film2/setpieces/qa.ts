@@ -30,7 +30,7 @@
 //   codaWords, codaHolds, codaStone, codaCamera, codaPose, codaNoUi, codaLockup, codaFlashes, codaSound, codaCaptions,
 //   codaLight
 // Pure; no React. setpieces/tests run checkPlan() on every piece, every aspect and many music grids.
-import { CAMERA, COLOR } from "../tokens";
+import { CAMERA, COLOR, SAFE_MARGIN_PX } from "../tokens";
 import { checkAll, type Finding, type QaMove, type Report } from "../qa/checks";
 import type { FilmTimelineQa, QaReadable, QaShot } from "../qa/timeline";
 import { GRADES, gradeColor, gradeLuminance, hexToRgb, relLuminance, type Grade } from "../light/grades";
@@ -54,7 +54,9 @@ import { shotOf, type PlaneSpec, type ScenePlan, type ShotSpec, type TypeSpec } 
 import { contentMotion, planeOpacityAt, probeGrid } from "./motion-qa";
 import { drawnSlots, labelOpacityOn, labelRectOn, visibleFrameOn, type DrawnSlot } from "./labels";
 import { apertureRect } from "../carrier/apertureMath";
-import { exemptReturnSpan, returnChecks } from "./returnChecks";
+import { exemptReturnSpan, picturedStonePxOf, planTrace, returnChecks, returnOf } from "./returnChecks";
+import { localOfR, rOfLocal } from "./returnField";
+import { CASCADE_SWEEP_PX } from "./ringBlock";
 import { codaChecks } from "./codaChecks";
 
 const at = (p: ScenePlan, s: ShotSpec, fr: number) => s.camera.pose(fr - s.from);
@@ -558,12 +560,56 @@ export function stonesOnFrame(p: ScenePlan, fr: number, minShare = 0.25): StoneO
   return out;
 }
 
+/** The share of the stone's area from which a pebble a cell pictures counts as a stone (fix round 3; VF-01). */
+export const PICTURED_STONE_SHARE = 0.1;
+
+/**
+ * The pebbles the Return's cells picture on a local frame (fix round 3; the verifier's VF-01): Pebble's engine drawn in
+ * a cell, or a still that shows the companion's avatar (returnChecks.ts picturedStonePxOf), each counted as a stone
+ * when its body is 10 % or more of the stone's area on that frame and at least a quarter of the cell is shown (in frame,
+ * not behind the stone). On r4 A3's engine cell, a whole dark pebble about 15 % of the stone's area, sat beside the
+ * stone at the merge (4818–4830) and the scan's 25 % blob floor passed it. Its centre and radius in frame px.
+ */
+export function picturedStonesOnFrame(p: ScenePlan, fr: number): { cell: string; c: Point; r: number; share: number }[] {
+  const ret = returnOf(p);
+  const t = ret ? planTrace(p) : null;
+  if (!ret || !t) return [];
+  const r = rOfLocal(fr, p.fps);
+  const tf = Number.isInteger(r) ? t.at(r) : t.frames.find((x) => Math.abs(localOfR(x.r, p.fps) - fr) < 0.5);
+  if (!tf) return [];
+  const k = p.frame.unit; // the trace's px at 1080 → frame px
+  const stoneW = t.field.stone.body.width * tf.pose.zoom;
+  const out: { cell: string; c: Point; r: number; share: number }[] = [];
+  for (const x of tf.cells) {
+    const wpx = picturedStonePxOf(x.c, x.s.w, x.s.h);
+    if (wpx <= 0 || stoneW <= 0) continue;
+    const share = (wpx / stoneW) ** 2;
+    const inFrame = (Math.max(0, Math.min(x.s.x + x.s.w, t.W) - Math.max(x.s.x, 0)) * Math.max(0, Math.min(x.s.y + x.s.h, t.H) - Math.max(x.s.y, 0))) / Math.max(1e-9, x.s.w * x.s.h);
+    if (share < PICTURED_STONE_SHARE || inFrame * x.share < 0.25) continue;
+    out.push({ cell: x.c.id, c: { x: (x.s.x + x.s.w / 2) * k, y: (x.s.y + x.s.h / 2) * k }, r: (wpx / 2) * k, share });
+  }
+  return out;
+}
+
 /**
  * Exactly one stone wherever the stone shows: two stones a frame shows at once must be the same stone (centres within
- * 6 px at 1080, sizes within 6 %), as a match through an iris is; otherwise the frame shows two stones.
+ * 6 px at 1080, sizes within 6 %), as a match through an iris is; otherwise the frame shows two stones. Since fix round
+ * 3 a pebble a Return cell pictures counts too, from 10 % of the stone's area (picturedStonesOnFrame; VF-01).
  */
 export function stoneCount(p: ScenePlan): Finding[] {
   const out: Finding[] = [];
+  // (fix round 3, VF-01): a pebble pictured in a cell beside the stone is a second stone
+  const pictured = (fr: number) => (stonesOnFrame(p, fr).length > 0 ? picturedStonesOnFrame(p, fr) : []);
+  for (const run of runsOf(0, p.duration, (fr) => pictured(fr).length > 0)) {
+    const xs = pictured(run.from);
+    out.push({
+      check: "stoneCount",
+      level: "error",
+      message: `a pebble pictured in a cell beside the stone for ${run.to - run.from} frames, ${run.from}–${run.to}: ${xs.map((x) => `${x.cell}'s, ${Math.round(x.share * 100)} % of the stone's area`).join("; ")} on frame ${run.from} (one stone only: a cell never pictures the pebble at 10 % of its area or more, VF-01)`,
+      frame: run.from,
+      to: run.to,
+    });
+  }
   const tol = 6 * p.frame.unit;
   const two = (fr: number) => {
     const s = stonesOnFrame(p, fr);
@@ -1615,6 +1661,120 @@ export function typeOverStone(p: ScenePlan): Finding[] {
 /** The checks added on fix round 2's render (28 Oct): what the reels showed and no check saw. */
 export const ROUND2_RENDER_CHECKS = ["subjectsCovered", "typeOverStone"] as const;
 
+/* ---------------------------------------------------------------- fix round 3 (28 Oct): verify-2's VF-03, VF-04 -- */
+
+/** Where a margin falls short: the sides nearer than `m` to the visible frame's edges, and the least margin. */
+const marginOf = (q: Rect, v: Rect): { least: number; sides: string[] } => {
+  const d = { left: q.x - v.x, top: q.y - v.y, right: v.x + v.w - q.x - q.w, bottom: v.y + v.h - q.y - q.h };
+  const least = Math.min(d.left, d.top, d.right, d.bottom);
+  return { least, sides: Object.entries(d).filter(([, x]) => x === least).map(([k]) => k) };
+};
+
+/**
+ * Read UI keeps the safe margin (fix round 3; the verifier's VF-04; TREATMENT §3.12: "Text stays at least 60 px from
+ * every edge", which typeSafe held for film type only): every declared read (a plane's `read` from its `from` to its
+ * `to`, a shot's `reads`) sits SAFE_MARGIN_PX (60 at 1080) or more inside the frame the viewer sees (the aperture's
+ * open part in the Drop) on every frame it is read. On r4 (28 Oct) Ring 4's reads ran 26 px from the left edge and
+ * 36–38 px from the right in 1:1 and 9:16 for 3.5 s, where a social 9:16 overlay sits on the sentence.
+ */
+export function readEdges(p: ScenePlan): Finding[] {
+  const out: Finding[] = [];
+  const m = p.frame.safe;
+  for (const s of p.shots) {
+    const reads = [
+      ...s.planes.filter((pl) => pl.read && pl.read.words > 0).map((pl) => ({ id: pl.id, from: Math.max(pl.read!.from, s.from), to: Math.min(pl.read!.to, s.to), rect: (fr: number) => planeRectAt(p, s, pl, fr, pl.read!.rect ?? pl.rect) })),
+      ...(s.reads ?? []).filter((r) => r.words > 0).map((r) => ({ id: r.id, from: Math.max(r.from, s.from), to: Math.min(r.to, s.to), rect: (fr: number) => rectInFrame(r.rect, at(p, s, fr), p.frame) })),
+    ];
+    for (const r of reads) {
+      const short = (fr: number) => marginOf(r.rect(fr), visibleFrameOn(p, s, fr)).least < m - 0.5;
+      for (const run of runsOf(r.from, r.to, short)) {
+        let worst = Infinity;
+        let at0 = run.from;
+        const sides = new Set<string>();
+        for (let fr = run.from; fr < run.to; fr++) {
+          const g = marginOf(r.rect(fr), visibleFrameOn(p, s, fr));
+          if (g.least < worst) {
+            worst = g.least;
+            at0 = fr;
+          }
+          for (const x of g.sides) sides.add(x);
+        }
+        out.push({ check: "readEdges", level: "error", message: `${r.id}: read ${(worst / p.frame.unit).toFixed(0)} px from the frame's ${[...sides].join(" and ")} edge at 1080 (frame ${at0}) for ${((run.to - run.from) / p.fps).toFixed(2)} s, frames ${run.from}–${run.to}: read UI keeps ${SAFE_MARGIN_PX} px from every edge (TREATMENT §3.12; VF-04)`, frame: run.from, to: run.to });
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * A cascade's cards keep the safe margin and their labels (fix round 3; the verifier's VF-03): while a card is shown
+ * whole (from its swap in, the first from the cut, to its swap out or the cascade's end), outside the cut's sweep (its
+ * edges moving over CASCADE_SWEEP_PX, 4 px a frame at 1080), it sits SAFE_MARGIN_PX (60 at 1080) or more inside the
+ * frame, and a slot's label is drawn whole (labels.ts: whole or not at all). On r4 the 1:1 and 9:16 stage's pan and
+ * push carried the card (88 % of the tall frame's width) out of its left edge, its label hidden, from 2112 on.
+ */
+export function cascadeCards(p: ScenePlan): Finding[] {
+  const out: Finding[] = [];
+  const m = p.frame.safe;
+  for (const s of p.shots) {
+    const c = s.cascade;
+    if (!c) continue;
+    const sched = cascadeSchedule(c.start, c.items, p.fps, c.beats, undefined, c.endAt);
+    c.cards.forEach((card, i) => {
+      const w = sched[i];
+      if (!w) return;
+      const from = Math.max(s.from, i === 0 ? s.from : w.inEnd);
+      const to = Math.min(s.to, i === sched.length - 1 ? (c.endAt ?? s.to) : w.outStart);
+      const rectOn = (fr: number) => rectInFrame(card.rect, at(p, s, fr), p.frame);
+      const sweeping = (fr: number) => {
+        const a = rectOn(fr);
+        const b = rectOn(Math.min(fr + 1, s.to - 1));
+        return Math.max(Math.abs(b.x - a.x), Math.abs(b.x + b.w - a.x - a.w), Math.abs(b.y - a.y)) > CASCADE_SWEEP_PX * p.frame.unit;
+      };
+      const st = card.content.kind === "standIn" ? card.content.standIn : null;
+      const d: DrawnSlot | null = st && st.kind === "slot" ? { id: card.id, key: "self", slot: st, box: card.rect, depth: card.depth ?? 1, from: s.from, to: s.to, state: () => undefined, timecode: () => undefined } : null;
+      const near = (fr: number) => !sweeping(fr) && marginOf(rectOn(fr), visibleFrameOn(p, s, fr)).least < m - 0.5;
+      for (const run of runsOf(from, to, near)) {
+        let worst = Infinity;
+        for (let fr = run.from; fr < run.to; fr++) worst = Math.min(worst, marginOf(rectOn(fr), visibleFrameOn(p, s, fr)).least);
+        out.push({ check: "cascadeCards", level: "error", message: `${card.id}: the cascade's card comes ${(worst / p.frame.unit).toFixed(0)} px from the frame's edge at 1080 for ${((run.to - run.from) / p.fps).toFixed(2)} s, frames ${run.from}–${run.to}: a card stays ${SAFE_MARGIN_PX} px inside the frame while it is shown (VF-03)`, frame: run.from, to: run.to });
+      }
+      if (!d) return;
+      const unnamed = (fr: number) => !sweeping(fr) && labelOpacityOn(p, s, d, fr) < 0.99;
+      for (const run of runsOf(from, to, unnamed)) out.push({ check: "cascadeCards", level: "error", message: `${card.id}: its slot's label is not drawn for ${((run.to - run.from) / p.fps).toFixed(2)} s, frames ${run.from}–${run.to}, while the card shows: a placeholder names what fills it (VF-03)`, frame: run.from, to: run.to });
+    });
+  }
+  return out;
+}
+
+/**
+ * Ring 4's ring part and Cascade 4 against the cue sheet (fix round 3; OVERRIDES §61, MONTAGE_DESIGN §5.4): the score
+ * lane cut the music for 35 readable features (CUE_SHEET.md revision 2: Ring 4's ring part one phrase, 7.74 s; Cascade 4
+ * half of one, 3.87 s). The lengths come from the cue data (setpieces/tools/cue-data.ts reads CUE_SHEET.json), never
+ * typed in; a ring part or a cascade that differs from them by more than `tolFrames` fails. planRingBlock's plans carry
+ * both lengths (`extra.ringPart`, `extra.cascadePart`). It needs the cue data, so it is not part of checkPlan:
+ * setpieces/tools/check-setpieces.ts and tests/fix-round3.test.ts run it.
+ */
+export function cueLengths(p: ScenePlan, cue: { ringS: number; cascadeS: number; source: string }, tolFrames = 1): Finding[] {
+  const x = p.extra as { ringPart?: number; cascadePart?: number } | undefined;
+  if (x?.ringPart === undefined || x.cascadePart === undefined) return [{ check: "cueLengths", level: "error", message: `${p.id}: the plan carries no ring part and cascade lengths to hold to the cue sheet` }];
+  const out: Finding[] = [];
+  const parts = [
+    { name: "the ring part", got: x.ringPart, s: cue.ringS, at: 0 },
+    { name: "the cascade", got: x.cascadePart, s: cue.cascadeS, at: x.ringPart },
+  ];
+  for (const q of parts) {
+    const want = q.s * p.fps;
+    const d = q.got - want;
+    if (Math.abs(d) > tolFrames + 0.5)
+      out.push({ check: "cueLengths", level: "error", message: `${p.id}: ${q.name} runs ${q.got} frames (${(q.got / p.fps).toFixed(2)} s); the cue sheet gives it ${want.toFixed(1)} (${q.s.toFixed(3)} s, ${cue.source}): ${d > 0 ? "over" : "under"} by ${Math.abs(d).toFixed(1)} frames (${(Math.abs(d) / p.fps).toFixed(2)} s)`, frame: q.at, to: q.at + q.got });
+  }
+  return out;
+}
+
+/** The checks added in fix round 3 (28 Oct; verify-2's VF-03, VF-04). cueLengths needs the cue data, so it is run apart. */
+export const ROUND3_CHECKS = ["readEdges", "cascadeCards"] as const;
+
 /** The checks added in fix round 2, by name (the verifier's findings after fix round 1). */
 export const ROUND2_CHECKS = ["contentFloor", "sway", "cutsReadable", "slotLabels", "typeOverType", "typeExitKind"] as const;
 
@@ -1658,6 +1818,10 @@ export function checkPlan(p: ScenePlan, grid?: MusicGrid, extraMoves: readonly Q
     // added on fix round 2's render (28 Oct): nothing in front of the subject, no type on the stone
     ...subjectsCovered(p),
     ...typeOverStone(p),
+    // added in fix round 3 (28 Oct; verify-2's VF-04 and VF-03): read UI keeps the safe margin; a cascade's cards keep
+    // it and their labels
+    ...readEdges(p),
+    ...cascadeCards(p),
     // the Return (OVERRIDES §61 R2: returnSchedule, returnWindows, returnContent, returnMerge, returnRadius, cellText,
     // blinkPlaced, joinPose; setpieces/returnChecks.ts)
     ...returnChecks(p),

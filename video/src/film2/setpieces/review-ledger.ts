@@ -89,6 +89,27 @@ export const CLOSED_FINDINGS: readonly { piece: string; check: string; cr: strin
 ];
 
 /**
+ * Open findings of checks that need data a plan does not carry (fix round 3, 28 Oct): `cueLengths` holds Ring 4's ring
+ * part and Cascade 4 to the cue sheet's lengths, read from the score lane's cue data (.work/score2/CUE_SHEET.json:
+ * setpieces/tools/cue-data.ts). checkPlan cannot run it, so tests/fix-round3.test.ts holds these the same way: each must
+ * still fire on the current plans with the cue data, until the lead rules a music flex and the cue sheet follows.
+ */
+export const OPEN_DATA_FINDINGS: readonly OpenFinding[] = [
+  {
+    piece: "ring4",
+    check: "cueLengths",
+    cr: "TRIM-R4",
+    note: "the ring part (MONTAGE_DESIGN §5.4's named cut: the held card shown, not read; the take entered after the click; the act and the Verified line read; two lines on the ring's travel) runs 639 frames, 10.65 s, against the cue sheet's 7.74 s: its 26 readable words (L17 3, L18 3, F3 13, F12 7) need 8.28 s at 3.14 a second, and in 1:1 and 9:16 the act's 424-px sentence at 28 px fills the width with the 60-px margin (2.26×) while the Verified line's 11-px text needs 2.55×, so the two are read in two framings with a glide between: 3.9 + 0.93 + 2.6 + 0.32 s after the act is legible, 5.5 bars on one timeline. The lead rules the music (F2 doubled, CUE_SHEET §5.4 F5's second clause: +2 bars for Ring 4 and Cascade 4 together, the film 2:18.90)",
+  },
+  {
+    piece: "ring4",
+    check: "cueLengths",
+    cr: "TRIM-C4",
+    note: "Cascade 4's four features (the person chose 35) run 290 frames, 4.83 s, against the cue sheet's 3.87 s: each swap lands 2–3 frames before a beat (124 BPM), so the first item holds three beats (1.32 s; TREATMENT §3.8 about 1.1 s, checkCascade 0.95) and the rest two (0.83 s) or the cascade's end (0.70 s): the first item on the cut's first beat, the last at its 0.65-s floor, is 2.5 bars; 2 bars cannot hold four items at the floors (the fourth item would land on the 8th beat, then 0.65 s and the 19-frame leave)",
+  },
+];
+
+/**
  * Open findings no check holds: judged by eye at G1 (MONTAGE_DESIGN §9). Listed so that nothing reads as closed that is
  * not (the review of 28 Oct, RV-07: the README said CR-16's wall part closed with the wall, while its size target is
  * unmet).

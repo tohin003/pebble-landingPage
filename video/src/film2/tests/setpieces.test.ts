@@ -190,14 +190,17 @@ describe("the ring block (Ring 4 and Cascade 4)", () => {
         const p = planRingBlock({ w, h, fps: FPS, content: ring4(w > h ? "16:9" : w === h ? "1:1" : "9:16"), grid });
         expectClean(p, grid);
         const x = p.extra as Record<string, number>;
-        // the take's receipt event IS the receipt's beat, and the ring returns on it
+        // the take's receipt event IS the receipt's beat
         expect(eventFrame(p.takes[0]!, "verified", FPS)).toBe(x.receiptAt);
         expect(grid.beats).toContain(x.receiptAt);
+        // (fix round 3, the lean ring: MONTAGE_DESIGN §5.4) the ring returns once it has framed the ask, as the camera
+        // flies in, so no held ring grows across the lines with the reading zoom
         const ring = p.shots[0]!.rings[0]!;
         const returnAt = ring.start + ring.phases.slice(0, 3).reduce((s, ph) => s + ph.frames, 0);
-        expect(returnAt).toBe(x.receiptAt);
-        // the cut to the cascade is on a bar line; every swap lands 2–3 frames before a beat
-        expect(grid.downbeats).toContain(x.cut);
+        expect(returnAt).toBe(ring.phases[0]!.frames + ring.phases[1]!.frames + 1);
+        // the cut to the cascade is on a half bar (a bar line would hold the receipt up to 2 s longer); every swap lands
+        // 2–3 frames before a beat
+        expect(halfBars(grid)).toContain(x.cut);
         const c = p.shots[1]!.cascade!;
         for (const sw of cascadeSchedule(c.start, c.items, FPS, c.beats).slice(1)) {
           const b = grid.beats.find((y) => y >= sw.inEnd)!;

@@ -115,6 +115,9 @@ const LAYOUT: Record<FrameBox["aspect"], DuskLayout> = {
   },
 };
 
+/** The room the palette's read row leaves for its push and pan (its width ÷ the safe frame's at the reading zoom). */
+export const PALETTE_ROW_ROOM = 1.24;
+
 /** The palette's pan, px a frame at 1080, on top of its push (fix round 2: the content floor). */
 export const PALETTE_PAN_PX = 0.28;
 /** The Veil's lateral orbit, px a frame at 1080, on top of its push (fix round 2: the content floor). */
@@ -157,11 +160,15 @@ export function planDusk(o: DuskOptions): ScenePlan {
   // the typed word and the lit row are read (L20, UI) at ≥ 28 px at 1080; the palette may bleed off the frame's sides
   const paletteTextPx = 15;
   const needZoom = ((28 * f.unit) / paletteTextPx) * 1.03;
-  // (the push grows it by up to 12 % before the rack: the row it reads stays inside the frame's margins)
-  const rowW = Math.min(paletteWorld.w, (f.w - 2 * f.safe) / needZoom / 1.12);
+  // (the push grows it by up to 12 % before the rack, and the pan carries it sideways: the row it reads keeps the safe
+  // margin, 60 px at 1080, to the read's end: fix round 3's readEdges (VF-04) measured 30 px in 9:16 and 52 in 1:1 at
+  // 1.12; the typed word and the lit row, about 200–300 CSS px, sit inside it)
+  const rowW = Math.min(paletteWorld.w, (f.w - 2 * f.safe) / needZoom / PALETTE_ROW_ROOM);
   const paletteRead: Rect = { x: paletteWorld.x + (paletteWorld.w - rowW) / 2, y: paletteWorld.y, w: rowW, h: 170 };
   const p0fit = fitPose(paletteRead, L.palette(f), f, 0.92);
-  const p0: Pose = { ...p0fit, zoom: Math.max(p0fit.zoom, needZoom) };
+  // (at most the zoom that leaves the read row its room: filling the palette's region framed the row 874 px wide in
+  // 1:1, and the push and the pan then carried it to 52 px from the frame's edge)
+  const p0: Pose = { ...p0fit, zoom: Math.max(needZoom, Math.min(p0fit.zoom, (f.w - 2 * f.safe) / PALETTE_ROW_ROOM / rowW)) };
   const rackAt = enter + f60(48, fps);
   const rackF = f60(36, fps);
   // in with the cut's momentum (a glide, never landing at rest), then the slow push toward the palette, panning on in

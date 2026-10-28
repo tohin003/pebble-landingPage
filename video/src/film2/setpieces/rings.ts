@@ -44,28 +44,35 @@ export const ring4 = (A: Aspect): RingContent => {
     context: worldContext(A),
     take: TAKE_HSF,
     window: { view: "window", rect: W.project.window },
-    // the held card asking, framed whole with its buttons until the person's click on Run the tests; then its answered
-    // sentence, "Blocked · Pebble's change isn't verified yet." (6 words), is read (NF-01)
+    // MONTAGE_DESIGN §5.4's named cut (fix round 3, the trim to 35 readable features, OVERRIDES §61): the held card is
+    // shown, not read: F11 stays in context in the conversation's history (the take enters after the person's click
+    // on Run the tests, TREATMENT §3.6 chain 9); the ring frames it and the camera lands on the test card, read while
+    // the take runs; the receipt reads its first line only. (Fix round 2 framed the card asking with its buttons for
+    // 1.1 s and read its answer, NF-01: 6 more words and a second dolly, which the 7.74-s phrase has no room for)
     ask: {
       view: "held",
       rect: held,
       words: STILL.heldNote.words!,
       textPx: STILL.heldNote.textPx!,
       readRect: { x: held.x + HSF_VIEWS.held.answered.x, y: held.y + HSF_VIEWS.held.answered.y, w: HSF_VIEWS.held.answered.w, h: HSF_VIEWS.held.answered.h },
-      asking: { until: "click", textPx: STILL.held.textPx! },
+      shownOnly: { after: "click" },
     },
     // the test card's sentence: "Runs the project's tests in a temporary copy. Your project files don't change." (13)
     act: { view: "run", rect: run, startEvent: "running", words: STILL.testsLine.words!, textPx: STILL.testsLine.textPx!, readRect: { x: run.x + HSF_VIEWS.run.tests.x, y: run.y + HSF_VIEWS.run.tests.y, w: HSF_VIEWS.run.tests.w, h: HSF_VIEWS.run.tests.h } },
     // "Verified · pytest … passed on current files" (7 words)
     receipt: { event: "verified", rect: HSF_VIEWS.run.receipt, words: STILL.verifiedTop.words!, textPx: STILL.verifiedTop.textPx! },
     lines: { chapter: "AgentGuard, built in.", limit: "Reliability, not security." },
+    // (the lean cascade, MONTAGE_DESIGN §5.4: its four features stay. Each swap lands 2–3 frames before a beat (124 BPM:
+    // a beat is 29 frames), so a hold is two beats less the 8-frame swap (0.83 s) or three (1.32 s): the first item
+    // holds three beats (TREATMENT §3.8 asks about 1.1 s; checkCascade's floor is 0.95), the next two two beats each
+    // (the table's 0.9 and 0.85 s), and the last its floor, 0.65 s, so the four end on the cascade's second half bar)
     cascade: {
       fixed: "Bigger tasks",
       items: [
         { text: "Agents read and propose", holdS: 1.1, card: SLOT.agents },
-        { text: "A goal, with criteria", holdS: 0.9, card: SLOT.goal },
-        { text: "Skills you review", holdS: 0.85, card: SLOT.skills },
-        { text: "Connectors that ask", holdS: 0.85, card: SLOT.connector },
+        { text: "A goal, with criteria", holdS: 0.8, card: SLOT.goal },
+        { text: "Skills you review", holdS: 0.8, card: SLOT.skills },
+        { text: "Connectors that ask", holdS: 0.65, card: SLOT.connector },
       ],
     },
   };

@@ -7,7 +7,8 @@
 // cuts velocity-matched and never between two rests, every piece reading within 6 frames of its join).
 // --summary prints one line per piece and check instead of every finding. Exit status 0 only when every piece passes.
 import { formatReport, type Finding } from "../../qa/checks";
-import { REVIEW_CHECKS, checkPlan, hitSyncAcross } from "../qa";
+import { REVIEW_CHECKS, checkPlan, cueLengths, hitSyncAcross } from "../qa";
+import { loadRingFourCue } from "./cue-data";
 import { DEMO_JOINS, demoPlans } from "../demo/plans";
 import { checkJoins } from "../joins";
 import type { ScenePlan } from "../scene";
@@ -56,6 +57,25 @@ for (const a of aspects) {
   if (joins.length) {
     ok = false;
     counts.joins = (counts.joins ?? 0) + joins.length;
+  }
+}
+// fix round 3 (OVERRIDES §61; MONTAGE_DESIGN §5.4): Ring 4's ring part and Cascade 4 against the cue sheet's lengths,
+// read from the cue data (.work/score2/CUE_SHEET.json); open until the lead's music flex rules (review-ledger.ts
+// OPEN_DATA_FINDINGS), and this tool fails while it is
+const cue = loadRingFourCue();
+for (const a of aspects) {
+  const ring = demoPlans(a).find((e) => e.plan.id === "ring4")?.plan;
+  if (!ring) continue;
+  if (!cue) {
+    console.log(`${a.padEnd(5)} cue     NOT MEASURED: no cue data (.work/score2/CUE_SHEET.json) or no "Ring 4" block in it`);
+    continue;
+  }
+  const xs = cueLengths(ring, cue);
+  console.log(`${a.padEnd(5)} cue     ${xs.length ? "FAIL" : "PASS"} Ring 4's ring part and Cascade 4 against ${cue.source}: ${cue.ringS.toFixed(3)} s and ${cue.cascadeS.toFixed(3)} s`);
+  for (const f of xs) console.log(`  ERROR [${f.check}] ${f.message}`);
+  if (xs.length) {
+    ok = false;
+    counts.cueLengths = (counts.cueLengths ?? 0) + xs.length;
   }
 }
 if (summary) console.log(`errors by check: ${Object.entries(counts).map(([k, v]) => `${k} ${v}`).join(", ")}`);

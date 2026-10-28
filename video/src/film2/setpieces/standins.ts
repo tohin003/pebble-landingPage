@@ -68,6 +68,16 @@ export interface SlotStandIn {
 
 export type StandIn = StillStandIn | SlotStandIn;
 
+/**
+ * A card's padding, CSS px: its text starts this far inside its border (measured 28 Oct on the 1.0.x test card, 3×: the
+ * border at 15 CSS px, the first line's ink at 29; the title row 16 below the top border). A read of a whole card (a
+ * slot at the 2.0.0 card's size) keeps the safe margin with its text, inside this padding (fix round 3, readEdges).
+ */
+export const CARD_TEXT_INSET = 14;
+
+/** A card's text block: its rect inside its padding. */
+export const cardText = (r: Rect, inset = CARD_TEXT_INSET): Rect => ({ x: r.x + inset, y: r.y + inset, w: r.w - 2 * inset, h: r.h - 2 * inset });
+
 /** The shown size of a stand-in (its crop, or the whole capture). */
 export const shownSize = (s: StandIn): { w: number; h: number } => (s.kind === "still" && s.crop ? { w: s.crop.w, h: s.crop.h } : { w: s.w, h: s.h });
 
