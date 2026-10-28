@@ -71,7 +71,8 @@ def main():
                                                                      "score_provenance.py", "score_common.py",
                                                                      "score_designed.py", "score_arc.py",
                                                                      "score_sfx_audition.py", "score_sfx_sheet.py",
-                                                                     "score_title_probe.py", "cue_plan.py",
+                                                                     "score_title_probe.py", "score_handcheck.py",
+                                                                     "cue_plan.py",
                                                                      "revise_measure.py")]}
     # ---------------------------------------------------------------- inputs
     aud = os.path.join(REPO, ".work", "music-audition")
@@ -231,6 +232,18 @@ def main():
                 "overlapping_in_source": any(src[i][1] > src[i + 1][0] + 1e-6 for i in range(len(src) - 1))}
     checks = {c["check"]: c for c in cs.get("checks", [])}
     overl = [c["detail"] for k, c in checks.items() if "overlaps other music" in k]
+    # the same, in the masters as built (each cue's audio extent in film time from the build record, so the master
+    # revision's heads and tails count): the longest overlap of each Mixkit cue with any other cue's audio
+    overl_built = {}
+    for film, bb in films.items():
+        ext = {cid: v["film_s"] for cid, v in bb["cues"].items()}
+        trk = {c["id"]: c["track"] for c in json.load(open(os.path.join(W, "cuesheet", f"plan_{film}.json")))["cues"]}
+        for cid, (a0, a1) in ext.items():
+            if trk[cid] not in ("YourBreath", "TechnoFestVibes"):
+                continue
+            best = max(((max(0.0, min(a1, b1) - max(a0, b0)), o) for o, (b0, b1) in ext.items() if o != cid),
+                       default=(0.0, None))
+            overl_built[f"{film}:{cid}"] = {"longest_overlap_s": round(best[0], 3), "with": best[1]}
     out["licences"] = {
         "scott_buckley": {"licence": "CC BY 4.0", "url": "https://creativecommons.org/licenses/by/4.0/",
                           "tracks": ["A4 Born Of The Sky (M1, M6a, M6b)", "A1 Starfire (M4)"],
@@ -244,6 +257,7 @@ def main():
                          "tracks": ["B2 Your Breath (M2a, M2b, M5; X1, X2)", "B4 Techno Fest Vibes (M3a, M3b; X3)"],
                          "excerpts_as_built": mix_music, "order_checks": order_ok,
                          "overlap_with_other_music": overl,
+                         "overlap_with_other_music_in_the_masters": overl_built,
                          "rules_kept": ["each cue is an edited excerpt in its own order: trimmed, faded, shortened at bar lines",
                                         "never re-arranged: every B2 and B4 excerpt plays in the track's own order and "
                                         "none overlaps another in source time (order_checks)",
@@ -289,9 +303,14 @@ def main():
                "Terms §9 forbid scripts or bots; the person downloads each one the final masters use by hand from its "
                "own page (the lead prepares the list). Nothing here was downloaded by this lane.",
         "files": hand,
-        "then": "put each hand-downloaded file beside its script-fetched copy and compare SHA-256. Where every hash "
-                "matches, the working masters stand bit for bit; otherwise rebuild with the same commands "
-                "(score_layers.py, score_build.py, then the strips, previews and this file) and compare the records."}
+        "then": "python3 -I tools/audio/score2/score_handcheck.py --b2 <the person's Your Breath> --b4 <the person's "
+                "Techno Fest Vibes> compares SHA-256 with the audition copies (no audio read). Where both match, the "
+                "working masters and the previews stand bit for bit: re-run score_provenance.py and score_readme.py. "
+                "Otherwise rebuild with the same commands (score_layers.py, score_build.py, then the strips, previews "
+                "and this file) and compare the records."}
+    hc = os.path.join(M, "hand_download_check.json")  # score_handcheck.py, once the person has downloaded B2 and B4
+    if os.path.exists(hc):
+        out["mixkit_files_for_hand_download"]["check"] = json.load(open(hc))
     out["working_masters"] = {
         "status": "WORKING masters: no Mixkit sound effect (R-01), but the music B2 and B4 is still the audition copy "
                   "fetched by script on 26 Oct 18:29, so these masters and the previews made from them wait for the "

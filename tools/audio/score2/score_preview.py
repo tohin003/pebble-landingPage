@@ -113,7 +113,7 @@ JOINS = {
             "G that rises into it. 120 into 124 BPM: a cut, never an overlap. The title lands on its real stop.",
             "the push into the faster last bar; then a true stop under the title, with the tap and the hit."),
 }
-SHORT = {"J1": "cut on the hit", "M2s": "splice", "J2": "hard cut after a beat of hats", "M3s": "splice",
+SHORT = {"J1": "cut on the hit", "M2s": "splice", "J2": "hard cut after the hats", "M3s": "splice",
          "J3": "its own stop", "J4": "short crossfade", "J5": "beat cut", "F4": "splice", "XJ1": "splice into the lift",
          "XJ2": "cut under a swell"}
 # the shots whose cue-sheet notes are the lanes' shorthand, in plain words for the person

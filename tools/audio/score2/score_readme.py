@@ -65,7 +65,10 @@ def main():
              for a in b[f]["classifier"]["web"].get("attribution", []) if a["mix"] and a["music_alone"]]
     ret_under = b["main"]["fix_checks"]["return_vs_climax"]["return_under_climax_lu"]
     probe = os.path.join(M, "title_probe.json")  # score_title_probe.py: the same music, the windows moved
-    pr = [rw["summary"]["foghorn_max"] for rw in json.load(open(probe))["variants"]] if os.path.exists(probe) else []
+    pr = [rw["summary"]["foghorn_max"] for rw in json.load(open(probe))["variants"]
+          if rw.get("corr_s")] if os.path.exists(probe) else []  # the masters' own music, the windows moved
+    hc_path = os.path.join(M, "hand_download_check.json")  # score_handcheck.py: the person's downloads (CR-13)
+    hand_ok = os.path.exists(hc_path) and json.load(open(hc_path)).get("all_match")
     probe_lo, probe_hi = (f"{min(pr):.2f}", f"{max(pr):.2f}") if pr else ("?", "?")
     tg = b["main"]["classifier"].get("title_grid", {})
     tgw = tg.get("web_master", {})
@@ -124,7 +127,9 @@ def main():
                "the checker's 3-second windows move by a fraction of a second, so that number is about the checker, "
                f"not the sound.{nm_line} If any of it makes you think of a phone or a horn, say so."),
         bullet("The hits are temporary, and the plunk and the tap are stand-ins, until the final sounds exist."),
-        bullet("Before the final film, the two Mixkit tracks, Your Breath and Techno Fest Vibes, need to be "
+        bullet("The two Mixkit tracks, Your Breath and Techno Fest Vibes, are your own hand downloads: they match "
+               "the copies these previews were built from byte for byte." if hand_ok else
+               "Before the final film, the two Mixkit tracks, Your Breath and Techno Fest Vibes, need to be "
                "downloaded by you, by hand, from their own pages (you'll get the two links). The copies in these "
                "previews were fetched automatically, which Mixkit's terms don't allow for the finished film; if your "
                "downloads match them byte for byte, the film's music stands exactly as you hear it here.")])
