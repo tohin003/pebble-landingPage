@@ -897,8 +897,10 @@ it 404: the snapshot now archives those paths and hard-links the gitignored capt
 sampler looping under launchd (`render-segments.sh` stops it on exit); the drift script never measured (bash's `GROUPS`
 is a special variable).
 
-**On the reels** (16:9 and 1:1 r3, 9:16 r2; `scan.json`, `ground-light.json` and `marks.json` under
-`.work/film2/snap-fix2b/.work/film2/sp5/demo*/`, gitignored):
+**On the reels** (16:9 and 1:1 r3, 9:16 r2; their `scan.json`, `ground-light.json` and `marks.json` in
+`.work/film2/fix2-evidence/r2-keep` and `r3-keep`, r1's in `r1-keep`, the drift measures in `drift/`, all gitignored;
+the reels themselves and their reports in `.work/film2/snap-fix2b/.work/film2/sp5/demo*/` are r4's, each earlier reel
+deleted, with a record, as the next replaced it):
 
 | Check | 16:9 | 1:1 | 9:16 |
 |---|---|---|---|
@@ -955,8 +957,8 @@ the climax is all window and card: there the evening shows on the slots' paper (
 The title and the end card push in at about 0.3 px a frame at the corners (0.10–0.13 measured near the middle, where
 their lines are).
 
-**Looked at** (sheets every 2–60 frames at the review's and the verifier's frames and strips frame by frame; the lane's
-scratchpad, `eyes-r*` and `look-r*`): the Drop's pre-roll, hit, hold, the pair's lift and the whole Mac; Ring 4's
+**Looked at** (sheets every 2–60 frames at the review's and the verifier's frames and strips frame by frame;
+`.work/film2/fix2-evidence/sheets/eyes-r*`): the Drop's pre-roll, hit, hold, the pair's lift and the whole Mac; Ring 4's
 arrival, the chapter's lift, the card asking with its three buttons, the click's hard cut to its answer, the reads, the
 glide down and the receipt with its label; the cascade's swaps crossing and its end (the fixed line lifting, the last
 item blurring out over about 8 frames, both gone before the cut); the Dusk's workspace handing its label to the palette
