@@ -13,8 +13,9 @@
 //                       (slow at first, E-move on u^1.3), panning from the kept card to the stone; a 12 % push from R200
 //                       to R480 overlapping it; a pan that lands the stone on the title stone's pose on R656 (with the
 //                       page's own glide, so one stone goes through the iris)
-//   planReturn()        the piece: the field's shot (setpieces/returnField.ts), then the finale's iris, title and end
-//                       card (setpieces/finale.ts through its `head`), one stone through the iris (StoneSpec.layer and
+//   planReturn()        the piece: the field's shot (setpieces/returnField.ts; its rings and cells at RETURN_FIELD_SCALE,
+//                       ×1.1 about the stone, G1's choice), then the finale's iris, title and end card
+//                       (setpieces/finale.ts through its `head`), one stone through the iris (StoneSpec.layer and
 //                       clockOffset: setpieces/blink.ts puts the engine's own blink on R646)
 // The Return is a montage act (lead ruling R2): its span is exempt from cutRate, holds and readingLoad and is held to
 // returnSchedule, returnWindows, returnContent, returnMerge with returnRadius, cellText, blinkPlaced, joinPose,
@@ -343,10 +344,19 @@ export interface ReturnOptions {
   /**
    * G1's size test (MONTAGE_DESIGN §9 item 7, §10): the three rings and their cells scaled by this about the stone (the
    * stone, the first cell and the camera as built), so the outer ring may pass the frame's edge while every cell stays
-   * half in frame for 60 frames or more (returnSchedule); default 1
+   * half in frame for 60 frames or more (returnSchedule); default RETURN_FIELD_SCALE (1.1, G1's choice), 1 the design's
+   * own size (RETURN_GEOMETRY)
    */
   fieldScale?: number;
 }
+
+/**
+ * The field's scale about the stone that the film plans (G1, 28 Oct, MONTAGE_DESIGN §9 item 7: the field as designed read
+ * sparse, its cells covering 22, 26 and 18 % of the frame in the rush with inner cells under CR-16's 150 px; ×1.1 passes
+ * every plan check and both scans on its renders in every aspect, and covers 26, 31 and 21 %). RETURN_GEOMETRY stays the
+ * design's (`return-sheet --reference` compares it with schedule_r2.json).
+ */
+export const RETURN_FIELD_SCALE = 1.1;
 
 /**
  * The Return's travel for G1's curve A/B (MONTAGE_DESIGN §2.3: "G1 also plays revision 1's curve (orbits of 3–5° a
@@ -413,8 +423,8 @@ export function planReturn(o: ReturnOptions): ScenePlan {
     if (merge === "toned") fieldO.timing = { wEnd: TONED_W_END, ...(fieldO.timing ?? {}) };
     // revision 1's swaps are all in place (no 36-px slide along the ring)
     if (curve === "r1") fieldO.timing = { slidePx: 0, ...(fieldO.timing ?? {}) };
-    // G1's size test: the rings and their cells larger about the stone (the first cell keeps S24's frame's size)
-    const k = o.fieldScale ?? 1;
+    // G1's size: the rings and their cells larger about the stone (the first cell keeps S24's frame's size)
+    const k = o.fieldScale ?? RETURN_FIELD_SCALE;
     if (k !== 1) {
       const g = RETURN_GEOMETRY[f.aspect];
       fieldO.geometry = { ell: g.ell.map(([x, y]) => [x * k, y * k] as const) as unknown as ReturnGeometry["ell"], cell: g.cell.map((c) => c * k) as unknown as ReturnGeometry["cell"], ...(fieldO.geometry ?? {}) };
@@ -497,7 +507,7 @@ export function planReturn(o: ReturnOptions): ScenePlan {
     align: o.align,
     head,
   });
-  const variant = [o.merge === "toned" ? "the toned matte" : "", o.curve === "r1" ? "revision 1's curve" : "", o.labels ? "the family labels" : "", o.fieldScale && o.fieldScale !== 1 ? `the field ×${o.fieldScale}` : ""].filter(Boolean).join(", ");
+  const variant = [o.merge === "toned" ? "the toned matte" : "", o.curve === "r1" ? "revision 1's curve" : "", o.labels ? "the family labels" : "", o.fieldScale !== undefined && o.fieldScale !== RETURN_FIELD_SCALE ? `the field ×${o.fieldScale}` : ""].filter(Boolean).join(", ");
   return { ...plan, id: "return", name: `The Return${variant ? ` (${variant})` : ""}, title, end ${plan.aspect}`, ...(o.labels ? { types: [...plan.types, ...returnLabelTypes(plan, fps)] } : {}) };
 }
 

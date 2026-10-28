@@ -20,7 +20,7 @@ import { BLINK_S, blinkStartsFor, offsetForBlink } from "../setpieces/blink";
 import { RETURN_CELLS, RETURN_WAVES, SI, manifestProblems, refuseBadManifest, type ReturnCellSpec } from "../setpieces/returnCells";
 import { RETURN_LUM } from "../setpieces/returnLum";
 import { RETURN_GEOMETRY, RETURN_TIMING, buildReturnField, cellPoseAt, hairlineAt, hungarian, localOfR, pairWave, slotOrder, type FieldCell, type ReturnFieldOptions } from "../setpieces/returnField";
-import { RETURN_BLINK_R, RETURN_EVENTS, RETURN_FILM_S, RETURN_MUSIC, blinkKeepClear, filmFrameOfR, planReturn, returnCameraAt, returnCameraSpec, returnGrid, type ReturnCameraSpec, type ReturnOptions } from "../setpieces/returnPlan";
+import { RETURN_BLINK_R, RETURN_EVENTS, RETURN_FIELD_SCALE, RETURN_FILM_S, RETURN_MUSIC, blinkKeepClear, filmFrameOfR, planReturn, returnCameraAt, returnCameraSpec, returnGrid, type ReturnCameraSpec, type ReturnOptions } from "../setpieces/returnPlan";
 import {
   R2_EXEMPT,
   RETURN_CHECKS,
@@ -238,7 +238,8 @@ describe("the field's schedule (returnField.ts)", () => {
     const rets = field.cells.filter((c) => c.retStart !== null);
     expect(rets.length).toBe(46);
     expect(Math.min(...rets.map((c) => c.retStart!))).toBe(430);
-    // (the kept card's return is 93, 90 and 90 frames in 16:9, 1:1 and 9:16: hidden on R639 in each, RV-08)
+    // (the kept card's return is 93, 90 and 90 frames in 16:9, 1:1 and 9:16: hidden on R639 in each at the design's size,
+    // RV-08; on R640 in the field ×1.1 the film plans, the blink 6.1 frames after)
     expect([byId.get("G3")!.retStart, byId.get("G3")!.retT]).toEqual([566, 93]);
     expect(["1:1", "9:16"].map((a) => buildReturnField(a as Aspect).cells.find((c) => c.spec.hero)!.retT)).toEqual([90, 90]);
     expect(Math.max(...rets.filter((c) => !c.spec.hero).map((c) => c.retStart!))).toBeCloseTo(540 + 4.2 * 6, 6);
@@ -269,7 +270,8 @@ describe("the field's schedule (returnField.ts)", () => {
     const f = returnOf(planOf("16:9"))!.field;
     expect(hairlineAt(2, localOfR(-1, FPS), f)).toBeNull();
     expect(hairlineAt(2, localOfR(15, FPS), f)!.drawn).toBeGreaterThan(0);
-    expect(hairlineAt(2, localOfR(500, FPS), f)!.a).toBe(RETURN_GEOMETRY["16:9"].ell[2][0]);
+    expect(hairlineAt(2, localOfR(500, FPS), f)!.a).toBe(f.geometry.ell[2][0]);
+    expect(f.geometry.ell[2][0]).toBeCloseTo(RETURN_GEOMETRY["16:9"].ell[2][0] * RETURN_FIELD_SCALE, 9);
     expect(hairlineAt(2, localOfR(546, FPS), f)).toBeNull();
     expect(hairlineAt(0, localOfR(600, FPS), f)).not.toBeNull();
     expect(hairlineAt(0, localOfR(606, FPS), f)).toBeNull();
@@ -339,7 +341,8 @@ describe("the Return, planned and joined to S24, passes every check in every asp
       expect(m.minChangeGap).toBe(73);
       expect(m.minSettled).toBeGreaterThanOrEqual(60);
       expect(m.lastSwapEnd).toBe(466);
-      expect(m.minOnScreen).toBeGreaterThanOrEqual(84);
+      // (86, 81 and 79 frames in the field ×1.1 the film plans; 89, 86 and 84 at the design's size; the rule is 60)
+      expect(m.minOnScreen).toBeGreaterThanOrEqual(79);
       expect(m.maxOverlap).toBe(0);
       expect(m.maxCornerPx).toBeLessThanOrEqual(30);
       expect(m.minCornerPx1s).toBeGreaterThanOrEqual(0.25);
@@ -370,7 +373,9 @@ describe("returnSchedule: its canaries fail", () => {
     for (const a of ASPECTS) {
       expect(scheduleMetrics(planTrace(planOf(a))!).entriesInFrame).toEqual([]);
       const unfit = scheduleMetrics(planTrace(planFor(a, { fitEntries: false }))!).entriesInFrame;
-      expect(unfit.length).toBeGreaterThanOrEqual(5);
+      // (5, 4 and 4 entries in the field ×1.1 the film plans; 7, 8 and 7 at the design's size, where the renders showed it)
+      expect(unfit.length).toBeGreaterThanOrEqual(4);
+      expect(scheduleMetrics(planTrace(planFor(a, { fitEntries: false, fieldScale: 1 }))!).entriesInFrame.length).toBeGreaterThanOrEqual(7);
     }
     expect(scheduleMetrics(planTrace(planFor("1:1", { fitEntries: false }))!).entriesInFrame).toContain("N1 on R204");
   });
@@ -687,13 +692,18 @@ describe("blinkPlaced: its canaries fail", () => {
     expect(f.some((e) => /a blink on R48[01]\.\d falls in R430–R496/.test(e.message))).toBe(true);
   });
   test("RV-08: the kept card's return at the design's 92 frames in every aspect (hidden R638, R641, R641: the blink 8.1 and 5.1 frames after)", () => {
-    const flat = { field: { timing: { returns: { ...RETURN_TIMING.returns, hero: { s0: 566, T: 92 } } } } };
+    // (at the design's size, where the review found it)
+    const flat = { fieldScale: 1, field: { timing: { returns: { ...RETURN_TIMING.returns, hero: { s0: 566, T: 92 } } } } };
     for (const a of ["1:1", "9:16"] as const) expect(errs(blinkPlaced(planFor(a, flat))).some((e) => /falls 5\.1 frames after the kept card is hidden \(R641\): 6–8/.test(e.message))).toBe(true);
     expect(errs(blinkPlaced(planFor("16:9", flat))).some((e) => /falls 8\.1 frames after the kept card is hidden \(R638\)/.test(e.message))).toBe(true);
-    // as planned: hidden on R639 in every aspect, the blink 7.1 frames after; the card still the last to return
+    // with its return at 93, 90 and 90 frames: hidden on R639 in every aspect at the design's size, the blink 7.1 frames
+    // after; in the field ×1.1 the film plans, its slot is 10 % further out: hidden on R640, the blink 6.1 frames after
+    // (inside §2.7's 6–8); the card still the last to return
     for (const a of ASPECTS) {
+      expect(errs(blinkPlaced(planFor(a, { fieldScale: 1 })))).toEqual([]);
+      expect(blinkPlaced(planFor(a, { fieldScale: 1 })).find((x) => x.level === "info")!.message).toMatch(/the planned blink 7\.1 frames after the kept card is hidden \(R639\)/);
       expect(errs(blinkPlaced(planOf(a)))).toEqual([]);
-      expect(blinkPlaced(planOf(a)).find((x) => x.level === "info")!.message).toMatch(/the planned blink 7\.1 frames after the kept card is hidden \(R639\)/);
+      expect(blinkPlaced(planOf(a)).find((x) => x.level === "info")!.message).toMatch(/the planned blink 6\.1 frames after the kept card is hidden \(R640\)/);
     }
   });
   test("an offset of 0 (no blink on R646)", () => {
@@ -848,21 +858,27 @@ describe("the view's model: cells on screen, from thumbnails, the first cell S24
     expect(at(0.95)).toBeCloseTo(0, 6);
   });
   test("RV-02: a cell is drawn while its shadow reaches into the frame, not only its rect (A6 entering 1:1's right edge on R84)", () => {
-    const field = returnOf(planOf("1:1"))!.field;
-    const a6 = field.cells.find((c) => c.id === "A6")!;
-    let enter = -1;
-    for (let f = 0; f < 400 && enter < 0; f++) {
-      const s = cellScreenAt(a6, f, field);
-      if (s && s.rect.x < field.view!.w) enter = f;
+    // at the design's size, where the reels showed the step (R84), and in the field ×1.1 the film plans (R92)
+    for (const [k, r, reach] of [
+      [1, 84, 200],
+      [RETURN_FIELD_SCALE, 92, 180],
+    ] as const) {
+      const field = returnOf(planFor("1:1", { fieldScale: k }))!.field;
+      const a6 = field.cells.find((c) => c.id === "A6")!;
+      let enter = -1;
+      for (let f = 0; f < 400 && enter < 0; f++) {
+        const s = cellScreenAt(a6, f, field);
+        if (s && s.rect.x < field.view!.w) enter = f;
+      }
+      expect(Math.round(rOfLocal(enter, FPS))).toBe(r);
+      // its shadow reaches far into the ground there (216 and 194 px): drawn before its rect enters, so it never steps in
+      expect(cellReachPx(cellScreenAt(a6, enter, field)!)).toBeGreaterThan(reach);
+      expect(cellsOnScreen(field, enter - 5).some((c) => c.cell.id === "A6")).toBe(true);
+      // the canary: culled by its rect alone (as before), A6 and its shadow would appear on that frame at once
+      const byRect = (f: number) => field.cells.map((c) => cellScreenAt(c, f, field)).filter((x) => !!x && x.share > 0 && x.rect.x < field.view!.w && x.rect.x + x.rect.w > 0 && x.rect.y < field.view!.h && x.rect.y + x.rect.h > 0);
+      expect(byRect(enter - 1).some((c) => c!.cell.id === "A6")).toBe(false);
+      expect(byRect(enter).some((c) => c!.cell.id === "A6")).toBe(true);
     }
-    expect(Math.round(rOfLocal(enter, FPS))).toBe(84);
-    // its shadow reaches 200 px or more into the ground there: drawn before its rect enters, so it never steps in
-    expect(cellReachPx(cellScreenAt(a6, enter, field)!)).toBeGreaterThan(200);
-    expect(cellsOnScreen(field, enter - 5).some((c) => c.cell.id === "A6")).toBe(true);
-    // the canary: culled by its rect alone (as before), A6 and its shadow would appear on R84 at once
-    const byRect = (f: number) => field.cells.map((c) => cellScreenAt(c, f, field)).filter((x) => !!x && x.share > 0 && x.rect.x < field.view!.w && x.rect.x + x.rect.w > 0 && x.rect.y < field.view!.h && x.rect.y + x.rect.h > 0);
-    expect(byRect(enter - 1).some((c) => c!.cell.id === "A6")).toBe(false);
-    expect(byRect(enter).some((c) => c!.cell.id === "A6")).toBe(true);
   });
   test("a cell's blur is the swap's (round) or its own travel's (σ = travel ÷ 7 above 4.6 px a frame), never more", () => {
     const p = planOf("16:9");
@@ -1040,7 +1056,7 @@ describe("the toned matte (R4's alternative for G1, views/ReturnView.tsx merge \
   });
 });
 
-describe("G1's variants (MONTAGE_DESIGN §9): revision 1's curve, the family labels, the field ×1.1", () => {
+describe("G1's variants (MONTAGE_DESIGN §9): revision 1's curve, the family labels, the field's size (×1.1 planned, ×1 the design's)", () => {
   const corner = (p: ScenePlan, r0: number, r1: number) => {
     const t = planTrace(p)!;
     const v: number[] = [];
@@ -1052,8 +1068,10 @@ describe("G1's variants (MONTAGE_DESIGN §9): revision 1's curve, the family lab
     }
     return v;
   };
-  test("each plans with no error in every aspect, on the demo Return's timeline and climax", () => {
-    for (const o of [{ curve: "r1" as const }, { labels: true }, { fieldScale: 1.1 }])
+  test("each plans with no error in every aspect, on the demo Return's timeline and climax (at the design's size, as G1 measured them)", () => {
+    // (demo/ReturnVariantDemo.tsx RETURN_G1_VARIANTS: each keeps fieldScale 1, so it plays against the unscaled field;
+    // revision 1's curve at ×1.1 leaves cells in frame under 60 frames in every aspect, which G1 records)
+    for (const o of [{ merge: "toned" as const, fieldScale: 1 }, { curve: "r1" as const, fieldScale: 1 }, { labels: true, fieldScale: 1 }, { fieldScale: 1 }])
       for (const a of ASPECTS) {
         const v = demoReturnVariant(a, o);
         const d = demoPlans(a).find((e) => e.plan.id === "return")!.plan;
@@ -1119,15 +1137,24 @@ describe("G1's variants (MONTAGE_DESIGN §9): revision 1's curve, the family lab
       expect(planOf(a).types.some((x) => /^RL/.test(x.id))).toBe(false);
     }
   });
-  test("the field ×1.1: the rings and cells 10 % larger about the stone, the first cell and the stone as built; ×1.2 fails returnSchedule in 16:9", () => {
+  test("the field ×1.1 is planned (G1, item 7): the rings and cells 10 % larger about the stone than the design's, the first cell and the stone as built; ×1.15 fails cellText and ×1.2 returnSchedule in 16:9", () => {
+    expect(RETURN_FIELD_SCALE).toBe(1.1);
     for (const a of ASPECTS) {
-      const f = returnOf(planFor(a, { fieldScale: 1.1 }))!.field;
-      const d = returnOf(planOf(a))!.field;
+      const f = returnOf(planOf(a))!.field;
+      const d = returnOf(planFor(a, { fieldScale: 1 }))!.field;
       expect(f.geometry.cell[0]).toBeCloseTo(RETURN_GEOMETRY[a].cell[0] * 1.1, 9);
       expect(f.geometry.ell[2][1]).toBeCloseTo(RETURN_GEOMETRY[a].ell[2][1] * 1.1, 9);
+      // the design's own size is RETURN_GEOMETRY (return-sheet --reference compares it with schedule_r2.json)
+      expect(d.geometry.cell).toEqual(RETURN_GEOMETRY[a].cell);
+      expect(d.geometry.ell).toEqual(RETURN_GEOMETRY[a].ell);
       expect(f.geometry.hero).toEqual(d.geometry.hero);
       expect(f.stone.px).toBe(d.stone.px);
+      // the demo plays the planned size; the size test's other side is the unscaled variant
+      expect(returnOf(demoPlans(a).find((e) => e.plan.id === "return")!.plan)!.field.geometry.cell[0]).toBeCloseTo(RETURN_GEOMETRY[a].cell[0] * 1.1, 9);
+      expect(returnOf(demoReturnVariant(a, { fieldScale: 1 }))!.field.geometry.cell).toEqual(RETURN_GEOMETRY[a].cell);
     }
+    // its limits: one step larger, a stand-in's text passes 16 px outside the inner ring; two, cells leave too soon
+    expect(errs(checkPlan(planFor("16:9", { fieldScale: 1.15 }), returnGrid(FPS)), "cellText").map((e) => e.message).join(" ")).toMatch(/text reaches 16\.\d px/);
     const big = planFor("16:9", { fieldScale: 1.2 });
     expect(errs(checkPlan(big, returnGrid(FPS)), "returnSchedule").map((e) => e.message).join(" ")).toMatch(/under 60 frames/);
   });

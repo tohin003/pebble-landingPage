@@ -590,7 +590,8 @@ so this one is the lead's call (the lane's report).
 The montage the person chose for the end only (OVERRIDES §61; MONTAGE_DESIGN revision 2, its option B), in place of the
 wall and the convergence: after the kept card the camera pulls back from S24's own last frame, which is the first cell,
 to 85 cells of real features on three counter-rotating rings round the stone (a still or a 1× slice each, swapping in
-place or by a 36-px slide); then each cell returns along its own radius into the stone's opaque silhouette, the kept
+place or by a 36-px slide; the rings and cells at ×1.1 the design's size about the stone, G1's choice:
+`RETURN_FIELD_SCALE`); then each cell returns along its own radius into the stone's opaque silhouette, the kept
 card last, the stone's own idle blink falls on R646, the finale's iris opens the page from the one stone and the title
 lands on A4's bar 82. Frames are R-frames at 60 fps (a local frame is R + 60): 12 s from R0, 13 with the lead-in.
 - **Files.** `returnCells.ts` (the manifest: take, moment, card, red, stand-in, text size, the avatar a capture pictures;
@@ -664,9 +665,9 @@ lands on A4's bar 82. Frames are R-frames at 60 fps (a local frame is R + 60): 1
     frame, in the bloom (up to 20 px a frame) as in its return.
   - **Drawn, not declared (RV-05).** The light and red rules hold on each image as drawn (`returnLum.ts`) until the
     2.0.0 crops carry their own values; the red cells' budgets for their crops are reported, for the capture lane
-    (J1* shows at most 1.04, 1.24 and 1.18 % of the 16:9, 1:1 and 9:16 frames in frame and unhidden, so its crop may
-    hold under 48 %, 81 % and 100 % saturated red; the review's 6.2 % counted its whole area while it entered from
-    out of frame at the bloom's zoom). F11*'s published held
+    (J1* shows at most 1.02, 1.20 and 1.15 % of the 16:9, 1:1 and 9:16 frames in frame and unhidden in the field ×1.1,
+    1.04, 1.24 and 1.18 % at the design's size, so its crop may hold under 49 %, 83 % and 100 % saturated red; the
+    review's 6.2 % counted its whole area while it entered from out of frame at the bloom's zoom). F11*'s published held
     card was the same conversation as F12's Verified at another moment, beside it for 4.5 s (CR-11): a slot now. The
     other stills of one published conversation (E3 and F2 asking, F7's Git plan, beside F12) are open (see below).
   - **Must-not-appear text (RV-06).** B9's slot no longer prints "Privacy & Stealth"; a label drawn into an image is
@@ -674,12 +675,16 @@ lands on A4's bar 82. Frames are R-frames at 60 fps (a local frame is R + 60): 1
     model.
   - **CR-16 (RV-07).** Its readability part closed with the hairline orbits and the faster orbits; its cell size did
     not: the inner cells are 144, 116 and 128 px at z = 1 against CR-16's 150–250 px, open until G1 judges grand, busy
-    or sparse (MONTAGE_DESIGN §9 item 7; `review-ledger.ts` `OPEN_BY_EYE`).
+    or sparse (MONTAGE_DESIGN §9 item 7; `review-ledger.ts` `OPEN_BY_EYE`). G1 judged the design's size sparse, and the
+    film now plans the field ×1.1 (inner cells 158, 128 and 141 px at z = 1; see G1 below); the size part stays open by
+    eye until the 2.0.0 crops are judged (G4).
   - **The blink (RV-08).** The field's stone is built at the title stone's size on the landing (172.5, 147.9 and 172.5
     px, not the design's 190, 170 and 190), because the title page glides on after the landing (OVERRIDES §58), so the
     kept card hid on R638, R641 and R641 and the blink fell 8.1, 5.1 and 5.1 frames after it (§2.7 asks 6–8). Its
     return runs 93, 90 and 90 frames from R566 (`RETURN_TIMING.returns.hero.byAspect`): hidden on R639 in every
-    aspect, the blink 7.1 frames after; `blinkPlaced` holds the gap (the toned matte's is reported, for G1).
+    aspect, the blink 7.1 frames after; `blinkPlaced` holds the gap (the toned matte's is reported, for G1). In the
+    field ×1.1 the film plans (G1), the card's slot is 10 % further out: hidden on R640 in every aspect, the blink 6.1
+    frames after, inside 6–8.
   - **Rendered and scanned (28 Oct, 3644743, half size, frames R−60 to R720 in every aspect; from a snapshot of the
     commit, `.work/film2/snap-return-fix`, as another lane's set pieces were mid-edit).** `qa/luma-scan.ts --marks`
     with the reel's marks cut to the Return: no tile pop, pop, dip or dead second in any aspect (the reels of 28 Oct
@@ -696,24 +701,34 @@ lands on A4's bar 82. Frames are R-frames at 60 fps (a local frame is R + 60): 1
     S24's last; the images carry their content's signature.
   - **Slices (RV-11).** `returnContent` holds each slice to 1×, played once forward, ending on its moment as its cell
     settles (a recall present from the start: as it first shows half in frame) and wholly while the cell is drawn
-    (`sliceWindowR`): J6+F14 R124–R135 (R122 in 9:16), A5 R224–R235, X5 R459–R466 (8 frames: it slides in 8 frames
+    (`sliceWindowR`): J6+F14 R129–R140 (R127 in 9:16; R124 and R122 at the design's size), A5 R224–R235, X5
+    R459–R466 (8 frames: it slides in 8 frames
     before it settles, so 12 would start before it is drawn). No slice exists before the 2.0.0 takes, so the view
     draws the stand-in; their player comes with them, held by the same window.
 - **G1 (28 Oct; MONTAGE_DESIGN §9, decided by measurement and by looking, OVERRIDES §61; the record and its evidence are
   in the Return lane's scratch, `g1/G1.md`).** Each A/B's other side is a plan option and a composition,
   `F2-SP-return-<tag>-<aspect>` (`demo/ReturnVariantDemo.tsx` `RETURN_G1_VARIANTS`), on the demo Return's climax and
-  timeline, never in a film unless G1 picks it: `toned` (`merge: "toned"`), `curve1` (`curve: "r1"`: revision 1's orbits
-  of 5, −4 and 3° a second, every swap in place, a 0.33-px-a-frame pull-back in place of the push), `labels`
-  (`labels: true`: "Models", "Memory", "Your workspace" in one band, the camera at 0.90 or less to R354) and `large`
-  (`fieldScale: 1.1`: the rings and cells 10 % larger about the stone). Decided: **behind the silhouette** (the eyes hold
-  ≥ 5.42:1 on every open-eye frame; the toned matte falls to 1.39–1.50:1, under 3:1 on 16–20 frames an aspect, so R4
-  keeps the default); **revision 2's curve** (its settled cells move 1.07 px a frame in the rush against revision 1's
-  0.56, the reading hold's glide; the same flash load); **no labels** (cells sit under "Models" and "Your workspace" in
-  16:9 and 1:1 even at z 0.90, and in one band "Memory" can hold 38 frames at most, under R3's 48); **sparse** as
-  designed (cells cover 22, 26 and 18 % of the frame in the rush; inner cells 143, 114 and 127 px, under CR-16's 150), the
-  field ×1.1 the remedy G1 chooses once its 9:16 render passes (every plan check passes in every aspect; coverage 26, 31
-  and 21 %). The rush is the calmest stretch on the stand-ins (5.6–6.5 % of pixels change a frame): judge it again on
-  the 2.0.0 crops.
+  timeline, never in a film unless G1 picks it, each at the design's size as G1 measured it: `toned` (`merge: "toned"`),
+  `curve1` (`curve: "r1"`: revision 1's orbits of 5, −4 and 3° a second, every swap in place, a 0.33-px-a-frame
+  pull-back in place of the push), `labels` (`labels: true`: "Models", "Memory", "Your workspace" in one band, the
+  camera at 0.90 or less to R354), and `unscaled` (`fieldScale: 1`: the rings and cells at `RETURN_GEOMETRY`, the
+  design's size), against which the other three play. Decided: **behind the silhouette** (the eyes hold ≥ 5.42:1 on
+  every open-eye frame; the toned matte falls to 1.39–1.50:1, under 3:1 on 16–20 frames an aspect, so R4 keeps the
+  default); **revision 2's curve** (its settled cells move 1.07 px a frame in the rush against revision 1's 0.56, the
+  reading hold's glide; the same flash load; at ×1.1 revision 1's curve even leaves cells in frame for under 60 frames
+  in every aspect); **no labels** (cells sit under "Models" and "Your workspace" in 16:9 and 1:1 even at z 0.90, and in
+  one band "Memory" can hold 38 frames at most, under R3's 48); **the field ×1.1**, planReturn's default
+  (`RETURN_FIELD_SCALE`; the stone, the first cell and the camera as built): the design's size read sparse (cells cover
+  22, 26 and 18 % of the frame in the rush; inner cells 143, 114 and 127 px, under CR-16's 150); ×1.1 covers 26, 31 and
+  21 % with inner cells of 157, 126 and 139 px, passes every plan check in every aspect (cells half in frame for 86, 81
+  and 79 frames or more, the rule 60; corners at most 20.9, 16.2 and 28.3 px a frame, the limit 30; text outside the
+  inner ring at most 15.6, 12.3 and 14.7 px, the limit 16; the flash model's worst windows as at the design's size, 16:9
+  4 and 4, 1:1 2 and 3, 9:16 2), and its renders pass both scans in every aspect (9:16 at b97b97d: `luma-scan --marks`
+  ok, no tile pop, pop, dip or dead second, at most 1 flash a second, one stone on all 631 frames checked with the
+  cells' own pebble scan; flash-rgb 1 in its 400 × 400 and CSS windows, no red). ×1.15 fails cellText in 16:9 (16.3 px)
+  and ×1.2 returnSchedule. The variants keep `fieldScale: 1`, as G1 measured them. The rush is the calmest stretch on
+  the stand-ins (5.6–6.5 % of pixels change a frame at the design's size, 6.6–7.6 % at ×1.1): judge it again on the
+  2.0.0 crops, with CR-16's size, open by eye.
 
 ### The demo and the checks
 
