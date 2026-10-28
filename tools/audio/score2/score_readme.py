@@ -1,7 +1,9 @@
 """score2 lane: write the score previews' README.txt for the person, in plain words, from the build records.
 
-Every number comes from the build's own records (master/main.build.json, x40.build.json and the previews' facts in
-master/*.preview.json); none is typed by hand. Pure Python: no audio.
+Every number and every film time comes from the build's own records (master/main.build.json, x40.build.json and the
+previews' facts in master/*.preview.json) and the cue plans; none is typed by hand. Pure Python: no audio. Revision 3
+(28 Oct): the scenes, the changes and the times are read from the plan (M2 and M3 are one excerpt each, B4's two more
+bars move everything after Ring 4), and the scene after the end card (the coda's room tone and its one tap) is listed.
 
   python3 -I tools/audio/score2/score_readme.py .work/score2 .work/score2/preview/README.txt
 """
@@ -22,6 +24,82 @@ def fmt(t):
 
 def mmss(t):
     return f"{int(t // 60)}:{int(t % 60):02d}"
+
+SCENES = {  # what each cue carries, in plain words (CUE_SHEET.md §1)
+    "M1": ("\"Still Water\"", "A4 Born Of The Sky (Scott Buckley)",
+           "Act I: the question, \"Pebble 2.0\", the companion everywhere, the card. Near-silent strings that grow; their "
+           "own crescendo is the riser into the Drop."),
+    "M2": ("\"Allow\"", "B2 Your Breath (Mixkit)",
+           "The Drop (your Allow), Ring 1 (your browser) and Ring 2 (your apps). B2's own drop lands on the Allow, and it "
+           "plays in one piece, as its composer wrote it, until its hi-hats take a breath before Ring 3."),
+    "M3": ("\"Every Ring\"", "B4 Techno Fest Vibes (Mixkit)",
+           "Ring 3 (your files and the terminal), Ring 4 (your project and AgentGuard's Verified), \"Bigger tasks\", "
+           "Command-K. Harder and brighter, in one piece, and its real ending stops exactly on Enter."),
+    "M4": ("\"Dusk\"", "A1 Starfire (Scott Buckley)",
+           "The quiet passage: Stealth Lockdown, the Veil, the honest line, the menu bar. A held chord with no beat, so "
+           "the line can be read."),
+    "M5": ("\"Its Own Tools, the Return\"", "B2 Your Breath again, later in the track",
+           "The climax: Pebble asks to keep a tool it made, then keeps it. B2's breakdown builds, stops for one beat, and "
+           "its biggest lift lands the \"Kept in Pebble's Toolbox\" card. It runs on, a little lower, under the Return, "
+           "where every feature rushes in around the stone."),
+    "M6": ("\"Ripples (End Title)\"", "A4 Born Of The Sky again, its ending",
+           "The merge: every screen returns into the stone, on Born Of The Sky's held dominant. Then the title \"Pebble "
+           "2.0\", the end card's two pages, and the composer's own ending, which dies away by itself (only its last 0.3 "
+           "seconds, already near silence, are faded into room tone). The film ends on the voice it began with."),
+}
+CHANGES = {  # how each change is made and what to listen for (CUE_SHEET.md §2)
+    "J1": "The Drop. Born Of The Sky's crescendo rises; on the downbeat the music cuts hard to Your Breath's drop, with "
+          "the Drop hit. Listen for: an arrival exactly on the beat.",
+    "M2s": "A splice inside Your Breath (two bars out), as Ring 2 arrives under its sweep. Listen for: nothing at all.",
+    "J2": "Ring 3. Your Breath's hi-hats stop for the last three beats of its bar, a breath, then a hard cut onto Techno "
+          "Fest Vibes under a ring sweep. The tempo steps from 120 to 124 beats a minute as a clean cut. Listen for: the "
+          "breath, then the lift into a harder groove, with nothing stumbling on the first beat.",
+    "M3s": "A splice inside Techno Fest Vibes (two bars out), on the cut to the flyer. Listen for: nothing at all.",
+    "J3": "Stealth. Techno Fest Vibes' own ending stops on the downbeat, exactly on Enter. One soft tick, the chord rings "
+          "out, and Starfire's pad fades in under it. Listen for: a true stop, not a fade, then the hush.",
+    "J4": "Evening. A quarter-second crossfade that ends exactly on Your Breath's downbeat. Its breakdown builds, takes a "
+          "one-beat breath, and its biggest lift lands the kept card. Listen for: a smooth hand-over, and the lift as the "
+          "peak of the film.",
+    "J5": "The merge. A cut beat for beat back into Born Of The Sky (both are 120 beats a minute, so the pulse never "
+          "breaks), a little quieter while the screens return into the stone. A swell made from its own chord rises into "
+          "the title. The key opens from {kb} into {ka}, with B held in common. Listen for: the title arriving louder than "
+          "the bar before it.",
+    "F4": "A splice inside Born Of The Sky's held chord, under the end card. Listen for: nothing at all.",
+}
+
+
+def scene_lines(plan, coda, xcut):
+    cues = plan["cues"]
+    rows, k = [], 0
+    while k < len(cues):
+        c = cues[k]
+        key = "M6" if c["id"].startswith("M6") else c["id"]
+        last = k
+        while last + 1 < len(cues) and (cues[last + 1]["id"].startswith("M6") and key == "M6"):
+            last += 1
+        # a scene runs from the change into its cue to the change out of its last cue (J3 is Enter, not the pad's fade-in)
+        a = next((x["t"] for x in plan["seams"] if x["to"] == c["id"]), c["film_in"])
+        z = next((x["t"] for x in plan["seams"] if x["from"] == cues[last]["id"]), xcut)
+        name, track, what = SCENES[key]
+        rows.append(f"  {mmss(round(a)):>4}-{mmss(round(z))}  {key} {name:<28} {track}")
+        rows += textwrap.wrap(what, width=105, initial_indent="             ", subsequent_indent="             ")
+        k = last + 1
+    if coda:
+        rows.append(f"  {mmss(round(xcut)):>4}-{mmss(round(coda['to_film_s']))}  after the end card               no music")
+        rows += textwrap.wrap("The scene after the end card: Pebble rests. The room tone carries on without a restart, and "
+                              "one soft stone tap sounds as its second line lands. (The X version ends at the end card.)",
+                              width=105, initial_indent="             ", subsequent_indent="             ")
+    return "\n".join(rows)
+
+
+def change_lines(plan, k5):
+    rows = []
+    for s_ in plan["seams"]:
+        txt = CHANGES[s_["id"]].format(kb=k5.get("key_before", {}).get("key", "?"), ka=k5.get("key_after", {}).get("key", "?"))
+        rows += textwrap.wrap(txt, width=103, initial_indent=f"  {s_['id']:<3} {fmt(s_['t'])}  ",
+                              subsequent_indent="               ")
+    return "\n".join(rows)
+
 
 
 def main():
@@ -47,7 +125,15 @@ def main():
                 f"{a['true_peak_dbtp']} on Apple's")
 
     st = {f: {s["id"]: s for s in b[f]["seams"]} for f in b}
-    worst_step = max(abs(seam("main", s)["master_web"]["step_3s_lu"]) for s in ("M2s", "M3s", "F4"))
+    pc = {c["id"]: c for c in plan["main"]["cues"]}
+    splices = [x["id"] for x in plan["main"]["seams"] if pc[x["from"]]["track"] == pc[x["to"]]["track"]]
+    worst_step = max(abs(seam("main", s)["master_web"]["step_3s_lu"]) for s in splices)
+    ev = {e["label"]: e["t"] for e in plan["main"]["events"]}
+    sm = {x["id"]: x for x in plan["main"]["seams"]}
+    lay = {L["id"]: L for L in b["main"]["layers"]}
+    coda = b["main"].get("coda")
+    xcut = b["main"].get("x_cut_film_s", b["main"]["film_length_s"])
+    n_sp = {1: "one splice", 2: "two splices", 3: "three splices"}.get(len(splices), f"{len(splices)} splices")
     lags = [abs(v) for f in b for s in b[f]["seams"] for v in (s["grid"]["lag_bed_vs_incoming_source_samples"],
                                                               s["grid"]["lag_master_vs_bed_samples"]) if v is not None]
     beat_cues = {f: {c["id"] for c in plan[f]["cues"] if c["track"] in ("YourBreath", "TechnoFestVibes")} for f in plan}
@@ -75,11 +161,12 @@ def main():
     tgm = tg.get("music_alone_at_web_gain", {})
     j5 = st["main"]["J5"]["continuity"]["bed"]
     k5 = j5.get("harmony", {})
-    main_len = fmt(b["main"]["film_length_s"])
+    main_len = fmt(xcut)
     pre = {f: (pv[f]["format"]["duration"] if f in pv else None) for f in ("main", "x40")}
 
     sfx = "\n".join(bullet(x) for x in [
-        "Three big moments: the Drop (0:20.00), the kept card (1:38.03) and the title (1:58.03). Their hits are "
+        f"Three big moments: the Drop ({fmt(sm['J1']['t'])}), the kept card ({fmt(ev['kept card'])}) and the title "
+        f"({fmt(ev['TITLE'])}). Their hits are "
         "temporary for now: the final ones come from a free professional library or from your own recordings, and "
         "get balanced again.",
         f"At the Drop the hit sits on top of the music (+{comp('main', 'drop')['composite_over_bed_db']} dB over the "
@@ -89,11 +176,16 @@ def main():
         "it, with the hit inside it.",
         "The plunk at the Drop (made here from code) and the stone tap at the title (a free CC0 sound) stand in for "
         "your recordings of a pebble dropped into water and a pebble tapped on wood.",
-        "Soft ticks at about 0:03, 0:41 and 0:46 mark roughly where the send, \"=\" and a click will be; they move to "
-        "the exact frames when the real screens are recorded. The Enter tick at 1:23.03 sits alone in the hush.",
+        f"Soft ticks at about {mmss(lay['tick_send']['t'])}, {mmss(lay['tick_equals']['t'])} and "
+        f"{mmss(lay['tick_click']['t'])} mark roughly where the send, \"=\" and a click will be; they move to "
+        f"the exact frames when the real screens are recorded. The Enter tick at {fmt(lay['tick_enter']['t'])} sits "
+        "alone in the hush.",
         "A whoosh as the Space slides and as each ring arrives (each made here from code), a reverse swell into the "
         "title, and room tone at the very start, in the hush and at the very end. Nothing sounds under the Return's "
-        "screens: the music carries them.",
+        "screens: the music carries them."]
+        + ([f"After the end card the music has ended for good: the room tone carries on, never restarting, through the "
+            f"short scene that follows ({fmt(xcut)} to {fmt(coda['to_film_s'])}), and one soft stone tap, the title's own "
+            f"tap at a whisper, sounds at {fmt(coda['tap_film_s'])}, as the scene's second line lands."] if coda else []) + [
         "No sound effect comes from Mixkit any more: they are free CC0 sounds (Kenney) and sounds made for this film."])
     lines = [f"{k:<24}{loud(f, m)}" for k, f, m in (("main film, social:", "main", "social"),
                                                     ("main film, website:", "main", "web"),
@@ -109,8 +201,8 @@ def main():
         bullet(f"The kept card is the loudest moment of the film: its loudest 3 seconds are {ret_under} LU louder than "
                "the Return's, and the loudest 3 seconds and the loudest half-second of the whole film both fall on "
                "it."),
-        bullet(f"Inside a track, the three splices change the loudness by at most {worst_step:.2f} LU over 3 seconds "
-               "(about half a decibel)."),
+        bullet(f"Inside a track, the {n_sp} change{'s' if len(splices) == 1 else ''} the loudness by at most "
+               f"{worst_step:.2f} LU over 3 seconds."),
         bullet("Loudness, measured after the AAC encode (FFmpeg's encoder makes the film's deliveries; Apple's made "
                "these previews):")] + ["    " + x for x in lines] + [
         "  (Social: -14 LUFS and at most -1.0 dBTP. Website: -16 LUFS and at most -1.5 dBTP.) The film is meant to be",
@@ -133,6 +225,9 @@ def main():
                "downloaded by you, by hand, from their own pages (you'll get the two links). The copies in these "
                "previews were fetched automatically, which Mixkit's terms don't allow for the finished film; if your "
                "downloads match them byte for byte, the film's music stands exactly as you hear it here.")])
+    scenes = scene_lines(plan["main"], coda, xcut)
+    changes = change_lines(plan["main"], k5)
+    after = f", then the scene after the end card (to {fmt(coda['to_film_s'])})" if coda else ""
     listen = "     ".join(f"{s['id']} {mmss(round(max(0.0, s['t'] - 5.0)))}" for s in plan["main"]["seams"])
     txt = f"""PEBBLE 2.0 FILM, "RIPPLES": THE SCORE, CUT LIKE A FILM
 
@@ -142,7 +237,7 @@ changes. You said Your Breath (B2) and Techno Fest Vibes (B4) feel energetic and
 Buckley) holds a cinematic vibe. So B2 and B4 carry the energetic middle, the peak and the Return, and the A series
 opens the film, gives it a quiet dusk, and closes it with the title.
 
-  Pebble-2.0-score-preview.mp4       the main film ({main_len}), with the Return (the montage) at the end
+  Pebble-2.0-score-preview.mp4       the main film ({main_len}), with the Return (the montage) at the end{after}
   Pebble-2.0-40s-score-preview.mp4   the 40-second cut for social media (0:40.00)
 
 There is no picture yet: the real 2.0 screens are recorded near the release. On screen you see which scene you are in,
@@ -161,48 +256,10 @@ HOW TO LISTEN (about 10 minutes)
 4. Tell me in your own words what you feel, for example "the merge feels like a jolt" or "the climax isn't big enough".
 
 THE MAIN FILM, SCENE BY SCENE
-  0:00-0:20  M1 "Still Water"                 A4 Born Of The Sky (Scott Buckley)
-             Act I: the question, "Pebble 2.0", the companion everywhere, the card. Near-silent strings that grow;
-             their own crescendo is the riser into the Drop.
-  0:20-0:54  M2 "Allow"                       B2 Your Breath (Mixkit)
-             The Drop (your Allow), Ring 1 (your browser) and Ring 2 (your apps). B2's own drop lands on the Allow.
-             At 0:40.00, where Ring 2 arrives, two bars are left out (the track's own order is kept).
-  0:54-1:23  M3 "Every Ring"                  B4 Techno Fest Vibes (Mixkit)
-             Ring 3 (your files and the terminal), Ring 4 (your project and AgentGuard's Verified), "Bigger tasks",
-             Command-K. Harder and brighter. Two bars are left out at 0:59.81, on the cut to the flyer, and its real
-             ending stops exactly on Enter at 1:23.03.
-  1:23-1:34  M4 "Dusk"                        A1 Starfire (Scott Buckley)
-             The quiet passage: Stealth Lockdown, the Veil, the honest line, the menu bar. A held chord with no beat,
-             so the line can be read.
-  1:34-1:54  M5 "Its Own Tools, the Return"   B2 Your Breath again, later in the track
-             The climax: Pebble asks to keep a tool it made, then keeps it. B2's breakdown builds, stops for one beat,
-             and its biggest lift lands the "Kept in Pebble's Toolbox" card at 1:38.03. It runs on, a little lower,
-             under the Return, where every feature rushes in around the stone.
-  1:54-2:15  M6 "Ripples (End Title)"         A4 Born Of The Sky again, its ending
-             The merge: every screen returns into the stone, on Born Of The Sky's held dominant. Then the title
-             "Pebble 2.0" at 1:58.03, the end card's two pages, and the composer's own ending, which dies away by
-             itself (only its last 0.3 seconds, already near silence, are faded into room tone). The film ends on the
-             voice it began with.
+{scenes}
 
 THE CHANGES, AND WHAT TO LISTEN FOR
-  J1  0:20.00  The Drop. Born Of The Sky's crescendo rises; on the downbeat the music cuts hard to Your Breath's drop,
-               with the Drop hit. Listen for: an arrival exactly on the beat.
-  M2s 0:40.00  A splice inside Your Breath (two bars out), as Ring 2 arrives under its sweep. Listen for: nothing at
-               all; the groove should just carry on.
-  J2  0:54.00  Ring 3. Your Breath's last beat of hi-hats leads into a hard cut onto Techno Fest Vibes, under a ring
-               sweep. The tempo steps from 120 to 124 beats a minute as a clean cut. Listen for: the lift into a
-               harder groove, with nothing stumbling on the first beat.
-  M3s 0:59.81  A splice inside Techno Fest Vibes (two bars out), on the cut to the flyer. Listen for: nothing at all.
-  J3  1:23.03  Stealth. Techno Fest Vibes' own ending stops on the downbeat, exactly on Enter. One soft tick, the chord
-               rings out, and Starfire's pad fades in under it. Listen for: a true stop, not a fade, then the hush.
-  J4  1:34.03  Evening. A quarter-second crossfade that ends exactly on Your Breath's downbeat. Its breakdown
-               builds, takes a one-beat breath, and its biggest lift lands the kept card at 1:38.03. Listen for: a
-               smooth hand-over, and the lift as the peak of the film.
-  J5  1:54.03  The merge. A cut beat for beat back into Born Of The Sky (both are 120 beats a minute, so the pulse
-               never breaks), a little quieter while the screens return into the stone. A swell made from its own
-               chord rises into the title. The key opens from {k5.get('key_before', {}).get('key', '?')} into {k5.get('key_after', {}).get('key', '?')}, with B held in common.
-               Listen for: the title arriving louder than the bar before it.
-  F4  2:04.03  A splice inside Born Of The Sky's held chord, under the end card. Listen for: nothing at all.
+{changes}
 
 THE 40-SECOND CUT
   0:00-0:28  B2 Your Breath from its intro: the question, "Pebble 2.0" on B2's own hit at 0:04, its drop as the Drop at

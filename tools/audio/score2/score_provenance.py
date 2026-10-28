@@ -49,9 +49,10 @@ def main():
         "title": "Ripples: the score's provenance (the main film and the 40-second cut)",
         "made": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
         "lane": "score2: assemble and master the score from the cue sheet; the score preview videos",
-        "revision": "the fix revision (28 Oct 2026, after the score review's R-01 to R-11) of the Return revision "
-                    "(CUE_SHEET.md revision 2, 27-28 Oct 2026; OVERRIDES §61)",
-        "binding": ["OVERRIDES §48-§64 (§51: the person's music direction and the Mixkit licence limits; §55 CR-13: no "
+        "revision": cs.get("version", "the fix revision (28 Oct 2026, after the score review's R-01 to R-11) of the Return "
+                                      "revision (CUE_SHEET.md revision 2, 27-28 Oct 2026; OVERRIDES §61)"),
+        "binding": ["OVERRIDES §65-§68 (§65: the coda's sound; §66: R-04; §67-§68: Ring 4's and Cascade 4's bars)",
+                    "OVERRIDES §48-§64 (§51: the person's music direction and the Mixkit licence limits; §55 CR-13: no "
                     "scripted Mixkit access, the person downloads by hand; §60: the audio venv and the kit; §61: the "
                     "Return at the end only, 35 readable features, the person hears only finished work)",
                     "TREATMENT §3.4, §3.5, §3.8-§3.9, §3.12, §4, §5.5", "MUSIC_RESEARCH §3",
@@ -72,8 +73,11 @@ def main():
                                                                      "score_designed.py", "score_arc.py",
                                                                      "score_sfx_audition.py", "score_sfx_sheet.py",
                                                                      "score_title_probe.py", "score_handcheck.py",
-                                                                     "cue_plan.py",
-                                                                     "revise_measure.py")]}
+                                                                     "cue_plan.py", "revise_measure.py", "cue_sheet.py",
+                                                                     "revise3_bars.py", "revise3_plan.py", "revise3_spec.py",
+                                                                     "revise3_md.py", "score_coda.py", "coda_timing.ts",
+                                                                     "evening_r3.sh")
+                                         if os.path.exists(os.path.join(HERE, f))]}
     # ---------------------------------------------------------------- inputs
     aud = os.path.join(REPO, ".work", "music-audition")
     used = {}
@@ -111,8 +115,14 @@ def main():
     out["inputs"] = {
         "cue_sheet": [entry(os.path.join(W, f)) for f in ("CUE_SHEET.json", "CUE_SHEET.md", "BEAT_SHEET.json",
                                                            "MUSIC_MAP.json", "cuesheet/plan_main.json",
-                                                           "cuesheet/plan_x40.json", "cuesheet/main.metrics.json",
-                                                           "cuesheet/x40.metrics.json")],
+                                                           "cuesheet/plan_x40.json",
+                                                           "cuesheet/" + (json.load(open(os.path.join(W, "cuesheet", "plan_main.json"))).get("metrics")
+                                                                          or "main.metrics.json"),
+                                                           "cuesheet/x40.metrics.json", "cuesheet/r3/decision_rules.json",
+                                                           "cuesheet/r3/bars_decision.json", "cuesheet/r3/r04_decision.json",
+                                                           "cuesheet/r3/coda_tap_decision.json")
+                      if os.path.exists(os.path.join(W, f))],
+        "coda_timing": entry(os.path.join(M, "coda_timing.json")) if os.path.exists(os.path.join(M, "coda_timing.json")) else None,
         "layer_sheets": [entry(os.path.join(M, f)) for f in ("layers_main.json", "layers_x40.json", "beat_offsets.json")],
         "music": music,
         "sfx_kit": {"manifest": [entry(os.path.join(REPO, ".work", "sfx2", f)) for f in ("KIT.json", "kit_plan.json")],
@@ -173,6 +183,9 @@ def main():
                 "eq": b["eq"].get(c["id"], []), "time_stretch": "none"})
         out["films"][film] = {
             "length_s": b["film_length_s"], "samples": b["samples"], "sample_rate": b["sr"],
+            **({"x_cut_film_s": b["x_cut_film_s"], "coda": b["coda"]} if b.get("coda") else {}),
+            **({"coda_checks": json.load(open(os.path.join(M, f"{film}.coda.json")))}
+               if os.path.exists(os.path.join(M, f"{film}.coda.json")) else {}),
             "plan": {"file": b["plan"], "sha256": b["plan_sha256"]},
             "layers_sheet": {"file": b["layers"], "sha256": b["layers_sha256"]},
             "cues": cues,
@@ -230,6 +243,15 @@ def main():
             order_ok[f"{film}:{name}"] = {
                 "in_the_track's_own_order": film_order == src,
                 "overlapping_in_source": any(src[i][1] > src[i + 1][0] + 1e-6 for i in range(len(src) - 1))}
+    def cue_ids(track):
+        """The cues that play a track, per film, from the plans: 'M2, M5; X1, X2'."""
+        per = []
+        for film in ("main", "x40"):
+            pl = json.load(open(os.path.join(W, "cuesheet", f"plan_{film}.json")))
+            ids = [c["id"] for c in pl["cues"] if c["track"] == track]
+            if ids:
+                per.append(", ".join(ids))
+        return "; ".join(per)
     checks = {c["check"]: c for c in cs.get("checks", [])}
     overl = [c["detail"] for k, c in checks.items() if "overlaps other music" in k]
     # the same, in the masters as built (each cue's audio extent in film time from the build record, so the master
@@ -246,7 +268,7 @@ def main():
             overl_built[f"{film}:{cid}"] = {"longest_overlap_s": round(best[0], 3), "with": best[1]}
     out["licences"] = {
         "scott_buckley": {"licence": "CC BY 4.0", "url": "https://creativecommons.org/licenses/by/4.0/",
-                          "tracks": ["A4 Born Of The Sky (M1, M6a, M6b)", "A1 Starfire (M4)"],
+                          "tracks": [f"A4 Born Of The Sky ({cue_ids('BornOfTheSky')})", f"A1 Starfire ({cue_ids('Starfire')})"],
                           "edits": "excerpts with gain; M6a's dip; F4's splice inside the held IV chord; the reverse "
                                    "swell made from its own title chord (all edits: the credit says '(edited)')",
                           "credit_lines": cs["credits"]["main"],
@@ -254,7 +276,7 @@ def main():
                                     "never submit to Content ID or any fingerprinting service"]},
         "mixkit_music": {"licence": "Mixkit Stock Music Free License", "url": "https://mixkit.co/license/modal/musicFree/",
                          "licence_snapshot": ".work/audio/web/req2-license_modal_musicFree.html (OVERRIDES §60)",
-                         "tracks": ["B2 Your Breath (M2a, M2b, M5; X1, X2)", "B4 Techno Fest Vibes (M3a, M3b; X3)"],
+                         "tracks": [f"B2 Your Breath ({cue_ids('YourBreath')})", f"B4 Techno Fest Vibes ({cue_ids('TechnoFestVibes')})"],
                          "excerpts_as_built": mix_music, "order_checks": order_ok,
                          "overlap_with_other_music": overl,
                          "overlap_with_other_music_in_the_masters": overl_built,

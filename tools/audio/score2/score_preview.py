@@ -86,17 +86,17 @@ JOINS = {
     "M2s": ("A splice inside Your Breath: bars 17 and 18 are taken out, so bar 16 runs into bar 19 through a 60 ms "
             "crossfade that ends on bar 19's downbeat. The track keeps its own order. Ring 2's sweep carries across.",
             "nothing at all: the groove just carries on, and bar 19's own entrance lands on the beat."),
-    "J2": ("Your Breath's last beat of hi-hats leads into a hard cut onto Techno Fest Vibes' riser bar, under Ring 3's "
-           "whoosh. 120 into 124 BPM, so a cut, never an overlap; both tracks sit on G.",
-           "the lift into a harder, brighter groove, with no stumble on the first beat."),
+    "J2": ("Your Breath's hi-hats stop for the last three beats of its bar: a breath. Then a hard cut onto Techno Fest "
+           "Vibes' riser bar, under Ring 3's whoosh. 120 into 124 BPM, so a cut, never an overlap; both tracks sit on G.",
+           "the breath, then the lift into a harder, brighter groove, with no stumble on the first beat."),
     "M3s": ("A splice inside Techno Fest Vibes: bars 50 and 51 are taken out, so bar 49 runs into bar 52 through a 60 ms "
             "crossfade that ends on the downbeat, on the picture's cut to the flyer.",
             "nothing at all: the figure runs straight across, and its own fill still leads into Ring 4."),
     "J3": ("Techno Fest Vibes' own real ending: it stops on the downbeat as Enter is pressed. One soft Enter tick sits "
-           "in the hush while the chord rings out, then Starfire's pad fades in from 1:24.53 over 2 seconds.",
+           "in the hush while the chord rings out, then Starfire's pad fades in from {pad} over 2 seconds.",
            "a true stop, not a fade; the hush; the pad arriving without a bump."),
     "J4": ("A quarter-second crossfade from Starfire's pad that ends exactly on Your Breath's downbeat, into its "
-           "breakdown. It builds, takes its own one-beat stop, and its biggest lift lands the kept card at 1:38.03 with "
+           "breakdown. It builds, takes its own one-beat stop, and its biggest lift lands the kept card at {kept} with "
            "the hit; the music makes room under the hit for one bar, then settles lower under the Return.",
            "a smooth hand-over; then the held breath and the lift, the film's peak."),
     "J5": ("A beat cut, 120 into 120 BPM: Your Breath, running on under the Return, cuts on the downbeat to Born Of The "
@@ -113,7 +113,7 @@ JOINS = {
             "G that rises into it. 120 into 124 BPM: a cut, never an overlap. The title lands on its real stop.",
             "the push into the faster last bar; then a true stop under the title, with the tap and the hit."),
 }
-SHORT = {"J1": "cut on the hit", "M2s": "splice", "J2": "hard cut after the hats", "M3s": "splice",
+SHORT = {"J1": "cut on the hit", "M2s": "splice", "J2": "hard cut after the breath", "M3s": "splice",
          "J3": "its own stop", "J4": "short crossfade", "J5": "beat cut", "F4": "splice", "XJ1": "splice into the lift",
          "XJ2": "cut under a swell"}
 # the shots whose cue-sheet notes are the lanes' shorthand, in plain words for the person
@@ -121,8 +121,12 @@ PLAIN = {"S25": "one continuous shot: the camera pulls back from the kept card, 
                 "stone, then each returns into it; the swell, then the blink",
          "x8": "a ring of features as the camera leaves the kept card; each returns into the stone, the kept card last"}
 LAST = {"main": "Born Of The Sky's composed ending carries the title and the end card and dies away by itself; only its "
-                "last 0.3 s, already near silence, is faded into room tone (2:14.51 to 2:14.81), and room tone holds to "
-                "the end at 2:15.03.",
+                "last 0.3 s, already near silence, is faded into room tone ({fade_from} to {fade_to}), and room tone holds "
+                "to the end card's last frame at {xcut}.",
+        "main_coda": "Born Of The Sky's composed ending carries the title and the end card and dies away by itself; only "
+                     "its last 0.3 s, already near silence, is faded into room tone ({fade_from} to {fade_to}). The room "
+                     "tone carries on, never restarting, through the scene after the end card ({xcut} to {end}), where "
+                     "one soft stone tap sounds at {tap}. No music there: the end card is the music's real ending.",
         "x40": "Techno Fest Vibes' stop chord rings out under the facts, then room tone."}
 
 
@@ -182,9 +186,15 @@ def load(film, sheet_path, build_path, layers_path):
     layers = json.load(open(layers_path))
     f = cs["main_film"] if film == "main" else cs["cut_40s"]
     end = f["film_length_s"]
+    coda = b.get("coda") if film == "main" else None  # revision 3: the master runs on through the post-credit scene
+    xcut = end
     if film == "main":
         blocks = [(x["start_s"], x["end_s"], x["block"], BLOCK_SUB.get(x["block"], "")) for x in f["blocks"]]
         shots = [(x["start_s"], x["end_s"], x["id"], PLAIN.get(x["id"], x["what"])) for x in f["shots"]]
+        if coda:
+            end = max(end, b["film_length_s"])
+            blocks.append((xcut, end, "After the end card", "the post-credit scene: Pebble rests; no music"))
+            shots.append((xcut, end, "coda", "the end card's room tone carries on; one soft stone tap on the second line"))
     else:
         plan = json.load(open(os.path.join(os.path.dirname(sheet_path), "cuesheet", "plan_x40.json")))
         blocks = [(a, bb, BLOCK_NAME.get(lab, lab), BLOCK_SUB.get(lab, "")) for a, bb, lab in plan["blocks"]]
@@ -207,7 +217,18 @@ def load(film, sheet_path, build_path, layers_path):
             c["role"] = re.sub(r"dipped [\d.]+ dB", f"dipped {g[-1][1] - g[0][1]:.1f} dB", c["role"])
     # a cue "plays" from its film in-point to the next cue's in-point (heads that pre-roll belong to the change)
     for k, c in enumerate(cues):
-        c["until"] = cues[k + 1]["film_in"] if k + 1 < len(cues) else end
+        c["until"] = cues[k + 1]["film_in"] if k + 1 < len(cues) else xcut
+    sync = {x.get("what", ""): x["film_s"] for x in f.get("sync_points", [])}
+    pad = next((c["film_in"] for c in cues if c["id"] == "M4"), None)
+    kept = next((t for w, t in sync.items() if w.startswith("THE KEPT CARD")), None)
+    fill = {"pad": fmt(pad) if pad is not None else "", "kept": fmt(kept) if kept is not None else ""}
+    if film == "main":
+        room = next((L for L in b["layers"] if L["id"] == "room_end"), None)
+        a_, z_ = (room["film_s"][0], room["film_s"][0] + room["excerpt"]["fade_in_s"]) if room else (xcut, xcut)
+        last = LAST["main_coda" if coda else "main"].format(fade_from=fmt(a_), fade_to=fmt(z_), xcut=fmt(xcut), end=fmt(end),
+                                                            tap=fmt(coda["tap_film_s"]) if coda else "")
+    else:
+        last = LAST[film]
     joins = []
     for j in f["joins"]:
         a = next(c for c in cues if c["id"] == j["from"]) if "from" in j else None
@@ -225,7 +246,8 @@ def load(film, sheet_path, build_path, layers_path):
         if L.get("role") == "swell":
             span = (a, t + 0.2)
         spans.append((span[0], span[1], clean(lab)))
-    return {"end": end, "blocks": blocks, "shots": shots, "cues": cues, "joins": joins, "spans": spans, "build": b}
+    return {"end": end, "xcut": xcut, "coda": coda, "blocks": blocks, "shots": shots, "cues": cues, "joins": joins,
+            "spans": spans, "build": b, "fill": fill, "last": last}
 
 
 def at(rows, t):
@@ -273,6 +295,12 @@ def make_base(film, D):
         wl = d.textlength(lab, font=F["mono_s"])
         lx = x + 6 if x + 6 + wl <= X1 else x - 6 - wl
         d.text((lx, ty), lab, font=F["mono_s"], fill=C["ink"])
+    if D.get("coda"):  # the post-credit scene: no music, the room tone and one tap
+        a, b = xt(D["xcut"]) + 2, xt(D["end"]) - 2
+        d.rounded_rectangle([a, y - 4, max(a + 2, b), y + 4], radius=4, fill=C["dim"])
+        lab = "coda · no music"
+        if b - a > d.textlength(lab, font=F["mono_xs"]) + 2:
+            d.text((a, y + 15), lab, font=F["mono_xs"], fill=C["dim"])
     d.text((X0, 1036), "0:00", font=F["mono_s"], fill=C["dim"])
     e = fmt(end)
     d.text((X1 - d.textlength(e, font=F["mono_s"]), 1036), e, font=F["mono_s"], fill=C["dim"])
@@ -290,6 +318,17 @@ def scene_panel(block, shot):
         for k, ln in enumerate(wrap(d, clean(shot[3]), F["body"], 980 - x, 2)):
             d.text((x, 186 + k * 38), ln, font=F["body"], fill=C["ink2"])
     return panel(1000, 280, draw)
+
+
+def coda_panel():
+    def draw(d, im):
+        d.text((0, 0), "No music", font=F["cue"], fill=C["ink"])
+        d.text((0, 62), "the scene after the end card", font=F["track2"], fill=C["ink2"])
+        d.text((0, 112), "room tone (made for this film) · one stone tap (Kenney, CC0)", font=F["small"], fill=C["ink2"])
+        for k, ln in enumerate(wrap(d, "The end card is the music's real ending. The room tone carries on without a "
+                                       "restart, and one soft stone tap marks the second line.", F["body"], 1000, 3)):
+            d.text((0, 150 + k * 37), ln, font=F["body"], fill=C["ink2"])
+    return panel(1020, 280, draw)
 
 
 def cue_panel(c):
@@ -316,7 +355,7 @@ def change_card(state, j, sub, D, film):
         lab = {"next": "NEXT CUE CHANGE", "now": "CUE CHANGE NOW", "done": "NO MORE CUE CHANGES"}[state]
         tracked(d, (32, 28), lab, F["label"], C["sage"], 2.0)
         if state == "done":
-            for k, ln in enumerate(wrap(d, LAST[film], F["card"], w - 64, 6)):
+            for k, ln in enumerate(wrap(d, D["last"], F["card"], w - 64, 8)):
                 d.text((32, 70 + k * 34), ln, font=F["card"], fill=C["ink2"])
             return
         d.text((32, 56), f"{j['id']} · {j['name']}", font=F["card_t"], fill=C["ink"])
@@ -325,7 +364,7 @@ def change_card(state, j, sub, D, film):
         what = (f"inside {frm['title']}: shortened at bar lines" if frm["title"] == to["title"]
                 else f"from {frm['title']} to {to['title']}")
         d.text((32, 152), wrap(d, what, F["card_m"], w - 64, 1)[0], font=F["card_m"], fill=C["ink"])
-        how, listen = JOINS[j["id"]]
+        how, listen = (x.format(**D["fill"]) for x in JOINS[j["id"]])
         y = 194
         for ln in wrap(d, how, F["card"], w - 64, 6):
             d.text((32, y), ln, font=F["card"], fill=C["ink2"])
@@ -379,8 +418,11 @@ def main():
         block = at(D["blocks"], t)
         shot = at(D["shots"], t)
         im.paste(cached(("s", block[2], shot[2]), lambda: scene_panel(block, shot)), (X0, 176))
-        cue = next((c for c in D["cues"] if c["film_in"] - 1e-6 <= t < c["until"] - 1e-6), D["cues"][-1] if t >= D["cues"][-1]["film_in"] else D["cues"][0])
-        im.paste(cached(("c", cue["id"]), lambda: cue_panel(cue)), (X0, 520))
+        if D.get("coda") and t >= D["xcut"] - 1e-6:
+            im.paste(cached(("coda",), coda_panel), (X0, 520))
+        else:
+            cue = next((c for c in D["cues"] if c["film_in"] - 1e-6 <= t < c["until"] - 1e-6), D["cues"][-1] if t >= D["cues"][-1]["film_in"] else D["cues"][0])
+            im.paste(cached(("c", cue["id"]), lambda: cue_panel(cue)), (X0, 520))
         nxt = next((j for j in D["joins"] if t < j["t"] + 3.0), None)
         if nxt is None:
             card = cached(("done",), lambda: change_card("done", None, "", D, film))

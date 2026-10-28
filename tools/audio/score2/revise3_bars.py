@@ -8,6 +8,8 @@ most one forward splice of whole bars.
 
   python3 -I tools/audio/score2/revise3_bars.py [R3_DIR]
       -> R3_DIR/bars_candidates.json (every candidate and its measures), R3_DIR/bars_decision.json (the choice)
+  python3 -I tools/audio/score2/revise3_bars.py confirm
+      -> r3/confirm.json: the rule's evening confirmation on the plan's own measurement as built (exit 1 on a failure)
 
 Bars are the music map's indices (downbeats_s[k] starts bar k). Film offsets are in B4 bars after J2.
 """
@@ -22,7 +24,7 @@ sys.path.insert(0, HERE)
 import revise_plan as rp  # noqa: E402  the maps, the downbeats and the cutter's own cost (t5_cut.py's)
 
 B4 = rp.B4
-R3 = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.path.join(rp.CUESHEET, "r3")
+R3 = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1] != "confirm" else os.path.join(rp.CUESHEET, "r3")
 RULES = os.path.join(R3, "decision_rules.json")
 
 STOP = 64                       # B4's own stop: bar 64's downbeat (the map's ending: "final_hit_on_downbeat_bar": 64)
@@ -88,7 +90,8 @@ def label(c):
     if c["splice"] is None:
         return f"B4 bars {c['in_bar']}-63 whole, the stop at bar 64" + (" (bars 50-51 back in)" if c["in_bar"] == 47 else "")
     sp = c["splice"]
-    return (f"B4 bars {c['in_bar']}-{sp['out_bar'] - 1} + {sp['in_bar']}-63, the stop at bar 64 "
+    span = lambda x, y: f"{x}-{y}" if y > x else f"{x}"  # noqa: E731
+    return (f"B4 bars {span(c['in_bar'], sp['out_bar'] - 1)} + {span(sp['in_bar'], 63)}, the stop at bar 64 "
             f"({sp['bars_out']} bar{'s' if sp['bars_out'] > 1 else ''} out at bar {sp['out_bar']})")
 
 
@@ -219,5 +222,43 @@ def main():
               f"lift {r['lift_on_S15']}; Cascade 4 over phrase C {r['cascade4_bars_over_phrase_C']} bars; gates {r['gates']}")
 
 
+def confirm():
+    """The evening's confirmation on audio (the rule's 'confirm_in_the_evening', and R-04's last sentence): revision 2's
+    gates on the chosen edit's seams in the plan's own measurement as built (cuesheet/r3/main.metrics.json). With no
+    splice in M3, that is J2 (the click and loudness gates: J2 is a cue change, so the spectral, harmony and grid gates of
+    a splice inside one track do not apply, as in revision 2) and J3 (the click gate: its step is the planned stop).
+    Exit 1 when a gate fails: the chain stops before any master is built, and the lead is told."""
+    plan = json.load(open(os.path.join(rp.CUESHEET, "plan_main.json")))
+    met = json.load(open(os.path.join(rp.CUESHEET, plan["metrics"])))
+    ex = met.get("extras", {}).get("seams", {})
+    seams = {x["id"]: x for x in met["seams"]}
+    rows = {}
+    for sid, gates in (("J2", ("click", "loudness")), ("J3", ("click",))):
+        m, e = seams[sid], ex.get(sid, {})
+        g = {}
+        if "click" in gates:
+            g["click"] = (m.get("extra_hf_db") is None or m["extra_hf_db"] < 3.0) and (e.get("d2_ratio_at_seam") or 0.0) < 2.0
+        if "loudness" in gates:
+            g["loudness"] = abs(m["film_step_3s_lu"]) <= 1.5
+        rows[sid] = {"gates": g, "pass": all(g.values()),
+                     "measured": {"extra_hf_db": m.get("extra_hf_db"), "d2_ratio_at_seam": e.get("d2_ratio_at_seam"),
+                                  "film_step_3s_lu": m["film_step_3s_lu"], "film_step_400ms_lu": m["film_step_400ms_lu"],
+                                  "extra_lsd_db": m.get("extra_lsd_db"),
+                                  "lsd_percentile_of_incoming_own_downbeats": e.get("lsd_percentile_of_incoming_own_downbeats")}}
+    splices = [x for x in plan["seams"] if next(c for c in plan["cues"] if c["id"] == x["from"])["track"]
+               == next(c for c in plan["cues"] if c["id"] == x["to"])["track"] and x["id"] != "F4"]
+    out = {"what": "revision 3's audio confirmation (decision_rules.json BARS confirm_in_the_evening; R04)",
+           "measurement": plan["metrics"], "seams": rows, "new_splices_in_M2_or_M3": [x["id"] for x in splices],
+           "pass": all(r_["pass"] for r_ in rows.values()) and not splices}
+    with open(os.path.join(R3, "confirm.json"), "w") as fh:
+        json.dump(out, fh, indent=1)
+        fh.write("\n")
+    print("confirm:", "PASS" if out["pass"] else "FAIL", json.dumps({k: v["gates"] for k, v in rows.items()}))
+    sys.exit(0 if out["pass"] else 1)
+
+
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] == "confirm":
+        confirm()
+    else:
+        main()

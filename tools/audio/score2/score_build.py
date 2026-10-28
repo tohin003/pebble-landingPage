@@ -23,6 +23,10 @@ Then the masters: one gain and pedalboard's true-peak BrickwallLimiter, iterated
 on the target (web -16 LUFS with a -2.0 dBTP ceiling, social -14 LUFS with -1.5 dBTP). Each is measured again after an
 AAC encode with FFmpeg's ebur128; no AAC file is written, because the encoder pipes ADTS straight into the meter.
 
+Revision 3 (OVERRIDES §65): when the layer sheet carries the coda's span, the master runs on to the coda's last frame
+(the end card's room tone carried on and the coda's one tap are ordinary layers), and the record names the X cut (the
+coda's L0). The like-for-like bed is the plan's own measurement (the plan's 'metrics', revision 3's cuesheet/r3/).
+
 Checks, written to OUT_DIR/NAME.build.json:
   - the bed against the cue sheet lane's in-memory measurements (without the corrections and the EQ, like for like);
   - per cue change: the loudness step (3 s and 400 ms) and the spectral continuity (log-spectral distance and six
@@ -824,14 +828,18 @@ def main():
     kit, kplan = load_kit()
     cues = {c["id"]: c for c in plan["cues"]}
     end = plan["end_film_s"]
-    N = int(round(end * SR))
+    coda = sheet.get("coda")  # revision 3 (OVERRIDES §65): the master runs on through the post-credit scene's last frame
+    N = int(round(max(end, coda["to_film_s"] if coda else end) * SR))
     bed = np.zeros((N, 2), dtype=np.float32)
     bed_cs = np.zeros((N, 2), dtype=np.float32)  # the cue sheet lane's bed (the corrections, no EQ), like for like
     mel_fb = cp.mel_filterbank()
     corr = sheet.get("source_time_correction_s", {})
     res = {"plan": rel(plan_path), "plan_sha256": sha256(plan_path), "layers": rel(layers_path),
            "layers_sha256": sha256(layers_path), "film": plan["film"], "sr": SR, "samples": N,
-           "film_length_s": r(N / SR, 4), "source_time_correction_s": corr,
+           "film_length_s": r(N / SR, 4), "x_cut_film_s": r(end, 4),
+           **({"coda": coda, "x_cut_note": "the X version is this master cut at x_cut_film_s, the coda's L0 (the end "
+                                         "card's last frame is the X version's last; X's 2:20 cap)"} if coda else {}),
+           "source_time_correction_s": corr,
            "source_time_correction_evidence": sheet.get("source_time_correction_evidence"),
            "cue_time_correction_s": sheet.get("cue_time_correction_s", {}),
            "cue_time_correction_evidence": sheet.get("cue_time_correction_evidence"),
@@ -1004,7 +1012,7 @@ def main():
     mom_b, st_b = cp.curves(ms_bed)
     ms_cs = cp.kweighted_ms(bed_cs, SR)
     lt = np.arange(len(ms_bed)) * cp.LH + cp.LH / 2
-    lane = os.path.join(os.path.dirname(plan_path), plan["film"] + ".metrics.json")
+    lane = os.path.join(os.path.dirname(plan_path), plan.get("metrics") or (plan["film"] + ".metrics.json"))
     lane_m = json.load(open(lane)) if os.path.exists(lane) else None
     res["bed"] = {
         "built": {"integrated_lufs": r(cp.integrated(ms_bed, 0, N / SR)), "lra_lu": r(cp.lra(ms_bed, 0, N / SR)),

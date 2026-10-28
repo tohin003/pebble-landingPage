@@ -32,7 +32,20 @@ The fix revision (28 Oct, after the score review's R-01 to R-11) changes, on top
   - R-03 (the 40-s cut): its title duck is 0.5 dB, X3 plays 1 dB lower, and the kept card at XJ1 gets the climax
     composite only if it passes the rule written before the build (else it stays out, with its numbers).
 
-  python3 -I tools/audio/score2/score_layers.py .work/score2
+Revision 3 (28 Oct, OVERRIDES §65-§68; CUE_SHEET.md revision 3) changes, on top of that:
+  - every time is still read from the plan: Ring 2 arrives on an event of the plan (M2 is one excerpt, so there is no
+    splice seam to read it from), Ring 4 and Enter move with B4's two more bars, and everything after Enter is 232
+    frames later; the layer notes print the plan's own times, never typed ones;
+  - M3 is one excerpt: every B4 cue of the plan gets the cue sheet's low shelf;
+  - the coda (OVERRIDES §65): the end card's room tone is carried on without a restart to the coda's last frame (one
+    excerpt of room_tone_b, about -52 LUFS), and the coda's one stone tap (standin_tap_a, Kenney CC0, about -30 LUFS)
+    peaks on L-C2's landing, tuned as cuesheet/r3/coda_tap_decision.json decides. The coda's frames are read from its
+    own plan (coda_timing.ts writes CODA_TIMING.json at build time), never typed in; the levels are the coda lane's
+    CODA_SOUND. The master then runs to the coda's last frame; the X version is the master cut at the coda's L0.
+
+  python3 -I tools/audio/score2/score_layers.py .work/score2 [OUT_DIR] [CODA_TIMING.json]
+      OUT_DIR defaults to .work/score2/master; CODA_TIMING.json to OUT_DIR/coda_timing.json (needed when the plan has a
+      coda span)
 """
 import json
 import os
@@ -52,7 +65,7 @@ MASTERS = {  # the ceiling search keeps 0.2 dB under each gate on both encoders 
 }
 BUDGETS = [["drop_sub", 1.0], ["climax_sub", 1.0], ["title_sub", 1.0], ["swell", 1.0], ["mask", 1.0], ["drop", 2.5],
            ["climax", 2.5], ["title", 2.5], ["name", 0.5], ["slide", 0.5], ["tick1", 0.5], ["tick2", 0.5], ["tick3", 0.5],
-           ["enter", 0.5], ["ring1", 0.5], ["ring2", 0.5], ["ring3", 0.5], ["ring4", 0.5]]  # the 40-s mask is a reverse
+           ["enter", 0.5], ["ring1", 0.5], ["ring2", 0.5], ["ring3", 0.5], ["ring4", 0.5], ["coda", 0.5]]  # the 40-s mask is a reverse
 # swell, so it is fitted with the sustained layers (1.0 dB), as the title's swell
 WHY_DUCK = ("1.5 dB, not 3 dB, on the music's own loudest arrivals (B2's lift at the kept card, A4's title chord, B4's "
             "stop in the 40-s cut): the 26 Oct 23:45 build measured a 3 dB duck there as quieter than the music alone "
@@ -140,6 +153,11 @@ def r4(v):
     return round(float(v), 4)
 
 
+def ft(t):
+    """A film time as the cue sheet prints it, with its frame: 1:26.90 (5214)."""
+    return f"{int(t // 60)}:{t % 60:05.2f} ({round(t * FR)})"
+
+
 def sweep(lid, group, label, which, t, cue, replaces, offset_db=-4.0):
     """A designed whoosh (WHOOSH[which]) starting at t, set to the music under it as long as it lasts."""
     p = WHOOSH[which]
@@ -185,7 +203,9 @@ def drop_group(t, plunk_frames=2):
 
 def main_sheet(plan):
     t_drop = seam_t(plan, "J1")
-    t_ring2, t_ring3 = seam_t(plan, "M2s"), seam_t(plan, "J2")
+    ev = {e["label"] for e in plan["events"]}
+    t_ring2 = event_t(plan, "Ring 2") if "Ring 2" in ev else seam_t(plan, "M2s")  # revision 3: M2 has no splice
+    t_ring3 = seam_t(plan, "J2")
     t_ring4 = event_t(plan, "Ring 4")
     t_enter = seam_t(plan, "J3")
     t_kept = event_t(plan, "kept card")
@@ -221,9 +241,10 @@ def main_sheet(plan):
     lay.append(sweep("ring1_sweep", "ring1", "ring sweep: Ring 1 arrives (your browser)", "ring1",
                      t_ring1 - 12 / FR, "§4: 0:27.80 (1668); whoosh 2 of 5",
                      "ring_sweep_a (Mixkit #2632, script-fetched: CR-13)"))
-    lay.append(sweep("ring2_sweep", "ring2", "ring sweep: Ring 2 arrives (your apps), across the splice", "ring2",
-                     t_ring2 - 12 / FR, "§4: 0:39.80 (2388), carries M2s; whoosh 3 of 5",
-                     "ring_sweep_c (Mixkit #1471, script-fetched: CR-13)"))
+    splice2 = any(s_["id"] == "M2s" for s_ in plan["seams"])
+    lay.append(sweep("ring2_sweep", "ring2", "ring sweep: Ring 2 arrives (your apps)" + (", across the splice" if splice2 else ""),
+                     "ring2", t_ring2 - 12 / FR, f"§4: {ft(t_ring2 - 12 / FR)}" + (", carries M2s" if splice2 else "")
+                     + "; whoosh 3 of 5", "ring_sweep_c (Mixkit #1471, script-fetched: CR-13)"))
     lay.append(tick("tick_equals", "tick2", "tick 2: Calculator's “=” (placeholder time)", "ui_tap_key",
                     t_ring2 + 1.5, "G", "§4: tick 2, '=', ui_tap_key (Kenney CC0), tuned to G",
                     "the real press's frame comes with the take (CUE_SHEET §4: 'in S11, about 0:41-0:42')"))
@@ -232,19 +253,19 @@ def main_sheet(plan):
                     "the real click's frame comes with the take (CUE_SHEET §4: 'in S12, about 0:46'); not tuned: the "
                     "take has no measurable pitch"))
     lay.append(sweep("ring3_sweep", "ring3", "ring sweep: Ring 3, across the cut to Techno Fest Vibes", "ring3",
-                     t_ring3 - 12 / FR, "§4: 0:53.80 (3228), covers J2; whoosh 4 of 5 (a noise whoosh has no pitch, "
-                     "so it needs no tuning to G)", "ring_sweep_b (Mixkit #2604, script-fetched: CR-13)"))
+                     t_ring3 - 12 / FR, f"§4: {ft(t_ring3 - 12 / FR)}, covers J2; whoosh 4 of 5 (a noise whoosh has no "
+                     "pitch, so it needs no tuning to G)", "ring_sweep_b (Mixkit #2604, script-fetched: CR-13)"))
     lay.append(sweep("ring4_sweep", "ring4", "ring sweep: Ring 4 arrives (your project)", "ring4",
-                     t_ring4 - 12 / FR, "§4: 1:07.35 (4041); whoosh 5 of 5",
+                     t_ring4 - 12 / FR, f"§4: {ft(t_ring4 - 12 / FR)}; whoosh 5 of 5",
                      "ring_sweep_d (Mixkit #2611, script-fetched: CR-13)"))
     lay.append({"id": "tick_enter", "group": "enter", "label": "tick 4: Enter, alone in the hush, on B4's stop",
                 "role": "tick", "take": "ui_tap_enter", "t": r4(t_enter), "align": "peak", "tune": {"to_note": "A#"},
                 "level": {"mode": "abs_m", "lufs": -30.0},
-                "cue_sheet": "§4: 1:23.03 (4982) tick 4, Enter, on B4's stop, ui_tap_enter (Kenney CC0), soft (about "
+                "cue_sheet": f"§4: {ft(t_enter)} tick 4, Enter, on B4's stop, ui_tap_enter (Kenney CC0), soft (about "
                              "-30 LUFS), tuned to Bb"})
     lay.append({"id": "dusk_shimmer", "group": "enter", "label": "the dusk shimmer", "role": "shimmer",
                 "take": "glass_shimmer_a", "t": r4(t_enter), "align": "start", "level": {"mode": "abs_m", "lufs": -27.0},
-                "cue_sheet": "§4: 1:23.03 glass_shimmer_a, about -27 LUFS momentary; the 23:45 build left it out",
+                "cue_sheet": f"§4: {ft(t_enter)} glass_shimmer_a, about -27 LUFS momentary; the 23:45 build left it out",
                 "omit": "left out of the masters, as the 26 Oct 23:45 build and CUE_SHEET §4 record: over B4's "
                         "ring-out and the Starfire pad it lifts the classifier's 'foghorn' (0.33 to 0.46); the Enter "
                         "tick sits alone in the hush, as J3 describes"})
@@ -252,14 +273,14 @@ def main_sheet(plan):
                 "take": "room_tone_b", "t": r4(t_enter), "align": "start",
                 "excerpt": {"from_s": 3.0, "dur_s": 2.1, "fade_in_s": 0.1, "fade_out_s": 0.6},
                 "level": {"mode": "abs_i", "lufs": -52.0},
-                "cue_sheet": "M4 layers: optional room tone under the hush (1:23.03-1:25.13) at -52 LUFS"})
+                "cue_sheet": f"M4 layers: room tone under the hush ({ft(t_enter)}-{ft(t_enter + 2.1)}) at -52 LUFS"})
     ref_k = [r4(t_kept), r4(t_kept + 3.0)]
     lab_k = "THE KEPT CARD: the climax hit (CC0 temp) and sub 2"
     src_k, what_k = hit_source()
     lay.append({"id": "climax_hit", "group": "climax", "label": lab_k, "role": "hit", **src_k, "status": "temp",
                 "t": r4(t_kept), "align": "peak", "level": {"mode": "rel", "ref": ref_k, "offset_db": 3.0},
                 "prelimit_db": 4.0, "highpass_hz": 70.0,
-                "cue_sheet": "§4: 1:38.03 (5882) the climax: final EffectiveTrailer_Booms_Vol2_011 (Sonniss); the music "
+                "cue_sheet": f"§4: {ft(t_kept)} the climax: final EffectiveTrailer_Booms_Vol2_011 (Sonniss); the music "
                              "ducks 250 ms", "replaces": "drop_impact_a (Mixkit #563, script-fetched: CR-13)",
                 "departure": "temp hit: " + what_k + "; the music under it dips 2 dB for one bar and ducks 3 dB (R-02)"})
     lay.append({"id": "climax_sub", "group": "climax", "label": lab_k, "role": "sub",
@@ -274,9 +295,9 @@ def main_sheet(plan):
                 "t": r4(t_title), "align": "end", "highpass_hz": 300.0,
                 "level": {"mode": "rel", "ref": [r4(t_title - 1.0), r4(t_title)], "offset_db": -6.0},
                 "budget_group": "swell",
-                "cue_sheet": "§4, C7: 1:56.03-1:58.03 the one-bar reverse swell from A4's own title chord (2:44.52, 4 "
-                             "beats, reversed), its last sample on the title frame (7082), high-passed at 300 Hz, its "
-                             "loudest 400 ms 6 dB under the music over its last second (CC BY, edited)"})
+                "cue_sheet": f"§4, C7: {ft(t_title - 2.0)}-{ft(t_title)} the one-bar reverse swell from A4's own title "
+                             "chord (2:44.52, 4 beats, reversed), its last sample on the title frame, high-passed at 300 "
+                             "Hz, its loudest 400 ms 6 dB under the music over its last second (CC BY, edited)"})
     lay.append({"id": "title_tap", "group": "title", "label": lab_t, "role": "tap", "take": "standin_tap_a",
                 "t": r4(t_title), "align": "peak", "tune": {"to_note": "E"},
                 "level": {"mode": "rel", "ref": ref_t, "offset_db": -3.0},
@@ -293,13 +314,29 @@ def main_sheet(plan):
                 "designed": {"base": "sub_drop_b", "params": {"f0": 69.3, "f1": 34.65}}, "t": r4(t_title),
                 "align": "start", "level": {"mode": "rel", "ref": ref_t, "offset_db": -4.0}, "budget_group": "title_sub",
                 "cue_sheet": "§4, C7: sub 3, sub_drop_b 69.3 -> 34.65 Hz (C#2, the title chord's root)"})
-    lay.append({"id": "room_end", "group": "room", "label": "room tone after the decay", "role": "room",
-                "take": "room_tone_b", "t": r4(room_fade_from), "align": "start",
-                "excerpt": {"from_s": 9.0, "dur_s": r4(end - room_fade_from), "fade_in_s": round(m6b["tail"]["fade"], 3),
+    coda = coda_span(plan) if plan.get("coda") else None
+    room_to = coda["to_film_s"] if coda else end
+    lay.append({"id": "room_end", "group": "room", "label": "room tone after the decay" + (", carried on through the coda"
+                                                                                          if coda else ""),
+                "role": "room", "take": "room_tone_b", "t": r4(room_fade_from), "align": "start",
+                "excerpt": {"from_s": 9.0, "dur_s": r4(room_to - room_fade_from), "fade_in_s": round(m6b["tail"]["fade"], 3),
                             "fade_out_s": 0.02},
-                "level": {"mode": "abs_i", "lufs": -52.0},
-                "cue_sheet": "§4: 2:14.81-2:15.03 room tone, room_tone_b, after the decay (it fades in under A4's last "
-                             "0.3 s, so the film never falls to digital silence)"})
+                "level": {"mode": "abs_i", "lufs": coda["room_lufs"] if coda else -52.0},
+                "cue_sheet": f"§4: {ft(room_fade_from)}-{ft(end)} room tone, room_tone_b, after the decay (it fades in "
+                             "under A4's last 0.3 s, so the film never falls to digital silence)"
+                             + (f"; carried on without a restart to the coda's last frame, {ft(room_to)} (OVERRIDES §65: "
+                                "one excerpt of the loop, no second start)" if coda else "")})
+    if coda:
+        lay.append({"id": "coda_tap", "group": "coda", "label": "the coda's one stone tap, on L-C2's landing",
+                    "role": "tap", "take": coda["tap_take"], "t": r4(coda["tap_film_s"]), "align": "peak",
+                    **({"tune": {"to_note": "E"}} if coda["tune_to_e"] else {}),
+                    "level": {"mode": "abs_m", "lufs": coda["tap_lufs"]},
+                    "cue_sheet": f"OVERRIDES §65: the coda's one one-shot, {coda['tap_take']} (Kenney CC0), about "
+                                 f"{coda['tap_lufs']:g} LUFS, its peak on L{coda['tap_local']} ({ft(coda['tap_film_s'])}), "
+                                 "L-C2's landing as the coda's plan gives it"
+                                 + (", tuned to E as the title's tap (cuesheet/r3/coda_tap_decision.json)"
+                                    if coda["tune_to_e"] else ""),
+                    "coda_timing": coda["source"]})
     ducks = [
         {"id": "drop", "t": r4(t_drop), "db": -3.0, "attack_s": 0.01, "hold_s": 0.15, "release_s": 0.4},
         {"id": "climax", "t": r4(t_kept), "db": -3.0, "attack_s": 0.01, "hold_s": 0.25, "release_s": 0.4,
@@ -312,7 +349,38 @@ def main_sheet(plan):
     ]
     shelf = {"type": "lowshelf", "hz": 60.0, "gain_db": -1.5, "q": 0.7071,
              "why": "CUE_SHEET §1 M3 and §3: a low shelf of -1.5 dB below 60 Hz (B4's sub share is about twice B2's)"}
-    return lay, ducks, {"M3a": [shelf], "M3b": [shelf]}
+    return lay, ducks, {c["id"]: [shelf] for c in plan["cues"] if c["track"] == "TechnoFestVibes"}
+
+
+CODA_TIMING = None  # set by main(): the coda's timing as coda_timing.ts read it from the coda's plan at build time
+WORKDIR = None  # set by main(): .work/score2
+
+
+def coda_span(plan):
+    """The coda's span and its two layers' timing and levels, from the coda's own plan (coda_timing.ts), never typed in;
+    the tap's tuning from the rule's decision (cuesheet/r3/coda_tap_decision.json)."""
+    if CODA_TIMING is None:
+        raise SystemExit("the plan has a coda span: run tools/audio/score2/coda_timing.ts first and pass its JSON")
+    T = CODA_TIMING
+    if T["L0_frame"] != plan["coda"]["L0_frame"]:
+        raise SystemExit(f"the coda timing was read for L0 {T['L0_frame']}, the plan's L0 is {plan['coda']['L0_frame']}")
+    if not (T["aspects_agree"] and T["bed_covers_every_frame"] and T["tap_on_line2"] and len(T["one_shots"]) == 1):
+        raise SystemExit("the coda's plan does not give one bed under every frame and one tap on L-C2's landing")
+    dec = os.path.join(WORKDIR, "cuesheet", "r3", "coda_tap_decision.json")
+    if not os.path.exists(dec):
+        raise SystemExit("the coda's tap has no tuning decision: run revise3_plan.py decide (the rule's CODA_TAP)")
+    tune = json.load(open(dec))["tune_to_E"]
+    tap, bed = T["one_shots"][0], T["beds"][0]
+    for L in (tap, bed):
+        if "mixkit" in f"{L['take']} {L['licence']}".lower():
+            raise SystemExit(f"a Mixkit take in the coda's plan ({L['take']}): OVERRIDES §55, §60")
+    if bed["take"] != "room_tone_b":
+        raise SystemExit(f"the coda's bed is {bed['take']}, not the end card's room_tone_b: it would restart")
+    return {"from_film_s": T["L0_film_s"], "to_film_s": T["end_film_s"], "L0_frame": T["L0_frame"],
+            "end_frame": T["end_frame"], "tap_film_s": T["tap_film_s"], "tap_local": T["tap_local"],
+            "tap_take": tap["take"], "tap_lufs": tap["lufs"], "room_lufs": bed["lufs"], "tune_to_e": tune,
+            "source": {"read_at": T["read_at"], "git_head": T["git_head"], "coda_ts_uncommitted": T["coda_ts_uncommitted"],
+                       "from": T["source"]}}
 
 
 M6A_DIP_DB = float(os.environ.get("SCORE2_M6A_DIP", "-4.5"))  # the merge's dip on A4 bars 80-81 (the cue sheet: -2.8)
@@ -337,9 +405,9 @@ def main_overrides(plan):
     m6a_new = [[m6a[0][0], M6A_DIP_DB], [m6a[1][0], M6A_DIP_DB], list(m6a[2])]
     return {
         "M5": {"gain_db": m5_new, "head": {"mode": "fade", "start": r4(j4 - J4_XF), "len": J4_XF},
-               "why": f"R-02 and R-05. Gain: a one-bar dip of 2 dB under the climax hit (1:38.03, recovering by the next "
-                      f"bar line, 1:40.03) with the 3 dB duck, so the composite stands over the music; then "
-                      f"{-RIDE_DB:g} dB down over the bar before R0 (1:44.03-1:46.03), held to J5, so the Return's B2 "
+               "why": f"R-02 and R-05. Gain: a one-bar dip of 2 dB under the climax hit ({ft(t_kept)}, recovering by the "
+                      f"next bar line, {ft(t_kept + bar)}) with the 3 dB duck, so the composite stands over the music; then "
+                      f"{-RIDE_DB:g} dB down over the bar before R0 ({ft(r0 - bar)}-{ft(r0)}), held to J5, so the Return's B2 "
                       f"plateau sits under the climax's instead of above it. Head: J4's crossfade shortened to "
                       f"{J4_XF:g} s, ending on the same downbeat. Fades and gain rides only, B2 in its own order (§51)."},
         "M6a": {"gain_db": m6a_new,
@@ -451,7 +519,12 @@ CUE_CORR_EVIDENCE = ("master/beat_offsets.json: Born Of The Sky's attacks are to
 
 
 def main():
-    W = os.path.abspath(sys.argv[1])
+    global CODA_TIMING, WORKDIR
+    W = WORKDIR = os.path.abspath(sys.argv[1])
+    out_dir = os.path.abspath(sys.argv[2]) if len(sys.argv) > 2 else os.path.join(W, "master")
+    ct = sys.argv[3] if len(sys.argv) > 3 else os.path.join(out_dir, "coda_timing.json")
+    CODA_TIMING = json.load(open(ct)) if os.path.exists(ct) else None
+    os.makedirs(out_dir, exist_ok=True)
     old = json.load(open(os.path.join(W, "master", "archive-2026-10-26-2350", "layers_main.json")))
     for film, fn, ovf in (("main", main_sheet, main_overrides), ("x40", x40_sheet, x40_overrides)):
         plan = json.load(open(os.path.join(W, "cuesheet", f"plan_{film}.json")))
@@ -469,11 +542,21 @@ def main():
         if film == "main":
             sheet["cue_time_correction_s"] = CUE_CORR
             sheet["cue_time_correction_evidence"] = CUE_CORR_EVIDENCE
-        sheet["revision"] = ("the fix revision (28 Oct 2026, after the score review): the Return revision's sheet "
+            if plan.get("coda"):
+                sheet["coda"] = {k: v for k, v in coda_span(plan).items()} | {
+                    "x_cut_film_s": plan["end_film_s"],
+                    "why": "OVERRIDES §65: the score lane owns the coda's sound layer; the master runs to the coda's last "
+                           "frame, and the X version is the master cut at the coda's L0 (X's 2:20 cap)"}
+        rev = plan.get("revision", {}).get("n")
+        sheet["revision"] = (("revision 3 (28 Oct 2026, OVERRIDES §65-§68): CUE_SHEET.md revision 3's plan, with the fix "
+                              "revision's CC0 and designed sounds and cue overrides, and the coda's sound")
+                             if rev == 3 else
+                             "the fix revision (28 Oct 2026, after the score review): the Return revision's sheet "
                              "(CUE_SHEET.md revision 2) with R-01's CC0 and designed sounds and the cue overrides")
-        out = os.path.join(W, "master", f"layers_{film}.json")
+        out = os.path.join(out_dir, f"layers_{film}.json")
         json.dump(sheet, open(out, "w"), indent=1, ensure_ascii=False)
-        print("wrote", os.path.relpath(out, W), len(lay), "layers")
+        print("wrote", os.path.relpath(out, W), len(lay), "layers", "(the coda's span to "
+              f"{sheet['coda']['to_film_s']:.4f} s)" if sheet.get("coda") else "")
 
 
 if __name__ == "__main__":

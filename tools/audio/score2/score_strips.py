@@ -132,7 +132,7 @@ def wave(z, t0z, tmark, h, title, zb=None):
 
 
 def overview(plan, sheet, Z, M):
-    t0, t1 = 0.0, plan["end_film_s"]
+    t0, t1 = 0.0, max(plan["end_film_s"], M.get("film_length_s", 0.0))  # revision 3: on through the coda's last frame
     vmax = float(np.percentile(Z["mel"], 99.9))
     hs, hl, hg, hc = 180, 170, 90, 76
     img = Image.new("RGB", (W, 26 + hs + hl + hg + hc + 24), (0, 0, 0))

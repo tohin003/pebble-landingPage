@@ -227,6 +227,7 @@ def plan_r3():
                          "rules": "cuesheet/r3/decision_rules.json", "bars": "cuesheet/r3/bars_decision.json",
                          "r04": "cuesheet/r3/r04_decision.json", "shift_after_enter_frames": SHIFT_FRAMES,
                          "enter_moves_s": rp.r4(j3 - os_["J3"]["t"])},
+            "metrics": "r3/main.metrics.json",
             "end_film_s": end, "cues": cues, "seams": seams, "events": events, "blocks": blocks,
             "return": {"R0_film_s": r0, "R480_film_s": r480, "R720_film_s": r720, "frame_rate": FPS,
                        "R0_frame": round(r0 * FPS), "title_frame": round(r720 * FPS), "note": ret["note"]},

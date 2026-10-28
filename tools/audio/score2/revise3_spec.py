@@ -21,8 +21,9 @@ PLAN = json.load(open(os.path.join(W, "plan_main.json")))
 BARS = json.load(open(os.path.join(R3, "bars_decision.json")))
 R04 = json.load(open(os.path.join(R3, "r04_decision.json")))
 TAP = json.load(open(os.path.join(R3, "coda_tap_decision.json")))
-CODA = os.path.join(R3, "planned", "coda_timing.json")  # coda_timing.ts, as read when this spec was written
-CODA = json.load(open(CODA)) if os.path.exists(CODA) else None
+# the coda's timing as coda_timing.ts read it: at build time (master/) once the evening has run, else as planned (r3/planned/)
+CODA = next((json.load(open(q)) for q in (os.path.join(rp.SCORE2, "master", "coda_timing.json"),
+                                          os.path.join(R3, "planned", "coda_timing.json")) if os.path.exists(q)), None)
 B2, B4 = rp.B2, rp.B4
 assert PLAN.get("revision", {}).get("n") == 3, "plan_main.json is not revision 3: run revise3_plan.py plans first"
 
