@@ -20,7 +20,7 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from cue_strips import COLS, axis, spec_panel, tx  # noqa: E402
-from score_common import apply_corrections  # noqa: E402
+from score_common import apply_corrections, apply_overrides  # noqa: E402
 from strips import FONT, FONT_B, LM, W, fmt_t  # noqa: E402
 
 SFX_COL = (255, 170, 60)
@@ -277,7 +277,7 @@ def hits_sheet(plan, sheet, Z, M, half=3.0):
 
 def main():
     sheet = json.load(open(sys.argv[2]))
-    plan = apply_corrections(json.load(open(sys.argv[1])), sheet)
+    plan = apply_overrides(apply_corrections(json.load(open(sys.argv[1])), sheet), sheet)  # as the masters play it
     out_dir, name = sys.argv[3], sys.argv[4]
     Z = dict(np.load(os.path.join(out_dir, name + ".npz")))
     M = json.load(open(os.path.join(out_dir, name + ".build.json")))

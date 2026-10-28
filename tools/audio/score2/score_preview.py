@@ -57,6 +57,7 @@ F = {
     "mono_m": font("GeistMono-Medium-latin.woff2", 26),
     "mono_cue": font("GeistMono-Medium-latin.woff2", 40),
     "mono_s": font("GeistMono-Regular-latin.woff2", 18),
+    "mono_xs": font("GeistMono-Regular-latin.woff2", 15),
     "count": font("GeistMono-Medium-latin.woff2", 30),
 }
 
@@ -86,7 +87,7 @@ JOINS = {
             "crossfade that ends on bar 19's downbeat. The track keeps its own order. Ring 2's sweep carries across.",
             "nothing at all: the groove just carries on, and bar 19's own entrance lands on the beat."),
     "J2": ("Your Breath's last beat of hi-hats leads into a hard cut onto Techno Fest Vibes' riser bar, under Ring 3's "
-           "sweep, tuned to G. 120 into 124 BPM, so a cut, never an overlap; both tracks sit on G.",
+           "whoosh. 120 into 124 BPM, so a cut, never an overlap; both tracks sit on G.",
            "the lift into a harder, brighter groove, with no stumble on the first beat."),
     "M3s": ("A splice inside Techno Fest Vibes: bars 50 and 51 are taken out, so bar 49 runs into bar 52 through a 60 ms "
             "crossfade that ends on the downbeat, on the picture's cut to the flyer.",
@@ -94,32 +95,34 @@ JOINS = {
     "J3": ("Techno Fest Vibes' own real ending: it stops on the downbeat as Enter is pressed. One soft Enter tick sits "
            "in the hush while the chord rings out, then Starfire's pad fades in from 1:24.53 over 2 seconds.",
            "a true stop, not a fade; the hush; the pad arriving without a bump."),
-    "J4": ("A 1-second crossfade from Starfire's pad that ends exactly on Your Breath's downbeat, into its breakdown. "
-           "It builds, takes its own one-beat stop, and its biggest lift lands the kept card at 1:38.03, with the hit.",
+    "J4": ("A quarter-second crossfade from Starfire's pad that ends exactly on Your Breath's downbeat, into its "
+           "breakdown. It builds, takes its own one-beat stop, and its biggest lift lands the kept card at 1:38.03 with "
+           "the hit; the music makes room under the hit for one bar, then settles lower under the Return.",
            "a smooth hand-over; then the held breath and the lift, the film's peak."),
     "J5": ("A beat cut, 120 into 120 BPM: Your Breath, running on under the Return, cuts on the downbeat to Born Of The "
-           "Sky's dominant, 2.5 dB lower while the screens return into the stone. A one-bar swell made from its own "
+           "Sky's dominant, a little lower while the screens return into the stone. A one-bar swell made from its own "
            "title chord rises into the title.",
            "the pulse never breaking; G major opening into B major; the title louder than the bar before it."),
     "F4": ("A splice inside Born Of The Sky: the second bar of its held IV chord is taken out, with a 200 ms crossfade "
            "onto bar 86's I chord, under the end card's first page.",
            "nothing at all: the chord resolves as the composer wrote it, one bar sooner."),
     "XJ1": ("One forward splice inside Your Breath at bar lines (0:31.53 to 1:28.53, in the track's own order): its "
-            "build lands straight on its biggest lift, under the kept card. No hit covers it: it needs none.",
+            "build lands straight on its biggest lift, under the kept card. No hit: the lift itself is the arrival.",
             "the beat staying on the grid through the splice; the lift arriving as the peak."),
     "XJ2": ("A hard cut on the downbeat into Techno Fest Vibes' last bar, under a reverse swell (Kenney, CC0) tuned to "
             "G that rises into it. 120 into 124 BPM: a cut, never an overlap. The title lands on its real stop.",
             "the push into the faster last bar; then a true stop under the title, with the tap and the hit."),
 }
-SHORT = {"J1": "cut on the hit", "M2s": "splice", "J2": "cut after a breath", "M3s": "splice", "J3": "its own stop",
-         "J4": "1-s crossfade", "J5": "beat cut", "F4": "splice", "XJ1": "splice into the lift",
+SHORT = {"J1": "cut on the hit", "M2s": "splice", "J2": "hard cut after a beat of hats", "M3s": "splice",
+         "J3": "its own stop", "J4": "short crossfade", "J5": "beat cut", "F4": "splice", "XJ1": "splice into the lift",
          "XJ2": "cut under a swell"}
 # the shots whose cue-sheet notes are the lanes' shorthand, in plain words for the person
 PLAIN = {"S25": "one continuous shot: the camera pulls back from the kept card, real 2.0 screens rush in around the "
                 "stone, then each returns into it; the swell, then the blink",
          "x8": "a ring of features as the camera leaves the kept card; each returns into the stone, the kept card last"}
 LAST = {"main": "Born Of The Sky's composed ending carries the title and the end card and dies away by itself; only its "
-                "last 0.3 s, already near silence, is faded into room tone at 2:15.03.",
+                "last 0.3 s, already near silence, is faded into room tone (2:14.51 to 2:14.81), and room tone holds to "
+                "the end at 2:15.03.",
         "x40": "Techno Fest Vibes' stop chord rings out under the facts, then room tone."}
 
 
@@ -195,6 +198,13 @@ def load(film, sheet_path, build_path, layers_path):
                      "fam": fam, "lic": lic, "role": c["role"], "src_in": c["source"]["in"], "src_out": c["source"]["out"],
                      "film_in": c["film"]["in_s"], "film_out": c["film"]["out_s"], "bpm": c.get("tempo_bpm"),
                      "start": c["film"]["audio_extent_s"][0]})
+    # the master revision's overrides (score_build.py 'cue_overrides'): a role that names a planned dip says the dip the
+    # masters play (M6a: the cue sheet's 2.5 dB under the title's level is 4.2 dB in the fix revision)
+    for c in cues:
+        ov = b.get("cue_overrides", {}).get(c["id"], {}).get("gain_db")
+        if ov and re.search(r"dipped [\d.]+ dB", c["role"]):
+            g = ov["master"]
+            c["role"] = re.sub(r"dipped [\d.]+ dB", f"dipped {g[-1][1] - g[0][1]:.1f} dB", c["role"])
     # a cue "plays" from its film in-point to the next cue's in-point (heads that pre-roll belong to the change)
     for k, c in enumerate(cues):
         c["until"] = cues[k + 1]["film_in"] if k + 1 < len(cues) else end
@@ -251,6 +261,10 @@ def make_base(film, D):
         lab = f"{c['id']} · {c['label']}"
         if b - a > d.textlength(lab, font=F["mono_s"]) + 4:
             d.text((a, y + 14), lab, font=F["mono_s"], fill=col)
+        else:  # a short cue (M3a: 5.8 s) gets its tag in the compact form, in a smaller size (the review's R-10)
+            lab = f"{c['id']}·{c['label']}"
+            if b - a > d.textlength(lab, font=F["mono_xs"]) + 2:
+                d.text((a, y + 15), lab, font=F["mono_xs"], fill=col)
     for k, j in enumerate(D["joins"]):  # two rows of labels, alternating, so neighbours never collide
         x = xt(j["t"])
         ty = y - 64 if k % 2 == 0 else y - 40

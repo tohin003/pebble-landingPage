@@ -63,6 +63,10 @@ def main():
                    f"{fmt(a['window_s'][0])}-{fmt(a['window_s'][1])} reads {a['verdict']}" for a in not_music) + ".")
     added = [round(max(a["mix"].values()) - max(a["music_alone"].values()), 3) for f in b
              for a in b[f]["classifier"]["web"].get("attribution", []) if a["mix"] and a["music_alone"]]
+    ret_under = b["main"]["fix_checks"]["return_vs_climax"]["return_under_climax_lu"]
+    probe = os.path.join(M, "title_probe.json")  # score_title_probe.py: the same music, the windows moved
+    pr = [rw["summary"]["foghorn_max"] for rw in json.load(open(probe))["variants"]] if os.path.exists(probe) else []
+    probe_lo, probe_hi = (f"{min(pr):.2f}", f"{max(pr):.2f}") if pr else ("?", "?")
     tg = b["main"]["classifier"].get("title_grid", {})
     tgw = tg.get("web_master", {})
     tgm = tg.get("music_alone_at_web_gain", {})
@@ -76,15 +80,18 @@ def main():
         "temporary for now: the final ones come from a free professional library or from your own recordings, and "
         "get balanced again.",
         f"At the Drop the hit sits on top of the music (+{comp('main', 'drop')['composite_over_bed_db']} dB over the "
-        "music alone). At the kept card and the title the music itself is at its loudest, so the hit sits inside it, "
-        "and the music dips only 1.5 dB for it.",
-        "The plunk at the Drop and the stone tap at the title stand in for your recordings of a pebble dropped into "
-        "water and a pebble tapped on wood.",
+        "music alone). At the kept card the music steps back for one bar so the hit lands on top of it "
+        f"(+{comp('main', 'climax')['composite_over_bed_db']} dB), then the music settles a little lower under the "
+        "Return, so the card stays the loudest moment of the film. At the title, Born Of The Sky's own chord carries "
+        "it, with the hit inside it.",
+        "The plunk at the Drop (made here from code) and the stone tap at the title (a free CC0 sound) stand in for "
+        "your recordings of a pebble dropped into water and a pebble tapped on wood.",
         "Soft ticks at about 0:03, 0:41 and 0:46 mark roughly where the send, \"=\" and a click will be; they move to "
         "the exact frames when the real screens are recorded. The Enter tick at 1:23.03 sits alone in the hush.",
-        "A whoosh as the Space slides and as each ring arrives, a reverse swell into the title, and room tone at the "
-        "very start, in the hush and at the very end. Nothing sounds under the Return's screens: the music carries "
-        "them."])
+        "A whoosh as the Space slides and as each ring arrives (each made here from code), a reverse swell into the "
+        "title, and room tone at the very start, in the hush and at the very end. Nothing sounds under the Return's "
+        "screens: the music carries them.",
+        "No sound effect comes from Mixkit any more: they are free CC0 sounds (Kenney) and sounds made for this film."])
     lines = [f"{k:<24}{loud(f, m)}" for k, f, m in (("main film, social:", "main", "social"),
                                                     ("main film, website:", "main", "web"),
                                                     ("40-second cut, social:", "x40", "social"),
@@ -96,6 +103,9 @@ def main():
         bullet("In the beat-driven cues (Your Breath and Techno Fest Vibes) the beats land within "
                f"{worst_med:.1f} thousandths of a second of the beat grid (the median of each cue)."),
         bullet("No clicks at any change, checked by measurement and by looking at every change zoomed in."),
+        bullet(f"The kept card is the loudest moment of the film: its loudest 3 seconds are {ret_under} LU louder than "
+               "the Return's, and the loudest 3 seconds and the loudest half-second of the whole film both fall on "
+               "it."),
         bullet(f"Inside a track, the three splices change the loudness by at most {worst_step:.2f} LU over 3 seconds "
                "(about half a decibel)."),
         bullet("Loudness, measured after the AAC encode (FFmpeg's encoder makes the film's deliveries; Apple's made "
@@ -110,11 +120,14 @@ def main():
                "as \"foghorn\". The sound effects I added change no reading by more than "
                f"{max(added) if added else 0:.2f} (on a 0-1 scale). Around the title, on the stricter half-second "
                f"grid, the finished mix reads at most {tgw.get('foghorn_max', '?')} \"foghorn\", and the music alone "
-               f"{tgm.get('foghorn_max', '?')}.{nm_line} If any of it makes you think of a phone or a horn, say so."),
+               f"{tgm.get('foghorn_max', '?')}; the same music reads anywhere from {probe_lo} to {probe_hi} when only "
+               "the checker's 3-second windows move by a fraction of a second, so that number is about the checker, "
+               f"not the sound.{nm_line} If any of it makes you think of a phone or a horn, say so."),
         bullet("The hits are temporary, and the plunk and the tap are stand-ins, until the final sounds exist."),
-        bullet("Before the final film, a few files from Mixkit (Your Breath, Techno Fest Vibes and some of the sound "
-               "effects) need to be downloaded by you, by hand, from their own pages; you'll get the list. The final "
-               "film is then made from your copies.")])
+        bullet("Before the final film, the two Mixkit tracks, Your Breath and Techno Fest Vibes, need to be "
+               "downloaded by you, by hand, from their own pages (you'll get the two links). The copies in these "
+               "previews were fetched automatically, which Mixkit's terms don't allow for the finished film; if your "
+               "downloads match them byte for byte, the film's music stands exactly as you hear it here.")])
     listen = "     ".join(f"{s['id']} {mmss(round(max(0.0, s['t'] - 5.0)))}" for s in plan["main"]["seams"])
     txt = f"""PEBBLE 2.0 FILM, "RIPPLES": THE SCORE, CUT LIKE A FILM
 
@@ -158,8 +171,8 @@ THE MAIN FILM, SCENE BY SCENE
              so the line can be read.
   1:34-1:54  M5 "Its Own Tools, the Return"   B2 Your Breath again, later in the track
              The climax: Pebble asks to keep a tool it made, then keeps it. B2's breakdown builds, stops for one beat,
-             and its biggest lift lands the "Kept in Pebble's Toolbox" card at 1:38.03. It runs on under the Return,
-             where every feature rushes in around the stone.
+             and its biggest lift lands the "Kept in Pebble's Toolbox" card at 1:38.03. It runs on, a little lower,
+             under the Return, where every feature rushes in around the stone.
   1:54-2:15  M6 "Ripples (End Title)"         A4 Born Of The Sky again, its ending
              The merge: every screen returns into the stone, on Born Of The Sky's held dominant. Then the title
              "Pebble 2.0" at 1:58.03, the end card's two pages, and the composer's own ending, which dies away by
@@ -177,9 +190,9 @@ THE CHANGES, AND WHAT TO LISTEN FOR
   M3s 0:59.81  A splice inside Techno Fest Vibes (two bars out), on the cut to the flyer. Listen for: nothing at all.
   J3  1:23.03  Stealth. Techno Fest Vibes' own ending stops on the downbeat, exactly on Enter. One soft tick, the chord
                rings out, and Starfire's pad fades in under it. Listen for: a true stop, not a fade, then the hush.
-  J4  1:34.03  Evening. A one-second crossfade that ends exactly on Your Breath's downbeat. Its breakdown builds,
-               takes a one-beat breath, and its biggest lift lands the kept card at 1:38.03. Listen for: a smooth
-               hand-over, and the lift as the peak of the film.
+  J4  1:34.03  Evening. A quarter-second crossfade that ends exactly on Your Breath's downbeat. Its breakdown
+               builds, takes a one-beat breath, and its biggest lift lands the kept card at 1:38.03. Listen for: a
+               smooth hand-over, and the lift as the peak of the film.
   J5  1:54.03  The merge. A cut beat for beat back into Born Of The Sky (both are 120 beats a minute, so the pulse
                never breaks), a little quieter while the screens return into the stone. A swell made from its own
                chord rises into the title. The key opens from {k5.get('key_before', {}).get('key', '?')} into {k5.get('key_after', {}).get('key', '?')}, with B held in common.
@@ -209,8 +222,7 @@ CREDITS
 'Starfire' by Scott Buckley (edited) – CC BY 4.0 – www.scottbuckley.com.au – https://creativecommons.org/licenses/by/4.0/
 'Your Breath' (Eugenio Mininni) and 'Techno Fest Vibes' (Alejandro Magaña): Mixkit Stock Music Free License; no credit
 needed. The 40-second cut uses only these two, so it needs no music credit.
-Sound effects: Mixkit (Sound Effects Free License), Kenney (CC0) and sounds made for this film. Sound effects are the
-film's; Pebble plays none of them.
+Sound effects: Kenney (CC0) and sounds made for this film. Sound effects are the film's; Pebble plays none of them.
 
 PLEASE DON'T SHARE THESE
 These previews are for you only. Pebble 2.0 isn't public yet, so nothing about it can be posted until it's released.

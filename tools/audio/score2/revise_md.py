@@ -45,6 +45,21 @@ XM2 = load(os.path.join(R2, "x40mask_g2.json")) if os.path.exists(os.path.join(R
 GB = load(os.path.join(R2, "main_g1b.metrics.json")) if os.path.exists(os.path.join(R2, "main_g1b.metrics.json")) else None
 DEC = load(os.path.join(R2, "g1_decision.json")) if os.path.exists(os.path.join(R2, "g1_decision.json")) else {}
 MET = load(os.path.join(W, "main.metrics.json"))
+# the master revision (the fix lane, 28 Oct): what the masters play, measured on them (score_build.py, score_arc.py,
+# score_title_probe.py); every table and number of §12 comes from these records
+MD = os.path.join(S2, "master")
+
+
+def _opt(p):
+    return load(p) if os.path.exists(p) else None
+
+
+BM, BX = _opt(os.path.join(MD, "main.build.json")), _opt(os.path.join(MD, "x40.build.json"))
+AM, AX = _opt(os.path.join(MD, "main.arc.json")), _opt(os.path.join(MD, "x40.arc.json"))
+TPR = _opt(os.path.join(MD, "title_probe.json"))
+TPQ = _opt(os.path.join(MD, "title_probe_cue_sheet_music.json"))  # the cue sheet's music, the windows moved
+TPS = _opt(os.path.join(MD, "title_probe_dip_and_shift.json"))  # the dip's depth against the 18 ms shift
+AUD = {k: _opt(os.path.join(MD, "fix-auditions", f"{k}.json")) for k in ("round1", "round2", "round3")}
 
 
 def f(v, d=2, sign=False):
@@ -283,17 +298,140 @@ def t_seamdetail(jid):
     return L
 
 
+def _layer_src(L):
+    if L.get("composite"):
+        return "a composite: " + " + ".join(
+            (f"`{q['kit']}`" if q.get("kit") else f"Kenney `{q['kenney'].split('/')[-1]}`" if q.get("kenney")
+             else f"a designed {q['designed']['recipe']}") + (f" ({f(q.get('gain_db'), 0, True)} dB)" if q.get("gain_db") else "")
+            for q in L["composite"])
+    if L.get("take"):
+        return f"`{L['take']}`"
+    return f"a designed {L.get('designed', '').split(' ')[0]}"
+
+
+def t_fix_sfx():
+    if not BM:
+        return ["n/a: no master build record"]
+    L = ["| Film | Layer | Film time | Was (script-fetched Mixkit) | Now | Licence | In the master: loudest 400 ms; limiter trim |",
+         "|---|---|---|---|---|---|---|"]
+    for name, b in (("main", BM), ("40-s", BX)):
+        for x in (b or {}).get("layers", []):
+            if not x.get("replaces"):
+                continue
+            L.append(f"| {name} | {x['id']} | {mm(x['t'])} | {x['replaces']} | {_layer_src(x)} | {x.get('licence')} | "
+                     f"{f(x.get('in_film_loudest_400ms_lufs'))} LUFS; {f(x.get('limiter_trim_db'), 2, True)} dB |")
+    return L
+
+
+def t_fix_auditions():
+    rows = [c for k in ("round1", "round2", "round3") for c in ((AUD.get(k) or {}).get("candidates") or [])]
+    if not rows:
+        return ["n/a"]
+    L = ["| Candidate | For | Classifier alone: verdict; top labels; watched | Centroid; share above 150 Hz; peak at |",
+         "|---|---|---|---|"]
+    for c in rows:
+        m, cl = c["measure"], c["classifier"]
+        w = ", ".join(f"{k} {v}" for k, v in cl["watch_max"].items()) or "none"
+        L.append(f"| {c['id']} | {c.get('for')} | {cl['verdict']}; {', '.join(cl['top'][:3])}; {w} | "
+                 f"{f(m['centroid_hz'], 0)} Hz; {f(m['share_above_150hz'], 3)}; {f(m['peak_time_s'], 3)} s |")
+    return L
+
+
+def t_fix_return():
+    if not BM:
+        return ["n/a"]
+    fc = BM["fix_checks"]["return_vs_climax"]
+    B = {b["label"]: b for b in BM["blocks_web"]}
+    L = ["| On the web master | This build's meter (pyloudnorm; 3 s centred) | FFmpeg ebur128, windows inside each block | FFmpeg, every window ending in each block (the review's way) |",
+         "|---|---|---|---|"]
+    a = AM["return_vs_climax"] if AM else {}
+    e = a.get("ending_in_block", {})
+    AB = {b["block"]: b for b in (AM or {}).get("blocks", [])}
+    L.append(f"| the climax's short-term max | {f(fc['climax_st_max'])} LUFS | {f(a.get('climax_S_max'), 1)} | "
+             f"{f(e.get('climax_S_max'), 1)} |")
+    for lab in ("Return: lead-in and release", "Return: gather", "Return: rush"):
+        L.append(f"| {lab} | {f(B[lab]['st_max'])} | {f(AB.get(lab, {}).get('S_max'), 1)} | "
+                 f"{f(AB.get(lab, {}).get('S_max_ending_in_block'), 1)} |")
+    L.append(f"| the Return under the climax | {f(fc['return_under_climax_lu'], 2)} LU (target 1.0) | "
+             f"{f(a.get('return_S_under_climax_lu'), 1)} LU | {f(e.get('return_S_under_climax_lu'), 1)} LU over the "
+             f"whole Return; {f(e.get('return_proper_S_under_climax_lu'), 1)} LU from R0 |")
+    lo = BM["fix_checks"]["loudest"]
+    L.append(f"| the loudest 3 s / 400 ms of the film | {f(lo['short_term_3s']['lufs'])} at {mm(lo['short_term_3s']['centre_film_s'])} "
+             f"({lo['short_term_3s']['block']}) / {f(lo['momentary_400ms']['lufs'])} at {mm(lo['momentary_400ms']['centre_film_s'])} "
+             f"({lo['momentary_400ms']['block']}) | {f((a and AM['loudest']['S']['lufs']), 1)} ending {mm(AM['loudest']['S']['window_ends_s']) if AM else 'n/a'} "
+             f"/ {f((a and AM['loudest']['M']['lufs']), 1)} ending {mm(AM['loudest']['M']['window_ends_s']) if AM else 'n/a'} | the same |")
+    return L
+
+
+def t_fix_arrivals():
+    if not BM:
+        return ["n/a"]
+    L = ["| Sync point | Film | Step, 3 s / 400 ms (this build's meter) | FFmpeg: S / M step |", "|---|---|---|---|"]
+    st = (AM or {}).get("steps", {})
+    for k, v in BM["fix_checks"]["arrivals_web"].items():
+        s_ = st.get(k, {})
+        L.append(f"| {k} | {mm(v['t'])} | {f(v['step_3s_lu'], 2, True)} / {f(v['step_400ms_lu'], 2, True)} LU | "
+                 f"{f(s_.get('S_step'), 1, True)} / {f(s_.get('M_step'), 1, True)} LU |")
+    return L
+
+
+def t_fix_masters():
+    L = ["| Master | Integrated, LUFS | LRA, LU | True peak, dBTP (ceiling used) | AAC: FFmpeg's / Apple's true peak (gate) | Limiter: deepest; s under -1 dB; the music alone |",
+         "|---|---|---|---|---|---|"]
+    for name, b in (("main", BM), ("40-s", BX)):
+        for k, m in ((b or {}).get("masters") or {}).items():
+            a = m["aac"]
+            L.append(f"| {name}, {k} | {f(m['integrated_lufs'])} | {f(m['lra_lu'], 1)} (AAC {f(a['native_default']['lra_lu'], 1)}) | "
+                     f"{f(m['true_peak_dbtp'], 1)} ({f(m['ceiling_used_dbtp'], 1)}) | {f(a['native_default']['true_peak_dbtp'], 1)} / "
+                     f"{f(a['apple_audiotoolbox_cbr']['true_peak_dbtp'], 1)} ({f(m['aac_gate_dbtp'], 1)}, kept {f(m.get('aac_margin_db', 0), 1)} under) | "
+                     f"{f(m['limiter']['gr_min_db'], 2)} dB; {f(m['limiter']['seconds_below_minus1db'], 2)} s; "
+                     f"{f(m['limiter']['music_alone']['gr_min_db'], 2)} dB |")
+    return L
+
+
+def t_fix_seams():
+    if not BM:
+        return ["n/a"]
+    L = ["| Change | Step 3 s / 400 ms (web) | 4 s either side: key before → after; chroma cosine | Onsets of the incoming beats (bed) | Extra 8–16 kHz; second difference | Grid lags (samples) |",
+         "|---|---|---|---|---|---|"]
+    for s_ in BM["seams"]:
+        c = s_["continuity"]["bed"]
+        w = c["windows"].get("4s", {})
+        on = c.get("onsets_around_seam") or c.get("onsets_after_seam")
+        L.append(f"| **{s_['id']}** {mm(s_['t_film'])} | {f(s_['master_web']['step_3s_lu'], 2, True)} / "
+                 f"{f(s_['master_web']['step_400ms_lu'], 2, True)} LU | {(w.get('key_before') or {}).get('key', 'n/a')} → "
+                 f"{(w.get('key_after') or {}).get('key', 'n/a')}; {f(w.get('chroma_cos'), 3)} | {onl(on)} | "
+                 f"{f(s_['click']['extra_hf_db'], 2, True)} dB; {f(s_['click']['d2_ratio_bed_at_seam'], 2)} | "
+                 f"{s_['grid']['lag_bed_vs_incoming_source_samples']}, {s_['grid']['lag_bed_vs_outgoing_source_samples']}, "
+                 f"{s_['grid']['lag_master_vs_bed_samples']} |")
+    return L
+
+
+def t_fix_probe():
+    if not TPR:
+        return ["n/a"]
+    L = ["| The music alone (A4, J5 to the title + 5.5 s) | Windows moved by | 'foghorn' max on the 0.5-s grid (at) |",
+         "|---|---|---|"]
+    for v in TPR["variants"]:
+        L.append(f"| {'as the masters play it (dip ' + f(v['dip_db'], 1) + ' dB, −18 ms)' if v['corr_s'] else 'the cue sheet\'s dip (−2.8 dB) and no correction, with the masters\' 0.5 dB title duck'} | "
+                 f"{f(1000 * v.get('grid_offset_s', 0.0), 0, True)} ms | {f(v['summary']['foghorn_max'], 3)} ({mm(v['summary']['foghorn_max_at'])}) |")
+    return L
+
+
 TABLES = {"cues": t_cues, "joins": t_joins, "arc": t_arc, "blocks": t_blocks, "shots": t_shots, "rframes": t_rframes,
           "returnbars": t_returnbars, "g1": t_g1, "probe": t_probe, "j2": t_j2, "checks": t_checks,
           "title_A": lambda: t_title(TA), "title_B": lambda: t_title(TB, "B"),
           "title_A_r2": lambda: t_title(TA2), "title_B_r2": lambda: t_title(TB2, "B"),
-          "returnbars_B": lambda: t_returnbars(GB)}
+          "returnbars_B": lambda: t_returnbars(GB),
+          "fix_sfx": t_fix_sfx, "fix_auditions": t_fix_auditions, "fix_return": t_fix_return,
+          "fix_arrivals": t_fix_arrivals, "fix_masters": t_fix_masters, "fix_seams": t_fix_seams,
+          "fix_probe": t_fix_probe}
 for jid in J:
     TABLES[f"seam_{jid}"] = (lambda jid_: (lambda: t_seamdetail(jid_)))(jid)
 V = {"CS": CS, "M": M, "X": X, "J": J, "XJ": XJ, "C": C, "B": B, "OJ": OJ, "OB": OB, "PROBE": PROBE, "TA": TA, "TB": TB,
      "TA2": TA2, "TB2": TB2, "XM2": XM2,
      "XM": XM, "GB": GB, "DEC": DEC, "MET": MET, "f": f, "mm": mm, "keyline": keyline, "onl": onl, "BS": BS,
-     "ordinal": ordinal}
+     "ordinal": ordinal, "BM": BM, "BX": BX, "AM": AM, "AX": AX, "TPR": TPR, "TPQ": TPQ, "TPS": TPS}
 
 
 def fill(text):

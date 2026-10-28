@@ -66,7 +66,8 @@ sys.path.insert(1, os.path.join(REPO, "tools", "audio", "sfx2"))
 import cue_plan as cp  # noqa: E402  the plan's semantics (cue_extent, envelope) and the lane's loudness helpers
 import audiolib as al  # noqa: E402  the kit's preverb and the classifier's label kinds
 from build_kit import sub_glide  # noqa: E402  the kit's designed sub glide
-from score_common import apply_corrections  # noqa: E402
+import score_designed as sd  # noqa: E402  the whooshes, the plunk and the crack made from code; CC0 composites
+from score_common import apply_corrections, apply_overrides  # noqa: E402
 
 SR = 48000
 cp.SR = SR
@@ -74,6 +75,7 @@ WORK = os.path.join(REPO, ".work")
 AUD = os.path.join(WORK, "music-audition")
 MAPS = os.path.join(WORK, "score2", "maps")
 KITDIR = os.path.join(WORK, "sfx2")
+KENNEY = os.path.join(WORK, "audio", "kenney")  # the CC0 packs on this Mac (OVERRIDES §60: the only local copy)
 SOUND_TAGS = os.path.join(WORK, "audio", "sound_tags")
 FFMPEG = os.environ.get("FFMPEG", "/opt/homebrew/bin/ffmpeg")
 NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
@@ -265,11 +267,47 @@ def load_kit():
     return kit, plan
 
 
+BARRED = {"drop_impact_b", "reverse_swell_a", "reverse_swell_b", "standin_plunk_b", "standin_plunk_c", "standin_tap_b",
+          "standin_tap_c", "stinger_standin", "ui_tap_key_rec", "ui_tap_soft_rec", "ui_tap_click_rec", "whoosh_slide_b",
+          "whoosh_pickup_a", "whoosh_pickup_b", "ring_sweep_e", "sub_boom_rec_a", "sub_boom_rec_b", "glass_shimmer_b",
+          "room_tone_a", "room_tone_c"}  # OVERRIDES §60: removed from the kit; never picked, even as a temp
+
+
+def kit_take_ok(tid, k):
+    """OVERRIDES §55 CR-13 and §60: no script-fetched Mixkit take and none of the 20 removed takes in any master."""
+    if tid in BARRED:
+        raise SystemExit(f"{tid} was removed from the kit (OVERRIDES §60): never picked")
+    if str(k["licence"]).startswith("mixkit"):
+        raise SystemExit(f"{tid} is a script-fetched Mixkit take (OVERRIDES §55 CR-13): never in a deliverable")
+
+
+def part_audio(src, kit, kplan):
+    """One part of a composite layer, stereo at 48 kHz, and its record: a kit take (never Mixkit), a Kenney CC0 file
+    from the packs on this Mac, or a designed recipe."""
+    if "kit" in src:
+        k = kit[src["kit"]]
+        kit_take_ok(src["kit"], k)
+        path = os.path.join(KITDIR, k["file"])
+        y, sr = sf.read(path, dtype="float32", always_2d=True)
+        assert sr == SR, (path, sr)
+        return stereo(y), {"kit": src["kit"], "file": rel(path), "sha256": sha256(path), "licence": k["licence"]}
+    if "kenney" in src:
+        path = os.path.join(KENNEY, src["kenney"])
+        y, info = al.load(path)  # libsndfile's Vorbis decoder, resampled to 48 kHz (polyphase, Kaiser) as the kit does
+        return stereo(y), {"kenney": src["kenney"], "file": rel(path), "sha256": sha256(path), "licence": "kenney-cc0",
+                           "source_page": "https://kenney.nl/assets/impact-sounds", "decoded": info}
+    if "designed" in src:
+        d = src["designed"]
+        return stereo(sd.RECIPES[d["recipe"]](d.get("params", {}))), {"designed": d, "licence": "designed"}
+    raise ValueError(src)
+
+
 def make_take(L, kit, kplan, tracks48):
     """A layer's audio, stereo at 48 kHz, and the record of how it was made."""
     rec = {}
     if "take" in L:
         k = kit[L["take"]]
+        kit_take_ok(L["take"], k)
         path = os.path.join(KITDIR, k["file"])
         y, sr = sf.read(path, dtype="float32", always_2d=True)
         assert sr == SR, (path, sr)
@@ -278,6 +316,26 @@ def make_take(L, kit, kplan, tracks48):
                    kit_note=f"{k['measure'].get('note')}{k['measure'].get('cents', 0):+d} c" if k["measure"].get("note") else None,
                    source=k["source"].get("source_page") or k["source"].get("provider"))
         pitch_hz = k["measure"].get("pitch_hz")
+    elif "designed" in L and L["designed"].get("recipe") in sd.RECIPES:
+        d = L["designed"]
+        y = sd.RECIPES[d["recipe"]](d.get("params", {}))
+        rec.update(designed=f"{d['recipe']} recipe (tools/audio/score2/score_designed.py)", params=d.get("params", {}),
+                   licence="designed", status=L.get("status", "stand-in"), final_allowed=True)
+        pitch_hz = None
+    elif "composite" in L:
+        parts = []
+
+        def loader(src):
+            y_, r_ = part_audio(src, kit, kplan)
+            parts.append(r_)
+            return y_
+        y = sd.composite(L["composite"], loader)
+        for r_, q in zip(parts, L["composite"]):
+            r_.update(at_s=q.get("at_s", 0.0), gain_db=q.get("gain_db", 0.0))
+        lic = sorted({r_["licence"] for r_ in parts})
+        rec.update(composite=parts, licence="+".join(lic), status=L.get("status", "temp"), final_allowed=True,
+                   designed="a composite of CC0 and designed parts (score_designed.composite)")
+        pitch_hz = None
     elif "designed" in L:
         d = L["designed"]
         base = kplan[d["base"]]["source"]["params"]
@@ -301,6 +359,7 @@ def make_take(L, kit, kplan, tracks48):
         # length_s, reversed, a 30 ms fade-in at its quiet start and a 4 ms fade at its loud end
         s = L["tail_swell"]
         k = kit[s["take"]]
+        kit_take_ok(s["take"], k)
         path = os.path.join(KITDIR, k["file"])
         y, sr = sf.read(path, dtype="float32", always_2d=True)
         assert sr == SR, (path, sr)
@@ -566,6 +625,13 @@ def onset_env(x):
     return t[1:] - 0.5 * 96 / SR, fl  # each difference sits between its two frames
 
 
+def cue_beats(maps, c, key="beats_s"):
+    """The audible beats of a cue's track in source seconds: the map's beats, already moved by the track's correction
+    (main()), and moved again by the cue's own correction (cue_time_correction_s), so a cue whose source moved for its
+    attacks is measured against the film's grid, not against its own shift."""
+    return np.array(maps[c["track"]][key]) + float(c.get("src_correction_cue_s", 0.0))
+
+
 def load_map(track):
     return json.load(open(os.path.join(MAPS, track + ".map.json")))
 
@@ -667,6 +733,80 @@ def attribute_flags(flags, mix_g, music_g, groups_g, tmp_dir):
     return out
 
 
+# ------------------------------------------------------------------------------------------------ the fix lane's checks
+def arrival(X, t):
+    """The step into film time t: the 3 s after against the 3 s before, and the 400 ms after against the 400 ms
+    before (K-weighted, all channels)."""
+    return {"t": r(t, 4), "step_3s_lu": r(lufs_seg(X, t, t + 3.0) - lufs_seg(X, t - 3.0, t)),
+            "step_400ms_lu": r(lufs_seg(X, t, t + 0.4) - lufs_seg(X, t - 0.4, t)),
+            "lufs_400ms_before": r(lufs_seg(X, t - 0.4, t)), "lufs_400ms_after": r(lufs_seg(X, t, t + 0.4))}
+
+
+def hole_scan(X, a, b, w=0.4, hop=0.05, nb=0.4):
+    """Every 400 ms window from a to b against the power mean of its two neighbours nb before and after it: a hole
+    shows as a window well under its neighbours. Returns the deepest deficit and where."""
+    rows, t = [], a
+    while t + w <= b + 1e-9:
+        L0 = lufs_seg(X, t, t + w)
+        Ls = [lufs_seg(X, t - nb, t - nb + w), lufs_seg(X, t + nb, t + nb + w)]
+        Ln = 10 * math.log10(np.mean([10 ** (v / 10) for v in Ls]))
+        rows.append({"t": r(t, 3), "lufs": r(L0), "neighbours_lufs": r(Ln), "deficit_lu": r(L0 - Ln)})
+        t += hop
+    worst = min(rows, key=lambda x: x["deficit_lu"])
+    return {"span_s": [a, b], "window_s": w, "neighbours_at_s": nb, "deepest": worst,
+            "windows": rows}
+
+
+def fix_checks(plan, res, web, bed, lt, st_w, mom_w):
+    """The score review's targets (28 Oct, R-02, R-03, R-05, R-06), measured on the web master as built: where the
+    film's loudest 3 s and 400 ms fall, each block's short-term maximum, the steps into every sync point, the merge
+    against the rush, the title's arrival on the music, and J4's 400 ms windows."""
+    B = {b["label"]: b for b in res["blocks_web"]}
+    ev = {e["label"]: e["t"] for e in plan["events"]}
+    out = {"meter": "this build's K-weighted meter (pyloudnorm's filters): short-term 3 s and momentary 400 ms, centred "
+                    "on 100 ms sub-blocks; ffmpeg's ebur128 gives the independent check (score_arc.py)"}
+    k3, km = int(np.argmax(st_w)), int(np.argmax(mom_w))
+    blk = lambda t: next((b["label"] for b in res["blocks_web"] if b["film"][0] <= t < b["film"][1]), None)  # noqa
+    out["loudest"] = {"short_term_3s": {"lufs": r(st_w[k3]), "centre_film_s": r(lt[k3], 2), "block": blk(lt[k3])},
+                      "momentary_400ms": {"lufs": r(mom_w[km]), "centre_film_s": r(lt[km], 2), "block": blk(lt[km])}}
+    pts = {}
+    for s in plan["seams"]:
+        pts[s["id"]] = s.get("in_film", s["t"])
+    for lab in ("name", "kept card", "TITLE", "TITLE (stop)", "DROP"):
+        if lab in ev:
+            pts[lab] = ev[lab]
+    out["arrivals_web"] = {k: arrival(web, t) for k, t in sorted(pts.items(), key=lambda kv: kv[1])}
+    if "return" in plan:
+        title = plan["return"]["R720_film_s"]
+        ret = {k: v for k, v in B.items() if k.startswith("Return")}
+        rings_max = max(B["Rings 1-2"]["st_max"], B["Rings 3-4"]["st_max"])
+        j5 = next(s for s in res["seams"] if s["id"] == "J5")
+        card = out["arrivals_web"]["kept card"]
+        others = {k: v for k, v in out["arrivals_web"].items() if k != "kept card"}
+        out["return_vs_climax"] = {
+            "climax_st_max": B["Climax"]["st_max"], "return_st_max": max(b["st_max"] for b in ret.values()),
+            "return_under_climax_lu": r(B["Climax"]["st_max"] - max(b["st_max"] for b in ret.values())),
+            "merge_vs_rush_lu": r(B["Return: merge"]["integrated_lufs"] - B["Return: rush"]["integrated_lufs"]),
+            "climax_over_rings_lu": r(B["Climax"]["st_max"] - rings_max),
+            "j5_step_3s_lu": j5["master_web"]["step_3s_lu"],
+            "title_arrival_bed": {"lufs_1s_before": r(lufs_seg(bed, title - 1.0, title)),
+                                  "lufs_1s_after": r(lufs_seg(bed, title, title + 1.0)),
+                                  "step_1s_lu": r(lufs_seg(bed, title, title + 1.0) - lufs_seg(bed, title - 1.0, title))},
+            "card_is_largest_arrival": {
+                "step_3s": card["step_3s_lu"] >= max(v["step_3s_lu"] for v in others.values()),
+                "step_400ms": card["step_400ms_lu"] >= max(v["step_400ms_lu"] for v in others.values())}}
+        j4 = next((s for s in plan["seams"] if s["id"] == "J4"), None)
+        if j4:
+            # the crossfade's own region (every 400 ms window from 1 s before J4 to the one starting on it), and the
+            # second after it, where B2's breakdown has gaps of its own
+            for key, (a, b) in (("j4_holes_web", (j4["t"] - 1.0, j4["t"] + 0.4)),
+                                ("j4_after_web", (j4["t"], j4["t"] + 1.4))):
+                full = hole_scan(web, a, b)
+                out[key] = {k: v for k, v in full.items() if k != "windows"}
+                out[key]["windows"] = full["windows"][::2]
+    return out
+
+
 # ------------------------------------------------------------------------------------------------ main
 def main():
     plan_path, layers_path, out_dir, name = sys.argv[1:5]
@@ -675,7 +815,12 @@ def main():
     tmp_dir = os.path.join(out_dir, "tmp")
     plan_cs = json.load(open(plan_path))
     sheet = json.load(open(layers_path))
-    plan = apply_corrections(copy.deepcopy(plan_cs), sheet)
+    plan = apply_overrides(apply_corrections(copy.deepcopy(plan_cs), sheet), sheet)
+    # the plan exactly as the cue sheet lane measured revision 2 (the tracks' corrections only: no cue's own correction,
+    # no override), for the like-for-like bed and for the music as the cue sheet planned it
+    plan_ref = apply_corrections(copy.deepcopy(plan_cs),
+                                 {"source_time_correction_s": sheet.get("source_time_correction_s", {})})
+    cref = {c["id"]: c for c in plan_ref["cues"]}
     kit, kplan = load_kit()
     cues = {c["id"]: c for c in plan["cues"]}
     end = plan["end_film_s"]
@@ -688,6 +833,12 @@ def main():
            "layers_sha256": sha256(layers_path), "film": plan["film"], "sr": SR, "samples": N,
            "film_length_s": r(N / SR, 4), "source_time_correction_s": corr,
            "source_time_correction_evidence": sheet.get("source_time_correction_evidence"),
+           "cue_time_correction_s": sheet.get("cue_time_correction_s", {}),
+           "cue_time_correction_evidence": sheet.get("cue_time_correction_evidence"),
+           "cue_overrides": {c["id"]: {"why": c.get("override_why"),
+                                       **{k: {"cue_sheet": c[f"cue_sheet_{k}"], "master": c[k]}
+                                          for k in ("gain_db", "head", "tail") if f"cue_sheet_{k}" in c}}
+                             for c in plan["cues"] if "override_why" in c},
            "tracks": {}, "cues": {}, "eq": {}, "eq_ramps": {}}
     tracks = sorted(set(c["track"] for c in plan["cues"]))
     swell_tracks = {L["swell"]["track"] for L in sheet["layers"] if "swell" in L}
@@ -718,8 +869,9 @@ def main():
             else:
                 res["cues"][c["id"]] = lay(bed, c, ye)
             y_eq[c["id"]] = ye
-            # like for like with the cue sheet lane (revision 2 measured as built: the corrections, and no EQ)
-            lay(bed_cs, c, y48)
+            # like for like with the cue sheet lane (revision 2 measured as built: the tracks' corrections, no EQ, and
+            # none of the master revision's overrides or cue corrections)
+            lay(bed_cs, cref[c["id"]], y48)
         for s in plan["seams"]:
             for side, cid in (("out", s["from"]), ("in", s["to"])):
                 c = cues[cid]
@@ -768,7 +920,8 @@ def main():
                    label=L.get("label"), role=L.get("role"), t=L["t"],
                    align=L["align"], film_samples=[a, b], film_s=[r(a / SR, 4), r(b / SR, 4)], level_rule=lv,
                    bed_ref=r(ref), target=r(target), take_level=r(measure), gain_db_rule=r(gain, 2),
-                   provisional=L.get("provisional"), cue_sheet=L.get("cue_sheet"))
+                   provisional=L.get("provisional"), cue_sheet=L.get("cue_sheet"), replaces=L.get("replaces"),
+                   departure=L.get("departure"))
         layers_out.append(rec)
     # ---------------------------------------------------------------- ducks; limiter budgets for groups
     dg = duck_gain(N, sheet.get("ducks", []))
@@ -838,6 +991,12 @@ def main():
                       "mix_lufs_400ms": r(lufs_seg(mix, t, t + 0.4)),
                       "composite_over_bed_db": r(lufs_seg(mix, t, t + 0.4) - lufs_seg(bed, t, t + 0.4)),
                       "composite_over_bed_first_100ms_db": r(lufs_seg(mix, t - 0.01, t + 0.1) - lufs_seg(bed, t - 0.01, t + 0.1)),
+                      # against the music exactly as the cue sheet planned it (no ride, no dip, no override): the
+                      # moment as heard against what the music alone would have been
+                      "planned_music_lufs_400ms": r(lufs_seg(bed_cs, t, t + 0.4)),
+                      "composite_over_planned_music_db": r(lufs_seg(mix, t, t + 0.4) - lufs_seg(bed_cs, t, t + 0.4)),
+                      "composite_over_planned_music_first_100ms_db": r(lufs_seg(mix, t - 0.01, t + 0.1)
+                                                                       - lufs_seg(bed_cs, t - 0.01, t + 0.1)),
                       "music_ducked_by_db": d["db"]})
     res["composites"] = comps
     # ---------------------------------------------------------------- the bed, as the cue sheet lane measured it
@@ -865,6 +1024,7 @@ def main():
         # the reference encoder, and lower the ceiling only by what the encoded true peak exceeds its gate
         ceiling, tries = spec["ceiling_dbtp"], []
         gate = spec.get("aac_tp_max_dbtp", spec["ceiling_dbtp"] + 0.5)
+        margin = float(spec.get("aac_tp_margin_db", 0.0))  # the ceiling search keeps this much under the gate
         refenc = spec.get("aac_reference_encoder", "apple_audiotoolbox_cbr")
         refencs = refenc if isinstance(refenc, list) else [refenc]  # every encoder the master must pass on
         path = os.path.join(out_dir, f"{name}.{mname}.wav")
@@ -874,13 +1034,14 @@ def main():
             tps = {e: aac_check(path, spec["aac_kbps"], gate, only=e)[e]["true_peak_dbtp"] for e in refencs}
             worst = max(tps.values())
             tries.append({"ceiling_dbtp": r(ceiling, 2), "encoded_true_peak_dbtp": tps})
-            if worst <= gate:
+            if worst <= gate - margin:
                 break
-            ceiling -= (worst - gate) + 0.1
+            ceiling -= (worst - (gate - margin)) + 0.1
         ms_y = cp.kweighted_ms(y, SR)
         rec.update(file=rel(path), integrated_lufs=r(integrated_lufs(y), 2), lra_lu=r(cp.lra(ms_y, 0, N / SR)),
                    true_peak_dbtp=r(true_peak_db(y), 2), sample_peak_dbfs=r(peak_db(y)), target=spec,
-                   ceiling_used_dbtp=r(ceiling, 2), ceiling_tries=tries, aac_gate_dbtp=gate, aac_reference_encoder=refenc)
+                   ceiling_used_dbtp=r(ceiling, 2), ceiling_tries=tries, aac_gate_dbtp=gate, aac_margin_db=margin,
+                   aac_reference_encoder=refenc)
         rec["aac"] = aac_check(path, spec["aac_kbps"], gate)
         for v in rec["aac"].values():
             v["pass"] = v["tp_pass"] and abs(v["integrated_lufs"] - spec["lufs"]) <= 0.5
@@ -989,7 +1150,7 @@ def main():
             k_pk = int(np.argmax(on[w_on]))
             out["attack_near_seam"] = {"strongest_attack_film_s": r(float(tt_on[w_on][k_pk]), 4),
                                        "vs_seam_ms": r((float(tt_on[w_on][k_pk]) - tin) * 1000, 1)}
-        bo, bi = np.array(maps[cout["track"]]["beats_s"]), np.array(maps[cin["track"]]["beats_s"])
+        bo, bi = cue_beats(maps, cout), cue_beats(maps, cin)
         last_out = bo[bo < cout["src_out"] - 1e-3]
         first_in = bi[bi >= cin["src_in"] - 0.03]
         if len(last_out) and len(first_in):
@@ -1013,7 +1174,7 @@ def main():
     own_lsd = {}
 
     def film_beats(c):
-        bt = np.array(maps[c["track"]]["beats_s"])  # already moved by the track's correction
+        bt = cue_beats(maps, c)  # already moved by the track's correction and the cue's own
         bt = bt[(bt >= c["src_in"] - 1e-3) & (bt <= c["src_out"] + 1e-3)]
         return bt - c["src_in"] + c["film_in"]
     for out in seams:
@@ -1030,6 +1191,8 @@ def main():
             if cin["head"]["mode"] != "fade" and len(bo) >= 2 and len(bi) >= 2:
                 e["harmony"] = rm.harmony_across(seg, a0, ts - a0, list(bo[-9:] - a0), list(bi[:9] - a0))
                 e["onsets_around_seam"] = rm.onsets_on_grid(seg, a0, list(bo[-4:]) + list(bi[:4]))
+            elif len(bi) >= 2:  # a fade-in from a pad or a ring-out (J3, J4): the incoming cue's first beats only
+                e["onsets_after_seam"] = rm.onsets_on_grid(seg, a0, list(bi[:8]))
             # fixed windows either side, for every seam (the fade-ins and the stop too, which share no beat grid):
             # the chroma cosine and the key of the 2 s and 4 s before the crossfade against the same after the in-point
             C_, tt_, E_ = rm.harmonic_chroma(seg)
@@ -1060,7 +1223,7 @@ def main():
     for c in plan["cues"]:
         f0, f1, fout = cp.cue_extent(c)
         lo, hi = c["film_in"] + 0.25, min(fout, f1) - 0.25
-        beats = np.array(maps[c["track"]]["beats_s"]) - c["src_in"] + c["film_in"]
+        beats = cue_beats(maps, c) - c["src_in"] + c["film_in"]
         beats = beats[(beats >= lo) & (beats <= hi)]
         beats = np.array([b for b in beats if all(abs(b - h) > 0.15 for h in hits)])
         offs = []
@@ -1098,6 +1261,7 @@ def main():
                                                  for v in (L["edge_db_re_peak"] for L in layers_out)))}
     res["layers"] = layers_out
     res["ducks"] = sheet.get("ducks", [])
+    res["fix_checks"] = fix_checks(plan, res, web, bed, lt, st_w, mom_w)
     # ---------------------------------------------------------------- classifier
     res["classifier"] = {k: classify_master(v[0], tmp_dir) for k, v in masters.items()}
     # attribution of the web master's flags: the music itself, or a sound-design group?
@@ -1146,7 +1310,7 @@ def main():
     for c in plan["cues"]:
         f0, f1, fout = cp.cue_extent(c)
         for key in ("beats_s", "downbeats_s"):
-            v = np.array(maps[c["track"]][key]) - c["src_in"] + c["film_in"]
+            v = cue_beats(maps, c, key) - c["src_in"] + c["film_in"]
             npz[f"{c['id']}_{key}"] = v[(v >= f0) & (v <= f1)].astype(np.float32)
     for (sid, side), (ys, a0, p, gdb, _) in snips.items():
         m2, t2 = cp.mel_db(ys, SR, mel_fb)
@@ -1181,6 +1345,9 @@ def main():
                                   for k, v in masters.items()},
                       "aac": {k: v[1]["aac"] for k, v in masters.items()}, "budgets": [
                           {k: b[k] for k in ("group", "trim_db")} for b in budgets],
+                      "composites": [{k: c[k] for k in ("duck", "composite_over_bed_db", "composite_over_bed_first_100ms_db",
+                                                        "composite_over_planned_music_db")} for c in res["composites"]],
+                      "fix_checks": {k: v for k, v in res["fix_checks"].items() if k in ("loudest", "return_vs_climax")},
                       "secs": res["secs"], "rss_mb": res["peak_rss_mb"]}))
 
 

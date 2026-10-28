@@ -16,6 +16,22 @@ The Return revision (28 Oct) differs from 26 Oct 23:50's sheet (kept in master/a
     as plan_x40.json says; the Mixkit ring sweep that covered it on 26 Oct stays out (OVERRIDES §55 CR-13); the 40-s
     title composite gains the stone tap as its attack (CUE_SHEET.json X3 'layers').
 
+The fix revision (28 Oct, after the score review's R-01 to R-11) changes, on top of that:
+  - R-01 (OVERRIDES §55 CR-13, §60): no Mixkit sound effect is left. The Space slide's whoosh and the four ring sweeps
+    are designed noise whooshes (score_designed.whoosh, each with the length of the take it replaces); the plunk is a
+    designed water plunk (score_designed.plunk) until the person's recording; the Drop's and the climax's temp hit is a
+    CC0 composite (Kenney's impactPunch_heavy_000, the kit's impact_body_cc0 3 dB under it, a designed crack 8 dB under)
+    until the Sonniss booms. Only the music (B2, B4) is still the script-fetched audition copy;
+  - R-02: the kept card is the film's biggest moment. M5 dips 2 dB for one bar under the climax hit (back by 1:40.03)
+    with the treatment's 3 dB duck, and rides RIDE_DB down over the bar before R0 (1:44.03-1:46.03), held to J5; M6a's
+    dip deepens to M6A_DIP_DB so the merge stays a dip under the lower rush (cue_overrides);
+  - R-05: J4 is a J4_XF equal-power crossfade ending on the same downbeat (cue_overrides on M4 and M5);
+  - R-06: the name's soft hit is 6 dB louder (-24 LUFS momentary), high-passed at 50 Hz (still no sub);
+  - R-08: M6a's source moves 18 ms earlier (cue_time_correction_s), as B2 and B4 do as a whole; the main title's duck
+    is then 0.5 dB, as the 40-s title's;
+  - R-03 (the 40-s cut): its title duck is 0.5 dB, X3 plays 1 dB lower, and the kept card at XJ1 gets the climax
+    composite only if it passes the rule written before the build (else it stays out, with its numbers).
+
   python3 -I tools/audio/score2/score_layers.py .work/score2
 """
 import json
@@ -28,11 +44,11 @@ FR = 60.0  # the film's frame rate: "12 frames early" is 0.2 s
 # tools/encode/encode.sh delivers with: '-c:a aac') and on Apple's (the score previews'); the build lowers a ceiling only
 # by what the worse of the two exceeds its gate
 ENCODERS = ["native_default", "apple_audiotoolbox_cbr"]
-MASTERS = {
+MASTERS = {  # the ceiling search keeps 0.2 dB under each gate on both encoders (the review's R-03: 0.1 dB was too thin)
     "web": {"lufs": -16.0, "ceiling_dbtp": -2.0, "aac_kbps": 160, "release_ms": 100.0, "aac_tp_max_dbtp": -1.5,
-            "aac_reference_encoder": ENCODERS},
+            "aac_tp_margin_db": 0.2, "aac_reference_encoder": ENCODERS},
     "social": {"lufs": -14.0, "ceiling_dbtp": -1.5, "aac_kbps": 192, "release_ms": 100.0, "aac_tp_max_dbtp": -1.0,
-               "aac_reference_encoder": ENCODERS},
+               "aac_tp_margin_db": 0.2, "aac_reference_encoder": ENCODERS},
 }
 BUDGETS = [["drop_sub", 1.0], ["climax_sub", 1.0], ["title_sub", 1.0], ["swell", 1.0], ["mask", 1.0], ["drop", 2.5],
            ["climax", 2.5], ["title", 2.5], ["name", 0.5], ["slide", 0.5], ["tick1", 0.5], ["tick2", 0.5], ["tick3", 0.5],
@@ -55,11 +71,61 @@ RULES = {
     "title_c7": "CUE_SHEET §4.1: composite C7, carried while the 'foghorn' flag stays open (round 2's rule; worst 0.387 "
                 "on the 0.5-s grid, a warn at most on the master's own grids). Temp hit until the Sonniss boom and the "
                 "person's tap (P9).",
-    "licences": "OVERRIDES §55 CR-13 and §60: every Mixkit take in the kit was fetched by script. They stand in this "
-                "WORKING build exactly as the cue sheet names them ('Mixkit, by hand'), and the person downloads each "
-                "by hand from its page before the final masters (SCORE_PROVENANCE.json lists them). The 20 takes §60 "
-                "removed are never picked.",
+    "licences": "OVERRIDES §55 CR-13 and §60: no Mixkit sound effect is in these masters (the score review's R-01): the "
+                "whooshes and the plunk are made here from code, the hits are CC0 (Kenney) and designed parts, the "
+                "ticks, the tap and the room tone are the kit's CC0 and designed takes. score_build.py refuses any "
+                "Mixkit take and the 20 takes §60 removed. Only the music, B2 and B4, is still the script-fetched "
+                "audition copy: the person downloads both by hand before the final masters (SCORE_PROVENANCE.json).",
+    "cue_overrides": "The master revision's departures from the cue plan (a cue's gain points, head or tail), each with "
+                     "its reason; the cue sheet's own values stay in the build record beside what the masters play. "
+                     "Film times and source points never change here; fades and gain rides are modifications within "
+                     "§51's Mixkit limits.",
 }
+
+HIT = os.environ.get("SCORE2_HIT", "drop_impact_cc0")  # the Drop's and the climax's temp hit, the review's pick. The
+# fix lane's rule (score2-fix PROGRESS.md) asked for its CC0 alternative H_c4 if drop_impact_cc0 gave the Drop under
+# +2.5 dB (it gave +2.16) or the climax under 0 dB against the planned music (-0.15); H_c4 measured worse on both (Drop
+# +0.24 dB, climax -2.54 dB; its punch's peaks spend the limiter budget: trims -4.3 and -8.9 dB), so the better one stays
+HITS = {
+    "drop_impact_cc0": {"take": "drop_impact_cc0", "what": "the kit's drop_impact_cc0 (Kenney CC0 with a designed sub)"},
+    "H_c4": {"composite": [{"src": {"kenney": "impact/Audio/impactPunch_heavy_000.ogg"}, "at_s": 0.0, "gain_db": 0.0},
+                           {"src": {"kit": "impact_body_cc0"}, "at_s": 0.0, "gain_db": -3.0},
+                           {"src": {"designed": {"recipe": "crack", "params": {"dur_s": 0.25, "band_hz": [1200, 5000],
+                                                                               "tau_s": 0.012, "seed": 19}}},
+                            "at_s": 0.004, "gain_db": -8.0}],
+             "what": "a CC0 composite: Kenney impactPunch_heavy_000, the kit's impact_body_cc0 3 dB under it, a designed "
+                     "crack 8 dB under"},
+}
+
+
+def hit_source(choice=None):
+    h = HITS[choice or HIT]
+    return ({"take": h["take"]} if "take" in h else {"composite": h["composite"]}), h["what"]
+
+
+# the designed takes (score_designed.py), chosen by measurement in the fix lane's auditions (score_sfx_audition.py,
+# 28 Oct 09:09-09:12): each reads 'whoosh_swoosh_swish' (the plunk 'water, liquid_dripping') with no watched label
+WHOOSH = {
+    "slide": {"dur_s": 0.48, "peak_s": 0.34, "fc_peak_hz": 2200, "rise_oct": 1.0, "fall_oct": 0.6, "sigma_oct": 0.9,
+              "decay20_s": 0.08, "rise_pow": 2.0, "air_db": -10, "pan": [0.5, -0.5], "fade_s": 0.02, "seed": 11},
+    "ring1": {"dur_s": 1.03, "peak_s": 0.24, "fc_peak_hz": 1000, "rise_oct": 1.3, "fall_oct": 0.9, "sigma_oct": 0.85,
+              "decay20_s": 0.3, "rise_pow": 2.2, "body_db": -14, "body_hz": 200, "air_db": -16, "flutter": [0.12, 16],
+              "pan": [-0.4, 0.4], "seed": 21},
+    "ring2": {"dur_s": 1.11, "peak_s": 0.24, "fc_peak_hz": 520, "rise_oct": 1.2, "fall_oct": 0.8, "sigma_oct": 0.9,
+              "decay20_s": 0.26, "rise_pow": 2.0, "body_db": -10, "body_hz": 180, "air_db": -18, "flutter": [0.12, 14],
+              "pan": [0.4, -0.4], "seed": 31},
+    "ring3": {"dur_s": 2.83, "peak_s": 0.30, "fc_peak_hz": 400, "rise_oct": 1.4, "fall_oct": 0.6, "sigma_oct": 1.3,
+              "decay20_s": 0.4, "rise_pow": 2.0, "body_db": -6, "body_hz": 130, "air_db": -16, "pan": [-0.3, 0.3],
+              "seed": 61},
+    "ring4": {"dur_s": 1.2, "peak_s": 0.24, "fc_peak_hz": 5200, "rise_oct": 1.2, "fall_oct": 0.9, "sigma_oct": 0.8,
+              "decay20_s": 0.55, "rise_pow": 2.0, "air_db": -6, "flutter": [0.1, 20], "pan": [0.4, -0.4], "seed": 51},
+}
+PLUNK = {"dur_s": 0.6, "f0_hz": 392.0, "f1_hz": 784.0, "glide_s": 0.025, "tau_s": 0.035, "splash_db": -2,
+         "splash_tau_s": 0.015, "splash_band_hz": [800, 8000],
+         "swarm": {"n": 16, "t": [0.012, 0.16], "f": [1200, 3600], "rise": [1.3, 1.8], "tau": [0.004, 0.010],
+                   "db": [-12, -26]},
+         "droplets": {"n": 8, "t": [0.08, 0.32], "db": [-26, -34], "band": [2500, 9000]}, "room_size": 0.22,
+         "wet": 0.12, "seed": 9}
 
 
 def seam_t(plan, sid):
@@ -74,12 +140,13 @@ def r4(v):
     return round(float(v), 4)
 
 
-def sweep(lid, group, label, take, t, dur, cue, tune=None):
-    L = {"id": lid, "group": group, "label": label, "role": "sweep", "take": take, "t": r4(t), "align": "start",
-         "level": {"mode": "rel", "ref": [r4(t), r4(t + dur)], "offset_db": -4.0}, "cue_sheet": cue}
-    if tune:
-        L["tune"] = tune
-    return L
+def sweep(lid, group, label, which, t, cue, replaces, offset_db=-4.0):
+    """A designed whoosh (WHOOSH[which]) starting at t, set to the music under it as long as it lasts."""
+    p = WHOOSH[which]
+    return {"id": lid, "group": group, "label": label, "role": "sweep",
+            "designed": {"recipe": "whoosh", "params": p}, "status": "primary", "t": r4(t), "align": "start",
+            "level": {"mode": "rel", "ref": [r4(t), r4(t + p["dur_s"])], "offset_db": offset_db}, "cue_sheet": cue,
+            "replaces": replaces}
 
 
 def tick(lid, group, label, take, t, note, cue, provisional=None):
@@ -94,16 +161,21 @@ def tick(lid, group, label, take, t, note, cue, provisional=None):
 
 def drop_group(t, plunk_frames=2):
     ref = [r4(t), r4(t + 3.0)]
-    lab = "THE DROP: the plunk (stand-in), the hit (temp), sub 1"
+    lab = "THE DROP: the plunk (designed stand-in), the hit (CC0 temp), sub 1"
+    src, what = hit_source()
     return [
-        {"id": "drop_plunk", "group": "drop", "label": lab, "role": "plunk", "take": "standin_plunk_a",
+        {"id": "drop_plunk", "group": "drop", "label": lab, "role": "plunk",
+         "designed": {"recipe": "plunk", "params": PLUNK}, "status": "stand-in",
          "t": r4(t - plunk_frames / FR), "align": "peak", "level": {"mode": "rel", "ref": ref, "offset_db": 0.0},
-         "cue_sheet": "§4: the plunk, standin_plunk_a (Mixkit, by hand) until the person's recording, 2 frames ahead "
-                      "of the hit; it stays at the Drop (§61 R3)"},
-        {"id": "drop_hit", "group": "drop", "label": lab, "role": "hit", "take": "drop_impact_a", "t": r4(t),
+         "cue_sheet": "§4: the plunk until the person's recording (P9), 2 frames ahead of the hit; it stays at the Drop "
+                      "(§61 R3)", "replaces": "standin_plunk_a (Mixkit #1320, script-fetched: CR-13)",
+         "departure": "a designed water plunk (score_designed.plunk: a splash, the bubble's note rising from G4 to G5, "
+                      "a swarm of tiny bubbles, droplets, a small room) in place of the Mixkit stand-in; alone it reads "
+                      "'water, liquid_dripping'"},
+        {"id": "drop_hit", "group": "drop", "label": lab, "role": "hit", **src, "status": "temp", "t": r4(t),
          "align": "peak", "level": {"mode": "rel", "ref": ref, "offset_db": 3.0}, "prelimit_db": 4.0, "highpass_hz": 70.0,
-         "cue_sheet": "§4: the Drop: final from Sonniss or our recording; temp drop_impact_a (Mixkit, by hand); CC0 "
-                      "fallback drop_impact_cc0; the music ducks 3 dB"},
+         "cue_sheet": "§4: the Drop: final from Sonniss or our recording; the music ducks 3 dB",
+         "replaces": "drop_impact_a (Mixkit #563, script-fetched: CR-13)", "departure": "temp hit: " + what},
         {"id": "drop_sub", "group": "drop", "label": lab, "role": "sub",
          "designed": {"base": "sub_drop_b", "params": {"f0": 49.0, "f1": 24.5}}, "t": r4(t), "align": "start",
          "level": {"mode": "rel", "ref": ref, "offset_db": -4.0}, "budget_group": "drop_sub",
@@ -128,7 +200,7 @@ def main_sheet(plan):
                 "take": "room_tone_b", "t": 0.0, "align": "start",
                 "excerpt": {"from_s": 0.0, "dur_s": 1.0, "fade_in_s": 0.005, "fade_out_s": 0.4},
                 "level": {"mode": "abs_i", "lufs": -58.0},
-                "cue_sheet": "§4: 0:00.00-0:01.00 room tone, room_tone_b, -52 LUFS (the build used -58)",
+                "cue_sheet": "§4: 0:00.00-0:01.00 room tone, room_tone_b, -58 LUFS",
                 "departure": "-58 LUFS, as the 26 Oct build: at -52 it added 0.07 'foghorn' to the opening window, "
                              "where Born Of The Sky's quiet pad at +12 dB already reads high on its own (CUE_SHEET §1 M1)"})
     lay.append(tick("tick_send", "tick1", "tick 1: the question is sent (placeholder time)", "ui_tap_send", 3.0, "E",
@@ -136,18 +208,22 @@ def main_sheet(plan):
                     "the real send's frame comes with the 2.0.0 take (BEAT_SHEET: 'about 0:03.00')"))
     lay.append({"id": "name_hit", "group": "name", "label": "the name's soft hit: “Pebble 2.0”", "role": "soft_hit",
                 "take": "impact_body_cc0", "t": r4(event_t(plan, "name") - 0.0004), "align": "peak",
-                "level": {"mode": "abs_m", "lufs": -30.0},
-                "cue_sheet": "§4: 0:04.00 (240) impact_body_cc0 (Kenney CC0), about -30 LUFS momentary, no sub"})
-    lay.append({"id": "slide_whoosh", "group": "slide", "label": "whoosh: the Space slide, on A4's own lift",
-                "role": "sweep", "take": "whoosh_slide_a", "t": 7.7991, "align": "start",
-                "level": {"mode": "rel", "ref": [7.7991, 8.2731], "offset_db": -6.0},
-                "cue_sheet": "§4: 0:07.80 (468) whoosh_slide_a (Mixkit, by hand), 12 frames before the slide; whoosh 1 of 5"})
+                "highpass_hz": 50.0, "level": {"mode": "abs_m", "lufs": -24.0},
+                "cue_sheet": "§4: 0:04.00 (240) impact_body_cc0 (Kenney CC0), a soft hit, no sub",
+                "departure": "-24 LUFS momentary, not about -30, and high-passed at 50 Hz (still no sub): at -30 it sat "
+                             "3.3 LU under the music and the name landed with no measurable accent (the score review's "
+                             "R-06: -1.2 LU over 400 ms at 0:04.00); at -25 the step read +0.9 LU (the fix lane's first "
+                             "build), under the +1 LU the review asks"})
+    lay.append({**sweep("slide_whoosh", "slide", "whoosh: the Space slide, on A4's own lift", "slide", 7.7991,
+                        "§4: 0:07.80 (468), 12 frames before the slide; whoosh 1 of 5",
+                        "whoosh_slide_a (Mixkit #1530, script-fetched: CR-13)", offset_db=-6.0)})
     lay += drop_group(t_drop)
-    lay.append(sweep("ring1_sweep", "ring1", "ring sweep: Ring 1 arrives (your browser)", "ring_sweep_a",
-                     t_ring1 - 12 / FR, 1.0314, "§4: 0:27.80 (1668) ring_sweep_a (Mixkit, by hand); whoosh 2 of 5"))
-    lay.append(sweep("ring2_sweep", "ring2", "ring sweep: Ring 2 arrives (your apps), across the splice",
-                     "ring_sweep_c", t_ring2 - 12 / FR, 1.1084,
-                     "§4: 0:39.80 (2388) ring_sweep_c (Mixkit, by hand), carries M2s; whoosh 3 of 5"))
+    lay.append(sweep("ring1_sweep", "ring1", "ring sweep: Ring 1 arrives (your browser)", "ring1",
+                     t_ring1 - 12 / FR, "§4: 0:27.80 (1668); whoosh 2 of 5",
+                     "ring_sweep_a (Mixkit #2632, script-fetched: CR-13)"))
+    lay.append(sweep("ring2_sweep", "ring2", "ring sweep: Ring 2 arrives (your apps), across the splice", "ring2",
+                     t_ring2 - 12 / FR, "§4: 0:39.80 (2388), carries M2s; whoosh 3 of 5",
+                     "ring_sweep_c (Mixkit #1471, script-fetched: CR-13)"))
     lay.append(tick("tick_equals", "tick2", "tick 2: Calculator's “=” (placeholder time)", "ui_tap_key",
                     t_ring2 + 1.5, "G", "§4: tick 2, '=', ui_tap_key (Kenney CC0), tuned to G",
                     "the real press's frame comes with the take (CUE_SHEET §4: 'in S11, about 0:41-0:42')"))
@@ -155,12 +231,12 @@ def main_sheet(plan):
                     "§4: tick 3, the click, ui_tap_click (Kenney CC0)",
                     "the real click's frame comes with the take (CUE_SHEET §4: 'in S12, about 0:46'); not tuned: the "
                     "take has no measurable pitch"))
-    lay.append(sweep("ring3_sweep", "ring3", "ring sweep (tuned to G): Ring 3, across the cut to Techno Fest Vibes",
-                     "ring_sweep_b", t_ring3 - 12 / FR, 2.8335,
-                     "§4: 0:53.80 (3228) ring_sweep_b (Mixkit, by hand), retuned to G, covers J2; whoosh 4 of 5",
-                     tune={"to_note": "G", "keep_length": True}))
-    lay.append(sweep("ring4_sweep", "ring4", "ring sweep: Ring 4 arrives (your project)", "ring_sweep_d",
-                     t_ring4 - 12 / FR, 1.201, "§4: 1:07.35 (4041) ring_sweep_d (Mixkit, by hand); whoosh 5 of 5"))
+    lay.append(sweep("ring3_sweep", "ring3", "ring sweep: Ring 3, across the cut to Techno Fest Vibes", "ring3",
+                     t_ring3 - 12 / FR, "§4: 0:53.80 (3228), covers J2; whoosh 4 of 5 (a noise whoosh has no pitch, "
+                     "so it needs no tuning to G)", "ring_sweep_b (Mixkit #2604, script-fetched: CR-13)"))
+    lay.append(sweep("ring4_sweep", "ring4", "ring sweep: Ring 4 arrives (your project)", "ring4",
+                     t_ring4 - 12 / FR, "§4: 1:07.35 (4041); whoosh 5 of 5",
+                     "ring_sweep_d (Mixkit #2611, script-fetched: CR-13)"))
     lay.append({"id": "tick_enter", "group": "enter", "label": "tick 4: Enter, alone in the hush, on B4's stop",
                 "role": "tick", "take": "ui_tap_enter", "t": r4(t_enter), "align": "peak", "tune": {"to_note": "A#"},
                 "level": {"mode": "abs_m", "lufs": -30.0},
@@ -178,12 +254,14 @@ def main_sheet(plan):
                 "level": {"mode": "abs_i", "lufs": -52.0},
                 "cue_sheet": "M4 layers: optional room tone under the hush (1:23.03-1:25.13) at -52 LUFS"})
     ref_k = [r4(t_kept), r4(t_kept + 3.0)]
-    lab_k = "THE KEPT CARD: the climax hit (temp) and sub 2"
-    lay.append({"id": "climax_hit", "group": "climax", "label": lab_k, "role": "hit", "take": "drop_impact_a",
+    lab_k = "THE KEPT CARD: the climax hit (CC0 temp) and sub 2"
+    src_k, what_k = hit_source()
+    lay.append({"id": "climax_hit", "group": "climax", "label": lab_k, "role": "hit", **src_k, "status": "temp",
                 "t": r4(t_kept), "align": "peak", "level": {"mode": "rel", "ref": ref_k, "offset_db": 3.0},
                 "prelimit_db": 4.0, "highpass_hz": 70.0,
-                "cue_sheet": "§4: 1:38.03 (5882) the climax: final EffectiveTrailer_Booms_Vol2_011 (Sonniss); temp "
-                             "drop_impact_a (Mixkit, by hand; drop_impact_d read 'telephone'); the music ducks 250 ms"})
+                "cue_sheet": "§4: 1:38.03 (5882) the climax: final EffectiveTrailer_Booms_Vol2_011 (Sonniss); the music "
+                             "ducks 250 ms", "replaces": "drop_impact_a (Mixkit #563, script-fetched: CR-13)",
+                "departure": "temp hit: " + what_k + "; the music under it dips 2 dB for one bar and ducks 3 dB (R-02)"})
     lay.append({"id": "climax_sub", "group": "climax", "label": lab_k, "role": "sub",
                 "designed": {"base": "sub_drop_a", "params": {"f0": 49.0, "f1": 24.5}}, "t": r4(t_kept),
                 "align": "start", "level": {"mode": "rel", "ref": ref_k, "offset_db": -4.0}, "budget_group": "climax_sub",
@@ -224,12 +302,62 @@ def main_sheet(plan):
                              "0.3 s, so the film never falls to digital silence)"})
     ducks = [
         {"id": "drop", "t": r4(t_drop), "db": -3.0, "attack_s": 0.01, "hold_s": 0.15, "release_s": 0.4},
-        {"id": "climax", "t": r4(t_kept), "db": -1.5, "attack_s": 0.01, "hold_s": 0.25, "release_s": 0.4, "why": WHY_DUCK},
-        {"id": "title", "t": r4(t_title), "db": -1.5, "attack_s": 0.01, "hold_s": 0.25, "release_s": 0.4, "why": WHY_DUCK},
+        {"id": "climax", "t": r4(t_kept), "db": -3.0, "attack_s": 0.01, "hold_s": 0.25, "release_s": 0.4,
+         "why": "the treatment's 3 dB (§4.6, §4.8), on top of M5's one-bar 2 dB dip (cue_overrides): the score review's "
+                "R-02 measured the 1.5 dB duck leaving the climax composite -0.06 dB over the music alone"},
+        {"id": "title", "t": r4(t_title), "db": -0.5, "attack_s": 0.01, "hold_s": 0.25, "release_s": 0.4,
+         "why": "0.5 dB, not 1.5 dB: with M6a's attacks moved onto the grid (R-08), A4's title chord and the hit land "
+                "together and the limiter budget trims the hit 1.5 dB more; with 1.5 dB the composite read -0.29 dB "
+                "under the music alone (the fix lane's first build), as the 40-s title did (R-03)"},
     ]
     shelf = {"type": "lowshelf", "hz": 60.0, "gain_db": -1.5, "q": 0.7071,
              "why": "CUE_SHEET §1 M3 and §3: a low shelf of -1.5 dB below 60 Hz (B4's sub share is about twice B2's)"}
     return lay, ducks, {"M3a": [shelf], "M3b": [shelf]}
+
+
+M6A_DIP_DB = float(os.environ.get("SCORE2_M6A_DIP", "-4.5"))  # the merge's dip on A4 bars 80-81 (the cue sheet: -2.8)
+RIDE_DB = float(os.environ.get("SCORE2_RIDE", "-2.0"))  # M5 over the bar before R0, held to J5 (the review: about -1.5)
+J4_XF = float(os.environ.get("SCORE2_J4_XF", "0.25"))  # J4's crossfade (the cue sheet: 1.0 s; MUSIC_RESEARCH §3.5: 1/8-1/2 beat)
+
+
+def main_overrides(plan):
+    """R-02 and R-05 as departures from the cue plan, with their reasons (score_common.apply_overrides)."""
+    c = {x["id"]: x for x in plan["cues"]}
+    t_kept = event_t(plan, "kept card")
+    r0 = plan["return"]["R0_film_s"]
+    j4 = seam_t(plan, "J4")
+    bar = 2.0002  # one bar of B2 at 119.994 BPM
+    m5 = c["M5"]["gain_db"]
+    assert [p[1] for p in m5] == [-7.8, -7.8, -3.8], m5  # the cue sheet's M5 as revision 2 wrote it
+    m5_new = [list(p) for p in m5] + [
+        [r4(t_kept - 0.02), -3.8], [r4(t_kept), -5.8], [r4(t_kept + 0.5), -5.8], [r4(t_kept + bar), -3.8],
+        [r4(r0 - bar), -3.8], [r4(r0), -3.8 + RIDE_DB]]
+    m6a = c["M6a"]["gain_db"]
+    assert [p[1] for p in m6a] == [-2.8, -2.8, -0.3], m6a
+    m6a_new = [[m6a[0][0], M6A_DIP_DB], [m6a[1][0], M6A_DIP_DB], list(m6a[2])]
+    return {
+        "M5": {"gain_db": m5_new, "head": {"mode": "fade", "start": r4(j4 - J4_XF), "len": J4_XF},
+               "why": f"R-02 and R-05. Gain: a one-bar dip of 2 dB under the climax hit (1:38.03, recovering by the next "
+                      f"bar line, 1:40.03) with the 3 dB duck, so the composite stands over the music; then "
+                      f"{-RIDE_DB:g} dB down over the bar before R0 (1:44.03-1:46.03), held to J5, so the Return's B2 "
+                      f"plateau sits under the climax's instead of above it. Head: J4's crossfade shortened to "
+                      f"{J4_XF:g} s, ending on the same downbeat. Fades and gain rides only, B2 in its own order (§51)."},
+        "M6a": {"gain_db": m6a_new,
+                "why": f"R-02: the merge's dip deepened from -2.8 to {M6A_DIP_DB:g} dB on A4 bars 80-81 (CC BY, edited), "
+                       f"so the merge stays a dip under the {-RIDE_DB:g} dB lower rush (MONTAGE_DESIGN §1.4: 'the merge "
+                       f"dips 2.5 LU') and the title still lands as an arrival; back to -0.3 dB on the title's downbeat."},
+        "M4": {"tail": {"mode": "fade", "end": c["M4"]["tail"]["end"], "len": J4_XF},
+               "why": f"R-05: J4 as a {J4_XF:g} s equal-power crossfade (half a beat; MUSIC_RESEARCH §3.5's 1/8-1/2 beat) "
+                      f"ending on the same downbeat, so the Dusk pad covers B2's rest: the 1 s fade left a 5.5 LU hole in "
+                      f"its last 400 ms, and a 0.5 s one (one beat) still 3.4 LU (the fix lane's first build)"},
+    }
+
+
+X40_ACCENT_OMIT = ("left out of the 40-second cut: the rule written before the build (score2-fix PROGRESS.md) needs the "
+                   "composite at least +1.5 dB over the music; with drop_impact_cc0 it read -0.26 dB (the climax group "
+                   "trimmed 8.35 dB by its limiter budget: B2's biggest lift already fills the social limiter) and with "
+                   "the CC0 punch composite -1.83 dB. Fading X1's last beat (the review's other route) changes the 40-s "
+                   "cut's music and waits for the lead")
 
 
 def x40_sheet(plan):
@@ -243,18 +371,22 @@ def x40_sheet(plan):
     lay += drop_group(t_drop)
     lay.append(tick("tick_equals", "tick2", "tick 2: Calculator's “=” (placeholder time)", "ui_tap_key", 19.5, "G",
                     "X1 layers: tick 2 on '='", "the real press's frame comes with the take (slot x5)"))
-    why_omit = ("left out of the 40-second cut's masters, as on 26 Oct: B2's own biggest arrival is the peak at the "
-                "splice (XJ1 measures clean without cover), and a hit within its limiter budget still lifted the "
-                "classifier's 'telephone' from 0.31 to 0.36 in 27-30 s; with no hit, the music does not duck there")
+    why_omit = os.environ.get("SCORE2_X40_ACCENT_OMIT", X40_ACCENT_OMIT)  # "" puts the accent back (a test)
     ref_k = [r4(t_kept), r4(t_kept + 3.0)]
-    lay.append({"id": "climax_hit", "group": "climax", "label": "the kept card: the climax hit and sub 2", "role": "hit",
-                "take": "impact_body_cc0", "t": r4(t_kept), "align": "peak", "level": {"mode": "rel", "ref": ref_k,
-                "offset_db": 3.0}, "prelimit_db": 4.0, "highpass_hz": 70.0,
-                "cue_sheet": "X2 layers: the climax composite at 0:28.00 (hit, sub 2) covers XJ1", "omit": why_omit})
-    lay.append({"id": "climax_sub", "group": "climax", "label": "the kept card: the climax hit and sub 2", "role": "sub",
-                "designed": {"base": "sub_drop_a", "params": {"f0": 49.0, "f1": 24.5}}, "t": r4(t_kept),
-                "align": "start", "level": {"mode": "rel", "ref": ref_k, "offset_db": -4.0}, "budget_group": "climax_sub",
-                "cue_sheet": "X2 layers: sub 2", "omit": why_omit})
+    src_k, what_k = hit_source()
+    lab_k = "the kept card: the climax hit (CC0 temp) and sub 2"
+    hit = {"id": "climax_hit", "group": "climax", "label": lab_k, "role": "hit", **src_k, "status": "temp",
+           "t": r4(t_kept), "align": "peak", "level": {"mode": "rel", "ref": ref_k, "offset_db": 3.0}, "prelimit_db": 4.0,
+           "highpass_hz": 70.0, "cue_sheet": "X2 layers: the climax composite at 0:28.00 (hit, sub 2) covers XJ1",
+           "departure": "R-03: the accent the 05:15 build left out, back as " + what_k + ", kept only under the rule "
+                        "written before the build (score2-fix PROGRESS.md)"}
+    sub = {"id": "climax_sub", "group": "climax", "label": lab_k, "role": "sub",
+           "designed": {"base": "sub_drop_a", "params": {"f0": 49.0, "f1": 24.5}}, "t": r4(t_kept),
+           "align": "start", "level": {"mode": "rel", "ref": ref_k, "offset_db": -4.0}, "budget_group": "climax_sub",
+           "cue_sheet": "X2 layers: sub 2"}
+    if why_omit:
+        hit["omit"] = sub["omit"] = why_omit
+    lay += [hit, sub]
     m = xj2["mask"]
     lay.append({"id": "xj2_mask", "group": "mask", "label": "a reverse swell (CC0) rising into the 40-s Return's cut",
                 "role": "swell", "tail_swell": {"take": m["take"], "tune_semitones": m["tune_semitones"],
@@ -283,16 +415,45 @@ def x40_sheet(plan):
                 "excerpt": {"from_s": 6.0, "dur_s": 1.85, "fade_in_s": 0.35, "fade_out_s": 0.02},
                 "level": {"mode": "abs_i", "lufs": -52.0},
                 "cue_sheet": "X3 layers: room tone from 0:38.5 to 0:40.0 (faded in from 38.15)"})
-    ducks = [{"id": "drop", "t": r4(t_drop), "db": -3.0, "attack_s": 0.01, "hold_s": 0.15, "release_s": 0.4},
-             {"id": "title", "t": r4(t_title), "db": -1.5, "attack_s": 0.01, "hold_s": 0.25, "release_s": 0.4,
-              "why": WHY_DUCK}]
+    ducks = [{"id": "drop", "t": r4(t_drop), "db": -3.0, "attack_s": 0.01, "hold_s": 0.15, "release_s": 0.4}]
+    if not why_omit:
+        ducks.append({"id": "climax", "t": r4(t_kept), "db": -3.0, "attack_s": 0.01, "hold_s": 0.25, "release_s": 0.4,
+                      "why": "the treatment's 3 dB under the kept card's composite (R-03), as in the main film"})
+    ducks.append({"id": "title", "t": r4(t_title), "db": -0.5, "attack_s": 0.01, "hold_s": 0.25, "release_s": 0.4,
+                  "why": "0.5 dB, not 1.5 dB (the score review's R-03): with 1.5 dB the 40-s title composite read 0.5 dB "
+                         "under the music alone over its first 400 ms"})
     return lay, ducks, {}
+
+
+X3_DB = float(os.environ.get("SCORE2_X3", "-3.5"))  # B4's last bar in the 40-s cut (the cue sheet: -2.0)
+
+
+def x40_overrides(plan):
+    """R-03 as a departure from the 40-s plan: B4's last bar 1 dB lower, so the social limiter works less on its kicks."""
+    c = {x["id"]: x for x in plan["cues"]}
+    g = c["X3"]["gain_db"]
+    assert g == [[0.0, -2.0]], g
+    return {"X3": {"gain_db": [[0.0, X3_DB]],
+                   "why": f"R-03: B4's last bar at {X3_DB:g} dB, not -2.0: at -2.0 the social master's limiter reached "
+                          f"-3.91 dB (1.84 s over 1 dB; -2.79 dB on the music alone), on its last-bar kicks and the "
+                          f"title; at -3.0 the music alone still cost -2.1 dB once the ceiling search kept 0.2 dB under "
+                          f"both AAC gates (the fix lane's build 4). A gain change only (the 40-s cut's music is "
+                          f"otherwise unchanged)."}}
+
+
+CUE_CORR = {"M6a": -0.018}
+CUE_CORR_EVIDENCE = ("master/beat_offsets.json: Born Of The Sky's attacks are too loose to correct as a whole (IQR -30.9 to "
+                     "+18.4 ms), but where M6a plays (bars 80-85, source 160.4-172.6 s) its 12 clear attacks sit "
+                     "-17.95 ms (median, flux) before the map's beats, and the three into the title (163.02, 163.52, "
+                     "164.02 s) -17.0, -16.9 and -18.9 ms (flux), -17.1, -16.4 and -18.3 ms (high-frequency rise). So "
+                     "M6a's source moves 18 ms earlier and its attacks land on the grid with the title's hit (the score "
+                     "review's R-08: a 16 ms phase step at J5 against B2, which is corrected by -30 ms).")
 
 
 def main():
     W = os.path.abspath(sys.argv[1])
     old = json.load(open(os.path.join(W, "master", "archive-2026-10-26-2350", "layers_main.json")))
-    for film, fn in (("main", main_sheet), ("x40", x40_sheet)):
+    for film, fn, ovf in (("main", main_sheet, main_overrides), ("x40", x40_sheet, x40_overrides)):
         plan = json.load(open(os.path.join(W, "cuesheet", f"plan_{film}.json")))
         lay, ducks, eq = fn(plan)
         sheet = {"film": film, "revision": "the Return revision (CUE_SHEET.md revision 2, 28 Oct 2026)",
@@ -303,7 +464,13 @@ def main():
                  "edges": {"fade_in_s": 0.005, "fade_out_s": 0.02}, "layers": lay,
                  "source_time_correction_s": old["source_time_correction_s"],
                  "source_time_correction_evidence": old["source_time_correction_evidence"],
+                 "cue_overrides": ovf(plan),
                  "limiter_budget_db": BUDGETS, "limiter_budget_passes": 2}
+        if film == "main":
+            sheet["cue_time_correction_s"] = CUE_CORR
+            sheet["cue_time_correction_evidence"] = CUE_CORR_EVIDENCE
+        sheet["revision"] = ("the fix revision (28 Oct 2026, after the score review): the Return revision's sheet "
+                             "(CUE_SHEET.md revision 2) with R-01's CC0 and designed sounds and the cue overrides")
         out = os.path.join(W, "master", f"layers_{film}.json")
         json.dump(sheet, open(out, "w"), indent=1, ensure_ascii=False)
         print("wrote", os.path.relpath(out, W), len(lay), "layers")

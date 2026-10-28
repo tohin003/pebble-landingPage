@@ -49,7 +49,8 @@ def main():
         "title": "Ripples: the score's provenance (the main film and the 40-second cut)",
         "made": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
         "lane": "score2: assemble and master the score from the cue sheet; the score preview videos",
-        "revision": "the Return revision (CUE_SHEET.md revision 2, 27-28 Oct 2026; OVERRIDES §61)",
+        "revision": "the fix revision (28 Oct 2026, after the score review's R-01 to R-11) of the Return revision "
+                    "(CUE_SHEET.md revision 2, 27-28 Oct 2026; OVERRIDES §61)",
         "binding": ["OVERRIDES §48-§64 (§51: the person's music direction and the Mixkit licence limits; §55 CR-13: no "
                     "scripted Mixkit access, the person downloads by hand; §60: the audio venv and the kit; §61: the "
                     "Return at the end only, 35 readable features, the person hears only finished work)",
@@ -68,7 +69,10 @@ def main():
                    "files": [entry(os.path.join(HERE, f)) for f in ("score_layers.py", "score_build.py", "score_strips.py",
                                                                      "score_preview.py", "score_readme.py",
                                                                      "score_provenance.py", "score_common.py",
-                                                                     "cue_plan.py", "revise_measure.py")]}
+                                                                     "score_designed.py", "score_arc.py",
+                                                                     "score_sfx_audition.py", "score_sfx_sheet.py",
+                                                                     "score_title_probe.py", "cue_plan.py",
+                                                                     "revise_measure.py")]}
     # ---------------------------------------------------------------- inputs
     aud = os.path.join(REPO, ".work", "music-audition")
     used = {}
@@ -117,7 +121,10 @@ def main():
     for film, b in films.items():
         for L in b["layers"]:
             key = L.get("take") or L.get("designed") or L.get("swell")
-            if L.get("designed"):  # one recipe, several tunings: each tuning is its own entry
+            if L.get("composite"):  # parts from the kit, Kenney's CC0 packs and recipes, summed
+                key = "composite: " + " + ".join(q.get("kit") or q.get("kenney") or q["designed"]["recipe"]
+                                                for q in L["composite"])
+            elif L.get("designed"):  # one recipe, several tunings: each tuning is its own entry
                 key = f"{L['designed']} {json.dumps(L.get('params'), sort_keys=True)}"
             if L.get("tail_swell"):  # a take's room tail made into a swell is not the take itself
                 key = f"{L['take']} (reverse swell from its room tail, {L['tail_swell']['tuned_semitones']:+g} st)"
@@ -135,7 +142,9 @@ def main():
                          made_as=("a reverse swell from its room tail" if L.get("tail_swell") else None))
             else:
                 t.update(licence=L.get("licence"), status=L.get("status"), final_allowed=L.get("final_allowed"),
-                         made=L.get("params") or L.get("swell"))
+                         made=L.get("params") or L.get("swell") or L.get("composite"))
+            if L.get("replaces"):
+                t["replaces"] = L["replaces"]
     out["inputs"]["sfx_kit"]["takes"] = list(takes.values())
     # ---------------------------------------------------------------- films
     out["films"] = {}
@@ -168,6 +177,12 @@ def main():
             "cues": cues,
             "seams": b["seams"],
             "layers": b["layers"], "ducks": b["ducks"],
+            "cue_overrides": b.get("cue_overrides"), "cue_time_correction_s": b.get("cue_time_correction_s"),
+            "cue_time_correction_evidence": b.get("cue_time_correction_evidence"),
+            "composites": b.get("composites"), "limiter_budgets": b.get("limiter_budgets"),
+            "fix_checks": {k: v for k, v in (b.get("fix_checks") or {}).items() if not k.endswith("_web")}
+                          | {k: {kk: vv for kk, vv in v.items() if kk != "windows"}
+                             for k, v in (b.get("fix_checks") or {}).items() if k.endswith("_web")},
             "bed": b["bed"], "blocks_web": b["blocks_web"],
             "masters": {k: {kk: v for kk, v in m.items() if kk != "iterations"} | {"iterations": m["iterations"]}
                         for k, m in b["masters"].items()},
@@ -233,28 +248,34 @@ def main():
                                         "never re-arranged: every B2 and B4 excerpt plays in the track's own order and "
                                         "none overlaps another in source time (order_checks)",
                                         "layered with other music only inside a short, standard cue transition (60 ms "
-                                        "pre-rolls, J4's 1.0 s crossfade, B4's ring-out under the Dusk pad's fade-in)",
+                                        "pre-rolls, J4's 0.25 s crossfade, B4's ring-out under the Dusk pad's fade-in)",
+                                        "edited only by gain: M5's one-bar dip under the climax hit and its ride under "
+                                        "the Return, X3 1 dB lower (cue_overrides in the layer sheets)",
                                         "the masters contain Mixkit music, so they stay in .work/score2/master as "
                                         "working files for muxing; no music-only file is delivered; the score previews "
                                         "are VIDEO with cue labels",
                                         "never registered with Content ID; not for broadcast"],
                          "credit": "none needed"},
         "mixkit_sfx": {"licence": "Mixkit Sound Effects Free License", "url": "https://mixkit.co/license/modal/sfxFree/",
-                       "note": "the temp hits, the stand-in plunk and the whooshes; never redistributed on their own, "
-                               "never Pebble's sonic logo; the three grand hits' finals are Sonniss or the person's "
-                               "recordings (TREATMENT §4.6), not Mixkit"},
-        "kenney": {"licence": "CC0 1.0", "note": "the UI ticks, the name's soft hit, the stone tap (stand-in), the "
-                                                 "title's temp hit and the 40-s cut's XJ2 swell (from a take's room tail)"},
-        "designed": {"licence": "made here from code (sub glides, room tone)"},
+                       "note": "NONE in these masters (the score review's R-01; OVERRIDES §55 CR-13, §60): the seven "
+                               "script-fetched effects of the 05:15 build are replaced (each layer's 'replaces')"},
+        "kenney": {"licence": "CC0 1.0", "note": "the UI ticks, the name's soft hit, the Drop's and the climax's temp hit "
+                                                 "(the kit's drop_impact_cc0), the stone tap (stand-in), the title's "
+                                                 "temp hit and the 40-s cut's XJ2 swell (from a take's room tail)"},
+        "designed": {"licence": "made here from code (tools/audio/score2/score_designed.py and the kit's recipes): the "
+                                "five whooshes, the plunk (stand-in), the sub glides, room tone"},
         "tools": {"pedalboard": "GPL-3.0, run as a tool (limiter, reverb, pitch), never shipped",
                   "pyloudnorm": "MIT", "soxr": "LGPL-2.1", "librosa": "ISC", "ffmpeg": "LGPL/GPL build (Homebrew)",
                   "Pillow": "MIT-CMU", "Apple SoundAnalysis (sound_tags)": "the system's classifier, read only"},
     }
     # every Mixkit file the masters use, for the person's hand download before the final masters (§55 CR-13)
     hand = []
+    items = {"B2": 634, "B4": 124}  # Mixkit's own item ids, from the 26 Oct crawl of its tag page (OVERRIDES §60)
     for e in music:
         if e["label"] in ("B2", "B4") and e["used_in"]:
             hand.append({"kind": "music", "label": e["label"], "title": e.get("title"), "artist": e.get("artist"),
+                         "mixkit_item_id": items[e["label"]],
+                         "listed_on": "https://mixkit.co/free-stock-music/tag/technology/",
                          "audition_copy": e["file"], "audition_sha256": e["sha256"], "used_in": e["used_in"],
                          "licence": "Mixkit Stock Music Free License"})
     for t in out["inputs"]["sfx_kit"]["takes"]:
@@ -272,10 +293,14 @@ def main():
                 "matches, the working masters stand bit for bit; otherwise rebuild with the same commands "
                 "(score_layers.py, score_build.py, then the strips, previews and this file) and compare the records."}
     out["working_masters"] = {
-        "status": "WORKING masters: built from the audition copies (the script-fetched Mixkit music of 26 Oct 18:29 "
-                  "and the kit's script-fetched Mixkit takes), for muxing and the previews only; the final masters wait "
-                  "for the person's hand downloads (mixkit_files_for_hand_download) and the final hits (Sonniss or the "
-                  "person's recordings, P9)",
+        "status": "WORKING masters: no Mixkit sound effect (R-01), but the music B2 and B4 is still the audition copy "
+                  "fetched by script on 26 Oct 18:29, so these masters and the previews made from them wait for the "
+                  "person's two hand downloads (mixkit_files_for_hand_download) before any copy to the person or any "
+                  "final master; the hits, the plunk and the tap stay temps until Sonniss or the person's recordings "
+                  "(P9)",
+        "music_only_files": "the four working WAVs in .work/score2/master (main.web, main.social, x40.web, x40.social) "
+                            "hold the mixed score (music and effects, B2 and B4 included), for muxing only (§51); none "
+                            "is delivered, copied out of .work or uploaded",
         "files": {film: [m["file"] for m in b["masters"].values()] for film, b in films.items()},
         "never": "a music-only file delivered; any copy outside .work/score2; any upload"}
     out["credits"] = {"main": cs["credits"]["main"], "x40": cs["credits"]["x40"],
