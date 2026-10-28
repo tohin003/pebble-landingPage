@@ -105,7 +105,8 @@ We studied two references and took their discipline, not their looks:
   every cut.
 - **No numbers on film.** The film never shows numbers that aren't published.
 - **Unreleased features.** A feature appears on the page or on film only after the Pebble release that ships it is
-  published.
+  published. The one exception is the person's (D157): the film's post-credit scene and the footer's hint show one
+  planned feature as coming and not yet built, with no version, date, number or mock screen (CLAIMS C-NEXT-1, C-NEXT-2).
 
 ## What we never do
 

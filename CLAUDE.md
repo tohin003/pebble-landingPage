@@ -75,7 +75,9 @@ sequences and masters once they have been used.
 - **Comparisons.** None, except two approved lines, word for word: "An agent shouldn't grade its own work." and the
   benchmark headline "Pebble matches Claude Code on the same model, within the margin." The film shows no number that
   isn't published. A feature appears only after the Pebble release that ships it is published, and with no savings or
-  speed numbers until a benchmark measures them.
+  speed numbers until a benchmark measures them. The one exception is the person's D157: one planned feature shown as
+  coming and not yet built, in the film's post-credit scene and the footer's hint (PHILOSOPHY's "Unreleased features",
+  CLAIMS C-NEXT-1 and C-NEXT-2).
 - **Release facts.** `src/content/releaseFacts.ts` holds what the page states about the release: version, tag, date,
   the zip's size and SHA-256, the test counts and the benchmark gate. Change it only for a published release, from its
   GitHub release (the API's `published_at` and asset size, and the release's own `SHA256SUMS`) and the README at its
