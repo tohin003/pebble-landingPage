@@ -16,6 +16,7 @@
 #   sheet     the spec, CUE_SHEET.json, BEAT_SHEET and CUE_SHEET.md with the measured numbers         [pure]
 #   build     both films' masters, web and social, each gated after AAC on FFmpeg's and Apple's encoders  [heavy]
 #   coda      the coda's mix-side checks on the main masters, with their canaries -> master/main.coda.json  [heavy]
+#             (not blocking: a failure is reported at the end and the chain exits 1, with every artifact built)
 #   arc       FFmpeg ebur128's independent arc of both web masters                                     [heavy]
 #   strips    the masters' strips (both films) and the measured bed's strips (cuesheet/r3/main-*.png)   [heavy]
 #   sheet2    CUE_SHEET.md again, now with the masters (§12)                                           [pure]
@@ -94,7 +95,8 @@ run() { # <step>
     heavy score2r3-build-main env "$NC" "$PY" -I -B "$T/score_build.py" "$C/plan_main.json" "$M/layers_main.json" "$M" main \
       && heavy score2r3-build-x40 env "$NC" "$PY" -I -B "$T/score_build.py" "$C/plan_x40.json" "$M/layers_x40.json" "$M" x40 \
       || rc=$? ;;
-  coda) heavy score2r3-coda env "$NC" "$PY" -I -B "$T/score_coda.py" check "$M" || rc=$? ;;
+  coda) # not blocking: a failed coda check is reported at the end (exit 1), after every artifact is built for review
+    heavy score2r3-coda env "$NC" "$PY" -I -B "$T/score_coda.py" check "$M" || { say "coda checks FAILED: see $M/main.coda.json"; CODA_FAILED=1; } ;;
   arc) heavy score2r3-arc bash -c "set -e; /usr/bin/python3 -I -B $T/score_arc.py $M/main.web.wav $C/plan_main.json $M/main.arc.json; /usr/bin/python3 -I -B $T/score_arc.py $M/x40.web.wav $C/plan_x40.json $M/x40.arc.json" || rc=$? ;;
   strips) heavy score2r3-strips bash -c "set -e; '$QPY' -I -B $T/score_strips.py $C/plan_main.json $M/layers_main.json $M main; '$QPY' -I -B $T/score_strips.py $C/plan_x40.json $M/layers_x40.json $M x40; '$QPY' -I -B $T/cue_strips.py $C/plan_main.json $C/r3/main" || rc=$? ;;
   previews)
@@ -113,6 +115,7 @@ run() { # <step>
 }
 
 STEPS="${*:-archive timing layers measure confirm sheet build coda arc strips sheet2 previews readme provenance}"
+CODA_FAILED=0
 say "revision 3 evening chain: $STEPS (head $(/usr/bin/git rev-parse --short HEAD 2>/dev/null))"
 python3 -I -c "import json,sys; p=json.load(open('$C/plan_main.json')); sys.exit(0 if p.get('revision',{}).get('n')==3 else 1)" \
   || { say "cuesheet/plan_main.json is not revision 3: run tools/audio/score2/revise3_plan.py plans"; exit 2; }
@@ -120,5 +123,31 @@ for st in $STEPS; do
   run "$st" || exit $?
 done
 say "done: $STEPS"
+python3 -I - "$REPO" <<'PYEOF' | tee -a "$LOG"
+import json, os, sys
+R = sys.argv[1]
+S = os.path.join(R, ".work", "score2")
+def opt(p):
+    p = os.path.join(S, p)
+    return json.load(open(p)) if os.path.exists(p) else None
+cf, cs, cd, bm, bx = (opt(p) for p in ("cuesheet/r3/confirm.json", "CUE_SHEET.json", "master/main.coda.json",
+                                       "master/main.build.json", "master/x40.build.json"))
+print("summary:")
+if cf: print("  the rule's confirmation (J2, J3):", "PASS" if cf["pass"] else "FAIL")
+if cs:
+    ck = cs["checks"]
+    print(f"  cue sheet checks: {sum(1 for c in ck if c['ok'] is True)} pass, {sum(1 for c in ck if c['ok'] is None)} pending, "
+          f"{sum(1 for c in ck if c['ok'] is False)} fail, {sum(1 for c in ck if c.get('warn'))} warn")
+    for c in ck:
+        if c["ok"] is False: print("    FAIL", c["check"], "::", c["detail"][:200])
+if cd: print("  the coda on the masters:", "PASS" if cd["ok"] else "FAIL " + ", ".join(k for k, v in cd["checks"].items() if not v["ok"]))
+for nm, b in (("main", bm), ("x40", bx)):
+    if b:
+        for k, m in b["masters"].items():
+            a = m["aac"]
+            print(f"  {nm} {k}: {m['integrated_lufs']} LUFS, TP {m['true_peak_dbtp']} dBTP; AAC FFmpeg {a['native_default']['true_peak_dbtp']} / "
+                  f"Apple {a['apple_audiotoolbox_cbr']['true_peak_dbtp']} dBTP; length {b['film_length_s']} s")
+PYEOF
+if [ "$CODA_FAILED" -ne 0 ]; then say "the coda's checks failed: the lead decides before the previews go anywhere"; exit 1; fi
 echo "Look at: $M/main-overview.png, main-seams.png, main-hits.png, x40-overview.png; $C/r3/main-overview.png; $M/main.coda.json;"
 echo "         the previews in $P (the main one runs on through the coda); CUE_SHEET.md §9 and §12."
