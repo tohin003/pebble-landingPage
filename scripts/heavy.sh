@@ -13,7 +13,9 @@
 #     left, macOS is likely to add another 1 GiB swap file to the same disk, so a job then needs 1 GiB more free (on
 #     27 Oct a half-size render that started with 1 GiB of swap left made macOS add one and took free disk from 2.43
 #     to 1.07 GiB in two minutes). While a job runs, it is stopped when swap falls under 0.35 GiB left, before the
-#     next swap file is made.
+#     next swap file is made. A job doesn't start with under 0.75 GiB of swap left, since it would be stopped within
+#     seconds: it waits for swap to recover (up to HEAVY_SWAP_WAIT_SECS, default 540 s), then refuses (28 Oct: a
+#     browser held 2.7 GB and swap had 0.38 GiB left, so every render that started was stopped and retried).
 #   - Log: start, end, exit code, duration and free disk go to $REPO/.work/heavy.log.
 # Exit status: the job's own; or 64 usage, 73 too little disk to start, 74 stopped at the disk floor, 75 lock wait timed out,
 # 76 stopped because swap ran low.
@@ -29,6 +31,8 @@ START_MIN_KB=${HEAVY_START_MIN_KB:-1782580} # 1.7 GiB
 FLOOR_KB=${HEAVY_FLOOR_KB:-1572864}         # 1.5 GiB
 SWAP_SURCHARGE_BELOW_KB=${HEAVY_SWAP_SURCHARGE_BELOW_KB:-1572864} # 1.5 GiB of swap left
 SWAP_STOP_KB=${HEAVY_SWAP_STOP_KB:-367002}  # 0.35 GiB of swap left
+SWAP_START_MIN_KB=${HEAVY_SWAP_START_MIN_KB:-786432} # 0.75 GiB of swap left to start a job
+SWAP_WAIT_SECS=${HEAVY_SWAP_WAIT_SECS:-540}
 WAIT_SECS=${HEAVY_WAIT_SECS:-3600}
 LOCK="$REPO/.work/heavy.lock"
 LOG="$REPO/.work/heavy.log"
@@ -138,6 +142,28 @@ refuse_if_low_disk() {
     exit 73
   fi
   sw="$(swap_free_kb)"
+  if [ -n "$sw" ] && [ "$sw" -lt "$SWAP_START_MIN_KB" ]; then
+    local waited=0
+    say "swap has only $(human "$sw") left (a job needs $(human "$SWAP_START_MIN_KB") to start): waiting up to ${SWAP_WAIT_SECS}s for memory to free"
+    log "SWAPWAIT label=$LABEL swap_free=$(human "$sw")"
+    while [ "$waited" -lt "$SWAP_WAIT_SECS" ]; do
+      sleep 15
+      waited=$((waited + 15))
+      if hold_active; then
+        say "HOLD appeared while waiting for swap: $(hold_reason)"
+        log "HOLD label=$LABEL"
+        exit 73
+      fi
+      sw="$(swap_free_kb)"
+      if [ -z "$sw" ] || [ "$sw" -ge "$SWAP_START_MIN_KB" ]; then break; fi
+    done
+    if [ -n "$sw" ] && [ "$sw" -lt "$SWAP_START_MIN_KB" ]; then
+      say "refusing '$LABEL': swap still has only $(human "$sw") left after ${waited}s (memory is held by other apps); retry later"
+      log "REFUSE label=$LABEL swap_free=$(human "$sw") waited=${waited}s"
+      exit 73
+    fi
+    say "swap recovered to $(human "$sw") after ${waited}s"
+  fi
   if [ -n "$sw" ] && [ "$sw" -lt "$SWAP_SURCHARGE_BELOW_KB" ]; then
     need=$((need + 1048576)) # room for the next 1 GiB swap file
   fi
