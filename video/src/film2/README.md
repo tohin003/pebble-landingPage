@@ -322,7 +322,7 @@ plan the music in local frames (`shiftGrid(grid, −start)`). Every piece is fra
 | `coda.ts`, `codaChecks.ts`, `coda.cues.ts` | the post-credit scene after the end card (D157, OVERRIDES §62), its checks and its stone's cues; drawn by `views/CodaView.tsx` |
 | `sweep.ts` | the title's sage sweep and its 15 % cap (L3a) |
 | `pieces.cues.ts` | the stone's cue templates (checked by the engine tests, D6) |
-| `qa.ts` | `planQa()` (a plan as the foundation's `FilmTimelineQa`) and `checkPlan()` (every foundation check, plus the set pieces': band contrast, takes, type in the safe area, type over UI being read (an error), type over any other UI plane (a warning; over a slot, a note to check the 2.0.0 capture), UI read size, UI read wholly in frame, music placement, cues, the wall, small print; the checks added after the craft review, below; and fix round 1's `slotLabels`: a frame of slots always shows a slot's label whole, a read slot its own) |
+| `qa.ts` | `planQa()` (a plan as the foundation's `FilmTimelineQa`) and `checkPlan()` (every foundation check, plus the set pieces': band contrast, takes, type in the safe area, type over UI being read (an error), type over any other UI plane (a warning; over a slot, a note to check the 2.0.0 capture), UI read size, UI read wholly in frame, music placement, cues, the wall, small print; the checks added after the craft review, below; and fix round 1's `slotLabels`: a frame of slots always shows a slot's label whole, a read slot its own; fix round 2's, below, with `subjectsCovered` and `typeOverStone` from its render) |
 | `ground.ts`, `review-ledger.ts` | the riverbed's extent and depth, sized from each shot's widest pose and shared by the view and the coverage check (CR-02); the open findings of the craft review, and the ones fix round 1 closed |
 | `joins.ts` | the joins between pieces (CR-06): `cutVelocity()`, `shareGround()`, `checkJoins()` (continued worlds continuous, cuts velocity-matched and never between rests, each piece readable within 6 frames) |
 | `align.ts` | one timeline for all three aspects: `alignAspects()` and `timelineDiffs()` |
@@ -406,7 +406,11 @@ for at least `SEEN_S` before the person's click; on the click the view switches 
 sentence, and a second dolly brings that sentence, then the act, to 28 px; the receipt lands Pebble's own time after
 the click (it may land while the act is still read: the camera then glides down to it); Ring 4's receipt is its
 Verified line (H6, S18), the reply's list below it left out (its 41 words would take the shot past 3.14 words a
-second). The chapter pair lands once no capture with text sits under its band for its whole hold
+second). The camera reaches the receipt on one frame in every aspect (`RingTiming.receiptArrive`, 28 Oct's render:
+16:9 read the 19 words above it at 4.4 words a second and then held its 7 words 5.1 s on a nearly empty slot, its cut
+aligned to 9:16's later receipt): the time a wide frame gains goes to its reads, and every aspect holds the receipt
+2.6 s. While the card asks it is `framed` whole as the frame's subject: nothing may be drawn over it
+(`subjectsCovered`; in 9:16 the Finder covered its "Details", and now sits out of frame then). The chapter pair lands once no capture with text sits under its band for its whole hold
 (`kit.ts planesClearFrame`; in 1:1 and 9:16 it keeps to the frame's left, in 9:16 in the top band, the place arriving
 in the frame's lower part so the camera never turns back up). The reading holds glide (0.4 px a frame); the stage is
 entered on a glide at the cut's speed (never landing at rest) and pans at the reading pace; the swaps cross at
@@ -431,7 +435,8 @@ the typed word and the lit row read at ≥ 28 px) and the light cooling to dusk 
 rendered with Pebble's own code (`views/VeilCast.tsx`: `stealthVeil.ts` and `veilDraw()`, the 1.25-s cast), **in macro:
 its body 47 % of the frame's height (42 % in 1:1), pushing in and orbiting at `VEIL_ORBIT_PX` (0.36 px a frame)
 through its framing** (CR-19: it filled 19 % of the width; fix round 2: at a 0.12 px orbit the render, the frame's
-subject, moved 0.14), with "A render, not a screen recording." **under it, right-aligned with its body's right edge**,
+subject, moved 0.14; in 9:16 its centre sits at 0.535 of the height, 42 px below the honest line's band from the rack
+to the crane: at 0.44 the band's last lines sat on the render for 7.5 s, `typeOverStone`), with "A render, not a screen recording." **under it, right-aligned with its body's right edge**,
 set in the render's world (`TypeSpec.carry`): on screen exactly as long as the render, kept in the safe area while it
 is read; the camera carries both out of the frame's left edge (in every aspect) and they leave on the same frame, the
 cut 2 frames later (fix round 2, the verifier's NF-03: set beside the render on the right, the label was the last
@@ -818,6 +823,120 @@ conversation slot for about 0.75 s while the camera sweeps in, before the kept c
 **Open:** the foundation demo's own camera floor (`review-ledger.ts`, the one entry left: its S2 lands on E-arrive at
 rest and its title page breathes under 0.25 px a frame); it is the motion foundation's demo reel, not a set piece, and
 the fix is the one the finale uses.
+
+## Fix round 2 (27–28 Oct): the verifier's findings after round 1, and the reels
+
+The verifier rendered round 1's reels and found what the checks still passed: the Drop's first hold after the hit
+barely moved its content (CR-04, partly), five blind spots in the checks (CR-15, partly) and eight new findings
+(NF-01 to NF-08). Round 2 fixes them, each with a check that sees it and a planted canary (`tests/fix-round2.test.ts`),
+then renders the three reels and fixes what only their frames showed (`tests/fix-round2-render.test.ts`). CR-13
+(Mixkit) and CR-22 (the pre-push guard) stay the lead's. OVERRIDES §61 put the montage, the Return, at the end only: it
+replaces the wall and the convergence, so CR-08, the wall's parts of CR-02 and CR-16 and CR-06's S24 → S25 pull-back
+close with that replacement, which the Return lane has built (§8 above).
+
+| Finding | What changed | Held by |
+|---|---|---|
+| CR-04 the Drop's hold: the corners moved 0.4–0.6 px a frame, the companion 0.04–0.09 | the hold pans at `HOLD_PAN_PX` (0.42) the way the reveal then glides, besides its pull-back; 1:1's pre-roll drifts sideways where the aperture leaves no room to rise; the cascade's stage, the palette, the Veil and the Glaze ask pan too | `contentFloor` (the content's median speed under a grid, each plane at its depth, ≥ 0.25 over every second; title pages keep the corners' floor, §58) |
+| CR-15 the checks' blind spots | `contentFloor`; `sway`; `cutsReadable` (internal cuts too); slot labels whole or not drawn (`setpieces/labels.ts`); `typeOverPlanes` an error over a capture with text, aware of the aperture; `typeOverType`; the cascade's end in every schedule the checks and the marks read; the facts' gaps measured in the ink | the canaries in `tests/fix-round2.test.ts` |
+| NF-01 Ring 4 framed no decision; the receipt ended on "Done, and verified:" | HS-F rolls from the held card asking: a dolly frames it whole with its three buttons (text kept under 17 px: seen, not read) for 1.1 s; the person's click switches it with a hard cut to its answered sentence, read at 28 px with the act; the receipt is its Verified line (the reply's 41-word list would take the shot past 3.14 words a second); the conversation's slot names itself from the click, between the answer and the run, and again above the receipt (`SlotStandIn.alsoAt`), one label of a slot at a time | `askActClock` (one take, one clock); tests (the take's states, the framings, the crop's line boundaries, a label whole on every frame of the receipt's hold) |
+| NF-02 the Kiln hold swayed (left, stop, right 70 px, stop, left) | the climax travels one way (right in 16:9, down in 1:1 and 9:16): the ask's pan, the cut, the incoming glide into the hold's pan, the push about the card's trailing edge, the leave; the Dusk leaves to the right so the cut into the climax never turns back | `sway` (no pan turns back through a stop within 3 s) |
+| NF-03 the Veil's label outlived the render by 24 frames | the label under the render, right-aligned 12 px inside its body's edge (further in where the push would grow it out of the safe area); every aspect cranes out left; the render and the label leave on the same frame, the cut 2–3 frames later; the tall frame's render 40 % of the height (CR-19) | tests; `typeOverType` (the 1:1 label would have sat on the honest line: that render is 42 % of the height) |
+| NF-04 the facts' gaps 62–165 px | each row of facts is one flex row (`TypeSpec.row`), so every gap is 1.25 em whatever the advance widths | the reel scan: the facts' gaps found in the ink, even within 1.2×, never under 0.6 of the gap |
+| NF-05 L05, L06 and the chapter line over the 9:16 Toolbox | the 9:16 Toolbox below the pair's band and the Finder right of the held card; a line in a fixed band lands once no capture with text sits under it for its whole hold (`planesClearFrame`); the 1:1 and 9:16 chapter pairs keep to the frame's left; the reveal waits for the pair's exit | `typeOverPlanes` (an error now) |
+| NF-06 the marks' cascade item ended 80 frames before the render's | `cascadeSchedule(…, endAt)` wherever the checks and the marks read a cascade; the last item's exit is its drawn blur | a test that every item's frames and exits are the view's |
+| NF-07 the cut into Kiln landed on 62 frames of unlabelled slot | the Kiln slot's label sits under where the card lands, where the cut's first frames look | `cutsReadable` (within 6 frames of every hard cut) |
+| NF-08 two labels stacked; a label cut by the frame's edge for 4 s | the workspace hands its label to the palette as it opens (`TakeView.labelOut`); every label is drawn whole or not at all, fading out over 10 frames before it would reach the frame's edge (the view and the checks read one function) | `slotLabels` (a label is never cut by the frame the viewer sees) |
+| CR-03's aim: type leaves the way it came | the lines that rose through their masks leave through them with a lift, as the title page's already did: the Drop's pair (the wave running down the block as it rose), Ring 4's chapter line, the cascade's fixed line and "Its own tools." (they rose and blurred away, two motions in one line); each lift is gone 2 frames before its cut | `typeExitKind` (a rise leaves with a lift, a blur-in with a blur; a line carried by its world and a cascade's swaps are not its to judge) |
+
+### The reels (28 Oct)
+
+The three demo reels at half size, 60 fps, from frozen snapshots of film-2.0 (the lane's render chain: `snapshot.sh`
+and `pipeline.sh` in its scratchpad, each step one heavy.sh job that waits out any HOLD), in four rounds: r1 at
+369c5ad (round 2 as committed, with the post-credit scene), r2 at c8afaca (the fixes below), r3 at 0a7cc72 (16:9 and
+1:1: Ring 4's receipt; 9:16's frames are r2's). 6,264–6,267 frames a reel, 407–421 s each. Every check ran on every reel: `luma-scan.ts --marks`,
+`ground-light.ts`, contact sheets at the review's and the verifier's frames, frame strips at every exit and join, and
+the verifier's own drift measures (`drift.py`, `blocks.py`: phase correlation between neighbouring frames).
+
+**What only the frames showed (r1), now each held by a check with a canary** (`tests/fix-round2-render.test.ts`):
+
+| Seen on the reels | What changed | Held by |
+|---|---|---|
+| 9:16: the Finder, a context window drawn in front of Ring 4's place, covered the held card's right end and its "Details" for the whole 1.17 s the camera framed the card asking (36 px at 1080) | the 9:16 Finder at world x 1080 (was 990): just out of frame while the card asks, 69 px clear of it | `subjectsCovered`: nothing drawn in front of a declared read or of a plane `framed` whole as the frame's subject (`PlaneSpec.framed`: Ring 4's card asking, from its dolly's landing to the click) |
+| 9:16: the honest line's last two lines sat on the Veil's render, the stone in macro, from the rack to the crane (7.55 s, up to 137 px into its body) | the 9:16 render's centre at 0.535 of the height (was 0.44): its top 42 px below the band all through, its label still in the safe area | `typeOverStone`: film type never on a stone's body (the pebble's own bounds at its drawn size; the title's wordmark beside its stone passes) |
+| 16:9: Ring 4 read its answer and act (19 words) in 4.2 s, 4.4 words a second, then held the 7-word Verified line 5.1 s on a nearly empty slot, its cut aligned to 9:16's later receipt | the camera reaches the receipt on one frame in every aspect (`RingTiming.receiptArrive`): the reads take 6.4 s (2.97 words a second; 1:1 6.9 s, 9:16 6.5 s) and every aspect holds the receipt 2.6 s | a test: one arrival, the reads at 3.14 words a second or slower, the receipt within half a second of its reading time |
+| 1:1, 9:16: the reel scan failed on the end card's last line "vanishing" 6 frames after its drawn blur had ended: the post-credit iris-out filled its rect with night green (6.4 × the line's ink), then read 0 once it covered it | after a line that left on its own has stopped being drawn, a fall from far above its own ink (`INK.notOwnAfterUntil`, 1.5 ×) is what covers its rect, not the line; a line drawn past its last frame, or one an iris covers before it left, is judged as before | canaries: the coda's case passes; a line held past its last frame, and one an iris covers, still vanish |
+| 16:9, 1:1: the light arc's report dropped the evening (and 16:9's morning) silently: no sampled frame of the climax shows 2 % of ground | `ground-light.ts` says so: "evening not measured: none of its 20 sampled frames shows 2 % of ground" | the report |
+
+On the way, in the tools rather than the film: the render snapshot had never rendered (the bundle reads the site's
+`src/` and the old film's beatmap and captions, and Remotion forwards a symlinked public file into its bundle and serves
+it 404: the snapshot now archives those paths and hard-links the gitignored captures); a failed render left its disk
+sampler looping under launchd (`render-segments.sh` stops it on exit); the drift script never measured (bash's `GROUPS`
+is a special variable).
+
+**On the reels** (16:9 and 1:1 r3, 9:16 r2; `scan.json`, `ground-light.json` and `marks.json` under
+`.work/film2/snap-fix2b/.work/film2/sp5/demo*/`, gitignored):
+
+| Check | 16:9 | 1:1 | 9:16 |
+|---|---|---|---|
+| `luma-scan.ts --marks` | exit 0 | exit 0 | exit 0 |
+| ink: lines that vanish (CR-03; 30 lines) | 0 | 0 | 0 |
+| stones: frames with two (CR-01) | 0 of 3,268 | 0 of 3,261 | 0 of 3,287 |
+| bands: opening frame, hit 180 (CR-07) | 181 | 181 | 181 |
+| the facts' gaps, widest ÷ narrowest (NF-04, at most 1.2) | 1.08 (58, 56; 58 px) | 1.09 (62; 64 px) | one fact a line |
+| the Veil's last pixel, its label's last ink, the cut (NF-03) | 3002, 3003, 3006 | 3003, 3003, 3006 | 3002, 3002, 3006 |
+| tile pops, whole-frame pops, dead seconds, dips | none | none | none |
+| flashes a second (at most 3) | 1 | 2 | 2 |
+| placeholder state changes listed (CR-18) | 8 | 8 | 8 |
+
+The plans (`check-setpieces.ts`, every check, old and new): every piece passes in every aspect, the joins too; at
+c8afaca and 0a7cc72 the wall and the convergence failed only on their ledger entries (`contentFloor`, `sway`), and at the
+branch's head, with the Return in their place, every piece passes (exit 0 in all three aspects). `bun test
+video/src/film2`: 318 pass at 0a7cc72 (alone, outside the shared tree); `tsc --noEmit`: no errors.
+
+**The light on the ground** (the median of the ground's pixels per section: RGB, R − B and luma in 8-bit levels):
+
+| Section | 16:9 | 1:1 | 9:16 |
+|---|---|---|---|
+| morning (the pre-roll) | not measured (at most 1.5 % ground) | 203/214/208, −5, 211 | 204/215/208, −4, 212 |
+| warm (the Drop) | 222/218/186, +36, 217 | 219/218/185, +34, 216 | 225/223/189, +36, 221 |
+| day (Ring 4) | 225/232/219, +6, 229 | 222/229/217, +5, 227 | 219/228/215, +4, 225 |
+| dusk | 181/191/197, −16, 189 (17 % darker) | 179/190/197, −18, 188 (17 % darker) | 175/186/194, −19, 184 (18 % darker) |
+| evening (the climax) | not measured (no ground: window and card) | not measured (no ground) | 224/217/187, +37, 216 (4 % darker) |
+| page (the title) | 247/247/244, +3, 247 | 244/244/242, +2, 244 | 244/244/242, +2, 244 |
+
+Every target holds where the ground shows (`lightArcProblems()` reports nothing on any reel): warm and evening 28–33
+levels warmer in R − B than day, dusk 17–18 % darker and bluer, evening a few per cent darker than day. In 16:9 and 1:1
+the climax is all window and card: there the evening shows on the slots' paper (the frames' pale pixels at R − B +8 to
++10 against the day's +3 to +4, 16:9) and on the ground at the cut into Kiln.
+
+**The content keeps moving** (the verifier's measure: px a frame at 1080 in the quadrant holding the moving content):
+
+| Stretch (reel frames) | 16:9 | 1:1 | 9:16 | before |
+|---|---|---|---|---|
+| the Drop's hold after the hit (300–450) | 0.42–0.46 | 0.41–0.46 | 0.58–0.63 | 0.07–0.15 (round 1) |
+| Ring 4: the card asking (1060–1120) | 0.39–0.40 | 0.40 | 0.40 | — |
+| Ring 4: the reads (1210–1500) | 0.40 | 0.40 | 0.40 | 0.40 |
+| Ring 4: the receipt (1650–1800) | 0.40–0.44 | 0.40–0.44 | 0.43–0.44 | — |
+| the Veil (2600–2900) | 0.32–0.57 | 0.45–0.65 | 0.27–0.96 | 0.14 (round 1) |
+| Kiln, from the landing to the leave (3700–4100) | 0.92 → 0.44, one way (right) | 0.94 → 0.40, one way (down) | 0.93 → 0.40, one way (down) | swayed through two stops |
+
+The title and the end card push in at about 0.3 px a frame at the corners (0.10–0.13 measured near the middle, where
+their lines are).
+
+**Looked at** (sheets every 2–60 frames at the review's and the verifier's frames and strips frame by frame; the lane's
+scratchpad, `eyes-r*` and `look-r*`): the Drop's pre-roll, hit, hold, the pair's lift and the whole Mac; Ring 4's
+arrival, the chapter's lift, the card asking with its three buttons, the click's hard cut to its answer, the reads, the
+glide down and the receipt with its label; the cascade's swaps crossing and its end (the fixed line lifting, the last
+item blurring out over about 8 frames, both gone before the cut); the Dusk's workspace handing its label to the palette
+(the two cross in 2 frames at under half strength), the palette's states, the rack, the Veil and its label leaving the
+frame together, the Dock, the crane cut and the menu bar; the climax's ask, "Its own tools." lifting, the cut into Kiln
+reading its label at once, the kept card landing and its hold travelling one way; one stone through the iris; the
+title, the facts' even gaps, page 2; the honest line's word-wave exit; every join.
+
+**Still placeholder-bound:** Ring 4, the Dusk and the climax are slots and published crops until the 2.0.0 captures
+exist, so those frames stay pale and sparse whatever the camera and the light do: the receipt is one line on the
+conversation's hatching, the cut into Kiln shows the conversation's label for 1.0 s before the kept card lands, and the
+16:9 and 1:1 climax shows no ground for the evening light.
 
 ## The lead's rulings (OVERRIDES §52), as decided and as built
 
