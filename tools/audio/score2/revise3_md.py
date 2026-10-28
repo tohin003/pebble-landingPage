@@ -360,9 +360,12 @@ def main():
           f"### 9.1 Checked: {ok} of {len(CS['checks'])} pass, {pend} pending, {bad} fail", ""] + checks_list()
     if CAN:
         L += ["", f"**The coda's mix-side checks and their canaries** (`tools/audio/score2/score_coda.py canaries`, "
-              f"`cuesheet/r3/coda_canaries.json`): the clean synthetic master passes ({'yes' if CAN['clean']['ok'] else 'NO'}), and "
+              f"`cuesheet/r3/coda_canaries.json`): the clean synthetic master passes ({'yes' if CAN['clean']['ok'] else 'NO'}), "
+              + (f"so does the same with the master's edge fades quantized to 24 bits ("
+                 f"{'yes' if CAN.get('clean_with_edge_fades_24bit', {}).get('ok') else 'NO'}), " if CAN.get('clean_with_edge_fades_24bit') else "")
+              + "and every planted fault is caught: "
               + "; ".join(f"{k} → {v['should_fail']} {'caught' if v['caught'] else 'MISSED'}" for k, v in CAN.items()
-                          if isinstance(v, dict) and k != "clean") + ". On the built master: "
+                          if isinstance(v, dict) and not k.startswith("clean")) + ". On the built master: "
               + ("see §12." if CODA_CHK else f"{PEND} (`score_coda.py check`).")]
     L += ["", "### 9.2 Open", "",
           "1. **The evening's heavy steps** (§9.3): the plan's measurement, the layers and both builds, the masters on both "

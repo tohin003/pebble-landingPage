@@ -6,7 +6,9 @@ under every frame, one one-shot on L-C2's landing, CC0 or ours, no music). These
 score_build.py made from the layer sheet (score_layers.py: the end card's room tone carried on without a restart to the
 coda's last frame, and the one stone tap):
 
-  C1 no run of digital zero anywhere in the master (no stretch of more than ZERO_RUN exactly-zero samples on both channels)
+  C1 no run of digital zero anywhere in the master (no stretch of more than ZERO_RUN exactly-zero samples on both channels),
+     outside the master's own edge fades (its first 5 ms and last 20 ms fade to zero by design; in 24 bits their quietest
+     samples are exact zeros, which is not digital silence in the film)
   C2 room tone under every frame of the coda: no 1/60-s frame more than HOLE_DB under the coda's median frame (the tap's
      second excluded)
   C3 the room tone about -52 LUFS before the master's gain (the build's layer record), and on each master within 2.5 LU
@@ -121,6 +123,9 @@ def peak_pitch_cents(y, t, target_hz):
     return fp, c - 1200 * round(c / 1200)
 
 
+EDGE_IN_S, EDGE_OUT_S = 0.01, 0.025  # the master's edge fades (score_layers.py 'edges': 5 ms in, 20 ms out) and a margin
+
+
 def check(masters, layers, T, gains_db, tune_hz=None):
     """masters: {name: stereo array}; layers: the build record's layers (id, take, licence, role, film_s, gain_db_rule,
     in_film_loudest_400ms_lufs, level_rule, target); T: {L0_s, tap_s, end_s}; gains_db: {name: the master's gain}."""
@@ -128,8 +133,13 @@ def check(masters, layers, T, gains_db, tune_hz=None):
     L0, tap, end = T["L0_s"], T["tap_s"], T["end_s"]
     C = res["checks"]
     # C1 digital zero, on every master, everywhere (the film's last samples fade by design, one sample reaches zero)
-    zr = {k: zero_runs(y) for k, y in masters.items()}
+    ei, eo = int(EDGE_IN_S * SR), int(EDGE_OUT_S * SR)
+    zr = {}
+    for k, y in masters.items():
+        n_, at_ = zero_runs(y[ei:len(y) - eo])
+        zr[k] = (n_, None if at_ is None else round(at_ + EDGE_IN_S, 4))
     C["C1_no_digital_zero_run"] = {"ok": all(v[0] <= ZERO_RUN for v in zr.values()),
+                                   "outside_the_edge_fades_s": [EDGE_IN_S, EDGE_OUT_S],
                                    "longest_run_samples": {k: {"samples": v[0], "at_s": v[1]} for k, v in zr.items()}}
     per = {}
     for k, y in masters.items():
@@ -250,12 +260,23 @@ def canaries():
     clean = check(m, layers, T, {"web": 0.0}, tune_hz=329.63)
     out["clean"] = {"ok": clean["ok"], "failing": [k for k, v in clean["checks"].items() if not v["ok"]],
                     "measured": clean["per_master"]["web"]}
+    # the master's own edge fades, quantized to 24 bits as the WAV holds them: exact zeros there are not a fault
+    y = m["web"].copy()
+    fi, fo = int(0.005 * SR), int(0.02 * SR)
+    y[:fi] *= np.linspace(0, 1, fi, dtype=np.float32)[:, None]
+    y[-fo:] *= np.linspace(1, 0, fo, dtype=np.float32)[:, None]
+    y = np.round(y * 2 ** 23) / 2 ** 23
+    e = check({"web": y.astype(np.float32)}, layers, T, {"web": 0.0}, tune_hz=329.63)
+    out["clean_with_edge_fades_24bit"] = {"ok": e["ok"], "failing": [k for k, v in e["checks"].items() if not v["ok"]],
+                                          "zero_runs_in_the_fades": [zero_runs(y[:fi])[0], zero_runs(y[-fo:])[0]]}
     for fault, want in CANARIES.items():
         m, layers, T = synth(fault)
         r = check(m, layers, T, {"web": 0.0}, tune_hz=329.63)
         failing = [k for k, v in r["checks"].items() if not v["ok"]]
         out[fault] = {"planted": fault, "should_fail": want, "failing": failing, "caught": want in failing}
-    out["all_ok"] = out["clean"]["ok"] and all(v["caught"] for k, v in out.items() if k not in ("clean",) and isinstance(v, dict))
+    out["all_ok"] = (out["clean"]["ok"] and out["clean_with_edge_fades_24bit"]["ok"]
+                     and all(v["caught"] for k, v in out.items() if k not in ("clean", "clean_with_edge_fades_24bit")
+                             and isinstance(v, dict)))
     return out
 
 
