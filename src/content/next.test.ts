@@ -7,7 +7,8 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { checkTwoTone } from "@/components/ui/twoTone";
-import { NEXT_NEVER, NEXT_NEVER_PHRASES, comingNext, comingNextShown, versionAtLeast } from "./next";
+import { COMING_NEVER, COMING_NEVER_PHRASES } from "../../shared/coming/never";
+import { NEXT_NEVER, NEXT_NEVER_PHRASES, comingNext, comingNextShown, sameLine, versionAtLeast } from "./next";
 import { releaseFacts } from "./releaseFacts";
 import { jsonLdString, llmsTxt, llmsTxtFor, openGraphFor, seo, softwareApplicationJsonLd, twitterCard } from "./seo";
 
@@ -76,8 +77,26 @@ describe("the never-rules (OVERRIDES §62; POSTCREDIT_DESIGN §5, C1 and C2)", (
       "COMING NEXT: learning while resting.",
       "Coming next: learning while resting 🌙",
       "Learning while resting ships with Pebble.",
+      // the gaps the post-credit review's probe found (P2-3): plurals, shipping, a build, abbreviations, a season,
+      // and overclaims of memory
+      "Coming in future releases.",
+      "Coming with the next updates.",
+      "Coming in later versions.",
+      "Shipping soon.",
+      "Coming in a future build.",
+      "It remembers everything.",
+      "It learns from all your work.",
+      "It always learns from you.",
+      "Coming in Oct.",
+      "Coming next season.",
     ];
     expect(canaries.filter((text) => breaks(text).length === 0)).toEqual([]);
+  });
+
+  test("one rule set with the film's post-credit scene: the page reads shared/coming/never.ts, rule for rule", () => {
+    expect(NEXT_NEVER_PHRASES).toBe(COMING_NEVER_PHRASES);
+    expect(NEXT_NEVER.length).toBe(COMING_NEVER.length);
+    NEXT_NEVER.forEach((re, i) => expect(re).toBe(COMING_NEVER[i]!.re));
   });
 
   test("each of §62's four phrases fails on its own rule", () => {
@@ -96,7 +115,7 @@ describe("the never-rules (OVERRIDES §62; POSTCREDIT_DESIGN §5, C1 and C2)", (
       comingNext.lead,
       comingNext.limit,
       "Pebble rests.",
-      "Soon, it will learn while it does.",
+      "Soon, it may learn while it does.",
       "Not built yet.",
       "Soon",
       "Coming next",
@@ -114,7 +133,7 @@ describe("the never-rules (OVERRIDES §62; POSTCREDIT_DESIGN §5, C1 and C2)", (
   });
 });
 
-describe("the gate: the hint shows only from 2.0.0's page on, while the feature is planned (C13)", () => {
+describe("the gate: the hint shows only on 2.0.x pages, from 2.0.0's on, while the feature is planned (C13)", () => {
   test("hidden before 2.0.0, for a pre-release or a malformed version, and once withdrawn", () => {
     for (const version of ["1.5.0", "1.9.20", "1.10.0", "1.99.99", "2.0.0-rc.1", "v2.0.0", "2.0", "2", "", "two"])
       expect({ version, shown: comingNextShown(version) }).toEqual({ version, shown: false });
@@ -122,17 +141,25 @@ describe("the gate: the hint shows only from 2.0.0's page on, while the feature 
     expect(comingNextShown("3.0.0", false)).toBe(false);
   });
 
-  test("shown from 2.0.0 on, compared as numbers (10.0.0 is later than 2.0.0)", () => {
-    for (const version of ["2.0.0", " 2.0.0 ", "2.0.1", "2.1.0", "3.0.0", "10.0.0"])
+  test("shown on 2.0.0's own line, compared as numbers (2.0.10 is in it)", () => {
+    for (const version of ["2.0.0", " 2.0.0 ", "2.0.1", "2.0.4", "2.0.10"])
       expect({ version, shown: comingNextShown(version) }).toEqual({ version, shown: true });
     expect(versionAtLeast("1.10.0", "1.9.0")).toBe(true);
     expect(versionAtLeast("1.9.0", "1.10.0")).toBe(false);
   });
 
+  test("the canary: a later minor or major hides it by itself (the page never shows 2.1.0 beside \"Not built yet.\")", () => {
+    for (const version of ["2.1.0", "2.1.3", "2.2.0", "2.10.0", "3.0.0", "10.0.0"])
+      expect({ version, shown: comingNextShown(version) }).toEqual({ version, shown: false });
+    expect(sameLine("2.0.7", comingNext.from)).toBe(true);
+    expect(sameLine("2.1.0", comingNext.from)).toBe(false);
+    expect(sameLine("12.0.0", comingNext.from)).toBe(false);
+  });
+
   test("by default it follows the release facts, which it never changes", () => {
     expect(comingNext.from).toBe("2.0.0");
     expect(comingNext.planned).toBe(true);
-    expect(comingNextShown()).toBe(versionAtLeast(releaseFacts.version, comingNext.from));
+    expect(comingNextShown()).toBe(versionAtLeast(releaseFacts.version, comingNext.from) && sameLine(releaseFacts.version, comingNext.from));
     // the gate only reads the facts: nothing in next.ts writes to them
     expect(readFileSync(path.join(HERE, "next.ts"), "utf8")).not.toMatch(/releaseFacts\.\w+\s*=[^=]/);
   });
