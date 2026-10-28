@@ -18,6 +18,11 @@ lanes' timing source).
 Every time in the output is resolved from a source time on a cue (film = cue film_in + (src - src_in)), so the beat
 sheet cannot drift from the music. Frames are given at the spec's frame rate. No audio is read or written.
 
+Before a plan has been measured (revision 3 was planned during the release session's held-out run, OVERRIDES §68: the
+spec names its metrics file and it does not exist yet), every measured field is written as pending and every check that
+needs the measurement reports PENDING, never a number from another plan. The timing, the blocks and the pure checks are
+complete without it, so the picture lanes can work from the sheet at once.
+
   python3 -I tools/audio/score2/cue_sheet.py [WORK_DIR]  ->  WORK_DIR/../CUE_SHEET.json, prints the checks
 """
 import json
@@ -55,6 +60,11 @@ EXTRA = {k: _opt(os.path.join(R2, k)) for k in ("main_g1b.metrics.json", "title_
 EXTRA["chosen_title_variant"] = (EXTRA.get("g1_decision.json") or {}).get("title_variant")
 if os.path.exists(os.path.join(ARCH, "plan_main.json")):
     EXTRA["archive_plans"] = {"main": load(os.path.join(ARCH, "plan_main.json")), "x40": load(os.path.join(ARCH, "plan_x40.json"))}
+PREV = SPEC.get("previous")  # the revision this one revises (revision 3 names revision 2's archived sheet and plan)
+PREV_SHEET = _opt(os.path.join(WORK, PREV["sheet"])) if PREV else None
+PREV_PLAN = _opt(os.path.join(WORK, PREV["plan"])) if PREV else None
+PENDING = ("pending: this plan's own measurement, assembled as built (revise_measure.py plan), runs after the release "
+           "session's hold lifts (OVERRIDES §68); nothing here is carried over from another plan")
 MM = load(os.path.join(SCORE2, "MUSIC_MAP.json"))
 FPS = SPEC["frame_rate"]
 MAPS = {}
@@ -111,10 +121,10 @@ GRIDS = {"BornOfTheSky": 0.49994 * 4, "YourBreath": 0.50002 * 4, "TechnoFestVibe
 def build_film(key):
     sp = SPEC[key]
     plan = load(os.path.join(WORK, sp["plan"]))
-    met = load(os.path.join(WORK, sp["metrics"]))
+    met = _opt(os.path.join(WORK, sp["metrics"]))  # None until the plan is measured (the evening, for revision 3)
     cues = {c["id"]: c for c in plan["cues"]}
     seams = {s["id"]: s for s in plan["seams"]}
-    msm = {s["id"]: s for s in met["seams"]}
+    msm = {s["id"]: s for s in met["seams"]} if met else {}
     out_cues = []
     for c in plan["cues"]:
         tm = track_meta(c["track"])
@@ -155,16 +165,20 @@ def build_film(key):
         })
     joins = []
     for jid, s in seams.items():
-        m = msm[jid]; a = sp["joins"][jid]
+        a = sp["joins"][jid]
+        if met:
+            m = msm[jid]
+            measured = {**{k: m[k] for k in ("xfade_s", "film_lufs_3s_before", "film_lufs_3s_after", "film_step_3s_lu",
+                                             "film_step_400ms_lu", "incoming_source_own_step_3s_lu", "lsd_film_db",
+                                             "lsd_incoming_source_db", "extra_lsd_db", "hf_click_film_db", "extra_hf_db",
+                                             "attack_film_vs_source_db", "gain_db_out", "gain_db_in")},
+                        **met.get("extras", {}).get("seams", {}).get(jid, {})}
+        else:
+            measured = {"pending": PENDING}
         joins.append({"id": jid, "name": a["name"], "film_s": round(s["t"], 4), "film": mmss(s["t"]), "frame": round(s["t"] * FPS),
                       "incoming_starts_film_s": round(s.get("in_film", s["t"]), 4),
                       "from": s["from"], "to": s["to"], "methods": a["methods"], "how": a["how"], "motivation": a["motivation"],
-                      "tempo": a["tempo"], "key": a["key"],
-                      "measured": {**{k: m[k] for k in ("xfade_s", "film_lufs_3s_before", "film_lufs_3s_after", "film_step_3s_lu",
-                                                        "film_step_400ms_lu", "incoming_source_own_step_3s_lu", "lsd_film_db",
-                                                        "lsd_incoming_source_db", "extra_lsd_db", "hf_click_film_db", "extra_hf_db",
-                                                        "attack_film_vs_source_db", "gain_db_out", "gain_db_in")},
-                                   **met.get("extras", {}).get("seams", {}).get(jid, {})}})
+                      "tempo": a["tempo"], "key": a["key"], "measured": measured})
     # each cue carries its own entry and exit methods and the measured levels of the blocks it plays under
     jby = {j["id"]: j for j in joins}
     for oc in out_cues:
@@ -178,10 +192,12 @@ def build_film(key):
                 oc[side] = {"join": None, "how": note}
         f0, f1 = oc["film"]["in_s"], oc["film"]["out_s"]
         oc["levels"] = {"gain_db_points_film_s": oc["gain_db_points_film_s"],
-                        "measured_blocks": [b for b in met["blocks"] if min(f1, b["film"][1]) - max(f0, b["film"][0]) > 0.5]}
+                        "measured_blocks": ([b for b in met["blocks"] if min(f1, b["film"][1]) - max(f0, b["film"][0]) > 0.5]
+                                            if met else PENDING)}
     res = {"plan": sp["plan"], "film_length_s": sp["end_film_s"], "film_length": mmss(sp["end_film_s"]),
-           "film_length_frames": round(sp["end_film_s"] * FPS), "bed": met["bed"], "blocks_measured": met["blocks"],
-           "cues": out_cues, "joins": joins}
+           "film_length_frames": round(sp["end_film_s"] * FPS), "bed": met["bed"] if met else None,
+           "blocks_measured": met["blocks"] if met else [], "measured": bool(met),
+           **({} if met else {"measurement": PENDING}), "cues": out_cues, "joins": joins}
     # shots or slots
     rows = sp.get("shots") or sp.get("slots")
     seq = []
@@ -208,6 +224,8 @@ def build_film(key):
                       "dur_frames": round(t1 * FPS) - round(t0 * FPS), "anchor": anc, "music_under": ", ".join(under),
                       "music_cues": under, "what": what})
     res["shots" if "shots" in sp else "slots"] = shots
+    if sp.get("coda"):  # the post-credit scene's span after the end card (revision 3, OVERRIDES §65)
+        res["coda"] = sp["coda"]
     if "sync_points" in sp:
         res["sync_points"] = [{"film_s": round(film_of(cues, a) if isinstance(a, dict) else a, 4),
                                "film": mmss(film_of(cues, a) if isinstance(a, dict) else a),
@@ -236,6 +254,10 @@ def checks(main, plan, met, x40, xplan, xmet):
 
     def add(name, ok, detail):
         out.append({"check": name, "ok": bool(ok), "detail": detail})
+
+    def pend(name, what):
+        """A check that needs the plan's own measurement, before it exists: neither a pass nor a failure."""
+        out.append({"check": name, "ok": None, "pending": True, "detail": f"PENDING ({what}): {PENDING}"})
 
     for film, pl, res in (("main", plan, main), ("x40", xplan, x40)):
         L = res["film_length_s"]
@@ -270,29 +292,43 @@ def checks(main, plan, met, x40, xplan, xmet):
         add(f"{film}: shots contiguous from 0", contiguous, f"{len(rows)} rows, last ends {rows[-1]['end']}")
         mn = min(r["dur_s"] for r in rows)
         add(f"{film}: every shot at least 1.9 s", mn >= 1.9, f"shortest {mn:.2f} s ({min(rows, key=lambda r: r['dur_s'])['id']})")
-        add(f"{film}: no audio written", res["bed"] is not None and "none" in (met if film == "main" else xmet)["audio_written"],
-            (met if film == "main" else xmet)["audio_written"])
-    b = {x["label"]: x for x in main["blocks_measured"]}
+        m_ = met if film == "main" else xmet
+        if m_ is None:
+            pend(f"{film}: no audio written", "the measurement's own record")
+        else:
+            add(f"{film}: no audio written", res["bed"] is not None and "none" in m_["audio_written"], m_["audio_written"])
     drop = next(s for s in main["shots"] if s["id"] == "S06")["start_s"]
     add("main: the Drop at 14-20 % of the film", 14 <= 100 * drop / main["film_length_s"] <= 20,
         f"{drop:.2f} s = {100 * drop / main['film_length_s']:.1f} %")
-    rings_max = max(b["Rings 1-2"]["st_max"], b["Rings 3-4"]["st_max"])
-    add("main: the climax is the loudest, 1.5 LU or more above any ring moment (short-term)",
-        b["Climax"]["st_max"] >= rings_max + 1.5, f"climax {b['Climax']['st_max']} against the rings' {rings_max} LUFS short-term")
-    rings_med = min(b["Rings 1-2"]["st_median"], b["Rings 3-4"]["st_median"])
-    add("main: the quiet passage sits 6 LU or more under the rings (median short-term)",
-        b["Dusk"]["st_median"] <= rings_med - 6, f"Dusk {b['Dusk']['st_median']} against the rings' {rings_med}")
-    add("main: the Drop is a step of +3 LU or more", main["joins"][0]["measured"]["film_step_3s_lu"] >= 3,
-        f"J1 {main['joins'][0]['measured']['film_step_3s_lu']} LU over 3 s, {main['joins'][0]['measured']['film_step_400ms_lu']} LU over 400 ms")
-    unint = [j for j in main["joins"] if j["id"] in ("J2", "M2s", "M3s", "F4")]
-    add("main: unplanned loudness jumps at most 1.5 LU (J2 and the splices M2s, M3s, F4)",
-        all(abs(j["measured"]["film_step_3s_lu"]) <= 1.5 for j in unint),
-        "; ".join(f"{j['id']} {j['measured']['film_step_3s_lu']} LU" for j in unint))
-    j5 = next(j for j in main["joins"] if j["id"] == "J5")
-    add("main: J5 is the merge's planned dip, -1.5 to -4.0 LU over 3 s (Loops' merge ran 2-4 LU quieter)",
-        -4.0 <= j5["measured"]["film_step_3s_lu"] <= -1.5,
-        f"J5 {j5['measured']['film_step_3s_lu']} LU over 3 s, {j5['measured']['film_step_400ms_lu']} LU over 400 ms")
-    ex = met.get("extras", {})
+    splices = [j for j in main["joins"]
+               if {c["id"]: c for c in plan["cues"]}[j["from"]]["track"] == {c["id"]: c for c in plan["cues"]}[j["to"]]["track"]]
+    unint_ids = ["J2"] + [j["id"] for j in splices]
+    if met:
+        b = {x["label"]: x for x in main["blocks_measured"]}
+        rings_max = max(b["Rings 1-2"]["st_max"], b["Rings 3-4"]["st_max"])
+        add("main: the climax is the loudest, 1.5 LU or more above any ring moment (short-term)",
+            b["Climax"]["st_max"] >= rings_max + 1.5, f"climax {b['Climax']['st_max']} against the rings' {rings_max} LUFS short-term")
+        rings_med = min(b["Rings 1-2"]["st_median"], b["Rings 3-4"]["st_median"])
+        add("main: the quiet passage sits 6 LU or more under the rings (median short-term)",
+            b["Dusk"]["st_median"] <= rings_med - 6, f"Dusk {b['Dusk']['st_median']} against the rings' {rings_med}")
+        add("main: the Drop is a step of +3 LU or more", main["joins"][0]["measured"]["film_step_3s_lu"] >= 3,
+            f"J1 {main['joins'][0]['measured']['film_step_3s_lu']} LU over 3 s, {main['joins'][0]['measured']['film_step_400ms_lu']} LU over 400 ms")
+        unint = [j for j in main["joins"] if j["id"] in unint_ids]
+        add(f"main: unplanned loudness jumps at most 1.5 LU (J2 and the splices {', '.join(unint_ids[1:])})",
+            all(abs(j["measured"]["film_step_3s_lu"]) <= 1.5 for j in unint),
+            "; ".join(f"{j['id']} {j['measured']['film_step_3s_lu']} LU" for j in unint))
+        j5 = next(j for j in main["joins"] if j["id"] == "J5")
+        add("main: J5 is the merge's planned dip, -1.5 to -4.0 LU over 3 s (Loops' merge ran 2-4 LU quieter)",
+            -4.0 <= j5["measured"]["film_step_3s_lu"] <= -1.5,
+            f"J5 {j5['measured']['film_step_3s_lu']} LU over 3 s, {j5['measured']['film_step_400ms_lu']} LU over 400 ms")
+    else:
+        for nm in ("main: the climax is the loudest, 1.5 LU or more above any ring moment (short-term)",
+                   "main: the quiet passage sits 6 LU or more under the rings (median short-term)",
+                   "main: the Drop is a step of +3 LU or more",
+                   f"main: unplanned loudness jumps at most 1.5 LU (J2 and the splices {', '.join(unint_ids[1:])})",
+                   "main: J5 is the merge's planned dip, -1.5 to -4.0 LU over 3 s (Loops' merge ran 2-4 LU quieter)"):
+            pend(nm, "loudness on the bed")
+    ex = (met or {}).get("extras", {})
     if ex.get("return_vs_climax"):
         rv, ta = ex["return_vs_climax"], ex["title_arrival"]
         add("main: the Return adds no new peak (short-term max at most 0.5 LU over the climax's)",
@@ -301,8 +337,13 @@ def checks(main, plan, met, x40, xplan, xmet):
             f"merge against rush {rv['merge_vs_rush_lu']} LU")
         add("main: the title is an arrival (the music's second after its downbeat at least as loud as the second before)",
             ta["step_1s_lu"] >= 0.0, f"{ta['lufs_1s_before']} to {ta['lufs_1s_after']} LUFS ({ta['step_1s_lu']} LU)")
+    elif met is None:
+        for nm in ("main: the Return adds no new peak (short-term max at most 0.5 LU over the climax's)",
+                   "main: the merge dips under the rush (integrated, by 1.5 LU or more)",
+                   "main: the title is an arrival (the music's second after its downbeat at least as loud as the second before)"):
+            pend(nm, "loudness on the bed")
     cues = {c["id"]: c for c in plan["cues"]}
-    for jid in ("M2s", "M3s", "F4"):
+    for jid in [j["id"] for j in splices]:
         sm = next((s_ for s_ in plan["seams"] if s_["id"] == jid), None)
         if sm is None:
             continue
@@ -311,6 +352,10 @@ def checks(main, plan, met, x40, xplan, xmet):
         add(f"main: {jid} is a forward splice at bar lines (in the same track, in its order)",
             a["track"] == b["track"] and b["src_in"] > a["src_out"] and abs(oo) <= 2 and abs(oi) <= 2,
             f"{a['track']} out {mmss(a['src_out'])} (downbeat {oo} ms), in {mmss(b['src_in'])} (downbeat {oi} ms)")
+        if not met:
+            pend(f"main: {jid}'s spectral step is within the track's own bar changes (at or under their 95th percentile)",
+                 "the spectral step")
+            continue
         mj = next(j for j in main["joins"] if j["id"] == jid)["measured"]
         pc = mj.get("lsd_percentile_of_incoming_own_downbeats")
         add(f"main: {jid}'s spectral step is within the track's own bar changes (at or under their 95th percentile)",
@@ -325,10 +370,20 @@ def checks(main, plan, met, x40, xplan, xmet):
     ta_all = [v for k in ("title_A.json", "title_A_r2.json") for v in (EXTRA.get(k) or {}).get("variants", [])]
     if ta_all:  # the composite the sheet carries, from round 1 or round 2 (r2/title_round2_rule.json)
         ch = next((v for v in ta_all if v["id"] == EXTRA.get("chosen_title_variant")), None)
-        if ch:
+        if ch and PREV:  # OVERRIDES §66 (R-07): the old classifier gate is a warning from now on, never a gate
+            out.append({"check": "main: the legacy classifier around the swell and the title (a warning since OVERRIDES §66 "
+                                 "R-07, never a gate)", "ok": True, "warn": ch["verdict"] == "fail",
+                        "detail": f"{'WARN' if ch['verdict'] == 'fail' else 'clear'}: {ch['id']}: foghorn max {ch['foghorn_max']} "
+                                  f"at {ch['foghorn_max_at']} s over {ch['windows']} windows; watched {ch['watched_max']} "
+                                  "(revision 2's measurement of the same audio, 232 frames earlier: the title's music and "
+                                  "composite are unchanged in revision 3; the reading follows where the 3-s windows fall, "
+                                  "0.42-0.78 for the same music, CUE_SHEET §12.5)"})
+        elif ch:
             add("main: no 'foghorn' (or phone, voice or alarm) reading at 0.30 or more in any 3 s window around the "
                 "swell and the title (the composite the sheet carries, 0.5 s grid)", ch["verdict"] != "fail",
-                f"{ch['id']}: foghorn max {ch['foghorn_max']} at {ch['foghorn_max_at']} s over {ch['windows']} windows; watched {ch['watched_max']}")
+                f"{ch['id']}: foghorn max {ch['foghorn_max']} at {ch['foghorn_max_at']} s over {ch['windows']} windows; watched {ch['watched_max']}"
+                + (" (revision 2's measurement of the same audio, 232 frames earlier: the title's music and composite "
+                   "are unchanged in revision 3)" if PREV else ""))
     arch = EXTRA.get("archive_plans")
     if arch:
         m1_old = next(c for c in arch["main"]["cues"] if c["id"] == "M1")
@@ -347,16 +402,101 @@ def checks(main, plan, met, x40, xplan, xmet):
     add("the wall and the convergence are gone from every cue, join, block, shot, slot and sync point",
         "the wall" not in words and "wall" not in words and "convergence" not in words.replace("a2 convergence", ""),
         "searched the structural parts of the sheet (the revision log may name them)")
-    add("main: no click at any seam (extra 8-16 kHz under +3 dB, except where a drop's transient is the seam)",
-        all(j["measured"]["extra_hf_db"] is None or j["measured"]["extra_hf_db"] < 3 or j["id"] == "J1" for j in main["joins"]),
-        "; ".join(f"{j['id']} {j['measured']['extra_hf_db']}" for j in main["joins"]) + " (J1: B2's drop transient against a quiet pad; no click line on the spectrogram)")
+    if met:
+        add("main: no click at any seam (extra 8-16 kHz under +3 dB, except where a drop's transient is the seam)",
+            all(j["measured"]["extra_hf_db"] is None or j["measured"]["extra_hf_db"] < 3 or j["id"] == "J1" for j in main["joins"]),
+            "; ".join(f"{j['id']} {j['measured']['extra_hf_db']}" for j in main["joins"]) + " (J1: B2's drop transient against a quiet pad; no click line on the spectrogram)")
+    else:
+        pend("main: no click at any seam (extra 8-16 kHz under +3 dB, except where a drop's transient is the seam)", "clicks")
     for act, a0, a1 in SPEC["main"]["acts"]:
         ids = [s["id"] for s in main["shots"]]
         seg = main["shots"][ids.index(a0):ids.index(a1) + 1]
         dur = seg[-1]["end_s"] - seg[0]["start_s"]
         rate = (len(seg) - (0 if a0 == "S01" else 0)) / (dur / 60)
         add(f"main: cut rate in '{act}' at most 18 a minute", rate <= 18, f"{len(seg)} shots in {dur:.1f} s = {rate:.1f} a minute")
+    if PREV_PLAN:
+        out.extend(revision_checks(main, plan))
     return out
+
+
+def revision_checks(main, plan):
+    """Revision 3's own pure checks (OVERRIDES §66-§68): the bars Ring 4, Cascade 4 and ⌘K get, Enter on B4's stop,
+    the hard sync points on their music, every block on its music, and what moved against revision 2."""
+    out = []
+
+    def add(name, ok, detail):
+        out.append({"check": name, "ok": bool(ok), "detail": detail})
+
+    cues = {c["id"]: c for c in plan["cues"]}
+    B = {b["block"]: b for b in main["blocks"]}
+    shots = {s["id"]: s for s in main["shots"]}
+    b4 = cues.get("M3")
+    if b4 and b4["track"] == "TechnoFestVibes":
+        bar = GRIDS["TechnoFestVibes"]
+        want = {"Ring 4": 5.5, "Cascade 4": 2.5}
+        got = {k: B[k]["dur_s"] / bar for k in want if k in B}
+        got["⌘K (S20)"] = shots["S20"]["dur_s"] / bar
+        want["⌘K (S20)"] = 2.0
+        add("main: Ring 4, Cascade 4 and ⌘K hold 5.5, 2.5 and 2 bars of B4 (OVERRIDES §68; the set pieces' 639 and 290 "
+            "frames)", all(abs(got[k] - want[k]) * bar * FPS <= 1.0 for k in want),
+            "; ".join(f"{k} {got[k]:.3f} bars ({B[k]['dur_s'] if k in B else shots['S20']['dur_s']:.3f} s, "
+                      f"{(B[k] if k in B else shots['S20'])['dur_s'] * FPS:.1f} frames)" for k in want))
+        stop = film_of(cues, {"cue": "M3", "src": b4["src_out"]})
+        k, d, off = nearest_db("TechnoFestVibes", b4["src_out"])
+        add("main: Enter lands on B4's own stop (bar 64's downbeat), where S21 starts and J3 is",
+            k == 64 and abs(off) <= 2 and abs(shots["S21"]["start_s"] - stop) < 0.5 / FPS
+            and abs(next(s for s in plan["seams"] if s["id"] == "J3")["t"] - stop) < 0.5 / FPS,
+            f"B4 bar {k} at {mmss(d)} ({off} ms from M3's out-point); S21 at {shots['S21']['start']}, frame {shots['S21']['start_frame']}")
+    hard = []
+    for name, cid, src, track, barno in (("the kept card on B2's lift (bar 44)", "M5", 88.5302, "YourBreath", 44),
+                                         ("J5 on A4's bar 80", "M6a", 160.5249, "BornOfTheSky", 80),
+                                         ("the title on A4's bar 82", "M6a", 164.5244, "BornOfTheSky", 82)):
+        k, d, off = nearest_db(track, src)
+        hard.append((name, k == barno and abs(off) <= 2, f"{name}: {mmss(film_of(cues, {'cue': cid, 'src': src}))} on bar {k} ({off} ms)"))
+    add("main: every hard sync point after Ring 4 stays on its own music", all(h[1] for h in hard), "; ".join(h[2] for h in hard))
+    beats_off = []
+    for blk in ("Ring 2", "Ring 3", "Ring 4", "Cascade 4", "Quiet passage", "Climax", "The Return", "Title", "End card"):
+        if blk not in B:
+            continue
+        t = B[blk]["start_s"]
+        c = next((c for c in plan["cues"] if c["film_in"] - 1e-6 <= t < c["film_in"] + (c["src_out"] - c["src_in"]) - 1e-6
+                  and c["id"] != "M4"), None)
+        if c is None:
+            continue
+        src = c["src_in"] + (t - c["film_in"])
+        bts = tmap(c["track"])["beats_s"]
+        off = min(abs(x - src) for x in bts) * 1000
+        beats_off.append((blk, c["id"], off))
+    add("main: every block starts on a beat of the cue under it (OVERRIDES §52 L3d: a beat, a half bar or a phrase line)",
+        all(o <= 2.0 for _, _, o in beats_off), "; ".join(f"{b_} ({c_}) {o:.1f} ms" for b_, c_, o in beats_off))
+    po = {e["label"]: e["t"] for e in PREV_PLAN["events"]}
+    pn = {e["label"]: e["t"] for e in plan["events"]}
+    sh = plan.get("revision", {}).get("shift_after_enter_frames")
+    moved = [(lab, round(pn[lab] * FPS) - round(po[lab] * FPS)) for lab in ("kept card", "R0", "R480", "TITLE", "end card", "page 2")
+             if lab in po and lab in pn]
+    moved.append(("the end", round(plan["end_film_s"] * FPS) - round(PREV_PLAN["end_film_s"] * FPS)))
+    add(f"main: everything after Enter moves by exactly {sh} frames against {PREV['label']}",
+        sh is not None and all(d == sh for _, d in moved), "; ".join(f"{lab} {d:+d}" for lab, d in moved))
+    pj2 = next(s for s in PREV_PLAN["seams"] if s["id"] == "J2")["t"]
+    nj2 = next(s for s in plan["seams"] if s["id"] == "J2")["t"]
+    add(f"main: no anchor before Ring 4 moves against {PREV['label']} (J2 within half a frame; Ring 2, Ring 3, S16 and Ring 4 "
+        "on the same frames)",
+        abs(nj2 - pj2) * FPS < 0.5 and round(pn["Ring 4"] * FPS) == round(po["Ring 4"] * FPS)
+        and all(round(B[k]["start_s"] * FPS) == round(PREV_SHEET_BLOCK(k) * FPS) for k in ("Ring 2", "Ring 3", "Ring 4"))
+        and shots["S16"]["start_frame"] == round(PREV_SHEET_SHOT("S16") * FPS),
+        f"J2 {1000 * (nj2 - pj2):+.2f} ms; Ring 4 frame {round(pn['Ring 4'] * FPS)} ({PREV['label']} {round(po['Ring 4'] * FPS)}); "
+        f"Ring 2 {B['Ring 2']['start']}, Ring 3 {B['Ring 3']['start']}")
+    return out
+
+
+def PREV_SHEET_BLOCK(name):
+    """A block's start in the previous revision's sheet (seconds)."""
+    return next(b["start_s"] for b in PREV_SHEET["main_film"]["blocks"] if b["block"] == name)
+
+
+def PREV_SHEET_SHOT(sid):
+    """A shot's start in the previous revision's sheet (seconds)."""
+    return next(x["start_s"] for x in PREV_SHEET["main_film"]["shots"] if x["id"] == sid)
 
 
 def return_frames(plan, met):
@@ -385,7 +525,7 @@ def return_frames(plan, met):
         rows.append({"R": R, "film_s": round(ft, 4), "film": mmss(ft), "frame": round(ft * FPS), "what": what})
     return {"R0_film_s": R0, "R0_frame": round(R0 * FPS), "title_film_s": title, "title_frame": round(title * FPS),
             "marks": rows, "bar_lines": bars, "bars_per_120_frames": "B2: 120.006 frames a bar; A4: 119.99",
-            "per_bar": met.get("extras", {}).get("return_bars")}
+            "per_bar": (met or {}).get("extras", {}).get("return_bars") if met else PENDING}
 
 
 def g1_record(ma, mb):
@@ -416,13 +556,20 @@ def beat_sheet(sheet, plan):
     if os.path.exists(arch):
         for b in load(arch)["main_film"]["blocks"]:
             old.setdefault(b["block"], b)
+    prev = {}  # the revision this one revises (revision 3: revision 2), for the "before" column
+    if PREV_SHEET:
+        for b in PREV_SHEET["main_film"]["blocks"]:
+            prev.setdefault(b["block"], b)
+    rev_n = SPEC["version"].split("(")[0].replace("cue sheet ", "").strip()  # "revision 3"
     rows = []
     for b in m["blocks"]:
         o = old.get(b["block"])
         rows.append({"block": b["block"], "start_s": b["start_s"], "end_s": b["end_s"], "start": b["start"], "end": b["end"],
                      "start_frame": round(b["start_s"] * FPS), "end_frame": round(b["end_s"] * FPS), "dur_s": b["dur_s"],
                      "start_pct": b["start_pct"], "music": b["music"],
-                     "on_22_13": f"{o['start']}-{o['end']}" if o else None})
+                     "on_22_13": f"{o['start']}-{o['end']}" if o else None,
+                     **({f"on_{PREV['label'].replace(' ', '_')}": (f"{prev[b['block']]['start']}-{prev[b['block']]['end']}"
+                                                                   if b["block"] in prev else None)} if PREV else {})})
     gone = []
     for name, why in (("Cascade 1", "out of the main film (§61: 35 readable features); its features are in the Return's "
                                     "outer ring, the tour and their short"),
@@ -432,28 +579,47 @@ def beat_sheet(sheet, plan):
         if o:
             gone.append({"block": "22:13's S25 (the convergence)" if name == "Convergence" else name,
                          "on_22_13": f"{o['start']}-{o['end']}", "now": why})
-    out = {"title": "Ripples: the picture beat sheet (revision 2, the Return)", "version": sheet["version"],
+    out = {"title": f"Ripples: the picture beat sheet ({rev_n})", "version": sheet["version"],
            "frame_rate": FPS, "film_length_s": m["film_length_s"], "film_length": m["film_length"],
            "film_length_frames": m["film_length_frames"], "blocks": rows, "left_the_film": gone, "return": m.get("return"),
-           "shots": m["shots"], "sync_points": m["sync_points"],
+           "shots": m["shots"], "sync_points": m["sync_points"], **({"coda": m["coda"]} if m.get("coda") else {}),
            "rule": "every time is a source time on a cue (film = cue film_in + (src - src_in)); the incoming shot's first "
                    "readable frame lands on a beat, a half bar or a phrase line; a reading hold is never shortened; only "
                    "hits snap (OVERRIDES §52 L3d)"}
     with open(os.path.join(SCORE2, "BEAT_SHEET.json"), "w") as fh:
         json.dump(out, fh, indent=1, ensure_ascii=False)
+    pk = f"on_{PREV['label'].replace(' ', '_')}" if PREV else "on_22_13"
+    pl = PREV["label"].capitalize() if PREV else "On 22:13"
     L = ["# Ripples: the picture beat sheet", "",
-         f"Revision 2, generated by `tools/audio/score2/cue_sheet.py` from the cue plans and their measurements, the same data as "
-         f"`CUE_SHEET.json`. It is the picture lanes' timing source. Film length {m['film_length']} ({m['film_length_frames']} "
-         f"frames at {FPS} fps). Frames are film frames at {FPS} fps (round(seconds x {FPS})).", "",
+         f"{rev_n.capitalize()}, generated by `tools/audio/score2/cue_sheet.py` from the cue plans, the same data as "
+         f"`CUE_SHEET.json` ({SPEC['version']}). It is the picture lanes' timing source. Film length {m['film_length']} "
+         f"({m['film_length_frames']} frames at {FPS} fps). Frames are film frames at {FPS} fps (round(seconds x {FPS})).",
+         *(["", f"The music's measurement as built is {'done' if m.get('measured') else 'PENDING'}: "
+                + ("every time here is from the plan." if not m.get("measured") else "see CUE_SHEET.md."),
+            ] if PREV else []), "",
          "## The blocks (MONTAGE_DESIGN §5.2, moved to the revised music)", "",
-         "| Block | Film (frames) | Length, s | % | Music | On 22:13 |", "|---|---|---|---|---|---|"]
+         f"| Block | Film (frames) | Length, s | % | Music | {pl} |", "|---|---|---|---|---|---|"]
     for r_ in rows:
         L.append(f"| {r_['block']} | {r_['start']}-{r_['end']} ({r_['start_frame']}-{r_['end_frame']}) | {r_['dur_s']:.2f} | "
-                 f"{r_['start_pct']} | {', '.join(r_['music'])} | {r_['on_22_13'] or 'new'} |")
+                 f"{r_['start_pct']} | {', '.join(r_['music'])} | {r_.get(pk) or 'new'} |")
     L += ["", "Left the film since 22:13:", ""] + [f"- {g['block']} ({g['on_22_13']}): {g['now']}." for g in gone]
-    L += ["", "After the end card (OVERRIDES §62, D157): a breath of room tone, then the post-credit sneak peek, its own "
-              "scene with its own small sound. It is not timed here; its length counts against X's 2:20 cap "
-              f"({140.0 - m['film_length_s']:.2f} s left), and if it doesn't fit, the X version ends at the end card."]
+    cd = m.get("coda")
+    if cd:
+        pt = cd.get("planned") or {}
+        L += ["", f"After the end card (OVERRIDES §62, §65; D157): the post-credit scene starts on frame {cd['L0_frame']} "
+                  f"({mmss(cd['L0_film_s'])}), the end card's true ending. No music: the end card's room tone carries on "
+                  "without a restart to the coda's last frame, and the scene's one stone tap peaks on L-C2's landing. "
+                  + (f"As planned when this sheet was written: the tap on L{pt['line2']} (frame {pt['tap_frame']}, "
+                     f"{mmss(pt['tap_film_s'])}), the last frame L{pt['end'] - 1} (frame {pt['end_frame'] - 1}). "
+                     if pt else "")
+                  + "The build reads the coda's timing from its plan again (tools/audio/score2/coda_timing.ts); its frames "
+                  f"are the coda lane's. The X version is the main film to frame {cd['L0_frame']} ({mmss(cd['L0_film_s'])}, "
+                  f"{140.0 - cd['L0_film_s']:.2f} s under X's 2:20): the coda does not fit there, so the X version ends at "
+                  "the end card."]
+    else:
+        L += ["", "After the end card (OVERRIDES §62, D157): a breath of room tone, then the post-credit sneak peek, its own "
+                  "scene with its own small sound. It is not timed here; its length counts against X's 2:20 cap "
+                  f"({140.0 - m['film_length_s']:.2f} s left), and if it doesn't fit, the X version ends at the end card."]
     rt = m.get("return")
     if rt:
         L += ["", "## The Return in R-frames (MONTAGE_DESIGN §2.3)", "",
@@ -505,7 +671,9 @@ def main():
     sheet = {
         "title": "Ripples: the cue sheet (music supervisor)",
         "version": SPEC["version"],
-        "binding": ["OVERRIDES §48-§52 (§51: the multi-cue score and the Mixkit limits)", "TREATMENT §3.4-3.9, §3.12, §4, §5.5",
+        "binding": (["OVERRIDES §61-§68 (§65: the coda's sound; §66: R-04; §67-§68: Ring 4's and Cascade 4's bars, the work "
+                     "during the held-out run)"] if PREV else []) + [
+                    "OVERRIDES §48-§52 (§51: the multi-cue score and the Mixkit limits)", "TREATMENT §3.4-3.9, §3.12, §4, §5.5",
                     "MUSIC_RESEARCH §3", "TOOLS_AUDIO / TOOLS_TESTS: pre-roll crossfades that end on the incoming downbeat; no time-stretch"],
         "evidence": "Every number is measured on the nine audition files (MUSIC_MAP) or on the planned bed assembled in memory by "
                     "tools/audio/score2/cue_plan.py; nobody has listened. Every join, window and level is for ears to confirm.",
@@ -517,7 +685,13 @@ def main():
         "credits": SPEC["credits"],
         "tracks_used": {k: sorted(v) for k, v in sorted(used.items())},
         "checks": ck,
-        "files": {"plans": ["cuesheet/plan_main.json", "cuesheet/plan_x40.json", "cuesheet/plan_main_g1b.json"],
+        "files": ({"revision_3": {"plan": "cuesheet/plan_main.json (revision 3)",
+                                  "rules": "cuesheet/r3/decision_rules.json (28 Oct 13:45:49, before any candidate was scored)",
+                                  "decisions": ["cuesheet/r3/bars_candidates.json", "cuesheet/r3/bars_decision.json",
+                                                "cuesheet/r3/r04_decision.json", "cuesheet/r3/coda_tap_decision.json"],
+                                  "measurements": "cuesheet/r3/main.metrics.json and main.npz (the evening's; pending until then)",
+                                  "previous": f"cuesheet/{PREV['sheet']} and {PREV['plan']}"}} if PREV else {}) | {
+                  "plans": ["cuesheet/plan_main.json", "cuesheet/plan_x40.json", "cuesheet/plan_main_g1b.json"],
                   "measurements": ["cuesheet/main.metrics.json", "cuesheet/x40.metrics.json", "cuesheet/main.npz", "cuesheet/x40.npz",
                                    "cuesheet/r2/main_g1b.metrics.json", "cuesheet/r2/probe.json", "cuesheet/r2/title_A.json",
                                    "cuesheet/r2/title_B.json", "cuesheet/r2/title_A_r2.json", "cuesheet/r2/title_B_r2.json",
@@ -528,8 +702,12 @@ def main():
     }
     if "return" in plan:
         sheet["main_film"]["return"] = return_frames(plan, met)
-    if EXTRA.get("main_g1b.metrics.json"):
+    if EXTRA.get("main_g1b.metrics.json") and met and not PREV:
         sheet["g1_music_ab"] = g1_record(met, EXTRA["main_g1b.metrics.json"])
+    elif PREV_SHEET and PREV_SHEET.get("g1_music_ab"):  # decided in the previous revision; the Return's music is unchanged
+        sheet["g1_music_ab"] = {**PREV_SHEET["g1_music_ab"],
+                                "note": f"{PREV['label']}'s record, carried: G1's music A/B was decided there (side A), and "
+                                        "the Return's music is unchanged in this revision (232 frames later in film time)"}
     for k in ("title_A.json", "title_B.json", "title_A_r2.json", "title_B_r2.json"):
         if EXTRA.get(k):
             T = EXTRA[k]
@@ -550,13 +728,34 @@ def main():
         sheet["splice_probe"]["own_downbeat_lsd"] = P["own_downbeat_lsd"]
     if EXTRA.get("g1_decision.json"):
         sheet["decisions"] = EXTRA["g1_decision.json"]
+    r3 = os.path.join(WORK, "r3")
+    if PREV and os.path.exists(os.path.join(r3, "bars_decision.json")):
+        bd = load(os.path.join(r3, "bars_decision.json"))
+        sheet["decisions_revision_3"] = {
+            "rules": load(os.path.join(r3, "decision_rules.json")),
+            "bars": {k: bd[k] for k in ("rule_sha256", "rule_written_at", "decided_by", "scale", "candidates",
+                                        "passing_every_gate")} | {"chosen": bd["chosen"]["label"],
+                                                                  "chosen_rank_key": bd["chosen"]["rank_key"],
+                                                                  "next_by_the_rule": [{"label": r["label"], "rank_key": r["rank_key"]}
+                                                                                       for r in bd["next_by_the_rule"]],
+                                                                  "named": {k: {"label": v["label"], "rank_key": v["rank_key"],
+                                                                                "ring4": v["sync_points"]["Ring 4 landing"],
+                                                                                "lift_on_S15": v["lift_on_S15"],
+                                                                                "cascade4_bars_over_phrase_C": v["cascade4_bars_over_phrase_C"],
+                                                                                "phrase_lines_off_every_sync_point": v["phrase_lines_off_every_sync_point"]}
+                                                                            for k, v in bd["named_candidates"].items()}},
+            "r04": load(os.path.join(r3, "r04_decision.json")),
+            "coda_tap": load(os.path.join(r3, "coda_tap_decision.json"))}
     with open(os.path.join(SCORE2, "CUE_SHEET.json"), "w") as fh:
         json.dump(sheet, fh, indent=1, ensure_ascii=False)
     beat_sheet(sheet, plan)
-    bad = [c for c in ck if not c["ok"]]
+    bad = [c for c in ck if c["ok"] is False]
+    pend = [c for c in ck if c["ok"] is None]
     for c in ck:
-        print(("ok  " if c["ok"] else "FAIL") + "  " + c["check"] + " :: " + c["detail"])
-    print(f"{len(ck) - len(bad)} of {len(ck)} checks pass; wrote {os.path.join(SCORE2, 'CUE_SHEET.json')}")
+        print(("WARN" if c.get("warn") else "ok  " if c["ok"] else "PEND" if c["ok"] is None else "FAIL") + "  "
+              + c["check"] + " :: " + c["detail"])
+    print(f"{len(ck) - len(bad) - len(pend)} of {len(ck)} checks pass, {len(pend)} pending (they need the plan's own "
+          f"measurement), {len(bad)} fail; wrote {os.path.join(SCORE2, 'CUE_SHEET.json')}")
 
 
 if __name__ == "__main__":
