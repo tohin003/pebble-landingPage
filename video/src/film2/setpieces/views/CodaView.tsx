@@ -5,11 +5,12 @@
 // Layers, back to front:
 //   L0 to the iris-out's end: the end card itself, played on past its end by its own PieceView
 //     (extra.coda.endCard.extended): its page and camera as it left them, its stone on its engine clock, page 2's lines
-//     leaving with their own exits. Nothing is redrawn, so the join is the end card's own next frame;
+//     held with no exit of their own (the closing iris takes them, OVERRIDES §65 on P2-1). Nothing is redrawn or added,
+//     so the join is the end card's own next frame;
 //   from the iris-in: the coda's shot under its light (coda.ts CODA_GRADE): the riverbed at night (the site's own dark
-//     wallpaper, defocused, at the ground's parallax depth, over exactly the extent the coverage check reads) and the
-//     sleeping stone (Pebble's own engine, the Companion's `sleepy` pose, the page's dark palette, on its own clock),
-//     moving with the push;
+//     wallpaper, defocused, at the ground's parallax depth, over exactly the extent the coverage check reads: in 9:16
+//     the plate framed between its pebbles, coda.ts CODA_PLATE_FRAMING) and the sleeping stone (Pebble's own engine, the
+//     Companion's `sleepy` pose, the page's dark palette, on its own clock), moving with the push;
 //   the night cover (outside the grade, so it is exactly the dark --bg): night green outside the closing iris, over the
 //     whole breath, and outside the opening iris (codaIrisOut and codaIrisIn: the circles the checks read); the closing
 //     iris with the sage hairline on its edge, the opening one with none (codaHairline: what is drawn, which codaNoUi

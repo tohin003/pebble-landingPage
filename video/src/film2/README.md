@@ -508,26 +508,79 @@ iris to the film's last breath; each page's lines are exact at the middle of the
 within a few per cent of their layout while read and stay in the safe area (checked on every frame); only the room tone
 at the very end, after the music's decay, settles to a still, the one declared wait. The piece ends after the ending's
 decay and 0.5–1 s of room tone. **To fit it:** start it where the wall ends; `hit` at least ~4 s in; time the track's
-real ending back so its last strong note lands on `lastNote` (a splice at a real stop, never a fade).
+real ending back so its last strong note lands on `lastNote` (a splice at a real stop, never a fade). **After it**
+(28 Oct, the coda's round 2): `then: "coda"` (or `withThen()` for the Return's end card) records that the main cut plays
+the post-credit scene from the true ending (§7), changing no frame; and `titleStoneSafe` holds the page's stone 60 px
+inside the frame to its last frame (the 1:1 stone now at 0.21 of the height: the page's ×1.30 growth had carried it to
+35 px from the top edge).
 
 ### 7. The post-credit scene — `planCoda({ w, h, fps, endCard, align? })` (`coda.ts`, `codaChecks.ts`, `coda.cues.ts`)
 
 The person's sneak peek of a coming feature (D157, OVERRIDES §62; the design lane's POSTCREDIT_DESIGN.md), in the main
-film only (not the tour cut, the 40-s cut or the shorts), after the end card's true ending: page 2's lines leave, a ring
-iris (E-move) closes onto the end card's stone, a breath of night green (the dark --bg, a declared wait), an iris opens
-from the same stone asleep on the riverbed at night (the Companion's own `sleepy` pose, created asleep, in the page's
-dark palette, one engine blink placed alone in line 1's hold), and "Pebble rests." / "Soon, it may learn while it
-does." / "Not built yet." land one at a time (1:1 and 9:16 break the second after "learn"), the scene's one sound (the
-title's CC0 stone tap at a whisper; planned, not built: see below) on the second; a push at 0.35 px a frame (0.30 in
-1:1) eases to the film's last breath. Its frames 0–33 ARE the end card, played on past its end by `CodaView`
-(`extra.coda.endCard.extended`): the end card's plan is untouched, so the X version (the main film with the coda is
-over X's 140 s) is the master cut at the coda's first frame (`codaPlacement`, `xCutFrames`). A flash model (6 × 6 tiles, qa/luma.ts's rule)
-lengthens the breath until no tile the iris-out darkened brightens again within a second (12 frames in 16:9: 7.80 s in
-all, on one timeline). `codaChecks()`, in `checkPlan()`, holds its words (§62's four phrases, numbers, versions, dates,
-names), reading holds, one stone, the camera rule (two declared waits only), the pose, no mock screen, the lockup (and
-that it is centred), flashes, the sound and captions it hands on, and the night ground's light; each has a canary in
-`tests/coda.test.ts`. The night plate is `video/public/desktop/riverbed-dark-2400.jpg` (gitignored;
-`capture/riverbed-plate.mjs dark`, then `sips`): until it is made, the view draws the wallpaper's mid tone.
+film only (not the X cut, the tour cut, the 40-s cut or the shorts), after the end card's true ending: page 2's lines
+stay (no exit of their own) while a ring iris (E-move) closes onto the end card's stone and takes them with the page, a
+breath of night green (the dark --bg), an iris opens from the same stone asleep on the riverbed at night (the
+Companion's own `sleepy` pose, created asleep, in the page's dark palette, one engine blink placed alone in line 1's
+hold), and "Pebble rests." / "Soon, it may learn while it does." / "Not built yet." land one at a time (1:1 and 9:16
+break the second after "learn"), the scene's one sound (the title's CC0 stone tap at a whisper; planned, not built: see
+below) on the second; a push at 0.35 px a frame (0.30 in 1:1) eases to the film's last breath. L0 to the iris-in is
+§62's one breath of silence, one declared wait (§65's ruling (a)). Its frames 0–33 ARE the end card, played on past its
+end by `CodaView` (`extra.coda.endCard.extended`): the end card's plan is untouched, so the X version (the main film
+with the coda is over X's 140 s) is the master cut at the coda's first frame, page 2 held to its last frame there
+(`codaPlacement`, `xCutFrames`, `xCut`). The main composition (`F2-SetPieces-Demo`, the film's order) plays it after
+the end card planned with `finale.ts`'s `then: "coda"`, and `codaCut` holds every cut to that. A flash model (6 × 6
+tiles, qa/luma.ts's rule) lengthens the breath until no tile the iris-out darkened brightens again within a second (12
+frames in 16:9: 7.80 s in all, on one timeline). `codaChecks()`, in `checkPlan()`, holds its words (§62's four
+phrases, numbers, versions, dates, names), reading holds, one stone, the camera rule (two declared waits only, no
+undeclared still frame before the push), the pose, no mock screen, the lockup (and that it is centred), flashes (and no
+exit of its own on page 2's lines), the sound and captions it hands on, the night ground's light, and the night plate's
+pebbles against the stone; each has a canary in `tests/coda.test.ts`. The night plate is
+`video/public/desktop/riverbed-dark-2400.jpg` (gitignored; `capture/riverbed-plate.mjs dark`, then `sips`): until it
+is made, the view draws the wallpaper's mid tone.
+
+**Round 2 of 28 Oct: the lead's rulings on the review's open points (OVERRIDES §65, §67), code only** (the release
+session's held-out run held the Mac, §68: rendered, scanned and looked at in the evening; the lane's scratch
+`postcredit/r2`):
+- **The still span is §62's one breath of silence (P1-4, ruling (a)).** L0 to the iris-in (L0–L81: the iris-out over
+  the settled page, then the night-green breath) is ONE declared wait (`extra.coda.silence`), set on the two shots it
+  spans as the foundation reads a wait (the page's L0–L3, the breath's L4–L81); the end card keeps its own declared
+  last breath before it (2.12 s still in all, reported as an info), and the camera floor applies from the iris-in on.
+  `codaCamera` fails any still frame before the push that no wait declares (`codaStillBeforePush().undeclared`: the
+  foundation's one-second windows never judged that span); canaries: the page's wait, the breath's, or a silence that
+  stops short of the iris-in, removed.
+- **The one flash is gone from the plan (P2-1).** In the main cut page 2's lines have no exit: the closing iris takes
+  them with the page, so nothing rises before the fall (C8 as written: no opposing pair). Each carried line is
+  `exit: "camera"` with `covered` (`TypeSpec.covered`, `coda.ts irisCover`): the frames the iris's edge crosses it
+  (L14–L27 in 16:9, L16–L25 in 1:1, L18–L24 in 9:16), which the render's marks declare as its exit (`typeTracks`, kind
+  `iris`, so qa/ink.ts reads the fall there as the iris's) and the reading model reads it until. `codaFlashes` fails a
+  carried line with an exit of its own (the canary: the exits as they were, which the model alone did not see). The X
+  cut is unchanged: the end card holds page 2 to its last frame. **Calibration, prepared:** `codaCalibrate.ts` (pure)
+  and `codaCalibrateCli.ts` measure a render of the coda alone as the reel scan does (shrunk to about 192 px, the sRGB
+  curve, 6 × 6 tiles), fit the ink share the model reads (CODA_LUMA.inkShare, 0.22) by least squares on page 2's frames
+  and on the coda's lines, compare the grounds, count flashes on the render and in the model as planned and as fitted,
+  and list where their transitions disagree; exit 2 if the render or the fitted model flashes.
+- **9:16 frames the night plate between its pebbles (P2-9's second half).** At any scale that covers the tall frame,
+  every pebble of the plate is larger than the sleeping stone (the renders drew c1 at 1,105 × 607 px beside a stone of
+  263 × 232). `CODA_PLATE_FRAMING`: 9:16 shows the plate ×3 (×1.41 of the others' 2.125 world px a plate unit) about its
+  point (1060, 480), 32 units clear of every pebble at the iris-in, where the ground is widest; its median there is
+  #232C27 (#181F1B under the coda's light, ΔE 1.3 from the dark --bg). `codaPlate` checks every frame at plan level: the
+  part of each of the plate's pebbles the frame shows (their outlines, `codaPlate.ts`, generated from
+  `tools/assets/wallpaper/wallpaper-dark.svg` and tested against it) is no wider and no taller than the stone's body;
+  16:9 shows only c0's rim at a corner (35 × 30 px), 1:1 and 9:16 none. Canaries: 9:16 as every shot frames the plate
+  (c1, c8 named), 16:9's plate moved so c8 comes in, a stretched plate.
+- **The 1:1 end card's stone keeps the safe margin (P2-9's first half, §67).** Its page grows ×1.30 from page 1's anchor
+  to its last frame, which carried the stone to 35 px from the top edge there, and the coda's first 34 frames with it.
+  The 1:1 stone (and the wordmark set beside it) sits at 0.21 of the height, not 0.18: 73 px on the last frame.
+  `titleStoneSafe` (`finale.ts`, in `checkPlan()`) holds every title page's stone 60 px inside every edge on every
+  frame it draws it, the seams it leaves through included (the coda's closing iris); canary: the stone back at 0.18.
+  The end card's holds and page timings (fix round 2's CR-10, CR-20) are untouched, one timeline in every aspect.
+- **The wiring (design item 14).** `planFinale({ ..., then: "coda" })`, or `withThen()` for an end card planned elsewhere
+  (the Return's), records that the main cut plays the coda after the end card's true ending; it changes no frame
+  (tested: planned with and without it, the same cameras, lines and length) and `endsFilm` stays (the end card ends
+  every other cut; the coda carries its last frame on). `demo/plans.ts` marks the Return's end card and plans the coda
+  against it; `codaCut(pieces, cut)` holds the main cut to it (the coda right after that end card, placed by
+  `codaPlacement`) and refuses the coda in the X cut, the tour, the 40-s cut and the shorts. The join is the same reel
+  frame (5,282) in every aspect, and `stoneCount` and every coda check pass on the plan.
 
 **What the stills of 28 Oct changed** (half-size key frames in every aspect, looked at; the lane's scratch
 `postcredit/stills`):
@@ -560,7 +613,8 @@ which it does not flag); and its lines' ink held to the last frame. It counts on
 2.3.1's three a second and the scan's rule, and none in 9:16: page 2's lines leaving lift the middle tiles' luminance
 by 0.10–0.15 just before the iris-out darkens them, a rise and a fall within a second. The coda's flash model reads
 the page's ink at a fifth of each line's box and sees no rise there; the design's C8 asks for no opposing pair at all,
-so this one is the lead's call (the lane's report).
+so this one is the lead's call (the lane's report). (Ruled in §65: page 2's exits are dropped in the main cut; round 2
+above.)
 
 **What the post-credit review of 28 Oct changed** (its P1s and the cheap P2s; each check has its canary in
 `tests/coda.test.ts`):
@@ -579,7 +633,8 @@ so this one is the lead's call (the lane's report).
 - **The main cut's still span is reported.** The end card's declared last breath (0.75 s), L0–L33 under the iris-out and
   the breath hold the picture still for 2.12 s before the push, and the floor's one-second windows never judged it
   (each overlaps a declared wait). `codaCamera` reports the span as a warning (`codaStillBeforePush`) until the lead
-  rules: (a) it is §62's one breath of silence, declared as such, or (b) the end card glides to its last frame.
+  rules: (a) it is §62's one breath of silence, declared as such, or (b) the end card glides to its last frame. (Ruled
+  (a) in §65; round 2 above declares it and fails an undeclared still frame.)
 - **One never-list.** The film's and the page's lists differed; both now read `shared/coming/never.ts` (plurals,
   "shipping", "a build", the month abbreviations, "season" and overclaims such as "remembers everything" added).
 - **The X figures** follow the cue sheet's revision 2 (8,102 frames, 2:15.03; 8,570 with the coda), and the placement

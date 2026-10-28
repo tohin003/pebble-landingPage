@@ -28,7 +28,7 @@
 //   Return's span exempt from cutRate, holds and readingLoad there only (exemptReturnSpan)
 // Added for the post-credit scene (D157, OVERRIDES §62; setpieces/codaChecks.ts, each with a canary in tests/coda.test.ts):
 //   codaWords, codaHolds, codaStone, codaCamera, codaPose, codaNoUi, codaLockup, codaFlashes, codaSound, codaCaptions,
-//   codaLight
+//   codaLight, codaPlate; and titleStoneSafe (setpieces/finale.ts): a title page's stone keeps the safe margin
 // Pure; no React. setpieces/tests run checkPlan() on every piece, every aspect and many music grids.
 import { CAMERA, COLOR, SAFE_MARGIN_PX } from "../tokens";
 import { checkAll, type Finding, type QaMove, type Report } from "../qa/checks";
@@ -58,6 +58,7 @@ import { exemptReturnSpan, picturedStonePxOf, planTrace, returnChecks, returnOf 
 import { localOfR, rOfLocal } from "./returnField";
 import { CASCADE_SWEEP_PX } from "./ringBlock";
 import { codaChecks } from "./codaChecks";
+import { titleStoneSafe } from "./finale";
 
 const at = (p: ScenePlan, s: ShotSpec, fr: number) => s.camera.pose(fr - s.from);
 
@@ -926,6 +927,8 @@ export const drawnSpan = (t: TypeSpec, fps: number, pieceEnd: number): { from: n
   const ent = t.entrance ?? defaultEntranceOf(t.tier);
   const landed = t.at + enterFramesOf(ent, t.text, fps);
   const exit = t.exit ?? "blur";
+  // taken by an iris (TypeSpec.covered): drawn until the iris has passed it, read until it reaches it
+  if (t.covered) return { from: t.at, landed, exitAt: t.covered.from, until: t.covered.to };
   if (t.exitAt === undefined) return { from: t.at, landed, exitAt: pieceEnd, until: pieceEnd };
   if (exit === "camera") return { from: t.at, landed, exitAt: t.exitAt, until: t.exitAt };
   return { from: t.at, landed, exitAt: t.exitAt, until: Math.min(pieceEnd, t.exitAt + exitFramesOf(ent, exit, t.text, fps) + 2) };
@@ -1050,6 +1053,15 @@ export function typeTracks(p: ScenePlan): TypeTrack[] {
     let exits: TypeTrack["exits"] = t.exitAt !== undefined && exit !== "camera" ? [{ from: t.exitAt, to: d.until, kind: exit }] : [];
     let vanishes: string | undefined;
     let rects: Record<number, Rect> | undefined;
+    if (t.covered) {
+      // no exit of its own: an iris takes it (TypeSpec.covered, the post-credit scene's closing iris over page 2), drawn
+      // until the iris has passed it; the frames its edge crosses it are its declared exit
+      if (t.carry) {
+        rects = {};
+        for (let fr = d.from; fr < d.until; fr++) rects[fr] = carriedRect(p, t, rect, fr);
+      }
+      return { id: t.id, text: t.text, rect, ...(rects ? { rects } : {}), color: t.color ?? COLOR.ink, from: d.from, landed: d.landed, until: d.until, exits: [{ from: t.covered.from, to: t.covered.to, kind: t.covered.by }] };
+    }
     if (t.carry && exit === "camera") {
       // a line set in the world leaves with it: drawn until its shot ends, it must be out of frame by then, and the
       // frames it crosses the frame's edge are its exit (the world carries it out)
@@ -1826,8 +1838,10 @@ export function checkPlan(p: ScenePlan, grid?: MusicGrid, extraMoves: readonly Q
     // blinkPlaced, joinPose; setpieces/returnChecks.ts)
     ...returnChecks(p),
     // the post-credit scene (D157, OVERRIDES §62; setpieces/codaChecks.ts, each with a canary in tests/coda.test.ts):
-    // its words, holds, one stone, camera, pose, no mock screen, lockup, flashes, sound, captions and night light
+    // its words, holds, one stone, camera, pose, no mock screen, lockup, flashes, sound, captions, night light and plate
     ...codaChecks(p),
+    // a title page's stone keeps the safe margin to its last frame (the post-credit review's P2-9; setpieces/finale.ts)
+    ...titleStoneSafe(p),
   ];
   const errors = [...r.errors, ...more.filter((x) => x.level === "error")];
   return {

@@ -13,17 +13,23 @@ import { checkAll, copy, type Finding } from "../qa/checks";
 import type { FilmTimelineQa } from "../qa/timeline";
 import { ReelScan, type ReelMarks } from "../qa/reel-scan";
 import { deltaE, hexToRgb, rgbToHex } from "../light/grades";
-import { checkPlan, groundCoverage, irisOnFrame, planQa, stoneCount, stonesOnFrame } from "../setpieces/qa";
+import { checkPlan, groundCoverage, irisOnFrame, planQa, stoneCount, stonesOnFrame, typeTracks } from "../setpieces/qa";
 import { lineRect } from "../setpieces/frame";
+import { carriedRect } from "../setpieces/kit";
 import { groundView } from "../setpieces/ground";
 import { demoPlans } from "../setpieces/demo/plans";
 import { timelineDiffs } from "../setpieces/align";
 import { checkJoins } from "../setpieces/joins";
 import { blinkStartsFor, offsetForBlink } from "../setpieces/blink";
 import { checkCues } from "../../../../shared/pebble/cues";
+import { BODY, VIEWBOX_SIZE } from "../../../../shared/pebble/character";
+import { worldToFrame } from "../motion/camera";
 import { CODA_CUES } from "../setpieces/coda.cues";
-import { CODA_GRADE, CODA_GRID, CODA_INK_EM_16x9, CODA_PLATE, CODA_TEXT, IRIS_FEATHER_SHARE, codaFeather, codaFlashModel, codaHairline, codaIrisIn, codaIrisOut, codaOf, codaOneShots, codaPlacement, planCoda, plateUnder, xCutFrames, type CodaExtra, type CodaSoundLayer, type FilmPiece } from "../setpieces/coda";
-import { CODA_CHECKS, CODA_NEVER, CODA_NEVER_PHRASES, codaCamera, codaCaptions, codaChecks, codaHolds, codaLight, codaLockup, codaMarkStones, codaNoUi, codaPose, codaSound, codaStillBeforePush, codaStone, codaStonesOn, codaWords, forbiddenIn } from "../setpieces/codaChecks";
+import { CODA_GRADE, CODA_GRID, CODA_INK_EM_16x9, CODA_LUMA, CODA_PLATE, CODA_PLATE_FRAMING, CODA_TEXT, IRIS_FEATHER_SHARE, codaCut, codaFeather, codaFlashModel, codaHairline, codaIrisIn, codaIrisOut, codaLumaSeries, codaOf, codaOneShots, codaPlacement, irisCover, planCoda, plateRect, plateUnder, xCut, xCutFrames, type CodaExtra, type CodaSoundLayer, type FilmCut, type FilmPiece } from "../setpieces/coda";
+import { CODA_CHECKS, CODA_NEVER, CODA_NEVER_PHRASES, clipToFrame, codaCamera, codaCaptions, codaChecks, codaFlashes, codaHolds, codaLight, codaLockup, codaMarkStones, codaNoUi, codaPlate, codaPose, codaSound, codaStillBeforePush, codaStone, codaStonesOn, codaWords, forbiddenIn, joinedWaits, platePebblesOn } from "../setpieces/codaChecks";
+import { CODA_PLATE_PEBBLES, PLATE_SOURCE, PLATE_UNITS, platePebbles, platePebblesSource } from "../setpieces/codaPlate";
+import { RenderLuma, calibrate, fitInkShare, flashesOf, transitionDiffs, type TileSeries } from "../setpieces/codaCalibrate";
+import { finaleThen, planFinale, titleStoneSafe, withThen } from "../setpieces/finale";
 import { COMING_NEVER, COMING_NEVER_PHRASES } from "../../../../shared/coming/never";
 import type { ScenePlan, ShotSpec, TypeSpec } from "../setpieces/scene";
 
@@ -149,10 +155,22 @@ describe("it continues the end card, which does not change (C10's half: nothing 
       expect((st1.clockOffset ?? 0) - (st0.clockOffset ?? 0)).toBe(ec.duration);
     }
   });
+  test("page 2 stays to the end card's last frame in every cut (the X prefix), and the view adds no exit past it: the closing iris takes the lines (OVERRIDES §65 on P2-1)", () => {
+    for (const a of ASPECTS) {
+      const ec = endCard(a);
+      const ext = X(coda(a)).endCard.extended;
+      const page2 = ec.types.filter((t) => t.exitAt === undefined);
+      expect(page2.map((t) => t.id).sort()).toEqual(["L29a", "L29b"]);
+      expect(ec.endsFilm).toBe(true);
+      for (const t of page2) expect(ext.types.find((y) => y.id === t.id)!.exitAt).toBeUndefined();
+      // drawn on past the end to the iris-out's end, where the night has covered them
+      expect(ext.duration).toBe(ec.duration + X(coda(a)).irisOut.at + X(coda(a)).irisOut.frames);
+    }
+  });
   test("the canaries: page 2 leaving a frame before the end, or a page that settles differently, change the X cut", () => {
     const ec = endCard("16:9");
     const ext = X(coda("16:9")).endCard.extended;
-    const early = { ...ext, types: ext.types.map((t) => (t.exitAt === ec.duration ? { ...t, exitAt: ec.duration - 1 } : t)) };
+    const early = { ...ext, types: ext.types.map((t) => (t.exitAt === undefined ? { ...t, exitAt: ec.duration - 1, exit: "blur" as const } : t)) };
     expect(changesBeforeEnd(ec, early).length).toBeGreaterThan(0);
     const title = ext.shots[ext.shots.length - 1]!;
     const glides = { ...ext, shots: ext.shots.map((s) => (s === title ? { ...s, camera: new VelocityCamera(s.camera.pose(0), s.camera.sample(0).vel) } : s)) };
@@ -212,11 +230,15 @@ describe("C1: the coda never says §62's four phrases, a number, a name or that 
     for (const c of CANARIES.slice(0, 4)) expect(copy(t(c)).length).toBeGreaterThan(0);
     expect(copy(t(CODA_TEXT.soon))).toEqual([]);
   });
-  test("the end card's lines carried in pass only as they leave (they start before the coda and are gone by the iris-out)", () => {
+  test("the end card's lines carried in pass only as they leave with its page (they start before the coda and the closing iris takes them by its end)", () => {
     const p = coda("16:9");
     const id = X(p).carried[0]!;
-    const stays = withLine(p, id, (t) => ({ ...t, exitAt: 40 }));
+    expect(errorsOf(codaWords(p, X(p)))).toEqual([]);
+    // the canaries: a line held past the iris (no iris takes it), and one the iris would still show after its end
+    const stays = withLine(p, id, (t) => ({ ...t, exitAt: undefined, covered: undefined }));
     expect(errorsOf(codaWords(stays, X(stays))).some((f) => f.message.includes(id))).toBe(true);
+    const late = withLine(p, id, (t) => ({ ...t, covered: { ...t.covered!, to: 40 } }));
+    expect(errorsOf(codaWords(late, X(late))).some((f) => f.message.includes(id))).toBe(true);
   });
 });
 
@@ -429,31 +451,64 @@ describe("C7: the camera never fully stops, but for the breath and the film's la
     const bad = withShot(p, "page", (s) => ({ ...s, camera: new RestartCamera(s.camera, 10) }));
     expect(errorsOf(codaCamera(bad, X(bad))).some((f) => /starts moving again/.test(f.message))).toBe(true);
   });
-  test("the main cut's still span before the push is reported, not excused (a warning for the lead's ruling, the review's P1-4): the end card's last breath, L0–L33 and the breath", () => {
+  test("§62's one breath of silence (the lead's ruling (a) on P1-4, OVERRIDES §65): L0 to the iris-in, the iris-out and the breath, declared as one wait; the end card keeps its own last breath; the floor applies from the iris-in on", () => {
     for (const a of ASPECTS) {
       const p = coda(a);
       const x = X(p);
+      expect(x.silence).toEqual({ from: 0, to: x.irisIn.at });
+      // one wait, on the two shots it spans (as the foundation reads a wait: the shot a frame falls in), and the last breath
+      expect(joinedWaits(p)).toEqual([x.silence, x.lastBreath]);
+      expect(p.shots.find((s) => s.id === "page")!.waits).toEqual([{ from: 0, to: x.irisOut.at }]);
+      expect(p.shots.find((s) => s.id === "breath")!.waits).toEqual([{ from: x.irisOut.at, to: x.irisIn.at }]);
       const s = codaStillBeforePush(p, x);
-      // the end card declares its last 0.75 s still (the X cut's last breath), the page carried on settled to the
-      // iris-out's end, then the breath: one span of about 2.1 s, which the floor's one-second windows never judged
+      // the end card declares its last 0.75 s still, the page carried on settled to the iris-out's end, then the breath:
+      // 2.12 s in all, every still frame of it declared
       expect(x.endCard.lastBreath).not.toBeNull();
       expect(s.endCard).toBe(x.endCard.end - x.endCard.lastBreath!.from);
-      expect(s.page).toBe(x.irisOut.at + x.irisOut.frames);
-      expect(s.breath).toBe(x.breath.to - x.breath.from);
-      expect(s.frames).toBe(s.endCard + s.page + s.breath);
+      expect([s.coda, s.page, s.breath]).toEqual([x.irisIn.at, x.irisOut.at + x.irisOut.frames, x.breath.to - x.breath.from]);
+      expect(s.frames).toBe(s.endCard + s.coda);
       expect(s.frames / 60).toBeGreaterThan(2);
+      expect(s.undeclared).toEqual([]);
       expect(errorsOf(checkAll(planQa(p)).errors, "cameraFloor")).toEqual([]);
-      const warns = codaCamera(p, x).filter((f) => f.level === "warn").map((f) => f.message);
-      expect(warns.some((m) => /holds still for 2\.\d\d s before the coda's push/.test(m) && /\(a\).*\(b\)/.test(m))).toBe(true);
+      const found = codaCamera(p, x);
+      expect(found.filter((f) => f.level !== "info")).toEqual([]);
+      expect(found.some((f) => f.level === "info" && /holds still for 2\.\d\d s before the coda's push/.test(f.message) && /ruling \(a\)/.test(f.message))).toBe(true);
+      // from the iris-in on, nothing is declared until the last breath: the push carries the floor (the canaries above)
+      expect(joinedWaits(p).some((w) => w.from < x.lastBreath.from && w.to > x.irisIn.at)).toBe(false);
     }
   });
-  test("the canary for ruling (b): an end card that glides to its last frame (no still at its end, the carried page moving) leaves no span to report", () => {
+  test("the canary: an undeclared still span fails (the page's frames, the breath, or a silence that stops short of the iris-in)", () => {
+    for (const a of ASPECTS) {
+      const p = coda(a);
+      const x = X(p);
+      const noPage = withShot(p, "page", (s) => ({ ...s, waits: [] }));
+      const noBreath = withShot(p, "breath", (s) => ({ ...s, waits: [] }));
+      const short = withShot(p, "breath", (s) => ({ ...s, waits: [{ from: x.irisOut.at, to: x.irisIn.at - 20 }] }));
+      for (const [bad, from, to] of [
+        [noPage, 0, x.irisOut.at - 1],
+        [noBreath, x.irisOut.at, x.irisIn.at - 1],
+        [short, x.irisIn.at - 20, x.irisIn.at - 1],
+      ] as const) {
+        const msgs_ = errorsOf(codaCamera(bad, X(bad))).map((f) => f.message);
+        expect(msgs_.some((m) => m.includes(`an undeclared still span, L${from}–L${to}`))).toBe(true);
+        expect(codaStillBeforePush(bad, X(bad)).undeclared).toEqual([{ from, to: to + 1 }]);
+        expect(checkPlan(bad, CODA_GRID).ok).toBe(false);
+      }
+      // the foundation's floor alone passed every one of them (each second there overlaps a declared wait): the review's P1-4
+      expect(errorsOf(checkAll(planQa(noPage)).errors, "cameraFloor")).toEqual([]);
+      // a silence declared past the iris-in fails too (the floor applies from the iris-in on)
+      const long = withCoda(withShot(p, "coda", (s) => ({ ...s, waits: [{ from: s.from, to: s.from + 30 }, ...(s.waits ?? [])] })), (y) => ({ ...y, silence: { from: 0, to: y.irisIn.at + 30 } }));
+      expect(errorsOf(codaCamera(long, X(long))).some((f) => /runs from the end card's true ending \(L0\) to the iris-in/.test(f.message))).toBe(true);
+    }
+  });
+  test("an end card that glides to its last frame (the review's option (b), not the ruling): the page moves on L0, so no still span leads into the coda", () => {
     const p = coda("16:9");
     const glides = withCoda(
       withShot(p, "page", (s) => ({ ...s, camera: new VelocityCamera(s.camera.pose(0), { x: 0, y: 0, lz: 0.0004 }) })),
       (x) => ({ ...x, endCard: { ...x.endCard, lastBreath: null } }),
     );
-    expect(codaStillBeforePush(glides, X(glides)).frames).toBe(0);
+    const s = codaStillBeforePush(glides, X(glides));
+    expect([s.frames, s.undeclared.length]).toEqual([0, 0]);
     expect(codaCamera(glides, X(glides))).toEqual([]);
   });
 });
@@ -631,6 +686,62 @@ describe("C8: no flash (no opposing pair of large luminance changes within a sec
   });
 });
 
+describe("the one flash (P2-1, OVERRIDES §65): page 2's lines have no exit in the main cut; the closing iris takes them, so nothing rises before the fall", () => {
+  test("as planned: each carried line has no drawn exit, the iris covers it within the iris-out, and its frames are what the iris draws", () => {
+    for (const a of ASPECTS) {
+      const p = coda(a);
+      const x = X(p);
+      const shut = x.irisOut.at + x.irisOut.frames;
+      expect(x.carried).toEqual(["L29a", "L29b"]);
+      for (const id of x.carried) {
+        const t = p.types.find((y) => y.id === id)!;
+        expect([t.exit, t.exitAt]).toEqual(["camera", t.covered!.from]);
+        expect(t.covered!.by).toBe("iris");
+        expect(t.covered!.from).toBeGreaterThan(x.irisOut.at);
+        expect(t.covered!.to).toBeLessThanOrEqual(shut);
+        expect(irisCover(p, t)).toEqual({ from: t.covered!.from, to: t.covered!.to });
+        // on its last covered frame some of it is still in the hole; from `to` the night has it all
+        const r0 = lineRect(t.text, t.tier, p.frame, t.box, t.sizeT ?? 0.5);
+        const near = (fr: number) => {
+          const o = codaIrisOut(p, fr)!;
+          const r = carriedRect(p, t, r0, fr);
+          const nx = Math.max(r.x, Math.min(o.c.x, r.x + r.w));
+          const ny = Math.max(r.y, Math.min(o.c.y, r.y + r.h));
+          return Math.hypot(nx - o.c.x, ny - o.c.y) - o.R;
+        };
+        if (t.covered!.to < shut) expect(near(t.covered!.to)).toBeGreaterThanOrEqual(-1);
+        expect(near(t.covered!.to - 1)).toBeLessThan(0);
+      }
+      expect(errorsOf(codaFlashes(p, x))).toEqual([]);
+    }
+  });
+  test("the render's marks declare the iris as each line's exit, so its ink may fall there (qa/ink.ts), and the line is drawn until the iris has passed it", () => {
+    for (const a of ASPECTS) {
+      const p = coda(a);
+      const x = X(p);
+      for (const tr of typeTracks(p).filter((y) => x.carried.includes(y.id))) {
+        const t = p.types.find((y) => y.id === tr.id)!;
+        expect(tr.until).toBe(t.covered!.to);
+        expect(tr.exits).toEqual([{ from: t.covered!.from, to: t.covered!.to, kind: "iris" }]);
+        expect(tr.vanishes).toBeUndefined();
+        expect(tr.rects?.[0]).toBeDefined();
+      }
+    }
+  });
+  test("the canary: page 2's exits as they were (a blur from L0, the rise before the fall the 16:9 and 1:1 renders showed) fail codaFlashes, which the model alone missed", () => {
+    for (const a of ASPECTS) {
+      const p = coda(a);
+      let bad = p;
+      for (const id of X(p).carried) bad = withLine(bad, id, (t) => ({ ...t, exit: "blur", exitAt: 0, covered: undefined }));
+      const xs = errorsOf(codaFlashes(bad, X(bad)));
+      expect(xs.some((f) => /leaves on its own \(a blur from L0\)/.test(f.message) && /rise before the fall/.test(f.message))).toBe(true);
+      expect(checkPlan(bad, CODA_GRID).ok).toBe(false);
+      // the model as planned reads a line's ink at 0.22 of its box and sees no flash in it (codaCalibrate.ts measures the share)
+      expect(errorsOf(codaFlashModel(bad).findings)).toEqual([]);
+    }
+  });
+});
+
 describe("C8's light and C9's ground", () => {
   test("the canary: a 6-frame light cue (a step of light under the breath) fails the film's flash rule", () => {
     const p = coda("16:9");
@@ -749,8 +860,240 @@ describe("C11 and C12: the sound layer and the captions the plan hands on", () =
 
 describe("the registry", () => {
   test("checkPlan runs every coda check on the coda only", () => {
-    expect(CODA_CHECKS.length).toBe(11);
+    expect(CODA_CHECKS.length).toBe(12);
     for (const id of ["drop", "return"]) expect(codaChecks(piece("16:9", id))).toEqual([]);
+  });
+});
+
+/* ---------------------------------------------------------------- the night plate's pebbles (P2-9, 9:16) -------- */
+
+describe("no riverbed pebble on the night plate reads larger than the sleeping stone (OVERRIDES §65 on P2-9)", () => {
+  test("the plate's pebbles are the wallpaper's own (codaPlate.ts is generated from it; a change prints the new constant)", () => {
+    const svg = readFileSync(path.join(import.meta.dir, "../../../..", PLATE_SOURCE), "utf8");
+    const now = platePebbles(svg);
+    if (JSON.stringify(now) !== JSON.stringify(CODA_PLATE_PEBBLES)) throw new Error(`the plate's source changed: paste into setpieces/codaPlate.ts\n${platePebblesSource(now)}`);
+    expect(now.map((p) => p.id)).toEqual(["c0", "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"]);
+    expect(PLATE_UNITS).toEqual(CODA_PLATE.units);
+    expect(svg).toContain(`viewBox="0 0 ${PLATE_UNITS.w} ${PLATE_UNITS.h}"`);
+  });
+  test("as planned, in every aspect: the frame shows no pebble's part wider or taller than the stone's body; 9:16 none at all, 1:1 none, 16:9 one rim at a corner", () => {
+    for (const a of ASPECTS) {
+      const p = coda(a);
+      expect(msgs(errorsOf(codaPlate(p, X(p)))).map((m) => `${a} ${m}`)).toEqual([]);
+      const shot = p.shots.find((s) => s.id === "coda")!;
+      const seen = new Map<string, number>();
+      for (let fr = shot.from; fr < shot.to; fr++) for (const pb of platePebblesOn(p, fr)) seen.set(pb.id, Math.max(seen.get(pb.id) ?? 0, pb.w, pb.h));
+      if (a === "16:9") {
+        expect([...seen.keys()]).toEqual(["c0"]);
+        expect(seen.get("c0")!).toBeLessThan((BODY.height * shot.stone!.size) / VIEWBOX_SIZE);
+      } else expect([...seen.keys()]).toEqual([]);
+    }
+  });
+  test("9:16 shows the plate between its pebbles: ×3 about its point (1060, 480), unstretched, the ground still covering every frame", () => {
+    const p = coda("9:16");
+    const shot = p.shots.find((s) => s.id === "coda")!;
+    expect(X(p).plateFraming).toEqual(CODA_PLATE_FRAMING["9:16"]);
+    expect(shot.groundRect).toEqual(plateRect(shot.ref, CODA_PLATE_FRAMING["9:16"]!));
+    expect(shot.groundRect!.w / shot.groundRect!.h).toBeCloseTo(PLATE_UNITS.w / PLATE_UNITS.h, 9);
+    expect(errorsOf(groundCoverage(p))).toEqual([]);
+    for (const a of ["16:9", "1:1"] as const) expect(coda(a).shots.find((s) => s.id === "coda")!.groundRect).toBeUndefined();
+  });
+  test("the canary: 9:16 with the plate as every shot frames it (as the renders of 28 Oct drew it) fails, the largest pebbles named", () => {
+    const p = coda("9:16");
+    const bad = withShot(p, "coda", (s) => {
+      const { groundRect: _g, ...rest } = s;
+      return rest;
+    });
+    const xs = errorsOf(codaPlate(bad, X(bad)));
+    for (const id of ["c1", "c8"]) expect(xs.some((f) => f.message.includes(`pebble ${id} reads larger than the sleeping stone`))).toBe(true);
+    expect(checkPlan(bad, CODA_GRID).ok).toBe(false);
+  });
+  test("the canaries: 16:9's plate scaled so a pebble comes into frame whole, and a stretched plate, fail", () => {
+    const p = coda("16:9");
+    const shot = p.shots.find((s) => s.id === "coda")!;
+    // the plate at its own scale, moved up so its pebble c8 (230 × 194 units: about 490 × 410 px) comes into frame
+    const up = withShot(p, "coda", (s) => ({ ...s, groundRect: plateRect(s.ref, { scale: 2.125, centre: { x: 600, y: 300 } }) }));
+    expect(errorsOf(codaPlate(up, X(up))).some((f) => f.message.includes("pebble c8 reads larger than the sleeping stone"))).toBe(true);
+    const r = plateRect(shot.ref, { scale: 2.5, centre: { x: 800, y: 500 } });
+    const stretched = withShot(p, "coda", (s) => ({ ...s, groundRect: { ...r, h: r.h * 1.2 } }));
+    expect(errorsOf(codaPlate(stretched, X(stretched))).some((f) => /stretched/.test(f.message))).toBe(true);
+  });
+  test("clipToFrame keeps what the frame shows of a polygon", () => {
+    const sq = [
+      { x: -10, y: -10 },
+      { x: 10, y: -10 },
+      { x: 10, y: 10 },
+      { x: -10, y: 10 },
+    ];
+    const c = clipToFrame(sq, 100, 100);
+    expect([Math.min(...c.map((q) => q.x)), Math.max(...c.map((q) => q.x)), Math.min(...c.map((q) => q.y)), Math.max(...c.map((q) => q.y))]).toEqual([0, 10, 0, 10]);
+    expect(clipToFrame(sq.map((q) => ({ x: q.x + 200, y: q.y })), 100, 100)).toEqual([]);
+  });
+});
+
+/* ---------------------------------------------------------------- the end card's stone (P2-9, 1:1) ------------- */
+
+describe("the end card's stone keeps the safe margin to its last frame, and the coda's first frames with it (OVERRIDES §65, §67 on P2-9)", () => {
+  /** The stone's least distance to the frame's edges on a title shot's frame (its own bounds, with 6 % for its lean or breath). */
+  const margin = (p: ScenePlan, shotId: string, fr: number) => {
+    const s = p.shots.find((y) => y.id === shotId)!;
+    const pose = s.camera.pose(fr - s.from);
+    const c = worldToFrame(s.stone!.at, pose, p.frame.w, p.frame.h);
+    const k = ((s.stone!.size * pose.zoom) / VIEWBOX_SIZE) * 1.06;
+    return Math.min(c.y + BODY.top * k, c.x + BODY.left * k, p.frame.w - c.x - BODY.right * k, p.frame.h - c.y - BODY.bottom * k);
+  };
+  test("as planned: the end card's stone in every aspect, and the coda's page carrying it on, stay 60 px or more inside the frame; the 1:1 stone ends about 73 px from the top", () => {
+    for (const a of ASPECTS) {
+      const ec = endCard(a);
+      expect(msgs(titleStoneSafe(ec)).map((m) => `${a} ${m}`)).toEqual([]);
+      expect(msgs(titleStoneSafe(coda(a))).map((m) => `${a} ${m}`)).toEqual([]);
+      expect(margin(ec, "title", ec.duration - 1)).toBeGreaterThanOrEqual(60);
+      // the coda's first frame is the end card's next: the same place
+      expect(Math.abs(margin(coda(a), "page", 0) - margin(ec, "title", ec.duration - 1))).toBeLessThan(0.5);
+    }
+    const ec = endCard("1:1");
+    expect(margin(ec, "title", ec.duration - 1)).toBeGreaterThan(70);
+    expect(margin(ec, "title", ec.duration - 1)).toBeLessThan(76);
+  });
+  test("the canaries: the 1:1 stone where it was (0.18 of the height) fails on the end card and on the coda's page", () => {
+    const at = (p: ScenePlan, shotId: string): ScenePlan => withShot(p, shotId, (s) => ({ ...s, stone: { ...s.stone!, at: { x: s.stone!.at.x, y: 1080 * 0.18 } } }));
+    const ec = at(endCard("1:1"), "title");
+    expect(titleStoneSafe(ec).some((f) => /from the frame's top edge/.test(f.message))).toBe(true);
+    expect(margin(ec, "title", ec.duration - 1)).toBeLessThan(40);
+    expect(titleStoneSafe(at(coda("1:1"), "page")).length).toBe(1);
+  });
+  test("its holds and page timings are fix round 2's (CR-10, CR-20), untouched: one timeline in every aspect", () => {
+    const keys = ["factsLand", "factsHoldEnd", "page2", "end", "breathFrom", "irisAt"] as const;
+    const of = (a: Aspect) => keys.map((k) => (endCard(a).extra as Record<string, number>)[k]);
+    expect(of("1:1")).toEqual(of("16:9"));
+    expect(of("9:16")).toEqual(of("16:9"));
+    expect((endCard("1:1").extra as { anchors: unknown }).anchors).toEqual((endCard("16:9").extra as { anchors: unknown }).anchors);
+  });
+});
+
+/* ---------------------------------------------------------------- the wiring (design item 14) ------------------ */
+
+describe("the wiring: finale.ts's then: \"coda\" in the main composition, the coda in the main cut only (OVERRIDES §62, §65)", () => {
+  const main = (a: Aspect) => demoPlans(a).map((e) => e.plan);
+  test("the main reel plays the coda right after the end card planned with then: \"coda\", from its true ending, on one timeline", () => {
+    const joins: number[] = [];
+    for (const a of ASPECTS) {
+      const ps = main(a);
+      const ec = ps.find((p) => p.id === "return")!;
+      const c = ps[ps.length - 1]!;
+      expect(finaleThen(ec)).toBe("coda");
+      expect(c.id).toBe("coda");
+      expect(ps[ps.length - 2]).toBe(ec);
+      expect(msgs(codaCut(ps, "main"))).toEqual([]);
+      // the join: the coda's first frame is the end card's true ending, the same reel frame in every aspect
+      const join = ps.slice(0, -1).reduce((n, p) => n + p.duration, 0);
+      joins.push(join);
+      expect(join).toBe(xCutFrames(ps));
+      expect(X(c).endCard.end).toBe(ec.duration);
+      expect(checkJoins([ec, c], ["continue"])).toEqual([]);
+      // its timing is the plan's (aligned across the aspects), never typed in
+      expect(c.extra!.timing).toEqual(coda("16:9").extra!.timing);
+      // stoneCount and the coda's checks still pass on the plan
+      expect(errorsOf(stoneCount(c))).toEqual([]);
+      expect(errorsOf(codaChecks(c))).toEqual([]);
+      expect(checkPlan(c, CODA_GRID).ok).toBe(true);
+    }
+    expect(new Set(joins).size).toBe(1);
+    expect(timelineDiffs({ "16:9": coda("16:9"), "1:1": coda("1:1"), "9:16": coda("9:16") })).toEqual([]);
+  });
+  test("then: \"coda\" changes no frame of the end card: planFinale with it and without it differ only in what it records", () => {
+    for (const [w, h] of [
+      [1920, 1080],
+      [1080, 1080],
+      [1080, 1920],
+    ] as const) {
+      const a = planFinale({ w, h, fps: 60, hit: 300 });
+      const b = planFinale({ w, h, fps: 60, hit: 300, then: "coda" });
+      expect([finaleThen(a), finaleThen(b)]).toEqual([null, "coda"]);
+      expect(b.duration).toBe(a.duration);
+      expect(JSON.stringify(b.types)).toBe(JSON.stringify(a.types));
+      expect(b.endsFilm).toBe(true);
+      for (const [i, s] of a.shots.entries()) for (let fr = s.from; fr < s.to; fr += 7) expect(b.shots[i]!.camera.pose(fr - s.from)).toEqual(s.camera.pose(fr - s.from));
+      const { then: _t, ...ra } = a.extra as Record<string, unknown>;
+      const { then: _u, ...rb } = b.extra as Record<string, unknown>;
+      expect(Object.keys(rb)).toEqual(Object.keys(ra));
+      expect(finaleThen(withThen(a, "coda"))).toBe("coda");
+    }
+    expect(() => withThen({ ...endCard("16:9"), endsFilm: false }, "coda")).toThrow(/not an end card/);
+  });
+  test("every other cut ends on the end card: the X version is the main reel to the coda's first frame, with page 2 held to its last frame", () => {
+    for (const a of ASPECTS) {
+      const ps = main(a);
+      const x = xCut(ps);
+      expect(x.map((p) => p.id)).toEqual(["drop", "ring4", "dusk", "climax", "return"]);
+      expect(msgs(codaCut(x, "x"))).toEqual([]);
+      const ec = x[x.length - 1]!;
+      expect(ec.endsFilm).toBe(true);
+      expect(ec.types.filter((t) => t.kind === "end" && t.exitAt === undefined).map((t) => t.id).sort()).toEqual(["L29a", "L29b"]);
+    }
+  });
+  test("the canaries: the coda in the X cut, the tour, the 40-s cut or a short; a main cut without it after its end card; the coda after an end card not planned with then: \"coda\"", () => {
+    const ps = main("16:9");
+    for (const cut of ["x", "tour", "40s", "short"] as FilmCut[]) expect(errorsOf(codaCut(ps, cut)).some((f) => /plays the post-credit scene: only the main film does/.test(f.message))).toBe(true);
+    expect(errorsOf(codaCut(xCut(ps), "main")).some((f) => /planned with then: "coda", but the main cut does not play/.test(f.message))).toBe(true);
+    const unmarked = ps.map((p) => (p.id === "return" ? { ...p, extra: { ...p.extra, then: null } } : p));
+    expect(errorsOf(codaCut(unmarked, "main")).some((f) => /not planned with then: "coda"/.test(f.message))).toBe(true);
+  });
+});
+
+/* ---------------------------------------------------------------- the flash model's calibration (P2-1) ---------- */
+
+describe("the flash model's calibration against a render (codaCalibrate.ts; prepared for the evening, OVERRIDES §65 on P2-1)", () => {
+  const model = (share: number): TileSeries => {
+    const p = coda("16:9");
+    return codaLumaSeries(p, 0, p.duration, { ...CODA_LUMA, inkShare: share });
+  };
+  test("a render that is the model itself: the fitted share is the plan's, no flash, no disagreement, nothing to recommend", () => {
+    const r = calibrate(coda("16:9"), model(CODA_LUMA.inkShare));
+    expect(r.ok).toBe(true);
+    expect(r.fit.page.share!).toBeCloseTo(CODA_LUMA.inkShare, 6);
+    expect(r.fit.night.share!).toBeCloseTo(CODA_LUMA.inkShare, 6);
+    expect([r.flashes.render.worst, r.flashes.planned.worst, r.flashes.fitted.worst]).toEqual([0, 0, 0]);
+    expect(r.transitions).toEqual([]);
+    expect(r.recommend).toEqual([]);
+    expect(r.levels.page.ratio!).toBeCloseTo(1, 9);
+    expect(r.levels.plate.ratio!).toBeCloseTo(1, 9);
+  });
+  test("a render whose glyphs cover more of their boxes: the fit finds the share, and the report says what to set", () => {
+    const r = calibrate(coda("16:9"), model(0.45));
+    expect(r.fit.page.share!).toBeCloseTo(0.45, 6);
+    expect(r.fit.night.share!).toBeCloseTo(0.45, 6);
+    expect(r.recommend.some((m) => /fits an ink share of 0\.450/.test(m))).toBe(true);
+    expect(fitInkShare(coda("16:9"), model(0.45), [0, 1, 2, 3]).rmsFitted).toBeLessThan(1e-9);
+  });
+  test("the canary: a render with the rise before the fall (page 2 leaving before the iris, as on 28 Oct) fails, and the model as planned is named as missing it", () => {
+    const r0 = model(CODA_LUMA.inkShare);
+    const k = 2 * 6 + 2;
+    // tile 2,2 of the 16:9 render of 28 Oct (postcredit/runs/tileflash-16x9.txt): 0.792 on L0, 0.899 on L10 and 0.922 on
+    // L20 as page 2's lines left, then the closing iris: 0.010 by L30; the model's own values after
+    const at = (f: number, a: number, b: number, f0: number) => a + ((b - a) * (f - f0)) / 10;
+    const tile = r0.tiles[k]!.map((v, f) => (f <= 10 ? at(f, 0.792, 0.899, 0) : f <= 20 ? at(f, 0.899, 0.922, 10) : f <= 30 ? at(f, 0.922, 0.01, 20) : v));
+    const render: TileSeries = { tiles: r0.tiles.map((s, i) => (i === k ? tile : s)), whole: r0.whole };
+    const r = calibrate(coda("16:9"), render);
+    expect(r.ok).toBe(false);
+    expect(r.flashes.render.worst).toBe(1);
+    expect(r.problems.some((m) => /the render flashes: tile 2,2/.test(m))).toBe(true);
+    expect(r.recommend.some((m) => /the model misses it/.test(m))).toBe(true);
+    expect(transitionDiffs(r0, render).some((d) => d.where === "tile 2,2")).toBe(true);
+    expect(flashesOf(render, 60).flashing.map((f) => f.where)).toEqual(["tile 2,2"]);
+  });
+  test("RenderLuma measures as the reel scan does: K-fold box averages, the sRGB curve, 6 × 6 tiles", () => {
+    const W = 960;
+    const H = 540;
+    const rl = new RenderLuma(W, H);
+    expect([rl.K, rl.w, rl.h]).toEqual([5, 192, 108]);
+    const f = new Uint8Array(W * H).fill(128);
+    for (let y = 0; y < H / 6; y++) for (let x = 0; x < W / 6; x++) f[y * W + x] = 255;
+    rl.push(f);
+    const lin = (v: number) => ((v / 255 + 0.055) / 1.055) ** 2.4;
+    expect(rl.series.tiles[0]![0]!).toBeCloseTo(1, 9);
+    expect(rl.series.tiles[1]![0]!).toBeCloseTo(lin(128), 9);
+    expect(rl.series.whole[0]!).toBeCloseTo((1 + 35 * lin(128)) / 36, 9);
   });
 });
 

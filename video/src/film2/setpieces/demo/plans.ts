@@ -15,7 +15,7 @@ import { planRingBlock, type RingTiming } from "../ringBlock";
 import { ring4 } from "../rings";
 import { planDusk } from "../dusk";
 import { planClimax } from "../climax";
-import type { FinaleTiming } from "../finale";
+import { withThen, type FinaleTiming } from "../finale";
 import { RETURN_MUSIC, RETURN_STRETCH, planReturn, returnGrid, type ReturnOptions } from "../returnPlan";
 import { localOfR } from "../returnField";
 import { CODA_GRID, CODA_STRETCH, planCoda, type CodaTiming } from "../coda";
@@ -74,10 +74,13 @@ function buildAll(): Map<Aspect, DemoEntry[]> {
     // the Return, the title and the end card (OVERRIDES §61: in place of the wall and the convergence): S24's last
     // frame is its first cell; the title lands on A4's bar 82 (R720); the track's last strong note 4 s later (an edit
     // at a bar line brings Born Of The Sky's 2:55.42 there), then its 6.6 s decay and 0.75 s of room tone
-    const returns = alignAspects<FinaleTiming>((a, align) => planReturn(returnOptions(a, climaxes[a], align)));
+    // This reel is the main cut: its end card is planned with finale.ts's `then: "coda"` (withThen: no frame of it
+    // changes), and the post-credit scene plays from its true ending (D157, OVERRIDES §62, §65). Every other cut ends on
+    // the end card, page 2 held to its last frame: the X version is this reel to the coda's first frame (coda.ts xCut,
+    // codaPlacement), and codaCut holds every cut to it
+    const aligned = alignAspects<FinaleTiming>((a, align) => planReturn(returnOptions(a, climaxes[a], align)));
+    const returns = Object.fromEntries(ASPECTS.map((a) => [a, withThen(aligned[a], "coda")])) as Record<Aspect, ScenePlan>;
     add(returns, returnGrid(FPS), RETURN_STRETCH);
-    // the post-credit scene (D157, OVERRIDES §62): from the end card's true ending, the main film only; the X version is
-    // the master cut at its first frame (setpieces/coda.ts codaPlacement)
     const codas = alignAspects<CodaTiming>((a, align) => planCoda({ ...SIZE[a], fps: FPS, endCard: returns[a], align }));
     add(codas, CODA_GRID, CODA_STRETCH);
   }

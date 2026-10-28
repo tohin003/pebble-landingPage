@@ -115,6 +115,13 @@ export interface TypeSpec {
    * estimated widths came out 62–165 px apart)
    */
   row?: { id: string; gapEm: number; index: number };
+  /**
+   * no exit of its own: an iris takes it (the post-credit scene's closing iris takes page 2's lines in the main cut,
+   * OVERRIDES §65 on P2-1; setpieces/coda.ts irisCover): drawn until `to`, the iris's edge crossing it on [from, to),
+   * its declared exit (`by` names it for the render's marks). Set with `exit: "camera"` and `exitAt: from`, so the
+   * reading model reads it until the iris reaches it; the view that draws the iris covers it
+   */
+  covered?: { from: number; to: number; by: string };
 }
 
 /** A cascade (kind 5): one fixed line, one swapping item and its UI card, swapped in place. */

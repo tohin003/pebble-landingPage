@@ -26,16 +26,19 @@
 // It works for any title downbeat: the convergence and the iris are placed back from `hit`.
 // `head` replaces the convergence with another shot before the iris (OVERRIDES §61: the Return, setpieces/returnPlan.ts),
 // which lands its stone on the title stone's pose and velocity on `landAt`; the convergence stays the default until the
-// film's sequence switches to the Return.
+// film's sequence switches to the Return. `then: "coda"` (FinaleThen; withThen() for an end card planned elsewhere)
+// marks the end card the main cut plays on past its true ending into the post-credit scene (setpieces/coda.ts), changing
+// none of its frames; titleStoneSafe holds the page's stone inside the safe margin to its last frame.
 // Pure data.
 import { f60, sec } from "../tokens";
 import { VelocityCamera, worldToFrame, type CamVel, type Pose } from "../motion/camera";
 import type { Point } from "../motion/geometry";
 import type { RingSpec } from "../carrier/ring";
 import type { Grade, GradeName, LightCue } from "../light/grades";
-import type { QaMove } from "../qa/checks";
+import type { Finding, QaMove } from "../qa/checks";
 import { approxLineWidth, typeSizePx } from "../type/scale";
 import { STEALTH_HONEST } from "../../../../shared/pebble/stealthVeil";
+import { BODY, VIEWBOX_SIZE } from "../../../../shared/pebble/character";
 import { place, type MusicGrid } from "./music";
 import { breakLines, enterFramesOf, exitFramesOf, frameBox, glideLz, lineHeightOf, type FrameBox, type TypeBox } from "./frame";
 import { TITLE_CUES, WALL_CUES } from "./pieces.cues";
@@ -99,6 +102,31 @@ export interface FinaleOptions {
    * which must land its stone there with the page's velocity, and its light, music and moves
    */
   head?: (ctx: FinaleHeadContext) => FinaleHead;
+  /** what the main cut plays after the end card's true ending (FinaleThen; withThen() marks an end card planned elsewhere) */
+  then?: FinaleThen;
+}
+
+/**
+ * What the main cut plays after the end card's true ending (POSTCREDIT_DESIGN item 14; OVERRIDES §62, §65): "coda", the
+ * post-credit scene (setpieces/coda.ts planCoda), in the main cut only. It changes no frame of the end card: the X cut,
+ * and every other cut, is the master cut at the end card's true ending, page 2 held to its last frame; the end card
+ * keeps its own declared last breath (§65's ruling (a) on P1-4) and page 2's lines keep no exit (the coda's closing iris
+ * takes them, §65 on P2-1). So `endsFilm` stays: the end card ends every cut but the main one, whose coda carries its
+ * last frame on (a "continue" join, setpieces/joins.ts). The plan records it (`extra.then`), and coda.ts codaCut holds a
+ * cut to it: the main cut plays the coda right after an end card planned with it, and no other cut plays the coda.
+ */
+export type FinaleThen = "coda";
+
+/** What the main cut plays after an end card (null: nothing, the end card ends it). */
+export const finaleThen = (p: Pick<ScenePlan, "extra">): FinaleThen | null => ((p.extra as { then?: FinaleThen | null } | undefined)?.then ?? null);
+
+/**
+ * An end card planned elsewhere (planReturn plans its end card with planFinale), marked as planFinale's `then` marks it:
+ * the same plan, frame for frame, with `extra.then` set. It must end the film's X cut (`endsFilm`).
+ */
+export function withThen(endCard: ScenePlan, then: FinaleThen): ScenePlan {
+  if (!endCard.endsFilm) throw new Error(`${endCard.id} is not an end card (it does not end the film): nothing plays after its true ending`);
+  return { ...endCard, extra: { ...endCard.extra, then } };
 }
 
 /** What a head is given: the title's camera and where the title's stone is on `landAt` (CR-01: one stone through the iris). */
@@ -158,7 +186,11 @@ const LAYOUT: Record<FrameBox["aspect"], FinaleLayout> = {
     facts: [["Free and open source.", "Apache-2.0", "No telemetry."], ["For Macs with Apple silicon.", "Not notarized."]],
   },
   "1:1": {
-    stone: (f) => ({ x: f.w * 0.5 - 230 * f.unit, y: f.h * 0.18 }),
+    // the stone (and the wordmark set beside it) 0.21 of the height down, not 0.18: the page grows ×1.30 from page 1's
+    // anchor to its last frame, which carried the stone to 35 px from the top edge there, and the coda's first 34 frames
+    // inherit that frame (the post-credit review's P2-9, OVERRIDES §65, §67); now 73 px, inside the 60-px safe margin
+    // (titleStoneSafe holds it on every frame)
+    stone: (f) => ({ x: f.w * 0.5 - 230 * f.unit, y: f.h * 0.21 }),
     stonePx: 170,
     mark: (f, s, r) => ({ left: s.x + r + 40 * f.unit, top: s.y - 56 * f.unit }),
     lineTop: (f) => f.h * 0.31,
@@ -417,6 +449,40 @@ export function planFinale(o: FinaleOptions): ScenePlan {
       factRows,
       credits: FILM_CREDITS({ musicCredits: o.musicCredit ? [o.musicCredit] : [], trademarks: o.trademarks }),
       honestLine: STEALTH_HONEST,
+      // what the main cut plays after the true ending (FinaleThen): no frame here changes with it
+      then: o.then ?? null,
     },
   };
+}
+
+/** The pebble's drawn extent about its centre `c` at drawn size `px`: its own bounds (BODY), with 6 % for its lean or breath. */
+const stoneBodyRect = (c: Point, px: number): { x0: number; y0: number; x1: number; y1: number } => {
+  const k = (px / VIEWBOX_SIZE) * 1.06;
+  return { x0: c.x + BODY.left * k, y0: c.y + BODY.top * k, x1: c.x + BODY.right * k, y1: c.y + BODY.bottom * k };
+};
+
+/**
+ * The title's and the end card's stone keeps the frame's safe margin (the post-credit review's P2-9, first half; OVERRIDES
+ * §65, §67): on every frame a title page draws its stone (its shot, and the seams it leaves through: the coda's closing
+ * iris carries the end card's last frame on for 34 frames), the stone's drawn extent (its own bounds, with 6 % for its
+ * lean or breath) stays 60 px at 1080 or more inside every edge, as the page's type does (typeSafe). The 1:1 end card's
+ * page grows ×1.30 from page 1's anchor to its last frame and carried its stone to 35 px from the top edge there.
+ */
+export function titleStoneSafe(p: ScenePlan): Finding[] {
+  const out: Finding[] = [];
+  const { w, h, safe } = p.frame;
+  for (const s of p.shots) {
+    if (s.kind !== "title" || !s.stone) continue;
+    const st = s.stone;
+    const spans = [{ from: s.from, to: s.to }, ...p.seams.filter((x) => x.out === s.id && x.frames > 0).map((x) => ({ from: x.at, to: x.at + x.frames }))];
+    let worst: { fr: number; m: number; edge: string } | null = null;
+    for (const sp of spans)
+      for (let fr = Math.max(0, sp.from); fr < Math.min(p.duration, sp.to); fr++) {
+        const pose = s.camera.pose(fr - s.from);
+        const r = stoneBodyRect(worldToFrame(st.at, pose, w, h), st.size * pose.zoom);
+        for (const [edge, m] of [["top", r.y0], ["left", r.x0], ["right", w - r.x1], ["bottom", h - r.y1]] as const) if (!worst || m < worst.m) worst = { fr, m, edge };
+      }
+    if (worst && worst.m < safe - 0.5) out.push({ check: "titleStoneSafe", level: "error", message: `the stone of ${s.id} comes ${(worst.m / p.frame.unit).toFixed(1)} px from the frame's ${worst.edge} edge at 1080 (frame ${worst.fr}): it keeps the ${(safe / p.frame.unit).toFixed(0)}-px safe margin on every frame, as the page's type does (the post-credit review's P2-9, OVERRIDES §65, §67)`, frame: worst.fr });
+  }
+  return out;
 }

@@ -15,12 +15,15 @@
 // line, and the feature's status. Pebble never speaks: every line is in the third person.
 //
 // The beats (local frames L at 60 fps, L0 = the end card's true ending; f60() converts for other rates):
-//   A  L0–L13    page 2's two lines blur out, each with its own exit (the 14-word method line over 14 frames)
+//   A  L0–       page 2's two lines stay: in the main cut they have no exit of their own, and the closing iris takes
+//                them with the page (OVERRIDES §65 on the post-credit review's P2-1: leaving first, they lifted the middle
+//                tiles just before the iris darkened them, a rise before the fall: one flash on the 16:9 and 1:1 renders)
 //   B  L4–L33    a ring iris closes onto the end card's stone, night green outside it, the sage hairline on its edge;
-//                the stone's face is the last thing seen. It eases on E-move: a closing "leave" ease waits for the
-//                lead's ruling (POSTCREDIT_DESIGN §7 item 3), and E-move is the ruling the film already has (§52)
-//   C  L34–      the breath: flat night green (COLOR.nightPage, the dark --bg, never black), with no camera: a declared
-//                wait. Room tone only
+//                the stone's face is the last thing seen. It eases on E-move (the lead kept it, §65)
+//   C  L34–      the breath: flat night green (COLOR.nightPage, the dark --bg, never black), with no camera. Room tone only
+//   L0 to the iris-in is §62's one breath of silence (§65, the lead's ruling (a) on the review's P1-4): the real ending,
+//   then a dark beat, declared as ONE wait (`silence`, on the two shots it spans); the end card keeps its own declared
+//   last breath before it, and the camera floor applies from the iris-in on
 //   D  irisIn    an iris opens from the sleeping stone's face (E-move, 36 frames, with NO hairline: in this film a ring
 //                means Pebble is acting, and a sage ring opening from the sleeping stone read as the unbuilt feature at
 //                work, POSTCREDIT_DESIGN §6; the review's P1-1): the stone comes out of the dark through the feathered
@@ -39,13 +42,16 @@
 //
 // What it continues. Frames L0–L33 ARE the end card's page, carried on: its camera (settled in the end card's own last
 // breath, the room tone after the music's decay, and left as it is: the X cut ends there, so it cannot change), its
-// stone on its engine clock, page 2's lines in its world. The closing ring is the motion there. The plan's `page` shot describes them for the checks; setpieces/views/CodaView.tsx
-// draws them by playing the end card's own plan on past its end (`extra.coda.endCard.extended`, built here), so those
-// frames are the end card's own picture with only the exits added. Nothing before L0 changes: the end card's plan is
-// not touched, and the X version (the main film with the coda is over X's 2:20) is the main master cut at the coda's
-// first frame (codaPlacement, xCutFrames).
+// stone on its engine clock, page 2's lines in its world. The closing ring is the motion there. The plan's `page` shot
+// describes them for the checks (page 2's lines `covered` by the closing iris: TypeSpec.covered); CodaView draws them by
+// playing the end card's own plan on past its end (`extra.coda.endCard.extended`, built here), so those frames are the
+// end card's own picture, nothing added. Nothing before L0 changes: the end card's plan is not touched, and the X
+// version (the main film with the coda is over X's 2:20) is the main master cut at the coda's first frame, page 2 held to
+// its last frame there (codaPlacement, xCutFrames).
 //
-// The main film only: not the tour cut, the 40-s cut or the shorts (POSTCREDIT_DESIGN §3.10; OVERRIDES §62).
+// The main film only: not the X cut, the tour cut, the 40-s cut or the shorts (POSTCREDIT_DESIGN §3.10; OVERRIDES §62,
+// §65). The main composition plays it after an end card planned with finale.ts's `then: "coda"` (codaCut holds a cut to
+// it).
 // Pure; no React.
 import { COLOR, RING, f60, type Aspect } from "../tokens";
 import { VelocityCamera, worldToFrame, type CamSample, type Pose } from "../motion/camera";
@@ -62,6 +68,7 @@ import { defaultEntranceOf, enterFramesOf, exitFramesOf, frameBox, glideLz, line
 import { offsetForBlink, type FrameSpan } from "./blink";
 import { CODA_CUES } from "./coda.cues";
 import { move, type ScenePlan, type ShotSpec, type StoneSpec, type TypeSpec } from "./scene";
+import { finaleThen } from "./finale";
 import type { MusicGrid } from "./music";
 import type { DemoStretch } from "./demo/grids";
 
@@ -153,7 +160,39 @@ export const CODA_GRADE: Grade = { ...GRADES.page, name: "night riverbed", keyLi
  *             at 0.55 the plate's median becomes #1D2520, exactly the site's dark --wallpaper-tint (its riverbed's
  *             ground), and the ground's within ΔE 5 of the --bg (codaChecks.ts codaLight)
  */
-export const CODA_PLATE = { src: "desktop/riverbed-dark-2400.jpg", fallback: "#1D2520", median: "#29332D", exposure: 0.55 } as const;
+export const CODA_PLATE = { src: "desktop/riverbed-dark-2400.jpg", fallback: "#1D2520", median: "#29332D", exposure: 0.55, units: { w: 1600, h: 1000 } } as const;
+
+/** Where the night plate sits in a frame: `scale` world px of the ground's plane a plate unit, and the plate's point (its units) on the ground's centre at the shot's ref pose. */
+export interface PlateFraming {
+  scale: number;
+  centre: Point;
+}
+
+/**
+ * The night plate's framing per aspect (OVERRIDES §65 on the post-credit review's P2-9, second half: no riverbed pebble
+ * on the night plate may read larger than the sleeping stone; codaChecks.ts codaPlate holds it on every frame, against
+ * the plate's own pebbles, codaPlate.ts). null: the ground is sized from the shot's own widest pose as every shot's is
+ * (setpieces/ground.ts), 2.125 world px a plate unit here: 16:9 shows the plate's middle, with two pebbles' rims at its
+ * corners, 1:1 a middle no pebble reaches. The tall 9:16 frame showed four of the plate's pebbles, the largest drawn
+ * 1,105 × 607 px against the stone's body of 263 × 232; and at any scale that covers its height, every pebble of the plate
+ * is larger than the stone. So 9:16 shows a stretch of the plate between its pebbles instead: 3 world px a plate unit
+ * (×1.41), the plate's point (1060, 480) on the frame's centre, 32 units clear of every pebble's outline at the iris-in,
+ * where the ground is seen widest (the push only narrows it). Its median there is #232C27 (the plate's 160 × 100 sample;
+ * #181F1B under the coda's light, ΔE 1.3 from the dark --bg, where the whole plate's #29332D gives #1D2520, ΔE 3.3).
+ */
+export const CODA_PLATE_FRAMING: Readonly<Record<Aspect, PlateFraming | null>> = {
+  "16:9": null,
+  "1:1": null,
+  "9:16": { scale: 3, centre: { x: 1060, y: 480 } },
+};
+
+/** The ground's rect (world units of the ground's plane) that puts the plate where `framing` says, about the shot's ref pose. */
+export const plateRect = (ref: Pose, framing: PlateFraming, units: { w: number; h: number } = CODA_PLATE.units): Rect => ({
+  x: ref.x - framing.centre.x * framing.scale,
+  y: ref.y - framing.centre.y * framing.scale,
+  w: units.w * framing.scale,
+  h: units.h * framing.scale,
+});
 
 /** The night plate's median as a frame shows it: its exposure, then the light `g` (the ground's gains, the filter, the washes). */
 export const plateUnder = (g: Grade, plate: { median: string; exposure: number } = CODA_PLATE): RGB =>
@@ -243,18 +282,31 @@ export interface CodaExtra {
    * the still wait it declares at its end (its own frames; the film's last breath in the X cut, not in the main cut)
    */
   endCard: { id: string; end: number; shot: string; extended: ScenePlan; lastBreath: { from: number; to: number } | null };
-  /** the end card's lines carried in and leaving on L0 (page 2's) */
+  /**
+   * the end card's lines carried in (page 2's): no exit of their own in the main cut, the closing iris takes them with
+   * the page (TypeSpec.covered: the frames its edge crosses each)
+   */
   carried: readonly string[];
   /** the coda's own lines */
   lines: readonly string[];
   /** the iris that closes onto the end card's stone (B) and the iris that opens from the coda's stone (D) */
   irisOut: CodaIris;
   irisIn: CodaIris & { startRadius: number };
+  /** the flat night green between the irises: no camera, nothing drawn */
   breath: { from: number; to: number };
+  /**
+   * §62's one breath of silence (OVERRIDES §65, the lead's ruling (a) on the post-credit review's P1-4): the end card's
+   * true ending, then a dark beat, from L0 to the iris-in (the iris-out and the breath), ONE declared wait on the two
+   * shots it spans (the page's frames, the breath's); the end card's own declared last breath comes before it, and the
+   * camera floor applies from the iris-in on
+   */
+  silence: { from: number; to: number };
   lastBreath: { from: number; to: number };
   push: { px: number; lz: number; from: number; ease: number; still: number };
   stone: { palette: "dark"; initialPose: "sleepy"; colors: typeof CODA_STONE_COLORS; blink: { target: number; keepClear: FrameSpan[]; clockOffset: number } };
   ground: { src: string; fallback: string; median: string; exposure: number };
+  /** where the night plate sits in this aspect (CODA_PLATE_FRAMING; null: the ground sized from the shot's own poses) */
+  plateFraming: PlateFraming | null;
   grade: Grade;
   /** the scene's sound as layers (codaSound counts them: one bed under every frame, one one-shot), and who builds it */
   sound: { builtBy: string | null; layers: readonly CodaSoundLayer[] };
@@ -523,28 +575,25 @@ function buildCoda(o: CodaOptions, irisInAt: number, flashWait: number): ScenePl
   const st0 = title.stone;
   // one stone on one clock across the join: engine time is (local + clockOffset) ÷ fps, and the cues shift with it
   const pageStone: StoneSpec = { ...st0, cues: st0.cues.map((c) => ({ ...c, at: Math.round((c.at - end0 / fps) * 1000) / 1000 })), clockOffset: (st0.clockOffset ?? 0) + end0 };
-  // the lines the end card holds to its last frame (page 2's), leaving now, each the way it came
+  // the lines the end card holds to its last frame (page 2's): in the main cut they have no exit of their own, and the
+  // closing iris takes them with the page (OVERRIDES §65 on the post-credit review's P2-1: their exits lifted the
+  // middle tiles just before the iris darkened them, a rise before the fall, one flash on the 16:9 and 1:1 renders).
+  // `exit: "camera"`: no drawn exit, the line leaves with the world that carries it; once the plan exists, `covered`
+  // gives the frames the iris's edge crosses each (its declared exit) and `exitAt` the first of them
   const held = ec.types.filter((t) => t.exitAt === undefined);
   for (const t of held) if (t.carry && t.carry.shot !== title.id) throw new Error(`the end card's ${t.id} is set in ${t.carry.shot}, not its last shot`);
-  const exitOf = (t: TypeSpec) => {
-    const ent = t.entrance ?? defaultEntranceOf(t.tier);
-    return ent === "lineRise" || ent === "wordRise" ? ("lift" as const) : ("blur" as const);
-  };
   const carried: TypeSpec[] = held.map((t) => ({
     ...t,
     at: t.at - end0,
-    exitAt: 0,
-    exit: exitOf(t),
+    exit: "camera" as const,
     ...(t.carry ? { carry: { shot: "page", at: t.carry.at - end0, ...(t.carry.outFrom !== undefined ? { outFrom: t.carry.outFrom - end0 } : {}) } } : {}),
   }));
-  for (const t of carried) if (exitFramesOf(t.entrance ?? defaultEntranceOf(t.tier), t.exit!, t.text, fps) + 2 > irisOutEnd) throw new Error(`${t.id}'s exit outlasts the iris-out`);
   // the end card's own plan played on past its end, for the view: its last shot to the iris-out's end on the carried
-  // camera, its held lines leaving on its `end` (nothing before `end` changes: the exits start there)
+  // camera, its held lines held on with it (the night cover takes them); nothing before `end` changes, nothing is added
   const extended: ScenePlan = {
     ...ec,
     duration: end0 + irisOutEnd,
     shots: ec.shots.map((s) => (s === title ? { ...s, to: end0 + irisOutEnd, camera: continued, waits: [] } : s)),
-    types: ec.types.map((t) => (held.includes(t) ? { ...t, exitAt: end0, exit: exitOf(t) } : t)),
     endsFilm: false,
   };
 
@@ -577,11 +626,16 @@ function buildCoda(o: CodaOptions, irisInAt: number, flashWait: number): ScenePl
   types.push({ id: "L-C3", text: texts.status, tier: "expressive", at: line3 - rise(texts.status), sizeT: 0, color: NIGHT_INK2, box: lay.boxes[2], kind: "film", carry });
 
   /* ------------------------------------------------ shots, seams, light ------------------------------------------ */
+  // §62's one breath of silence (OVERRIDES §65, ruling (a)): L0 to the iris-in, one wait, declared on the two shots it
+  // spans as the foundation reads a wait (the shot a frame falls in): the page's frames, then the breath's
+  const silence = { from: 0, to: irisIn };
+  // the night plate, framed for this aspect (CODA_PLATE_FRAMING: in 9:16, between the plate's pebbles)
+  const framing = CODA_PLATE_FRAMING[A];
   const shots: ShotSpec[] = [
-    { id: "page", from: 0, to: irisOutAt, kind: "title", camera: pageCam, ref: title.ref, ground: "page", planes: [], stone: pageStone, rings: [] },
-    // flat night green (the page's ground at night); its camera is still and nothing in it moves: the declared wait
-    { id: "breath", from: irisOutAt, to: irisIn, kind: "cutscene", camera: new VelocityCamera(pose0), ref: pose0, ground: "page", planes: [], rings: [], waits: [{ from: irisOutEnd, to: irisIn }] },
-    { id: "coda", from: irisIn, to: end, kind: "title", camera: cam, ref: pose0, ground: "riverbed", planes: [], stone: codaStone, rings: [], waits: [{ from: still, to: end }], dofScale: 8 },
+    { id: "page", from: 0, to: irisOutAt, kind: "title", camera: pageCam, ref: title.ref, ground: "page", planes: [], stone: pageStone, rings: [], waits: [{ from: silence.from, to: irisOutAt }] },
+    // flat night green (the page's ground at night): its camera is still and nothing in it moves
+    { id: "breath", from: irisOutAt, to: irisIn, kind: "cutscene", camera: new VelocityCamera(pose0), ref: pose0, ground: "page", planes: [], rings: [], waits: [{ from: irisOutAt, to: silence.to }] },
+    { id: "coda", from: irisIn, to: end, kind: "title", camera: cam, ref: pose0, ground: "riverbed", ...(framing ? { groundRect: plateRect(pose0, framing) } : {}), planes: [], stone: codaStone, rings: [], waits: [{ from: still, to: end }], dofScale: 8 },
   ];
   const endGrade = gradeAt(end0 - 1, ec.lightInitial, ec.lightCues);
   const lightCues: LightCue[] = [{ at: irisOutEnd, to: CODA_GRADE, frames: irisIn - irisOutEnd }];
@@ -597,10 +651,12 @@ function buildCoda(o: CodaOptions, irisInAt: number, flashWait: number): ScenePl
     // the night green outside and the hairline was the only edge; the design rules that image out (§6)
     irisIn: { at: irisIn, frames: irisInF, feather, hairline: null, ease: "move", startRadius: IRIS_DRAWN.startRadiusPx * f.unit },
     breath: { from: irisOutEnd, to: irisIn },
+    silence,
     lastBreath: { from: still, to: end },
     push: { px: CODA_PUSH_PX[A], lz, from: irisIn, ease, still },
     stone: { palette: "dark", initialPose: "sleepy", colors: CODA_STONE_COLORS, blink: { target: blinkTarget, keepClear, clockOffset } },
     ground: CODA_PLATE,
+    plateFraming: framing,
     grade: CODA_GRADE,
     sound: { builtBy: CODA_SOUND.builtBy, layers: [{ ...CODA_SOUND.roomTone, from: 0, to: end }, { ...CODA_SOUND.tap, at: line2 }] },
     captions: [
@@ -613,7 +669,7 @@ function buildCoda(o: CodaOptions, irisInAt: number, flashWait: number): ScenePl
     flashWait,
   };
 
-  return {
+  const plan: ScenePlan = {
     id: "coda",
     name: `Coda (after the end card) ${A}`,
     aspect: A,
@@ -641,16 +697,62 @@ function buildCoda(o: CodaOptions, irisInAt: number, flashWait: number): ScenePl
     endsFilm: true,
     extra: { timing: { irisIn, line1, line2, line3, ease, still, end } satisfies CodaTiming, coda: extra },
   };
+  // page 2's lines, taken by the closing iris: the frames its edge crosses each (their declared exit), and the reading
+  // model reads each until the iris reaches it (TypeSpec.covered, exitAt)
+  const ids = new Set(carried.map((t) => t.id));
+  return {
+    ...plan,
+    types: plan.types.map((t) => {
+      if (!ids.has(t.id)) return t;
+      const c = irisCover(plan, t);
+      return { ...t, exitAt: c.from, covered: { ...c, by: "iris" } };
+    }),
+  };
+}
+
+/**
+ * The frames the closing iris crosses a line on the end card's page (the line's rect as its world carries it, the
+ * iris as CodaView draws it): from the first frame its feathered edge reaches the line (the line no longer wholly in
+ * the clear) to the first frame the night covers it wholly; the iris-out's end at most (the page is not drawn after).
+ */
+export function irisCover(p: ScenePlan, t: TypeSpec): { from: number; to: number } {
+  const x = codaOf(p)!;
+  const shut = x.irisOut.at + x.irisOut.frames;
+  const r0 = lineRect(t.text, t.tier, p.frame, t.box, t.sizeT ?? 0.5);
+  let from = shut;
+  for (let fr = x.irisOut.at; fr < shut; fr++) {
+    const o = codaIrisOut(p, fr)!;
+    const r = carriedRect(p, t, r0, fr);
+    const far = Math.max(...[r.x, r.x + r.w].flatMap((px) => [r.y, r.y + r.h].map((py) => Math.hypot(px - o.c.x, py - o.c.y))));
+    const near = Math.hypot(Math.max(r.x, Math.min(o.c.x, r.x + r.w)) - o.c.x, Math.max(r.y, Math.min(o.c.y, r.y + r.h)) - o.c.y);
+    if (from === shut && far > o.R - o.feather) from = fr;
+    if (near >= o.R) return { from: Math.min(from, fr), to: fr };
+  }
+  return { from, to: shut };
 }
 
 /* ---------------------------------------------------------------- the flash model (C8) -------------------------- */
 
+/** The relative luminances the flash model draws with (CODA_LUMA; a calibration against a render varies them: codaCalibrate.ts). */
+export interface CodaLuma {
+  page: number;
+  night: number;
+  plate: number;
+  endStone: number;
+  stone: number;
+  inkOnPage: number;
+  inkOnNight: number;
+  ink2OnNight: number;
+  /** the share of a line's box its glyphs cover */
+  inkShare: number;
+}
+
 /**
  * The relative luminances the model uses (WCAG), from the palette: the page under its grade, the night green, the
  * night plate (its measured median at its exposure), the two stones, the two inks. A line's glyphs cover about a fifth
- * of its box.
+ * of its box (an estimate: codaCalibrate.ts measures it on a render).
  */
-export const CODA_LUMA = {
+export const CODA_LUMA: Readonly<CodaLuma> = {
   page: relLuminance(gradeColor(hexToRgb(COLOR.page), GRADES.page)),
   night: relLuminance(hexToRgb(COLOR.nightPage)),
   /** the plate's measured median at its exposure, under the coda's light */
@@ -661,7 +763,7 @@ export const CODA_LUMA = {
   inkOnNight: relLuminance(hexToRgb(COLOR.nightInk)),
   ink2OnNight: relLuminance(hexToRgb(NIGHT_INK2)),
   inkShare: 0.22,
-} as const;
+};
 
 /** The flash model's grid: WCAG's quarter of a 10° field is about 2.8 % of the screen, so 6 × 6 tiles (qa/luma.ts). */
 export const FLASH_GRID = 6;
@@ -676,7 +778,7 @@ interface LineShape {
 }
 
 /** What one frame of the coda shows, as shapes the model samples. */
-function frameShapes(p: ScenePlan, fr: number) {
+function frameShapes(p: ScenePlan, fr: number, luma: Readonly<CodaLuma> = CODA_LUMA) {
   const x = codaOf(p)!;
   const { w, h } = p.frame;
   const page = p.shots[0]!;
@@ -691,13 +793,17 @@ function frameShapes(p: ScenePlan, fr: number) {
       let shown = 1;
       if (fr < t.at) continue;
       if (fr < t.at + enter) shown = ent === "lineRise" ? clamp01(1 - 1.12 * (1 - E_ARRIVE(clamp01((fr - t.at) / f60(30, p.fps))))) : clamp01((fr - t.at) / enter);
-      if (t.exitAt !== undefined && fr >= t.exitAt) {
+      if (t.covered) {
+        // no exit of its own (page 2's lines in the main cut): drawn whole until the iris has passed it; the closing
+        // iris's hole (below) covers it as CodaView draws it
+        if (fr >= t.covered.to) continue;
+      } else if (t.exitAt !== undefined && fr >= t.exitAt) {
         const out_ = exitFramesOf(ent, t.exit ?? "blur", t.text, p.fps);
         shown *= 1 - clamp01((fr - t.exitAt) / Math.max(1, out_));
       }
       if (shown <= 0) continue;
       const rect = carriedRect(p, t, lineRect(t.text, t.tier, p.frame, t.box, t.sizeT ?? 0.5), fr);
-      out.push({ rect, shown, L: layer === "page" ? CODA_LUMA.inkOnPage : t.color === NIGHT_INK2 ? CODA_LUMA.ink2OnNight : CODA_LUMA.inkOnNight, ground: layer === "page" ? CODA_LUMA.page : CODA_LUMA.plate });
+      out.push({ rect, shown, L: layer === "page" ? luma.inkOnPage : t.color === NIGHT_INK2 ? luma.ink2OnNight : luma.inkOnNight, ground: layer === "page" ? luma.page : luma.plate });
     }
     return out;
   };
@@ -721,33 +827,33 @@ function frameShapes(p: ScenePlan, fr: number) {
 const inRect = (r: Rect, px: number, py: number) => px >= r.x && px < r.x + r.w && py >= r.y && py < r.y + r.h;
 
 /** The relative luminance the model gives a frame point. */
-function lumaAt(s: ReturnType<typeof frameShapes>, px: number, py: number): number {
+function lumaAt(s: ReturnType<typeof frameShapes>, px: number, py: number, luma: Readonly<CodaLuma> = CODA_LUMA): number {
   const layer = (which: "page" | "coda"): number => {
     const l = which === "page" ? s.page : s.coda;
-    if (!l) return CODA_LUMA.night;
-    if (Math.hypot(px - l.stone.c.x, py - l.stone.c.y) <= l.stone.r) return which === "page" ? CODA_LUMA.endStone : CODA_LUMA.stone;
-    for (const ln of l.lines) if (inRect(ln.rect, px, py)) return ln.ground + (ln.L - ln.ground) * CODA_LUMA.inkShare * ln.shown;
-    return which === "page" ? CODA_LUMA.page : CODA_LUMA.plate;
+    if (!l) return luma.night;
+    if (Math.hypot(px - l.stone.c.x, py - l.stone.c.y) <= l.stone.r) return which === "page" ? luma.endStone : luma.stone;
+    for (const ln of l.lines) if (inRect(ln.rect, px, py)) return ln.ground + (ln.L - ln.ground) * luma.inkShare * ln.shown;
+    return which === "page" ? luma.page : luma.plate;
   };
-  if (s.covered) return CODA_LUMA.night;
-  if (s.hole) return Math.hypot(px - s.hole.c.x, py - s.hole.c.y) <= s.hole.r ? layer(s.hole.keep) : CODA_LUMA.night;
+  if (s.covered) return luma.night;
+  if (s.hole) return Math.hypot(px - s.hole.c.x, py - s.hole.c.y) <= s.hole.r ? layer(s.hole.keep) : luma.night;
   return layer(s.page ? "page" : "coda");
 }
 
 /** Every tile's mean relative luminance on every frame of the plan, and the whole frame's (the model of qa/luma.ts's frames). */
-export function codaLumaSeries(p: ScenePlan, from = 0, to = p.duration): { tiles: number[][]; whole: number[] } {
+export function codaLumaSeries(p: ScenePlan, from = 0, to = p.duration, luma: Readonly<CodaLuma> = CODA_LUMA): { tiles: number[][]; whole: number[] } {
   const { w, h } = p.frame;
   const G = FLASH_GRID;
   const tiles: number[][] = Array.from({ length: G * G }, () => []);
   const whole: number[] = [];
   for (let fr = from; fr < to; fr++) {
-    const s = frameShapes(p, fr);
+    const s = frameShapes(p, fr, luma);
     let sum = 0;
     for (let ty = 0; ty < G; ty++)
       for (let tx = 0; tx < G; tx++) {
         let t = 0;
         for (let j = 0; j < SAMPLES; j++)
-          for (let i = 0; i < SAMPLES; i++) t += lumaAt(s, ((tx + (i + 0.5) / SAMPLES) * w) / G, ((ty + (j + 0.5) / SAMPLES) * h) / G);
+          for (let i = 0; i < SAMPLES; i++) t += lumaAt(s, ((tx + (i + 0.5) / SAMPLES) * w) / G, ((ty + (j + 0.5) / SAMPLES) * h) / G, luma);
         const m = t / (SAMPLES * SAMPLES);
         tiles[ty * G + tx]!.push(m);
         sum += m;
@@ -758,8 +864,8 @@ export function codaLumaSeries(p: ScenePlan, from = 0, to = p.duration): { tiles
 }
 
 /** Flashes (pairs of opposing transitions of 0.1 or more, the darker below 0.8) per tile and for the whole frame. */
-export function codaFlashModel(p: ScenePlan): { worst: { where: string; flashes: number; at: number }; findings: Finding[]; transitions: number } {
-  const { tiles, whole } = codaLumaSeries(p);
+export function codaFlashModel(p: ScenePlan, luma: Readonly<CodaLuma> = CODA_LUMA): { worst: { where: string; flashes: number; at: number }; findings: Finding[]; transitions: number } {
+  const { tiles, whole } = codaLumaSeries(p, 0, p.duration, luma);
   let worst = { where: "none", flashes: 0, at: -1 };
   let transitions = 0;
   const findings: Finding[] = [];
@@ -807,15 +913,53 @@ export const X_AIM_S = 139.5;
 /** A piece of the film as the placement check reads it. */
 export type FilmPiece = Pick<ScenePlan, "id" | "duration" | "fps" | "endsFilm" | "extra">;
 
+/** Whether a piece is the post-credit scene. */
+const isCoda = (p: FilmPiece): boolean => !!(p.extra as { coda?: unknown } | undefined)?.coda;
+
 /** The X version's length in frames: the main master to the coda's first frame (the whole film when it has no coda). */
 export const xCutFrames = (pieces: readonly FilmPiece[]): number => {
   let n = 0;
   for (const p of pieces) {
-    if ((p.extra as { coda?: unknown } | undefined)?.coda) break;
+    if (isCoda(p)) break;
     n += p.duration;
   }
   return n;
 };
+
+/** The X version's pieces: the main cut's, up to the coda's first frame (frames 0 to xCutFrames − 1 of the master). */
+export const xCut = <P extends FilmPiece>(pieces: readonly P[]): P[] => {
+  const at = pieces.findIndex(isCoda);
+  return at < 0 ? [...pieces] : pieces.slice(0, at);
+};
+
+/** The film's cuts (OVERRIDES §50, §62): the main film, its X version, the tour cut, the 40-s cut, a short per feature area. */
+export type FilmCut = "main" | "x" | "tour" | "40s" | "short";
+
+/** The cuts that play the post-credit scene: the main film only (OVERRIDES §62, §65; POSTCREDIT_DESIGN §3.10). */
+export const CODA_CUTS: readonly FilmCut[] = ["main"];
+
+/**
+ * A cut's pieces against the coda's wiring (POSTCREDIT_DESIGN item 14; OVERRIDES §62, §65): the main cut plays the
+ * coda after an end card planned with finale.ts's `then: "coda"`, placed as codaPlacement places it (the last piece,
+ * from that end card's true ending), and an end card planned so is followed by it there; no other cut plays it (the X
+ * version is the main master to the coda's first frame, xCut; the tour, the 40-s cut and the shorts end on their own
+ * end cards, page 2 held to its last frame).
+ */
+export function codaCut(pieces: readonly FilmPiece[], cut: FilmCut): Finding[] {
+  const out: Finding[] = [];
+  const codas = pieces.filter(isCoda);
+  if (!CODA_CUTS.includes(cut)) {
+    if (codas.length) out.push({ check: "codaCut", level: "error", message: `the ${cut} cut plays the post-credit scene: only the main film does (OVERRIDES §62; the X version ends at the end card's true ending)` });
+    return out;
+  }
+  pieces.forEach((p, i) => {
+    const next = pieces[i + 1];
+    if (finaleThen(p) === "coda" && !(next && isCoda(next) && (next.extra as { coda: CodaExtra }).coda.endCard.id === p.id)) out.push({ check: "codaCut", level: "error", message: `${p.id} is planned with then: "coda", but the ${cut} cut does not play the post-credit scene after its true ending${next ? ` (${next.id} follows it)` : ""}` });
+    if (isCoda(p) && (i === 0 || finaleThen(pieces[i - 1]!) !== "coda")) out.push({ check: "codaCut", level: "error", message: `the post-credit scene follows ${pieces[i - 1]?.id ?? "nothing"}, which is not planned with then: "coda" (finale.ts): the main composition plays it only after the end card that says so` });
+  });
+  if (codas.length) out.push(...codaPlacement(pieces).findings.filter((f) => f.level !== "info"));
+  return out;
+}
 
 /**
  * The coda's place in a film (POSTCREDIT_DESIGN §3.10, C10): it is the film's last piece, right after the end card it
@@ -824,13 +968,13 @@ export const xCutFrames = (pieces: readonly FilmPiece[]): number => {
  */
 export function codaPlacement(pieces: readonly FilmPiece[]): { findings: Finding[]; xFrames: number } {
   const out: Finding[] = [];
-  const at = pieces.findIndex((p) => (p.extra as { coda?: unknown } | undefined)?.coda);
+  const at = pieces.findIndex(isCoda);
   const xFrames = xCutFrames(pieces);
   if (at < 0) return { findings: [{ check: "codaPlacement", level: "info", message: "this cut has no coda" }], xFrames };
   const coda = pieces[at]!;
   const x = (coda.extra as { coda: CodaExtra }).coda;
   const fps = coda.fps;
-  if (pieces.filter((p) => (p.extra as { coda?: unknown } | undefined)?.coda).length > 1) out.push({ check: "codaPlacement", level: "error", message: "the film has more than one coda" });
+  if (pieces.filter(isCoda).length > 1) out.push({ check: "codaPlacement", level: "error", message: "the film has more than one coda" });
   if (at !== pieces.length - 1) out.push({ check: "codaPlacement", level: "error", message: `the coda is piece ${at + 1} of ${pieces.length}: it ends the main film, so nothing follows it (${pieces.slice(at + 1).map((p) => p.id).join(", ")})` });
   const before = pieces[at - 1];
   if (!before || before.id !== x.endCard.id) out.push({ check: "codaPlacement", level: "error", message: `the coda follows ${before?.id ?? "nothing"}, not the end card it was planned against (${x.endCard.id})` });

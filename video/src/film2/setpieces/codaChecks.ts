@@ -9,10 +9,12 @@
 //                 flags), every line read before the film ends; the lines land one at a time, in order
 //   codaStone     C4: one stone. The closing iris closes onto the end card's stone and covers it wholly before the coda's
 //                 stone first shows; the coda shows one stone, and never two on one frame (the irises modelled as drawn)
-//   codaCamera    C7: the camera never fully stops, except in the two declared waits: the breath (no camera at all, the
-//                 frame all night green) and the film's last breath (the end, after the push has eased; at most 0.5 s).
-//                 The push moves from the shot's first frame and never arrives and holds before its ease; under the
-//                 iris-out the end card's page carries on as it left it (settled in its own last breath), never restarting
+//   codaCamera    C7: the camera never fully stops, except in the two declared waits: §62's one breath of silence (L0 to
+//                 the iris-in: the iris-out over the settled page and the night-green breath, one wait, the lead's ruling
+//                 (a), OVERRIDES §65) and the film's last breath (the end, after the push has eased; at most 0.5 s); a
+//                 still frame before the push that no wait declares fails. The push moves from the shot's first frame and
+//                 never arrives and holds before its ease; under the iris-out the end card's page carries on as it left it
+//                 (settled in its own last breath), never restarting
 //   codaPose      C5: the Companion's resting pose only (sleepy, never the catalogue `sleep`), the engine created in it,
 //                 the dark palette; shown for less than the app's 8-s hold; the planned blink where the plan puts it,
 //                 none in the keep-clear spans, never mid-blink on the last frame
@@ -20,30 +22,35 @@
 //                 lines and the two irises; and no hairline the view draws round the sleeping stone (a ring leaving it)
 //   codaLockup    the lines never sit on the stone or its z's while they are on screen
 //   codaFlashes   C8: no flash: no tile of the frame (6 × 6, WCAG's area) and not the whole frame makes an opposing pair
-//                 of large luminance changes within a second (the iris-out's fall is the one large change)
+//                 of large luminance changes within a second (the iris-out's fall is the one large change); and no rise
+//                 before that fall: the end card's lines have no exit of their own, the closing iris takes them (§65, P2-1)
 //   codaSound     C11, the plan's half: one one-shot (the tap, CC0, never Mixkit) within a frame of L-C2's landing, and
 //                 room tone over every frame; no music; a warning while no lane builds the layer (the review's P1-3)
 //   codaCaptions  C12, the plan's half: each caption cue 1.2 s or more, carrying each line's words exactly
 //   codaLight     the night ground (POSTCREDIT_DESIGN §3.5, §3.9): the plate's measured median at its exposure, under
 //                 the coda's light, within ΔE 5 of the site's dark --bg, which the footer sits on; never black
+//   codaPlate     no riverbed pebble on the night plate reads larger than the sleeping stone, on any frame (§65 on P2-9:
+//                 the plate's own pebble outlines, codaPlate.ts, as the frame shows them, against the stone's body)
 // The film's half of C10 (the X cut) is coda.ts codaPlacement(), run on the film's pieces (tests/coda.test.ts). For the
 // render's stone scan, codaMarkStones() gives reel-marks.ts the stones as CodaView draws them (the closing iris, and the
 // sleeping stone light on the night ground, which qa/reel-scan.ts finds on the inverted frame).
 // Pure; no React.
 import { CAMERA_FLOOR_PX_PER_FRAME_1080, type Finding } from "../qa/checks";
 import { COLOR, READING, RING, f60 } from "../tokens";
-import { screenVelocity, worldToFrame } from "../motion/camera";
+import { planePose, screenVelocity, worldToFrame } from "../motion/camera";
 import type { Point } from "../motion/geometry";
 import { deltaE, gradeAt, hexToRgb, relLuminance, rgbToHex } from "../light/grades";
 import { requiredHoldS, wordCount } from "../type/reading";
 import { COMING_NEVER, COMING_NEVER_PHRASES } from "../../../../shared/coming/never";
-import { HOLD_SECONDS } from "../../../../shared/pebble/character";
+import { BODY, HOLD_SECONDS, VIEWBOX_SIZE } from "../../../../shared/pebble/character";
 import { checkCues } from "../../../../shared/pebble/cues";
 import { BLINK_S, blinkStartsFor, blinkTouches } from "./blink";
 import { carriedRect } from "./kit";
 import { defaultEntranceOf, enterFramesOf, lineRect } from "./frame";
 import { CODA_STONE_COLORS, codaFlashModel, codaHairline, codaIrisIn, codaIrisOut, codaOf, codaOneShots, plateUnder, stoneExtent, type CodaExtra } from "./coda";
-import type { ScenePlan, ShotSpec, TypeSpec } from "./scene";
+import { shotOf, type ScenePlan, type ShotSpec, type TypeSpec } from "./scene";
+import { RIVERBED, groundRectOf } from "./ground";
+import { CODA_PLATE_PEBBLES, PLATE_UNITS } from "./codaPlate";
 
 /* ---------------------------------------------------------------- C1: the words ------------------------------- */
 
@@ -65,10 +72,12 @@ export const forbiddenIn = (text: string): string[] => CODA_NEVER.filter((x) => 
 export function codaWords(p: ScenePlan, x: CodaExtra): Finding[] {
   const out: Finding[] = [];
   const carried = new Set(x.carried);
+  const shut = x.irisOut.at + x.irisOut.frames;
   for (const t of p.types) {
     if (carried.has(t.id)) {
-      // the end card's own lines are let through only as they leave: begun before the coda and gone by the iris-out
-      if (!(t.at < 0 && t.exitAt !== undefined && t.exitAt <= x.irisOut.at)) out.push({ check: "codaWords", level: "error", message: `${t.id} is carried in from the end card but does not leave with it (it must start before the coda and exit by L${x.irisOut.at})`, frame: Math.max(0, t.at) });
+      // the end card's own lines are let through only as they leave with its page: begun before the coda, and taken by
+      // the closing iris by its end (TypeSpec.covered; their own exits are codaFlashes', P2-1)
+      if (!(t.at < 0 && t.covered && t.covered.to <= shut)) out.push({ check: "codaWords", level: "error", message: `${t.id} is carried in from the end card but does not leave with its page (it must start before the coda and be taken by the closing iris by L${shut})`, frame: Math.max(0, t.at) });
       continue;
     }
     for (const why of forbiddenIn(t.text)) out.push({ check: "codaWords", level: "error", message: `${t.id} "${t.text.replace(/\n/g, " ")}": ${why} (OVERRIDES §62)`, frame: t.at });
@@ -250,29 +259,44 @@ const cornerPx = (p: ScenePlan, s: ShotSpec, fr: number): number => {
 };
 
 /**
- * C7: the camera never fully stops (OVERRIDES §52, §58), outside exactly two declared waits: the breath (no camera, the
- * frame all night green: no picture to move) and the film's last breath (the end, at most 0.5 s, after the push has
- * eased, the camera dead still). The coda's push moves from its first frame and never drops under the floor before its
- * ease (no arrive and hold), and the ease only slows. The end card's page carries on under the iris-out exactly as the
- * end card left it: settled in its own declared last breath (finale.ts: the X cut ends there, so nothing before L0 may
- * change), it never starts moving again.
- * The main cut's span before the push is reported, not excused: the end card's declared last breath (the film's last
- * breath in the X cut only), L0 onward under the iris-out while the carried page stays under the floor, and the breath
- * hold the picture still as one span (2.12 s as planned on 28 Oct). Every one-second window there overlaps a declared
- * wait, so the foundation's floor never judged it; §58 lets only the film's last breath be still. Until the lead rules
- * (the post-credit review's P1-4: (a) the span is §62's one breath of silence, declared as such, or (b) the end card
- * glides to its last frame in both cuts) it is a warning with its frames.
+ * The waits a plan declares as the foundation's camera floor reads them (each shot's own waits, on the frames that shot
+ * covers: setpieces/qa.ts planQa), joined where one shot's wait runs on into the next shot's: piece-local [from, to).
+ */
+export const joinedWaits = (p: ScenePlan): { from: number; to: number }[] => {
+  const parts = p.shots
+    .flatMap((s) => (s.waits ?? []).map((w) => ({ from: Math.max(w.from, s.from), to: Math.min(w.to, s.to) })))
+    .filter((w) => w.to > w.from)
+    .sort((a, b) => a.from - b.from);
+  const out: { from: number; to: number }[] = [];
+  for (const w of parts) {
+    const last = out[out.length - 1];
+    if (last && w.from <= last.to) last.to = Math.max(last.to, w.to);
+    else out.push({ ...w });
+  }
+  return out;
+};
+
+/**
+ * C7: the camera never fully stops (OVERRIDES §52, §58), outside exactly two declared waits: §62's one breath of
+ * silence and the film's last breath (the end, at most 0.5 s, after the push has eased, the camera dead still). The
+ * silence is the lead's ruling (a) on the post-credit review's P1-4 (OVERRIDES §65): the end card's true ending, then a
+ * dark beat, L0 to the iris-in (the iris-out over the end card's page, settled, and the night-green breath), declared as
+ * ONE wait; the end card keeps its own declared last breath before it, and the floor applies from the iris-in on. So a
+ * still frame before the push that no wait declares fails: the main cut's span there (2.12 s as planned) passed the
+ * foundation's floor unjudged, every one-second window in it overlapping a declared wait, until the review saw it. The
+ * coda's push moves from its first frame and never drops under the floor before its ease (no arrive and hold), and the
+ * ease only slows. The end card's page carries on under the iris-out exactly as the end card left it: settled in its own
+ * declared last breath (finale.ts: the X cut ends there, so nothing before L0 may change), it never starts moving again.
  */
 export function codaCamera(p: ScenePlan, x: CodaExtra): Finding[] {
   const out: Finding[] = [];
   const floor = CAMERA_FLOOR_PX_PER_FRAME_1080;
-  const waits = p.shots.flatMap((s) => (s.waits ?? []).map((w) => ({ ...w, shot: s.id })));
-  const want = [
-    { ...x.breath, shot: "breath" },
-    { ...x.lastBreath, shot: "coda" },
-  ];
-  const same = waits.length === want.length && want.every((w) => waits.some((v) => v.shot === w.shot && v.from === w.from && v.to === w.to));
-  if (!same) out.push({ check: "codaCamera", level: "error", message: `the coda declares waits ${waits.map((w) => `${w.shot} ${w.from}–${w.to}`).join(", ") || "none"}: exactly two are allowed, the breath (${x.breath.from}–${x.breath.to}) and the last breath (${x.lastBreath.from}–${x.lastBreath.to})` });
+  const spans = joinedWaits(p);
+  const want = [x.silence, x.lastBreath];
+  const span = (w: { from: number; to: number }) => `L${w.from}–L${w.to - 1}`;
+  const same = spans.length === want.length && want.every((w, i) => spans[i]!.from === w.from && spans[i]!.to === w.to);
+  if (!same) out.push({ check: "codaCamera", level: "error", message: `the coda declares waits ${spans.map(span).join(", ") || "none"}: exactly two are allowed, §62's one breath of silence (${span(x.silence)}) and the film's last breath (${span(x.lastBreath)})` });
+  if (x.silence.from !== 0 || x.silence.to !== x.irisIn.at) out.push({ check: "codaCamera", level: "error", message: `§62's one breath of silence is ${span(x.silence)}: it runs from the end card's true ending (L0) to the iris-in (L${x.irisIn.at}), the iris-out and the night-green breath as one wait, and the camera floor applies from the iris-in on (OVERRIDES §65, ruling (a))` });
   if (x.lastBreath.to !== p.duration) out.push({ check: "codaCamera", level: "error", message: `the last breath ends on ${x.lastBreath.to}, not the film's end (${p.duration}): only the film's last breath may be still (§58)` });
   if (x.lastBreath.to - x.lastBreath.from > f60(30, p.fps)) out.push({ check: "codaCamera", level: "error", message: `the last breath lasts ${((x.lastBreath.to - x.lastBreath.from) / p.fps).toFixed(2)} s (at most 0.5 s)` });
   const breath = p.shots.find((s) => s.id === "breath");
@@ -324,35 +348,45 @@ export function codaCamera(p: ScenePlan, x: CodaExtra): Finding[] {
         out.push({ check: "codaCamera", level: "error", message: `the end card's page starts moving again under the iris-out (L${fr}: ${cornerPx(p, page, fr).toFixed(3)} px a frame, from ${settled.toFixed(3)}): it carries on as the end card left it`, frame: fr });
         break;
       }
-    const still = codaStillBeforePush(p, x);
-    if (still.frames > f60(60, p.fps)) {
-      const parts = [
-        still.endCard ? `the end card's declared last breath (${(still.endCard / p.fps).toFixed(2)} s; the film's last breath only in the X cut)` : "",
-        still.page ? `L0–L${still.page - 1} under the iris-out (the end card's page carried on settled, ${settled.toFixed(3)} px a frame at its corners)` : "",
-        still.breath ? `the breath (L${x.breath.from}–L${x.breath.to - 1})` : "",
-      ].filter(Boolean);
-      out.push({ check: "codaCamera", level: "warn", message: `in the main cut the picture holds still for ${(still.frames / p.fps).toFixed(2)} s before the coda's push: ${parts.join(", then ")}. §58 lets only the film's last breath be still; the lead rules on the span as one (the post-credit review's P1-4): (a) it is §62's one breath of silence, declared as such, or (b) the end card glides to its last frame in both cuts`, frame: 0, to: still.page && still.breath ? x.breath.to : still.page });
-    }
+  }
+  // before the push: a still frame no wait declares fails (the review's P1-4); the span as declared is reported
+  const still = codaStillBeforePush(p, x);
+  for (const u of still.undeclared) out.push({ check: "codaCamera", level: "error", message: `an undeclared still span, ${span(u)}: the picture holds still there (its camera under ${floor} px a frame at the corners, or the breath's flat night green) and no wait declares it; before the coda's push only §62's one breath of silence (L0 to the iris-in) may be still (OVERRIDES §58, §65)`, frame: u.from, to: u.to });
+  if (!still.undeclared.length && still.frames > 0) {
+    const parts = [still.endCard ? `the end card's own declared last breath (${(still.endCard / p.fps).toFixed(2)} s)` : "", still.coda ? `§62's one breath of silence, ${span({ from: 0, to: still.coda })}, declared (the iris-out over the settled page, then the breath)` : ""].filter(Boolean);
+    out.push({ check: "codaCamera", level: "info", message: `in the main cut the picture holds still for ${(still.frames / p.fps).toFixed(2)} s before the coda's push: ${parts.join(", then ")}; the lead's ruling (a) on P1-4 (OVERRIDES §65)`, frame: 0, to: still.coda });
   }
   return out;
 }
 
 /**
- * The main cut's still span before the coda's push, in frames: the end card's declared still at its end, then L0 onward
- * while the carried page's corners move under the floor (to the iris-out's end at most), then, if the page was still to
- * the iris-out's end, the breath.
+ * The main cut's still span before the coda's push: the end card's own declared still at its end (`endCard` frames),
+ * then the coda's frames from L0 while the picture holds still (`coda`: the carried page with its corners under the
+ * floor through the iris-out, `page` of them, then the breath's flat night green, `breath`), to the iris-in at most;
+ * and the runs of the coda's still frames before the iris-in that no wait declares (`undeclared`, as the foundation
+ * reads a wait: the shot a frame falls in, its own waits).
  */
-export function codaStillBeforePush(p: ScenePlan, x: CodaExtra): { frames: number; endCard: number; page: number; breath: number } {
+export function codaStillBeforePush(p: ScenePlan, x: CodaExtra): { frames: number; endCard: number; coda: number; page: number; breath: number; undeclared: { from: number; to: number }[] } {
   const page = p.shots.find((s) => s.id === "page");
   const shut = x.irisOut.at + x.irisOut.frames;
   const lb = x.endCard.lastBreath;
   const endCard = lb && lb.to >= x.endCard.end ? x.endCard.end - lb.from : 0;
-  let still = 0;
-  if (page) while (still < shut && cornerPx(p, page, still) < CAMERA_FLOOR_PX_PER_FRAME_1080) still++;
-  const breath = still >= shut ? x.breath.to - x.breath.from : 0;
+  const stillOn = (fr: number) => (fr < shut && page ? cornerPx(p, page, fr) < CAMERA_FLOOR_PX_PER_FRAME_1080 : true);
+  const declared = (fr: number) => {
+    const s = shotOf(p, fr);
+    return !!s && (s.waits ?? []).some((w) => fr >= w.from && fr < w.to);
+  };
+  let lead = 0;
+  while (lead < x.irisIn.at && stillOn(lead)) lead++;
+  const undeclared: { from: number; to: number }[] = [];
+  for (let fr = 0; fr < x.irisIn.at; fr++) {
+    if (!stillOn(fr) || declared(fr)) continue;
+    const last = undeclared[undeclared.length - 1];
+    if (last && last.to === fr) last.to = fr + 1;
+    else undeclared.push({ from: fr, to: fr + 1 });
+  }
   // a span counts from the join only if it touches it: a page moving on L0 breaks it there
-  const frames = still > 0 ? endCard + still + breath : endCard;
-  return { frames, endCard, page: still, breath };
+  return { frames: lead > 0 ? endCard + lead : endCard, endCard, coda: lead, page: Math.min(lead, shut), breath: Math.max(0, lead - shut), undeclared };
 }
 
 /* ---------------------------------------------------------------- C5: the pose -------------------------------- */
@@ -470,8 +504,23 @@ export function codaLockup(p: ScenePlan, x: CodaExtra): Finding[] {
 
 /* ---------------------------------------------------------------- C8, C11, C12 -------------------------------- */
 
-/** C8: no flash anywhere in the coda (coda.ts codaFlashModel: the irises and the scene, tile by tile). */
-export const codaFlashes = (p: ScenePlan): Finding[] => codaFlashModel(p).findings;
+/**
+ * C8: no flash anywhere in the coda (coda.ts codaFlashModel: the irises and the scene, tile by tile), and no rise
+ * before the fall: the end card's lines carried in have no exit of their own, the closing iris takes them with the page
+ * (OVERRIDES §65 on the post-credit review's P2-1: page 2's lines leaving first lifted the middle tiles by 0.10–0.15
+ * just before the iris darkened them, one flash on the 16:9 and 1:1 renders that the model, reading a line's ink at a
+ * fifth of its box, did not see; codaCalibrate.ts measures that share on a render).
+ */
+export function codaFlashes(p: ScenePlan, x: CodaExtra): Finding[] {
+  const out: Finding[] = [];
+  for (const id of x.carried) {
+    const t = p.types.find((y) => y.id === id);
+    if (!t) continue;
+    const own = (t.exit ?? "blur") !== "camera" || !t.covered;
+    if (own) out.push({ check: "codaFlashes", level: "error", message: `${t.id} "${t.text.replace(/\n/g, " ").slice(0, 40)}" ${t.exitAt !== undefined && (t.exit ?? "blur") !== "camera" ? `leaves on its own (a ${t.exit ?? "blur"} from L${t.exitAt})` : "is not taken by the closing iris"}: in the main cut page 2's lines have no exit, the iris takes them with the page; leaving first, they lift its tiles just before the iris darkens them, a rise before the fall (one flash, OVERRIDES §65 on P2-1; C8: no opposing pair)`, frame: Math.max(0, t.exitAt ?? 0) });
+  }
+  return [...out, ...codaFlashModel(p).findings];
+}
 
 /**
  * C11, the plan's half (the mix's half needs the layer built: see CODA_SOUND), over every layer the plan hands on: room
@@ -541,14 +590,95 @@ export function codaLight(p: ScenePlan, x: CodaExtra): Finding[] {
   return [{ check: "codaLight", level: "error", message: `the night ground's median under the coda's light is ${rgbToHex(c)}, ΔE ${dE.toFixed(1)} from the dark --bg ${COLOR.nightPage} the site's footer sits on, ${how}: at most ${CODA_LIGHT_MAX_DE}`, frame: coda.from }];
 }
 
+/* ---------------------------------------------------------------- the night plate's pebbles ------------------- */
+
+/** A polygon clipped to the frame [0, w] × [0, h] (Sutherland–Hodgman): the part of it the frame shows. */
+export const clipToFrame = (pts: readonly Point[], w: number, h: number): Point[] => {
+  let poly: Point[] = [...pts];
+  const edges: [(q: Point) => boolean, (a: Point, b: Point) => Point][] = [
+    [(q) => q.x >= 0, (a, b) => ({ x: 0, y: a.y + ((b.y - a.y) * (0 - a.x)) / (b.x - a.x) })],
+    [(q) => q.x <= w, (a, b) => ({ x: w, y: a.y + ((b.y - a.y) * (w - a.x)) / (b.x - a.x) })],
+    [(q) => q.y >= 0, (a, b) => ({ x: a.x + ((b.x - a.x) * (0 - a.y)) / (b.y - a.y), y: 0 })],
+    [(q) => q.y <= h, (a, b) => ({ x: a.x + ((b.x - a.x) * (h - a.y)) / (b.y - a.y), y: h })],
+  ];
+  for (const [inside, cut] of edges) {
+    const next: Point[] = [];
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i]!;
+      const b = poly[(i + 1) % poly.length]!;
+      if (inside(a)) {
+        next.push(a);
+        if (!inside(b)) next.push(cut(a, b));
+      } else if (inside(b)) next.push(cut(a, b));
+    }
+    poly = next;
+    if (!poly.length) break;
+  }
+  return poly;
+};
+
+/** A polygon's area (the shoelace), px². */
+const areaOf = (pts: readonly Point[]): number => Math.abs(pts.reduce((s, a, i) => s + a.x * pts[(i + 1) % pts.length]!.y - pts[(i + 1) % pts.length]!.x * a.y, 0)) / 2;
+
+/** The part of each of the night plate's pebbles the frame shows on a local frame of the coda's shot: its extent, px. */
+export function platePebblesOn(p: ScenePlan, fr: number): { id: string; w: number; h: number }[] {
+  const shot = p.shots.find((s) => s.id === "coda");
+  if (!shot) return [];
+  const { w, h } = p.frame;
+  const bed = groundRectOf(shot, w, h, 0);
+  const k = bed.w / PLATE_UNITS.w;
+  const gp = planePose(shot.camera.pose(fr - shot.from), shot.ref, RIVERBED.depth);
+  const out: { id: string; w: number; h: number }[] = [];
+  for (const pb of CODA_PLATE_PEBBLES) {
+    const vis = clipToFrame(
+      pb.outline.map(([u, v]) => ({ x: (bed.x + u * k - gp.x) * gp.zoom + w / 2, y: (bed.y + v * k - gp.y) * gp.zoom + h / 2 })),
+      w,
+      h,
+    );
+    if (vis.length < 3 || areaOf(vis) < 1) continue;
+    const xs = vis.map((q) => q.x);
+    const ys = vis.map((q) => q.y);
+    out.push({ id: pb.id, w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) });
+  }
+  return out;
+}
+
+/**
+ * No riverbed pebble on the night plate reads larger than the sleeping stone (OVERRIDES §65 on the post-credit review's
+ * P2-9, second half: in 9:16 the plate's own pebbles were drawn up to 1,105 × 607 px beside a stone of 263 × 232, so
+ * the stone no longer read as the riverbed's own): on every frame of the coda's shot, the part of each of the plate's
+ * pebbles (their outlines from the plate's source, codaPlate.ts) that the frame shows is no wider and no taller than
+ * the stone's drawn body (the pebble's own bounds at its drawn size). The plate is drawn over the shot's ground rect,
+ * at the ground's depth, never stretched (coda.ts CODA_PLATE_FRAMING places it).
+ */
+export function codaPlate(p: ScenePlan, x: CodaExtra): Finding[] {
+  const out: Finding[] = [];
+  const shot = p.shots.find((s) => s.id === "coda");
+  if (!shot?.stone) return out;
+  const bed = groundRectOf(shot, p.frame.w, p.frame.h, 0);
+  if (Math.abs(bed.h * PLATE_UNITS.w - bed.w * PLATE_UNITS.h) > 1e-6 * bed.w * PLATE_UNITS.h) out.push({ check: "codaPlate", level: "error", message: `the night plate is drawn ${bed.w.toFixed(0)} × ${bed.h.toFixed(0)}: stretched (it is ${PLATE_UNITS.w} × ${PLATE_UNITS.h})`, frame: shot.from });
+  const seen = new Set<string>();
+  for (let fr = shot.from; fr < shot.to; fr++) {
+    const k = (shot.stone.size / VIEWBOX_SIZE) * shot.camera.pose(fr - shot.from).zoom;
+    const sw = BODY.width * k;
+    const sh = BODY.height * k;
+    for (const pb of platePebblesOn(p, fr)) {
+      if (seen.has(pb.id) || (pb.w <= sw && pb.h <= sh)) continue;
+      seen.add(pb.id);
+      out.push({ check: "codaPlate", level: "error", message: `the night plate's pebble ${pb.id} reads larger than the sleeping stone from L${fr}: the frame shows ${Math.round(pb.w)} × ${Math.round(pb.h)} px of it, the stone's body is ${Math.round(sw)} × ${Math.round(sh)}; no riverbed pebble may read larger than the stone (OVERRIDES §65 on P2-9: frame the plate, coda.ts CODA_PLATE_FRAMING${x.plateFraming ? `, here ×${x.plateFraming.scale} about (${x.plateFraming.centre.x}, ${x.plateFraming.centre.y})` : ""})`, frame: fr });
+    }
+  }
+  return out;
+}
+
 /* ---------------------------------------------------------------- all of them --------------------------------- */
 
 /** The coda's checks, by name (for reports). */
-export const CODA_CHECKS = ["codaWords", "codaHolds", "codaStone", "codaCamera", "codaPose", "codaNoUi", "codaLockup", "codaFlashes", "codaSound", "codaCaptions", "codaLight"] as const;
+export const CODA_CHECKS = ["codaWords", "codaHolds", "codaStone", "codaCamera", "codaPose", "codaNoUi", "codaLockup", "codaFlashes", "codaSound", "codaCaptions", "codaLight", "codaPlate"] as const;
 
 /** Every coda check on a plan (none on a plan that is not the coda). */
 export function codaChecks(p: ScenePlan): Finding[] {
   const x = codaOf(p);
   if (!x) return [];
-  return [...codaWords(p, x), ...codaHolds(p, x), ...codaStone(p, x), ...codaCamera(p, x), ...codaPose(p, x), ...codaNoUi(p), ...codaLockup(p, x), ...codaFlashes(p), ...codaSound(p, x), ...codaCaptions(p, x), ...codaLight(p, x)];
+  return [...codaWords(p, x), ...codaHolds(p, x), ...codaStone(p, x), ...codaCamera(p, x), ...codaPose(p, x), ...codaNoUi(p), ...codaLockup(p, x), ...codaFlashes(p, x), ...codaSound(p, x), ...codaCaptions(p, x), ...codaLight(p, x), ...codaPlate(p, x)];
 }
