@@ -199,7 +199,10 @@ describe("the field's schedule (returnField.ts)", () => {
     const frames = (f: ReturnType<typeof buildReturnField>) => f.cells.filter((c) => c.swapIn !== null).map((c) => `${c.wave} ${c.ring}:${c.slot}@${c.swapIn}`).sort();
     expect(frames(field)).toEqual(frames(buildReturnField("16:9", { pair: false })));
   });
-  test("RV-02: each swap wave is paired by luminance within the card rule; the steps fall (largest 0.046 → 0.025), the waves' families mostly stand", () => {
+  test("every image the view draws is measured as made (returnLum.ts holds each one's signature: after a stand-in changes, run return-thumbs.ts --measure)", () => {
+    expect(RETURN_CELLS.filter((c) => !drawnLive(c) && drawnLumOf({ spec: c }).mean === undefined).map((c) => c.id)).toEqual([]);
+  });
+  test("RV-02: each swap wave is paired by luminance within the card rule; the steps fall (largest 0.046 → 0.026), the waves' families mostly stand", () => {
     const step = (f: ReturnType<typeof buildReturnField>) =>
       f.cells
         .filter((c) => c.swapIn !== null)
