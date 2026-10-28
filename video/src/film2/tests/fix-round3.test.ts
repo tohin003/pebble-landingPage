@@ -9,7 +9,9 @@ import type { Finding } from "../qa/checks";
 import { cascadeSchedule } from "../type/Cascade";
 import { wordCount } from "../type/reading";
 import { demoPlans } from "../setpieces/demo/plans";
-import { PICTURED_STONE_SHARE, cascadeCards, checkPlan, cueLengths, picturedStonesOnFrame, readEdges, stoneCount, stonesOnFrame } from "../setpieces/qa";
+import { PICTURED_STONE_SHARE, cascadeCards, checkPlan, cueLengths, picturedStonesOnFrame, readEdges, stoneCount, stonesOnFrame, typeOverPlanes } from "../setpieces/qa";
+import { planRingBlock } from "../setpieces/ringBlock";
+import { ring4 } from "../setpieces/rings";
 import { OPEN_DATA_FINDINGS } from "../setpieces/review-ledger";
 import { loadRingFourCue } from "../setpieces/tools/cue-data";
 import { ringFourCue } from "../setpieces/cueSheet";
@@ -23,6 +25,7 @@ import { ReelScan } from "../qa/reel-scan";
 import { PICTURED_BLOB } from "../qa/stones";
 
 const ASPECTS = ["16:9", "1:1", "9:16"] as const;
+const FRAME = { "16:9": { w: 1920, h: 1080 }, "1:1": { w: 1080, h: 1080 }, "9:16": { w: 1080, h: 1920 } } as const;
 const errorsOf = (xs: readonly Finding[], check?: string) => xs.filter((x) => x.level === "error" && (!check || x.check === check));
 const entry = (a: (typeof ASPECTS)[number], id: string) => demoPlans(a).find((e) => e.plan.id === id)!;
 const piece = (a: (typeof ASPECTS)[number], id: string): ScenePlan => entry(a, id).plan;
@@ -75,6 +78,28 @@ describe("the trim to 35: Ring 4 by MONTAGE_DESIGN §5.4's named cut, Cascade 4'
     const rec = STILL.verifiedTop;
     expect(act.crop!.w * (28 / rec.textPx!)).toBeGreaterThan(1080 - 2 * 60);
     expect(act.crop!.w * (28 / act.textPx!)).toBeLessThanOrEqual(1080 - 2 * 60);
+  });
+  test("OVERRIDES §67's take entered at Done, measured: the same 639 frames, its receipt under the lines in 16:9 and 1:1", () => {
+    // the reads set the ring part's length, not the take: the act is legible only once the arrival from the Drop's whole
+    // Mac has zoomed in (frame 148–153), then its read (13 words at 3.1 a second), the glide to the receipt's framing, the
+    // receipt's hold and the leave, cut on the next half bar. Entered at Done, Verified lands 110 source frames after it,
+    // during the ring's travel (R87), and sits under the lines' band in 16:9 and 1:1 before they leave
+    for (const a of ASPECTS) {
+      const ex = piece(a, "drop").exit!;
+      const { grid } = entry(a, "ring4");
+      const content = ring4(a);
+      const plan = (after: string): ScenePlan => planRingBlock({ ...FRAME[a], fps: 60, content: { ...content, ask: { ...content.ask, shownOnly: { after } } }, grid, entry: { pose: ex.pose, vel: ex.vel, ref: ex.ref, grade: ex.grade } });
+      const click = plan("click");
+      const done = plan("done");
+      const x = done.extra as Record<string, number>;
+      expect(`${a} ${(click.extra as Record<string, number>).ringPart} ${x.ringPart}`).toBe(`${a} 639 639`);
+      // Done in the take's history, Verified at 1× from it
+      expect(done.takes[0]!.inPoint).toBeGreaterThanOrEqual(TAKE_HSF.events.done!);
+      expect(x.receiptAt).toBeLessThanOrEqual(TAKE_HSF.events.verified! - TAKE_HSF.events.done!);
+      const under = errorsOf(typeOverPlanes(done)).filter((f) => /ring4-act:verifiedTop/.test(f.message));
+      expect(`${a} ${under.length > 0}`).toBe(`${a} ${a !== "9:16"}`);
+      expect(errorsOf(typeOverPlanes(click)).map((f) => `${a} ${f.message}`)).toEqual([]);
+    }
   });
   test("cueLengths: the cue's own lengths pass, a part a frame and a half off them fails (the canary)", () => {
     const cue = ringFourCue({ main_film: { blocks: [{ block: "Ring 4", start_s: 10, end_s: 17.742 }, { block: "Cascade 4", start_s: 17.742, end_s: 21.613 }] } }, "a cue sheet")!;

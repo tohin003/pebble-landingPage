@@ -48,7 +48,12 @@ export const ring4 = (A: Aspect): RingContent => {
     // shown, not read: F11 stays in context in the conversation's history (the take enters after the person's click
     // on Run the tests, TREATMENT §3.6 chain 9); the ring frames it and the camera lands on the test card, read while
     // the take runs; the receipt reads its first line only. (Fix round 2 framed the card asking with its buttons for
-    // 1.1 s and read its answer, NF-01: 6 more words and a second dolly, which the 7.74-s phrase has no room for)
+    // 1.1 s and read its answer, NF-01: 6 more words and a second dolly, which the phrase has no room for.)
+    // OVERRIDES §67 asked for the take entered at Done, to bring the ring part to 4.5 bars. Measured (fix round 3, part
+    // 2): `after: "done"` plans the same 639 frames in every aspect, because the reads set the length, not the take
+    // (the act legible from frame 149, 153 and 148, then its read, the glide, the receipt and the leave); and its
+    // receipt then lands on R87, during the travel, under the lines' band in 16:9 and 1:1 (typeOverPlanes). So the take
+    // stays entered after the click until the lead rules (the review ledger's TRIM-R4)
     ask: {
       view: "held",
       rect: held,

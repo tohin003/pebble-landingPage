@@ -427,9 +427,13 @@ export function planRingBlock(o: RingOptions): ScenePlan {
   let dolly1To = dollyFrom;
   if (lean) {
     // the act is read from the frame its text reaches 20 px on the way in (the arrival is the final camera's: only the
-    // glide after it differs) for its reading time, at the floor from the landing; the receipt lands on the latest beat
-    // that keeps the decision in the take's history (the take shows from the block's first frame, after the person's
-    // click: TREATMENT §3.6 chain 9) once the lines have left its band, and the ring returns to the stone on it
+    // glide after it differs) for its reading time, at the floor from the landing. The take is entered after its
+    // `shownOnly.after` event (TREATMENT §3.6 chain 9) and shows from the block's first frame, so the receipt lands
+    // Pebble's own time after that event, on the latest beat that keeps it in the take's history, once the lines have
+    // left the receipt's band where a beat allows (entered after the click: R261, while the act is read). Entered at
+    // Done (OVERRIDES §67) no beat that late keeps Done in the history: the receipt lands during the ring's travel (R87),
+    // under the lines' band in 16:9 and 1:1 (typeOverPlanes; fix round 3 part 2). No beat in the history at all is an
+    // error, never a later landing that would show the earlier moment (fix round 3 fell back to one)
     const after = m.events[c.ask.shownOnly!.after];
     if (after === undefined) throw new Error(`${c.id}: the take ${m.id} has no event "${c.ask.shownOnly!.after}"`);
     const historyMax = Math.floor(((recSrc - after) * fps) / m.fps + 1e-6);
@@ -443,12 +447,15 @@ export function planRingBlock(o: RingOptions): ScenePlan {
     }
     dollyTo = arriveAt;
     dolly1To = arriveAt;
-    const lo = Math.max(linesGone, al.receiptAt ?? 0);
+    const lo = Math.max(0, al.receiptAt ?? 0);
     const hi = Math.min(historyMax, readsFrom + actReadF);
-    const inHistory = g ? [...pointsOf(g, "beat")].reverse().find((b) => b >= lo && b <= hi) : undefined;
-    const landR = inHistory !== undefined ? place(inHistory, g, { level: "beat" }) : place(lo, g, { level: "beat" });
+    if (hi < lo) throw new Error(`${c.id}: the receipt must land by frame ${hi} to keep "${c.ask.shownOnly!.after}" in the take's history, but is aligned to ${lo}`);
+    const latest = (from: number) => (g ? [...pointsOf(g, "beat")].reverse().find((b) => b >= from && b <= hi) : undefined);
+    const inHistory = latest(Math.max(lo, linesGone)) ?? latest(lo);
+    if (g && inHistory === undefined) throw new Error(`${c.id}: no beat in frames ${lo}–${hi} lands the receipt with "${c.ask.shownOnly!.after}" in the take's history`);
+    const landR = inHistory !== undefined ? place(inHistory, g, { level: "beat" }) : place(hi, g, { level: "beat" });
     receiptAt = landR.point ?? landR.at;
-    music.push(musicHit("the receipt lands (the ring returns)", landR));
+    music.push(musicHit("the receipt lands (Verified, at 1×)", landR));
   } else if (c.ask.asking) {
     // the dolly frames the card asking, whole; the person's click comes at least SEEN_S after it lands; the dolly in
     // to read starts on the click; the receipt lands Pebble's own time after the click, on a beat
