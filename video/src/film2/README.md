@@ -876,7 +876,8 @@ close with that replacement, which the Return lane has built (§8 above).
 The three demo reels at half size, 60 fps, from frozen snapshots of film-2.0 (the lane's render chain: `snapshot.sh`
 and `pipeline.sh` in its scratchpad, each step one heavy.sh job that waits out any HOLD), in four rounds: r1 at
 369c5ad (round 2 as committed, with the post-credit scene), r2 at c8afaca (the fixes below), r3 at 0a7cc72 (16:9 and
-1:1: Ring 4's receipt; 9:16's frames are r2's). 6,264–6,267 frames a reel, 407–421 s each. Every check ran on every reel: `luma-scan.ts --marks`,
+1:1: Ring 4's receipt; 9:16's frames are r2's) and r4 at 2a6b8af, the branch with the Return in place of the wall
+and the convergence. 6,264–6,447 frames a reel, 407–428 s each. Every check ran on every reel: `luma-scan.ts --marks`,
 `ground-light.ts`, contact sheets at the review's and the verifier's frames, frame strips at every exit and join, and
 the verifier's own drift measures (`drift.py`, `blocks.py`: phase correlation between neighbouring frames).
 
@@ -910,6 +911,14 @@ is a special variable).
 | tile pops, whole-frame pops, dead seconds, dips | none | none | none |
 | flashes a second (at most 3) | 1 | 2 | 2 |
 | placeholder state changes listed (CR-18) | 8 | 8 | 8 |
+
+**At the branch's head** (r4 at 2a6b8af, the Return in place of the wall and the convergence; 6,447 frames a reel, 410–428
+s each) these pieces read the same: no line vanishes (0 of 30), no frame shows two stones (3,247, 3,239 and 3,262
+checked), the bands open on 181, the light as below (9:16's evening on 6 % ground, R − B +37), and the climax ends on its
+hold's glide into the Return's first frame, still travelling one way. Its scans fail only inside the Return, for the
+Return lane: a tile pop on 4703 in every aspect (4.7, 5.8 and 3.4 levels in the bottom-left tile; in 16:9 the cell of
+Pebble's own engine turns in one frame from its pale placeholder into the dark pebble), and in 1:1 two more, on 4350
+(3.9) and 4688 (3.3). Its cells' swaps are not declared in the reel's marks, or they pop: the Return lane's call.
 
 The plans (`check-setpieces.ts`, every check, old and new): every piece passes in every aspect, the joins too; at
 c8afaca and 0a7cc72 the wall and the convergence failed only on their ledger entries (`contentFloor`, `sway`), and at the
