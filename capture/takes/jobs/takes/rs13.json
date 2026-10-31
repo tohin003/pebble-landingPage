@@ -1,5 +1,5 @@
 {
- "_about": "RS-13 (S22, P0): ⌘K, 'stealth', Return on 'Turn Stealth Lockdown on': the menu-bar icon becomes a filled pebble in a ring, the Dock icon leaves (Pebble unpinned from the Dock on 31 Oct). Recorded with SCREENCAPTURE, never avfoundation: FFmpeg's avfoundation input keeps recording Pebble's windows with Stealth on (RS13-01, rejected), so it would misshow the feature. screencapture stops only on its own -V limit here (dry05, dry07), and its last frame must be fresh for the conform to hold within a frame (dry03), so the pointer keeps moving across the limit. Turns Stealth off after.",
+ "_about": "RS-13 (S22, P0): ⌘K, 'stealth', Return on 'Turn Stealth Lockdown on': the menu-bar icon becomes a filled pebble in a ring, the Dock icon leaves (Pebble unpinned from the Dock on 31 Oct). Recorded with screencapture. screencapture stops only on its own -V limit here (dry05, dry07), and its last frame must be fresh for the conform to hold within a frame (dry03), so the pointer keeps moving across the limit. Turns Stealth off after.",
  "schema": "pebble-take-job/1",
  "id": "RS13-$n",
  "take": "RS-13",
