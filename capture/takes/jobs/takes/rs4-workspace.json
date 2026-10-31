@@ -1,0 +1,252 @@
+{
+ "_about": "RS-4 (S11, P0), sent from Pebble's workspace (31 Oct: the quick chat sends its cards to the workspace anyway). Calculator sits at the screen's left edge, under the workspace's sidebar. Declines a card left waiting, opens a new conversation, sends $message, approves each card with its exact 'Allow' or 'Open app' (never Always allow), brings Calculator forward from the Dock to watch the presses, then 600, the receipt and the reply.",
+ "schema": "pebble-take-job/1",
+ "id": "RS4-$n",
+ "take": "RS-4",
+ "title": "Calculator (from the workspace)",
+ "defaults": {
+  "message": "What's 48 × 12.5? Press the keys in Calculator."
+ },
+ "steps": [
+  {
+   "do": "key",
+   "key": "space",
+   "mods": [
+    "cmd",
+    "shift"
+   ],
+   "note": "the workspace forward"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Don't allow",
+   "save_as": "@old",
+   "optional": true,
+   "timeout_s": 4,
+   "budget_ms": 15000,
+   "note": "an earlier card still waiting is declined first"
+  },
+  {
+   "do": "click",
+   "at": "@old",
+   "if": "@old"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "key",
+   "key": "n",
+   "mods": [
+    "cmd"
+   ],
+   "note": "a new conversation"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXTextArea",
+   "name": "Message Pebble",
+   "window_contains": "Pebble",
+   "save_as": "@msg",
+   "timeout_s": 20,
+   "budget_ms": 15000
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 900,
+    "y": 650
+   },
+   "ms": 300
+  },
+  {
+   "do": "record_start",
+   "name": "RS4-$n",
+   "max_s": 150,
+   "method": "avfoundation"
+  },
+  {
+   "do": "wait",
+   "s": 3.5,
+   "note": "pre-roll: the picture is live before the first pointer move (the conform's sync)"
+  },
+  {
+   "do": "click",
+   "at": "@msg",
+   "event": "composer"
+  },
+  {
+   "do": "wait",
+   "s": 0.6
+  },
+  {
+   "do": "type",
+   "text": "$message",
+   "event": "typed"
+  },
+  {
+   "do": "wait",
+   "s": 0.4
+  },
+  {
+   "do": "key",
+   "key": "return",
+   "event": "send"
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Don't allow",
+   "timeout_s": 60,
+   "save_as": "@card1",
+   "event": "card1",
+   "optional": true,
+   "budget_ms": 15000
+  },
+  {
+   "do": "wait",
+   "s": 1.5,
+   "note": "the person reads the card"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "save_as": "@c1a",
+   "optional": true,
+   "timeout_s": 3,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@c1a",
+   "if": "@c1a",
+   "event": "firstAllow"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Open app",
+   "save_as": "@c1o",
+   "optional": true,
+   "timeout_s": 2,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@c1o",
+   "if": "@c1o",
+   "event": "firstOpenApp"
+  },
+  {
+   "do": "wait",
+   "s": 1.0
+  },
+  {
+   "do": "find",
+   "app": "Dock",
+   "role": "AXDockItem",
+   "name": "Calculator",
+   "save_as": "@calc",
+   "timeout_s": 4
+  },
+  {
+   "do": "click",
+   "at": "@calc",
+   "event": "calculatorForward",
+   "note": "the person brings Calculator forward to watch"
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Don't allow",
+   "timeout_s": 20,
+   "save_as": "@card2",
+   "event": "card2",
+   "optional": true,
+   "budget_ms": 15000
+  },
+  {
+   "do": "wait",
+   "s": 1.2,
+   "if": "@card2"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "save_as": "@c2a",
+   "optional": true,
+   "timeout_s": 3,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@c2a",
+   "if": "@c2a",
+   "event": "secondAllow"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Open app",
+   "save_as": "@c2o",
+   "optional": true,
+   "timeout_s": 2,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@c2o",
+   "if": "@c2o",
+   "event": "secondOpenApp"
+  },
+  {
+   "do": "wait_element",
+   "app": "Calculator",
+   "contains": "600",
+   "timeout_s": 60,
+   "event": "equals600",
+   "optional": true,
+   "save_as": "@six"
+  },
+  {
+   "do": "wait",
+   "s": 9,
+   "note": "the receipt and the reply"
+  },
+  {
+   "do": "still",
+   "name": "calc-600"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "record_stop"
+  },
+  {
+   "do": "conform",
+   "name": "RS4-$n"
+  }
+ ]
+}

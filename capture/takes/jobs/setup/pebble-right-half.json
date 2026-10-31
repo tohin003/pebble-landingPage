@@ -1,0 +1,51 @@
+{
+ "_about": "Tiles Pebble's workspace to the right half with macOS's tiling shortcut (fn-⌃→), so a window on the left (Calculator, Finder) stays in view (31 Oct: drags on the window's edge don't resize it, and the menu bar isn't in the agent's tree).",
+ "schema": "pebble-take-job/1",
+ "id": "pebble-right-half-$n",
+ "take": "setup",
+ "title": "Workspace to the right half",
+ "steps": [
+  {
+   "do": "activate",
+   "app": "Pebble"
+  },
+  {
+   "do": "wait",
+   "s": 1
+  },
+  {
+   "do": "key",
+   "key": "right",
+   "mods": [
+    "fn",
+    "ctrl"
+   ]
+  },
+  {
+   "do": "wait",
+   "s": 1.8
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 600,
+    "y": 900
+   },
+   "ms": 300
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXWindow",
+   "name": "Pebble",
+   "anchor": "left",
+   "save_as": "@l",
+   "optional": true,
+   "timeout_s": 4
+  },
+  {
+   "do": "still",
+   "name": "after"
+  }
+ ]
+}

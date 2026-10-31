@@ -6,6 +6,60 @@
  "title": "Keys",
  "steps": [
   {
+   "do": "key",
+   "key": "space",
+   "mods": [
+    "cmd",
+    "shift"
+   ],
+   "note": "the workspace forward"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Companion",
+   "window_contains": "Pebble",
+   "save_as": "@comp",
+   "timeout_s": 15,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@comp",
+   "note": "the clean Companion conversation, so no usage line is in view"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "key",
+   "key": "h",
+   "mods": [
+    "ctrl",
+    "opt",
+    "cmd"
+   ],
+   "note": "Pebble hidden before the take"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 735,
+    "y": 640
+   },
+   "ms": 400
+  },
+  {
    "do": "record_start",
    "name": "RSkeys-$n",
    "max_s": 40,
@@ -15,6 +69,19 @@
    "do": "wait",
    "s": 3.5,
    "note": "pre-roll: avfoundation's first ~0.35 s repeat a stale frame (RS1-02), so the first pointer move (the conform's sync) comes after the picture is live"
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 790,
+    "y": 670
+   },
+   "ms": 500,
+   "event": "sync"
+  },
+  {
+   "do": "wait",
+   "s": 1.0
   },
   {
    "do": "key",

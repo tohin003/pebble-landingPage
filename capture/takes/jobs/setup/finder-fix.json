@@ -1,0 +1,20 @@
+{
+ "_about": "Finder for the takes (31 Oct): Settings › Sidebar › 'CDs, DVDs and iOS Devices' off (the sidebar listed a phone by its owner's name), then every Finder window closed (⌥⌘W) and Finder hidden. Reads the settings window if an item isn't found.",
+ "schema": "pebble-take-job/1",
+ "id": "finder-fix-$n",
+ "take": "setup",
+ "title": "Finder: no devices in the sidebar",
+ "steps": [
+  {"do": "activate", "app": "Finder"}, {"do": "wait", "s": 1},
+  {"do": "key", "key": "comma", "mods": ["cmd"]}, {"do": "wait", "s": 1.5},
+  {"do": "find", "app": "Finder", "contains": "Sidebar", "window_contains": "Settings", "save_as": "@tab", "optional": true, "timeout_s": 5},
+  {"do": "click", "at": "@tab", "if": "@tab"}, {"do": "wait", "s": 1},
+  {"do": "ax_dump", "app": "Finder", "max": 400, "window_contains": "Settings", "name": "settings"},
+  {"do": "find", "app": "Finder", "role": "AXCheckBox", "contains": "iOS", "window_contains": "Settings", "save_as": "@ios", "optional": true, "timeout_s": 4},
+  {"do": "click", "at": "@ios", "if": "@ios"}, {"do": "wait", "s": 0.8},
+  {"do": "still", "name": "settings"},
+  {"do": "key", "key": "w", "mods": ["cmd"]}, {"do": "wait", "s": 0.8},
+  {"do": "key", "key": "w", "mods": ["cmd", "opt"]}, {"do": "wait", "s": 1},
+  {"do": "hide", "app": "Finder"}
+ ]
+}

@@ -1,0 +1,11 @@
+{
+ "_about": "Scrolls Pebble's conversation down and up with stills (31 Oct: is the kept-tool notice below the visible reply?). Clicks nothing.",
+ "schema": "pebble-take-job/1",
+ "id": "scroll-look-$n",
+ "take": "setup",
+ "title": "Probe: scroll the conversation",
+ "steps": [
+  {"do": "scroll", "at": {"x": 700, "y": 450}, "lines": 12, "ms": 600}, {"do": "wait", "s": 1}, {"do": "still", "name": "s1"},
+  {"do": "scroll", "at": {"x": 700, "y": 450}, "lines": -12, "ms": 600}, {"do": "wait", "s": 1}, {"do": "still", "name": "s2"}
+ ]
+}

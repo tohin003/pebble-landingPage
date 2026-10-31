@@ -1,0 +1,177 @@
+{
+ "_about": "RS-4 (S11, P0), from a review already waiting in the conversation 'What's 48 × 12.5? Use Calculator.' (31 Oct: 2.0.0's quick chat sends its card to the workspace). Calculator sits at the screen's left edge (moved there before, by hand or a drag job); the workspace is brought forward on that conversation; the take rolls, Review, Allow (exact name, never Always allow), then the person brings Calculator forward from the Dock; Pebble presses the keys; 600; the receipt and the reply.",
+ "schema": "pebble-take-job/1",
+ "id": "RS4-$n",
+ "take": "RS-4",
+ "title": "Calculator (from the waiting review)",
+ "steps": [
+  {
+   "do": "wait",
+   "s": 0.8
+  },
+  {
+   "do": "key",
+   "key": "space",
+   "mods": [
+    "cmd",
+    "shift"
+   ],
+   "note": "Pebble's workspace forward"
+  },
+  {
+   "do": "wait",
+   "s": 2.5
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "What's 48 × 12.5? Use Calculator.",
+   "window_contains": "Pebble",
+   "save_as": "@conv",
+   "optional": true,
+   "timeout_s": 20,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@conv",
+   "if": "@conv"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Review",
+   "save_as": "@rev",
+   "timeout_s": 20,
+   "budget_ms": 15000
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 900,
+    "y": 620
+   },
+   "ms": 300
+  },
+  {
+   "do": "record_start",
+   "name": "RS4-$n",
+   "max_s": 100,
+   "method": "avfoundation"
+  },
+  {
+   "do": "wait",
+   "s": 3.5,
+   "note": "pre-roll: the picture is live before the first pointer move (the conform's sync)"
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 960,
+    "y": 560
+   },
+   "ms": 500,
+   "event": "sync"
+  },
+  {
+   "do": "wait",
+   "s": 0.8
+  },
+  {
+   "do": "click",
+   "at": "@rev",
+   "event": "review"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "save_as": "@allow",
+   "optional": true,
+   "timeout_s": 20,
+   "budget_ms": 15000
+  },
+  {
+   "do": "ax_dump",
+   "app": "Pebble",
+   "max": 2500,
+   "name": "card"
+  },
+  {
+   "do": "wait",
+   "s": 1.5,
+   "if": "@allow",
+   "note": "the person reads the card"
+  },
+  {
+   "do": "click",
+   "at": "@allow",
+   "if": "@allow",
+   "event": "allow"
+  },
+  {
+   "do": "wait",
+   "s": 0.7
+  },
+  {
+   "do": "find",
+   "app": "Dock",
+   "role": "AXDockItem",
+   "name": "Calculator",
+   "save_as": "@calc",
+   "timeout_s": 4
+  },
+  {
+   "do": "click",
+   "at": "@calc",
+   "event": "calculatorForward",
+   "note": "the person brings Calculator forward to watch"
+  },
+  {
+   "do": "wait_element",
+   "app": "Calculator",
+   "contains": "600",
+   "timeout_s": 60,
+   "event": "equals600",
+   "optional": true,
+   "save_as": "@six"
+  },
+  {
+   "do": "wait",
+   "s": 8,
+   "note": "the receipt and the reply"
+  },
+  {
+   "do": "still",
+   "name": "calc-600"
+  },
+  {
+   "do": "ax_dump",
+   "app": "Pebble",
+   "max": 2500,
+   "name": "after"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "record_stop"
+  },
+  {
+   "do": "conform",
+   "name": "RS4-$n"
+  }
+ ]
+}

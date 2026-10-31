@@ -1,10 +1,86 @@
 {
- "_about": "UNVERIFIED until the dry run: element names (Allow, the composer, the conversation list) and the pebble's place come from the dry run's Accessibility dumps and stills; the lead adjusts this template before the take. RS-3 (tour, P1): Open full workspace from the companion's arrow; the workspace fills the screen.",
+ "_about": "RS-3 (tour, P1): Open full workspace from the companion's arrow; the workspace fills most of the screen. Checked 31 Oct: the workspace is first folded into the pebble (⌘K, Switch to the floating companion), then the take clicks the pebble and the quick chat's 'Open full workspace'.",
  "schema": "pebble-take-job/1",
  "id": "RS3-$n",
  "take": "RS-3",
  "title": "Open full workspace",
  "steps": [
+  {
+   "do": "key",
+   "key": "space",
+   "mods": [
+    "cmd",
+    "shift"
+   ],
+   "note": "the workspace forward"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Companion",
+   "window_contains": "Pebble",
+   "save_as": "@comp",
+   "timeout_s": 15,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@comp",
+   "note": "the clean Companion conversation, so no usage line is in view"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "activate",
+   "app": "Pebble"
+  },
+  {
+   "do": "wait",
+   "s": 1
+  },
+  {
+   "do": "key",
+   "key": "k",
+   "mods": [
+    "cmd"
+   ]
+  },
+  {
+   "do": "wait",
+   "s": 0.8
+  },
+  {
+   "do": "type",
+   "text": "floating"
+  },
+  {
+   "do": "wait",
+   "s": 0.8
+  },
+  {
+   "do": "key",
+   "key": "return",
+   "note": "Switch to the floating companion: the workspace folds into the pebble"
+  },
+  {
+   "do": "wait",
+   "s": 2.5
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 1150,
+    "y": 700
+   },
+   "ms": 300
+  },
   {
    "do": "record_start",
    "name": "RS3-$n",
@@ -30,7 +106,10 @@
    "app": "Pebble",
    "name": "Open full workspace",
    "save_as": "@arrow",
-   "timeout_s": 6
+   "timeout_s": 15,
+   "budget_ms": 15000,
+   "role": "AXButton",
+   "window_contains": "companion"
   },
   {
    "do": "click",

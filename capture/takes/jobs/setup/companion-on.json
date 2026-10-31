@@ -1,0 +1,19 @@
+{
+ "_about": "Brings the floating companion back (31 Oct: it showed on no Space after the model sign-in): ⌘K, 'floating', Return on 'Switch to the floating companion'; then to the poster's Space from Chrome's, with stills.",
+ "schema": "pebble-take-job/1",
+ "id": "companion-on-$n",
+ "take": "setup",
+ "title": "The floating companion",
+ "steps": [
+  {"do": "activate", "app": "Pebble"}, {"do": "wait", "s": 1.2},
+  {"do": "key", "key": "k", "mods": ["cmd"]}, {"do": "wait", "s": 0.8},
+  {"do": "type", "text": "floating"}, {"do": "wait", "s": 0.8},
+  {"do": "still", "name": "palette"},
+  {"do": "key", "key": "return"}, {"do": "wait", "s": 2.5},
+  {"do": "still", "name": "desktop"},
+  {"do": "activate", "app": "Google Chrome"}, {"do": "wait", "s": 2.5},
+  {"do": "key", "key": "left", "mods": ["ctrl"]}, {"do": "wait", "s": 2.5},
+  {"do": "move", "to": {"x": 1230, "y": 700}, "ms": 300},
+  {"do": "still", "name": "poster"}
+ ]
+}

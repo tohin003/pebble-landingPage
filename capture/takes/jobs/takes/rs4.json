@@ -1,5 +1,5 @@
 {
- "_about": "UNVERIFIED until the dry run: element names (Allow, the composer, the conversation list) and the pebble's place come from the dry run's Accessibility dumps and stills; the lead adjusts this template before the take. RS-4 (S11, P0): Calculator: the window card, then Pebble presses 4 8 × 1 2 . 5 = and the display reads 600; Activity adds the row. Conversation 'Tickets' (empty), Ask for approval. Runs the calculator reset first, then opens Calculator at 0.",
+ "_about": "RS-4 (S11, P0): 'What's 48 × 12.5? Use Calculator.' in a new quick-chat conversation; the window card's Allow (exact name, never Always allow); Pebble presses the keys; the display reads 600; the reply. Checked 31 Oct: the quick chat must already be open (its 'New conversation' button is pressed before the take rolls); the message goes into 'Message Pebble'. If no button named exactly 'Allow' appears, the take records what came and dumps the tree.",
  "schema": "pebble-take-job/1",
  "id": "RS4-$n",
  "take": "RS-4",
@@ -23,25 +23,50 @@
    "s": 1.5
   },
   {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "New conversation",
+   "window_contains": "companion",
+   "save_as": "@nc",
+   "timeout_s": 6
+  },
+  {
+   "do": "click",
+   "at": "@nc"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXTextArea",
+   "name": "Message Pebble",
+   "window_contains": "companion",
+   "save_as": "@msg",
+   "timeout_s": 6
+  },
+  {
    "do": "record_start",
    "name": "RS4-$n",
-   "max_s": 120,
+   "max_s": 150,
    "method": "avfoundation"
   },
   {
    "do": "wait",
    "s": 3.5,
-   "note": "pre-roll: avfoundation's first ~0.35 s repeat a stale frame (RS1-02), so the first pointer move (the conform's sync) comes after the picture is live"
+   "note": "pre-roll: the picture is live before the first pointer move (the conform's sync)"
   },
   {
    "do": "click",
-   "at": "$stone",
-   "event": "openChat",
-   "note": "the pebble; its place is read off the dry run's still (positions.json)"
+   "at": "@msg",
+   "event": "composer"
   },
   {
    "do": "wait",
-   "s": 0.9
+   "s": 0.6
   },
   {
    "do": "type",
@@ -62,18 +87,27 @@
    "app": "Pebble",
    "role": "AXButton",
    "name": "Allow",
-   "timeout_s": 40,
+   "timeout_s": 60,
    "save_as": "@allow",
-   "event": "card"
+   "event": "card",
+   "optional": true
+  },
+  {
+   "do": "ax_dump",
+   "app": "Pebble",
+   "max": 1500,
+   "name": "at-card"
   },
   {
    "do": "wait",
    "s": 1.2,
-   "note": "the person reads the card (the person's time; the edit may cut it)"
+   "if": "@allow",
+   "note": "the person reads the card"
   },
   {
    "do": "click",
    "at": "@allow",
+   "if": "@allow",
    "event": "allow"
   },
   {
@@ -87,12 +121,18 @@
   },
   {
    "do": "wait",
-   "s": 8,
-   "note": "Activity's row and the reply"
+   "s": 10,
+   "note": "the receipt and the reply"
   },
   {
    "do": "still",
    "name": "calc-600"
+  },
+  {
+   "do": "ax_dump",
+   "app": "Pebble",
+   "max": 1500,
+   "name": "after"
   },
   {
    "do": "wait",
