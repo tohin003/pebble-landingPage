@@ -332,8 +332,8 @@ export const LongTasksExplainer: React.FC<{ x: number; y: number; w: number; h: 
  */
 export const RemoteExplainer: React.FC<{ x: number; y: number; w: number; h: number; dt: number; B: number; energy?: number }> = ({ x, y, w, h, dt, B, energy = 0 }) => {
   const u = unit(w, h);
-  const phone = { x: x + w * 0.16, y: y + h * 0.5, w: 170 * u, h: 340 * u };
-  const mac = { x: x + w * 0.8, y: y + h * 0.5, w: 330 * u, h: 210 * u };
+  const phone = { x: x + w * 0.1, y: y + h * 0.5, w: 170 * u, h: 340 * u };
+  const mac = { x: x + w * 0.86, y: y + h * 0.5, w: 330 * u, h: 210 * u };
   const inP = expoOut(c01(dt / 12));
   const link = c01((dt - 0.6 * B) / 12);
   const x1 = phone.x + phone.w / 2 + 16 * u;
@@ -363,7 +363,7 @@ export const RemoteExplainer: React.FC<{ x: number; y: number; w: number; h: num
       <Label text="Mac" x={mac.x} y={mac.y + mac.h / 2 + 30 * u} size={30 * u} dt={dt - 2} />
       <Label text="over Tailscale or your Wi-Fi" x={(x1 + x2) / 2} y={phone.y - 70 * u} size={32 * u} dt={dt - 0.6 * B - 6} color={SAGE} />
       {chips.map((c, i) => (
-        <Chip key={c} x={(x1 + x2) / 2} y={phone.y + 70 * u + i * 66 * u} text={c} u={u} p={(dt - (1.6 + i * 0.75) * B) / 9} size={28} glow={pulse(dt, (1.6 + i * 0.75) * B, 9)} />
+        <Chip key={c} x={(x1 + x2) / 2} y={phone.y + 64 * u + i * 62 * u} text={c} u={u} p={(dt - (1.6 + i * 0.75) * B) / 9} size={25} glow={pulse(dt, (1.6 + i * 0.75) * B, 9)} />
       ))}
     </div>
   );

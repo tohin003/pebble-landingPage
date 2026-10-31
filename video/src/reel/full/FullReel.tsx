@@ -207,7 +207,7 @@ function bigCard(crop: CropId, a: Aspect, W: number, H: number) {
   const r = CROPS[crop].rect;
   const portrait = r.w / r.h < 1.2;
   if (a === "9x16") return { k: Math.min((W * 0.9) / r.w, (H * 0.42) / r.h, 2.6), x: W / 2, y: H * 0.45, lineAt: { x: W / 2, y: H * 0.165, w: W * 0.86, align: "center" as const } };
-  if (a === "1x1") return { k: Math.min((W * 0.86) / r.w, (H * 0.6) / r.h, 2.6), x: W / 2, y: H * 0.42, lineAt: { x: W / 2, y: H * 0.85, w: W * 0.86, align: "center" as const } };
+  if (a === "1x1") return { k: Math.min((W * 0.86) / r.w, (H * 0.6) / r.h, 2.6), x: W / 2, y: H * 0.42, lineAt: { x: W / 2, y: H * 0.85, w: W * 0.74, align: "center" as const } };
   if (portrait) return { k: Math.min((W * 0.5) / r.w, (H * 0.84) / r.h, 2.6), x: W * 0.66, y: H * 0.5, lineAt: { x: W * 0.06, y: H * 0.5, w: W * 0.42, align: "left" as const } };
   return { k: Math.min((W * 0.8) / r.w, (H * 0.64) / r.h, 2.6), x: W * 0.5, y: H * 0.42, lineAt: { x: W * 0.5, y: H * 0.86, w: W * 0.8, align: "center" as const } };
 }
@@ -458,14 +458,14 @@ const EndScene: React.FC<{ plan: FullPlan; f: number; W: number; H: number; a: A
   const logo = plan.logo;
   const tease = plan.segments.find((s) => s.kind === "tease") as Extract<Segment, { kind: "tease" }>;
   const tall = a !== "16x9";
-  const size = a === "9x16" ? 560 : a === "1x1" ? 420 : 520;
+  const size = a === "9x16" ? 560 : a === "1x1" ? 380 : 520;
   const footX = tall ? W / 2 : W * 0.33;
-  const footY = a === "9x16" ? H * 0.34 : a === "1x1" ? H * 0.4 : H * 0.5;
+  const footY = a === "9x16" ? H * 0.34 : a === "1x1" ? H * 0.33 : H * 0.5;
   const cy = footY - size * 0.3;
   const teaseOn = f >= tease.from;
   const dimLock = teaseOn ? inOut(c01((f - tease.from) / 20)) : 0;
   const lockSize = tall ? fitSize("Pebble 2.0", W * 0.8, a === "1x1" ? 150 : 170) : 210;
-  const lock = { x: tall ? W / 2 : W * 0.43, y: a === "9x16" ? H * 0.43 : a === "1x1" ? H * 0.5 : H * 0.36 };
+  const lock = { x: tall ? W / 2 : W * 0.43, y: a === "9x16" ? H * 0.43 : a === "1x1" ? H * 0.42 : H * 0.36 };
   const lineSize = Math.round(Math.min(W, H) * (tall ? 0.048 : 0.05));
   const tagY = lock.y + lockSize * 0.78;
   // the aura: a grand, warm radiance on the logo chord, then calm and sleepy for the tease
@@ -493,7 +493,7 @@ const EndScene: React.FC<{ plan: FullPlan; f: number; W: number; H: number; a: A
       {!teaseOn && <Word text={END_CARD.tagline} dt={f - logo - 10} size={lineSize * 1.15} x={lock.x} y={tagY} align={tall ? "center" : "left"} color={REEL.inkSoft} style={{ fontWeight: 600, letterSpacing: "-0.015em", textShadow: "none" }} />}
       {teaseOn &&
         TEASE_LINES.map((t, i) => (
-          <Word key={t} text={t} dt={f - tease.lines[i]} size={lineSize * 1.15} x={lock.x} y={tagY + i * lineSize * 1.45} align={tall ? "center" : "left"} color={i === 2 ? REEL.inkSoft : REEL.ink} style={{ fontWeight: i === 0 ? 700 : 600, letterSpacing: "-0.015em", textShadow: "none" }} />
+          <Word key={t} text={t} dt={f - tease.lines[i]} size={lineSize * 1.15} x={lock.x} y={tagY + i * lineSize * (tall ? 1.3 : 1.45)} align={tall ? "center" : "left"} color={i === 2 ? REEL.inkSoft : REEL.ink} style={{ fontWeight: i === 0 ? 700 : 600, letterSpacing: "-0.015em", textShadow: "none" }} />
         ))}
     </AbsoluteFill>
   );
@@ -508,7 +508,7 @@ const HonestLine: React.FC<{ plan: FullPlan; f: number; W: number; H: number; a:
   const end = f >= plan.logo ? inOut(c01((f - plan.logo) / 20)) : 0; // on the end card it rises into its place
   const size = Math.round(Math.min(W, H) * (a === "16x9" ? 0.03 : 0.032));
   const yBand = a === "9x16" ? H * 0.69 : a === "1x1" ? H * 0.88 : H * 0.885;
-  const yEnd = a === "9x16" ? H * 0.62 : a === "1x1" ? H * 0.74 : H * 0.72;
+  const yEnd = a === "9x16" ? H * 0.655 : a === "1x1" ? H * 0.72 : H * 0.72;
   const y = yBand + (yEnd - yBand) * end;
   return (
     <div style={{ position: "absolute", left: 0, right: 0, top: y, transform: "translateY(-50%)", display: "flex", justifyContent: "center", opacity: p }}>
@@ -525,7 +525,7 @@ const Credits: React.FC<{ plan: FullPlan; f: number; W: number; H: number; a: As
   if (f < logo.credits) return null;
   const p = expoOut(c01((f - logo.credits) / 14));
   const size = Math.round(Math.min(W, H) * (a === "16x9" ? 0.017 : 0.019));
-  const top = a === "9x16" ? H * 0.69 : a === "1x1" ? H * 0.82 : H * 0.81;
+  const top = a === "9x16" ? H * 0.715 : a === "1x1" ? H * 0.815 : H * 0.81;
   return (
     <div style={{ position: "absolute", left: W * 0.06, right: W * 0.06, top, opacity: p, fontFamily: FONT.sans, fontWeight: 500, fontSize: size, lineHeight: 1.45, color: REEL.inkSoft, textAlign: "center" }}>
       <div style={{ color: REEL.ink, fontWeight: 600 }}>{END_CARD.honestSmall}</div>
