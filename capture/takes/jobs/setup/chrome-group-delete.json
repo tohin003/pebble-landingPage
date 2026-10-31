@@ -1,0 +1,14 @@
+{
+ "_about": "Answers Chrome's 'Close tab and delete group?' with 'Delete group' (Pebble's own tab group, which Pebble recreates), then reads Pebble's companion so its waiting card's buttons can be declined (31 Oct).",
+ "schema": "pebble-take-job/1",
+ "id": "chrome-group-delete-$n",
+ "take": "setup",
+ "title": "Delete Pebble's tab group; read the companion",
+ "steps": [
+  {"do": "activate", "app": "Google Chrome"}, {"do": "wait", "s": 1.5},
+  {"do": "find", "app": "Google Chrome", "role": "AXButton", "name": "Delete group", "save_as": "@del", "optional": true, "timeout_s": 6, "budget_ms": 15000},
+  {"do": "click", "at": "@del", "if": "@del"}, {"do": "wait", "s": 1.5},
+  {"do": "still", "name": "chrome"},
+  {"do": "ax_dump", "app": "Pebble", "window_contains": "companion", "max": 800, "name": "companion"}
+ ]
+}

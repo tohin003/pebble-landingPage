@@ -1,0 +1,22 @@
+{
+ "_about": "Clears a Pebble run left in Chrome (31 Oct, after RS9-03): Chrome forward, the page's 'Stop' (Pebble's status pill) pressed, the tab closed (⌘W), Pebble's waiting card declined if one shows in its companion or panel; then a still from the desktop's Space.",
+ "schema": "pebble-take-job/1",
+ "id": "chrome-stop-$n",
+ "take": "setup",
+ "title": "Stop Pebble in Chrome and close its tab",
+ "steps": [
+  {"do": "activate", "app": "Google Chrome"}, {"do": "wait", "s": 2},
+  {"do": "find", "app": "Google Chrome", "role": "AXButton", "name": "Stop", "save_as": "@stop", "optional": true, "timeout_s": 8, "budget_ms": 15000},
+  {"do": "click", "at": "@stop", "if": "@stop"}, {"do": "wait", "s": 1.5},
+  {"do": "still", "name": "chrome"},
+  {"do": "key", "key": "w", "mods": ["cmd"], "note": "close the Pebble tab (the current tab)"}, {"do": "wait", "s": 1.5},
+  {"do": "still", "name": "chrome-after"},
+  {"do": "key", "key": "space", "mods": ["cmd", "shift"]}, {"do": "wait", "s": 1.5},
+  {"do": "find", "app": "Pebble", "role": "AXButton", "name": "Don't allow", "within": {"x": 640, "y": 40, "w": 384, "h": 560}, "save_as": "@no", "optional": true, "timeout_s": 6, "budget_ms": 15000},
+  {"do": "click", "at": "@no", "if": "@no"},
+  {"do": "find", "app": "Pebble", "role": "AXButton", "name": "Deny", "within": {"x": 640, "y": 40, "w": 384, "h": 560}, "save_as": "@deny", "optional": true, "timeout_s": 4, "budget_ms": 15000},
+  {"do": "click", "at": "@deny", "if": "@deny"}, {"do": "wait", "s": 1},
+  {"do": "move", "to": {"x": 700, "y": 300}, "ms": 300},
+  {"do": "still", "name": "after"}
+ ]
+}

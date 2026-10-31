@@ -1,0 +1,221 @@
+{
+ "_about": "RS-9 Clip B (the play), a composite at the person's request (DECISION-RS9, update 23:40): from the Desktop's Space, a fresh conversation in the companion, $message (the direct link to Anthropic's 'Introducing Claude Code'); both cards answered with their exact 'Allow' in the companion (first 'Use youtube.com', then the video press); the video plays in Pebble's own Chrome tab.",
+ "schema": "pebble-take-job/1",
+ "id": "RS9B-$n",
+ "take": "RS-9",
+ "title": "Clip B: the play",
+ "max_minutes": 20,
+ "defaults": {
+  "message": "Play this video in Chrome: https://www.youtube.com/watch?v=AJpK3YTTKZ4"
+ },
+ "steps": [
+  {
+   "do": "key",
+   "key": "left",
+   "mods": [
+    "ctrl"
+   ]
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "key",
+   "key": "left",
+   "mods": [
+    "ctrl"
+   ]
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 700,
+    "y": 300
+   },
+   "ms": 300,
+   "note": "the pointer rests the same way in both clips"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Minimize to pebble",
+   "window_contains": "companion",
+   "save_as": "@min",
+   "optional": true,
+   "timeout_s": 3,
+   "budget_ms": 15000,
+   "note": "the quick chat closed first, so the take opens it"
+  },
+  {
+   "do": "click",
+   "at": "@min",
+   "if": "@min"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 700,
+    "y": 300
+   },
+   "ms": 300
+  },
+  {
+   "do": "record_start",
+   "name": "RS9B-$n",
+   "max_s": 240,
+   "method": "avfoundation"
+  },
+  {
+   "do": "wait",
+   "s": 3.5,
+   "note": "pre-roll: the picture is live before the first pointer move (the conform's sync)"
+  },
+  {
+   "do": "click",
+   "at": "$stone",
+   "event": "openChat",
+   "note": "the pebble: the companion's quick chat"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "New conversation",
+   "window_contains": "companion",
+   "save_as": "@nc",
+   "timeout_s": 8,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@nc",
+   "event": "newConversation"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXTextArea",
+   "name": "Message Pebble",
+   "window_contains": "companion",
+   "save_as": "@msg",
+   "timeout_s": 8,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@msg"
+  },
+  {
+   "do": "wait",
+   "s": 0.5
+  },
+  {
+   "do": "type",
+   "text": "$message",
+   "event": "typed"
+  },
+  {
+   "do": "wait",
+   "s": 0.4
+  },
+  {
+   "do": "key",
+   "key": "return",
+   "event": "send"
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "window_contains": "companion",
+   "timeout_s": 60,
+   "save_as": "@a1",
+   "event": "card1",
+   "optional": true,
+   "budget_ms": 15000
+  },
+  {
+   "do": "wait",
+   "s": 1.3,
+   "if": "@a1",
+   "note": "the person reads the card"
+  },
+  {
+   "do": "click",
+   "at": "@a1",
+   "if": "@a1",
+   "event": "allow1"
+  },
+  {
+   "do": "wait",
+   "s": 1.0
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "window_contains": "companion",
+   "timeout_s": 60,
+   "save_as": "@a2",
+   "event": "card2",
+   "optional": true,
+   "budget_ms": 15000
+  },
+  {
+   "do": "wait",
+   "s": 1.3,
+   "if": "@a2",
+   "note": "the person reads the card"
+  },
+  {
+   "do": "click",
+   "at": "@a2",
+   "if": "@a2",
+   "event": "allow2"
+  },
+  {
+   "do": "wait",
+   "s": 1.0
+  },
+  {
+   "do": "wait",
+   "s": 12,
+   "note": "the video plays"
+  },
+  {
+   "do": "still",
+   "name": "playing"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "record_stop"
+  },
+  {
+   "do": "conform",
+   "name": "RS9B-$n"
+  }
+ ]
+}

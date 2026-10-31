@@ -1,0 +1,21 @@
+{
+ "_about": "Declines a press card in Pebble's workspace panel (31 Oct: RS9-03's video press): the conversation found by search, the panel scrolled to its end, then 'Deny' or 'Don't allow' anywhere in the panel's column.",
+ "schema": "pebble-take-job/1",
+ "id": "decline-press-$n",
+ "take": "setup",
+ "title": "Decline a press card",
+ "defaults": {"conv": "Show me a clip of your rival: play"},
+ "steps": [
+  {"do": "key", "key": "space", "mods": ["cmd", "shift"]}, {"do": "wait", "s": 1.5},
+  {"do": "click", "at": {"x": 136, "y": 351}}, {"do": "wait", "s": 0.6}, {"do": "type", "text": "$conv"}, {"do": "wait", "s": 1.5},
+  {"do": "find", "app": "Pebble", "role": "AXButton", "contains": "$conv", "within": {"x": 0, "y": 360, "w": 215, "h": 140}, "save_as": "@c", "optional": true, "timeout_s": 10, "budget_ms": 15000},
+  {"do": "click", "at": "@c", "if": "@c"}, {"do": "wait", "s": 2},
+  {"do": "scroll", "at": {"x": 844, "y": 450}, "lines": 30, "ms": 700}, {"do": "wait", "s": 1},
+  {"do": "find", "app": "Pebble", "role": "AXButton", "name": "Deny", "within": {"x": 664, "y": 60, "w": 360, "h": 606}, "save_as": "@d", "optional": true, "timeout_s": 6, "budget_ms": 15000},
+  {"do": "click", "at": "@d", "if": "@d"},
+  {"do": "find", "app": "Pebble", "role": "AXButton", "name": "Don't allow", "within": {"x": 664, "y": 60, "w": 360, "h": 606}, "save_as": "@n", "optional": true, "timeout_s": 6, "budget_ms": 15000},
+  {"do": "click", "at": "@n", "if": "@n"}, {"do": "wait", "s": 1.5},
+  {"do": "key", "key": "escape"}, {"do": "move", "to": {"x": 700, "y": 300}, "ms": 300},
+  {"do": "still", "name": "after"}
+ ]
+}

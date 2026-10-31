@@ -1,0 +1,218 @@
+{
+ "_about": "RS-9 Clip A (the ask), a composite at the person's request (DECISION-RS9, update 23:40): the same start as Clip B; $message typed in a fresh companion conversation; about 5 s later the run is stopped (its Stop button) and any card declined.",
+ "schema": "pebble-take-job/1",
+ "id": "RS9A-$n",
+ "take": "RS-9",
+ "title": "Clip A: the ask",
+ "max_minutes": 10,
+ "defaults": {
+  "message": "Show me a clip of your rival."
+ },
+ "steps": [
+  {
+   "do": "key",
+   "key": "left",
+   "mods": [
+    "ctrl"
+   ]
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "key",
+   "key": "left",
+   "mods": [
+    "ctrl"
+   ]
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 700,
+    "y": 300
+   },
+   "ms": 300,
+   "note": "the pointer rests the same way in both clips"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Minimize to pebble",
+   "window_contains": "companion",
+   "save_as": "@min",
+   "optional": true,
+   "timeout_s": 3,
+   "budget_ms": 15000,
+   "note": "the quick chat closed first, so the take opens it"
+  },
+  {
+   "do": "click",
+   "at": "@min",
+   "if": "@min"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 700,
+    "y": 300
+   },
+   "ms": 300
+  },
+  {
+   "do": "record_start",
+   "name": "RS9A-$n",
+   "max_s": 60,
+   "method": "avfoundation"
+  },
+  {
+   "do": "wait",
+   "s": 3.5,
+   "note": "pre-roll: the picture is live before the first pointer move (the conform's sync)"
+  },
+  {
+   "do": "click",
+   "at": "$stone",
+   "event": "openChat",
+   "note": "the pebble: the companion's quick chat"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "New conversation",
+   "window_contains": "companion",
+   "save_as": "@nc",
+   "timeout_s": 8,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@nc",
+   "event": "newConversation"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXTextArea",
+   "name": "Message Pebble",
+   "window_contains": "companion",
+   "save_as": "@msg",
+   "timeout_s": 8,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@msg"
+  },
+  {
+   "do": "wait",
+   "s": 0.5
+  },
+  {
+   "do": "type",
+   "text": "$message",
+   "event": "typed"
+  },
+  {
+   "do": "wait",
+   "s": 0.4
+  },
+  {
+   "do": "key",
+   "key": "return",
+   "event": "send"
+  },
+  {
+   "do": "wait",
+   "s": 5,
+   "note": "Pebble's first visible sign of acting"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "contains": "Stop",
+   "window_contains": "companion",
+   "save_as": "@stop",
+   "optional": true,
+   "timeout_s": 4,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@stop",
+   "if": "@stop",
+   "event": "stop"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Deny",
+   "window_contains": "companion",
+   "save_as": "@deny",
+   "optional": true,
+   "timeout_s": 3,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@deny",
+   "if": "@deny"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Don't allow",
+   "window_contains": "companion",
+   "save_as": "@no",
+   "optional": true,
+   "timeout_s": 3,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@no",
+   "if": "@no"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "still",
+   "name": "stopped"
+  },
+  {
+   "do": "record_stop"
+  },
+  {
+   "do": "conform",
+   "name": "RS9A-$n"
+  }
+ ]
+}

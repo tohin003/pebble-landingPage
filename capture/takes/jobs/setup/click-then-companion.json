@@ -1,0 +1,16 @@
+{
+ "_about": "Clicks one point in the app in front ($app; 31 Oct: Chrome's 'Delete group' button, read off a still), then opens the companion's quick chat (the pebble) and reads it, with a still.",
+ "schema": "pebble-take-job/1",
+ "id": "click-then-companion-$n",
+ "take": "setup",
+ "title": "Click a point, then read the companion",
+ "defaults": {"app": "Google Chrome", "pt": {"x": 660, "y": 450}},
+ "steps": [
+  {"do": "activate", "app": "$app"}, {"do": "wait", "s": 1.2},
+  {"do": "click", "at": "$pt"}, {"do": "wait", "s": 1.5},
+  {"do": "still", "name": "clicked"},
+  {"do": "click", "at": "$stone"}, {"do": "wait", "s": 1.5},
+  {"do": "ax_dump", "app": "Pebble", "window_contains": "companion", "max": 800, "name": "companion"},
+  {"do": "still", "name": "companion"}
+ ]
+}
