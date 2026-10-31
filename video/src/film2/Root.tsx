@@ -9,6 +9,8 @@ import { SetPiecesDemo, DEMO_SIZE, demoLength } from "./setpieces/demo/SetPieces
 import { demoPlans } from "./setpieces/demo/plans";
 import { RETURN_G1_VARIANTS, ReturnVariantDemo } from "./setpieces/demo/ReturnVariantDemo";
 import type { Aspect } from "./tokens";
+import { RS9BeatView } from "./setpieces/views/RS9BeatView";
+import { RS9_BEAT_FRAMES } from "./setpieces/rs9Beat";
 
 const ASPECTS: readonly [Aspect, string][] = [
   ["16:9", "16x9"],
@@ -51,6 +53,10 @@ export const Film2Compositions: React.FC = () => (
           />
         )),
       )}
+      {/* RS-9's beat (S08–S09), the real composite of Clips A and B, until Ring 1 has a plan to hold it */}
+      {ASPECTS.map(([a, tag]) => (
+        <Composition key={`rs9-${tag}`} id={`F2-RS9-Beat-${tag}`} component={RS9BeatView} durationInFrames={RS9_BEAT_FRAMES} fps={60} width={DEMO_SIZE[a].w} height={DEMO_SIZE[a].h} />
+      ))}
       {/* G1's variants of the Return (toned matte, revision 1's curve, the labels), each against F2-SP-return-<aspect> (MONTAGE_DESIGN §9) */}
       {RETURN_G1_VARIANTS.flatMap((v) =>
         ASPECTS.map(([a, tag]) => (

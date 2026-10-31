@@ -22,6 +22,7 @@ import { CODA_GRID, CODA_STRETCH, planCoda, type CodaTiming } from "../coda";
 import { ASPECTS, alignAspects } from "../align";
 import { cutVelocity, shareGround, type JoinKind } from "../joins";
 import { STRETCH, demoGrid, type DemoStretch } from "./grids";
+import { RS9_CREDIT } from "../rs9Beat";
 
 export interface DemoEntry {
   plan: ScenePlan;
@@ -90,7 +91,8 @@ function buildAll(): Map<Aspect, DemoEntry[]> {
 /** The demo's Return for an aspect, after its climax (the demo's end-card music; `o` for the G1 variants). */
 const returnOptions = (a: Aspect, climax: ScenePlan, align?: Partial<FinaleTiming>, o: Partial<ReturnOptions> = {}): ReturnOptions => {
   const hit = Math.round(localOfR(RETURN_MUSIC.titleR, FPS));
-  return { ...SIZE[a], fps: FPS, grid: returnGrid(FPS), climax, lastNote: hit + sec(4.0, FPS), decayS: 6.6, roomToneS: 0.75, musicCredit: ccByCredit("Born Of The Sky"), align, ...o };
+  // (RS-9's beat is in the film at the person's decision: its credit line rides in the small print, DECISION-RS9)
+  return { ...SIZE[a], fps: FPS, grid: returnGrid(FPS), climax, lastNote: hit + sec(4.0, FPS), decayS: 6.6, roomToneS: 0.75, musicCredit: ccByCredit("Born Of The Sky"), trademarks: [RS9_CREDIT], align, ...o };
 };
 
 /**

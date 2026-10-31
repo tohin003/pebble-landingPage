@@ -479,6 +479,10 @@ export const REAL_TAKE_SOURCES: Readonly<Record<string, string>> = {
   "RS1-03": ".work/real-takes/takes/RS-1/RS1-03.mp4",
   "RS4-07": ".work/real-takes/takes/RS-4/RS4-07.mp4",
   "RS11-02": ".work/real-takes/takes/RS-11/RS11-02.mp4",
+  "RS9A-01": ".work/real-takes/takes/RS-9/RS9A-01.mp4",
+  "RS9B-02": ".work/real-takes/takes/RS-9/RS9B-02.mp4",
+  "RS5C-04": ".work/real-takes/takes/RS-5/RS5C-04.mp4",
+  "RS5F-03": ".work/real-takes/takes/RS-5/RS5F-03.mp4",
 };
 
 /**
@@ -604,4 +608,67 @@ export const TAKE_RS11_02: TakeManifest = {
   note: "the tour (Documents › Pebble); not in the main film",
 };
 
-export const REAL_TAKES: readonly TakeManifest[] = [TAKE_RS13_03, TAKE_RSW_01, TAKE_RS15_01, TAKE_RS1_03, TAKE_RS4_07, TAKE_RS11_02];
+/**
+ * RS-9, a composite at the person's request (.work/real-takes/DECISION-RS9-2026-10-31.md, 23:40 and the lead's 23:52
+ * edit decisions): two real clips recorded from the same start, 1024 × 666 CSS px (2048 × 1332 device px). Clip A, the
+ * ask: "Show me a clip of your rival." sent in the companion's quick chat (log: typed 22.51 s, sent 28.68 s); "Task:
+ * running" shows from 1726 (read off the picture). Clip B, the play: its prompt (it carries the URL: never shown) and
+ * the "Use youtube.com" card, Allow at 48.50 s; Chrome's Space slides in from about 3268 and has cleared the workspace,
+ * and the companion with the prompt, by 3276 (read off the picture); YouTube's adverts until about 116 s, then
+ * "Introducing Claude Code" (Anthropic) plays to the take's end. The beat itself is `rs9Beat.ts`.
+ */
+export const TAKE_RS9A_01: TakeManifest = {
+  id: "RS9A-01",
+  fps: 60,
+  frames: 3550,
+  w: 1024,
+  h: 666,
+  events: { openChat: 178, newConversation: 896, typed: 1351, send: 1721, taskRunning: 1726 },
+  pattern: realPattern("RS9A-01"),
+  views: {},
+  placeholder: false,
+  conform: realConform("RS9A-01", 59.166667, { openChat: { wallS: 2.9629 }, newConversation: { wallS: 14.9351 }, typed: { wallS: 22.5093 }, send: { wallS: 28.68 }, taskRunning: eye(1726) }),
+  note: "Clip A of RS-9's composite; Pebble's later 'which rival?' (after ~37 s) is never used",
+};
+export const TAKE_RS9B_02: TakeManifest = {
+  id: "RS9B-02",
+  fps: 60,
+  frames: 7541,
+  w: 1024,
+  h: 666,
+  events: { openChat: 187, newConversation: 994, typed: 1464, send: 2390, card1: 2790, allow1: 2910, chromeClear: 3276 },
+  pattern: realPattern("RS9B-02"),
+  views: {},
+  placeholder: false,
+  conform: realConform("RS9B-02", 125.683333, { openChat: { wallS: 3.1246 }, newConversation: { wallS: 16.566 }, typed: { wallS: 24.4019 }, send: { wallS: 39.8262 }, card1: { wallS: 46.493 }, allow1: { wallS: 48.5044 }, chromeClear: eye(3276) }),
+  note: "Clip B of RS-9's composite; never before chromeClear (its prompt carries the URL; usage lines), never 55–116 s (adverts)",
+};
+/** RS5C-04 and RS5F-03 (S14, 2 of its 5): Calendar and Finder from the workspace; no plan in the code yet. */
+export const TAKE_RS5C_04: TakeManifest = {
+  id: "RS5C-04",
+  fps: 60,
+  frames: 6591,
+  w: 1024,
+  h: 666,
+  events: { composer: 177, typed: 217, send: 880, card1: 1830, doIt: 2907, appForward: 5940 },
+  pattern: realPattern("RS5C-04"),
+  views: {},
+  placeholder: false,
+  conform: realConform("RS5C-04", 109.85, { composer: { wallS: 2.9449 }, typed: { wallS: 3.6217 }, send: { wallS: 14.6686 }, card1: { wallS: 30.4937 }, doIt: { wallS: 48.4458 }, appForward: { wallS: 99.0071 } }),
+  note: "S14: 'Glaze order' added to the Studio calendar, Calendar forward at 99.0 s; box the usage lines",
+};
+export const TAKE_RS5F_03: TakeManifest = {
+  id: "RS5F-03",
+  fps: 60,
+  frames: 6434,
+  w: 1024,
+  h: 666,
+  events: { composer: 171, typed: 211, send: 808, card1: 1530, doIt: 2633, appForward: 5815 },
+  pattern: realPattern("RS5F-03"),
+  views: {},
+  placeholder: false,
+  conform: realConform("RS5F-03", 107.233333, { composer: { wallS: 2.8424 }, typed: { wallS: 3.5188 }, send: { wallS: 13.4618 }, card1: { wallS: 25.4974 }, doIt: { wallS: 43.8839 }, appForward: { wallS: 96.9157 } }),
+  note: "S14: Documents › Open day opens in Finder within ~2 s of Do it; box the usage lines",
+};
+
+export const REAL_TAKES: readonly TakeManifest[] = [TAKE_RS13_03, TAKE_RSW_01, TAKE_RS15_01, TAKE_RS1_03, TAKE_RS4_07, TAKE_RS11_02, TAKE_RS9A_01, TAKE_RS9B_02, TAKE_RS5C_04, TAKE_RS5F_03];

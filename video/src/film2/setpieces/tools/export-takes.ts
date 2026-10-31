@@ -10,6 +10,7 @@ import { existsSync, mkdirSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { demoPlans } from "../demo/plans";
+import { RS9_BEAT } from "../rs9Beat";
 import { REAL_TAKE_SOURCES, sourceFrameAt, takeFramePath, type TakeManifest } from "../take";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../../../..");
@@ -31,6 +32,12 @@ export function usedRanges(): Map<TakeManifest, [number, number][]> {
         raw.set(u.manifest.id, x);
       }
     }
+  }
+  // RS-9's beat (its own composition until Ring 1 has a plan)
+  for (const b of RS9_BEAT) {
+    const x = raw.get(b.take.id) ?? { m: b.take, r: [] };
+    x.r.push([b.from, b.to - 1]);
+    raw.set(b.take.id, x);
   }
   const out = new Map<TakeManifest, [number, number][]>();
   for (const { m, r } of raw.values()) {

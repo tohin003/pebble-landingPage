@@ -4,6 +4,7 @@
 import { describe, expect, test } from "bun:test";
 import { REAL_TAKES, REAL_TAKE_SOURCES, RSW_01_FIRST, STEALTH_GONE_FROM, checkTakeManifest, checkTakeUse, sourceFrameAt, takeFramePath } from "../setpieces/take";
 import { demoPlans } from "../setpieces/demo/plans";
+import { RS9B_ADVERTS, RS9_BEAT, RS9_BEAT_FRAMES, RS9_CREDIT, RS9_SOUND_MARKS, beatAt, checkRs9Beat } from "../setpieces/rs9Beat";
 
 const ASPECTS = ["16:9", "1:1", "9:16"] as const;
 
@@ -49,5 +50,28 @@ describe("the real 2.0.0 takes", () => {
       }
     }
     expect(seen).toBe(6);
+  });
+
+  test("RS-9's beat: every shot at 1× inside its clip, never Clip A's 'which rival?', B's prompt or its adverts", () => {
+    expect(checkRs9Beat()).toEqual([]);
+    expect(RS9_BEAT.map((x) => x.id)).toEqual(["ask", "slide", "play", "punch", "anyway"]);
+    // 1×: consecutive beat frames inside a shot are consecutive source frames
+    for (let f = 1; f < RS9_BEAT_FRAMES; f++) {
+      const a = beatAt(f - 1);
+      const b = beatAt(f);
+      if (a.shot === b.shot) expect(b.src - a.src).toBe(1);
+    }
+    // the canary: a shot reaching into the adverts is refused
+    const bad = { ...RS9_BEAT[2]!, from: RS9B_ADVERTS.to - 30 };
+    expect(bad.from < RS9B_ADVERTS.to && bad.to > RS9B_ADVERTS.from).toBe(true);
+    expect(RS9_SOUND_MARKS.scoreOut).toBeLessThan(RS9_SOUND_MARKS.scoreBack);
+  });
+
+  test("RS-9's credit line rides in the end card's small print, word for word", () => {
+    expect(RS9_CREDIT).toBe("Claude Code launch video: Anthropic, on YouTube. Claude and Claude Code are trademarks of Anthropic.");
+    for (const a of ASPECTS) {
+      const ret = demoPlans(a).find((e) => e.plan.id === "return")!.plan;
+      expect(JSON.stringify(ret)).toContain(RS9_CREDIT);
+    }
   });
 });
