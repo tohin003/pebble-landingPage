@@ -6,11 +6,13 @@
 // sentence quoted in columns 4–8, the fixed rules in 9–12.
 //
 // - The three modes' words are Pebble's own (src/permissionModes.ts at tag v1.2.0, byte-identical through v1.5.0;
-//   copy.ts `explainers.permissionDial`, OVERRIDES §23, §25, §32), shown by the dial.
+//   copy.ts `explainers.permissionDial`, OVERRIDES §23, §25, §32), shown by the dial. Pebble 2.0.0 changed Auto in
+//   project and Full access: the dial now carries 2.0.0's words from its user guide, pending a re-quote from
+//   src/permissionModes.ts@v2.0.0 (copy.ts, C-200-8).
 // - The "In every mode, …" sentence is quoted and attributed ("In Pebble's Settings, under the three modes:"): it says
 //   "their switches below", which only makes sense in the app, so the next line explains where those switches are.
-//   The line after it says Pebble can't see or operate other apps yet (OVERRIDES §12), so an "app launch" never reads
-//   as app control.
+//   The line after it says what an app launch is, and that using an app's window is a separate request you allow with
+//   Screen control on (Pebble 2.0.0; until 1.5.0 it said Pebble couldn't see or operate other apps yet, OVERRIDES §12).
 // - Approvals happen only in Pebble's main window, with the two other facts that hold in every mode.
 // The dial pebble's still frames (one per mode, eyes on it) are drawn here on the server from the same engine set-up
 // the live pebble continues from, so swapping in the live pebble moves nothing.

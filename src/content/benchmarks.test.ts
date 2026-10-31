@@ -199,13 +199,15 @@ describe("the words follow the rules", () => {
     expect(JSON.stringify(benchmarks)).not.toMatch(/next change/i);
   });
 
-  test("llms.txt's lines carry the intervals, every trailing family, and the release on offer as unmeasured", () => {
-    const lines = benchmarkLlmsLinesFor("1.5.0").join("\n");
-    expect(lines).toContain("Pebble 1.5.0, the latest release, hasn't been measured yet.");
+  test("llms.txt's lines carry the intervals, every trailing family, and the release on offer as not this run's", () => {
+    const lines = benchmarkLlmsLinesFor("2.0.0").join("\n");
+    // 2.0.0's notes report a later benchmark, so the line says only what this run measured (C-BENCH-3, C-200-22)
+    expect(lines).toContain("This run measured Pebble 1.0.2, not 2.0.0, the latest release.");
+    expect(lines).not.toMatch(/hasn't been measured/);
     expect(lines).toContain("79.3 %, 95 % interval 68.1 to 88.9");
     expect(lines).toContain("82.2 %, 95 % interval 71.9 to 91.9");
     for (const family of ["coding fixes", "coding build and review", "research", "everyday companion"]) expect(lines).toContain(family);
-    expect(benchmarkLlmsLinesFor("1.0.4").join("\n")).not.toContain("hasn't been measured");
+    expect(benchmarkLlmsLinesFor("1.0.4").join("\n")).not.toContain("This run measured");
   });
 
   test("the links point at Pebble's main, which carries the correction", () => {

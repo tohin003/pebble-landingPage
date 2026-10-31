@@ -97,7 +97,7 @@ export function AgentGuard() {
       key: "verified",
       title: agentGuard.result,
       verified: true,
-      notes: [resultSentence, agentGuard.resultCaption],
+      notes: [resultSentence, agentGuard.request, agentGuard.resultCaption], // 2.0.0: what you asked for is checked too
       crop: {
         name: "main-done",
         alt: agentGuard.media.verified,

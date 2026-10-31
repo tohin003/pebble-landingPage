@@ -81,7 +81,9 @@ describe("Stealth Lockdown's words are Pebble 1.1.0's own", () => {
     expect(stealth.h2).toBe(`${stealth.name}.`);
     expect(stealth.offByDefault).toBe("Off by default.");
     expect(stealth.summary.startsWith(`${stealth.name} keeps Pebble out of screen shares`)).toBe(true);
-    expect(stealth.halves.map((half) => half.term)).toEqual(["Stealth"]);
+    // Stealth only from 25 October (the focus correction); Pebble 2.0.0's notes ship the fix, so Lockdown is back, in the
+    // 2.0.0 README's words, which promise no focus (the next describe still checks that).
+    expect(stealth.halves.map((half) => half.term)).toEqual(["Stealth", "Lockdown"]);
   });
 });
 

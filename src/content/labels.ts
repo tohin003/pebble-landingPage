@@ -16,6 +16,10 @@ export const labels = {
   agentGuard: { name: "AgentGuard", fact: "The evidence layer" }, // agentGuard.layer[0] "an evidence layer" [C-SYS-2] (C-AG-7)
   desktop: { name: "On your desktop", fact: "Joins every Space" }, // desktop.lead [C-SYS-3] (C-DESK-1)
   project: { name: "In your project", fact: "How a coding task goes" }, // project.rail.label [C-SYS-4]
+  /** "Across your Mac / New in 2.0.0": the section's name and the release that brought it (CHANGELOG.md 2.0.0:83). [C-SYS-19] */
+  mac: { name: "Across your Mac", fact: "New in 2.0.0" },
+  /** "Workshop / Tools it makes": workshop.then's subject, already on the page. [C-SYS-20] */
+  workshop: { name: "Workshop", fact: "Tools it makes" },
   models: { name: "Models", fact: "Three ways in" }, // models.cards: three ways [C-SYS-5] (C-MOD-2..7)
   pace: { name: "Permissions", fact: "Three modes" }, // pace.lead [C-SYS-6] (C-PACE-1)
   memory: { name: "Memory", fact: "Six labelled layers" }, // memory.layers [C-SYS-7] (C-MEM-7)

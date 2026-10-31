@@ -217,9 +217,11 @@ export const benchmarks = {
     ],
     /**
      * Shown only when the release the page offers (src/lib/release.ts) is none of `run.coveredVersions`, so a later
-     * release is never taken as measured. [C-BENCH-3]
+     * release is never taken as this run's result. Until 1.5.0 it said "Pebble {version}, the latest release, hasn't been
+     * measured yet."; 2.0.0's own notes report a later benchmark, so the line now says only what is true of this run
+     * either way, and makes no claim about the later one (.work/page-2.0/benchmarks-2.0.0.md). [C-BENCH-3] [C-200-22]
      */
-    notMeasured: (version: string) => `Pebble ${version}, the latest release, hasn't been measured yet.`,
+    notMeasured: (version: string) => `This run measured Pebble ${run.pebble.build}, not ${version}, the latest release.`,
   },
 
   /** 2. The overall result, with its interval and counts. [C-BENCH-4] [C-BENCH-5] */

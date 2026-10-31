@@ -78,6 +78,18 @@ export const faq: readonly FaqItem[] = [
     links: [{ label: stealth.name, href: `/#${sectionIds.stealth}` }],
   },
   {
+    // Pebble 2.0.0 (CHANGELOG.md 2.0.0:114-133; docs/USER_GUIDE.md@checkout-2026-10-31:96-121): the answer was "not yet"
+    // until 1.5.0 (C-LIM-15, retired). The feature, then its limits, in copy.ts `acrossMac`'s words.
+    id: "faq-apps",
+    question: "Can Pebble use my other apps?",
+    answer: [
+      "Yes, in a window you allow. With Screen control on, Pebble can ask to use one window of an open app, and nothing happens until you allow it. It reads the window through macOS Accessibility.", // [C-200-21] (C-MAC-4)
+      "It never reads or types into a password, code or card field, hands the window back to you at a sign-in, a code or a check, and never operates terminals, System Settings, Keychain Access, password managers, apps that run code or erase disks, or itself.", // [C-MAC-5] [C-200-19]
+      "Some apps also have actions Pebble can use without the screen, such as running your shortcuts, which asks you each time, or leaving a mail draft. It never sends mail or deletes anything this way.", // [C-MAC-8] [C-MAC-9]
+    ],
+    links: [{ label: "Across your Mac", href: `/#${sectionIds.mac}` }],
+  },
+  {
     id: "faq-offline",
     question: "Can I use it without an internet connection?",
     answer: [
@@ -90,6 +102,7 @@ export const faq: readonly FaqItem[] = [
     answer: [
       "No. AgentGuard is a reliability check, not a security layer. Before Pebble calls a task finished, it checks the evidence: when tests cover the code the task changed, they must have passed since the change, and written JSON or CSV files must parse. Changed code without covering tests is not held.", // [C-FAQ-13] (1.0.3)
       "It also indexes your project, grounds each request in the files it reaches, and challenges an agent that drifts outside that scope.", // [C-FAQ-14]
+      "Since 2.0.0 it also checks what you asked for, such as output that must match a file or files you asked to keep, and when something can't be confirmed, Pebble says the work is unverified instead of done.", // [C-200-20] (C-200-7)
       "When the evidence is missing, the task is held at “verification required”, and you choose: run the covering tests, ask Pebble to finish, or accept the change as not verified.", // [C-FAQ-15]
       "Protection comes from elsewhere: the permission mode you pick, approvals that happen only in Pebble's main window, and macOS's sandbox, which limits commands and tests but is not a promise against every attack.", // [C-FAQ-16]
     ],

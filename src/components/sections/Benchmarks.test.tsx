@@ -76,14 +76,16 @@ describe("the Benchmarks section", () => {
 
   test("a later release that this result doesn't cover says so", async () => {
     // a release the result covers (1.0.2 to 1.0.4) gets no line
-    expect(text(await render({ open: true, offered: "1.0.4" }))).not.toContain("hasn't been measured");
-    // the release the page states (a later release: none after 1.0.4 was measured, OVERRIDES §21 to §32) gets it
+    expect(text(await render({ open: true, offered: "1.0.4" }))).not.toContain("This run measured");
+    // the release the page states (a later release, outside 1.0.2 to 1.0.4) gets it; since 2.0.0 the line says only what
+    // this run measured, because 2.0.0's own notes report a later benchmark (C-BENCH-3, C-200-22)
     expect(text(await render({ open: true, offered: releaseFacts.version }))).toContain(
-      `Pebble ${releaseFacts.version}, the latest release, hasn't been measured yet.`,
+      `This run measured Pebble 1.0.2, not ${releaseFacts.version}, the latest release.`,
     );
-    const later = text(await render({ open: true, offered: "1.0.9" }));
-    expect(later).toContain("Pebble 1.0.9, the latest release, hasn't been measured yet.");
-    expect(run.coveredVersions).not.toContain("1.0.9");
+    const later = text(await render({ open: true, offered: "2.0.0" }));
+    expect(later).toContain("This run measured Pebble 1.0.2, not 2.0.0, the latest release.");
+    expect(later).not.toMatch(/hasn't been measured/);
+    expect(run.coveredVersions).not.toContain("2.0.0");
   });
 
   test("numbers are data, the model's name is not", () => {

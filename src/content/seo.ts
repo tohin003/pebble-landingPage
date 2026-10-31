@@ -141,7 +141,9 @@ export function jsonLdString(data: Record<string, unknown>): string {
  * Every line is sourced in docs/CLAIMS.md under "SEO" and "Honest limits". The "## Benchmark" block is there only while
  * the benchmark is public (releaseFacts.benchmarksPublic, the same gate as the page's section); the tests build the
  * closed version with llmsTxtFor(false). Stealth Lockdown (Pebble 1.1.0) is one line, in Pebble's own words, and it
- * carries the honest line word for word (OVERRIDES §21; src/content/stealth.test.ts).
+ * carries the honest line word for word (OVERRIDES §21; src/content/stealth.test.ts). Pebble 2.0.0's lines (Projects'
+ * Auto and Git, Across your Mac, Pebble's Workshop, AgentGuard's request checks, Memory, and the two limits) are rows
+ * C-200-23 to C-200-27, pending: verify at v2.0.0.
  */
 export function llmsTxtFor(benchmarksPublic: boolean): string {
   return `# Pebble
@@ -154,9 +156,11 @@ Pebble ${releaseFacts.version} came out on ${formatLongDate(releaseFacts.publish
 
 - Models: Continue with ChatGPT (an eligible Plus or Pro plan, through OpenAI's preview), an API key for an OpenAI-compatible service or Anthropic, a Responses API endpoint, or a GGUF model file run on the Mac by the bundled llama.cpp. Pebble downloads no model by itself.
 - Permissions: three modes, Ask for approval (the default), Auto in project and Full access. Approvals happen only in Pebble's main window.
-- Projects: in the default mode, every edit, test run, terminal command and Git change is a card you approve. Edits come with Undo. Tests run in a temporary copy of the project, without network access.
-- AgentGuard: an evidence layer between the model and the project. Before Pebble calls a task finished, tests that cover the code it changed must have passed since the change; changed code without covering tests is not held. An agent that drifts outside the files a request reaches is challenged. AgentGuard checks evidence; it is not a security layer.
-- Memory: six kinds of memory. You can see, search, add and forget memories, but not edit them; the only thing you edit is ~/.pebble/PEBBLE.md. One switch turns memory off.
+- Projects: in the default mode, every edit, test run, terminal command and Git change is a card you approve. Edits come with Undo. Tests run in a temporary copy of the project, without network access. In Auto in project, a command that stays in the project without network, and a Git step Pebble can undo, run without a card; pushes, deletions and history rewrites still ask. Everyday Git (revert, stash, rebase, merge, bisect and more) shows the exact command before it runs.
+- Across your Mac: in a conversation without a project, Pebble can run commands, read and write files and take a screenshot when a request needs one. Each command runs in a sandbox that writes only in the Pebble Workbench folder and the folders you allowed, with no network unless you allowed the site. With Screen control on (off until you turn it on), Pebble can use one window of an open app after you allow it, through macOS Accessibility, and the websites you approve, in its own tab with Pebble for Chrome or in a browser window it reads through Accessibility. It never reads or types into a password, code or card field.
+- Pebble's Workshop: Pebble can make a small tool, a pure calculation with no network, files or processes, validate it in a fresh sandbox and use it at once. It keeps a tool in its Toolbox on its own only when the tool passed every check, and tells you, with View code and Remove. Code Mode runs a short script that calls Pebble's tools; every call is checked, approved and recorded like a direct call.
+- AgentGuard: an evidence layer between the model and the project. Before Pebble calls a task finished, tests that cover the code it changed must have passed since the change; changed code without covering tests is not held. An agent that drifts outside the files a request reaches is challenged. It also checks what you asked for, such as output that must match a file, and when something can't be confirmed, Pebble says the work is unverified instead of done. AgentGuard checks evidence; it is not a security layer.
+- Memory: six kinds of memory. You can see, search and forget memories, and change or stop a saved preference in plain words. What you ask Pebble to remember reaches later conversations as your standing instructions; ~/.pebble/PEBBLE.md holds instructions in your own words. One switch turns memory off.
 - Views: dashboards, tables, charts, plans, diagrams, quizzes and app demos, built from data. A view can never approve, run or change anything.
 - Privacy: no telemetry. Conversations and memories are stored on the Mac, and keys stay in the macOS Keychain. With a local model, the conversation stays on the Mac.
 - ${stealth.summary} ${stealth.offByDefault} ${stealth.turnOn} ${stealth.honest}
@@ -169,8 +173,8 @@ Pebble ${releaseFacts.version} came out on ${formatLongDate(releaseFacts.publish
 - No independent security audit has been done yet.
 - Apple silicon only: there is no Intel, Windows or Linux version. No automatic updates.
 - Models make mistakes.
-- Pebble for Chrome needs Chrome's Developer mode. It works in one Chrome tab you share and then grant, on that tab's site, for up to 30 minutes; it can't open, close, list or switch tabs, or leave the site, and every press asks first. It has been tested against a simulated Chrome, not yet end to end in a real one.
-- Pebble can't see or operate other apps yet. It can only open one, which in the default mode waits for your approval.
+- Pebble for Chrome loads in the browser's Developer mode. It has been checked end to end in Google Chrome. In a browser that keeps extensions out of its pages, such as Comet, Pebble works in a new window through Accessibility.
+- Pebble uses another app's window only after you allow it, and never operates terminals, System Settings, Keychain Access, password managers, apps that run code or erase disks, or itself.
 - Scheduled tasks run only while Pebble is open. Their results show in Pebble; macOS notifications are off until you turn them on.
 - Commands run in macOS's sandbox, which limits them but is not a promise against every attack. Prompt injection from web pages or files is limited, not impossible.
 ${

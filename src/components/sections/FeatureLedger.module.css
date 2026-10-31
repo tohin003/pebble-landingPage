@@ -1,0 +1,66 @@
+/* The feature ledger of the Pebble 2.0.0 sections (FeatureLedger.tsx): Infrastructure's ruled ledger, with the feature
+   and its limit in one cell. A subgrid of the main column, so the terms sit on columns 4–6 and the text on 7–12. */
+.ledger {
+  display: grid;
+  grid-template-columns: subgrid;
+  border-bottom: 1px solid var(--line);
+}
+
+.row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: baseline;
+  padding: 19px 0 20px;
+  border-top: 1px solid var(--line);
+}
+
+.row dt {
+  grid-column: 1 / span 3;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.row dd {
+  grid-column: 4 / -1;
+  max-width: 36em;
+}
+
+.text {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+/* the row's limit, beside its promise and at the same size (PHILOSOPHY 3) */
+.limit {
+  margin-top: 8px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.note {
+  margin-top: 18px;
+  max-width: 44em;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+@media (max-width: 1023px) {
+  .ledger,
+  .row {
+    display: block;
+  }
+
+  .row {
+    padding: 16px 0 17px;
+  }
+
+  .row dd {
+    margin-top: 3px;
+  }
+}
