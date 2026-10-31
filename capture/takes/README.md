@@ -164,7 +164,7 @@ cd <repo> && TMPDIR=/private/tmp/claude-501/takes-tests /usr/sbin/taskpolicy -b 
   /Library/Frameworks/Python.framework/Versions/3.14/bin/python3 -I -B -m unittest discover -s capture/takes/tests -v
 ```
 
-34 tests, all headless; the agent runs in simulate mode: the vocabulary and every kind of refusal; jobs run once and every step
+35 tests, all headless; the agent runs in simulate mode: the vocabulary and every kind of refusal; jobs run once and every step
 is logged; optional finds and `if`; off-screen points and outside paths refused at run time; PAUSE; interrupted jobs;
 the kill switch by STOP and by Ctrl-C (stops within 2 s, the recording stopped and kept); `--live` refused in any
 other account and with test overrides; stills and recordings refused outside live mode; the JXA helper's matching;
