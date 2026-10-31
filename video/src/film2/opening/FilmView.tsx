@@ -5,14 +5,14 @@
 import { AbsoluteFill, Audio, Freeze, Sequence, staticFile } from "remotion";
 import type { Aspect } from "../tokens";
 import { PieceView } from "../setpieces/views/PieceView";
-import { CodaView } from "../setpieces/views/CodaView";
-import { codaOf } from "../setpieces/coda";
+import { CodaView, EndCardCarriedOn } from "../setpieces/views/CodaView";
+import { carriedEndCardFrames, carriesEndCard, codaOf } from "../setpieces/coda";
 import { ActView } from "./ActView";
 import { MASTER_AUDIO, filmFrames, filmSegments, masterGain, xSegments, type FilmSegment } from "./film";
 
-const Segment: React.FC<{ s: FilmSegment }> = ({ s }) => {
+const Segment: React.FC<{ s: FilmSegment; carried?: boolean }> = ({ s, carried = false }) => {
   if (s.kind === "act") return <ActView act={s.act} />;
-  const body = codaOf(s.plan) ? <CodaView plan={s.plan} slate={false} /> : <PieceView plan={s.plan} slate={false} />;
+  const body = codaOf(s.plan) ? <CodaView plan={s.plan} slate={false} endCard={carried ? "carried" : "own"} /> : <PieceView plan={s.plan} slate={false} />;
   if (s.kind === "hold") return <Freeze frame={s.frame}>{body}</Freeze>;
   return (
     <Sequence from={-s.from} name={`${s.id} local`}>
@@ -26,11 +26,24 @@ export const FilmView: React.FC<{ aspect: Aspect; x?: boolean; audio?: boolean }
   const end = filmFrames(segs);
   return (
     <AbsoluteFill style={{ background: "#000" }}>
-      {segs.map((s) => (
-        <Sequence key={s.id} from={s.at} durationInFrames={s.frames} name={s.id}>
-          <Segment s={s} />
-        </Sequence>
-      ))}
+      {segs.map((s, i) => {
+        const next = segs[i + 1];
+        const prev = segs[i - 1];
+        // the end card a coda carries on is drawn once, from its start through the closing iris (the coda lane's F2,
+        // views/CodaView.tsx EndCardCarriedOn), as SetPiecesDemo draws it; the coda then draws over it
+        if (s.kind === "piece" && s.from === 0 && next?.kind === "piece" && carriesEndCard(s.plan, next.plan))
+          return (
+            <Sequence key={s.id} from={s.at} durationInFrames={carriedEndCardFrames(next.plan)} name={`${s.id}, carried on`}>
+              <EndCardCarriedOn coda={next.plan} />
+            </Sequence>
+          );
+        const carried = s.kind === "piece" && prev?.kind === "piece" && carriesEndCard(prev.plan, s.plan);
+        return (
+          <Sequence key={s.id} from={s.at} durationInFrames={s.frames} name={s.id}>
+            <Segment s={s} carried={carried} />
+          </Sequence>
+        );
+      })}
       {audio ? <Audio src={staticFile(MASTER_AUDIO[aspect])} volume={(f) => masterGain(segs, f, x ? end : undefined)} /> : null}
     </AbsoluteFill>
   );

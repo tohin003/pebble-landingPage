@@ -10,8 +10,8 @@
 //             hold and the honest line's exit) are cut by the climax on 5874;
 //   the climax  its kept card on 6114 (B2's lift); its first 60 frames (S23's lead-in, before "Its own tools." has
 //             landed) are under the Dusk, and its last 120 (the hold's glide) under the Return's pull-back on 6534;
-//   the end card  the Return's title lands on 7314 (R720) and its end card on 7554, but its plan ends on 8307, 27 frames
-//             before the score's true ending (8334): its last frame is held for those 27 (a still page, room tone).
+//   the end card  the Return's title lands on 7314 (R720) and its end card on 7554; since ba83499 its plan ends on the
+//             score's true ending (8334). Were it ever shorter, its last frame would be held to 8334 (a "hold" segment).
 // The X version is the same to the coda's first frame (8334), with a short fade of the room tone (MASTER_NOTES).
 // Pure; no React.
 import type { Aspect } from "../tokens";
