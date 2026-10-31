@@ -825,12 +825,12 @@ describe("C11 and C12: the sound layer and the captions the plan hands on", () =
       expect(X(p).sound.layers.map((l) => `${l.kind} ${l.take}`)).toEqual(["bed room_tone_b", "oneShot standin_tap_a"]);
     }
   });
-  test("while no lane builds the layer, codaSound says so (a warning: the coda would play digital silence); with a builder, it does not", () => {
+  test("the score lane builds the layer (OVERRIDES §65), so codaSound passes; a plan whose layer no lane builds says so (a warning: the coda would play digital silence)", () => {
     const p = coda("16:9");
-    expect(X(p).sound.builtBy).toBeNull();
-    expect(codaSound(p, X(p)).filter((f) => f.level === "warn").map((f) => f.message).join("\n")).toMatch(/built by no lane.*digital silence/);
-    const built = withCoda(p, (x) => ({ ...x, sound: { ...x.sound, builtBy: "a lane the lead names" } }));
-    expect(codaSound(built, X(built))).toEqual([]);
+    expect(X(p).sound.builtBy).toMatch(/score lane/);
+    expect(codaSound(p, X(p))).toEqual([]);
+    const none = withCoda(p, (x) => ({ ...x, sound: { ...x.sound, builtBy: null } }));
+    expect(codaSound(none, X(none)).filter((f) => f.level === "warn").map((f) => f.message).join("\n")).toMatch(/built by no lane.*digital silence/);
   });
   test("the canaries the review's probe passed: a second one-shot, a room tone that stops before the end, a Mixkit bed", () => {
     const p = coda("16:9");

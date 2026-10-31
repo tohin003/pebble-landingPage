@@ -199,16 +199,14 @@ export const plateUnder = (g: Grade, plate: { median: string; exposure: number }
   gradeColor(applyGroundLight(hexToRgb(plate.median), { ground: [plate.exposure, plate.exposure, plate.exposure] }), g, 0.5, true);
 
 /**
- * The scene's own small sound (§62; POSTCREDIT_DESIGN §3.7): room tone throughout, one CC0 tap; no music. Planned here and
- * NOT BUILT: this plan said the score lane builds it, and the score lane's cue sheet says the scene's lane times it
- * (.work/score2/CUE_SHEET.md, "After the end card"), so no lane builds it; the master's room tone stops at the master's
- * end, so the coda as it stands would play digital silence. `builtBy` stays null until the lead assigns the layer (the
- * post-credit review's P1-3), and codaSound reports it while it is. For whoever builds it, the plan's own timing: the end
- * card's room tone carried on without a restart to the coda's last frame (extra.timing.end), and the tap's peak on
- * L-C2's landing (extra.timing.line2), about −30 LUFS.
+ * The scene's own small sound (§62; POSTCREDIT_DESIGN §3.7): room tone throughout, one CC0 tap; no music. Built by the
+ * score lane (OVERRIDES §65; CUE_SHEET.md revision 3 §13.3): tools/audio/score2/coda_timing.ts reads this plan's timing
+ * at build time, score_layers.py lays the end card's room tone on without a restart to the coda's last frame
+ * (extra.timing.end) and the tap with its peak on L-C2's landing (extra.timing.line2) at these levels, score_build.py
+ * builds them into the main master, and score_coda.py checks them on it, each check with a planted canary.
  */
 export const CODA_SOUND = {
-  builtBy: null as string | null,
+  builtBy: "the score lane (tools/audio/score2: score_layers.py lays it, score_build.py builds it, score_coda.py checks it)" as string | null,
   roomTone: { kind: "bed", take: "room_tone_b", licence: "ours (designed air, .work/sfx2/KIT.md)", lufs: -52, note: "the end card's room tone carried on without a restart, to the coda's last frame" },
   tap: { kind: "oneShot", take: "standin_tap_a", licence: "CC0 (Kenney impactWood_light_002)", lufs: -30, note: "the title's own stone tap; its peak on L-C2's landing" },
 } as const;
