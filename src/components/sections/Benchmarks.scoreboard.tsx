@@ -145,7 +145,7 @@ export function DifferenceFigure() {
                   <span className={`data ${styles.diffEnd}`} style={{ left: pctOf(dx(lo)) }}>
                     {signed(lo)}
                   </span>
-                  <span className={`data ${styles.diffEnd}`} style={{ left: pctOf(dx(hi)) }}>
+                  <span className={`data ${styles.diffEnd}`} style={{ left: pctOf(dx(hi)) }} data-end="hi">
                     {signed(hi)}
                   </span>
                 </div>
@@ -157,7 +157,13 @@ export function DifferenceFigure() {
             <div className={styles.diffAxis}>
               <span className={styles.zero} style={{ left: pctOf(dx(0)) }} />
               {TICKS.map((t) => (
-                <span key={t} className={`data ${styles.diffTick}`} style={{ left: pctOf(dx(t)) }} data-zero={t === 0 || undefined}>
+                <span
+                  key={t}
+                  className={`data ${styles.diffTick}`}
+                  style={{ left: pctOf(dx(t)) }}
+                  data-zero={t === 0 || undefined}
+                  data-edge={t === LO ? "start" : t === HI ? "end" : undefined}
+                >
                   {t === 0 ? "0" : signed(t).replace(/\.0$/, "")}
                 </span>
               ))}

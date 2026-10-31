@@ -127,8 +127,9 @@
   color: var(--ink-2);
 }
 
-[data-grow="armed"] .figure,
-[data-grow="play"] .figure {
+/* (specific enough to beat the other product's muted ink above) */
+[data-grow="armed"] .line[data-tone] .figure,
+[data-grow="play"] .line[data-tone] .figure {
   color: transparent;
 }
 
@@ -254,36 +255,45 @@
   transition-delay: calc(var(--i, 0) * 120ms);
 }
 
-/* the point estimate: an ink dot ringed in the page's colour (an outline, never a shadow) */
+/* the point estimate: a ring in ink on the page's colour, never an ink fill (ui.test.ts), with a gap of ground
+   around it so it reads over the band (an outline, never a shadow) */
 .diffDot {
   position: absolute;
   top: 44px;
-  width: 16px;
-  height: 16px;
-  margin: -8px 0 0 -8px;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border: 3px solid var(--ink);
   border-radius: 50%;
-  background: var(--ink);
-  outline: 3px solid var(--bg);
+  background: var(--bg);
+  outline: 2px solid var(--bg);
 }
 
+/* the value starts just left of its dot and runs right, so it never crosses the zero line */
 .diffValue {
   position: absolute;
   top: 10px;
-  transform: translateX(-50%);
+  transform: translateX(-10px);
   font-size: 18px;
   line-height: 1;
   white-space: nowrap;
   color: var(--ink);
 }
 
+/* the interval's ends sit inside its span: the lower end from its mark rightward, the upper end up to its mark */
 .diffEnd {
   position: absolute;
   top: 60px;
-  transform: translateX(-50%);
+  padding-left: 4px;
   font-size: 13px;
   line-height: 1.2;
   white-space: nowrap;
   color: var(--ink-2);
+}
+
+.diffEnd[data-end="hi"] {
+  padding: 0 0 0 0;
+  transform: translateX(-100%);
 }
 
 .diffAxis {
@@ -302,6 +312,15 @@
   transform: translateX(-50%);
   font-size: 12.5px;
   color: var(--ink-2);
+}
+
+/* the axis's end labels stay inside the column */
+.diffTick[data-edge="start"] {
+  transform: none;
+}
+
+.diffTick[data-edge="end"] {
+  transform: translateX(-100%);
 }
 
 .diffTick[data-zero] {
