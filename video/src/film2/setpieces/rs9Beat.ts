@@ -21,7 +21,7 @@ export const RS9_TEXT = { anyway: "Anyway." } as const;
 export const RS9_CREDIT = "Claude Code launch video: Anthropic, on YouTube. Claude and Claude Code are trademarks of Anthropic.";
 
 export interface BeatShot {
-  id: "ask" | "slide" | "play" | "punch" | "anyway";
+  id: string;
   take: TakeManifest;
   /** source frames shown, [from, to), at 1× */
   from: number;
@@ -64,15 +64,15 @@ export const RS9_SOUND_MARKS = (() => {
   return { scoreOut: starts.punch!, scoreBack: at };
 })();
 
-/** The shot and its source frame on beat-local frame `f`. */
-export function beatAt(f: number): { shot: BeatShot; src: number; local: number } {
+/** The shot and its source frame on beat-local frame `f` (RS-9's beat, or another list of shots). */
+export function beatAt(f: number, beat: readonly BeatShot[] = RS9_BEAT): { shot: BeatShot; src: number; local: number } {
   let at = 0;
-  for (const s of RS9_BEAT) {
+  for (const s of beat) {
     const n = s.to - s.from;
     if (f < at + n) return { shot: s, src: s.from + (f - at), local: f - at };
     at += n;
   }
-  const last = RS9_BEAT[RS9_BEAT.length - 1]!;
+  const last = beat[beat.length - 1]!;
   return { shot: last, src: last.to - 1, local: last.to - 1 - last.from };
 }
 

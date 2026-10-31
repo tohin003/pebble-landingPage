@@ -4,6 +4,7 @@
 import { describe, expect, test } from "bun:test";
 import { REAL_TAKES, REAL_TAKE_SOURCES, RSW_01_FIRST, STEALTH_GONE_FROM, checkTakeManifest, checkTakeUse, sourceFrameAt, takeFramePath } from "../setpieces/take";
 import { demoPlans } from "../setpieces/demo/plans";
+import { ACT1_BEAT, checkTakeBeats } from "../setpieces/takeBeats";
 import { RS9B_ADVERTS, RS9_BEAT, RS9_BEAT_FRAMES, RS9_CREDIT, RS9_SOUND_MARKS, beatAt, checkRs9Beat } from "../setpieces/rs9Beat";
 
 const ASPECTS = ["16:9", "1:1", "9:16"] as const;
@@ -73,5 +74,11 @@ describe("the real 2.0.0 takes", () => {
       const ret = demoPlans(a).find((e) => e.plan.id === "return")!.plan;
       expect(JSON.stringify(ret)).toContain(RS9_CREDIT);
     }
+  });
+
+  test("Act I's and S11's beats: inside their takes, no usage line, Pebble's wait before its reply never cut", () => {
+    expect(checkTakeBeats()).toEqual([]);
+    // the canary: the whole screen run past the reply's landing shows the usage line
+    expect(ACT1_BEAT[0]!.to).toBeLessThan(924);
   });
 });

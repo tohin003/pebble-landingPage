@@ -11,6 +11,7 @@ import { RETURN_G1_VARIANTS, ReturnVariantDemo } from "./setpieces/demo/ReturnVa
 import type { Aspect } from "./tokens";
 import { RS9BeatView } from "./setpieces/views/RS9BeatView";
 import { RS9_BEAT_FRAMES } from "./setpieces/rs9Beat";
+import { beatFrames } from "./setpieces/takeBeats";
 
 const ASPECTS: readonly [Aspect, string][] = [
   ["16:9", "16x9"],
@@ -57,6 +58,12 @@ export const Film2Compositions: React.FC = () => (
       {ASPECTS.map(([a, tag]) => (
         <Composition key={`rs9-${tag}`} id={`F2-RS9-Beat-${tag}`} component={RS9BeatView} durationInFrames={RS9_BEAT_FRAMES} fps={60} width={DEMO_SIZE[a].w} height={DEMO_SIZE[a].h} />
       ))}
+      {/* the kept takes whose pieces aren't built: Act I (S01–S03) and S11, cut at 1× (setpieces/takeBeats.ts) */}
+      {(["act1", "s11"] as const).flatMap((b) =>
+        ASPECTS.map(([a, tag]) => (
+          <Composition key={`beat-${b}-${tag}`} id={`F2-Beat-${b}-${tag}`} component={RS9BeatView} defaultProps={{ beat: b }} durationInFrames={beatFrames(b)} fps={60} width={DEMO_SIZE[a].w} height={DEMO_SIZE[a].h} />
+        )),
+      )}
       {/* G1's variants of the Return (toned matte, revision 1's curve, the labels), each against F2-SP-return-<aspect> (MONTAGE_DESIGN §9) */}
       {RETURN_G1_VARIANTS.flatMap((v) =>
         ASPECTS.map(([a, tag]) => (
