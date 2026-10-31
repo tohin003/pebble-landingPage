@@ -1,0 +1,294 @@
+{
+ "_about": "RS-9 (S04-S09), the third attempt of 31 Oct (DECISION-RS9 fallback): a fresh conversation in the companion's quick chat, $message; the review link opens the workspace; only exact 'Allow' buttons are approved, searched inside the Details panel (never 'Open link', 'Always allow' or anything else); then the person brings Chrome forward.",
+ "schema": "pebble-take-job/1",
+ "id": "RS9-$n",
+ "take": "RS-9",
+ "title": "The clip in Pebble's tab",
+ "max_minutes": 25,
+ "defaults": {
+  "message": "Show me a clip of your rival: play Claude Code's launch video on YouTube."
+ },
+ "steps": [
+  {
+   "do": "key",
+   "key": "escape"
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 700,
+    "y": 300
+   },
+   "ms": 300
+  },
+  {
+   "do": "record_start",
+   "name": "RS9-$n",
+   "max_s": 300,
+   "method": "avfoundation"
+  },
+  {
+   "do": "wait",
+   "s": 3.5,
+   "note": "pre-roll: the picture is live before the first pointer move (the conform's sync)"
+  },
+  {
+   "do": "click",
+   "at": "$stone",
+   "event": "openChat",
+   "note": "the pebble: the companion's quick chat"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "New conversation",
+   "window_contains": "companion",
+   "save_as": "@nc",
+   "timeout_s": 8,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@nc",
+   "event": "newConversation"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXTextArea",
+   "name": "Message Pebble",
+   "window_contains": "companion",
+   "save_as": "@msg",
+   "timeout_s": 8,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@msg"
+  },
+  {
+   "do": "wait",
+   "s": 0.5
+  },
+  {
+   "do": "type",
+   "text": "$message",
+   "event": "typed"
+  },
+  {
+   "do": "wait",
+   "s": 0.4
+  },
+  {
+   "do": "key",
+   "key": "return",
+   "event": "send"
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Open",
+   "window_contains": "companion",
+   "timeout_s": 60,
+   "save_as": "@open",
+   "event": "reviewLink",
+   "optional": true,
+   "budget_ms": 15000
+  },
+  {
+   "do": "wait",
+   "s": 1.0,
+   "if": "@open"
+  },
+  {
+   "do": "click",
+   "at": "@open",
+   "if": "@open",
+   "event": "openReview",
+   "note": "the quick chat's 'An action needs your review in the workspace' › Open"
+  },
+  {
+   "do": "wait",
+   "s": 2.5
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "within": {
+    "x": 664,
+    "y": 90,
+    "w": 360,
+    "h": 500
+   },
+   "timeout_s": 25,
+   "save_as": "@a1",
+   "event": "card1",
+   "optional": true,
+   "budget_ms": 15000
+  },
+  {
+   "do": "wait",
+   "s": 1.3,
+   "if": "@a1",
+   "note": "the person reads the card"
+  },
+  {
+   "do": "click",
+   "at": "@a1",
+   "if": "@a1",
+   "event": "allow1"
+  },
+  {
+   "do": "wait",
+   "s": 1.0
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "within": {
+    "x": 664,
+    "y": 90,
+    "w": 360,
+    "h": 500
+   },
+   "timeout_s": 40,
+   "save_as": "@a2",
+   "event": "card2",
+   "optional": true,
+   "budget_ms": 15000
+  },
+  {
+   "do": "wait",
+   "s": 1.3,
+   "if": "@a2",
+   "note": "the person reads the card"
+  },
+  {
+   "do": "click",
+   "at": "@a2",
+   "if": "@a2",
+   "event": "allow2"
+  },
+  {
+   "do": "wait",
+   "s": 1.0
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "within": {
+    "x": 664,
+    "y": 90,
+    "w": 360,
+    "h": 500
+   },
+   "timeout_s": 30,
+   "save_as": "@a3",
+   "event": "card3",
+   "optional": true,
+   "budget_ms": 15000
+  },
+  {
+   "do": "wait",
+   "s": 1.3,
+   "if": "@a3",
+   "note": "the person reads the card"
+  },
+  {
+   "do": "click",
+   "at": "@a3",
+   "if": "@a3",
+   "event": "allow3"
+  },
+  {
+   "do": "wait",
+   "s": 1.0
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "within": {
+    "x": 664,
+    "y": 90,
+    "w": 360,
+    "h": 500
+   },
+   "timeout_s": 20,
+   "save_as": "@a4",
+   "event": "card4",
+   "optional": true,
+   "budget_ms": 15000
+  },
+  {
+   "do": "wait",
+   "s": 1.3,
+   "if": "@a4",
+   "note": "the person reads the card"
+  },
+  {
+   "do": "click",
+   "at": "@a4",
+   "if": "@a4",
+   "event": "allow4"
+  },
+  {
+   "do": "wait",
+   "s": 1.0
+  },
+  {
+   "do": "wait",
+   "s": 3
+  },
+  {
+   "do": "find",
+   "app": "Dock",
+   "role": "AXDockItem",
+   "name": "Google Chrome",
+   "save_as": "@chrome",
+   "timeout_s": 4
+  },
+  {
+   "do": "click",
+   "at": "@chrome",
+   "event": "chromeForward",
+   "note": "the person looks at Chrome"
+  },
+  {
+   "do": "wait",
+   "s": 12
+  },
+  {
+   "do": "still",
+   "name": "chrome"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "record_stop"
+  },
+  {
+   "do": "conform",
+   "name": "RS9-$n"
+  }
+ ]
+}
