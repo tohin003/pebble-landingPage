@@ -649,9 +649,7 @@
 /* the one line that never folds: what was not run before this release */
 .notRun {
   max-width: 40em;
-  margin-top: 28px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
+  margin-top: 40px;
   font-size: 16px;
   line-height: 1.6;
   color: var(--ink);
@@ -663,7 +661,7 @@
 }
 
 .fold:first-of-type {
-  margin-top: 28px;
+  margin-top: 20px;
 }
 
 .fold:last-of-type {

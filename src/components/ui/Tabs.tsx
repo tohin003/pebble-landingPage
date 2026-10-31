@@ -30,30 +30,39 @@ export function Tabs({ items, label, initial = 0, className }: TabsProps) {
   const [active, setActive] = useState(initial);
   const [wide, setWide] = useState(true);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const itemRefs = useRef<(HTMLDetailsElement | null)[]>([]);
+
+  // The <details> own their open state: React sets `open` once, at first render, and never again, so it can't fight
+  // the browser's own toggling (a tap on a summary, the group's exclusivity, find-in-page). A tab opens its panel on
+  // the element itself; the toggle events keep `active` in step.
+  const openItem = useCallback((index: number) => {
+    const item = itemRefs.current[index];
+    if (item && !item.open) item.open = true;
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia(WIDE);
     const sync = () => {
       setWide(mq.matches);
-      if (mq.matches) setActive((prev) => (prev < 0 ? 0 : prev));
+      // tabs always show one panel: landing on tabs with nothing open opens the first
+      if (mq.matches && !itemRefs.current.some((item) => item?.open)) {
+        setActive(0);
+        openItem(0);
+      }
     };
     sync();
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
-  }, []);
+  }, [openItem]);
 
   const onToggle = useCallback((index: number, open: boolean) => {
     setActive((prev) => (open ? index : prev === index ? -1 : prev));
   }, []);
 
-  // Keep the open item open at wide widths: tabs always show one panel.
-  useEffect(() => {
-    if (wide && active < 0) setActive(0);
-  }, [wide, active]);
-
   const select = (index: number, focus: boolean) => {
     const next = (index + items.length) % items.length;
     setActive(next);
+    openItem(next);
     if (focus) tabRefs.current[next]?.focus();
   };
 
@@ -92,8 +101,11 @@ export function Tabs({ items, label, initial = 0, className }: TabsProps) {
       {items.map((item, i) => (
         <details
           key={item.id}
+          ref={(el) => {
+            itemRefs.current[i] = el;
+          }}
           name={`${uid}-group`}
-          open={i === active}
+          open={i === initial}
           className={styles.item}
           data-item={item.id}
           onToggle={(event) => onToggle(i, event.currentTarget.open)}
