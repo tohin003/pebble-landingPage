@@ -1,0 +1,23 @@
+{
+ "_about": "Removes the desktop's Weather widget (the Mac's real location; 31 Oct), third try: Pebble's workspace covers it, so the workspace is dragged 250 pt right by an empty part of its toolbar, the widget is right-clicked, Remove Widget chosen, and the workspace dragged back.",
+ "schema": "pebble-take-job/1",
+ "id": "widget-remove2-$n",
+ "take": "setup",
+ "title": "Remove the Weather widget (drag Pebble aside)",
+ "steps": [
+  {"do": "open_app", "app": "Pebble"}, {"do": "wait", "s": 1.5},
+  {"do": "drag", "from": {"x": 900, "y": 62}, "to": {"x": 1150, "y": 62}, "ms": 900},
+  {"do": "wait", "s": 1},
+  {"do": "click", "at": {"x": 279, "y": 110}, "button": "right", "note": "the Weather widget"},
+  {"do": "wait", "s": 1.2},
+  {"do": "still", "name": "menu"},
+  {"do": "find", "app": "NotificationCenter", "role": "AXMenuItem", "contains": "Remove Widget", "save_as": "@rm", "optional": true, "timeout_s": 3},
+  {"do": "click", "at": "@rm", "if": "@rm"},
+  {"do": "wait", "s": 1.5},
+  {"do": "key", "key": "escape"},
+  {"do": "still", "name": "after"},
+  {"do": "drag", "from": {"x": 1150, "y": 62}, "to": {"x": 900, "y": 62}, "ms": 900},
+  {"do": "wait", "s": 1}, {"do": "move", "to": {"x": 735, "y": 640}, "ms": 400},
+  {"do": "still", "name": "back"}
+ ]
+}

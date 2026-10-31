@@ -1,0 +1,32 @@
+{
+ "_about": "After RS13-01 (31 Oct): Stealth Lockdown off (⌃⌥⌘S); the Weather widget removed from the desktop (it shows the Mac's real location); Pebble unpinned from the Dock (Options › Keep in Dock), so its icon can leave in RS-13; Finder hidden. Each find is optional, with dumps for the lead.",
+ "schema": "pebble-take-job/1",
+ "id": "desktop-fix-$n",
+ "take": "setup",
+ "title": "Stealth off, weather widget, Dock pin",
+ "steps": [
+  {"do": "key", "key": "s", "mods": ["ctrl", "opt", "cmd"], "note": "Stealth off"},
+  {"do": "wait", "s": 2},
+  {"do": "hide", "app": "Finder"}, {"do": "wait", "s": 1},
+  {"do": "click", "at": {"x": 279, "y": 132}, "button": "right", "note": "the Weather widget"},
+  {"do": "wait", "s": 1},
+  {"do": "ax_dump", "app": "NotificationCenter", "max": 300, "name": "widget-menu"},
+  {"do": "find", "app": "NotificationCenter", "role": "AXMenuItem", "contains": "Remove Widget", "save_as": "@rm", "optional": true, "timeout_s": 3},
+  {"do": "click", "at": "@rm", "if": "@rm"},
+  {"do": "key", "key": "escape"},
+  {"do": "wait", "s": 1},
+  {"do": "find", "app": "Dock", "role": "AXDockItem", "name": "Pebble", "save_as": "@pd", "timeout_s": 5},
+  {"do": "click", "at": "@pd", "button": "right"},
+  {"do": "wait", "s": 1},
+  {"do": "find", "app": "Dock", "role": "AXMenuItem", "name": "Options", "save_as": "@opts", "optional": true, "timeout_s": 3},
+  {"do": "click", "at": "@opts", "if": "@opts"},
+  {"do": "wait", "s": 0.8},
+  {"do": "ax_dump", "app": "Dock", "max": 300, "name": "dock-menu"},
+  {"do": "find", "app": "Dock", "role": "AXMenuItem", "name": "Keep in Dock", "save_as": "@keep", "optional": true, "timeout_s": 3},
+  {"do": "click", "at": "@keep", "if": "@keep"},
+  {"do": "key", "key": "escape"},
+  {"do": "wait", "s": 1},
+  {"do": "move", "to": {"x": 735, "y": 640}, "ms": 400},
+  {"do": "still", "name": "after"}
+ ]
+}
