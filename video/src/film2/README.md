@@ -790,6 +790,19 @@ lands on A4's bar 82. Frames are R-frames at 60 fps (a local frame is R + 60): 1
   and ×1.2 returnSchedule. The variants keep `fieldScale: 1`, as G1 measured them. The rush is the calmest stretch on
   the stand-ins (5.6–6.5 % of pixels change a frame at the design's size, 6.6–7.6 % at ×1.1): judge it again on the
   2.0.0 crops, with CR-16's size, open by eye.
+- **The default rendered (31 Oct, ×1.1, from a snapshot of fe846c1; half size, frames R−60 to R720 in every aspect).**
+  `qa/luma-scan.ts --marks` ok in all three: no tile pop, pop, dip or dead second, at most 1 flash a second, the largest
+  whole-frame change 2.98, 2.88 and 2.53 levels, one stone on every one of 634, 634 and 631 frames checked (with the
+  cells' own pebble scan). `qa/flash-rgb-scan.ts`: 1:1 passes (desk27 1, css2560 2); 9:16 passes in its binding windows
+  (400 × 400 and the CSS reading 1); no red, no scene change, the frame mean's step at most 0.021. **16:9 fails css2560:
+  8 transitions in a second at R9** (7 at R19 on a full-size render of the span, so not a half-size artefact). Since
+  fix round 3 restaged the climax, S24's last frame, the Return's first cell, holds the kept card's placeholder slot
+  with four lines of dark label text, and the pull-back's pan carries them up through the frame's centre at about 13 px
+  a frame over R0–R30. `returnWindows` models cells as coverage, not the first cell's content, so the plan passes.
+  Open for the lead: keep text out of S24's last frame's middle (climax.ts, with RV-09), pan slower over R0–R30, or
+  model the first cell's content. The join on pixels is continuous: S24's last frame to the Return's first is S24's own
+  step (mean 0.63, 0.57 and 0.80 levels against S24's 0.62, 0.66 and 0.81; the 99th percentile 17–18 levels in every
+  case), as the camera starts one frame along S24's glide. The record is in the Return lane's scratch, `g1/G1.md` §6–§7.
 
 ### The demo and the checks
 
