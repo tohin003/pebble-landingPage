@@ -14,6 +14,7 @@
 .item {
   border-top: 1px solid var(--line);
   min-width: 0;
+  scroll-margin-top: calc(var(--header-h, 64px) + 8px);
 }
 
 .summary {
@@ -123,7 +124,7 @@
     padding: 24px 0 0;
   }
 
-  :global(:root[data-motion="on"]) .panel {
+  :global(:root[data-motion="on"]) .tabs[data-switched] .panel {
     animation: tab-in var(--dur-fast) var(--ease-out);
   }
 }

@@ -25,10 +25,23 @@ export type TabsProps = Readonly<{
 
 const WIDE = "(min-width: 768px)";
 
+/**
+ * In the accordion, opening a row closes the one above it, which can lift the tapped row under the sticky header. Once
+ * the layout settles, bring it back just under the header (scroll-margin-top in Tabs.module.css), instantly: no motion.
+ */
+function keepInView(item: HTMLDetailsElement) {
+  requestAnimationFrame(() => {
+    const header = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 64;
+    if (item.getBoundingClientRect().top < header) item.scrollIntoView({ block: "start", behavior: "instant" });
+  });
+}
+
 export function Tabs({ items, label, initial = 0, className }: TabsProps) {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const [active, setActive] = useState(initial);
   const [wide, setWide] = useState(true);
+  // the panel fades in only when the reader picks a tab, never at load (Tabs.module.css)
+  const [switched, setSwitched] = useState(false);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const itemRefs = useRef<(HTMLDetailsElement | null)[]>([]);
 
@@ -62,6 +75,7 @@ export function Tabs({ items, label, initial = 0, className }: TabsProps) {
   const select = (index: number, focus: boolean) => {
     const next = (index + items.length) % items.length;
     setActive(next);
+    setSwitched(true);
     openItem(next);
     if (focus) tabRefs.current[next]?.focus();
   };
@@ -77,7 +91,7 @@ export function Tabs({ items, label, initial = 0, className }: TabsProps) {
 
   const selected = active < 0 ? 0 : active;
   return (
-    <div className={`${styles.tabs} ${className ?? ""}`} data-tabs="">
+    <div className={`${styles.tabs} ${className ?? ""}`} data-tabs="" data-switched={switched ? "" : undefined}>
       <div role="tablist" aria-label={label} className={styles.list} onKeyDown={onKeyDown}>
         {items.map((item, i) => (
           <button
@@ -108,7 +122,11 @@ export function Tabs({ items, label, initial = 0, className }: TabsProps) {
           open={i === initial}
           className={styles.item}
           data-item={item.id}
-          onToggle={(event) => onToggle(i, event.currentTarget.open)}
+          onToggle={(event) => {
+            const item = event.currentTarget;
+            onToggle(i, item.open);
+            if (item.open && !window.matchMedia(WIDE).matches) keepInView(item);
+          }}
         >
           <summary className={styles.summary}>
             <span>{item.label}</span>
