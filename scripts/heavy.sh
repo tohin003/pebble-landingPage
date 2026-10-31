@@ -17,6 +17,8 @@
 #     since it would be stopped within seconds: it waits for swap or memory to recover (up to HEAVY_SWAP_WAIT_SECS,
 #     default 540 s), then refuses (28 Oct: a browser held 2.7 GB and swap had 0.38 GiB left, so every render that
 #     started was stopped and retried). With half the memory free, nothing pages out, so swap's own level doesn't matter.
+#     Both swap rules apply only while free disk is under 8 GiB (HEAVY_SWAP_RULES_BELOW_KB): above it, the next swap
+#     file can't reach the disk floor.
 #   - Log: start, end, exit code, duration and free disk go to $REPO/.work/heavy.log.
 # Exit status: the job's own; or 64 usage, 73 too little disk to start, 74 stopped at the disk floor, 75 lock wait timed out,
 # 76 stopped because swap ran low.
@@ -35,6 +37,9 @@ SWAP_STOP_KB=${HEAVY_SWAP_STOP_KB:-367002}  # 0.35 GiB of swap left
 SWAP_START_MIN_KB=${HEAVY_SWAP_START_MIN_KB:-786432} # 0.75 GiB of swap left to start a job
 SWAP_WAIT_SECS=${HEAVY_SWAP_WAIT_SECS:-540}
 SWAP_FLOOR_MEM_PCT=${HEAVY_SWAP_FLOOR_MEM_PCT:-50} # the swap floor applies only below this much free memory
+# The two swap rules (the start floor and the running stop) guard the disk from the next 1 GiB swap file, so they apply
+# only while free disk is under this (31 Oct: 65 GiB free, where they would only stop renders for nothing).
+SWAP_RULES_BELOW_KB=${HEAVY_SWAP_RULES_BELOW_KB:-8388608} # 8 GiB
 WAIT_SECS=${HEAVY_WAIT_SECS:-3600}
 LOCK="$REPO/.work/heavy.lock"
 LOG="$REPO/.work/heavy.log"
@@ -144,7 +149,8 @@ refuse_if_low_disk() {
     exit 73
   fi
   sw="$(swap_free_kb)"
-  if [ -n "$sw" ] && [ "$sw" -lt "$SWAP_START_MIN_KB" ] && [ "${mem:-0}" -lt "$SWAP_FLOOR_MEM_PCT" ]; then
+  if [ -n "$sw" ] && [ "$sw" -lt "$SWAP_START_MIN_KB" ] && [ "${mem:-0}" -lt "$SWAP_FLOOR_MEM_PCT" ] &&
+    [ "$(free_kb)" -lt "$SWAP_RULES_BELOW_KB" ]; then
     local waited=0
     say "swap has only $(human "$sw") left (a job needs $(human "$SWAP_START_MIN_KB") to start): waiting up to ${SWAP_WAIT_SECS}s for memory to free"
     log "SWAPWAIT label=$LABEL swap_free=$(human "$sw")"
@@ -249,7 +255,7 @@ proc_start "$JOB" >"$LOCK/jobstart"
   while kill -0 "$JOB" 2>/dev/null; do
     sleep 5
     sw="$(swap_free_kb)"
-    if [ -n "$sw" ] && [ "$sw" -lt "$SWAP_STOP_KB" ]; then
+    if [ -n "$sw" ] && [ "$sw" -lt "$SWAP_STOP_KB" ] && [ "$(free_kb)" -lt "$SWAP_RULES_BELOW_KB" ]; then
       echo "$sw" >"$LOCK/swap-hit"
       log "SWAP label=$LABEL swap_free=$(human "$sw") free=$(human "$(free_kb)") -> stopping the job"
       say "swap has only $(human "$sw") left, so macOS would soon add a 1 GiB swap file: stopping '$LABEL'"
