@@ -3,12 +3,14 @@
 // project story, where the page's work moves from one project to the rest of the Mac. Each section lives in
 // src/components/sections and fetches what it needs itself, so the section lanes fill the sections without editing
 // this file. Page-level overlays (the sticky call to action and
-// the film theatre) are mounted here once. The sticky pill's facts are the version, the size and "Not notarized"
+// the film theatre) are mounted here once. Under the hero, while the benchmark is public, the benchmark strip points
+// at the Benchmarks section (golden set 2.0's headline and its two "Tasks done correctly" rows). The sticky pill's facts are the version, the size and "Not notarized"
 // (OVERRIDES §20), each its own item.
 import { formatTimecode, timedChapters } from "@/content/chapters";
 import { FilmPlayer, type TimedChapter } from "@/components/media/FilmPlayer";
 import { AcrossYourMac } from "@/components/sections/AcrossYourMac";
 import { AgentGuard } from "@/components/sections/AgentGuard";
+import { BenchmarkStrip } from "@/components/sections/BenchmarkStrip";
 import { Benchmarks } from "@/components/sections/Benchmarks";
 import { Film } from "@/components/sections/Film";
 import { FinalCta } from "@/components/sections/FinalCta";
@@ -40,6 +42,7 @@ export default async function Home() {
   return (
     <>
       <Hero />
+      <BenchmarkStrip />
       <Film />
       <AgentGuard />
       <OnYourDesktop />

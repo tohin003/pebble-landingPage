@@ -45,7 +45,16 @@ describe("the Benchmarks section", () => {
     expect(html).toMatch(/<h2 id="benchmarks-title"[^>]*><span>Pebble 2\.0 against Claude Code and Codex\.<\/span> <span>One model for both/);
     expect(html).toContain(`>${benchmarks.h2}<`);
     const at = (tag: string, title: string) => html.indexOf(`>${title.replace(/'/g, "&#x27;")}</${tag}>`);
-    const goldenOrder = [golden.method.title, golden.result.title, golden.sides.title, golden.limits.title, golden.data.title].map((t) => at("h3", t));
+    // the moment first (the scoreboard's measures, then led and trailed), then the ledger in the philosophy's order
+    const goldenOrder = [
+      ...golden.scoreboard.measures,
+      golden.pair.led.title,
+      golden.pair.trailed.title,
+      golden.method.title,
+      golden.result.title,
+      golden.limits.title,
+      golden.data.title,
+    ].map((t) => at("h3", t));
     expect(goldenOrder.every((i) => i > 0)).toBe(true);
     expect([...goldenOrder].sort((x, y) => x - y)).toEqual(goldenOrder);
     const earlier = html.indexOf('id="benchmarks-earlier"');

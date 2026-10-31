@@ -3,12 +3,15 @@
 //
 // Since Pebble 2.0.0 (the "2.0.0 published" post, STATUS 2026-10-31 14:53) it leads with the latest run, golden set 2.0:
 // Pebble against Claude Code and against Codex, one model for both products in each comparison (content: benchmarks.ts
-// `golden`, every figure as README.md@v2.0.0's tables print it). In the philosophy's order, one ruled row each: how it
-// was measured; the result (the README's two tables, then the paired differences); where Pebble led and where it
-// trailed, at the same weight, with cost and time said to be reported, not claimed; what it doesn't prove (gate 6 and
-// the probes weren't run); the data (the 2.0.0 release notes). No chart is drawn for it: the README publishes no
-// interval per product, only the paired differences, printed as data. Then, under its own dated heading, the 1.0.2 run
-// below as published history (its rows' titles one level down), with everything that follows:
+// `golden`, every figure as README.md@v2.0.0's tables print it). Since the lead's direction of 31 Oct 17:30 ("the
+// page's proudest moment") the head is followed by the moment (Benchmarks.scoreboard.tsx): the README's headline over a
+// scoreboard of three measures, each Pebble beside Claude Code and beside Codex with bars from zero; the paired
+// difference drawn with its 95 % intervals right of a zero line; where Pebble led and where it trailed, as a pair. The
+// bars grow and the figures count up once, only with motion on (Benchmarks.grow.tsx). Then the ledger, one ruled row
+// each: how it was measured; the result (the README's two tables, cell for cell, the text record of every figure above,
+// with cost and time said to be reported, not claimed); what it doesn't prove (gate 6 and the probes weren't run); the
+// data (the 2.0.0 release notes). Then, under its own dated heading, the 1.0.2 run as published history, its heading
+// and headline in view and the rest behind a closed disclosure (its rows' titles one level down):
 //
 // It renders only while releaseFacts.benchmarksPublic is true (src/content/releaseFacts.ts), and every number in it is
 // published (src/content/benchmarks.ts, checked against Pebble's analysis by benchmarks.test.ts). The order is the
@@ -21,8 +24,9 @@
 //   4. what it cost, printed plainly, with its caveats;
 //   5. what this doesn't prove;
 //   6. the data, and how to run it again (Pebble's `main`, which carries the correction).
-// The only headline is the allowed one, word for word. No stat tiles, no win or loss colours, no animation: numbers are
-// data (Geist Mono, tabular figures), each rate with its count.
+// The 1.0.2 run's only headline is the allowed one, word for word; its chart is static. Everywhere, numbers are data
+// (Geist Mono, tabular figures), each rate with its count, and no win or loss colours: sage marks Pebble, a warm grey
+// the other product, and every word stays in ink.
 import type { ReactNode } from "react";
 import { benchmarkLinks, benchmarks, golden, run } from "@/content/benchmarks";
 import { labels } from "@/content/labels";
@@ -33,6 +37,8 @@ import { getRelease } from "@/lib/release";
 import { SECTIONS } from "@/lib/sections";
 import { DifferenceChart, SuccessChart } from "./Benchmarks.chart";
 import { Figures } from "./Benchmarks.figures";
+import { DifferenceFigure, LedTrailed, Scoreboard } from "./Benchmarks.scoreboard";
+import glory from "./Benchmarks.glory.module.css";
 import styles from "./Benchmarks.module.css";
 
 /** Words in which bare numbers are counts (rendered as data): "45 tasks", "135 runs" … */
@@ -187,9 +193,13 @@ export async function Benchmarks({ open = releaseFacts.benchmarksPublic, offered
         action={<TextLink href={benchmarkLinks.releaseNotes200}>{g.notesLink}</TextLink>}
       />
 
-      {/* golden set 2.0, the latest run */}
+      {/* golden set 2.0, the latest run: the moment (scoreboard, the difference drawn, led and trailed), then the ledger */}
       <div className="wrap grid-12 sec-body">
         <div className={`main ${styles.ledger}`} data-run="golden-2.0">
+          <Scoreboard />
+          <DifferenceFigure />
+          <LedTrailed />
+
           <Row id="golden-method" title={g.method.title}>
             <dl className={styles.method}>
               {g.method.items.map((item) => (
@@ -209,28 +219,6 @@ export async function Benchmarks({ open = releaseFacts.benchmarksPublic, offered
                 <GoldenTable key={table.id} table={table} />
               ))}
             </div>
-            <div className={styles.goldenDifference}>
-              <p>{g.result.differenceTitle}</p>
-              <ul className={styles.list}>
-                {g.result.differences.map((line) => (
-                  <li key={line}>
-                    <Figures text={line} />
-                  </li>
-                ))}
-              </ul>
-              <p className={styles.goldenGates}>
-                <Figures text={g.result.gates} />
-              </p>
-            </div>
-          </Row>
-
-          <Row id="golden-sides" title={g.sides.title}>
-            <p className={styles.goldenSide}>
-              <Figures text={g.sides.led} />
-            </p>
-            <p className={styles.goldenSide}>
-              <Figures text={g.sides.trailed} />
-            </p>
             <ul className={styles.notes}>
               {g.reported.map((line) => (
                 <li key={line}>{line}</li>
@@ -266,13 +254,15 @@ export async function Benchmarks({ open = releaseFacts.benchmarksPublic, offered
               <Figures text={g.earlier.title} />
             </h3>
             <p className={styles.earlierLine}>{b.h2}</p>
+          </div>
+          <details className={glory.earlier}>
+            <summary className={glory.earlierOpen}>{g.earlier.open}</summary>
             <p className={styles.earlierLead}>
               <Figures text={b.lead} counts={COUNTS} />
             </p>
             <p className={styles.earlierLink}>
               <TextLink href={benchmarkLinks.results}>{b.resultsLink}</TextLink>
             </p>
-          </div>
 
           {/* 1. the method first */}
           <Row id="benchmarks-method" title={b.method.title} level={4}>
@@ -419,6 +409,7 @@ export async function Benchmarks({ open = releaseFacts.benchmarksPublic, offered
               ))}
             </ul>
           </Row>
+          </details>
         </div>
       </div>
     </section>
