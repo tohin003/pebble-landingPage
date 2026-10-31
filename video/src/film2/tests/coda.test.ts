@@ -5,7 +5,7 @@
 // stills of 28 Oct showed: an off-centre lockup, a night ground too light, irises that glowed, and the render's stone
 // scan, blind to a light stone on a night frame.
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { VelocityCamera, type CamSample } from "../motion/camera";
 import { RING, type Aspect } from "../tokens";
@@ -25,12 +25,14 @@ import { checkCues } from "../../../../shared/pebble/cues";
 import { BODY, VIEWBOX_SIZE } from "../../../../shared/pebble/character";
 import { worldToFrame } from "../motion/camera";
 import { CODA_CUES } from "../setpieces/coda.cues";
-import { CODA_GRADE, CODA_GRID, CODA_INK_EM_16x9, CODA_LUMA, CODA_PLATE, CODA_PLATE_FRAMING, CODA_TEXT, IRIS_FEATHER_SHARE, codaCut, codaFeather, codaFlashModel, codaHairline, codaIrisIn, codaIrisOut, codaLumaSeries, codaOf, codaOneShots, codaPlacement, irisCover, planCoda, plateRect, plateUnder, xCut, xCutFrames, type CodaExtra, type CodaSoundLayer, type FilmCut, type FilmPiece } from "../setpieces/coda";
+import { carriedEndCardFrames, carriesEndCard, CODA_GRADE, CODA_GRID, CODA_INK_EM_16x9, CODA_LUMA, CODA_PLATE, CODA_PLATE_FRAMING, CODA_TEXT, IRIS_FEATHER_SHARE, codaCut, codaFeather, codaFlashModel, codaHairline, codaIrisIn, codaIrisOut, codaLumaSeries, codaOf, codaOneShots, codaPlacement, irisCover, planCoda, plateRect, plateUnder, xCut, xCutFrames, type CodaExtra, type CodaSoundLayer, type FilmCut, type FilmPiece } from "../setpieces/coda";
 import { CODA_CHECKS, CODA_NEVER, CODA_NEVER_PHRASES, clipToFrame, codaCamera, codaCaptions, codaChecks, codaFlashes, codaHolds, codaLight, codaLockup, codaMarkStones, codaNoUi, codaPlate, codaPose, codaSound, codaStillBeforePush, codaStone, codaStonesOn, codaWords, forbiddenIn, joinedWaits, platePebblesOn } from "../setpieces/codaChecks";
 import { CODA_PLATE_PEBBLES, PLATE_SOURCE, PLATE_UNITS, platePebbles, platePebblesSource } from "../setpieces/codaPlate";
 import { LEVEL_TOLERANCE, RenderLuma, calibrate, fitInkShare, flashesOf, slateTiles, transitionDiffs, type TileSeries } from "../setpieces/codaCalibrate";
 import { finaleThen, planFinale, titleStoneSafe, withThen } from "../setpieces/finale";
 import { COMING_NEVER, COMING_NEVER_PHRASES } from "../../../../shared/coming/never";
+import { SCORE } from "../opening/film";
+import { FLOOR, changeOf, judgeJoin } from "../setpieces/tools/coda-join-scan";
 import type { ScenePlan, ShotSpec, TypeSpec } from "../setpieces/scene";
 
 const ASPECTS: readonly Aspect[] = ["16:9", "1:1", "9:16"];
@@ -785,15 +787,24 @@ describe("C10: the X version is the main master cut at the coda's first frame, u
       fake("coda", c.duration, { extra: c.extra, ...(o.coda ?? {}) }),
     ];
   };
-  // the score lane's cue sheet, revision 2 (F4 on): the master runs 8,102 frames, 2:15.03 (it was 8,334, 2:18.90, on
-  // the 22:13 sheet the coda was designed against); with the coda the main film runs 8,570 frames, 2:22.83
-  test("the cue sheet's film: 8,102 frames before the coda is 2:15.03 on X (under 2:20), and the main film with the coda 8,570", () => {
-    const r = codaPlacement(film(8102));
+  // the score's film (cue sheet revision 3, OVERRIDES §68): the coda's L0 is BEAT_SHEET.json's coda.L0_frame, 8,334
+  // (2:18.90), which opening/film.ts SCORE.trueEnd holds in the tree; with the coda the main film runs 8,802 frames
+  // (SCORE.codaEnd, 2:26.70). Revision 2 put it at 8,102 (2:15.03)
+  const L0 = SCORE.trueEnd;
+  test("the score's film: the X cut is everything before BEAT_SHEET's coda L0 (8,334 frames, 2:18.90, under X's 2:20 and the 139.5-s aim), and the main film with the coda ends on the score's coda end", () => {
+    const r = codaPlacement(film(L0));
     expect(errorsOf(r.findings)).toEqual([]);
-    expect(r.xFrames).toBe(8102);
-    expect(r.findings.map((f) => f.message).join("\n")).toContain("the main film runs 8570");
-    // within 4.97 s of X's cap: no warning (the warning starts past 139.5 s)
+    expect(r.xFrames).toBe(L0);
+    expect(L0 + coda("16:9").duration).toBe(SCORE.codaEnd);
+    expect(r.findings.map((f) => f.message).join("\n")).toContain(`the main film runs ${SCORE.codaEnd}`);
+    // 0.6 s under the 139.5-s aim: no warning
     expect(r.findings.filter((f) => f.level === "warn")).toEqual([]);
+  });
+  const sheet = path.join(import.meta.dir, "../../../../.work/score2/BEAT_SHEET.json");
+  test.skipIf(!existsSync(sheet))("the coda's L0 here is BEAT_SHEET.json's coda.L0_frame (when the score lane's sheet is in the tree)", () => {
+    const b = JSON.parse(readFileSync(sheet, "utf8"));
+    expect(b.coda.L0_frame).toBe(L0);
+    expect(Math.round(b.coda.L0_film_s * 60)).toBe(L0);
   });
   test("past 139.5 s the warning leaves what gives to the lead (F4, the cue sheet's one shortening splice, is already on)", () => {
     const w = codaPlacement(film(8380)).findings.filter((f) => f.level === "warn");
@@ -806,12 +817,12 @@ describe("C10: the X version is the main master cut at the coda's first frame, u
   });
   test("the canary: a coda that does not start on the end card's true ending fails (an X cut ending at end + 1)", () => {
     const end = X(coda("16:9")).endCard.end;
-    expect(errorsOf(codaPlacement(film(8102, { endCardEnd: end + 1 })).findings)).not.toEqual([]);
-    expect(errorsOf(codaPlacement(film(8102, { endCardEnd: end - 1 })).findings)).not.toEqual([]);
+    expect(errorsOf(codaPlacement(film(L0, { endCardEnd: end + 1 })).findings)).not.toEqual([]);
+    expect(errorsOf(codaPlacement(film(L0, { endCardEnd: end - 1 })).findings)).not.toEqual([]);
   });
   test("the canary: anything after the coda, or a coda after a piece that is not its end card, fails", () => {
-    expect(errorsOf(codaPlacement([...film(8102), fake("tail", 60)]).findings)).not.toEqual([]);
-    const f = film(8102);
+    expect(errorsOf(codaPlacement([...film(L0), fake("tail", 60)]).findings)).not.toEqual([]);
+    const f = film(L0);
     expect(errorsOf(codaPlacement([f[0]!, f[2]!]).findings)).not.toEqual([]);
   });
 });
@@ -946,7 +957,7 @@ describe("the end card's stone keeps the safe margin to its last frame, and the 
     const k = ((s.stone!.size * pose.zoom) / VIEWBOX_SIZE) * 1.06;
     return Math.min(c.y + BODY.top * k, c.x + BODY.left * k, p.frame.w - c.x - BODY.right * k, p.frame.h - c.y - BODY.bottom * k);
   };
-  test("as planned: the end card's stone in every aspect, and the coda's page carrying it on, stay 60 px or more inside the frame; the 1:1 stone ends about 73 px from the top", () => {
+  test("as planned: the end card's stone in every aspect, and the coda's page carrying it on, stay 60 px or more inside the frame; the 1:1 stone ends 65 to 76 px from the top", () => {
     for (const a of ASPECTS) {
       const ec = endCard(a);
       expect(msgs(titleStoneSafe(ec)).map((m) => `${a} ${m}`)).toEqual([]);
@@ -956,7 +967,9 @@ describe("the end card's stone keeps the safe margin to its last frame, and the 
       expect(Math.abs(margin(coda(a), "page", 0) - margin(ec, "title", ec.duration - 1))).toBeLessThan(0.5);
     }
     const ec = endCard("1:1");
-    expect(margin(ec, "title", ec.duration - 1)).toBeGreaterThan(70);
+    // about 73 px on the 1,773-frame end card, 68 px once it holds on to the score's coda L0 (the Return lane, 1 Nov):
+    // the rule is the 60-px margin above; this only says the 1:1 fix (0.21 of the height) left room
+    expect(margin(ec, "title", ec.duration - 1)).toBeGreaterThan(65);
     expect(margin(ec, "title", ec.duration - 1)).toBeLessThan(76);
   });
   test("the canaries: the 1:1 stone where it was (0.18 of the height) fails on the end card and on the coda's page", () => {
@@ -1202,5 +1215,54 @@ describe("the render's stone scan on a night frame (qa/reel-scan.ts)", () => {
     const blind = reel(marksOf(false), (f) => f >= 20 && f < 26);
     expect(blind.stones.frames.every((s) => s.blobs === 0)).toBe(true);
     expect(blind.stones.twoStoneRuns).toEqual([]);
+  });
+});
+
+/* ---------------------------------------------------------------- one end card across L0 (the review's F2) ------ */
+
+describe("the join: the end card is ONE component tree across L0 (the review's F2, 1 Nov: a second PieceView mounted at L0 re-rasterised page 2's type)", () => {
+  test("in every aspect the demo reel's end card is carried on by the coda after it, for its own length and the coda's frames to the iris-out's end", () => {
+    for (const a of ASPECTS) {
+      const list = demoPlans(a);
+      const i = list.findIndex((e) => codaOf(e.plan));
+      const ec = list[i - 1]!.plan;
+      const c = list[i]!.plan;
+      const x = X(c);
+      expect(carriesEndCard(ec, c)).toBe(true);
+      expect(carriedEndCardFrames(c)).toBe(ec.duration + x.irisOut.at + x.irisOut.frames);
+      expect(x.endCard.extended.duration).toBe(carriedEndCardFrames(c));
+      // only the end card it was planned from
+      expect(carriesEndCard(list[i - 2]!.plan, c)).toBe(false);
+      expect(carriesEndCard({ ...ec, duration: ec.duration - 1 }, c)).toBe(false);
+      expect(carriesEndCard(ec, undefined)).toBe(false);
+    }
+  });
+  test("the reel draws it with <EndCardCarriedOn> and the coda with endCard=\"carried\" (no second PieceView of the end card at L0); alone, the coda mounts its own", () => {
+    const demo = readFileSync(path.join(import.meta.dir, "../setpieces/demo/SetPiecesDemo.tsx"), "utf8");
+    expect(demo).toMatch(/carriesEndCard\(e\.plan, next\)/);
+    expect(demo).toMatch(/<EndCardCarriedOn coda=\{next\} \/>/);
+    expect(demo).toMatch(/durationInFrames=\{carriedEndCardFrames\(next\)\}/);
+    expect(demo).toMatch(/endCard=\{prev && carriesEndCard\(prev, e\.plan\) \? "carried" : "own"\}/);
+    const view = readFileSync(path.join(import.meta.dir, "../setpieces/views/CodaView.tsx"), "utf8");
+    // CodaView mounts the end card only when it is alone
+    expect(view).toMatch(/endCard === "own" \? \(\s*<Sequence from=\{-x\.endCard\.end\}/);
+    expect((view.match(/<PieceView /g) ?? []).length).toBe(2);
+  });
+});
+
+describe("the render's join scan (setpieces/tools/coda-join-scan.ts)", () => {
+  const pairs = (n: number, join: number, l0: number, other = 15) => Array.from({ length: n - 1 }, (_, k) => ({ from: k, changed: k === l0 - 1 ? join : other, meanAbs: 0 }));
+  test("a still join passes; the review's re-raster (3,759 px against 9 to 15 on the other pairs, half size) fails", () => {
+    expect(judgeJoin(pairs(64, 40, 60), 60, 64).ok).toBe(true);
+    const bad = judgeJoin(pairs(64, 3759, 60), 60, 64);
+    expect(bad.ok).toBe(false);
+    expect(bad.limit).toBe(FLOOR);
+    // a busy neighbourhood raises the bar with it
+    expect(judgeJoin(pairs(64, 500, 60, 300), 60, 64).ok).toBe(true);
+    expect(() => judgeJoin(pairs(10, 0, 60), 60, 10)).toThrow();
+  });
+  test("changeOf counts pixels past 12 levels", () => {
+    const a = new Uint8Array([0, 0, 0, 0]);
+    expect(changeOf(a, new Uint8Array([12, 13, 0, 200]))).toEqual({ changed: 2, meanAbs: 225 / 4 });
   });
 });

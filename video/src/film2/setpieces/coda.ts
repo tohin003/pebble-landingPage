@@ -150,8 +150,8 @@ export const CODA_GRADE: Grade = { ...GRADES.page, name: "night riverbed", keyLi
 /**
  * The ground: the site's own night wallpaper (tools/assets/wallpaper/wallpaper-dark.svg) without its vignette, as
  * capture/riverbed-plate.mjs renders it (video/public/desktop/riverbed-dark@3x.png, gitignored), then a 2400-px JPEG
- * beside the light one (`sips -s format jpeg -s formatOptions 88 -Z 2400 …`). Until it exists the view draws the
- * wallpaper's own mid tone (#1D2520, the site's dark --wallpaper-tint), never black.
+ * beside the light one (`sips -s format jpeg -s formatOptions 88 -Z 2400 …`). Until it exists a render stops, and Studio
+ * draws the wallpaper's own mid tone (#1D2520, the site's dark --wallpaper-tint) with a MISSING line (CodaView).
  *   median    the plate's measured median (a 160 × 100 area-scaled sample of the JPEG, 28 Oct): the light check and
  *             the flash model read it
  *   exposure  the plate's exposure, a neutral linear-light gain the view multiplies into the ground's light, constant
@@ -319,6 +319,18 @@ export interface CodaExtra {
 
 /** The coda's data on a plan (null when the plan is not the coda). */
 export const codaOf = (p: ScenePlan): CodaExtra | null => ((p.extra?.coda as CodaExtra | undefined) ?? null);
+
+/** How long views/CodaView.tsx <EndCardCarriedOn> plays: the end card's own length and the coda's frames to the iris-out's end. */
+export const carriedEndCardFrames = (coda: ScenePlan): number => {
+  const x = codaOf(coda)!;
+  return x.endCard.end + x.irisOut.at + x.irisOut.frames;
+};
+
+/** Whether `coda` carries `endCard` on (the plan that plays just before it in a reel): then draw it with views/CodaView.tsx <EndCardCarriedOn>. */
+export const carriesEndCard = (endCard: ScenePlan, coda: ScenePlan | undefined): boolean => {
+  const x = coda ? codaOf(coda) : null;
+  return !!x && x.endCard.id === endCard.id && x.endCard.end === endCard.duration;
+};
 
 export interface CodaOptions {
   w: number;
@@ -904,8 +916,9 @@ export function codaIrisInNeed(p: ScenePlan): number {
 /* ---------------------------------------------------------------- the film: the X cut (C10) --------------------- */
 
 /**
- * X's cap for a standard account: 140 s (help.x.com; OVERRIDES §14), 8,400 frames at 60 fps. The master runs 8,102
- * frames (2:15.03) on the score lane's cue sheet, revision 2, whose flex rule F4 (its one shortening splice) is already on,
+ * X's cap for a standard account: 140 s (help.x.com; OVERRIDES §14), 8,400 frames at 60 fps. The master runs 8,334
+ * frames before the coda (2:18.90: BEAT_SHEET.json's coda.L0_frame, the score lane's cue sheet revision 3, OVERRIDES §68;
+ * it was 8,102 on revision 2), 0.6 s under the 139.5-s aim; its flex rule F4 (its one shortening splice) is already on,
  * so past 139.5 s what gives is the lead's call.
  */
 export const X_CAP_S = 140;

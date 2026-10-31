@@ -3,10 +3,12 @@
 // coda's local frame, and its frame 0 is the end card's true ending.
 //
 // Layers, back to front:
-//   L0 to the iris-out's end: the end card itself, played on past its end by its own PieceView
-//     (extra.coda.endCard.extended): its page and camera as it left them, its stone on its engine clock, page 2's lines
-//     held with no exit of their own (the closing iris takes them, OVERRIDES §65 on P2-1). Nothing is redrawn or added,
-//     so the join is the end card's own next frame;
+//   L0 to the iris-out's end: the end card itself, played on past its end (extra.coda.endCard.extended): its page and
+//     camera as it left them, its stone on its engine clock, page 2's lines held with no exit of their own (the closing
+//     iris takes them, OVERRIDES §65 on P2-1). In a reel the end card plays before the coda, the composition draws it
+//     with <EndCardCarriedOn> from the end card's own start and passes endCard="carried": ONE component tree across L0,
+//     so the join is the end card's own next frame (a second PieceView mounted at L0 re-rasterised page 2's type layers
+//     at the current scale: the review's F2, 1 Nov). Alone (F2-SP-coda-<aspect>), CodaView mounts the end card itself;
 //   from the iris-in: the coda's shot under its light (coda.ts CODA_GRADE): the riverbed at night (the site's own dark
 //     wallpaper, defocused, at the ground's parallax depth, over exactly the extent the coverage check reads: in 9:16
 //     the plate framed between its pebbles, coda.ts CODA_PLATE_FRAMING) and the sleeping stone (Pebble's own engine, the
@@ -18,7 +20,7 @@
 //   the coda's own lines (one FontGate, outside the grade, set in the coda's world: TypeSpec.carry);
 //   the placeholder slate (the demo reels only).
 import { useMemo } from "react";
-import { AbsoluteFill, Img, Sequence, getStaticFiles, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { AbsoluteFill, Img, Sequence, getRemotionEnvironment, getStaticFiles, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLOR } from "../../tokens";
 import type { Rect } from "../../motion/geometry";
 import { World3D, Plane } from "../../camera/World3D";
@@ -41,12 +43,24 @@ const hasStatic = (path: string): boolean => {
   }
 };
 
-/** The riverbed at night over a world rect of its plane: the plate, or its mid tone until the plate is rendered. */
-const NightRiverbed: React.FC<{ rect: Rect; src: string; fallback: string }> = ({ rect, src, fallback }) => (
-  <div style={{ position: "absolute", left: rect.x, top: rect.y, width: rect.w, height: rect.h, backgroundColor: fallback }}>
-    {hasStatic(src) ? <Img src={staticFile(src)} style={{ position: "absolute", left: 0, top: 0, width: rect.w, height: rect.h, maxWidth: "none" }} /> : null}
-  </div>
-);
+/**
+ * The riverbed at night over a world rect of its plane: the plate. The plate is derived and gitignored; without it a
+ * render stops with how to make it, and Studio draws its mid tone with a loud MISSING line (the review's N10, 1 Nov:
+ * a quiet flat ground passed every check, since codaLight reads the plate's measured median, not the picture).
+ */
+const NightRiverbed: React.FC<{ rect: Rect; src: string; fallback: string }> = ({ rect, src, fallback }) => {
+  const have = hasStatic(src);
+  if (!have && getRemotionEnvironment().isRendering) throw new Error(`the coda draws the night plate video/public/${src}, which is missing: make it with capture/riverbed-plate.mjs dark, then a 2400-px JPEG by sips (coda.ts CODA_PLATE)`);
+  return (
+    <div style={{ position: "absolute", left: rect.x, top: rect.y, width: rect.w, height: rect.h, backgroundColor: fallback }}>
+      {have ? (
+        <Img src={staticFile(src)} style={{ position: "absolute", left: 0, top: 0, width: rect.w, height: rect.h, maxWidth: "none" }} />
+      ) : (
+        <div style={{ position: "absolute", left: rect.w / 2 - 300, top: rect.h / 2 - 20, color: COLOR.nightInk, font: "600 22px/1.2 ui-monospace, Menlo, monospace" }}>MISSING the night plate {src}</div>
+      )}
+    </div>
+  );
+};
 
 /** The coda's shot: the night riverbed and the sleeping stone, under the coda's light. Inside <Sequence from={shot.from}>. */
 const CodaShot: React.FC<{ plan: ScenePlan; shot: ShotSpec }> = ({ plan, shot }) => {
@@ -117,8 +131,24 @@ const NightCover: React.FC<{ plan: ScenePlan }> = ({ plan }) => {
   );
 };
 
-/** The post-credit scene. */
-export const CodaView: React.FC<{ plan: ScenePlan; slate?: boolean }> = ({ plan, slate = true }) => {
+/**
+ * The end card played on through the closing iris, for the composition to place where the end card starts (frame 0 of
+ * the end card's plan) for coda.ts `carriedEndCardFrames(coda)` frames, in place of the end card's own PieceView: the same plan
+ * frame for frame before L0 (coda.ts builds `extended` from it), then on to the iris-out's end. Then CodaView with
+ * endCard="carried" draws the night over it.
+ */
+export const EndCardCarriedOn: React.FC<{ coda: ScenePlan; slate?: boolean }> = ({ coda, slate = false }) => {
+  const x = codaOf(coda);
+  if (!x) throw new Error(`EndCardCarriedOn takes the coda's plan, not ${coda.id}`);
+  return <PieceView plan={x.endCard.extended} slate={slate} />;
+};
+
+
+/**
+ * The post-credit scene. endCard "own" (alone): it mounts the end card for L0 to the iris-out's end itself. "carried"
+ * (in a reel, after the end card): the composition draws the end card with <EndCardCarriedOn>, under this.
+ */
+export const CodaView: React.FC<{ plan: ScenePlan; slate?: boolean; endCard?: "own" | "carried" }> = ({ plan, slate = true, endCard = "own" }) => {
   const x = codaOf(plan);
   // the coda's own lines (the end card's carried lines are drawn by the end card itself, with their exits)
   const own = useMemo(() => ({ ...plan, types: plan.types.filter((t) => !(x?.carried ?? []).includes(t.id)) }), [plan, x]);
@@ -126,10 +156,16 @@ export const CodaView: React.FC<{ plan: ScenePlan; slate?: boolean }> = ({ plan,
   const shut = x.irisOut.at + x.irisOut.frames;
   const coda = plan.shots.find((s) => s.id === "coda")!;
   return (
-    <AbsoluteFill style={{ backgroundColor: COLOR.nightPage }}>
-      <Sequence from={-x.endCard.end} durationInFrames={x.endCard.end + shut} layout="none" name="the end card, carried on">
-        <PieceView plan={x.endCard.extended} slate={false} />
-      </Sequence>
+    <AbsoluteFill style={{ backgroundColor: endCard === "own" ? COLOR.nightPage : undefined }}>
+      {endCard === "own" ? (
+        <Sequence from={-x.endCard.end} durationInFrames={x.endCard.end + shut} layout="none" name="the end card, carried on">
+          <PieceView plan={x.endCard.extended} slate={false} />
+        </Sequence>
+      ) : (
+        <Sequence from={shut} name="the night, under the coda">
+          <AbsoluteFill style={{ backgroundColor: COLOR.nightPage }} />
+        </Sequence>
+      )}
       <Sequence from={coda.from} durationInFrames={coda.to - coda.from} name="the riverbed at night">
         <CodaShot plan={plan} shot={coda} />
       </Sequence>
