@@ -574,6 +574,12 @@ export const workshop = {
 export const agentGuard = {
   /** The disclosure that holds `layer[1]`, the scope and its Python-only limit (.work/page-declutter/PLAN.md). A UI label. */
   scopeMore: "How it checks",
+  /**
+   * The three examples as cards (tabs from 768 px, an accordion below; .work/page-declutter/PLAN.md): the tablist's
+   * name, each card's short label (the second and third are the app's own state words, `toggle`), and the per-card
+   * disclosure. UI labels, not claims.
+   */
+  cards: { label: "What AgentGuard shows", challenge: "Scope challenge", howItWorks: "How it works" },
   kicker: "AgentGuard",
   heading: "Evidence before “done”.", // [C-AG-5] the heading of the README's AgentGuard section (OVERRIDES §7: one story)
   lead:
@@ -610,6 +616,8 @@ export const agentGuard = {
   /** Reliability, not security (OVERRIDES §7): where protection comes from instead. [C-AG-11] */
   reliability: {
     title: "Reliability, not security.",
+    /** The disclosure that holds "Protection comes from Pebble itself:" and the three points. A UI label. */
+    more: "Where protection comes from",
     body: "AgentGuard checks evidence; it is not a sandbox and not a security layer. Protection comes from Pebble itself:",
     points: [
       "Approvals happen only in Pebble's main window.",
@@ -1038,8 +1046,8 @@ export const privacy = {
   toolsNote:
     "Pebble's own tools can never read or change `~/.pebble` or `~/Documents/Pebble`, even when your project contains them.", // [C-PRIV-11]
   dataFoldersLink: { label: "Where Pebble keeps your things", href: links.dataFolders, external: true } satisfies Link,
-  /** The two notes open from these neutral labels, on tap, focus or hover (InfoTip; .work/page-declutter/PLAN.md). */
-  tips: { tools: "About Pebble's own folders", search: "About web search" },
+  /** The disclosure under both columns (.work/page-declutter/PLAN.md). A UI label, not a claim. */
+  more: "More on what stays and what leaves",
   /** The head's one link: the next section, Stealth Lockdown (the setting's name; its honest line is there). [C-STL-1] */
   stealthLink: { label: "Stealth Lockdown", href: `/#${sectionIds.stealth}` } satisfies Link,
   diagram: {

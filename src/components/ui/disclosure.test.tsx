@@ -9,7 +9,8 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { golden } from "@/content/benchmarks";
-import { honestLimits, stealth } from "@/content/copy";
+import { agentGuard, honestLimits, privacy, stealth } from "@/content/copy";
+import { AgentGuard } from "@/components/sections/AgentGuard";
 import { AcrossYourMac } from "@/components/sections/AcrossYourMac";
 import { Benchmarks } from "@/components/sections/Benchmarks";
 import { Limits } from "@/components/sections/Limits";
@@ -227,9 +228,36 @@ describe("the lines that must stay visible are never folded", () => {
     expect(models).toContain('role="tablist"');
   });
 
-  test("Privacy: the two notes are in the DOM behind real buttons", () => {
+  test("Privacy: the destinations stay listed; their detail and the notes are in the DOM, one tap away", () => {
     const html = renderToStaticMarkup(<Privacy />);
-    expect((html.match(/aria-expanded="false"/g) ?? []).length).toBeGreaterThanOrEqual(2);
-    expect(html).toContain("Settings › Permissions");
+    const page = text(html);
+    for (const d of privacy.diagram.destinations) expect(page).toContain(d.label);
+    expect(html).toMatch(/<button[^>]*aria-expanded="false"[^>]*>With a cloud model<\/button>/);
+    for (const line of [privacy.searchNote, "Optional usage counters are off by default"]) expect(page).toContain(line);
+    // "No telemetry." stays on screen, outside every disclosure
+    expect(depth(html, html.indexOf("No telemetry."))).toBe(0);
+    expect(depth(html, html.indexOf("Settings › Permissions"))).toBe(1);
+  });
+
+  test("AgentGuard: three cards, each with its quoted line, sample-data label and capture outside the fold", () => {
+    const html = renderToStaticMarkup(<AgentGuard />);
+    const rows = html.split('data-row="').slice(1);
+    expect(rows.map((r) => r.slice(0, r.indexOf('"')))).toEqual(["challenge", "held", "verified"]);
+    expect((html.match(/Shown with sample data\./g) ?? []).length).toBeGreaterThanOrEqual(3);
+    for (const marker of ["Shown with sample data.", agentGuard.reliability.body.split(" Protection")[0]!]) {
+      const at = html.indexOf(marker.replace(/'/g, "&#x27;"));
+      expect({ marker, at: at >= 0 }).toEqual({ marker, at: true });
+    }
+    // the reliability sentence is outside every disclosure; its three points are inside one
+    const reliability = html.indexOf("it is not a sandbox and not a security layer.");
+    expect(reliability).toBeGreaterThan(0);
+    expect(depth(html, reliability)).toBe(0);
+    // each card's sample-data label sits in its card (a tab panel), never in its "How it works" fold
+    for (const row of html.split('data-row="').slice(1)) {
+      const card = row.slice(0, row.indexOf("<details")); // up to its "How it works" fold
+      expect(card).toContain("Shown with sample data.");
+      expect(row.slice(row.indexOf("<details"), row.indexOf("</details>"))).toContain("How it works");
+    }
+    for (const point of agentGuard.reliability.points) expect(text(html)).toContain(point.replace(/'/g, "'"));
   });
 });

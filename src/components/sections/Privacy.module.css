@@ -233,3 +233,8 @@
     padding: 22px 18px 24px;
   }
 }
+
+/* the disclosure under both columns (.work/page-declutter/PLAN.md) */
+.more {
+  margin-top: 32px;
+}
