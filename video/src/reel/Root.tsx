@@ -1,6 +1,6 @@
 // The Pebble 2.0 launch reel's compositions (folder "Reel"), 60 fps: the style test in 16:9 (1920×1080) and 9:16
 // (1080×1920). src/Root.tsx mounts this.
-import { Composition, Folder } from "remotion";
+import { Composition, Folder, Freeze, Still } from "remotion";
 import { ReelStyleTest, styleTestLength } from "./StyleTest";
 import { FullReel, fullReelLength } from "./full/FullReel";
 
@@ -20,6 +20,12 @@ const fullLengthOr = (): number => {
   }
 };
 
+const ReelPoster: React.FC = () => (
+  <Freeze frame={2680}>
+    <FullReel />
+  </Freeze>
+);
+
 export const ReelCompositions: React.FC = () => (
   <Folder name="Reel">
     <Composition id="Reel-StyleTest-16x9" component={ReelStyleTest} durationInFrames={lengthOr()} fps={60} width={1920} height={1080} />
@@ -28,5 +34,9 @@ export const ReelCompositions: React.FC = () => (
     <Composition id="Reel-Full-16x9" component={FullReel} durationInFrames={fullLengthOr()} fps={60} width={1920} height={1080} />
     <Composition id="Reel-Full-9x16" component={FullReel} durationInFrames={fullLengthOr()} fps={60} width={1080} height={1920} />
     <Composition id="Reel-Full-1x1" component={FullReel} durationInFrames={fullLengthOr()} fps={60} width={1080} height={1080} />
+    {/* the poster frame for each aspect: the logo's lockup in its warm light (frame 2680) */}
+    <Still id="Reel-Poster-16x9" component={ReelPoster} width={1920} height={1080} />
+    <Still id="Reel-Poster-9x16" component={ReelPoster} width={1080} height={1920} />
+    <Still id="Reel-Poster-1x1" component={ReelPoster} width={1080} height={1080} />
   </Folder>
 );
