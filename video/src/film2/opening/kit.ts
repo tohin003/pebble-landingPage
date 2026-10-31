@@ -77,8 +77,8 @@ export const LINE_IN = 18;
 /** Reading speed, words a second (the set pieces' reading model), and the floor of any line's hold. */
 export const WORDS_PER_S = 3.14;
 export const MIN_HOLD_S = 2.0;
-/** The slow push on every shot of the opening, scale a second (0.4 % a second: about 2 px a second at the box's edge). */
-export const PUSH_PER_S = 0.004;
+/** The slow push on every shot of the opening, scale a second (0.8 % a second: the scans read a thin strip held still at 0.4 % as dead). */
+export const PUSH_PER_S = 0.008;
 
 export const shotFrames = (s: ActShot): number => (s.kind === "take" ? s.to! - s.from! : s.frames!);
 export const actFrames = (p: ActPlan): number => p.shots.reduce((n, s) => n + shotFrames(s), 0);
