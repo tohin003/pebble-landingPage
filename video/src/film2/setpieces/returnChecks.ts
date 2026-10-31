@@ -23,6 +23,9 @@
 //                   until it is hidden; no opacity below 1 before a cell is hidden (CR-08's fade)
 //   returnRadius    CR-08's check: each cell's screen radius from the stone falls 70 % or more on average from its
 //                   return's start to its first contact, and 50 % or more for each cell (no push cancels it)
+//   returnFirstCell the first cell's worst-case content (setpieces/returnFirstCell.ts), moved by the plan's camera and
+//                   softened as drawn, through the verdict's own counter (qa/flash-rgb.ts) in the binding windows: an
+//                   error above 6 in a second, a warning at 4 (the R9 flash of 31 Oct, which returnWindows cannot see)
 //   cellText        a cell's largest text stays under 16 px at 1080 on every frame it shows, except the inner recalls
 //   blinkPlaced     the stone's idle blink starts within a frame of its plan (R646), none other in the keep-clear spans,
 //                   and 6–8 frames after the kept card is hidden in every aspect (§2.7: RV-08)
@@ -40,6 +43,7 @@ import type { ReturnExtra } from "./returnPlan";
 import { blinkStartsFor, blinkTouches } from "./blink";
 import { ENGINE_CELL_SIZE, manifestProblems, type ReturnCellSpec } from "./returnCells";
 import { RETURN_LUM, type DrawnLum } from "./returnLum";
+import { firstCellFlash } from "./returnFirstCell";
 import { drawnLumOf } from "./returnThumbs";
 import { RETURN_SLOTS, bodyR, bodyStats, cellPoseR, localOfR, rOfLocal, rectTouchesBody, visibleFraction, type CellPoseR, type FieldCell, type ReturnField } from "./returnField";
 
@@ -991,9 +995,29 @@ export function joinPose(p: ScenePlan): Finding[] {
 export const RETURN_CHECKS = ["returnSchedule", "returnWindows", "returnContent", "returnMerge", "returnRadius", "cellText", "blinkPlaced", "joinPose"] as const;
 
 /** Every Return check on a plan (none when the plan has no Return). */
+/**
+ * returnFirstCell (the R9 flash, 31 Oct; setpieces/returnFirstCell.ts): the first cell's worst-case content
+ * (FIRST_CELL_MODEL), moved by the plan's camera and softened as the view draws it, through the verdict's own counter
+ * (qa/flash-rgb.ts) in the aspect's binding windows: an error above 6 transitions in a second, a warning at 4. It covers
+ * what returnWindows cannot: the content inside the first cell while it is still S24's frame pulling back.
+ */
+export function returnFirstCell(p: ScenePlan): Finding[] {
+  const ret = returnOf(p);
+  if (!ret || !ret.join) return [];
+  const r = firstCellFlash(ret.field, p.aspect as "16:9" | "1:1" | "9:16");
+  if (!r) return [];
+  const name = `${p.id} ${p.aspect}`;
+  const w = r.worst;
+  const where = `${w.window}, ${w.pattern}${w.at !== null ? `, local frame ${w.at}` : ""}`;
+  const peak = `softening at most σ ${r.peak.sigma.toFixed(1)} px and a veil of ${r.peak.veil.toFixed(2)}, the content at up to ${r.peak.v.toFixed(1)} px a frame, over ${r.frames} frames`;
+  if (w.n > 6) return [{ check: "returnFirstCell", level: "error", message: `${name}: the first cell's worst-case content makes ${w.n} transitions in a second (${where}): WCAG 2.3.1 fails above 6 (${peak}); soften it by its speed (FIRST_CELL_SOFTEN) or slow the pull-back` }];
+  if (w.n >= 4) return [{ check: "returnFirstCell", level: "warn", message: `${name}: the first cell's worst-case content makes ${w.n} transitions in a second (${where}): IRIS's warning level (${peak})` }];
+  return [{ check: "returnFirstCell", level: "info", message: `${name}: the first cell's worst-case content makes at most ${w.n} transitions in a second (${where}; ${peak})` }];
+}
+
 export function returnChecks(p: ScenePlan): Finding[] {
   if (!returnOf(p)) return [];
-  return [...returnSchedule(p), ...returnWindows(p), ...returnContent(p), ...returnMerge(p), ...returnRadius(p), ...cellText(p), ...blinkPlaced(p), ...joinPose(p)];
+  return [...returnSchedule(p), ...returnWindows(p), ...returnFirstCell(p), ...returnContent(p), ...returnMerge(p), ...returnRadius(p), ...cellText(p), ...blinkPlaced(p), ...joinPose(p)];
 }
 
 /** The checks R2 exempts the Return's span from. */

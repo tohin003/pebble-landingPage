@@ -16,6 +16,7 @@
 //                     behind the stone (CR-08), or at a swap's crossing at mid-blur (CR-17)
 //   hairlineAt        a ring's hairline orbit: drawn on in the release, returning into the stone after its last cell
 // Pure; no React.
+import type { FirstCellSoften } from "./returnFirstCell";
 import type { Aspect } from "../tokens";
 import { E_LEAVE, E_MOVE, clamp01, smoothstep } from "../motion/ease";
 import { planePose, type Pose, type VelocityCamera } from "../motion/camera";
@@ -316,6 +317,8 @@ export interface ReturnField {
   fps: number;
   /** what the camera adds (the plan sets it): the camera, its parallax ref and the frame, for screen speeds and blur */
   view?: { camera: VelocityCamera; ref: Pose; w: number; h: number; unit: number };
+  /** the first cell's softening by its content's speed (the plan sets it; setpieces/returnFirstCell.ts), null for none */
+  soften?: FirstCellSoften | null;
   /** how each swap wave was paired by luminance (§2.4): paired or kept in the manifest's order, and why */
   pairing: readonly WavePairing[];
 }

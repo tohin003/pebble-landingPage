@@ -19,6 +19,7 @@ import { checkJoins } from "../setpieces/joins";
 import { BLINK_S, blinkStartsFor, offsetForBlink } from "../setpieces/blink";
 import { RETURN_CELLS, RETURN_WAVES, SI, manifestProblems, refuseBadManifest, type ReturnCellSpec } from "../setpieces/returnCells";
 import { RETURN_LUM } from "../setpieces/returnLum";
+import { FIRST_CELL_FADE_K, FIRST_CELL_SOFTEN, firstCellFlash, firstCellMotion, firstCellSoftenAt } from "../setpieces/returnFirstCell";
 import { RETURN_GEOMETRY, RETURN_TIMING, buildReturnField, cellPoseAt, hairlineAt, hungarian, localOfR, pairWave, slotOrder, type FieldCell, type ReturnFieldOptions } from "../setpieces/returnField";
 import { RETURN_BLINK_R, RETURN_EVENTS, RETURN_FIELD_SCALE, RETURN_FILM_S, RETURN_MUSIC, blinkKeepClear, filmFrameOfR, planReturn, returnCameraAt, returnCameraSpec, returnGrid, type ReturnCameraSpec, type ReturnOptions } from "../setpieces/returnPlan";
 import {
@@ -32,6 +33,7 @@ import {
   planTrace,
   returnContentOf,
   returnMergeOf,
+  returnFirstCell,
   returnOf,
   returnRadiusOf,
   returnScheduleOf,
@@ -1068,7 +1070,7 @@ describe("G1's variants (MONTAGE_DESIGN §9): revision 1's curve, the family lab
     }
     return v;
   };
-  test("each plans with no error in every aspect, on the demo Return's timeline and climax (at the design's size, as G1 measured them)", () => {
+  test("each plans with no error in every aspect, on the demo Return's timeline and climax (at the design's size, as G1 measured them)", { timeout: 120000 }, () => {
     // (demo/ReturnVariantDemo.tsx RETURN_G1_VARIANTS: each keeps fieldScale 1, so it plays against the unscaled field;
     // revision 1's curve at ×1.1 leaves cells in frame under 60 frames in every aspect, which G1 records)
     for (const o of [{ merge: "toned" as const, fieldScale: 1 }, { curve: "r1" as const, fieldScale: 1 }, { labels: true, fieldScale: 1 }, { fieldScale: 1 }])
@@ -1122,7 +1124,7 @@ describe("G1's variants (MONTAGE_DESIGN §9): revision 1's curve, the family lab
   test("an orbit that turns the other way is refused (a slide and an entry follow each ring's direction)", () => {
     expect(() => buildReturnField("16:9", { omega: [5, 7, 7] })).toThrow(/turn as the design's/);
   });
-  test("the labels: three lines in one band, landing on the design's beats, never two at once, the camera at 0.90 or less to R354", () => {
+  test("the labels: three lines in one band, landing on the design's beats, never two at once, the camera at 0.90 or less to R354", { timeout: 120000 }, () => {
     for (const a of ASPECTS) {
       const p = planFor(a, { labels: true });
       const ls = p.types.filter((t: TypeSpec) => /^RL/.test(t.id));
@@ -1137,7 +1139,7 @@ describe("G1's variants (MONTAGE_DESIGN §9): revision 1's curve, the family lab
       expect(planOf(a).types.some((x) => /^RL/.test(x.id))).toBe(false);
     }
   });
-  test("the field ×1.1 is planned (G1, item 7): the rings and cells 10 % larger about the stone than the design's, the first cell and the stone as built; ×1.15 fails cellText and ×1.2 returnSchedule in 16:9", () => {
+  test("the field ×1.1 is planned (G1, item 7): the rings and cells 10 % larger about the stone than the design's, the first cell and the stone as built; ×1.15 fails cellText and ×1.2 returnSchedule in 16:9", { timeout: 120000 }, () => {
     expect(RETURN_FIELD_SCALE).toBe(1.1);
     for (const a of ASPECTS) {
       const f = returnOf(planOf(a))!.field;
@@ -1207,7 +1209,7 @@ describe("the film's sequence: the Return in place of the wall and the convergen
     expect(checkJoins([climax, dusk], ["frame"]).length).toBeGreaterThan(0);
     expect(checkJoins([dusk, ret], ["frame"]).some((f) => /opens? on dusk/.test(f.message) || /continues climax/.test(f.message))).toBe(true);
   });
-  test("the demo's Return passes every check in every aspect on its own cue, one timeline", () => {
+  test("the demo's Return passes every check in every aspect on its own cue, one timeline", { timeout: 120000 }, () => {
     const by = Object.fromEntries(ASPECTS.map((a) => [a, demoPlans(a).find((e) => e.plan.id === "return")!])) as Record<Aspect, ReturnType<typeof demoPlans>[number]>;
     for (const a of ASPECTS) expect(errs(checkPlan(by[a].plan, by[a].grid)).map((e) => `${a} ${e.check}: ${e.message}`)).toEqual([]);
     expect(timelineDiffs({ "16:9": by["16:9"].plan, "1:1": by["1:1"].plan, "9:16": by["9:16"].plan })).toEqual([]);
@@ -1226,3 +1228,63 @@ describe("the film's sequence: the Return in place of the wall and the convergen
     }
   });
 });
+
+describe("the first cell in motion (the R9 flash of 31 Oct): returnFirstCell, and its softening by speed", () => {
+  test("the film's softening keeps the first cell's worst-case content within the verdict in every aspect (6 or fewer a second, binding windows)", { timeout: 120000 }, () => {
+    for (const a of ASPECTS) {
+      const p = planOf(a);
+      const ret = returnOf(p)!;
+      const r = firstCellFlash(ret.field, a as "16:9" | "1:1" | "9:16")!;
+      expect(r.worst.n).toBeLessThanOrEqual(6);
+      expect(errs(returnFirstCell(p))).toEqual([]);
+    }
+  });
+  test("canary: unsoftened, as on 31 Oct (16:9 failed flash-rgb at R9), the guard errors in every aspect", { timeout: 120000 }, () => {
+    for (const a of ASPECTS) {
+      const p = planFor(a, { firstCellSoften: null });
+      const e = errs(returnFirstCell(p));
+      expect(e.length).toBe(1);
+      expect(e[0]!.message).toContain("WCAG 2.3.1 fails above 6");
+    }
+  });
+  test("canary: a weak softening (a veil of 0.1 and no blur) still errors (16:9)", { timeout: 120000 }, () => {
+    const p = planFor("16:9", { firstCellSoften: { ...FIRST_CELL_SOFTEN, sigmaMin: 0, sigmaPerV: 0, veilMax: 0.1 } });
+    expect(errs(returnFirstCell(p)).length).toBe(1);
+  });
+  test("nothing at rest: no softening at the join (S24's glide), and none once the first cell is a cell of the field", { timeout: 60000 }, () => {
+    for (const a of ASPECTS) {
+      const field = returnOf(planOf(a))!.field;
+      const s0 = firstCellSoftenAt(field, 0);
+      expect(s0.sigma).toBe(0);
+      expect(s0.veil).toBe(0);
+      expect(s0.v).toBeLessThan(FIRST_CELL_SOFTEN.v0);
+      // from the frame its scale falls under FIRST_CELL_FADE_K to the end of the field's shot: none
+      let f = 0;
+      while ((firstCellMotion(field, f)?.k ?? 1) >= FIRST_CELL_FADE_K) f++;
+      for (let g = f; g < returnOf(planOf(a))!.span.to; g += 7) expect(firstCellSoftenAt(field, g).sigma + firstCellSoftenAt(field, g).veil).toBe(0);
+    }
+  });
+});
+
+describe("qa/flash-rgb.ts's lean path (the first-cell guard)", () => {
+  test("pushGrey gives push()'s general verdict on grey frames, in every binding window", () => {
+    const w = 64;
+    const h = 36;
+    const full = new FlashRgb({ w, h, fps: 60, srcW: 640 });
+    const lean = new FlashRgb({ w, h, fps: 60, srcW: 640, lean: true });
+    for (let t = 0; t < 120; t++) {
+      const grey = new Uint8Array(w * h);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) grey[y * w + x] = (Math.floor((y * 10 + t * 7) / 24) % 2 ? 40 : 235) + ((x * 3 + t) % 5);
+      const rgb = new Uint8Array(w * h * 3);
+      for (let i = 0; i < w * h; i++) rgb[3 * i] = rgb[3 * i + 1] = rgb[3 * i + 2] = grey[i]!;
+      full.push(rgb);
+      lean.pushGrey(grey);
+    }
+    const a = full.finish();
+    const b = lean.finish();
+    expect(b.binding).toEqual(a.binding);
+    for (const k of a.binding) expect(b.general[k]).toEqual(a.general[k]);
+    expect(a.general.css2560!.maxTransitions1s).toBeGreaterThan(6);
+  });
+});
+

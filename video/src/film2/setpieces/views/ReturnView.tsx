@@ -14,7 +14,8 @@
 //                  The cells take the UI's share of the light (the grade's `ui` gains); the first cell does not: it is
 //                  S24's own last frame, drawn live by S24's own view with S24's light, so the pull-back starts on
 //                  exactly what S24 showed (MONTAGE_DESIGN §2.12, joinPose). Its corners round in over the lead-in
-//                  only (at R−60 it is the frame itself). (A3 was Pebble's own engine drawn live: a second pebble, now a
+//                  only (at R−60 it is the frame itself). While it pulls back it softens by its content's speed, a
+//                  round blur and a veil of the page, nothing at rest (setpieces/returnFirstCell.ts: the R9 flash). (A3 was Pebble's own engine drawn live: a second pebble, now a
 //                  slot, RV-01.) A missing image or S24 shot stops a render, and is a loud slate in Studio (RV-10)
 //   the stone      Pebble's own engine at the rings' centre, ABOVE every cell: its opaque, breathing silhouette is the
 //                  mask the cells pass behind (the default merge: nothing fades). Its clock runs (local + clockOffset)
@@ -40,6 +41,7 @@ import { PEBBLE_LIGHT } from "../../../pebble/PebbleSvg";
 import { cellScreenAt, cellsOnScreen, hairlineScreenAt, rOfLocal, tonedMatteK, type CellScreen, type ReturnField } from "../returnField";
 import { ENGINE_CELL_SIZE } from "../returnCells";
 import { RETURN_THUMBS_HOWTO, returnThumbPath } from "../returnThumbs";
+import { firstCellSoftenAt } from "../returnFirstCell";
 import type { ReturnExtra } from "../returnPlan";
 import type { ScenePlan, ShotSpec, StoneSpec } from "../scene";
 
@@ -113,8 +115,10 @@ const CellContent: React.FC<{ c: CellScreen; plan: ScenePlan; renderS24: S24Rend
     const shot = src?.shots.find((s) => s.id === si.shot);
     if (!src || !shot) return <Missing what={src ? `S24's shot "${si.shot}" (the climax's last shot is "${src.shots[src.shots.length - 1]?.id}")` : "S24's plan (plan the Return with the climax)"} />;
     const k = c.rect.w / plan.frame.w;
+    // (G1's stress test of the R9 fix, never in a film: S24's frame at full contrast)
+    const stress = extra.firstCellStress ? "grayscale(1) contrast(4)" : undefined;
     return (
-      <div style={{ position: "absolute", left: 0, top: 0, width: plan.frame.w, height: plan.frame.h, transformOrigin: "0 0", transform: `scale(${k.toFixed(6)})` }}>
+      <div style={{ position: "absolute", left: 0, top: 0, width: plan.frame.w, height: plan.frame.h, transformOrigin: "0 0", transform: `scale(${k.toFixed(6)})`, filter: stress }}>
         <Freeze frame={src.duration - 1 - shot.from}>{renderS24(src, shot)}</Freeze>
       </div>
     );
@@ -138,7 +142,7 @@ const CellContent: React.FC<{ c: CellScreen; plan: ScenePlan; renderS24: S24Rend
 export type S24Renderer = (plan: ScenePlan, shot: ShotSpec) => React.ReactNode;
 
 /** One cell's box in the frame's px: its rect, radius, shadow and blur, around its content. */
-const CellBox: React.FC<{ c: CellScreen; tag: string; plan: ScenePlan; renderS24: S24Renderer; extra: ReturnExtra; frame: number; tone?: number }> = ({ c, tag, plan, renderS24, extra, frame, tone }) => {
+const CellBox: React.FC<{ c: CellScreen; tag: string; plan: ScenePlan; renderS24: S24Renderer; extra: ReturnExtra; frame: number; tone?: number; veil?: number }> = ({ c, tag, plan, renderS24, extra, frame, tone, veil = 0 }) => {
   const { rect } = c;
   const r = rOfLocal(frame, plan.fps);
   const hero = !!c.cell.spec.hero;
@@ -165,6 +169,7 @@ const CellBox: React.FC<{ c: CellScreen; tag: string; plan: ScenePlan; renderS24
       }}
     >
       <CellContent c={c} plan={plan} renderS24={renderS24} extra={extra} frame={frame} />
+      {veil > 0.002 ? <div style={{ position: "absolute", inset: 0, backgroundColor: COLOR.page, opacity: veil }} /> : null}
     </div>
   );
 };
@@ -233,7 +238,12 @@ export const ReturnFieldView: React.FC<ReturnFieldViewProps> = ({ plan, shot, fr
   const cues = useMemo(() => (st ? st.cues.map((c) => ({ ...c, at: c.at + off / plan.fps })) : []), [st, off, plan.fps]);
   const cells = cellsOnScreen(field, frame);
   const inner = cells.filter((c) => c.cell.ring === 0 && !c.cell.spec.hero);
-  const hero = cells.filter((c) => c.cell.spec.hero);
+  // the first cell softens by its content's speed while it pulls back (setpieces/returnFirstCell.ts: the R9 flash): a
+  // round blur, as large as its own motion blur or larger, and a veil of the page; nothing at rest
+  const soft = firstCellSoftenAt(field, frame);
+  const hero = cells
+    .filter((c) => c.cell.spec.hero)
+    .map((c) => (c.cell.spec.standIn.kind === "frame" && soft.sigma > 0.05 ? { ...c, blur: { sx: Math.max(c.blur.sx, soft.sigma), sy: Math.max(c.blur.sy, soft.sigma) } } : c));
   const outer = cells.filter((c) => c.cell.ring !== 0);
   const r = rOfLocal(frame, plan.fps);
   const toned = extra.merge === "toned";
@@ -278,7 +288,7 @@ export const ReturnFieldView: React.FC<ReturnFieldViewProps> = ({ plan, shot, fr
       <AbsoluteFill>
         <BlurDefs cells={hero} tag="h" />
         {hero.map((c) => (
-          <CellBox key={c.cell.id} c={c} tag="h" {...common} />
+          <CellBox key={c.cell.id} c={c} tag="h" veil={c.cell.spec.standIn.kind === "frame" ? soft.veil : 0} {...common} />
         ))}
       </AbsoluteFill>
       {/* the middle and outer rings, nearer */}
