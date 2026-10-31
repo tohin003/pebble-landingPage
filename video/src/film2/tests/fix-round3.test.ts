@@ -188,6 +188,24 @@ describe("a cascade's cards keep 60 px inside the frame and their labels drawn (
     expect(found.some((m) => /comes -?\d+ px from the frame's edge/.test(m))).toBe(true);
     expect(found.some((m) => /label is not drawn/.test(m))).toBe(true);
   });
+  test("no card slides under the item lines: each keeps clear of their column while shown (seen on the r2 16:9 reel)", () => {
+    // (the fit centred the wide frame's cards on the whole frame: their left edge came to x 416, under "Agents read and
+    // propose" (its right edge 629); the cards are slots today, but the 2.0.0 captures will have text there, §5.2)
+    for (const a of ASPECTS) {
+      const p = piece(a, "ring4");
+      const s = p.shots[1]!;
+      const c = s.cascade!;
+      const lines = c.items.map((it) => lineRect(it.text, "functional", p.frame, c.itemBox, 0.3));
+      for (let fr = s.from + 40; fr < c.endAt!; fr++) {
+        const pose = s.camera.pose(fr - s.from);
+        for (const card of c.cards) {
+          const r = rectInFrame(card.rect, pose, p.frame);
+          const hit = lines.find((l) => r.x < l.x + l.w + 24 && l.x < r.x + r.w && r.y < l.y + l.h && l.y < r.y + r.h);
+          if (hit) throw new Error(`${a} frame ${fr}: ${card.id} at x ${r.x.toFixed(0)}–${(r.x + r.w).toFixed(0)} meets an item line (x ${hit.x.toFixed(0)}–${(hit.x + hit.w).toFixed(0)})`);
+        }
+      }
+    }
+  });
 });
 
 /* ---------------------------------------------------------------- CR-15's last gap: a pictured pebble ------------- */

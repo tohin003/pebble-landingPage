@@ -652,14 +652,20 @@ export function planRingBlock(o: RingOptions): ScenePlan {
       });
       return { x0, x1, y0, y1 };
     };
+    // (fix round 3 part 2, seen on the r2 16:9 reel: centred on the whole frame, the wide frame's cards slid left into
+    // the item lines' column, "Agents read and propose" 30 px over the card's edge; there the cards keep to the
+    // layout's own stage column, right of the lines, and the square and tall frames, whose lines sit above or below
+    // the stage, keep the whole width)
+    const mg = f.safe + 2 * f.unit;
+    const colX0 = narrow ? mg : Math.max(mg, L.stage(f).x);
+    const colX1 = f.w - mg;
     for (let k = 0; k < 12; k++) {
       const e = extentOf(build(stagePose));
       if (!Number.isFinite(e.x0)) break;
-      const m = f.safe + 2 * f.unit;
-      if (e.x0 >= m && e.x1 <= f.w - m && e.y0 >= m && e.y1 <= f.h - m) break;
-      // smaller by what the extent overruns the safe frame, then centred on it (content right by d px: camera left)
-      const shrink = Math.min(1, (f.w - 2 * m) / (e.x1 - e.x0), (f.h - 2 * m) / (e.y1 - e.y0)) * 0.995;
-      const dx = (f.w - e.x1 - e.x0) / 2;
+      if (e.x0 >= colX0 && e.x1 <= colX1 && e.y0 >= mg && e.y1 <= f.h - mg) break;
+      // smaller by what the extent overruns the safe column, then centred on it (content right by d px: camera left)
+      const shrink = Math.min(1, (colX1 - colX0) / (e.x1 - e.x0), (f.h - 2 * mg) / (e.y1 - e.y0)) * 0.995;
+      const dx = (colX0 + colX1 - e.x1 - e.x0) / 2;
       const dy = (f.h - e.y1 - e.y0) / 2;
       stagePose = { x: stagePose.x - dx / stagePose.zoom, y: stagePose.y - dy / stagePose.zoom, zoom: stagePose.zoom * shrink };
     }
