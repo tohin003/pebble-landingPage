@@ -191,14 +191,15 @@ def what_changed(W, b, plan, coda, xcut):
         return min((d["gr_db"] for d in m["limiter"]["deepest"] if abs(d["film_s"] - t) <= 0.3), default=0.0)
 
     diffs = [(nm, gr_at(ms, t3), gr_at(ms2, t2)) for nm, t2, t3 in hits]
-    dips = [d for d in ms.get("ceiling_search", {}).get("local_dips", []) if d["lowered_db"] >= 1.0]
-    hits_line = "; ".join(f"{nm} {abs(a):.1f} dB (was {abs(z):.1f})" for nm, a, z in diffs)
+    dips = sorted((d for d in ms.get("ceiling_search", {}).get("local_dips", []) if d["lowered_db"] >= 1.0),
+                  key=lambda d: d["t"])
+    hits_line = ", ".join(f"{nm} {abs(a):.1f} dB (was {abs(z):.1f})" for nm, a, z in diffs)
     if any(abs(a - z) > 0.5 for _, a, z in diffs):
         rows.append(f"The three hits are limited differently from the last preview: {hits_line}.")
     if dips:
         tracks = sorted({NAMES[c["track"]] for d in dips for c in p3["cues"]
                          if c["film_in"] <= d["t"] < cp_out(c)}) or ["the music"]
-        rows.append((f"The three hits are limited as in the last preview ({hits_line}). " if all(
+        rows.append((f"The three hits are limited as in the last preview: {hits_line}. " if all(
                         abs(a - z) <= 0.5 for _, a, z in diffs) else "")
                     + f"New: {NUMS.get(len(dips), str(len(dips)))} short moment{'s' if len(dips) > 1 else ''} in "
                     + " and ".join(tracks) + " (" + ", ".join(fmt(d["t"]) for d in dips) + ") "
