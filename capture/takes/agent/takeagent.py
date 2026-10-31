@@ -336,8 +336,9 @@ class Agent:
     def selftest_visible(self) -> None:
         """While the person watches: the pointer moves a little and back, and a still is saved. Proof it all works."""
         x, y = self.ui.pointer()
-        self.ui.hands.move(min(x + 80, 1000), y, 400)
+        self.ui.hands.move(x + 80 if x < 600 else x - 80, y, 400)
         self.ui.hands.move(x, y, 400)
+        self.log(f"selftest: the pointer moved and came back to {x:.0f},{y:.0f}")
         os.makedirs(self.p("results", "preflight"), exist_ok=True)
         shot = self.p("results", "preflight", f"still-{dt.datetime.now():%H%M%S}.png")
         self.media.still(shot)
@@ -983,8 +984,15 @@ def main(argv: list[str] | None = None) -> int:
         agent.say("Pebble take agent: checking permissions …")
         pf = agent.preflight()
         write_json(agent.p("results", "preflight.json"), pf)
-        if not pf["ok"]:
-            missing = [k for k, v in pf["checks"].items() if not v]
+        # Only what the person must fix stops the start; anything else is a warning the lead reads in preflight.json
+        # and can fix without the person (install.sh, then RESTART).
+        must = {"demo_user", "accessibility", "screen_recording"}
+        if not pf["checks"].get("system_events") and any(("1743" in n or "not allowed" in n.lower() or "Not authori" in n)
+                                                         for n in pf.get("notes", [])):
+            must.add("system_events")  # Terminal was refused control of System Events: only the person can allow it
+        missing = [k for k, v in pf["checks"].items() if not v and k in must]
+        warnings = [k for k, v in pf["checks"].items() if not v and k not in must]
+        if missing:
             hints = {
                 "accessibility": "System Settings › Privacy & Security › Accessibility: turn Terminal on.",
                 "screen_recording": "System Settings › Privacy & Security › Screen & System Audio Recording: turn Terminal on, then quit and reopen Terminal.",
@@ -1000,12 +1008,16 @@ def main(argv: list[str] | None = None) -> int:
             for k in missing:
                 agent.say(f"  - {hints.get(k, k)}")
             return 2
+        if warnings:
+            agent.say(f"Starting with warnings for the lead ({', '.join(warnings)}); nothing for you to do.")
         if not a.no_selftest and not a.restarted:
             agent.say("Permissions are fine. Watch the pointer: it moves a little and comes back …")
             try:
                 agent.selftest_visible()
-            except Exception as e:  # noqa: BLE001
-                agent.say(f"The test failed: {e}. Tell the lead (it is in the agent's log).")
+            except media.MediaError as e:
+                agent.say(f"(The test picture failed: {e}. The lead will see it; nothing for you to do.)")
+            except Exception as e:  # noqa: BLE001 (the pointer itself failed: the person must see this)
+                agent.say(f"The pointer test failed: {e}. Check Accessibility for Terminal, then start again.")
                 return 2
         if not a.restarted:  # caffeinate waits on this pid, which an exec keeps
             subprocess.Popen([cfg["tools"]["caffeinate"], "-dimsu", "-w", str(os.getpid())])

@@ -36,7 +36,7 @@ capture/takes/
    (`results/agent.json`, every 5 s).
 3. **The lead posts the hold** (RUNBOOK §6.4): the status file, and the landing repo's `.work/HOLD`, so no heavy job of
    ours runs while the Studio user records. `enqueue.py status` shows the agent ready.
-4. **The dry run first:** `enqueue.py dry-run` queues `jobs/dry/01…09` (probe, Calculator, a 6 s recording and its
+4. **The dry run first:** `enqueue.py dry-run` queues `jobs/dry/01…09` (probe, Calculator, a 5 s recording and its
    conform, the Spaces, both recorders measured, a SIGINT stop, typing, Pebble's Accessibility tree). Read every
    result (`enqueue.py show <id>`), every still and dump in `results/<id>/`, and the conforms in `conformed/`. Then:
    - choose the recorder (RUNBOOK §6.2: dry05 against dry06: frames, average rate, gaps, MB a minute) and the stop

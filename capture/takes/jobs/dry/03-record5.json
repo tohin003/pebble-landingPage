@@ -1,5 +1,5 @@
 {
- "_about": "Dry run 3. A 6-second recording that ends on its own limit (-V), the pointer moving once (the sync), then the conform and its checks.",
+ "_about": "Dry run 3. A 5-second recording that ends on its own limit (-V), the pointer moving once (the sync), then the conform and its checks.",
  "schema": "pebble-take-job/1",
  "id": "dry03-rec-$n",
  "take": "dry",
@@ -16,7 +16,7 @@
   {
    "do": "record_start",
    "name": "dry03-$n",
-   "max_s": 6,
+   "max_s": 5,
    "stop_with": "duration"
   },
   {
