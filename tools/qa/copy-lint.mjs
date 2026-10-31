@@ -265,11 +265,21 @@ function strip(text) {
 /** The one place a visitor may read the name of the product Pebble was measured against (see the header). */
 const NAMED = /\b(Claude Code|Codex)\b/g;
 
-/** [the Benchmarks section's HTML, the rest of the page] */
+/**
+ * [the Benchmarks section's HTML and the benchmark strip's under the hero (<aside id="benchmark-strip">: golden set 2.0's
+ * headline and its two "Tasks done correctly" rows, the lead's direction of 31 Oct 2026, CLAIMS C-GS-16), the rest]
+ */
 function splitNamed(html) {
-  const start = html.search(/<section\b[^>]*\bid="benchmarks"/);
+  const [section, rest] = splitRegion(html, "section", "benchmarks");
+  const [strip, other] = splitRegion(rest, "aside", "benchmark-strip");
+  return [section + strip, other];
+}
+
+/** [the <tag id="id"> element's HTML, the rest of the page] */
+function splitRegion(html, tag, id) {
+  const start = html.search(new RegExp(`<${tag}\\b[^>]*\\bid="${id}"`));
   if (start < 0) return ["", html];
-  const tags = /<\/?section\b[^>]*>/gi;
+  const tags = new RegExp(`<\\/?${tag}\\b[^>]*>`, "gi");
   tags.lastIndex = start;
   let depth = 0;
   let end = html.length;

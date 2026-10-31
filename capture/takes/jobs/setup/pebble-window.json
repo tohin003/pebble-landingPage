@@ -1,0 +1,14 @@
+{
+ "_about": "Drags Pebble's workspace by the top of its title bar from $from_x to $to_x (y 66), then a still and its window's frame. 31 Oct: after widget-remove2 left it mostly off-screen.",
+ "schema": "pebble-take-job/1",
+ "id": "pebble-window-$n",
+ "take": "setup",
+ "title": "Move Pebble's workspace",
+ "steps": [
+  {"do": "activate", "app": "Pebble"}, {"do": "wait", "s": 1},
+  {"do": "drag", "from": {"x": "$from_x", "y": 66}, "to": {"x": "$to_x", "y": 66}, "ms": 1200},
+  {"do": "wait", "s": 1}, {"do": "move", "to": {"x": 735, "y": 640}, "ms": 400},
+  {"do": "find", "app": "Pebble", "role": "AXWindow", "name": "Pebble", "save_as": "@w", "anchor": "left", "optional": true, "timeout_s": 4},
+  {"do": "still", "name": "after"}
+ ]
+}

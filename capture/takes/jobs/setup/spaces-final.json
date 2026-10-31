@@ -1,0 +1,21 @@
+{
+ "_about": "Spaces Desktop, poster, Chrome from a state with Chrome full screen and no poster window (31 Oct): the poster opens and goes full screen (it is placed last), then Chrome leaves full screen and goes full screen again (now last). Ends on the poster, reached from Chrome with ⌃←.",
+ "schema": "pebble-take-job/1",
+ "id": "spaces-final-$n",
+ "take": "setup",
+ "title": "Spaces: Desktop, poster, Chrome",
+ "steps": [
+  {"do": "open_file", "path": "~/Documents/Open day/poster-screen.png", "app": "Preview"},
+  {"do": "wait_window", "app": "Preview", "title_contains": "poster-screen", "timeout_s": 20},
+  {"do": "wait", "s": 2},
+  {"do": "key", "key": "f", "mods": ["ctrl", "cmd"]}, {"do": "wait", "s": 3.5},
+  {"do": "still", "name": "a-poster"},
+  {"do": "activate", "app": "Google Chrome"}, {"do": "wait", "s": 2.5},
+  {"do": "key", "key": "f", "mods": ["ctrl", "cmd"], "note": "Chrome leaves full screen"}, {"do": "wait", "s": 3.5},
+  {"do": "key", "key": "f", "mods": ["ctrl", "cmd"], "note": "and goes full screen again, last"}, {"do": "wait", "s": 3.5},
+  {"do": "still", "name": "b-chrome"},
+  {"do": "key", "key": "left", "mods": ["ctrl"]}, {"do": "wait", "s": 2},
+  {"do": "move", "to": {"x": 1230, "y": 700}, "ms": 400},
+  {"do": "still", "name": "c-left"}
+ ]
+}

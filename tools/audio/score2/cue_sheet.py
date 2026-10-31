@@ -66,6 +66,19 @@ PREV_PLAN = _opt(os.path.join(WORK, PREV["plan"])) if PREV else None
 PENDING = ("pending: this plan's own measurement, assembled as built (revise_measure.py plan), runs after the release "
            "session's hold lifts (OVERRIDES §68); nothing here is carried over from another plan")
 MM = load(os.path.join(SCORE2, "MUSIC_MAP.json"))
+
+
+def _sha(p):
+    import hashlib
+    with open(p, "rb") as fh:
+        return hashlib.sha256(fh.read()).hexdigest()
+
+
+# this plan's own masters, once built (master/main.build.json whose plan_sha256 is this plan's): R3-05 quotes its
+# classifier record, and the masters' checks (the social title arrival, the AAC gates) read it
+_PM = os.path.join(WORK, "plan_main.json")
+BUILD = _opt(os.path.join(SCORE2, "master", "main.build.json"))
+BUILD = BUILD if BUILD and os.path.exists(_PM) and BUILD.get("plan_sha256") == _sha(_PM) else None
 FPS = SPEC["frame_rate"]
 MAPS = {}
 
@@ -370,7 +383,28 @@ def checks(main, plan, met, x40, xplan, xmet):
     ta_all = [v for k in ("title_A.json", "title_A_r2.json") for v in (EXTRA.get(k) or {}).get("variants", [])]
     if ta_all:  # the composite the sheet carries, from round 1 or round 2 (r2/title_round2_rule.json)
         ch = next((v for v in ta_all if v["id"] == EXTRA.get("chosen_title_variant")), None)
-        if ch and PREV:  # OVERRIDES §66 (R-07): the old classifier gate is a warning from now on, never a gate
+        tgb = (BUILD or {}).get("classifier", {}).get("title_grid", {})
+        if ch and PREV and tgb.get("web_master"):  # R3-05: this build's own reading, quoted from its record
+            wm, mu = tgb["web_master"], tgb["music_alone_at_web_gain"]
+            cl = BUILD["classifier"]["web"]
+            fog = [f_ for f_ in cl["flags"] if f_["label"] == "foghorn" and f_["t"] >= tgb["j5_film_s"] - 3.0]
+            att = [a for a in cl.get("attribution", []) if a["window_s"][1] > tgb["j5_film_s"]]
+            out.append({"check": "main: the legacy classifier around the swell and the title (a warning since OVERRIDES §66 "
+                                 "R-07, never a gate)", "ok": True, "warn": wm["verdict"] == "fail",
+                        "detail": f"{'WARN' if wm['verdict'] == 'fail' else 'clear'}: this build's record "
+                                  f"(master/main.build.json): on the 0.5 s grid from J5 the web master reads foghorn "
+                                  f"{wm['foghorn_max']} at {wm['foghorn_max_at']} s over {wm['windows']} windows, the music "
+                                  f"alone {mu['foghorn_max']} at {mu['foghorn_max_at']} s; the film's own 3 s windows "
+                                  + ("flag foghorn " + ", ".join(f"{f_['p']} at {f_['t']} s ({f_['pass']})" for f_ in fog)
+                                     if fog else "flag no foghorn there")
+                                  + ("; attributed: " + "; ".join(
+                                      f"{a['window_s'][0]}-{a['window_s'][1]} s to {a['verdict']} ("
+                                      + ", ".join(f"{k} {v} in the mix" for k, v in a["mix"].items())
+                                      + "; the music alone " + ", ".join(f"{k} {v}" for k, v in a["music_alone"].items()) + ")"
+                                      for a in att) if att else "")
+                                  + ". The reading follows where the 3 s windows fall (0.42-0.78 for the same music, "
+                                    "CUE_SHEET §12.5)"})
+        elif ch and PREV:  # OVERRIDES §66 (R-07): the old classifier gate is a warning from now on, never a gate
             out.append({"check": "main: the legacy classifier around the swell and the title (a warning since OVERRIDES §66 "
                                  "R-07, never a gate)", "ok": True, "warn": ch["verdict"] == "fail",
                         "detail": f"{'WARN' if ch['verdict'] == 'fail' else 'clear'}: {ch['id']}: foghorn max {ch['foghorn_max']} "
@@ -416,6 +450,25 @@ def checks(main, plan, met, x40, xplan, xmet):
         add(f"main: cut rate in '{act}' at most 18 a minute", rate <= 18, f"{len(seg)} shots in {dur:.1f} s = {rate:.1f} a minute")
     if PREV_PLAN:
         out.extend(revision_checks(main, plan))
+    # the masters (R3-02, R3-04, 31 Oct), from this plan's build: the title's arrival on the social master (the previews'
+    # sound) and every master within its AAC true-peak gate on every reference encoder
+    nm_ta = ("main: on the social master the title's first second and first 400 ms are each at least +2.0 LU over the "
+             "same span before it (the lead's ruling on R3-02)")
+    nm_aac = "main: every master within its AAC true-peak gate on every reference encoder (TREATMENT §4.8)"
+    ta = ((BUILD or {}).get("masters", {}).get("social") or {}).get("title_arrival")
+    if ta and ta.get("min_lu") is not None:
+        add(nm_ta, ta["pass"], f"{ta['step_1s_lu']:+.2f} LU over 1 s ({ta['lufs_1s_before']} to {ta['lufs_1s_after']} LUFS), "
+                               f"{ta['step_400ms_lu']:+.2f} LU over 400 ms; at least {ta['min_lu']:+.1f} each")
+    else:
+        pend(nm_ta, "the masters' build")
+    if BUILD:
+        rows = []
+        for k, m in BUILD["masters"].items():
+            refs = m["aac_reference_encoder"] if isinstance(m["aac_reference_encoder"], list) else [m["aac_reference_encoder"]]
+            rows += [(k, e, m["aac"][e]["true_peak_dbtp"], m["aac_gate_dbtp"], m["aac"][e]["pass"]) for e in refs]
+        add(nm_aac, all(x[4] for x in rows), "; ".join(f"{k} {e} {tp} dBTP (gate {g})" for k, e, tp, g, _ in rows))
+    else:
+        pend(nm_aac, "the masters' build")
     return out
 
 

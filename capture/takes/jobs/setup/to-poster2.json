@@ -1,0 +1,40 @@
+{
+ "_about": "Set-up for RS-15, RS-1 and RS-9 (31 Oct): reaches the poster's full-screen Space from Chrome's (Spaces: Desktop, poster, Chrome) with ⌃←, because activating Preview can bring a windowed copy forward. Rests the pointer near the pebble.",
+ "schema": "pebble-take-job/1",
+ "id": "to-poster2-$n",
+ "take": "setup",
+ "title": "To the poster's Space (from Chrome's)",
+ "steps": [
+  {
+   "do": "activate",
+   "app": "Google Chrome"
+  },
+  {
+   "do": "wait",
+   "s": 2.5
+  },
+  {
+   "do": "key",
+   "key": "left",
+   "mods": [
+    "ctrl"
+   ]
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 1230,
+    "y": 700
+   },
+   "ms": 400
+  },
+  {
+   "do": "still",
+   "name": "poster"
+  }
+ ]
+}

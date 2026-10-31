@@ -1,0 +1,23 @@
+{
+ "_about": "Puts the Spaces in the order Desktop, poster, Chrome (31 Oct: on this Mac a new full-screen Space goes to the end, so the poster goes full screen first). Closes Chrome's 'Restore pages?' bubble (its Close, read from spaces-rebuild-01's dump). Ends on the poster.",
+ "schema": "pebble-take-job/1",
+ "id": "spaces-order-$n",
+ "take": "setup",
+ "title": "Spaces: poster before Chrome",
+ "steps": [
+  {"do": "activate", "app": "Google Chrome"}, {"do": "wait", "s": 2},
+  {"do": "find", "app": "Google Chrome", "role": "AXButton", "name": "Close", "window_contains": "Restore", "save_as": "@restore", "optional": true, "timeout_s": 4},
+  {"do": "click", "at": "@restore", "if": "@restore"}, {"do": "wait", "s": 1},
+  {"do": "key", "key": "f", "mods": ["ctrl", "cmd"], "note": "Chrome leaves full screen"}, {"do": "wait", "s": 3.5},
+  {"do": "activate", "app": "Preview"}, {"do": "wait", "s": 2},
+  {"do": "key", "key": "f", "mods": ["ctrl", "cmd"], "note": "the poster leaves full screen"}, {"do": "wait", "s": 3.5},
+  {"do": "key", "key": "f", "mods": ["ctrl", "cmd"], "note": "the poster full screen again: Space 2"}, {"do": "wait", "s": 3.5},
+  {"do": "activate", "app": "Google Chrome"}, {"do": "wait", "s": 2},
+  {"do": "key", "key": "f", "mods": ["ctrl", "cmd"], "note": "Chrome full screen: Space 3"}, {"do": "wait", "s": 3.5},
+  {"do": "still", "name": "chrome"},
+  {"do": "activate", "app": "Preview"}, {"do": "wait", "s": 2.5},
+  {"do": "still", "name": "poster"},
+  {"do": "key", "key": "right", "mods": ["ctrl"]}, {"do": "wait", "s": 1.6}, {"do": "still", "name": "right"},
+  {"do": "key", "key": "left", "mods": ["ctrl"]}, {"do": "wait", "s": 1.6}, {"do": "still", "name": "back"}
+ ]
+}

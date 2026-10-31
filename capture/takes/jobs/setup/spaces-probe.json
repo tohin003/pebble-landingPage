@@ -1,0 +1,16 @@
+{
+ "_about": "Reads the Spaces' order (31 Oct, after RS1-01's swipe didn't move): a still on each Space from the left, by ⌃← then ⌃→ steps. Clicks nothing.",
+ "schema": "pebble-take-job/1",
+ "id": "spaces-probe-$n",
+ "take": "setup",
+ "title": "Probe: the Spaces",
+ "steps": [
+  {"do": "still", "name": "s0-now"},
+  {"do": "key", "key": "left", "mods": ["ctrl"]}, {"do": "wait", "s": 1.6}, {"do": "still", "name": "s1-left"},
+  {"do": "key", "key": "left", "mods": ["ctrl"]}, {"do": "wait", "s": 1.6}, {"do": "still", "name": "s2-left2"},
+  {"do": "key", "key": "right", "mods": ["ctrl"]}, {"do": "wait", "s": 1.6}, {"do": "still", "name": "s3-right"},
+  {"do": "key", "key": "right", "mods": ["ctrl"]}, {"do": "wait", "s": 1.6}, {"do": "still", "name": "s4-right2"},
+  {"do": "key", "key": "right", "mods": ["ctrl"]}, {"do": "wait", "s": 1.6}, {"do": "still", "name": "s5-right3"},
+  {"do": "ax_dump", "app": "Google Chrome", "max": 200, "name": "chrome"}
+ ]
+}

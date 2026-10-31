@@ -1,0 +1,487 @@
+/* Golden set 2.0's moment (Benchmarks.scoreboard.tsx): the scoreboard, the paired difference drawn, the led and trailed
+   pair. The series marks are Benchmarks.module.css's (--mark-pebble, --mark-other on .section: sage and a warm grey,
+   each at least 3:1 on the ground in both themes); every word and value stays in ink or muted ink.
+
+   Motion (Benchmarks.motion.ts): the server renders the still, final state. Only under html[data-motion="on"], and only
+   once the client has armed the block (data-grow="armed"), do the bars sit at zero and the figures hide under their
+   counters; data-grow="play" grows them once. Paused or reduced motion never arms, and globals.css zeroes every
+   transition under it anyway. Bars are transforms, figures keep their width: nothing shifts. */
+
+.board {
+  padding-bottom: 56px;
+}
+
+.headline {
+  max-width: 22em;
+  font-family: var(--font-display);
+  font-weight: 350;
+  font-size: 34px;
+  line-height: 1.15;
+  letter-spacing: -0.016em;
+  text-wrap: balance;
+  color: var(--ink);
+}
+
+.measures {
+  margin-top: 40px;
+}
+
+/* ---- one measure: its name, then the two comparisons side by side ---- */
+.measure {
+  padding-block: 28px 32px;
+  border-top: 1px solid var(--line);
+}
+
+.measureTitle {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.pairs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--gap);
+  row-gap: 28px;
+  margin-top: 18px;
+}
+
+.against {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.model {
+  font-size: 0.95em;
+}
+
+.lines {
+  display: grid;
+  row-gap: 14px;
+  margin-top: 12px;
+}
+
+.line {
+  display: grid;
+  grid-template-columns: 7.5em minmax(0, 1fr);
+  column-gap: 12px;
+  align-items: baseline;
+}
+
+.who {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+.line[data-tone="other"] .who {
+  color: var(--ink-2);
+}
+
+.value {
+  min-width: 0;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--ink);
+}
+
+/* the figure that leads: large, mono, tabular; its counter (added by the client) sits over it, right-aligned */
+.big {
+  position: relative;
+  display: inline-block;
+}
+
+.figure {
+  font-size: 44px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.line[data-tone="other"] .figure {
+  color: var(--ink-2);
+}
+
+.big > [data-tick] {
+  position: absolute;
+  inset: 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 44px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-align: right;
+  white-space: nowrap;
+  color: inherit;
+}
+
+.line[data-tone="pebble"] .big > [data-tick] {
+  color: var(--ink);
+}
+
+.line[data-tone="other"] .big > [data-tick] {
+  color: var(--ink-2);
+}
+
+/* (specific enough to beat the other product's muted ink above) */
+[data-grow="armed"] .line[data-tone] .figure,
+[data-grow="play"] .line[data-tone] .figure {
+  color: transparent;
+}
+
+.tail {
+  margin-left: 0.15em;
+  font-size: 18px;
+  color: var(--ink);
+}
+
+.share {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.track {
+  display: block;
+  height: 10px;
+  margin-top: 10px;
+  background: var(--line);
+}
+
+.fill {
+  display: block;
+  width: var(--w);
+  height: 100%;
+  transform-origin: left center;
+  background: var(--mark-pebble);
+}
+
+.line[data-tone="other"] .fill {
+  background: var(--mark-other);
+}
+
+:global(:root[data-motion="on"]) [data-grow="armed"] .fill {
+  transform: scaleX(0);
+}
+
+:global(:root[data-motion="on"]) [data-grow="play"] .fill {
+  transform: scaleX(1);
+  transition: transform 900ms var(--ease-enter);
+}
+
+.boardNotes {
+  display: grid;
+  row-gap: 4px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+/* ---- the paired difference, drawn ---- */
+.diff {
+  margin: 0;
+  padding-block: 32px 48px;
+  border-top: 1px solid var(--line);
+}
+
+.diffTitle {
+  max-width: 36em;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.diffPlot {
+  margin-top: 28px;
+}
+
+.diffRow,
+.diffAxisRow {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  column-gap: var(--gap);
+  align-items: center;
+}
+
+.diffLabel {
+  grid-column: 1 / span 3;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.diffTrack,
+.diffAxis,
+.diffSides {
+  grid-column: 4 / -1;
+  position: relative;
+}
+
+/* a row of the plot: the band at mid-height, its value above, its two ends below */
+.diffTrack {
+  height: 88px;
+}
+
+.zero {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px solid var(--ink);
+}
+
+.band {
+  position: absolute;
+  top: 44px;
+  height: 10px;
+  margin-top: -5px;
+  background: var(--mark-pebble);
+  transform-origin: var(--origin) center;
+}
+
+:global(:root[data-motion="on"]) [data-grow="armed"] .band {
+  transform: scaleX(0);
+}
+
+:global(:root[data-motion="on"]) [data-grow="play"] .band {
+  transform: scaleX(1);
+  transition: transform 900ms var(--ease-enter);
+  transition-delay: calc(var(--i, 0) * 120ms);
+}
+
+/* the point estimate: a ring in ink on the page's colour, never an ink fill (ui.test.ts), with a gap of ground
+   around it so it reads over the band (an outline, never a shadow) */
+.diffDot {
+  position: absolute;
+  top: 44px;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  background: var(--bg);
+  outline: 2px solid var(--bg);
+}
+
+/* the value starts just left of its dot and runs right, so it never crosses the zero line */
+.diffValue {
+  position: absolute;
+  top: 10px;
+  transform: translateX(-10px);
+  font-size: 18px;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+/* the interval's ends sit inside its span: the lower end from its mark rightward, the upper end up to its mark */
+.diffEnd {
+  position: absolute;
+  top: 60px;
+  padding-left: 4px;
+  font-size: 13px;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: var(--ink-2);
+}
+
+.diffEnd[data-end="hi"] {
+  padding: 0 0 0 0;
+  transform: translateX(-100%);
+}
+
+.diffAxis {
+  height: 28px;
+  border-top: 1px solid var(--line);
+}
+
+.diffAxis .zero {
+  bottom: auto;
+  height: 6px;
+}
+
+.diffTick {
+  position: absolute;
+  top: 8px;
+  transform: translateX(-50%);
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+/* the axis's end labels stay inside the column */
+.diffTick[data-edge="start"] {
+  transform: none;
+}
+
+.diffTick[data-edge="end"] {
+  transform: translateX(-100%);
+}
+
+.diffTick[data-zero] {
+  color: var(--ink);
+}
+
+.diffSides {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+.diffSides > span:last-child {
+  text-align: right;
+  color: var(--ink);
+}
+
+/* ---- where Pebble led, where it trailed: the same weight, the same type ---- */
+.sidePair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--gap);
+  row-gap: 28px;
+  padding-block: 28px 64px;
+  border-top: 1px solid var(--line);
+}
+
+.sideTitle {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.sideRule {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.sideList {
+  display: grid;
+  row-gap: 6px;
+  margin-top: 12px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+/* ---- tablets and phones ---- */
+@media (max-width: 1023px) {
+  .headline {
+    font-size: 28px;
+  }
+
+  .diffRow,
+  .diffAxisRow {
+    display: block;
+  }
+
+  .diffAxisRow .diffLabel {
+    display: none;
+  }
+
+  .diffLabel {
+    margin-top: 8px;
+  }
+}
+
+@media (max-width: 720px) {
+  .pairs,
+  .sidePair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .figure,
+  .big > [data-tick] {
+    font-size: 38px;
+  }
+}
+
+@media (max-width: 560px) {
+  .headline {
+    font-size: 24px;
+  }
+
+  .line {
+    grid-template-columns: 6.5em minmax(0, 1fr);
+  }
+
+  .figure,
+  .big > [data-tick] {
+    font-size: 34px;
+  }
+
+  .tail {
+    font-size: 16px;
+  }
+}
+
+/* the chart's words under it: the README's two lines */
+.diffCaption {
+  margin-top: 20px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+/* ---- the 1.0.2 run, closed by default: its heading and headline stay in view, the rest behind one button ---- */
+.earlier {
+  margin-top: 16px;
+}
+
+.earlierOpen {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ink);
+  cursor: pointer;
+  list-style: none;
+}
+
+.earlierOpen::-webkit-details-marker {
+  display: none;
+}
+
+.earlierOpen::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-top: -2px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.earlier[open] > .earlierOpen::before {
+  margin-top: 3px;
+  transform: rotate(-135deg);
+}
+
+.earlierOpen:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .earlierOpen:hover {
+    border-color: var(--ink-2);
+  }
+}

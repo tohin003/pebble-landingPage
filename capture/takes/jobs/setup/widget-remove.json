@@ -1,0 +1,119 @@
+{
+ "_about": "Removes the desktop's Weather widget (it shows the Mac's real location; 31 Oct). Pebble is hidden first (⌘H) because its workspace covers the widget, then opened again. After ⌘H macOS may switch to Chrome's Space, so ⌃← twice returns to the Desktop (widget-remove-01).",
+ "schema": "pebble-take-job/1",
+ "id": "widget-remove-$n",
+ "take": "setup",
+ "title": "Remove the Weather widget",
+ "steps": [
+  {
+   "do": "activate",
+   "app": "Pebble"
+  },
+  {
+   "do": "wait",
+   "s": 1
+  },
+  {
+   "do": "key",
+   "key": "h",
+   "mods": [
+    "cmd"
+   ]
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "key",
+   "key": "left",
+   "mods": [
+    "ctrl"
+   ]
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "key",
+   "key": "left",
+   "mods": [
+    "ctrl"
+   ]
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 600,
+    "y": 500
+   },
+   "ms": 300
+  },
+  {
+   "do": "still",
+   "name": "desktop"
+  },
+  {
+   "do": "click",
+   "at": {
+    "x": 279,
+    "y": 110
+   },
+   "button": "right",
+   "note": "the Weather widget"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "still",
+   "name": "menu"
+  },
+  {
+   "do": "ax_dump",
+   "app": "NotificationCenter",
+   "max": 400,
+   "name": "nc"
+  },
+  {
+   "do": "find",
+   "app": "NotificationCenter",
+   "role": "AXMenuItem",
+   "contains": "Remove Widget",
+   "save_as": "@rm",
+   "optional": true,
+   "timeout_s": 3
+  },
+  {
+   "do": "click",
+   "at": "@rm",
+   "if": "@rm"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "key",
+   "key": "escape"
+  },
+  {
+   "do": "still",
+   "name": "after"
+  },
+  {
+   "do": "open_app",
+   "app": "Pebble"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  }
+ ]
+}

@@ -19,12 +19,13 @@
   {
    "do": "record_start",
    "name": "RSH-$n",
-   "max_s": 240
+   "max_s": 240,
+   "method": "avfoundation"
   },
   {
    "do": "wait",
-   "s": 2.5,
-   "note": "the take rolls before the first action"
+   "s": 3.5,
+   "note": "pre-roll: avfoundation's first ~0.35 s repeat a stale frame (RS1-02), so the first pointer move (the conform's sync) comes after the picture is live"
   },
   {
    "do": "open_app",

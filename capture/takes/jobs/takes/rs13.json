@@ -1,5 +1,5 @@
 {
- "_about": "UNVERIFIED until the dry run: element names (Allow, the composer, the conversation list) and the pebble's place come from the dry run's Accessibility dumps and stills; the lead adjusts this template before the take. RS-13 (S22, P0): ⌘K, 'stealth', Return on 'Turn Stealth Lockdown on': the menu-bar icon becomes a filled pebble in a ring, the Dock icon leaves. The workspace is open. Turns Stealth off afterwards (⌃⌥⌘S). The film holds the honest line beside every Stealth shot.",
+ "_about": "RS-13 (S22, P0): ⌘K, 'stealth', Return on 'Turn Stealth Lockdown on': the menu-bar icon becomes a filled pebble in a ring, the Dock icon leaves (Pebble unpinned from the Dock on 31 Oct). Recorded with screencapture. screencapture stops only on its own -V limit here (dry05, dry07), and its last frame must be fresh for the conform to hold within a frame (dry03), so the pointer keeps moving across the limit. Turns Stealth off after.",
  "schema": "pebble-take-job/1",
  "id": "RS13-$n",
  "take": "RS-13",
@@ -19,14 +19,39 @@
    "s": 1.5
   },
   {
+   "do": "move",
+   "to": {
+    "x": 735,
+    "y": 640
+   },
+   "ms": 400,
+   "note": "rest the pointer mid-screen"
+  },
+  {
    "do": "record_start",
    "name": "RS13-$n",
-   "max_s": 40
+   "max_s": 20,
+   "method": "screencapture",
+   "stop_with": "duration"
   },
   {
    "do": "wait",
-   "s": 2.5,
-   "note": "the take rolls before the first action"
+   "s": 3.0,
+   "note": "pre-roll"
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 790,
+    "y": 670
+   },
+   "ms": 500,
+   "event": "sync",
+   "note": "the conform's sync"
+  },
+  {
+   "do": "wait",
+   "s": 1.0
   },
   {
    "do": "key",
@@ -55,24 +80,18 @@
    "event": "switchOn"
   },
   {
-   "do": "wait_element",
-   "app": "Dock",
-   "name": "Pebble",
-   "gone": true,
-   "timeout_s": 10,
-   "event": "dockLeft"
-  },
-  {
    "do": "wait",
-   "s": 5
+   "s": 6.5,
+   "note": "the Dock icon leaving and the menu-bar icon: read off the picture"
   },
   {
-   "do": "still",
-   "name": "stealth-on"
-  },
-  {
-   "do": "wait",
-   "s": 3
+   "do": "move",
+   "to": {
+    "x": 100,
+    "y": 300
+   },
+   "ms": 6000,
+   "note": "keeps the picture changing across screencapture's own 20 s limit, so its last frame is fresh"
   },
   {
    "do": "record_stop"
@@ -80,6 +99,10 @@
   {
    "do": "conform",
    "name": "RS13-$n"
+  },
+  {
+   "do": "still",
+   "name": "stealth-on"
   },
   {
    "do": "key",

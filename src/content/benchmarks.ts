@@ -309,8 +309,84 @@ export const golden = {
   /** The 1.0.2 run below it, dated, as history (README.md@v2.0.0:426's heading, with the run's date). [C-GS-11] */
   earlier: {
     title: "Earlier: Pebble 1.0.2 against Claude Code CLI, on 23 October 2026",
+    /** the disclosure's button text when it is closed; the heading above stays the run's title */
+    open: "Show the 1.0.2 run",
+  },
+
+  /**
+   * The scoreboard at the top of the section (the lead's direction, 31 Oct 17:30: "the page's proudest moment"). It
+   * draws three of the README tables' rows, each Pebble beside Claude Code and beside Codex; the figures are the
+   * tables' cells above, never retyped. [C-GS-13]
+   */
+  scoreboard: {
+    /** README.md@v2.0.0:392's bold line after its colon, word for word, its first letter a sentence's capital */
+    headline: "More tasks done correctly, fewer false completions, lower cost per task.",
+    /** the README rows it draws, in the README's order (Benchmarks.scoreboard.tsx finds each row by its measure) */
+    measures: [GOLDEN_MEASURES.correct, GOLDEN_MEASURES.falseDone, GOLDEN_MEASURES.cost],
+    /** README.md@v2.0.0:394-395 and :416, word for word */
+    notes: [
+      "The plan (its gates, graders, prices and budgets) was registered before the first run.",
+      "The plan's five measured gates were met against both.",
+    ],
+  },
+
+  /** The paired difference, drawn: the section's chart that leads (README.md@v2.0.0:412-415). [C-GS-5] [C-GS-14] */
+  chart: {
+    title: "The paired difference in tasks done correctly, Pebble minus the other product, with its 95 % interval",
+    /** the axis ends say which way a mark leans */
+    left: "The other product ahead",
+    right: "Pebble ahead",
+    rows: [
+      { id: "claude-code", against: "Against Claude Code", model: "claude-opus-5-5", points: 8.6, interval: [3.1, 14.9] },
+      { id: "codex", against: "Against Codex", model: "gpt-6.1-sol", points: 4.7, interval: [0.4, 9.4] },
+    ],
+  },
+
+  /** Where Pebble led and where it trailed, as a pair at the same weight (README.md@v2.0.0:417-421). [C-GS-15] */
+  pair: {
+    led: {
+      title: "Where Pebble led",
+      rule: "By the plan's rule, family by family, only where the 95 % lower bound is above zero.",
+      items: ["Against Claude Code: answers from saved web pages and repeated computations.", "Against Codex: no single family."],
+    },
+    trailed: {
+      title: "Where Pebble trailed",
+      rule: "By one task each.",
+      items: ["Against Claude Code: remembering across sessions.", "Against Codex: long tasks."],
+    },
+  },
+
+  /**
+   * The strip under the hero, linking to the section: the README's bold line whole, then the two "Tasks done correctly"
+   * rows (README.md@v2.0.0:392, :395, :400, :407). [C-GS-16]
+   */
+  strip: {
+    headline: "Pebble 2.0 against Claude Code and Codex: more tasks done correctly, fewer false completions, lower cost per task.",
+    measure: GOLDEN_MEASURES.correct,
+    note: "Each comparison used one model for both products.",
+    link: "See how it was measured",
   },
 } as const;
+
+/** One README cell split for display: "235 of 255 (92.2 %)" → the figure "235", its tail " of 255", its share "92.2 %". */
+export type GoldenCell = Readonly<{ text: string; figure: string; tail: string; share: string | null; value: number }>;
+
+/** Splits a golden table cell (the README's characters, unchanged) into the figure that leads and the rest. */
+export function goldenCell(text: string): GoldenCell {
+  const m = /^(\$?)(\d+(?:\.\d+)?)( of \d+| %)?(?: \((.+)\))?$/.exec(text);
+  if (!m) throw new Error(`goldenCell: not a figure: ${text}`);
+  const tail = m[3] ?? "";
+  // "6.3 %" leads with "6.3 %" whole; "235 of 255" leads with "235"
+  const figure = tail === " %" ? `${m[2]} %` : `${m[1]}${m[2]}`;
+  return { text, figure, tail: tail === " %" ? "" : tail, share: m[4] ?? null, value: Number(m[2]) };
+}
+
+/** A golden table's row by its measure (throws if the README's table has no such row). */
+export function goldenRow(table: GoldenTable, measure: string): GoldenTable["rows"][number] {
+  const row = table.rows.find((r) => r.measure === measure);
+  if (!row) throw new Error(`goldenRow: no row ${measure} in ${table.id}`);
+  return row;
+}
 
 // ---- the section's words ---------------------------------------------------------------------------------------------
 

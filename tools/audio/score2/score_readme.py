@@ -23,7 +23,13 @@ def fmt(t):
 
 
 def mmss(t):
-    return f"{int(t // 60)}:{int(t % 60):02d}"
+    t = int(round(t))  # rounded, never truncated (R3-07: 45.9986 s is 0:46)
+    return f"{t // 60}:{t % 60:02d}"
+
+
+NAMES = {"YourBreath": "Your Breath", "TechnoFestVibes": "Techno Fest Vibes", "BornOfTheSky": "Born Of The Sky",
+         "Starfire": "Starfire"}
+NUMS = {1: "one", 2: "two", 3: "three", 4: "four"}
 
 SCENES = {  # what each cue carries, in plain words (CUE_SHEET.md §1)
     "M1": ("\"Still Water\"", "A4 Born Of The Sky (Scott Buckley)",
@@ -102,6 +108,107 @@ def change_lines(plan, k5):
 
 
 
+def cp_out(c):
+    """A cue's last film second in the plan (its out-point in film time)."""
+    return c["film_in"] + (c["src_out"] - c["src_in"])
+
+
+def what_changed(W, b, plan, coda, xcut):
+    """WHAT CHANGED SINCE THE 28 OCTOBER PREVIEW (R3-01), from the records only: revision 2's plan and build as archived
+    (cuesheet/archive-2026-10-28-r2/plan_main.json, master/archive-2026-10-28-r2fix/*.build.json) against this plan and
+    build. Nothing here is typed in but the words."""
+    p2 = json.load(open(os.path.join(W, "cuesheet", "archive-2026-10-28-r2", "plan_main.json")))
+    A = os.path.join(W, "master", "archive-2026-10-28-r2fix")
+    b2 = {f: json.load(open(os.path.join(A, f"{f}.build.json"))) for f in ("main", "x40")}
+    p3 = plan["main"]
+    c2, c3 = {c["id"]: c for c in p2["cues"]}, {c["id"]: c for c in p3["cues"]}
+
+    def bar_s(track):
+        return 240.0 / json.load(open(os.path.join(W, "maps", f"{track}.map.json")))["tempo"]["bpm"]
+
+    def total(cs, track):
+        return sum(c["src_out"] - c["src_in"] for c in cs.values() if c["track"] == track)
+
+    def splices(pl, cs):
+        return [(s_, cs[s_["from"]]["track"]) for s_ in pl["seams"] if cs[s_["from"]]["track"] == cs[s_["to"]]["track"]]
+
+    now = splices(p3, c3)
+    def same(x, cx, y, cy):  # the same splice: the same source points on both sides, wherever it sits in the film
+        return (cx[x["from"]]["track"] == cy[y["from"]]["track"]
+                and abs(cx[x["from"]]["src_out"] - cy[y["from"]]["src_out"]) < 0.05
+                and abs(cx[x["to"]]["src_in"] - cy[y["to"]]["src_in"]) < 0.05)
+
+    gone = [(s_, tr) for s_, tr in splices(p2, c2) if not any(same(s_, c2, x, c3) for x, _ in now)]
+    rows = []
+    ev2, ev3 = {e["label"]: e["t"] for e in p2["events"]}, {e["label"]: e["t"] for e in p3["events"]}
+    sm2, sm3 = {x["id"]: x["t"] for x in p2["seams"]}, {x["id"]: x["t"] for x in p3["seams"]}
+    shift = sm3["J3"] - sm2["J3"]
+    for s_, tr in gone:
+        nb = round((c2[s_["to"]]["src_in"] - c2[s_["from"]]["src_out"]) / bar_s(tr))
+        grow = total(c3, tr) - total(c2, tr)
+        nxt = next((x for x in p3["seams"] if x["t"] > s_["t"] + 0.05), None)
+        words = NUMS.get(nb, str(nb)) + (" bar" if nb == 1 else " bars")
+        more = words.replace(" bar", " more bar")
+        if abs(grow - nb * bar_s(tr)) < 0.05:
+            rows.append(f"{NAMES[tr]} plays in one piece now: the {words} that were cut out of it at {fmt(s_['t'])} "
+                        f"are back, so it plays {more} of its own ({grow:.2f} seconds).")
+        else:
+            rows.append(f"{NAMES[tr]} plays in one piece now: the {words} that were cut out of it at {fmt(s_['t'])} "
+                        "are back, so from there on you hear it in its own order"
+                        + (f", and it reaches the next change ({fmt(nxt['t'])}) {words} earlier in the track than "
+                           "before." if nxt and abs(grow) < 0.05 else "."))
+    if abs(shift) > 0.01 and "Ring 4" in ev2 and "Ring 4" in ev3:
+        ln2, ln3 = sm2["J3"] - ev2["Ring 4"], sm3["J3"] - ev3["Ring 4"]
+        rows.append(f"So Ring 4, \"Bigger tasks\" and Command-K get {shift:.2f} seconds more ({ln3:.2f} seconds from Ring "
+                    f"4 to Enter, was {ln2:.2f}), and everything from Enter on comes {shift:.2f} seconds later: Enter "
+                    f"{fmt(sm3['J3'])} (was {fmt(sm2['J3'])}), the kept card {fmt(ev3['kept card'])} (was "
+                    f"{fmt(ev2['kept card'])}), the title {fmt(ev3['TITLE'])} (was {fmt(ev2['TITLE'])}).")
+    if coda and not b2["main"].get("coda"):
+        rows.append(f"New: after the end card the room tone carries on, never restarting, through a short scene, and "
+                    f"one soft stone tap sounds at {fmt(coda['tap_film_s'])}, as its second line lands.")
+    rows.append(f"The film is {fmt(xcut)} long (it was {fmt(b2['main']['film_length_s'])})"
+                + (f", and {fmt(coda['to_film_s'])} with the scene after the end card." if coda else "."))
+    l2 = {L["id"]: L for L in b2["main"]["layers"]}
+    hit_groups = {"drop", "climax", "title", "drop_sub", "climax_sub", "title_sub"}
+    dl = [(abs(L["gain_db"] - l2[L["id"]]["gain_db"]), L) for L in b["main"]["layers"] if L["id"] in l2]
+    if dl and all(L.get("take") == l2[L["id"]].get("take") for _, L in dl):
+        dh = max((d for d, L in dl if L.get("group") in hit_groups), default=0.0)
+        rest = [(d, L) for d, L in dl if L.get("group") not in hit_groups and d > 0.1]
+        sweeps = all(L["id"].startswith("ring") for _, L in rest)
+        rows.append(f"Every sound effect you heard is the same take, at its new time. The three hits sit within "
+                    f"{dh:.2f} dB of their old levels"
+                    + (f"; {'the ring sweeps' if sweeps else 'the others'}, which are set against the music under them, "
+                       f"within {max(d for d, _ in rest):.1f} dB." if rest else ", and so does everything else."))
+    if all(b["x40"]["masters"][k]["sha256"] == b2["x40"]["masters"][k]["sha256"] for k in b2["x40"]["masters"]):
+        rows.append("The 40-second cut is the same as before, sample for sample.")
+    # the masters' limiting (R3-02): only if it still differs audibly from the last preview's (the social master, the
+    # previews' sound): a hit limited more than 0.5 dB harder or softer, or a spot held down by 1 dB or more
+    ms, ms2 = b["main"]["masters"]["social"], b2["main"]["masters"]["social"]
+    hits = (("the Drop", sm2["J1"], sm3["J1"]), ("the kept card", ev2["kept card"], ev3["kept card"]),
+            ("the title", ev2["TITLE"], ev3["TITLE"]))
+
+    def gr_at(m, t):
+        return min((d["gr_db"] for d in m["limiter"]["deepest"] if abs(d["film_s"] - t) <= 0.3), default=0.0)
+
+    diffs = [(nm, gr_at(ms, t3), gr_at(ms2, t2)) for nm, t2, t3 in hits]
+    dips = sorted((d for d in ms.get("ceiling_search", {}).get("local_dips", []) if d["lowered_db"] >= 1.0),
+                  key=lambda d: d["t"])
+    hits_line = ", ".join(f"{nm} {abs(a):.1f} dB (was {abs(z):.1f})" for nm, a, z in diffs)
+    if any(abs(a - z) > 0.5 for _, a, z in diffs):
+        rows.append(f"The three hits are limited differently from the last preview: {hits_line}.")
+    if dips:
+        tracks = sorted({NAMES[c["track"]] for d in dips for c in p3["cues"]
+                         if c["film_in"] <= d["t"] < cp_out(c)}) or ["the music"]
+        rows.append((f"The three hits are limited as in the last preview: {hits_line}. " if all(
+                        abs(a - z) <= 0.5 for _, a, z in diffs) else "")
+                    + f"New: {NUMS.get(len(dips), str(len(dips)))} short moment{'s' if len(dips) > 1 else ''} in "
+                    + " and ".join(tracks) + " (" + ", ".join(fmt(d["t"]) for d in dips) + ") "
+                    + ("are" if len(dips) > 1 else "is") + f" held down by up to {max(d['lowered_db'] for d in dips):.1f} "
+                    "dB for under a quarter of a second, so that the encoder that makes the film's files doesn't "
+                    "overshoot there.")
+    return "\n".join(bullet(x) for x in rows)
+
+
 def main():
     W, out = os.path.abspath(sys.argv[1]), sys.argv[2]
     M = os.path.join(W, "master")
@@ -162,6 +269,20 @@ def main():
     j5 = st["main"]["J5"]["continuity"]["bed"]
     k5 = j5.get("harmony", {})
     main_len = fmt(xcut)
+    # R3-03: the loudest-part sentence, computed from the build's fix_checks.loudest (centres of the loudest 3 s and 400 ms)
+    ld = b["main"]["fix_checks"]["loudest"]
+    c3, cm = ld["short_term_3s"]["centre_film_s"], ld["momentary_400ms"]["centre_film_s"]
+    lo, hi = min(c3 - 1.5, cm - 0.2), max(c3 + 1.5, cm + 0.2)
+    card = ev["kept card"]
+    if ld["short_term_3s"]["block"] == ld["momentary_400ms"]["block"] == "Climax" and lo >= card:
+        loud_line = (f"The climax is the loudest part of the film. After the kept card lands ({fmt(card)}), Your Breath's "
+                     f"lift keeps building, and its loudest seconds (about {mmss(lo)} to {mmss(hi)}) are {ret_under} LU "
+                     "louder than anything in the Return (the loudest 3 seconds of each).")
+    else:
+        loud_line = (f"The film's loudest 3 seconds are centred on {fmt(c3)} ({ld['short_term_3s']['block']}) and its "
+                     f"loudest 400 ms on {fmt(cm)} ({ld['momentary_400ms']['block']}); the climax's loudest 3 seconds are "
+                     f"{ret_under} LU louder than the Return's.")
+    changed = what_changed(W, b, plan, coda, xcut)
     pre = {f: (pv[f]["format"]["duration"] if f in pv else None) for f in ("main", "x40")}
 
     sfx = "\n".join(bullet(x) for x in [
@@ -172,8 +293,8 @@ def main():
         f"At the Drop the hit sits on top of the music (+{comp('main', 'drop')['composite_over_bed_db']} dB over the "
         "music alone). At the kept card the music steps back for one bar so the hit lands on top of it "
         f"(+{comp('main', 'climax')['composite_over_bed_db']} dB), then the music settles a little lower under the "
-        "Return, so the card stays the loudest moment of the film. At the title, Born Of The Sky's own chord carries "
-        "it, with the hit inside it.",
+        "Return, so the climax stays louder than the Return. At the title, Born Of The Sky's own chord carries it, "
+        "with the hit inside it.",
         "The plunk at the Drop (made here from code) and the stone tap at the title (a free CC0 sound) stand in for "
         "your recordings of a pebble dropped into water and a pebble tapped on wood.",
         f"Soft ticks at about {mmss(lay['tick_send']['t'])}, {mmss(lay['tick_equals']['t'])} and "
@@ -198,9 +319,7 @@ def main():
         bullet("In the beat-driven cues (Your Breath and Techno Fest Vibes) the beats land within "
                f"{worst_med:.1f} thousandths of a second of the beat grid (the median of each cue)."),
         bullet("No clicks at any change, checked by measurement and by looking at every change zoomed in."),
-        bullet(f"The kept card is the loudest moment of the film: its loudest 3 seconds are {ret_under} LU louder than "
-               "the Return's, and the loudest 3 seconds and the loudest half-second of the whole film both fall on "
-               "it."),
+        bullet(loud_line),
         bullet(f"Inside a track, the {n_sp} change{'s' if len(splices) == 1 else ''} the loudness by at most "
                f"{worst_step:.2f} LU over 3 seconds."),
         bullet("Loudness, measured after the AAC encode (FFmpeg's encoder makes the film's deliveries; Apple's made "
@@ -245,8 +364,11 @@ which music is playing (track and artist), and a running clock. A bar along the 
 of music, labelled with how the change is made. A card counts down to the next change, says how it is made, and says
 what to listen for. The sound is the social-media master (-14 LUFS, the loudness Instagram, X and LinkedIn expect).
 
-Every change and every level here was measured and looked at on a spectrogram. Nobody has listened yet: your ears are
-the first.
+Every change and every level here was measured and looked at on a spectrogram. Nobody has listened to this version
+yet: your ears are the first.
+
+WHAT CHANGED SINCE THE 28 OCTOBER PREVIEW
+{changed}
 
 HOW TO LISTEN (about 10 minutes)
 1. On headphones or good laptop speakers, watch the main film once straight through, just for the feeling.
@@ -287,8 +409,8 @@ needed. The 40-second cut uses only these two, so it needs no music credit.
 Sound effects: Kenney (CC0) and sounds made for this film. Sound effects are the film's; Pebble plays none of them.
 
 PLEASE DON'T SHARE THESE
-These previews are for you only. Pebble 2.0 isn't public yet, so nothing about it can be posted until it's released.
-The music in them can't be shared on its own either: its licence allows it only inside the film.
+These previews are for you only: the film isn't finished or published yet, so please don't post or pass them on. The
+music in them can't be shared on its own either: its licence allows it only inside the film.
 """
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     open(out, "w").write(txt)

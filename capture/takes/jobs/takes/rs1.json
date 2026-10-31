@@ -1,19 +1,42 @@
 {
- "_about": "UNVERIFIED until the dry run: element names (Allow, the composer, the conversation list) and the pebble's place come from the dry run's Accessibility dumps and stills; the lead adjusts this template before the take. RS-1 (S03, P0): the Space swipe, poster → Chrome; the pebble stays. Run setup/to-poster first.",
+ "_about": "RS-1 (S03, P0): the Space swipe, poster → Chrome; the pebble stays. Run setup/to-poster first. Checked after the dry run (31 Oct): the pointer rests off the poster's text, then one small move before the swipe gives the conform its sync.",
  "schema": "pebble-take-job/1",
  "id": "RS1-$n",
  "take": "RS-1",
  "title": "The Space swipe",
  "steps": [
   {
+   "do": "move",
+   "to": {
+    "x": 1230,
+    "y": 700
+   },
+   "ms": 500,
+   "note": "rest the pointer near the pebble, off the poster's text"
+  },
+  {
    "do": "record_start",
    "name": "RS1-$n",
-   "max_s": 30
+   "max_s": 30,
+   "method": "avfoundation"
   },
   {
    "do": "wait",
-   "s": 2.5,
-   "note": "the take rolls before the first action"
+   "s": 3.5,
+   "note": "pre-roll: avfoundation's first ~0.35 s repeat a stale frame (RS1-02), so the first pointer move (the conform's sync) comes after the picture is live"
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 1290,
+    "y": 745
+   },
+   "ms": 600,
+   "event": "sync"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
   },
   {
    "do": "key",
