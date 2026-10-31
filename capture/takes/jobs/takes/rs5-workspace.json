@@ -10,7 +10,11 @@
   "app": "Shortcuts",
   "tail_s": 6,
   "message": "Run my Open day checklist shortcut.",
-  "preapp": "Shortcuts"
+  "preapp": "Shortcuts",
+  "composer": {
+   "x": 474,
+   "y": 442
+  }
  },
  "steps": [
   {
@@ -66,7 +70,7 @@
   {
    "do": "record_start",
    "name": "$tid-$n",
-   "max_s": 300,
+   "max_s": 240,
    "method": "avfoundation"
   },
   {
@@ -102,6 +106,12 @@
    "app": "Pebble",
    "role": "AXButton",
    "name": "Don't allow",
+   "within": {
+    "x": 664,
+    "y": 90,
+    "w": 360,
+    "h": 500
+   },
    "timeout_s": 60,
    "save_as": "@w1",
    "event": "card1",
@@ -122,8 +132,7 @@
    },
    "lines": 8,
    "ms": 500,
-   "if": "@w1",
-   "note": "Pebble's Activity panel (the workspace is in front until every card is answered)"
+   "if": "@w1"
   },
   {
    "do": "wait",
@@ -135,10 +144,17 @@
    "app": "Pebble",
    "role": "AXButton",
    "name": "Do it",
+   "within": {
+    "x": 664,
+    "y": 90,
+    "w": 360,
+    "h": 500
+   },
    "save_as": "@d1",
    "optional": true,
    "timeout_s": 2,
-   "budget_ms": 15000
+   "budget_ms": 15000,
+   "if": "@w1"
   },
   {
    "do": "click",
@@ -151,32 +167,23 @@
    "app": "Pebble",
    "role": "AXButton",
    "name": "Allow",
+   "within": {
+    "x": 664,
+    "y": 90,
+    "w": 360,
+    "h": 500
+   },
    "save_as": "@a1",
    "optional": true,
    "timeout_s": 2,
-   "budget_ms": 15000
+   "budget_ms": 15000,
+   "if": "@w1"
   },
   {
    "do": "click",
    "at": "@a1",
    "if": "@a1",
    "event": "a1"
-  },
-  {
-   "do": "find",
-   "app": "Pebble",
-   "role": "AXButton",
-   "name": "Open app",
-   "save_as": "@o1",
-   "optional": true,
-   "timeout_s": 2,
-   "budget_ms": 15000
-  },
-  {
-   "do": "click",
-   "at": "@o1",
-   "if": "@o1",
-   "event": "o1"
   },
   {
    "do": "wait",
@@ -187,7 +194,13 @@
    "app": "Pebble",
    "role": "AXButton",
    "name": "Don't allow",
-   "timeout_s": 10,
+   "within": {
+    "x": 664,
+    "y": 90,
+    "w": 360,
+    "h": 500
+   },
+   "timeout_s": 20,
    "save_as": "@w2",
    "event": "card2",
    "optional": true,
@@ -207,8 +220,7 @@
    },
    "lines": 8,
    "ms": 500,
-   "if": "@w2",
-   "note": "Pebble's Activity panel (the workspace is in front until every card is answered)"
+   "if": "@w2"
   },
   {
    "do": "wait",
@@ -220,10 +232,17 @@
    "app": "Pebble",
    "role": "AXButton",
    "name": "Do it",
+   "within": {
+    "x": 664,
+    "y": 90,
+    "w": 360,
+    "h": 500
+   },
    "save_as": "@d2",
    "optional": true,
    "timeout_s": 2,
-   "budget_ms": 15000
+   "budget_ms": 15000,
+   "if": "@w2"
   },
   {
    "do": "click",
@@ -236,117 +255,23 @@
    "app": "Pebble",
    "role": "AXButton",
    "name": "Allow",
+   "within": {
+    "x": 664,
+    "y": 90,
+    "w": 360,
+    "h": 500
+   },
    "save_as": "@a2",
    "optional": true,
    "timeout_s": 2,
-   "budget_ms": 15000
+   "budget_ms": 15000,
+   "if": "@w2"
   },
   {
    "do": "click",
    "at": "@a2",
    "if": "@a2",
    "event": "a2"
-  },
-  {
-   "do": "find",
-   "app": "Pebble",
-   "role": "AXButton",
-   "name": "Open app",
-   "save_as": "@o2",
-   "optional": true,
-   "timeout_s": 2,
-   "budget_ms": 15000
-  },
-  {
-   "do": "click",
-   "at": "@o2",
-   "if": "@o2",
-   "event": "o2"
-  },
-  {
-   "do": "wait",
-   "s": 1.0
-  },
-  {
-   "do": "wait_element",
-   "app": "Pebble",
-   "role": "AXButton",
-   "name": "Don't allow",
-   "timeout_s": 10,
-   "save_as": "@w3",
-   "event": "card3",
-   "optional": true,
-   "budget_ms": 15000
-  },
-  {
-   "do": "wait",
-   "s": 1.3,
-   "if": "@w3",
-   "note": "the person reads the card"
-  },
-  {
-   "do": "scroll",
-   "at": {
-    "x": 844,
-    "y": 450
-   },
-   "lines": 8,
-   "ms": 500,
-   "if": "@w3",
-   "note": "Pebble's Activity panel (the workspace is in front until every card is answered)"
-  },
-  {
-   "do": "wait",
-   "s": 0.8,
-   "if": "@w3"
-  },
-  {
-   "do": "find",
-   "app": "Pebble",
-   "role": "AXButton",
-   "name": "Do it",
-   "save_as": "@d3",
-   "optional": true,
-   "timeout_s": 2,
-   "budget_ms": 15000
-  },
-  {
-   "do": "click",
-   "at": "@d3",
-   "if": "@d3",
-   "event": "d3"
-  },
-  {
-   "do": "find",
-   "app": "Pebble",
-   "role": "AXButton",
-   "name": "Allow",
-   "save_as": "@a3",
-   "optional": true,
-   "timeout_s": 2,
-   "budget_ms": 15000
-  },
-  {
-   "do": "click",
-   "at": "@a3",
-   "if": "@a3",
-   "event": "a3"
-  },
-  {
-   "do": "find",
-   "app": "Pebble",
-   "role": "AXButton",
-   "name": "Open app",
-   "save_as": "@o3",
-   "optional": true,
-   "timeout_s": 2,
-   "budget_ms": 15000
-  },
-  {
-   "do": "click",
-   "at": "@o3",
-   "if": "@o3",
-   "event": "o3"
   },
   {
    "do": "wait",

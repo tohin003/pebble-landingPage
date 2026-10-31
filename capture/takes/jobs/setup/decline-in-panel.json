@@ -1,0 +1,115 @@
+{
+ "_about": "Declines the card waiting in the conversation $conv (its exact 'Don't allow', searched only inside Pebble's Details panel). With conv='' it declines the card of the conversation in view. Proves the 'within' search (31 Oct).",
+ "schema": "pebble-take-job/1",
+ "id": "decline-in-panel-$n",
+ "take": "setup",
+ "title": "Decline a waiting card",
+ "defaults": {
+  "conv": "Show the Open day folder in Documents",
+  "list_lines": 0
+ },
+ "steps": [
+  {
+   "do": "key",
+   "key": "space",
+   "mods": [
+    "cmd",
+    "shift"
+   ]
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "scroll",
+   "at": {
+    "x": 106,
+    "y": 430
+   },
+   "lines": "$list_lines",
+   "ms": 400,
+   "note": "the sidebar's conversation list, to bring older ones into view"
+  },
+  {
+   "do": "wait",
+   "s": 1
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "contains": "$conv",
+   "within": {
+    "x": 0,
+    "y": 360,
+    "w": 215,
+    "h": 140
+   },
+   "save_as": "@c",
+   "optional": true,
+   "timeout_s": 10,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@c",
+   "if": "@c"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "scroll",
+   "at": {
+    "x": 844,
+    "y": 450
+   },
+   "lines": 10,
+   "ms": 500,
+   "note": "the Activity panel down, so the card's buttons are on screen"
+  },
+  {
+   "do": "wait",
+   "s": 1
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Don't allow",
+   "within": {
+    "x": 664,
+    "y": 90,
+    "w": 360,
+    "h": 490
+   },
+   "save_as": "@no",
+   "optional": true,
+   "timeout_s": 20,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@no",
+   "if": "@no"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 600,
+    "y": 300
+   },
+   "ms": 300
+  },
+  {
+   "do": "still",
+   "name": "after"
+  }
+ ]
+}

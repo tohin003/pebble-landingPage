@@ -9,7 +9,11 @@
   "tid": "RS5N",
   "app": "Notes",
   "tail_s": 6,
-  "message": "Make a note: kiln unload at 9:00, glaze table ready by 9:30."
+  "message": "Make a note: kiln unload at 9:00, glaze table ready by 9:30.",
+  "composer": {
+   "x": 474,
+   "y": 442
+  }
  },
  "steps": [
   {

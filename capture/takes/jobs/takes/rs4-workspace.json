@@ -5,7 +5,11 @@
  "take": "RS-4",
  "title": "Calculator (from the workspace)",
  "defaults": {
-  "message": "What's 48 × 12.5? Press the keys in Calculator."
+  "message": "What's 48 × 12.5? Press the keys in Calculator.",
+  "composer": {
+   "x": 474,
+   "y": 442
+  }
  },
  "steps": [
   {

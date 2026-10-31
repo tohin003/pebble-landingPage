@@ -54,6 +54,12 @@ function bulkOrNull(spec, prop, count) {
 
 // Walk a tree level by level with one Apple Event per property per parent (not per element). `limits.deadline` is
 // one deadline for the whole request, however many windows it walks.
+function outside(n, r) {
+  if (!n.position || !n.size || !(n.size[0] > 0) || !(n.size[1] > 0)) return false;
+  const [x, y] = n.position, [w, h] = n.size;
+  return x + w <= r.x || y + h <= r.y || x >= r.x + r.w || y >= r.y + r.h;
+}
+
 function walk(win, limits, visit) {
   const deadline = limits.deadline;
   let seen = 0;
@@ -77,6 +83,10 @@ function walk(win, limits, visit) {
       seen++;
       const n = { role: roles[i], name: names[i], description: descs[i], title: titles[i], value: values[i],
         position: pos[i], size: size[i], depth: depth + 1, path: path + "/" + i };
+      // `limits.within` (a screen rectangle): a subtree whose frame lies wholly outside it is neither matched nor
+      // walked (31 Oct: Pebble's tree read so slowly that the walk spent its budget on the sidebar and the
+      // conversation before it reached the Activity panel's card)
+      if (limits.within && outside(n, limits.within)) continue;
       if (visit(n) === false) return { seen, stopped: true };
       stack.push({ spec: spec.uiElements.at(i), depth: depth + 1, path: n.path });
     }
@@ -157,7 +167,7 @@ const handlers = {
     const p = processNamed(se, q.app);
     if (!p) return { running: false, matches: [] };
     const found = [];
-    const limits = { depth: q.depth || 30, max: q.max || 4000, deadline: Date.now() + (q.ms || 8000) };
+    const limits = { depth: q.depth || 30, max: q.max || 4000, deadline: Date.now() + (q.ms || 8000), within: q.within || null };
     let seen = 0;
     const wnames = windowNames(p);
     const wpos = bulk(p.windows, "position", wnames.length);

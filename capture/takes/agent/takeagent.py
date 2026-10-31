@@ -646,7 +646,7 @@ class Agent:
 
     def ax_find(self, step: dict, budget_ms: int = 6000) -> dict:
         q = {"cmd": "find", "app": step["app"], "ms": budget_ms}
-        for k in ("role", "name", "contains", "window_contains"):
+        for k in ("role", "name", "contains", "window_contains", "within"):
             if k in step:
                 q[k] = step[k]
         return self.ui.ax(q, timeout=budget_ms / 1000 + 20)
