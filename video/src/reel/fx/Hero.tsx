@@ -32,7 +32,9 @@ export const Hero: React.FC<{
   pulseGain?: number;
   aura?: AuraState;
   opacity?: number;
-}> = ({ cues, x, y, size, landAt, enter = "fall", pulses = [], pulseGain = 1, aura, opacity = 1 }) => {
+  /** a little bounce (a hop of a quarter of its size) starting at this absolute frame */
+  bounceAt?: number;
+}> = ({ cues, x, y, size, landAt, enter = "fall", pulses = [], pulseGain = 1, aura, opacity = 1, bounceAt }) => {
   const frame = useCurrentFrame();
   const dt = frame - landAt;
   if (dt < 0) return null;
@@ -62,6 +64,14 @@ export const Hero: React.FC<{
     const e = hitEnv(frame - p, 1, 6) * pulseGain;
     sx += 0.08 * e;
     sy -= 0.07 * e;
+  }
+  if (bounceAt !== undefined && frame >= bounceAt && frame < bounceAt + 20) {
+    const b = (frame - bounceAt) / 20;
+    lift += Math.sin(Math.PI * b) * ps * 0.22;
+    if (b > 0.85) {
+      sx += 0.1 * (1 - (b - 0.85) / 0.15);
+      sy -= 0.1 * (1 - (b - 0.85) / 0.15);
+    }
   }
   const cy = py - ps * BODY_CY - lift;
   const r = ps * BODY_R * s;

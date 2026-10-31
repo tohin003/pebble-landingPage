@@ -51,7 +51,9 @@ export const Card: React.FC<{
    * pose exactly: `at(sx, sy)` maps a source device-px point to the box. For the aura on a captured pebble.
    */
   overlay?: (at: (sx: number, sy: number) => { x: number; y: number }, scale: number) => React.ReactNode;
-}> = ({ crop, src, pose, trail, inner, sweep, fadeRight, glow = 0.6, radiusPx, shadow = true, blurPx = 0, overlay }) => {
+  /** a grade on the picture: brightness (1 = as captured), with a touch of contrast (the full reel's screens: close and bright) */
+  bright?: number;
+}> = ({ crop, src, pose, trail, inner, sweep, fadeRight, glow = 0.6, radiusPx, shadow = true, blurPx = 0, overlay, bright = 1 }) => {
   const c = CROPS[crop];
   const r = c.rect;
   const w = r.w * pose.k;
@@ -90,7 +92,7 @@ export const Card: React.FC<{
             : undefined,
         background: "#111814",
         // ghosts are softened so a trail reads as one smear, not a stack of copies; the card itself blurs with its speed
-        filter: key > 0 ? `blur(${Math.max(2, ghostBlur)}px)` : blurPx > 0.4 ? `blur(${blurPx}px)` : undefined,
+        filter: [key > 0 ? `blur(${Math.max(2, ghostBlur)}px)` : blurPx > 0.4 ? `blur(${blurPx}px)` : "", bright !== 1 ? `brightness(${bright}) contrast(1.04)` : ""].join(" ").trim() || undefined,
         ...mask,
       }}
     >
