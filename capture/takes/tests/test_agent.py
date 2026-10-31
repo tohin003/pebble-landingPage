@@ -277,6 +277,17 @@ class TestAgentSimulated(unittest.TestCase):
         self.assertEqual(res["steps"][1]["detail"]["at"], [640.0, 502.0])
         self.assertEqual(res["vars"]["@allow"], {"x": 640, "y": 500})
 
+    def test_gone_needs_a_read_that_saw_elements(self):
+        fixture = os.path.join(self.root, "fixture.json")
+        dump({"find:Dock": [{"running": True, "matches": [], "seen": 0}, {"running": True, "matches": [], "seen": 0},
+                            {"running": True, "matches": [], "seen": 14}]}, fixture)
+        enqueue_raw(self.root, "0001-gone.json", job([
+            {"do": "wait_element", "app": "Dock", "name": "Pebble", "gone": True, "timeout_s": 5, "event": "dockLeft"}], jid="gone"))
+        run_agent(self.root, "--fixture", fixture)
+        res = result(self.root, "gone")
+        self.assertEqual(res["status"], "done", res.get("error"))
+        self.assertEqual(res["steps"][0]["detail"]["seen"], 14)  # the two empty reads were not taken for "gone"
+
     def test_off_screen_points_are_refused(self):
         enqueue_raw(self.root, "0001-o.json", job([{"do": "move", "to": {"x": 5000, "y": 10}}], jid="o"))
         run_agent(self.root)

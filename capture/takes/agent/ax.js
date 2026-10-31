@@ -34,9 +34,18 @@ function bulk(spec, prop, count) {
   return out;
 }
 
-// Walk a window's tree level by level with one Apple Event per property per parent (not per element).
+// A property that may not exist in this System Events: the whole list, or null (never one event per element).
+function bulkOrNull(spec, prop, count) {
+  try {
+    const v = spec[prop]();
+    return Array.isArray(v) && v.length === count ? v : null;
+  } catch (e) { return null; }
+}
+
+// Walk a tree level by level with one Apple Event per property per parent (not per element). `limits.deadline` is
+// one deadline for the whole request, however many windows it walks.
 function walk(win, limits, visit) {
-  const deadline = Date.now() + limits.ms;
+  const deadline = limits.deadline;
   let seen = 0;
   const stack = [{ spec: win, depth: 0, path: "" }];
   while (stack.length) {
@@ -47,7 +56,9 @@ function walk(win, limits, visit) {
     const k = roles.length;
     if (!k) continue;
     const names = bulk(spec.uiElements, "name", k);
-    const descs = bulk(spec.uiElements, "description", k);
+    // "description" falls back to the role's own description ("button", "group") when an element has none; the
+    // accessibility description doesn't, so it is used where this System Events has it
+    const descs = bulkOrNull(spec.uiElements, "accessibilityDescription", k) || bulk(spec.uiElements, "description", k);
     const titles = bulk(spec.uiElements, "title", k);
     const values = bulk(spec.uiElements, "value", k);
     const pos = bulk(spec.uiElements, "position", k);
@@ -75,6 +86,15 @@ function windowsOf(p, contains) {
     if (!contains || (names[i] || "").indexOf(contains) >= 0) out.push({ spec: p.windows.at(i), title: names[i] || "" });
   }
   return out;
+}
+
+// What to walk: the windows; but the Dock's icons (its list), the menu bar's items and a process without windows
+// live on the process itself, so those are walked from the process.
+const PROCESS_ROOTS = ["Dock", "ControlCenter", "SystemUIServer"];
+function rootsOf(p, name, contains) {
+  if (PROCESS_ROOTS.indexOf(name) >= 0) return [{ spec: p, title: "(" + name + ")" }];
+  const ws = windowsOf(p, contains);
+  return ws.length || contains ? ws : [{ spec: p, title: "(" + name + ")" }];
 }
 
 function brief(n) {
@@ -119,7 +139,7 @@ const handlers = {
     const p = processNamed(se, q.app);
     if (!p) return { running: false, matches: [] };
     const found = [];
-    const limits = { depth: q.depth || 30, max: q.max || 4000, ms: q.ms || 8000 };
+    const limits = { depth: q.depth || 30, max: q.max || 4000, deadline: Date.now() + (q.ms || 8000) };
     let seen = 0;
     const wpos = bulk(p.windows, "position", p.windows.length);
     const wsize = bulk(p.windows, "size", p.windows.length);
@@ -133,7 +153,7 @@ const handlers = {
         found.push(b);
       }
     }
-    for (const w of windowsOf(p, q.window_contains)) {
+    for (const w of rootsOf(p, q.app, q.window_contains)) {
       const r = walk(w.spec, limits, (n) => {
         if (matches(n, q) && n.position && n.size && n.size[0] > 0 && n.size[1] > 0) {
           const b = brief(n);
@@ -154,8 +174,8 @@ const handlers = {
     const p = processNamed(se, q.app);
     if (!p) return { running: false, windows: [] };
     const out = [];
-    const limits = { depth: q.depth || 30, max: q.max || 1500, ms: q.ms || 20000 };
-    for (const w of windowsOf(p, q.window_contains)) {
+    const limits = { depth: q.depth || 30, max: q.max || 1500, deadline: Date.now() + (q.ms || 20000) };
+    for (const w of rootsOf(p, q.app, q.window_contains)) {
       const nodes = [];
       const r = walk(w.spec, limits, (n) => { nodes.push(brief(n)); return true; });
       out.push({ title: w.title, seen: r.seen, timedOut: !!r.timedOut, nodes: nodes });

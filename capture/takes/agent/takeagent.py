@@ -652,23 +652,30 @@ class Agent:
         return self.ui.ax(q, timeout=budget_ms / 1000 + 20)
 
     def wait_for_element(self, step: dict, ctx: dict, timeout: float) -> dict | None:
+        """Polls until the element is there (or gone). A read that fails (an app launching or quitting, a slow tree)
+        is retried until the timeout; "gone" counts only when the app is not running, or a read saw elements."""
         end = time.monotonic() + timeout
         idx = step.get("index", 0)
-        last = None
+        last: dict = {}
+        last_error = None
         while True:
             self.check_stop()
-            r = self.ax_find(step, step.get("budget_ms", 6000))
-            ms = r.get("matches", [])
-            last = r
-            if step.get("gone"):
-                if not ms:
-                    return {"gone": True, "seen": r.get("seen")}
-            elif len(ms) > idx:
-                return ms[idx]
+            try:
+                r = self.ax_find(step, step.get("budget_ms", 6000))
+                last, last_error = r, None
+                ms = r.get("matches", [])
+                if step.get("gone"):
+                    if not r.get("running", True) or (not ms and (r.get("seen") or 0) > 0):
+                        return {"gone": True, "seen": r.get("seen"), "running": r.get("running", True)}
+                elif len(ms) > idx:
+                    return ms[idx]
+            except StepFailed as e:
+                last_error = str(e)
             if time.monotonic() > end:
                 raise StepFailed(f"{'still there' if step.get('gone') else 'not found'} after {timeout:.0f} s "
                                  f"({step['app']}: {', '.join(f'{k}={step[k]!r}' for k in ('role', 'name', 'contains') if k in step)}; "
-                                 f"{len(last.get('matches', []))} matches, {last.get('seen')} elements read)")
+                                 f"{len(last.get('matches', []))} matches, {last.get('seen')} elements read"
+                                 + (f"; last read failed: {last_error}" if last_error else "") + ")")
             self.sleep(0.3)
 
     # ---- the vocabulary ---------------------------------------------------------------------------------------
@@ -680,9 +687,16 @@ class Agent:
 
     def do_wait_window(self, s, ctx):
         end = time.monotonic() + s["timeout_s"]
+        titles: list = []
         while True:
             self.check_stop()
-            r = self.ui.ax({"cmd": "windows", "app": s["app"]}, timeout=20)
+            try:
+                r = self.ui.ax({"cmd": "windows", "app": s["app"]}, timeout=20)
+            except StepFailed as e:  # the app may still be launching or quitting: read again until the timeout
+                if time.monotonic() > end:
+                    raise StepFailed(f"{s['app']}: no answer about its windows within {s['timeout_s']:.0f} s ({e})") from None
+                self.sleep(0.5)
+                continue
             titles = [w.get("title") or "" for w in r.get("windows", [])]
             if "title" in s:
                 hit = s["title"] in titles
@@ -747,7 +761,7 @@ class Agent:
         q = {"cmd": "dump", "app": s["app"], "max": s.get("max", 1500), "ms": 30000}
         if "window_contains" in s:
             q["window_contains"] = s["window_contains"]
-        r = self.ui.ax(q, timeout=60)
+        r = self.ui.ax(q, timeout=75)
         out = os.path.join(ctx["dir"], f"ax-{s.get('name') or s['app'].replace(' ', '-')}.json")
         write_json(out, r)
         return {"file": os.path.relpath(out, self.root), "windows": [(w["title"], w["seen"]) for w in r.get("windows", [])]}

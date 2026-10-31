@@ -115,8 +115,11 @@ class Media:
         cmd = [self.cfg["tools"]["screencapture"], "-x", "-C", "-D", "1", "-t", "png"]
         if region:
             cmd += ["-R", f"{region['x']:.0f},{region['y']:.0f},{region['w']:.0f},{region['h']:.0f}"]
-        r = subprocess.run([self.cfg["tools"]["taskpolicy"], "-c", "utility", *cmd, out_path], capture_output=True,
-                           text=True, timeout=30, env=self.env())
+        try:
+            r = subprocess.run([self.cfg["tools"]["taskpolicy"], "-c", "utility", *cmd, out_path], capture_output=True,
+                               text=True, timeout=30, env=self.env())
+        except subprocess.TimeoutExpired:
+            raise MediaError("screencapture took longer than 30 s (a macOS question on screen?)") from None
         if r.returncode != 0 or not os.path.exists(out_path):
             raise MediaError(f"screencapture failed ({r.returncode}): {r.stderr.strip()[:300]}")
         return {"path": out_path, "bytes": os.path.getsize(out_path)}
@@ -265,7 +268,13 @@ class Media:
                              "stop_requested_at_s": t_stop, "recorder_exit": rec.proc.returncode}
         raw = self.p(rec.raw)
         if os.path.exists(raw) and os.path.getsize(raw) > 0:
-            meta["probe"] = self.probe(raw, packets=True)
+            # the take's record (its events and moves) is written whatever the probe says: a file cut short by a
+            # watchdog or a forced stop may not open
+            try:
+                meta["probe"] = self.probe(raw, packets=True)
+            except (MediaError, subprocess.TimeoutExpired, ValueError) as e:
+                meta["probe"] = None
+                meta["error"] = f"{rec.raw} exists but ffprobe can't read it ({e}); stopped by {stopped_by}"
         else:
             meta["probe"] = None
             meta["error"] = f"no file at {rec.raw} (recorder exit {rec.proc.returncode}; see log/rec-{rec.name}.log)"

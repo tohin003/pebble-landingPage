@@ -54,7 +54,7 @@ defaults write com.apple.dock autohide -bool false
 defaults write com.apple.WindowManager EnableStandardClickToShowDesktop -bool false
 for k in NSAutomaticQuoteSubstitutionEnabled NSAutomaticDashSubstitutionEnabled NSAutomaticSpellingCorrectionEnabled \
          NSAutomaticCapitalizationEnabled NSAutomaticPeriodSubstitutionEnabled NSAutomaticTextCompletionEnabled \
-         WebAutomaticSpellingCorrectionEnabled; do defaults write -g "$k" -bool false; done
+         WebAutomaticSpellingCorrectionEnabled NSAutomaticInlinePredictionEnabled; do defaults write -g "$k" -bool false; done
 defaults write -g AppleLocale -string en_GB
 defaults write -g AppleLanguages -array en-GB
 defaults write -g AppleICUForce24HourTime -bool true
