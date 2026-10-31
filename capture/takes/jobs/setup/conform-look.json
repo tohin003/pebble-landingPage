@@ -10,5 +10,8 @@
    "name": "$take_name"
   }
  ],
- "max_minutes": 45
+ "max_minutes": 45,
+ "defaults": {
+  "take_name": "RS4-01"
+ }
 }

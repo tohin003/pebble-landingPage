@@ -5,10 +5,55 @@
  "take": "setup",
  "title": "Move Pebble's workspace",
  "steps": [
-  {"do": "activate", "app": "Pebble"}, {"do": "wait", "s": 1},
-  {"do": "drag", "from": {"x": "$from_x", "y": 66}, "to": {"x": "$to_x", "y": 66}, "ms": 1200},
-  {"do": "wait", "s": 1}, {"do": "move", "to": {"x": 735, "y": 640}, "ms": 400},
-  {"do": "find", "app": "Pebble", "role": "AXWindow", "name": "Pebble", "save_as": "@w", "anchor": "left", "optional": true, "timeout_s": 4},
-  {"do": "still", "name": "after"}
- ]
+  {
+   "do": "activate",
+   "app": "Pebble"
+  },
+  {
+   "do": "wait",
+   "s": 1
+  },
+  {
+   "do": "drag",
+   "from": {
+    "x": "$from_x",
+    "y": 66
+   },
+   "to": {
+    "x": "$to_x",
+    "y": 66
+   },
+   "ms": 1200
+  },
+  {
+   "do": "wait",
+   "s": 1
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 735,
+    "y": 640
+   },
+   "ms": 400
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXWindow",
+   "name": "Pebble",
+   "save_as": "@w",
+   "anchor": "left",
+   "optional": true,
+   "timeout_s": 4
+  },
+  {
+   "do": "still",
+   "name": "after"
+  }
+ ],
+ "defaults": {
+  "from_x": 1050,
+  "to_x": 306
+ }
 }

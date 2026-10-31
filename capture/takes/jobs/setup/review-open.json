@@ -5,12 +5,70 @@
  "take": "setup",
  "title": "Open the waiting review; narrow the workspace",
  "steps": [
-  {"do": "find", "app": "Pebble", "role": "AXButton", "name": "Open", "window_contains": "companion", "save_as": "@open", "timeout_s": 6},
-  {"do": "click", "at": "@open"}, {"do": "wait", "s": 3},
-  {"do": "find", "app": "Pebble", "role": "AXWindow", "name": "Pebble", "anchor": "left", "save_as": "@l", "timeout_s": 6},
-  {"do": "drag", "from": {"ref": "@l", "dx": 2, "dy": 0}, "to": {"ref": "@l", "dx": "$shift", "dy": 0}, "ms": 1000},
-  {"do": "wait", "s": 1.2}, {"do": "move", "to": {"x": 735, "y": 900}, "ms": 300},
-  {"do": "still", "name": "review"},
-  {"do": "ax_dump", "app": "Pebble", "max": 2500, "name": "review"}
- ]
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Open",
+   "window_contains": "companion",
+   "save_as": "@open",
+   "timeout_s": 6
+  },
+  {
+   "do": "click",
+   "at": "@open"
+  },
+  {
+   "do": "wait",
+   "s": 3
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXWindow",
+   "name": "Pebble",
+   "anchor": "left",
+   "save_as": "@l",
+   "timeout_s": 6
+  },
+  {
+   "do": "drag",
+   "from": {
+    "ref": "@l",
+    "dx": 2,
+    "dy": 0
+   },
+   "to": {
+    "ref": "@l",
+    "dx": "$shift",
+    "dy": 0
+   },
+   "ms": 1000
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 735,
+    "y": 900
+   },
+   "ms": 300
+  },
+  {
+   "do": "still",
+   "name": "review"
+  },
+  {
+   "do": "ax_dump",
+   "app": "Pebble",
+   "max": 2500,
+   "name": "review"
+  }
+ ],
+ "defaults": {
+  "shift": 592
+ }
 }

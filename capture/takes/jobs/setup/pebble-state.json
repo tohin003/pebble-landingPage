@@ -5,7 +5,18 @@
  "take": "setup",
  "title": "Probe: Pebble's state",
  "steps": [
-  {"do": "still", "name": "now"},
-  {"do": "ax_dump", "app": "Pebble", "max": 1500, "name": "pebble"}
+  {
+   "do": "screen_info"
+  },
+  {
+   "do": "still",
+   "name": "now"
+  },
+  {
+   "do": "ax_dump",
+   "app": "Pebble",
+   "max": 2500,
+   "name": "pebble"
+  }
  ]
 }
