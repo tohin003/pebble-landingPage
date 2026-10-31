@@ -170,6 +170,146 @@ export const benchmarkLinks = {
   analysis: `${REPO}/blob/main/docs/benchmarks/claude-opus-5-5/analysis.json`,
   charts: `${REPO}/tree/main/docs/benchmarks/claude-opus-5-5`,
   runner: `${REPO}/tree/main/benchmarks`,
+  /** golden set 2.0's setup, gates and what was not run: the 2.0.0 release notes (README.md@v2.0.0:424) [C-GS-9] */
+  releaseNotes200: `${REPO}/blob/v2.0.0/CHANGELOG.md#200`,
+} as const;
+
+// ---- golden set 2.0 (Pebble 2.0.0): the latest run, which the section leads with ------------------------------------
+//
+// Public with the "2.0.0 published" post (STATUS 2026-10-31 14:53: "the figures exactly as the README's Benchmarks
+// tables give them"; "Beats" only family by family; no speed claim; gate 6 and the probes not run). Every figure is a
+// string typed exactly as README.md@v2.0.0:398-414 prints it, character for character; a copy of those lines is vendored
+// at docs/benchmarks/golden-set-2.0.README-v2.0.0.md, and benchmarks.test.ts finds every figure in it. No figure that
+// isn't in the README's tables or its Benchmarks text; no "beats", "better", "faster", "cheaper" or "saves" sentence:
+// the word "beats" is left out altogether, and the plan's family rule is said in plain words. The CLAIMS rows are
+// C-GS-1 to C-GS-12 (docs/CLAIMS.md, "Pebble 2.0.0 on the page").
+
+/** One comparison's table, as the README prints it (README.md@v2.0.0:398-403, :405-410). */
+export type GoldenTable = Readonly<{
+  id: string;
+  /** the table's header, word for word ("Against Claude Code (`claude-opus-5-5`)") */
+  caption: string;
+  model: string;
+  other: string;
+  rows: readonly Readonly<{ measure: string; pebble: string; other: string }>[];
+}>;
+
+const GOLDEN_MEASURES = {
+  correct: "Tasks done correctly",
+  falseDone: "Said done when it was not",
+  cost: "Cost per task",
+  time: "Time per task: median, 95th percentile",
+} as const;
+
+export const golden = {
+  /** The H2: the run's subject, no comparative (README.md@v2.0.0:392's own line has "lower cost per task"). [C-GS-1] */
+  h2: "Pebble 2.0 against Claude Code and Codex.",
+  /** Its muted second line (≤ 60 characters): README.md@v2.0.0:394-395 in short. [C-GS-1] */
+  then: "One model for both, on tasks kept sealed.",
+  /** README.md@v2.0.0:393, :395, word for word. [C-GS-2] */
+  lead: "Golden set 2.0's held-out split has 85 tasks in 17 families, each asked in three phrasings, so 255 runs per product. Each comparison used one model for both products.",
+  /** the head's one link */
+  notesLink: "Read the setup in the 2.0.0 release notes",
+
+  /** 1. The method. [C-GS-3] */
+  method: {
+    title: "How it was measured",
+    items: [
+      {
+        term: "Tasks",
+        text: "The tasks were written before the runs and kept sealed from development.", // README.md@v2.0.0:394
+      },
+      {
+        term: "Fixed in advance",
+        text: "The plan (its gates, graders, prices and budgets) was registered before the first run.", // README.md@v2.0.0:394-395
+      },
+      {
+        term: "Models",
+        text: "claude-opus-5-5 for both Pebble and Claude Code, and gpt-6.1-sol for both Pebble and Codex.", // README.md@v2.0.0:398, :405
+      },
+      {
+        term: "Build",
+        text: "Pebble ran as 1.9.29, the build whose source 2.0.0 is, apart from its version number and notes.", // README.md@v2.0.0:395-396
+      },
+      {
+        term: "Cost and time",
+        text: "Costs are at public list prices, with cached input at the cached price. Times are wall-clock on one Mac and include the provider's speed on the day.", // CHANGELOG.md@v2.0.0:68-69
+      },
+    ],
+  },
+
+  /** 2. The result: the README's two tables, every cell character for character, then the paired differences. [C-GS-4] [C-GS-5] */
+  result: {
+    title: "The result",
+    columns: { measure: "Measure", pebble: "Pebble" },
+    tables: [
+      {
+        id: "claude-code",
+        caption: "Against Claude Code (claude-opus-5-5)",
+        model: "claude-opus-5-5",
+        other: "Claude Code",
+        rows: [
+          { measure: GOLDEN_MEASURES.correct, pebble: "235 of 255 (92.2 %)", other: "213 of 255 (83.5 %)" },
+          { measure: GOLDEN_MEASURES.falseDone, pebble: "6.3 %", other: "13.7 %" },
+          { measure: GOLDEN_MEASURES.cost, pebble: "$0.091", other: "$0.117" },
+          { measure: GOLDEN_MEASURES.time, pebble: "12.1 s, 46.5 s", other: "12.9 s, 40.2 s" },
+        ],
+      },
+      {
+        id: "codex",
+        caption: "Against Codex (gpt-6.1-sol)",
+        model: "gpt-6.1-sol",
+        other: "Codex",
+        rows: [
+          { measure: GOLDEN_MEASURES.correct, pebble: "243 of 255 (95.3 %)", other: "231 of 255 (90.6 %)" },
+          { measure: GOLDEN_MEASURES.falseDone, pebble: "3.9 %", other: "7.1 %" },
+          { measure: GOLDEN_MEASURES.cost, pebble: "$0.042", other: "$0.050" },
+          { measure: GOLDEN_MEASURES.time, pebble: "20.0 s, 62.9 s", other: "21.1 s, 54.6 s" },
+        ],
+      },
+    ] satisfies readonly GoldenTable[],
+    /** README.md@v2.0.0:412-416, word for word but for the list's punctuation. [C-GS-5] */
+    differenceTitle: "The paired difference in tasks done correctly:",
+    differences: ["+8.6 points (95 % interval +3.1 to +14.9) against Claude Code.", "+4.7 points (+0.4 to +9.4) against Codex."],
+    gates: "The plan's five measured gates were met against both.",
+  },
+
+  /** 3. Where Pebble led and where it trailed, at the same weight. [C-GS-6] [C-GS-7] */
+  sides: {
+    title: "Where Pebble led and where it trailed",
+    /** README.md@v2.0.0:417-419, the plan's rule in plain words instead of the word it governs */
+    led: "By the plan's rule, family by family, only where the 95 % lower bound is above zero: against Claude Code, answers from saved web pages and repeated computations; against Codex, no single family.",
+    /** README.md@v2.0.0:420-421, word for word */
+    trailed: "Where Pebble trails, by one task each: remembering across sessions against Claude Code, and long tasks against Codex.",
+  },
+
+  /** 4. Cost and time: reported, never a claim (STATUS 14:53: "No speed claim"). [C-GS-8] */
+  reported: [
+    "Cost is reported here, not claimed.",
+    "Time is reported, not claimed: Pebble's median time per task is a little lower, and its 95th percentile higher.",
+  ],
+
+  /** 5. What this doesn't prove, and what wasn't run. [C-GS-10] */
+  limits: {
+    title: "What this doesn't prove",
+    items: [
+      "Not run before 2.0.0: the plan's sixth gate (no regression on the older corpus 24a) and the held-out probes.", // README.md@v2.0.0:422, the count left out
+      "Anything beyond these tasks. They are the project's own tasks and graders; this is not an independent benchmark.",
+      "Anything about what AgentGuard adds on its own. That test is still to come.", // README.md@v2.0.0:451-452
+      "Anything about speed: time is reported, not claimed.",
+    ],
+  },
+
+  /** 6. The data. [C-GS-9] */
+  data: {
+    title: "The data",
+    line: "The setup, the gates and what was not run are in the 2.0.0 release notes.", // README.md@v2.0.0:424
+  },
+
+  /** The 1.0.2 run below it, dated, as history (README.md@v2.0.0:426's heading, with the run's date). [C-GS-11] */
+  earlier: {
+    title: "Earlier: Pebble 1.0.2 against Claude Code CLI, on 23 October 2026",
+  },
 } as const;
 
 // ---- the section's words ---------------------------------------------------------------------------------------------
@@ -382,6 +522,32 @@ export const benchmarks = {
  * true. [C-BENCH-*]
  */
 export function benchmarkLlmsLinesFor(offered: string): readonly string[] {
+  return [...goldenLlmsLines(), `${golden.earlier.title}:`, ...earlierLlmsLines(offered)];
+}
+
+/**
+ * llms.txt's golden set 2.0 lines: the setup, both tables' figures (each as the README prints it), the paired
+ * differences, where Pebble led and trailed, what wasn't run, and that cost and time are reported, not claimed. [C-GS-12]
+ */
+export function goldenLlmsLines(): readonly string[] {
+  const [cc, cx] = golden.result.tables;
+  const table = (t: GoldenTable) => {
+    const [correct, falseDone, cost, time] = t.rows;
+    return `${t.caption}: tasks done correctly, ${correct!.pebble} for Pebble and ${correct!.other} for ${t.other}; said done when it was not, ${falseDone!.pebble} and ${falseDone!.other}; cost per task, ${cost!.pebble} and ${cost!.other}; time per task (median, 95th percentile), ${time!.pebble} and ${time!.other}.`;
+  };
+  return [
+    `${golden.h2} ${golden.lead} ${golden.method.items[0]!.text} ${golden.method.items[1]!.text} ${golden.method.items[3]!.text}`,
+    table(cc!),
+    table(cx!),
+    `${golden.result.differenceTitle} ${golden.result.differences.map((d) => d.replace(/\.$/, "")).join("; ")}. ${golden.result.gates}`,
+    `Where Pebble led, ${golden.sides.led.charAt(0).toLowerCase()}${golden.sides.led.slice(1)} ${golden.sides.trailed}`,
+    golden.limits.items[0]!,
+    `${golden.reported.join(" ")} ${golden.method.items[4]!.text}`,
+  ];
+}
+
+/** llms.txt's lines for the 1.0.2 run (corpus 24a), below the golden set 2.0 lines. */
+function earlierLlmsLines(offered: string): readonly string[] {
   return [
     benchmarks.h2,
     benchmarks.lead,

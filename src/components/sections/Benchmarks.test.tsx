@@ -4,7 +4,7 @@
 // Run: bun test ./src/components/sections
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import { benchmarks, run } from "@/content/benchmarks";
+import { benchmarks, golden, run } from "@/content/benchmarks";
 import { footer, infrastructure } from "@/content/copy";
 import { releaseFacts } from "@/content/releaseFacts";
 import { llmsTxt, llmsTxtFor } from "@/content/seo";
@@ -38,10 +38,19 @@ describe("the Benchmarks section", () => {
     expect(html === "").toBe(!releaseFacts.benchmarksPublic);
   });
 
-  test("shows the method, the result, both sides, the cost, the limits and the data, in that order", async () => {
+  test("leads with golden set 2.0, then shows the 1.0.2 run below, dated, each in the philosophy's order", async () => {
     const html = await render({ open: true, offered: releaseFacts.version });
     expect(html).toContain('id="benchmarks"');
+    // the H2 is golden set 2.0's; the 1.0.2 run's headline is a line under its own dated heading
+    expect(html).toMatch(/<h2 id="benchmarks-title"[^>]*><span>Pebble 2\.0 against Claude Code and Codex\.<\/span> <span>One model for both/);
     expect(html).toContain(`>${benchmarks.h2}<`);
+    const at = (tag: string, title: string) => html.indexOf(`>${title.replace(/'/g, "&#x27;")}</${tag}>`);
+    const goldenOrder = [golden.method.title, golden.result.title, golden.sides.title, golden.limits.title, golden.data.title].map((t) => at("h3", t));
+    expect(goldenOrder.every((i) => i > 0)).toBe(true);
+    expect([...goldenOrder].sort((x, y) => x - y)).toEqual(goldenOrder);
+    const earlier = html.indexOf('id="benchmarks-earlier"');
+    expect(earlier).toBeGreaterThan(goldenOrder.at(-1)!);
+    expect(html.indexOf(`>${benchmarks.h2}<`)).toBeGreaterThan(earlier);
     const order = [
       benchmarks.method.title,
       benchmarks.result.title,
@@ -49,9 +58,30 @@ describe("the Benchmarks section", () => {
       benchmarks.cost.title,
       benchmarks.limits.title,
       benchmarks.data.title,
-    ].map((title) => html.indexOf(`>${title.replace(/'/g, "&#x27;")}</h3>`));
-    expect(order.every((i) => i > 0)).toBe(true);
+    ].map((title) => at("h4", title));
+    expect(order.every((i) => i > earlier)).toBe(true);
     expect([...order].sort((x, y) => x - y)).toEqual(order);
+  });
+
+  test("prints golden set 2.0's two tables cell by cell, with the model ids as data", async () => {
+    const html = await render({ open: true, offered: releaseFacts.version });
+    const page = text(html);
+    for (const table of golden.result.tables) {
+      expect(page).toContain(table.other);
+      for (const row of table.rows) {
+        expect(page).toContain(row.measure);
+        for (const cell of [row.pebble, row.other]) {
+          const counted = /^(.*?) \((.*)\)$/.exec(cell);
+          if (counted) {
+            expect(page).toContain(counted[1]!);
+            expect(page).toContain(`(${counted[2]!})`);
+          } else expect(page).toContain(cell);
+        }
+      }
+    }
+    expect(html).toContain('<span class="data">claude-opus-5-5</span>');
+    expect(html).toContain('<span class="data">gpt-6.1-sol</span>');
+    expect(page).not.toMatch(/\b(beats?|better|faster|cheaper)\b/i);
   });
 
   test("prints every rate with its count, the interval and the correction beside the result", async () => {

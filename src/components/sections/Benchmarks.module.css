@@ -549,3 +549,94 @@
     padding-block: 22px 26px;
   }
 }
+
+/* ---- golden set 2.0, the latest run (Pebble 2.0.0): the README's two tables, then the paired differences ---- */
+.goldenTables {
+  display: grid;
+  gap: 28px;
+}
+
+/* the table's caption is the README's own header ("Against Codex (gpt-6.1-sol)"): a small title, left, in ink */
+.goldenCaption {
+  caption-side: top;
+  padding-bottom: 10px;
+  text-align: left;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.goldenTable .measureName {
+  font-weight: 400;
+}
+
+.goldenTable tbody tr + tr > th,
+.goldenTable tbody tr + tr > td {
+  border-top: 1px solid var(--line);
+}
+
+.goldenDifference {
+  margin-top: 28px;
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.goldenDifference > p:first-child {
+  margin-bottom: 10px;
+}
+
+.goldenGates {
+  margin-top: 12px;
+  color: var(--ink-2);
+}
+
+/* where Pebble led and where it trailed: two paragraphs, the same size and the same ink (PHILOSOPHY 6) */
+.goldenSide {
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.goldenSide + .goldenSide {
+  margin-top: 12px;
+}
+
+/* ---- the 1.0.2 run below, as dated history: its own head on the main column, then its rows ---- */
+.earlierBody {
+  margin-top: 72px;
+}
+
+.earlierHead {
+  padding-block: 28px 32px;
+  border-top: 1px solid var(--line);
+  max-width: 44em;
+}
+
+.earlierTitle {
+  font-size: 17px;
+}
+
+.earlierLine {
+  margin-top: 10px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.earlierLead {
+  margin-top: 8px;
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.earlierLink {
+  margin-top: 14px;
+}
+
+@media (max-width: 1023px) {
+  .earlierBody {
+    margin-top: 56px;
+  }
+}

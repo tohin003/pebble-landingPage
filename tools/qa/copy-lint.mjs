@@ -10,9 +10,10 @@
 //   - American spellings (licence, colour, recognise and the like);
 //   - "every" or "always" next to edit, command, Git or test without a mode qualifier (OVERRIDES §8 C2);
 //   - competitor and internal model names, and words that must not reach a visitor ("receipt", "fixture", "mock").
-//     The one exception (OVERRIDES §11, §16, §18): the Benchmarks section names the product Pebble was measured
-//     against, so "Claude Code" (and no other name) passes inside <section id="benchmarks">, in llms.txt's
-//     "## Benchmark" block and in src/content/benchmarks.ts. Every other rule still applies there.
+//     The one exception (OVERRIDES §11, §16, §18): the Benchmarks section names the products Pebble was measured
+//     against, so "Claude Code" and, since golden set 2.0 (the "2.0.0 published" post, STATUS 2026-10-31 14:53),
+//     "Codex" (and no other name) pass inside <section id="benchmarks">, in llms.txt's "## Benchmark" block and in
+//     src/content/benchmarks.ts. Every other rule still applies there.
 //   - Stealth Lockdown's never-words (OVERRIDES §21): "undetectable", "invisible", and exams, interviews, proctoring,
 //     monitoring, cheating, bypassing or evading, except inside the honest line itself; and "Context Warping", the name
 //     of 1.3.0's prompt-caching change, which waits for its benchmark (OVERRIDES §25).
@@ -143,7 +144,8 @@ const QUALIFIER = /\b(in (the )?default mode|default mode|in every mode|in (Ask 
 // whole text node / attribute / sentence, so anything else with the same word still fails.
 const ALLOW = new Set([
   // CLAIMS.md allow-list
-  "Full access increases the impact of mistakes and prompt injection. AgentGuard is a reliability check; it cannot guarantee that every command or answer is safe.",
+  // Pebble 2.0.0's Full access note, word for word (AdvancedSettings.vue@v2.0.0:1564-1567; C-EXP-10, C-200-28)
+  "Full access increases the impact of mistakes and prompt injection. Pebble checks each step that would ask against your own messages and runs only what they ask for, never spending money; the check, like AgentGuard, can be wrong and cannot guarantee that every step is safe.",
   "Pebble is not notarized.",
   "not notarized",
   "Pebble is not notarized, so the first time you open it, macOS may say it cannot verify the app.",
@@ -155,13 +157,9 @@ const ALLOW = new Set([
   "Pebble runs on Macs with Apple silicon (M1 or later). There is no version for Intel Macs, Windows or Linux.",
   "There is no version for Intel Macs, Windows or Linux, and the installer won't run under Rosetta.",
   "There is no version for Intel Macs, Windows or Linux, and the installer won’t run under Rosetta.",
-  // OVERRIDES §8 C2: the approved mode-qualified sentence for commands and Git
-  "Terminal commands beyond a short read-only list, and Git changes that delete or publish work, always wait for your review.",
   // every/always sentences that need no mode qualifier (claims review):
   // the "Ask for approval" mode's own "Always asks" text, word for word from permissionModes.ts (C-EXP-4..7)
   "Every edit, test run, terminal command, app launch, Git change and connector call.",
-  // true in every mode: a Git change that deletes or publishes work always asks (C-TOUR-2)
-  "A Git change that deletes or publishes work always asks.",
   // README's release gates, word for word (C-INF-5); about how Pebble is released, not about modes
   "A secret scan, a licence inventory, a scan for personal paths, and every published test run in a fresh clone.",
   // the sandbox caveat (OVERRIDES §8 H14); "every" belongs to "attack"
@@ -265,7 +263,7 @@ function strip(text) {
 }
 
 /** The one place a visitor may read the name of the product Pebble was measured against (see the header). */
-const NAMED = /\bClaude Code\b/g;
+const NAMED = /\b(Claude Code|Codex)\b/g;
 
 /** [the Benchmarks section's HTML, the rest of the page] */
 function splitNamed(html) {

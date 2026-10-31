@@ -7,7 +7,7 @@ import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { benchmarkLinks, benchmarkLlmsLinesFor, benchmarks, money, pct, run, signed } from "./benchmarks";
+import { benchmarkLinks, benchmarkLlmsLinesFor, benchmarks, golden, goldenLlmsLines, money, pct, run, signed } from "./benchmarks";
 import { releaseFacts } from "./releaseFacts";
 
 const FILE = path.join(import.meta.dir, "..", "..", "docs", "benchmarks", "claude-opus-5-5.analysis.json");
@@ -147,7 +147,8 @@ describe("every number in `run` comes from the analysis", () => {
 });
 
 describe("the words follow the rules", () => {
-  const all = JSON.stringify(benchmarks) + benchmarkLlmsLinesFor(releaseFacts.version).join("\n");
+  // the 1.0.2 run's words: its section block and its llms.txt lines (those after golden set 2.0's and the "Earlier" line)
+  const all = JSON.stringify(benchmarks) + benchmarkLlmsLinesFor(releaseFacts.version).slice(goldenLlmsLines().length + 1).join("\n");
 
   test("the headline is the one allowed, word for word", () => {
     expect(benchmarks.h2).toBe("Pebble matches Claude Code on the same model, within the margin.");
@@ -221,5 +222,79 @@ describe("the words follow the rules", () => {
     expect([...run.coveredVersions]).toEqual(["1.0.2", "1.0.3", "1.0.4"]);
     expect(run.coveredVersions).toContain(run.pebble.build);
     expect(run.coveredVersions).not.toContain(releaseFacts.version);
+  });
+});
+
+// ---- golden set 2.0 (Pebble 2.0.0): the latest run, public with the "2.0.0 published" post (STATUS 2026-10-31 14:53) ----
+describe("golden set 2.0", () => {
+  // README.md@v2.0.0:390-424, copied byte for byte from the tag (the file's first line says so)
+  const README = readFileSync(path.join(import.meta.dir, "..", "..", "docs", "benchmarks", "golden-set-2.0.README-v2.0.0.md"), "utf8");
+  const words = JSON.stringify(golden) + goldenLlmsLines().join("\n");
+
+  test("the vendored lines are the tag's Benchmarks section", () => {
+    expect(README.split("\n")[0]).toContain("README.md@v2.0.0:390-424");
+    expect(README).toContain("## Benchmarks: measured, not claimed");
+    expect(README).toContain("| Against Claude Code (`claude-opus-5-5`) | Pebble | Claude Code |");
+    expect(README).toContain("| Against Codex (`gpt-6.1-sol`) | Pebble | Codex |");
+  });
+
+  test("every cell is the README table's own, character for character, in its row", () => {
+    for (const table of golden.result.tables) {
+      expect(README).toContain(`| ${table.caption.replace(`(${table.model})`, `(\`${table.model}\`)`)} | Pebble | ${table.other} |`);
+      for (const row of table.rows) expect(README).toContain(`| ${row.measure} | ${row.pebble} | ${row.other} |`);
+    }
+    expect(golden.result.tables.flatMap((t) => t.rows)).toHaveLength(8);
+  });
+
+  test("the paired differences, the gates, the sides and what wasn't run are the README's words", () => {
+    expect(README).toContain("+8.6 points (95 % interval +3.1 to +14.9) against Claude Code;");
+    expect(README).toContain("+4.7 points (+0.4 to +9.4) against Codex.");
+    expect(golden.result.differences).toEqual(["+8.6 points (95 % interval +3.1 to +14.9) against Claude Code.", "+4.7 points (+0.4 to +9.4) against Codex."]);
+    expect(README).toContain(golden.result.gates);
+    expect(README.replace(/\n  /g, " ")).toContain(golden.sides.trailed.replace("Where Pebble trails,", "**Where Pebble trails**,"));
+    expect(README).toContain("Against Claude Code: answers from saved web pages and repeated computations.");
+    expect(README).toContain("Against Codex: no single family.");
+    expect(golden.sides.led).toContain("answers from saved web pages and repeated computations");
+    expect(golden.sides.led).toContain("against Codex, no single family");
+    expect(README).toContain("**Not run before 2.0.0:** the plan's sixth gate (no regression on the older corpus 24a) and the 32 held-out probes.");
+    expect(golden.limits.items[0]).toBe("Not run before 2.0.0: the plan's sixth gate (no regression on the older corpus 24a) and the held-out probes.");
+  });
+
+  test("the framing states the held-out split, 255 runs per product, one model for both, and the plan fixed first", () => {
+    const flat = README.replace(/\n/g, " ");
+    expect(flat).toContain(golden.lead.split(" Each comparison")[0]!);
+    expect(flat).toContain("Each comparison used one model for both products.");
+    expect(flat).toContain("The tasks were written before the runs and kept sealed from development");
+    expect(flat).toContain("the plan (its gates, graders, prices and budgets) was registered before the first run");
+    expect(flat).toContain("Pebble ran as 1.9.29, the build whose source 2.0.0 is, apart from its version number and notes.");
+    expect(golden.lead).toContain("held-out split");
+    expect(golden.lead).toContain("255 runs per product");
+  });
+
+  test("no figure that isn't in the README's Benchmarks section", () => {
+    const flat = README.replace(/\n/g, " ");
+    // the "Earlier" heading names the 1.0.2 run (README.md@v2.0.0:426, after the vendored lines); everything else counts
+    const latest = JSON.stringify({ ...golden, earlier: null }) + goldenLlmsLines().join("\n");
+    const figures = latest.match(/[+−-]?\$?\d+(?:\.\d+)?(?:\s?%)?/g) ?? [];
+    for (const figure of figures) expect({ figure, inReadme: flat.includes(figure.replace(/^[+−-]/, "")) }).toEqual({ figure, inReadme: true });
+  });
+
+  test("no 'beats', 'better', 'faster', 'cheaper' or 'saves', and no speed claim", () => {
+    expect(words).not.toMatch(/\b(beats?|better|faster|quicker|cheaper|saves?|savings|outperform\w*|wins?|superior)\b/i);
+    expect(words).toContain("Time is reported, not claimed");
+    expect(words).toContain("Cost is reported here, not claimed.");
+  });
+
+  test("the 1.0.2 run stays below as dated history, and its not-covered line stays true", () => {
+    expect(golden.earlier.title).toContain("1.0.2");
+    expect(golden.earlier.title).toContain("23 October 2026");
+    const lines = benchmarkLlmsLinesFor("2.0.0");
+    const at = lines.indexOf(`${golden.earlier.title}:`);
+    expect(at).toBe(goldenLlmsLines().length);
+    expect(lines.slice(at)).toContain("This run measured Pebble 1.0.2, not 2.0.0, the latest release.");
+  });
+
+  test("the release notes link is the tag's", () => {
+    expect(benchmarkLinks.releaseNotes200).toBe("https://github.com/tohin003/Pebble/blob/v2.0.0/CHANGELOG.md#200");
   });
 });
