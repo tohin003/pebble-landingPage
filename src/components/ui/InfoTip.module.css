@@ -1,0 +1,93 @@
+/* InfoTip (InfoTip.tsx): a text button with a dotted rule, and its note. Closed, the note is clipped like .sr-only
+   (in the DOM, read in place by screen readers). Open: an inline block under the line by default (phones, tablets,
+   touch); a small bubble under the trigger from 768 px where the pointer hovers precisely. No ink fills, no glass, no shadow (only the pebble casts one): the bubble is a hairline box on the ground. */
+.tip {
+  position: relative;
+}
+
+.trigger {
+  position: relative;
+  display: inline;
+  padding: 0;
+  font: inherit;
+  font-weight: 500;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  text-decoration: underline dotted;
+  text-decoration-color: var(--ink-2);
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+/* a 44 px hit area around the words, without moving the line */
+.trigger::before {
+  content: "";
+  position: absolute;
+  inset: 50% -6px auto;
+  height: 44px;
+  transform: translateY(-50%);
+}
+
+.trigger:hover,
+.tip[data-open] .trigger {
+  text-decoration-style: solid;
+  text-decoration-color: var(--ink);
+}
+
+.note {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.tip[data-open] .note {
+  position: static;
+  display: block;
+  width: auto;
+  height: auto;
+  margin: 10px 0 4px;
+  padding: 12px 14px;
+  overflow: visible;
+  clip-path: none;
+  white-space: normal;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--fill);
+  border-radius: var(--radius-control);
+  overflow-wrap: anywhere;
+}
+
+@media (hover: hover) and (pointer: fine) and (min-width: 768px) {
+  .tip[data-open] .note {
+    position: absolute;
+    z-index: 5;
+    top: calc(100% + 8px);
+    left: 0;
+    width: max-content;
+    max-width: min(22rem, calc(100vw - 32px));
+    margin: 0;
+    transform: translateX(var(--tip-shift, 0px));
+    background: var(--bg);
+    border: 1px solid var(--line);
+  }
+
+  :global(:root[data-motion="on"]) .tip[data-open] .note {
+    animation: tip-in var(--dur-fast) var(--ease-out);
+  }
+}
+
+@keyframes tip-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

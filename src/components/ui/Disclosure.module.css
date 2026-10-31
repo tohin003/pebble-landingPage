@@ -1,0 +1,102 @@
+/* Disclosure rows (Disclosure.tsx): the FAQ's hairline rows, shared by every section that keeps detail one step away.
+   Fluid at every width: no fixed widths, long words wrap, the summary is a 44 px target or taller. */
+.group {
+  border-bottom: 1px solid var(--line);
+}
+
+.item {
+  border-top: 1px solid var(--line);
+  min-width: 0;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 52px;
+  padding: 12px 2px;
+  list-style: none;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary:focus-visible {
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+
+.summaryText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.hint {
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.caret {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--ink-2);
+}
+
+.item[open] > .summary .caret {
+  transform: rotate(180deg);
+}
+
+.summary:hover .caret {
+  color: var(--ink);
+}
+
+.body {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  max-width: 44em;
+  padding: 2px 2px 22px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+/* Opening answers a click: the caret turns and, where the browser animates <details>, the body opens in 220 ms. With
+   motion paused or reduced it simply opens. */
+:global(:root[data-motion="on"]) .caret {
+  transition: transform var(--dur-base) var(--ease-firm);
+}
+
+@supports (interpolate-size: allow-keywords) {
+  :global(:root[data-motion="on"]) .item {
+    interpolate-size: allow-keywords;
+  }
+
+  :global(:root[data-motion="on"]) .item::details-content {
+    height: 0;
+    overflow: clip;
+    transition:
+      height 220ms var(--ease-firm),
+      content-visibility 220ms allow-discrete;
+  }
+
+  :global(:root[data-motion="on"]) .item[open]::details-content {
+    height: auto;
+  }
+}
