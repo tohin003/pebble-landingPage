@@ -12,6 +12,7 @@ import type { Aspect } from "./tokens";
 import { RS9BeatView } from "./setpieces/views/RS9BeatView";
 import { RS9_BEAT_FRAMES } from "./setpieces/rs9Beat";
 import { beatFrames } from "./setpieces/takeBeats";
+import { OpeningCompositions } from "./opening/Compositions";
 
 const ASPECTS: readonly [Aspect, string][] = [
   ["16:9", "16x9"],
@@ -80,5 +81,7 @@ export const Film2Compositions: React.FC = () => (
         )),
       )}
     </Folder>
+    {/* the film's opening (Act I, Rings 1–3) and the whole film on the score (opening/) */}
+    <OpeningCompositions />
   </Folder>
 );

@@ -1141,3 +1141,27 @@ C-REL-1 to C-REL-6, C-INF-2, C-INF-3, C-OSS-2, C-SYS-11 and C-SYS-14 above say "
   its figure isn't in the README's tables, which the post limits the page to. Reported to the lead, since it is a loss.
 - The notes' other numbers (the 32 probes, 366 licence components, 3 GB of copies kept for a day, 15 minutes): no
   sentence needs them.
+
+## The film's opening lines (Film 2, Act I and Rings 1–3, lane film-acts, 2026-11-01)
+
+The lines `video/src/film2/opening/` sets over the real 2.0.0 takes and in the typographic beats (the `claim` of each
+`ActLine`). Sources read from the published tag (raw.githubusercontent.com, `v2.0.0`). "Anyway." (RS-9's beat) states
+nothing and has no row; the beat's credit line is DECISION-RS9's, in the end card's small print.
+
+| ID | Claim | Source | Type |
+|---|---|---|---|
+| C-F2O-1 | Act I, L02: "Pebble 2.0" (the name, over RS15-01) | C-REL-1 (2.0.0); `src/content/releaseFacts.ts` | Q |
+| C-F2O-2 | Act I, L03 over RS1-03's Space swipe: "Over full-screen apps, on every Space." | `CHANGELOG.md@v2.0.0:238` ("stays on screen over full-screen apps, on every Space") | Q |
+| C-F2O-3 | Ring 1, L07 over RS9B-02's tab: "Its own tab in your browser, on sites you approve." | `CHANGELOG.md@v2.0.0:133-135` ("you approve the sites Pebble may act on … it works in its own tab") | Q |
+| C-F2O-4 | Ring 1, L07's limit: "Pebble for Chrome needs Developer mode." | `README.md@v2.0.0:592`; C-200-18 | Q |
+| C-F2O-5 | Ring 2, L11 over RS4-07's Calculator: "Your apps. One window you allow." | `CHANGELOG.md@v2.0.0:116-117` ("can ask to use one window of an open app … nothing happens until you allow it"); C-200-21 | Q |
+| C-F2O-6 | Ring 2, L11's limit: "Never terminals, System Settings or password managers." | `CHANGELOG.md@v2.0.0:121-123` ("never operates terminals, System Settings, Keychain Access, password managers …") | Q (a subset of the list) |
+| C-F2O-7 | Ring 2, over RS5C-04's Calendar: "Calendar events, without the screen." | `CHANGELOG.md@v2.0.0:131-132` ("Without the screen, it can … list and create calendar events") | Q |
+| C-F2O-8 | Its limit: "No invitations." | `CHANGELOG.md@v2.0.0:132-133` ("(no invitations)") | Q |
+| C-F2O-9 | Ring 2's typographic beat (S13): "A press that may send, save or delete asks you." | `CHANGELOG.md@v2.0.0:126` | Q |
+| C-F2O-10 | Its limit: "In Full access, Pebble's check of your messages decides." | `CHANGELOG.md@v2.0.0:126-127` ("in Full access, it passes Pebble's own check of your messages"); C-200-28 | Q |
+| C-F2O-11 | Ring 3, over RS5F-03's Finder: "Folders in Finder, without the screen." | `CHANGELOG.md@v2.0.0:131-133` ("Without the screen, it can … open folders in Finder") | Q |
+| C-F2O-12 | Its limit: "It never deletes anything this way." | `CHANGELOG.md@v2.0.0:133` ("it never sends mail or deletes anything this way") | Q (a subset) |
+| C-F2O-13 | Ring 3's typographic beat, L14: "Your files. The terminal." | `CHANGELOG.md@v2.0.0:85-86` ("run commands, read and write files … the way you would at a terminal") | Q |
+| C-F2O-14 | L15: "Commands in a sandbox. File changes with Undo." | `CHANGELOG.md@v2.0.0:87` ("A sandbox for each command"), `:92-93` ("keeps a copy before each change, so its card has 'Undo this change'") | Q |
+| C-F2O-15 | L15's limit: "Deleting or moving outside the workbench asks every time." | `CHANGELOG.md@v2.0.0:91-92` | Q |
