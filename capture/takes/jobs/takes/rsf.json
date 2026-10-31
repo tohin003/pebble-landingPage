@@ -1,0 +1,147 @@
+{
+ "_about": "UNVERIFIED until the dry run: element names (Allow, the composer, the conversation list) and the pebble's place come from the dry run's Accessibility dumps and stills; the lead adjusts this template before the take. RS-F (S18, optional): in the workspace's 'studio-bookings' project conversation (connected and renamed in the dry run), Ask for approval: Apply edit on the card; if AgentGuard holds the run, Run the tests, then Run tests on the card; Running, Done, Verified. After: git checkout in the project puts the bug back (by hand in the demo user, or the lead's reset job).",
+ "schema": "pebble-take-job/1",
+ "id": "RSF-$n",
+ "take": "RS-F",
+ "title": "The AgentGuard run",
+ "max_minutes": 15,
+ "steps": [
+  {
+   "do": "record_start",
+   "name": "RSF-$n",
+   "max_s": 420
+  },
+  {
+   "do": "wait",
+   "s": 2.5,
+   "note": "the take rolls before the first action"
+  },
+  {
+   "do": "open_app",
+   "app": "Pebble",
+   "note": "opening Pebble again brings the main window forward (USER_GUIDE)"
+  },
+  {
+   "do": "wait_window",
+   "app": "Pebble",
+   "timeout_s": 15
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "name": "studio-bookings",
+   "save_as": "@conv",
+   "timeout_s": 10,
+   "note": "the conversation in the sidebar, by its name (renamed in the dry run, R15)"
+  },
+  {
+   "do": "click",
+   "at": "@conv"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "type",
+   "text": "Saturday's wheel tasters are taking one booking too many. Stop a full slot from taking another booking.",
+   "event": "typed"
+  },
+  {
+   "do": "wait",
+   "s": 0.4
+  },
+  {
+   "do": "key",
+   "key": "return",
+   "event": "send"
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Apply edit",
+   "timeout_s": 180,
+   "save_as": "@apply",
+   "event": "applyCard"
+  },
+  {
+   "do": "wait",
+   "s": 1.2,
+   "note": "the person reads the card (the person's time; the edit may cut it)"
+  },
+  {
+   "do": "click",
+   "at": "@apply",
+   "event": "apply"
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Run the tests",
+   "timeout_s": 120,
+   "optional": true,
+   "save_as": "@held",
+   "event": "held"
+  },
+  {
+   "do": "wait",
+   "s": 2,
+   "if": "@held"
+  },
+  {
+   "do": "click",
+   "at": "@held",
+   "if": "@held",
+   "event": "runTests"
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Run tests",
+   "timeout_s": 60,
+   "optional": true,
+   "save_as": "@run"
+  },
+  {
+   "do": "click",
+   "at": "@run",
+   "if": "@run",
+   "event": "click"
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "contains": "Verified",
+   "timeout_s": 180,
+   "event": "verified",
+   "optional": true,
+   "save_as": "@verified"
+  },
+  {
+   "do": "wait",
+   "s": 4
+  },
+  {
+   "do": "still",
+   "name": "verified"
+  },
+  {
+   "do": "wait",
+   "s": 3
+  },
+  {
+   "do": "record_stop"
+  },
+  {
+   "do": "conform",
+   "name": "RSF-$n"
+  }
+ ]
+}

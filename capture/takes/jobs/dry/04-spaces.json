@@ -1,0 +1,102 @@
+{
+ "_about": "Dry run 4 (also the scene set-up for RS-15, RS-1 and RS-9): Chrome full screen on the booking page first, then Preview full screen on the poster, so the Spaces read Desktop, poster, Chrome (a full-screen Space is made right of the Space its window left). Ends on the poster.",
+ "schema": "pebble-take-job/1",
+ "id": "dry04-spaces-$n",
+ "take": "dry",
+ "title": "Spaces: desktop, poster, Chrome",
+ "steps": [
+  {
+   "do": "open_url",
+   "url": "file:///Users/studio/Projects/studio-bookings/site/index.html",
+   "app": "Google Chrome"
+  },
+  {
+   "do": "wait_window",
+   "app": "Google Chrome",
+   "timeout_s": 25
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "key",
+   "key": "f",
+   "mods": [
+    "ctrl",
+    "cmd"
+   ],
+   "note": "full screen"
+  },
+  {
+   "do": "wait",
+   "s": 3
+  },
+  {
+   "do": "still",
+   "name": "chrome-full"
+  },
+  {
+   "do": "open_file",
+   "path": "~/Documents/Open day/poster-screen.png",
+   "app": "Preview"
+  },
+  {
+   "do": "wait_window",
+   "app": "Preview",
+   "title_contains": "poster-screen",
+   "timeout_s": 20
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "key",
+   "key": "f",
+   "mods": [
+    "ctrl",
+    "cmd"
+   ]
+  },
+  {
+   "do": "wait",
+   "s": 3
+  },
+  {
+   "do": "still",
+   "name": "poster-full"
+  },
+  {
+   "do": "key",
+   "key": "right",
+   "mods": [
+    "ctrl"
+   ],
+   "note": "to Chrome's Space"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "still",
+   "name": "space-3"
+  },
+  {
+   "do": "key",
+   "key": "left",
+   "mods": [
+    "ctrl"
+   ]
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "still",
+   "name": "space-2"
+  }
+ ]
+}

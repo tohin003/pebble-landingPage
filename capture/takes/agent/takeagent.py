@@ -194,13 +194,13 @@ class SimUI:
 
 class Agent:
     def __init__(self, cfg: dict, root: str, live: bool, fixture: dict | None = None, heavy: list[str] | None = None,
-                 out=sys.stdout):
+                 out=sys.stdout, home: str | None = None):
         self.cfg = cfg
         self.root = root
         self.live = live
         self.out = out
         self.user = pwd.getpwuid(os.getuid()).pw_name
-        self.home = os.path.expanduser("~")
+        self.home = home or os.path.expanduser("~")
         self.signalled = False
         self.deadline: float | None = None
         self.ax_src = open(os.path.join(HERE, "ax.js"), encoding="utf-8").read()
@@ -475,6 +475,11 @@ class Agent:
                 if self.media.recording:
                     rec["t_rec"] = round(self.media.recording.rel(), 3)
                     self.media.recording.actions.append({"t": rec["t_rec"], "do": step["do"], "job": jid, "i": i + 1})
+                if "if" in step and step["if"] not in ctx["vars"]:
+                    rec.update(ok=True, skipped=f"{step['if']} was not found")
+                    res["steps"].append(rec)
+                    self.log(f"job {jid} step {i + 1}: skipped ({step['if']} was not found): {step['do']}")
+                    continue
                 self.log(f"job {jid} step {i + 1}: {self.describe(step)}")
                 try:
                     detail = getattr(self, "do_" + step["do"])(step, ctx)
@@ -667,19 +672,38 @@ class Agent:
             self.sleep(0.25)
 
     def do_wait_element(self, s, ctx):
-        m = self.wait_for_element(s, ctx, s["timeout_s"])
+        try:
+            m = self.wait_for_element(s, ctx, s["timeout_s"])
+        except StepFailed as e:
+            if s.get("optional"):
+                return {"optional": True, "found": False, "why": str(e)}
+            raise
         if s.get("event"):
             self.mark(ctx, s["event"])
-        if "save_as" in s and m and "centre" in m:
-            ctx["vars"][s["save_as"]] = m["centre"]
+        if "save_as" in s and m and m.get("centre"):
+            ctx["vars"][s["save_as"]] = self.anchor_point(m, s.get("anchor", "centre"))
         return m
 
     def do_find(self, s, ctx):
-        m = self.wait_for_element(s, ctx, s.get("timeout_s", 10))
+        try:
+            m = self.wait_for_element(s, ctx, s.get("timeout_s", 10))
+        except StepFailed as e:
+            if s.get("optional"):
+                return {"optional": True, "found": False, "why": str(e)}
+            raise
         if not m or not m.get("centre"):
             raise StepFailed("the element has no position on screen")
-        ctx["vars"][s["save_as"]] = m["centre"]
+        ctx["vars"][s["save_as"]] = self.anchor_point(m, s.get("anchor", "centre"))
         return m
+
+    @staticmethod
+    def anchor_point(m: dict, anchor: str) -> dict:
+        c = dict(m["centre"])
+        if anchor == "centre" or m.get("w") is None or m.get("h") is None:
+            return c
+        inset_x, inset_y = min(10, m["w"] / 2), min(10, m["h"] / 2)
+        return {"top": {"x": c["x"], "y": m["y"] + inset_y}, "bottom": {"x": c["x"], "y": m["y"] + m["h"] - inset_y},
+                "left": {"x": m["x"] + inset_x, "y": c["y"]}, "right": {"x": m["x"] + m["w"] - inset_x, "y": c["y"]}}[anchor]
 
     def do_wait_file(self, s, ctx):
         path = self.allowed(s["path"])
@@ -905,6 +929,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--once", action="store_true", help="run what is queued, then exit (tests)")
     ap.add_argument("--fixture", help="simulate: a JSON file of Accessibility answers")
     ap.add_argument("--heavy", help="simulate/tests: a pass-through runner instead of heavy.sh (never in live mode)")
+    ap.add_argument("--home", help="simulate/tests: the demo user's home stand-in (never in live mode)")
     ap.add_argument("--no-selftest", action="store_true", help="live: skip the visible pointer test at start")
     a = ap.parse_args(argv)
     cfg = jobspec.load_config(a.config)
@@ -912,8 +937,8 @@ def main(argv: list[str] | None = None) -> int:
     os.umask(0o002)  # results, takes and log entries stay readable and appendable by the lead (group staff)
     user = pwd.getpwuid(os.getuid()).pw_name
     if a.live:
-        if a.heavy or a.fixture or a.root:
-            print("takeagent: --heavy, --fixture and --root are for tests; live mode always uses the installed folder.", file=sys.stderr)
+        if a.heavy or a.fixture or a.root or a.home:
+            print("takeagent: --heavy, --fixture, --root and --home are for tests; live mode always uses the installed folder.", file=sys.stderr)
             return 64
         if user != cfg["demo_user"] or not macos.arm(cfg["demo_user"]):
             print(f"takeagent: this is the account '{user}'. The take agent runs live only in the demo user "
@@ -921,7 +946,7 @@ def main(argv: list[str] | None = None) -> int:
             return 64
     fixture = json.load(open(a.fixture, encoding="utf-8")) if a.fixture else None
     heavy = [a.heavy] if a.heavy else None
-    agent = Agent(cfg, root, a.live, fixture=fixture, heavy=heavy)
+    agent = Agent(cfg, root, a.live, fixture=fixture, heavy=heavy, home=os.path.realpath(a.home) if a.home else None)
     agent.record_hashes()
     for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
         signal.signal(sig, agent.on_signal)

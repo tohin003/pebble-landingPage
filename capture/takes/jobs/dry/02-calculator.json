@@ -1,0 +1,92 @@
+{
+ "_about": "Dry run 2. Calculator: open, a still, a click found through Accessibility, typing, a key, a still, quit (⌘Q). Touches nothing else.",
+ "schema": "pebble-take-job/1",
+ "id": "dry02-calc-$n",
+ "take": "dry",
+ "title": "Calculator",
+ "steps": [
+  {
+   "do": "open_app",
+   "app": "Calculator"
+  },
+  {
+   "do": "wait_window",
+   "app": "Calculator",
+   "timeout_s": 20
+  },
+  {
+   "do": "wait",
+   "s": 1
+  },
+  {
+   "do": "still",
+   "name": "calc-open"
+  },
+  {
+   "do": "ax_dump",
+   "app": "Calculator",
+   "max": 400,
+   "name": "calculator"
+  },
+  {
+   "do": "find",
+   "app": "Calculator",
+   "role": "AXButton",
+   "contains": "7",
+   "save_as": "@seven",
+   "optional": true,
+   "timeout_s": 5
+  },
+  {
+   "do": "click",
+   "at": "@seven",
+   "if": "@seven",
+   "event": "pressSeven"
+  },
+  {
+   "do": "key",
+   "key": "escape"
+  },
+  {
+   "do": "type",
+   "text": "48*12.5",
+   "cps": 5
+  },
+  {
+   "do": "key",
+   "key": "return",
+   "event": "equals"
+  },
+  {
+   "do": "wait",
+   "s": 0.8
+  },
+  {
+   "do": "wait_element",
+   "app": "Calculator",
+   "contains": "600",
+   "timeout_s": 5,
+   "optional": true,
+   "save_as": "@display"
+  },
+  {
+   "do": "still",
+   "name": "calc-600"
+  },
+  {
+   "do": "key",
+   "key": "escape"
+  },
+  {
+   "do": "key",
+   "key": "escape"
+  },
+  {
+   "do": "key",
+   "key": "q",
+   "mods": [
+    "cmd"
+   ]
+  }
+ ]
+}

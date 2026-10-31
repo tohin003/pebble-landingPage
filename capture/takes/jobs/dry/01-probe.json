@@ -1,0 +1,41 @@
+{
+ "_about": "Dry run 1. Read only: the screen, the pointer, a still of the desktop, the Dock's and Pebble's Accessibility trees.",
+ "schema": "pebble-take-job/1",
+ "id": "dry01-probe-$n",
+ "take": "dry",
+ "title": "Probe",
+ "steps": [
+  {
+   "do": "screen_info"
+  },
+  {
+   "do": "pointer"
+  },
+  {
+   "do": "still",
+   "name": "desktop"
+  },
+  {
+   "do": "ax_dump",
+   "app": "Dock",
+   "max": 400,
+   "name": "dock"
+  },
+  {
+   "do": "ax_dump",
+   "app": "Pebble",
+   "max": 2500,
+   "name": "pebble-at-start"
+  },
+  {
+   "do": "ax_dump",
+   "app": "ControlCenter",
+   "max": 300,
+   "name": "menubar-controlcenter"
+  },
+  {
+   "do": "log",
+   "text": "dry run 1 (probe) done"
+  }
+ ]
+}

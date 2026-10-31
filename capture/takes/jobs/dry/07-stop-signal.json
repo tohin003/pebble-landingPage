@@ -1,0 +1,39 @@
+{
+ "_about": "Dry run 7: a recording stopped by SIGINT (the fallback stop), to check the file is whole.",
+ "schema": "pebble-take-job/1",
+ "id": "dry07-sigint-$n",
+ "take": "dry",
+ "title": "Stop by signal",
+ "steps": [
+  {
+   "do": "record_start",
+   "name": "dry07-$n",
+   "max_s": 30,
+   "stop_with": "signal"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 300,
+    "y": 260
+   },
+   "ms": 600,
+   "event": "move1"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "record_stop"
+  },
+  {
+   "do": "conform",
+   "name": "dry07-$n"
+  }
+ ]
+}

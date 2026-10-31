@@ -1,0 +1,13 @@
+{
+ "_about": "Between takes: the sample world's reset (reset_take.sh $what: photos, notes, app-actions, calculator or all).",
+ "schema": "pebble-take-job/1",
+ "id": "reset-$what-$n",
+ "take": "setup",
+ "title": "Reset",
+ "steps": [
+  {
+   "do": "reset",
+   "what": "$what"
+  }
+ ]
+}

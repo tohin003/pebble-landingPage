@@ -1,0 +1,54 @@
+{
+ "_about": "Dry run 9: Pebble's windows read through Accessibility, with stills: as it is, then after ⌘⇧Space (Pebble forward), then Escape. Sends nothing to the model. The lead reads the pebble's place ($stone), the composer and the card buttons off these.",
+ "schema": "pebble-take-job/1",
+ "id": "dry09-pebble-$n",
+ "take": "dry",
+ "title": "Pebble probe",
+ "steps": [
+  {
+   "do": "still",
+   "name": "before"
+  },
+  {
+   "do": "ax_dump",
+   "app": "Pebble",
+   "max": 3000,
+   "name": "pebble-companion"
+  },
+  {
+   "do": "key",
+   "key": "space",
+   "mods": [
+    "cmd",
+    "shift"
+   ],
+   "event": "show"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "still",
+   "name": "forward"
+  },
+  {
+   "do": "ax_dump",
+   "app": "Pebble",
+   "max": 3000,
+   "name": "pebble-forward"
+  },
+  {
+   "do": "key",
+   "key": "escape"
+  },
+  {
+   "do": "wait",
+   "s": 1
+  },
+  {
+   "do": "still",
+   "name": "after"
+  }
+ ]
+}

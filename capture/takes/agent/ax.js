@@ -121,6 +121,18 @@ const handlers = {
     const found = [];
     const limits = { depth: q.depth || 30, max: q.max || 4000, ms: q.ms || 8000 };
     let seen = 0;
+    const wpos = bulk(p.windows, "position", p.windows.length);
+    const wsize = bulk(p.windows, "size", p.windows.length);
+    const wnames = p.windows.name();
+    for (let i = 0; i < wnames.length; i++) {
+      // the windows themselves are candidates too (role AXWindow, named by their title): a window's frame finds its title bar
+      const n = { role: "AXWindow", name: wnames[i], position: wpos[i], size: wsize[i], depth: 0 };
+      if ((!q.window_contains || (wnames[i] || "").indexOf(q.window_contains) >= 0) && matches(n, q) && n.position && n.size) {
+        const b = brief(n);
+        b.window = wnames[i];
+        found.push(b);
+      }
+    }
     for (const w of windowsOf(p, q.window_contains)) {
       const r = walk(w.spec, limits, (n) => {
         if (matches(n, q) && n.position && n.size && n.size[0] > 0 && n.size[1] > 0) {

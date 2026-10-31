@@ -1,0 +1,63 @@
+{
+ "_about": "RS-11 (tour, P1): Documents › Pebble in Finder, after some sample conversations.",
+ "schema": "pebble-take-job/1",
+ "id": "RS11-$n",
+ "take": "RS-11",
+ "title": "Documents › Pebble",
+ "steps": [
+  {
+   "do": "open_file",
+   "path": "~/Documents/Pebble",
+   "app": "Finder"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "record_start",
+   "name": "RS11-$n",
+   "max_s": 20
+  },
+  {
+   "do": "wait",
+   "s": 2.5,
+   "note": "the take rolls before the first action"
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 640,
+    "y": 420
+   },
+   "ms": 900,
+   "event": "look"
+  },
+  {
+   "do": "wait",
+   "s": 3
+  },
+  {
+   "do": "still",
+   "name": "finder"
+  },
+  {
+   "do": "wait",
+   "s": 3
+  },
+  {
+   "do": "record_stop"
+  },
+  {
+   "do": "conform",
+   "name": "RS11-$n"
+  },
+  {
+   "do": "key",
+   "key": "w",
+   "mods": [
+    "cmd"
+   ]
+  }
+ ]
+}

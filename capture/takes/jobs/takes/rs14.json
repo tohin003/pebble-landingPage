@@ -1,0 +1,73 @@
+{
+ "_about": "UNVERIFIED until the dry run: element names (Allow, the composer, the conversation list) and the pebble's place come from the dry run's Accessibility dumps and stills; the lead adjusts this template before the take. RS-14 (tour, P1): price-list.pdf dragged from Finder onto the pebble (a real drag). Finder's item is found through Accessibility.",
+ "schema": "pebble-take-job/1",
+ "id": "RS14-$n",
+ "take": "RS-14",
+ "title": "A file dropped on the pebble",
+ "steps": [
+  {
+   "do": "open_file",
+   "path": "~/Documents/Open day",
+   "app": "Finder"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "find",
+   "app": "Finder",
+   "contains": "price-list",
+   "save_as": "@file",
+   "timeout_s": 8
+  },
+  {
+   "do": "record_start",
+   "name": "RS14-$n",
+   "max_s": 40
+  },
+  {
+   "do": "wait",
+   "s": 2.5,
+   "note": "the take rolls before the first action"
+  },
+  {
+   "do": "drag",
+   "from": "@file",
+   "to": "$stone",
+   "ms": 1500,
+   "hold_ms": 250,
+   "event": "drop"
+  },
+  {
+   "do": "wait",
+   "s": 5
+  },
+  {
+   "do": "still",
+   "name": "dropped"
+  },
+  {
+   "do": "wait",
+   "s": 3
+  },
+  {
+   "do": "record_stop"
+  },
+  {
+   "do": "conform",
+   "name": "RS14-$n"
+  },
+  {
+   "do": "activate",
+   "app": "Finder"
+  },
+  {
+   "do": "key",
+   "key": "w",
+   "mods": [
+    "cmd"
+   ]
+  }
+ ]
+}

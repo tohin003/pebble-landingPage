@@ -1,0 +1,21 @@
+{
+ "_about": "Set-up: back to the desktop Space (from the poster: ⌃←).",
+ "schema": "pebble-take-job/1",
+ "id": "setup-desktop-$n",
+ "take": "setup",
+ "title": "To the desktop",
+ "steps": [
+  {
+   "do": "activate",
+   "app": "Finder"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "still",
+   "name": "desktop"
+  }
+ ]
+}

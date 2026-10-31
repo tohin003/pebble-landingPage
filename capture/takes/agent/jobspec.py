@@ -238,6 +238,8 @@ def _keys(obj: dict, allowed: set, where: str, required: set = frozenset()) -> N
 
 R, O = True, False
 TIMEOUT = _num(0.1, 900)
+# which point of a found element is saved: its centre, or 10 points inside an edge (a window's "top" is its title bar)
+ANCHOR = _enum("centre", "top", "bottom", "left", "right")
 VOCABULARY: dict[str, dict[str, tuple]] = {
     # waiting
     "wait": {"s": (_num(0, 600), R)},
@@ -245,11 +247,12 @@ VOCABULARY: dict[str, dict[str, tuple]] = {
                     "timeout_s": (TIMEOUT, R)},
     "wait_element": {"app": (_ax_app, R), "role": (_role, O), "name": (_str(200), O), "contains": (_str(200), O),
                      "window_contains": (_str(200), O), "index": (_int(0, 50), O), "gone": (_bool, O),
-                     "timeout_s": (TIMEOUT, R), "save_as": (_var, O)},
+                     "timeout_s": (TIMEOUT, R), "save_as": (_var, O), "optional": (_bool, O), "anchor": (ANCHOR, O)},
     "wait_file": {"path": (_path, R), "gone": (_bool, O), "timeout_s": (TIMEOUT, R)},
     # looking (read only)
     "find": {"app": (_ax_app, R), "role": (_role, O), "name": (_str(200), O), "contains": (_str(200), O),
-             "window_contains": (_str(200), O), "index": (_int(0, 50), O), "save_as": (_var, R), "timeout_s": (TIMEOUT, O)},
+             "window_contains": (_str(200), O), "index": (_int(0, 50), O), "save_as": (_var, R), "timeout_s": (TIMEOUT, O),
+             "optional": (_bool, O), "anchor": (ANCHOR, O)},
     "ax_dump": {"app": (_ax_app, R), "window_contains": (_str(200), O), "max": (_int(10, 5000), O), "name": (_name, O)},
     "screen_info": {},
     "pointer": {},
@@ -278,7 +281,9 @@ VOCABULARY: dict[str, dict[str, tuple]] = {
     "reset": {"what": (_enum(*RESET_WHAT), R)},
     "log": {"text": (_str(500), R)},
 }
-COMMON = {"do", "event", "note"}
+# "if": "@name" runs the step only when an earlier `find` or `wait_element` saved that point (an optional element that
+# appeared: a press card in RS-9, R10). It is the vocabulary's only branch, and it is data.
+COMMON = {"do", "event", "note", "if"}
 TOP_KEYS = {"schema", "id", "take", "title", "steps", "max_minutes", "note"}
 
 
@@ -297,6 +302,10 @@ def validate_step(step: Any, i: int, cfg: dict, saved: set) -> dict:
         out["event"] = _event(step["event"], f"{where}.event", cfg)
     if "note" in step:
         out["note"] = _str(300)(step["note"], f"{where}.note", cfg)
+    if "if" in step:
+        out["if"] = _var(step["if"], f"{where}.if", cfg)
+        if out["if"] not in saved:
+            raise JobError(f"{where}.if: {out['if']} is not saved by an earlier find or wait_element step")
     for k, (check, _) in spec.items():
         if k in step:
             out[k] = check(step[k], f"{where}.{k}", cfg)
@@ -307,8 +316,8 @@ def validate_step(step: Any, i: int, cfg: dict, saved: set) -> dict:
         raise JobError(f"{where}: give at least one of role, name or contains")
     if action == "drag" and ("to" in out) == ("circle" in out):
         raise JobError(f"{where}: give exactly one of to or circle")
-    if action == "wait_element" and out.get("gone") and "save_as" in out:
-        raise JobError(f"{where}: an element that must be gone can't be saved")
+    if action == "wait_element" and out.get("gone") and ("save_as" in out or out.get("optional")):
+        raise JobError(f"{where}: an element that must be gone can't be saved or optional")
     # a saved point must be saved by an earlier step of the same job
     for k in ("to", "at", "from"):
         ref = out.get(k)
@@ -380,7 +389,7 @@ def load_config(path: str) -> dict:
 
 
 def expand_home(path: str, home: str) -> str:
-    return home + path[1:] if path.startswith("~/") else path
+    return home + path[1:] if path == "~" or path.startswith("~/") else path
 
 
 def path_allowed(path: str, cfg: dict, home: str) -> str | None:

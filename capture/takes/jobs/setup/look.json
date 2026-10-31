@@ -1,0 +1,19 @@
+{
+ "_about": "Any time: a still and Pebble's Accessibility tree, for the lead's eyes (read only).",
+ "schema": "pebble-take-job/1",
+ "id": "look-$n",
+ "take": "setup",
+ "title": "Look",
+ "steps": [
+  {
+   "do": "still",
+   "name": "now"
+  },
+  {
+   "do": "ax_dump",
+   "app": "Pebble",
+   "max": 3000,
+   "name": "pebble"
+  }
+ ]
+}

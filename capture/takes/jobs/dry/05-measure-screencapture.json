@@ -1,0 +1,119 @@
+{
+ "_about": "Dry run 5 (RUNBOOK §6.2: measure both): about 12 s of screencapture while Calculator's window is dragged in two circles and the Spaces swipe once and back; stop by a key on the control pipe. Compare frames, average rate, gaps and MB a minute with dry run 6.",
+ "schema": "pebble-take-job/1",
+ "id": "dry05-measure-sc-$n",
+ "take": "dry",
+ "title": "Measure: screencapture",
+ "steps": [
+  {
+   "do": "key",
+   "key": "left",
+   "mods": [
+    "ctrl"
+   ],
+   "note": "back to the desktop Space"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "key",
+   "key": "left",
+   "mods": [
+    "ctrl"
+   ]
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "open_app",
+   "app": "Calculator"
+  },
+  {
+   "do": "wait_window",
+   "app": "Calculator",
+   "timeout_s": 20
+  },
+  {
+   "do": "wait",
+   "s": 1
+  },
+  {
+   "do": "find",
+   "app": "Calculator",
+   "role": "AXWindow",
+   "save_as": "@win",
+   "anchor": "top",
+   "timeout_s": 5
+  },
+  {
+   "do": "record_start",
+   "name": "dry05-$n",
+   "max_s": 40,
+   "method": "screencapture",
+   "stop_with": "key"
+  },
+  {
+   "do": "wait",
+   "s": 1
+  },
+  {
+   "do": "drag",
+   "from": "@win",
+   "circle": {
+    "cx": 640,
+    "cy": 300,
+    "r": 110,
+    "turns": 2
+   },
+   "ms": 4000,
+   "event": "dragStart"
+  },
+  {
+   "do": "wait",
+   "s": 0.8
+  },
+  {
+   "do": "key",
+   "key": "right",
+   "mods": [
+    "ctrl"
+   ],
+   "event": "swipe"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "key",
+   "key": "left",
+   "mods": [
+    "ctrl"
+   ],
+   "event": "swipeBack"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "record_stop"
+  },
+  {
+   "do": "conform",
+   "name": "dry05-$n"
+  },
+  {
+   "do": "key",
+   "key": "q",
+   "mods": [
+    "cmd"
+   ],
+   "note": "quit Calculator"
+  }
+ ]
+}

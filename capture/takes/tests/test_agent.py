@@ -157,6 +157,7 @@ class TestJobSpec(unittest.TestCase):
             os.symlink("/etc", os.path.join(home, "Documents", "escape"))
             cfg = dict(CFG, file_roots=["~", root])
             self.assertTrue(jobspec.path_allowed("~/Documents/x.txt", cfg, home))
+            self.assertTrue(jobspec.path_allowed("~/Documents/x.txt", CFG, home), "the '~' root itself must expand")
             self.assertIsNone(jobspec.path_allowed("~/Documents/escape/hosts", cfg, home))
             self.assertIsNone(jobspec.path_allowed("/Users/Shared/elsewhere", cfg, home))
         finally:
@@ -459,6 +460,84 @@ class TestConform(unittest.TestCase):
         good = media.conform_checks(src, src | {"nb_frames": round(src["duration_s"] * 60), "avg_frame_rate": "60/1", "r_frame_rate": "60/1"},
                                     m.conform_command("syn-01"), 60)
         self.assertTrue(good["timestamp_conform_only"])
+
+
+class TestEnqueue(unittest.TestCase):
+    """The lead's tool: every template builds into a job the agent accepts, and the queue is written safely."""
+
+    def setUp(self):
+        self.root = make_root()
+        import enqueue
+        self.enqueue = enqueue
+        self.positions = os.path.join(self.root, "positions.json")
+        dump({"stone": {"x": 1180, "y": 760}}, self.positions)
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def test_every_template_builds(self):
+        import glob
+        n = 0
+        for t in sorted(glob.glob(os.path.join(TAKES, "jobs", "*", "*.json"))):
+            with self.subTest(template=os.path.basename(t)):
+                job = self.enqueue.build(t, self.root, CFG, None, {"what": "photos"}, self.positions)
+                self.assertTrue(job["id"])
+                n += 1
+        self.assertGreaterEqual(n, 30)
+
+    def test_missing_values_are_named(self):
+        with self.assertRaises(SystemExit) as cm:
+            self.enqueue.build(os.path.join(TAKES, "jobs", "takes", "rs15.json"), self.root, CFG, None, {}, os.path.join(self.root, "none.json"))
+        self.assertIn("$stone", str(cm.exception))
+
+    def test_queue_numbers_and_take_numbers(self):
+        t = os.path.join(TAKES, "jobs", "setup", "reset.json")
+        a = self.enqueue.build(t, self.root, CFG, None, {"what": "notes"}, self.positions)
+        name_a = self.enqueue.write_job(self.root, a)
+        b = self.enqueue.build(t, self.root, CFG, None, {"what": "notes"}, self.positions)
+        name_b = self.enqueue.write_job(self.root, b)
+        self.assertEqual((name_a, name_b), ("0001-reset-notes-01.json", "0002-reset-notes-02.json"))
+        with self.assertRaises(SystemExit):
+            self.enqueue.write_job(self.root, a)  # a job id runs once
+        self.assertFalse([n for n in os.listdir(os.path.join(self.root, "queue")) if n.startswith(".")])
+        r = run_agent(self.root)  # the agent accepts what enqueue wrote (simulated)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(result(self.root, "reset-notes-01")["status"], "done")
+
+    def test_the_dry_run_walks_through_in_simulation(self):
+        for t in self.enqueue.DRY_RUN:
+            self.enqueue.write_job(self.root, self.enqueue.build(t, self.root, CFG, None, {}, self.positions))
+        fixture = os.path.join(self.root, "fixture.json")
+        win = {"running": True, "windows": [{"title": "Calculator"}, {"title": "poster-screen.png"}, {"title": "Studio"}]}
+        calc = {"role": "AXWindow", "name": "Calculator", "centre": {"x": 640, "y": 300}, "x": 500, "y": 150, "w": 280, "h": 300}
+        dump({"windows:Calculator": [win], "windows:Preview": [win], "windows:Google Chrome": [win],
+              "find:Calculator": [{"running": True, "matches": [calc]}],
+              "dump:Pebble": [{"running": True, "windows": []}], "dump:Dock": [{"running": True, "windows": []}],
+              "dump:ControlCenter": [{"running": True, "windows": []}], "dump:Calculator": [{"running": True, "windows": []}]}, fixture)
+        home = os.path.join(self.root, "home")
+        os.makedirs(os.path.join(home, "Documents", "Open day"))
+        open(os.path.join(home, "Documents", "Open day", "poster-screen.png"), "w").close()
+        r = run_agent(self.root, "--fixture", fixture, "--home", home, timeout=180)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        for d in sorted(os.listdir(os.path.join(self.root, "results"))):
+            if d.startswith("dry"):
+                res = result(self.root, d)
+                # the conforms fail in simulation (no recording exists); every step before them must pass
+                if res["status"] != "done":
+                    self.assertIn("no raw take", res.get("error", ""), (d, res.get("error")))
+
+    def test_optional_and_if(self):
+        fixture = os.path.join(self.root, "fixture.json")
+        dump({"find:Pebble": [{"running": True, "matches": []}]}, fixture)
+        enqueue_raw(self.root, "0001-opt.json", job([
+            {"do": "wait_element", "app": "Pebble", "role": "AXButton", "name": "Allow", "timeout_s": 0.3, "optional": True, "save_as": "@press"},
+            {"do": "click", "at": "@press", "if": "@press"},
+            {"do": "mark", "event": "after"},
+        ], jid="opt"))
+        run_agent(self.root, "--fixture", fixture)
+        res = result(self.root, "opt")
+        self.assertEqual(res["status"], "done", res.get("error"))
+        self.assertIn("skipped", res["steps"][1])
 
 
 if __name__ == "__main__":

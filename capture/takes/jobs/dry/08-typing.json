@@ -1,0 +1,59 @@
+{
+ "_about": "Dry run 8: typing every unusual character the takes use (×, “ ”, °, ’) into Chrome's address bar, never sent (Escape clears it).",
+ "schema": "pebble-take-job/1",
+ "id": "dry08-typing-$n",
+ "take": "dry",
+ "title": "Typing check",
+ "steps": [
+  {
+   "do": "activate",
+   "app": "Google Chrome"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "key",
+   "key": "l",
+   "mods": [
+    "cmd"
+   ]
+  },
+  {
+   "do": "wait",
+   "s": 0.5
+  },
+  {
+   "do": "type",
+   "text": "What's 48 × 12.5? “Old price list (2025)” 20 °C"
+  },
+  {
+   "do": "wait",
+   "s": 0.6
+  },
+  {
+   "do": "still",
+   "name": "typed"
+  },
+  {
+   "do": "key",
+   "key": "escape"
+  },
+  {
+   "do": "key",
+   "key": "escape"
+  },
+  {
+   "do": "key",
+   "key": "left",
+   "mods": [
+    "ctrl"
+   ]
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  }
+ ]
+}

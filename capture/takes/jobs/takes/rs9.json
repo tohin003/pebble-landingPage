@@ -1,0 +1,194 @@
+{
+ "_about": "UNVERIFIED until the dry run: element names (Allow, the composer, the conversation list) and the pebble's place come from the dry run's Accessibility dumps and stills; the lead adjusts this template before the take. RS-9 (S04–S09, P0): send in 'Open day', swipe to Chrome, the banner naming 'Open day', the card, Allow, Pebble's tab and the video, then 'Play the next one.' with no new card. Needs: the video decided (RUNBOOK §11 item 1: $video_message), Pebble for Chrome paired with its own tabs allowed, Ask for approval, 'Open day' made, renamed and empty. A press card, if 2.0.0 raises one (R10), is allowed and recorded. Run setup/to-poster first.",
+ "schema": "pebble-take-job/1",
+ "id": "RS9-$n",
+ "take": "RS-9",
+ "title": "The banner, the card, the Allow and the browser",
+ "max_minutes": 12,
+ "defaults": {
+  "video_message": "Play our glazing video on YouTube."
+ },
+ "steps": [
+  {
+   "do": "record_start",
+   "name": "RS9-$n",
+   "max_s": 240
+  },
+  {
+   "do": "wait",
+   "s": 2.5,
+   "note": "the take rolls before the first action"
+  },
+  {
+   "do": "click",
+   "at": "$stone",
+   "event": "openChat"
+  },
+  {
+   "do": "wait",
+   "s": 0.9
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "name": "Open day",
+   "save_as": "@conv",
+   "optional": true,
+   "timeout_s": 4,
+   "note": "the conversation, if the companion lists it (R15)"
+  },
+  {
+   "do": "click",
+   "at": "@conv",
+   "if": "@conv"
+  },
+  {
+   "do": "wait",
+   "s": 0.8,
+   "if": "@conv"
+  },
+  {
+   "do": "type",
+   "text": "$video_message",
+   "event": "typed"
+  },
+  {
+   "do": "wait",
+   "s": 0.4
+  },
+  {
+   "do": "key",
+   "key": "return",
+   "event": "send"
+  },
+  {
+   "do": "wait",
+   "s": 0.6
+  },
+  {
+   "do": "key",
+   "key": "right",
+   "mods": [
+    "ctrl"
+   ],
+   "event": "swipe"
+  },
+  {
+   "do": "wait_element",
+   "app": "NotificationCenter",
+   "contains": "Open day",
+   "timeout_s": 60,
+   "save_as": "@banner",
+   "event": "banner"
+  },
+  {
+   "do": "wait",
+   "s": 0.8
+  },
+  {
+   "do": "click",
+   "at": "@banner",
+   "event": "bannerClick"
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "timeout_s": 30,
+   "save_as": "@allow",
+   "event": "card"
+  },
+  {
+   "do": "wait",
+   "s": 1.2,
+   "note": "the person reads the card (the person's time; the edit may cut it)"
+  },
+  {
+   "do": "click",
+   "at": "@allow",
+   "event": "allow"
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "timeout_s": 25,
+   "save_as": "@press",
+   "optional": true
+  },
+  {
+   "do": "wait",
+   "s": 1.2,
+   "note": "the person reads the card (the person's time; the edit may cut it)",
+   "if": "@press"
+  },
+  {
+   "do": "click",
+   "at": "@press",
+   "event": "press",
+   "if": "@press"
+  },
+  {
+   "do": "wait",
+   "s": 14,
+   "note": "the browser at 1×: tab, results, the video starts, the reply"
+  },
+  {
+   "do": "still",
+   "name": "video-1"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXTextArea",
+   "save_as": "@composer",
+   "optional": true,
+   "timeout_s": 4
+  },
+  {
+   "do": "click",
+   "at": "@composer",
+   "if": "@composer"
+  },
+  {
+   "do": "wait",
+   "s": 0.5
+  },
+  {
+   "do": "type",
+   "text": "Play the next one.",
+   "event": "typed2"
+  },
+  {
+   "do": "key",
+   "key": "return",
+   "event": "send2"
+  },
+  {
+   "do": "wait",
+   "s": 12,
+   "note": "no new site card (1.9.12); the next video starts"
+  },
+  {
+   "do": "mark",
+   "event": "secondVideo"
+  },
+  {
+   "do": "still",
+   "name": "video-2"
+  },
+  {
+   "do": "wait",
+   "s": 3
+  },
+  {
+   "do": "record_stop"
+  },
+  {
+   "do": "conform",
+   "name": "RS9-$n"
+  }
+ ]
+}

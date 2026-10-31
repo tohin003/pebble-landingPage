@@ -1,0 +1,83 @@
+{
+ "_about": "UNVERIFIED until the dry run: element names (Allow, the composer, the conversation list) and the pebble's place come from the dry run's Accessibility dumps and stills; the lead adjusts this template before the take. RS-6 (tour, P1): 'Price list' conversation: a file opened in an app (1.9.13), after the same review as opening the app.",
+ "schema": "pebble-take-job/1",
+ "id": "RS6-$n",
+ "take": "RS-6",
+ "title": "A file opened in an app",
+ "steps": [
+  {
+   "do": "record_start",
+   "name": "RS6-$n",
+   "max_s": 90
+  },
+  {
+   "do": "wait",
+   "s": 2.5,
+   "note": "the take rolls before the first action"
+  },
+  {
+   "do": "click",
+   "at": "$stone",
+   "event": "openChat",
+   "note": "the pebble; its place is read off the dry run's still (positions.json)"
+  },
+  {
+   "do": "wait",
+   "s": 0.9
+  },
+  {
+   "do": "type",
+   "text": "Open the price list in Preview.",
+   "event": "typed"
+  },
+  {
+   "do": "wait",
+   "s": 0.4
+  },
+  {
+   "do": "key",
+   "key": "return",
+   "event": "send"
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "timeout_s": 40,
+   "save_as": "@allow",
+   "optional": true
+  },
+  {
+   "do": "wait",
+   "s": 1.2,
+   "note": "the person reads the card (the person's time; the edit may cut it)",
+   "if": "@allow"
+  },
+  {
+   "do": "click",
+   "at": "@allow",
+   "event": "allow",
+   "if": "@allow"
+  },
+  {
+   "do": "wait",
+   "s": 8
+  },
+  {
+   "do": "still",
+   "name": "preview"
+  },
+  {
+   "do": "wait",
+   "s": 3
+  },
+  {
+   "do": "record_stop"
+  },
+  {
+   "do": "conform",
+   "name": "RS6-$n"
+  }
+ ]
+}

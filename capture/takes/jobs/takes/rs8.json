@@ -1,0 +1,124 @@
+{
+ "_about": "UNVERIFIED until the dry run: element names (Allow, the composer, the conversation list) and the pebble's place come from the dry run's Accessibility dumps and stills; the lead adjusts this template before the take. RS-8 (S13, P1): Notes on 'Old price list (2025)'; the window card, then the press card for Delete waits; hold 5 s; Don't allow (the note stays). Reset after: setup/reset what=notes.",
+ "schema": "pebble-take-job/1",
+ "id": "RS8-$n",
+ "take": "RS-8",
+ "title": "The Delete card in Notes",
+ "steps": [
+  {
+   "do": "open_app",
+   "app": "Notes"
+  },
+  {
+   "do": "wait_window",
+   "app": "Notes",
+   "timeout_s": 20
+  },
+  {
+   "do": "wait",
+   "s": 1
+  },
+  {
+   "do": "find",
+   "app": "Notes",
+   "contains": "Old price list",
+   "save_as": "@note",
+   "timeout_s": 8
+  },
+  {
+   "do": "click",
+   "at": "@note"
+  },
+  {
+   "do": "wait",
+   "s": 1
+  },
+  {
+   "do": "record_start",
+   "name": "RS8-$n",
+   "max_s": 150
+  },
+  {
+   "do": "wait",
+   "s": 2.5,
+   "note": "the take rolls before the first action"
+  },
+  {
+   "do": "click",
+   "at": "$stone",
+   "event": "openChat",
+   "note": "the pebble; its place is read off the dry run's still (positions.json)"
+  },
+  {
+   "do": "wait",
+   "s": 0.9
+  },
+  {
+   "do": "type",
+   "text": "Delete the note “Old price list (2025)” in Notes.",
+   "event": "typed"
+  },
+  {
+   "do": "wait",
+   "s": 0.4
+  },
+  {
+   "do": "key",
+   "key": "return",
+   "event": "send"
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "timeout_s": 40,
+   "save_as": "@allow",
+   "event": "card"
+  },
+  {
+   "do": "wait",
+   "s": 1.2,
+   "note": "the person reads the card (the person's time; the edit may cut it)"
+  },
+  {
+   "do": "click",
+   "at": "@allow",
+   "event": "allow"
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Don't allow",
+   "timeout_s": 60,
+   "save_as": "@dont",
+   "event": "pressCardWaits"
+  },
+  {
+   "do": "wait",
+   "s": 5,
+   "note": "hold on the waiting card at 1×"
+  },
+  {
+   "do": "click",
+   "at": "@dont",
+   "event": "dontAllow"
+  },
+  {
+   "do": "still",
+   "name": "after"
+  },
+  {
+   "do": "wait",
+   "s": 3
+  },
+  {
+   "do": "record_stop"
+  },
+  {
+   "do": "conform",
+   "name": "RS8-$n"
+  }
+ ]
+}

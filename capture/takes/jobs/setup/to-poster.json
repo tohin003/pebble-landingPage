@@ -1,0 +1,21 @@
+{
+ "_about": "Set-up: go to the poster's Space (Preview full screen), the start of RS-15, RS-1 and RS-9.",
+ "schema": "pebble-take-job/1",
+ "id": "setup-poster-$n",
+ "take": "setup",
+ "title": "To the poster",
+ "steps": [
+  {
+   "do": "activate",
+   "app": "Preview"
+  },
+  {
+   "do": "wait",
+   "s": 2.5
+  },
+  {
+   "do": "still",
+   "name": "poster"
+  }
+ ]
+}

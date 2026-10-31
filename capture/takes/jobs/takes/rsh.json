@@ -1,0 +1,174 @@
+{
+ "_about": "UNVERIFIED until the dry run: element names (Allow, the composer, the conversation list) and the pebble's place come from the dry run's Accessibility dumps and stills; the lead adjusts this template before the take. RS-H (S15–S16, P0): 'Photos' (no project), Ask for approval, a Finder window on ~/Pebble Workbench beside the workspace. The command's receipt ('Ran `sips …` with exit code 0.'), the copies in Finder; then the folder card, Allow (NOT Always allow), 'Wrote …', the pointer resting on Undo this change without clicking. Reset after: setup/reset what=photos.",
+ "schema": "pebble-take-job/1",
+ "id": "RSH-$n",
+ "take": "RS-H",
+ "title": "Photos, the terminal and Undo",
+ "max_minutes": 15,
+ "steps": [
+  {
+   "do": "open_file",
+   "path": "~/Pebble Workbench",
+   "app": "Finder",
+   "note": "the workbench must exist (Pebble makes it; the dry run checks)"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "record_start",
+   "name": "RSH-$n",
+   "max_s": 240
+  },
+  {
+   "do": "wait",
+   "s": 2.5,
+   "note": "the take rolls before the first action"
+  },
+  {
+   "do": "open_app",
+   "app": "Pebble",
+   "note": "opening Pebble again brings the main window forward (USER_GUIDE)"
+  },
+  {
+   "do": "wait_window",
+   "app": "Pebble",
+   "timeout_s": 15
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "name": "Photos",
+   "save_as": "@conv",
+   "timeout_s": 10,
+   "note": "the conversation in the sidebar, by its name (renamed in the dry run, R15)"
+  },
+  {
+   "do": "click",
+   "at": "@conv"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "type",
+   "text": "Resize the open-day photos in Pictures to 1600 px for the website.",
+   "event": "typed"
+  },
+  {
+   "do": "wait",
+   "s": 0.4
+  },
+  {
+   "do": "key",
+   "key": "return",
+   "event": "send"
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "contains": "exit code 0",
+   "timeout_s": 90,
+   "event": "receipt"
+  },
+  {
+   "do": "wait",
+   "s": 4
+  },
+  {
+   "do": "still",
+   "name": "receipt"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXTextArea",
+   "save_as": "@composer",
+   "optional": true,
+   "timeout_s": 4
+  },
+  {
+   "do": "click",
+   "at": "@composer",
+   "if": "@composer"
+  },
+  {
+   "do": "wait",
+   "s": 0.4
+  },
+  {
+   "do": "type",
+   "text": "Put Saturday's hours in the flyer: 10:00 to 16:00.",
+   "event": "typed2"
+  },
+  {
+   "do": "key",
+   "key": "return",
+   "event": "send2"
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "timeout_s": 60,
+   "save_as": "@allow",
+   "event": "card"
+  },
+  {
+   "do": "wait",
+   "s": 1.2,
+   "note": "the person reads the card (the person's time; the edit may cut it)"
+  },
+  {
+   "do": "click",
+   "at": "@allow",
+   "event": "allow"
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "contains": "Wrote",
+   "timeout_s": 60,
+   "event": "wrote"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "name": "Undo this change",
+   "save_as": "@undo",
+   "timeout_s": 10
+  },
+  {
+   "do": "move",
+   "to": "@undo",
+   "event": "undoHover",
+   "note": "rest on Undo, never click"
+  },
+  {
+   "do": "wait",
+   "s": 3
+  },
+  {
+   "do": "still",
+   "name": "undo"
+  },
+  {
+   "do": "wait",
+   "s": 3
+  },
+  {
+   "do": "record_stop"
+  },
+  {
+   "do": "conform",
+   "name": "RSH-$n"
+  }
+ ]
+}
