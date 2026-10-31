@@ -374,12 +374,15 @@ def main():
           "1. **The evening's heavy steps** (§9.3): the plan's measurement, the layers and both builds, the masters on both "
           "AAC encoders, the seam, loudness and coda checks, the strips, the two previews, the README and the provenance. "
           "If any revision 3 gate fails on audio, the rule's next candidate is planned and the lead is told first.",
-          "2. **CODA_SOUND.builtBy** (coda.ts) stays null for now: tests/coda.test.ts pins it null, so the flip is a "
-          "two-file change in the coda lane's files, and made before the evening's build it would silence codaSound's "
-          "warning while the masters still lack the layer. The patch is ready (`cuesheet/r3/coda-builtBy.patch`: the "
-          "builtBy line and its comment in coda.ts, the test turned round to null the builder itself; `git apply --check` "
-          "passes on e944b5b): apply it once `score_coda.py check` passes on the evening's masters, with the coda lane's or "
-          "the lead's agreement.",
+          (f"2. **CODA_SOUND.builtBy** (coda.ts) is set, by the coda lane's commit 1a9d193 (the patch "
+           f"`cuesheet/r3/coda-builtBy.patch`, applied after `score_coda.py check` passed on the masters): as the coda's "
+           f"timing reads it, “{CT['builtBy']}”." if (CT or {}).get("builtBy") else
+           "2. **CODA_SOUND.builtBy** (coda.ts) stays null for now: tests/coda.test.ts pins it null, so the flip is a "
+           "two-file change in the coda lane's files, and made before the evening's build it would silence codaSound's "
+           "warning while the masters still lack the layer. The patch is ready (`cuesheet/r3/coda-builtBy.patch`: the "
+           "builtBy line and its comment in coda.ts, the test turned round to null the builder itself; `git apply --check` "
+           "passes on e944b5b): apply it once `score_coda.py check` passes on the evening's masters, with the coda lane's or "
+           "the lead's agreement."),
           "3. **The set pieces' ledger:** with these rows `cueLengths` passes for Ring 4 (639 frames against 638.8) and "
           "Cascade 4 (290 against 290.3) in all three aspects, so TRIM-R4 and TRIM-C4 close in setpieces/review-ledger.ts "
           "(the set-piece lane's file); until then tests/fix-round3.test.ts 'the open findings fire' fails by design.",
@@ -417,6 +420,37 @@ def main():
         for k, m in (("main, web", mw), ("main, social", ms)) + ((("40-s, web", BLDX["masters"]["web"]), ("40-s, social", BLDX["masters"]["social"])) if BLDX else ()):
             L.append(f"| {k} | {f(m['integrated_lufs'])} | {f(m['lra_lu'], 1)} | {f(m['true_peak_dbtp'], 1)} | "
                      f"{f(m['aac']['native_default']['true_peak_dbtp'], 1)} / {f(m['aac']['apple_audiotoolbox_cbr']['true_peak_dbtp'], 1)} |")
+        L.append("")
+        for k, m in (("web", mw), ("social", ms)):  # R3-02 (31 Oct): the ceiling search, with its reasons
+            cs_ = m.get("ceiling_search")
+            if not cs_:
+                continue
+            dl = cs_.get("local_dips", [])
+            info = m.get("aac_info", {}).get("native_default_no_pns", {})
+            jit = m.get("aac_jitter_probe", {}).get("true_peak_dbtp", {})
+            ta = m.get("title_arrival") or {}
+            L.append(f"- **main, {k}:** the search started at {f(m['target'].get('start_ceiling_dbtp'), 1)} dBTP "
+                     f"({m['target'].get('start_ceiling_why')}) and kept {f(m['ceiling_used_dbtp'], 1)} after "
+                     f"{len(m['ceiling_tries'])} tries; "
+                     + (f"{len(dl)} local dip{'s' if len(dl) != 1 else ''}: " + "; ".join(
+                         f"{mm(d['t'])} held at {f(d['ceiling_dbtp'], 1)} dBTP (its peak lowered {f(d['lowered_db'], 1)} dB)"
+                         for d in dl) if dl else "no local dip")
+                     + (f"; the local search stopped {cs_['stopped']}" if cs_.get("stopped") else "")
+                     + f". Limiter: deepest {f(m['limiter']['gr_min_db'])} dB, {f(m['limiter']['seconds_below_minus1db'])} s "
+                     "under −1 dB."
+                     + (f" FFmpeg's native AAC without PNS (information only) {f(info.get('true_peak_dbtp'), 1)} dBTP; the "
+                        "same master a hair louder or quieter, " + ", ".join(
+                            f"{dg}: " + " / ".join(f(v, 1) for v in tp.values()) for dg, tp in jit.items())
+                        + " dBTP (FFmpeg / Apple): the spread is the encoder's PNS, not the master." if info else "")
+                     + (f" The title: {f(ta['step_1s_lu'], 2, True)} LU over its second before, "
+                        f"{f(ta['step_400ms_lu'], 2, True)} LU over 400 ms"
+                        + (f" (at least {f(ta['min_lu'], 1, True)}: {'pass' if ta['pass'] else 'FAIL'})."
+                           if ta.get("min_lu") is not None else ".") if ta else ""))
+        if BLD.get("aac_delivery"):
+            ad = BLD["aac_delivery"]
+            L.append(f"- **The deliveries' encoders** (R3-04, read from `{ad['script']}`): "
+                     + ("no line uses `-aac_coder fast`" if not ad.get("uses_aac_coder_fast") else "**a line uses `-aac_coder fast`**")
+                     + f" ({len(ad.get('aac_lines', []))} AAC lines); FFmpeg's fast coder stays measured for information only.")
         if CODA_CHK:
             L += ["", "The coda on the masters: " + "; ".join(f"{k} {'pass' if v['ok'] else 'FAIL'}" for k, v in CODA_CHK["checks"].items()) + "."]
     else:
@@ -481,7 +515,8 @@ def main():
           "- **The mix-side checks** (`score_coda.py`, each with a planted canary): no run of digital zero; room tone under "
           "every frame; the room tone about −52 LUFS and the tap about −30 LUFS; one one-shot within a frame of its planned "
           "peak; no restart across L0; no Mixkit take; the tap on E.",
-          "- **CODA_SOUND.builtBy:** not set by this lane: §9.2 item 2.", ""]
+          ("- **CODA_SOUND.builtBy:** set (§9.2 item 2)." if (CT or {}).get("builtBy") else
+           "- **CODA_SOUND.builtBy:** not set by this lane: §9.2 item 2."), ""]
     with open(os.path.join(S2, "CUE_SHEET.md"), "w") as fh:
         fh.write("\n".join(L) + "\n")
     print("wrote", os.path.join(S2, "CUE_SHEET.md"), len(L), "lines;", "measured" if measured else "measurement pending",

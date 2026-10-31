@@ -272,6 +272,23 @@ sp["flex"] = [
     ["F5", "superseded",
      "OVERRIDES §68: Cascade 4 keeps its four features in 2.5 bars and Ring 4 its 5.5 bars; the person chose 35 readable "
      "features (§61), so Cascade 4 never leaves"]]
+# R3-05 (31 Oct): where the masters play a cue differently from this plan (score_layers.py's cue_overrides, the master
+# revision's R-02 and R-05), the sheet prints the masters' value beside the plan's, read from the layer sheet
+LAYM = os.path.join(rp.SCORE2, "master", "layers_main.json")
+OVR = (json.load(open(LAYM)).get("cue_overrides") or {}) if os.path.exists(LAYM) else {}
+if OVR.get("M5", {}).get("head", {}).get("mode") == "fade":
+    xf = OVR["M5"]["head"]["len"]
+    j["J4"]["how"] += (f" The masters play J4 as a {xf:g} s equal-power crossfade ending on the same downbeat (B2 from "
+                       f"{rp.mmss(84.53 - xf)} in the track), not the plan's 1.0 s: the master revision's override (R-05, "
+                       "§3), because the 1.0 s fade left a hole under the Dusk pad.")
+if "M6a" in OVR:
+    g6 = OVR["M6a"]["gain_db"]
+    pl6 = CU["M6a"]["gain_db"]
+    for k_ in ("role",):
+        c["M6a"][k_] = c["M6a"][k_].replace(
+            f"dipped {pl6[-1][1] - pl6[0][1]:.1f} dB",
+            f"dipped {pl6[-1][1] - pl6[0][1]:.1f} dB in the plan, {g6[-1][1] - g6[0][1]:.1f} dB in the masters (R-02's "
+            "override, §3)")
 with open(os.path.join(W, "sheet_spec.json"), "w") as fh:
     json.dump(sp, fh, indent=1, ensure_ascii=False)
 print("wrote", os.path.join(W, "sheet_spec.json"), "| shots", len(shots), "| sync points", len(sync),

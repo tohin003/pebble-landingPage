@@ -137,6 +137,11 @@ def clean(text):
     text = re.sub(r"(;\s*)?\bL\d\d(\s*(,|and)\s*L\d\d)*\b", "", text)
     text = re.sub(r"\s*\((MONTAGE_DESIGN|TREATMENT|CUE_SHEET)[^)]*\)", "", text)
     text = re.sub(r"\s*\(R\d+\)", "", text)
+    # plain words for the lanes' labels (R3-07, 31 Oct): the person never sees 'sub 3', 'CC0 temp' or a line ID
+    text = re.sub(r"\((?:CC0 )?temp\)", "(temporary)", text)
+    text = re.sub(r",?\s+(?:and\s+)?sub \d\b", " and a low sub", text)
+    text = text.replace("the coda's one stone tap", "one soft stone tap")
+    text = re.sub(r"\bon L-C\d+'s landing", "as the second line lands", text)
     text = re.sub(r"\s+([;,.])", r"\1", text)
     text = re.sub(r"[;,]\s*$", "", text.strip())
     return re.sub(r"\s{2,}", " ", text)
@@ -212,6 +217,8 @@ def load(film, sheet_path, build_path, layers_path):
     # masters play (M6a: the cue sheet's 2.5 dB under the title's level is 4.2 dB in the fix revision)
     for c in cues:
         ov = b.get("cue_overrides", {}).get(c["id"], {}).get("gain_db")
+        # the cue sheet now prints the plan's dip beside the masters' (R3-05): the preview shows only what it plays
+        c["role"] = re.sub(r" in the plan, [\d.]+ dB in the masters \([^)]*\)", "", c["role"])
         if ov and re.search(r"dipped [\d.]+ dB", c["role"]):
             g = ov["master"]
             c["role"] = re.sub(r"dipped [\d.]+ dB", f"dipped {g[-1][1] - g[0][1]:.1f} dB", c["role"])

@@ -21,7 +21,15 @@ The layer sheet (LAYERS.json: this lane's reading of CUE_SHEET §1, §3 and §4)
     the social master's limiter (measured with the same limiter on the stretch around it).
 Then the masters: one gain and pedalboard's true-peak BrickwallLimiter, iterated until the integrated loudness lands
 on the target (web -16 LUFS with a -2.0 dBTP ceiling, social -14 LUFS with -1.5 dBTP). Each is measured again after an
-AAC encode with FFmpeg's ebur128; no AAC file is written, because the encoder pipes ADTS straight into the meter.
+AAC encode with FFmpeg's ebur128; no AAC file is written: the ADTS bytes stay in memory between encoder and meter.
+
+The R3-02 fix (31 Oct): a sheet can start the ceiling search from 'start_ceiling_dbtp' and give it a 'local_search'. The
+main film's masters start from revision 2's ceilings as built, and every spot where a reference encoder's decoded true
+peak (located in film time) is over its gate gets its own lower ceiling, by the excess, instead of the whole master; the
+whole ceiling falls only when a spot reaches its cap. The fix round measured why: FFmpeg's native overshoot is its
+perceptual noise substitution, a coin toss at noisy moments, so the build also records the native encoder without PNS
+and the reference encoders on the same master scaled by ±0.02 dB, for information. On the social master the title's
+arrival (1 s and 400 ms) is checked against the sheet's minimum.
 
 Revision 3 (OVERRIDES §65): when the layer sheet carries the coda's span, the master runs on to the coda's last frame
 (the end card's room tone carried on and the coda's one tap are ordinary layers), and the record names the X cut (the
@@ -521,11 +529,38 @@ def extra_gr(music, sfx, grp, a, b, gain_db, ceiling):
     return float(d[skip:].min()) if len(d) > skip else 0.0
 
 
-def master(mix, target, ceiling, release_ms):
+def local_depth(n, dips, ceiling):
+    """The master's ceiling lowered locally (R3-02, 31 Oct): per sample, how many dB under `ceiling` the limiter holds
+    the peaks. Each dip holds its own ceiling ('ceiling_dbtp') from 'from_s' to 'to_s', with raised-cosine ramps of
+    'ramp_s' either side; where two overlap, the lower ceiling wins."""
+    D = np.zeros(n, dtype=np.float64)
+    for d in dips:
+        a, b, rmp = d["from_s"], d["to_s"], d["ramp_s"]
+        depth = max(0.0, ceiling - d["ceiling_dbtp"])
+        i0, i1 = max(0, int((a - rmp) * SR)), min(n, int((b + rmp) * SR) + 1)
+        t = np.arange(i0, i1) / SR
+        w = np.ones_like(t)
+        up, dn = t < a, t > b
+        w[up] = 0.5 - 0.5 * np.cos(np.pi * (t[up] - (a - rmp)) / rmp)
+        w[dn] = 0.5 + 0.5 * np.cos(np.pi * (t[dn] - b) / rmp)
+        D[i0:i1] = np.maximum(D[i0:i1], depth * np.clip(w, 0.0, 1.0))
+    return D
+
+
+def master(mix, target, ceiling, release_ms, dips=None):
+    """One gain and the brickwall limiter, iterated until the integrated loudness lands on the target. With dips, the
+    limiter's ceiling is lowered locally (local_depth): the limiter runs on the mix scaled up by the local depth, and its
+    output is scaled back down, so its gain alone shapes the sound and the peaks there stay under the dip's ceiling."""
     g = target - integrated_lufs(mix)
     log = []
+    k = None
+    if dips:
+        k = (10 ** (local_depth(len(mix), dips, ceiling) / 20)).astype(np.float32)[:, None]
     for _ in range(8):
-        y = limiter(mix * 10 ** (g / 20), ceiling, release_ms)
+        if k is None:
+            y = limiter(mix * 10 ** (g / 20), ceiling, release_ms)
+        else:
+            y = limiter(mix * 10 ** (g / 20) * k, ceiling, release_ms) / k
         L = integrated_lufs(y)
         log.append({"gain_db": r(g, 3), "integrated_lufs": r(L, 3)})
         if abs(L - target) < 0.02:
@@ -549,6 +584,7 @@ def master(mix, target, ceiling, release_ms):
     return y.astype(np.float32), {"gain_db": r(g, 3), "iterations": log, "limiter": {
         "plugin": "pedalboard.BrickwallLimiter", "ceiling_db": ceiling, "true_peak_sidechain": True,
         "lookahead_ms": 5.0, "release_ms": release_ms, "lag_vs_input_samples": lag,
+        **({"local_dips": dips} if dips else {}),
         "gr_min_db": r(gr.min(), 2), "seconds_below_minus1db": r((gr < -1).sum() * 0.01, 2),
         "seconds_below_minus3db": r((gr < -3).sum() * 0.01, 2), "deepest": deepest}}, gr.astype(np.float32)
 
@@ -558,30 +594,105 @@ AAC_ENCODERS = {  # FFmpeg 9's native encoder defaults to the twoloop coder (wha
     "native_fast": ["-c:a", "aac", "-aac_coder", "fast"],
     "apple_audiotoolbox_cbr": ["-c:a", "aac_at", "-aac_at_mode", "cbr"],
 }
+# measured for information, never gated: the native encoder without its perceptual noise substitution (PNS). The fix
+# round's measurement (31 Oct) found FFmpeg's native overshoots to be PNS noise: ±0.02 dB of gain moves the Drop's
+# decoded peak between -2.0 and +0.8 dBTP with PNS, -1.7 to -1.8 without it
+AAC_INFO_ENCODERS = {"native_default_no_pns": ["-c:a", "aac", "-aac_pns", "0"]}
+# R3-04 (31 Oct): no delivery may use '-aac_coder fast'. The deliveries' encoder lines, read from the script itself
+DELIVERY_SCRIPT = os.path.join(REPO, "tools", "encode", "encode.sh")
 
 
-def aac_check(wav, kbps, gate, only=None):
-    """Encode to AAC with each encoder and meter the decoded stream with ebur128 (peak=true); the ADTS bytes only ever
-    exist in the pipe between the two processes. A master passes on an encoder when the integrated loudness is within
+def aac_encode(wav, args, kbps):
+    """The ADTS bytes of one encode, held in memory (no AAC file is written)."""
+    return subprocess.run([FFMPEG, "-hide_banner", "-nostdin", "-loglevel", "error", "-i", wav] + args +
+                          ["-b:a", f"{kbps}k", "-ar", "48000", "-ac", "2", "-f", "adts", "-"],
+                          capture_output=True, check=True).stdout
+
+
+def aac_meter(adts):
+    """ffmpeg's ebur128 (peak=true) on the decoded stream: the gate's own numbers."""
+    res = subprocess.run([FFMPEG, "-hide_banner", "-nostdin", "-nostats", "-f", "aac", "-i", "-", "-af",
+                          "ebur128=peak=true", "-f", "null", "-"], input=adts, capture_output=True)
+    s = res.stderr.decode("utf-8", "replace")
+    s = s[s.rfind("Summary:"):]
+    get = lambda pat: float(re.search(pat, s, re.S).group(1))  # noqa: E731
+    return {"integrated_lufs": get(r"I:\s+(-?[\d.]+) LUFS"), "lra_lu": get(r"LRA:\s+(-?[\d.]+) LU"),
+            "true_peak_dbtp": get(r"True peak:\s+Peak:\s+(-?[\d.inf]+) dBFS")}
+
+
+def tp_frames(x, hop_s=0.01, chunk_s=5.0):
+    """True peak (4x oversampled, the same filter as true_peak_db) per hop_s frame, both channels, in dBTP."""
+    hop, n, pad = int(hop_s * SR), len(x), 64
+    nf = n // hop
+    out = np.zeros(nf)
+    step = int(chunk_s * SR) // hop * hop
+    for a in range(0, nf * hop, step):
+        b = min(nf * hop, a + step)
+        s0, s1 = max(0, a - pad), min(n, b + pad)
+        up = np.abs(ss.resample_poly(x[s0:s1].astype(np.float64), 4, 1, axis=0, window=("kaiser", 9.0))).max(1)
+        lo = (a - s0) * 4
+        out[a // hop:b // hop] = up[lo:lo + (b - a) * 4].reshape(-1, hop * 4).max(1)
+    return 20 * np.log10(np.maximum(out, 1e-12))
+
+
+def aac_peaks(adts, y, floor_db, k=8):
+    """Where the decoded stream peaks: decode the ADTS bytes, find the decoder's delay against the master (cross-
+    correlation over the master's loudest second), and list the decoded true peaks at or above floor_db, one per spot at
+    least 0.5 s apart (loudest first, at most k), each with the master's own true peak over the same 30 ms."""
+    pcm = subprocess.run([FFMPEG, "-hide_banner", "-nostdin", "-loglevel", "error", "-f", "aac", "-i", "-", "-f", "f32le",
+                          "-ac", "2", "-ar", "48000", "-"], input=adts, capture_output=True, check=True).stdout
+    dec = np.frombuffer(pcm, dtype=np.float32).reshape(-1, 2)
+    hop = SR
+    ns = len(y) // hop
+    rms = (y[: ns * hop, 0].astype(np.float64) ** 2).reshape(ns, hop).mean(1)
+    a = int(np.argmax(rms[1:-1]) + 1) * hop
+    ref = y[a:a + SR, 0].astype(np.float64)
+    seg = dec[a:a + SR + 4096, 0].astype(np.float64)
+    cc = ss.correlate(seg, ref, mode="valid", method="fft")
+    delay = int(np.argmax(cc))
+    dd = dec[delay:delay + len(y)]
+    tpd, tpw = tp_frames(dd), tp_frames(y[: len(dd)])
+    order = np.argsort(-tpd)
+    spots, taken = [], []
+    for j in order:
+        if tpd[j] < floor_db or len(spots) >= k:
+            break
+        if all(abs(j - q) >= 50 for q in taken):
+            taken.append(j)
+            spots.append({"film_s": r(j * 0.01, 2), "dbtp": r(tpd[j]), "master_dbtp": r(tpw[max(0, j - 1):j + 2].max())})
+    return {"decoder_delay_samples": delay, "peaks": spots}
+
+
+def aac_check(wav, kbps, gate, only=None, locate_y=None, floor_db=None, encoders=None):
+    """Encode to AAC with each encoder and meter the decoded stream with ebur128 (peak=true); the ADTS bytes are held
+    in memory between the processes, never written. A master passes on an encoder when the integrated loudness is within
     0.5 LU of its target and the encoded true peak is at or under its gate (TREATMENT §4.8: web -1.5 dBTP, social
-    -1.0 dBTP after encoding)."""
+    -1.0 dBTP after encoding). With locate_y (the master's samples), each encoder's decoded true peaks at or above
+    floor_db are also located in film time (aac_peaks)."""
     out = {}
-    for name, args in AAC_ENCODERS.items():
+    for name, args in (encoders or AAC_ENCODERS).items():
         if only and name != only:
             continue
-        enc = subprocess.Popen([FFMPEG, "-hide_banner", "-nostdin", "-loglevel", "error", "-i", wav] + args +
-                               ["-b:a", f"{kbps}k", "-ar", "48000", "-ac", "2", "-f", "adts", "-"], stdout=subprocess.PIPE)
-        res = subprocess.run([FFMPEG, "-hide_banner", "-nostdin", "-nostats", "-f", "aac", "-i", "-", "-af",
-                              "ebur128=peak=true", "-f", "null", "-"], stdin=enc.stdout, capture_output=True, text=True)
-        enc.stdout.close()
-        enc.wait()
-        s = res.stderr[res.stderr.rfind("Summary:"):]
-        get = lambda pat: float(re.search(pat, s, re.S).group(1))  # noqa: E731
-        out[name] = {"args": " ".join(args) + f" -b:a {kbps}k", "integrated_lufs": get(r"I:\s+(-?[\d.]+) LUFS"),
-                     "lra_lu": get(r"LRA:\s+(-?[\d.]+) LU"),
-                     "true_peak_dbtp": get(r"True peak:\s+Peak:\s+(-?[\d.inf]+) dBFS")}
+        adts = aac_encode(wav, args, kbps)
+        out[name] = {"args": " ".join(args) + f" -b:a {kbps}k", **aac_meter(adts)}
         out[name]["tp_pass"] = out[name]["true_peak_dbtp"] <= gate
+        if locate_y is not None:
+            out[name].update(aac_peaks(adts, locate_y, gate - 1.0 if floor_db is None else floor_db))
     return out
+
+
+def delivery_encoders():
+    """R3-04: every AAC encoder line of the delivery script, and whether any asks for FFmpeg's fast coder."""
+    try:
+        lines = open(DELIVERY_SCRIPT).read().splitlines()
+    except OSError as e:
+        return {"script": rel(DELIVERY_SCRIPT), "error": str(e), "pass": False}
+    aac = [(i + 1, ln.strip()) for i, ln in enumerate(lines) if re.search(r"-c:a\s+aac\b|aac_at|aac_coder", ln)]
+    fast = [(i, ln) for i, ln in aac if "aac_coder" in ln]
+    return {"script": rel(DELIVERY_SCRIPT), "aac_lines": [f"{i}: {ln[:160]}" for i, ln in aac],
+            "uses_aac_coder_fast": bool(fast), "pass": bool(aac) and not fast,
+            "rule": "no delivery may use FFmpeg's '-aac_coder fast' (the lead's ruling on R3-04, 31 Oct): the masters "
+                    "are gated on the encoders the deliveries use; native_fast stays measured for information only"}
 
 
 # ------------------------------------------------------------------------------------------------ seam checks
@@ -811,6 +922,120 @@ def fix_checks(plan, res, web, bed, lt, st_w, mom_w):
     return out
 
 
+def build_master(mix, spec, name, mname, out_dir, tmp_dir, plan, N):
+    """One master: the limiter and gain (master()), gated after AAC on the reference encoders by the ceiling search, then
+    measured. Returns the master's samples, its record and its gain-reduction series."""
+    # the gate is on the encoded file (TREATMENT §4.8): start from the stated ceiling, encode the whole master with
+    # the reference encoder, and lower the ceiling only by what the encoded true peak exceeds its gate
+    # the search starts from 'start_ceiling_dbtp' when the sheet sets one (the main film since the R3-02 fix: revision
+    # 2's ceilings as built); 'ceiling_dbtp' stays the stated ceiling the limiter budgets were fitted at
+    ceiling, tries = spec.get("start_ceiling_dbtp", spec["ceiling_dbtp"]), []
+    gate = spec.get("aac_tp_max_dbtp", spec["ceiling_dbtp"] + 0.5)
+    margin = float(spec.get("aac_tp_margin_db", 0.0))  # the ceiling search keeps this much under the gate
+    refenc = spec.get("aac_reference_encoder", "apple_audiotoolbox_cbr")
+    refencs = refenc if isinstance(refenc, list) else [refenc]  # every encoder the master must pass on
+    path = os.path.join(out_dir, f"{name}.{mname}.wav")
+    ls = spec.get("local_search")  # R3-02 (31 Oct): lower the ceiling where an encoder overshoots, not everywhere
+    dips, search = [], {"mode": "local" if ls else "global", "stopped": None}
+    n_tries = int(ls["max_tries"]) + int(ls.get("global_fallback_tries", 4)) if ls else 5
+    for it in range(n_tries):
+        y, rec, gr = master(mix, spec["lufs"], ceiling, spec.get("release_ms", 100.0), copy.deepcopy(dips) or None)
+        sf.write(path, y, SR, subtype="PCM_24")
+        enc = {e: aac_check(path, spec["aac_kbps"], gate, only=e, locate_y=y if ls else None,
+                            floor_db=gate - margin - 0.5)[e] for e in refencs}
+        tps = {e: v["true_peak_dbtp"] for e, v in enc.items()}
+        worst = max(tps.values())
+        tries.append({"ceiling_dbtp": r(ceiling, 2), "encoded_true_peak_dbtp": tps,
+                      **({"local_dips": copy.deepcopy(dips),
+                          "encoded_peaks": {e: v["peaks"] for e, v in enc.items()},
+                          "decoder_delay_samples": {e: v["decoder_delay_samples"] for e, v in enc.items()}} if ls else {})})
+        if worst <= gate - margin:
+            break
+        lim = gate - margin
+        if ls and it < int(ls["max_tries"]) and search["stopped"] is None:
+            # every spot where an encoder's decoded true peak is over the gate less its margin, merged across the
+            # encoders (0.5 s apart), with the largest excess at each
+            spots = []
+            for e, v in enc.items():
+                for p in v["peaks"]:
+                    if p["dbtp"] > lim:
+                        near = next((s for s in spots if abs(s["film_s"] - p["film_s"]) < 0.5), None)
+                        if near is None:
+                            spots.append({"film_s": p["film_s"], "excess_db": p["dbtp"] - lim,
+                                          "master_dbtp": p["master_dbtp"], "encoders": [e]})
+                        else:
+                            near["encoders"].append(e)
+                            if p["dbtp"] - lim > near["excess_db"]:
+                                near.update(film_s=p["film_s"], excess_db=p["dbtp"] - lim, master_dbtp=p["master_dbtp"])
+            changed = False
+            for sp in spots:
+                step = min(sp["excess_db"] + 0.1, float(ls["step_cap_db"]))
+                t = sp["film_s"] + 0.005  # the centre of the 10 ms frame
+                d = next((d for d in dips if abs(d["t"] - t) <= float(ls["merge_s"])), None)
+                base = min(ceiling, sp["master_dbtp"])  # the master's own peak there, under the ceiling
+                if d is None:
+                    d = {"t": r(t, 3), "from_s": r(t - float(ls["half_width_s"]), 3),
+                         "to_s": r(t + float(ls["half_width_s"]), 3), "ramp_s": float(ls["ramp_s"]),
+                         "start_dbtp": r(base, 2), "ceiling_dbtp": r(base - step, 2), "lowered_db": r(step, 2),
+                         "why": []}
+                    dips.append(d)
+                else:
+                    new_c = min(d["ceiling_dbtp"], base - step)
+                    if d["start_dbtp"] - new_c > float(ls["total_cap_db"]) + 1e-9:
+                        new_c = d["start_dbtp"] - float(ls["total_cap_db"])
+                    if new_c >= d["ceiling_dbtp"] - 1e-9:
+                        continue  # this spot is at its cap
+                    d.update(ceiling_dbtp=r(new_c, 2), lowered_db=r(d["start_dbtp"] - new_c, 2))
+                d["why"].append(f"try {it + 1}: {', '.join(sp['encoders'])} decoded {r(sp['excess_db'] + lim)} dBTP "
+                                f"at {r(sp['film_s'], 2)} s (the master {sp['master_dbtp']})")
+                changed = True
+            if changed:
+                continue
+            search["stopped"] = (f"after try {it + 1}: every failing spot is at its {ls['total_cap_db']} dB cap; the "
+                                 "whole ceiling is lowered from here (the rule before this fix)")
+        elif ls and search["stopped"] is None:
+            search["stopped"] = (f"after {ls['max_tries']} local tries; the whole ceiling is lowered from here (the "
+                                 "rule before this fix)")
+        if it < n_tries - 1:  # the last try's master is the one kept, with the ceiling it was made at
+            ceiling -= (worst - lim) + 0.1
+    search["passed"] = bool(worst <= gate - margin)
+    ms_y = cp.kweighted_ms(y, SR)
+    rec.update(file=rel(path), integrated_lufs=r(integrated_lufs(y), 2), lra_lu=r(cp.lra(ms_y, 0, N / SR)),
+               true_peak_dbtp=r(true_peak_db(y), 2), sample_peak_dbfs=r(peak_db(y)), target=spec,
+               ceiling_used_dbtp=r(ceiling, 2), ceiling_tries=tries, aac_gate_dbtp=gate, aac_margin_db=margin,
+               aac_reference_encoder=refenc)
+    if ls:
+        search.update(local_dips=dips, rule=ls.get("why"))
+        rec["ceiling_search"] = search
+    rec["aac"] = aac_check(path, spec["aac_kbps"], gate, locate_y=y if ls else None)
+    for v in rec["aac"].values():
+        v["pass"] = v["tp_pass"] and abs(v["integrated_lufs"] - spec["lufs"]) <= 0.5
+    if ls:
+        # for information, never gated: the native encoder without PNS, and the reference encoders on the same
+        # master a hair louder or quieter (the PNS lottery: R3-02's measurement, 31 Oct)
+        rec["aac_info"] = aac_check(path, spec["aac_kbps"], gate, encoders=AAC_INFO_ENCODERS)
+        jit = {}
+        os.makedirs(tmp_dir, exist_ok=True)
+        jp = os.path.join(tmp_dir, f"{name}.{mname}.jitter.wav")
+        for dg in ls.get("jitter_probe_db", []):
+            sf.write(jp, y * np.float32(10 ** (dg / 20)), SR, subtype="PCM_24")
+            jit[f"{dg:+g} dB"] = {e: aac_check(jp, spec["aac_kbps"], gate, only=e)[e]["true_peak_dbtp"] for e in refencs}
+        if os.path.exists(jp):
+            os.remove(jp)  # a working WAV with Mixkit music: deleted as soon as it has been read (§51)
+        rec["aac_jitter_probe"] = {"note": "the same master scaled by a hair, encoded again: the spread is the "
+                                           "encoder's, not the master's (never gated)", "true_peak_dbtp": jit}
+    ta_min = spec.get("title_arrival_min_lu")
+    if "TITLE" in {e["label"] for e in plan["events"]}:
+        T = next(e["t"] for e in plan["events"] if e["label"] == "TITLE")
+        s1, s4 = lufs_seg(y, T, T + 1.0) - lufs_seg(y, T - 1.0, T), lufs_seg(y, T, T + 0.4) - lufs_seg(y, T - 0.4, T)
+        rec["title_arrival"] = {"t": r(T, 4), "lufs_1s_before": r(lufs_seg(y, T - 1.0, T)),
+                                "lufs_1s_after": r(lufs_seg(y, T, T + 1.0)), "step_1s_lu": r(s1),
+                                "step_400ms_lu": r(s4), "min_lu": ta_min,
+                                "pass": None if ta_min is None else bool(s1 >= ta_min and s4 >= ta_min)}
+    rec["sha256"] = sha256(path)
+    return y, rec, gr
+
+
 # ------------------------------------------------------------------------------------------------ main
 def main():
     plan_path, layers_path, out_dir, name = sys.argv[1:5]
@@ -1028,35 +1253,11 @@ def main():
     # ---------------------------------------------------------------- masters
     masters, grs = {}, {}
     for mname, spec in sheet["masters"].items():
-        # the gate is on the encoded file (TREATMENT §4.8): start from the stated ceiling, encode the whole master with
-        # the reference encoder, and lower the ceiling only by what the encoded true peak exceeds its gate
-        ceiling, tries = spec["ceiling_dbtp"], []
-        gate = spec.get("aac_tp_max_dbtp", spec["ceiling_dbtp"] + 0.5)
-        margin = float(spec.get("aac_tp_margin_db", 0.0))  # the ceiling search keeps this much under the gate
-        refenc = spec.get("aac_reference_encoder", "apple_audiotoolbox_cbr")
-        refencs = refenc if isinstance(refenc, list) else [refenc]  # every encoder the master must pass on
-        path = os.path.join(out_dir, f"{name}.{mname}.wav")
-        for _ in range(5):
-            y, rec, gr = master(mix, spec["lufs"], ceiling, spec.get("release_ms", 100.0))
-            sf.write(path, y, SR, subtype="PCM_24")
-            tps = {e: aac_check(path, spec["aac_kbps"], gate, only=e)[e]["true_peak_dbtp"] for e in refencs}
-            worst = max(tps.values())
-            tries.append({"ceiling_dbtp": r(ceiling, 2), "encoded_true_peak_dbtp": tps})
-            if worst <= gate - margin:
-                break
-            ceiling -= (worst - (gate - margin)) + 0.1
-        ms_y = cp.kweighted_ms(y, SR)
-        rec.update(file=rel(path), integrated_lufs=r(integrated_lufs(y), 2), lra_lu=r(cp.lra(ms_y, 0, N / SR)),
-                   true_peak_dbtp=r(true_peak_db(y), 2), sample_peak_dbfs=r(peak_db(y)), target=spec,
-                   ceiling_used_dbtp=r(ceiling, 2), ceiling_tries=tries, aac_gate_dbtp=gate, aac_margin_db=margin,
-                   aac_reference_encoder=refenc)
-        rec["aac"] = aac_check(path, spec["aac_kbps"], gate)
-        for v in rec["aac"].values():
-            v["pass"] = v["tp_pass"] and abs(v["integrated_lufs"] - spec["lufs"]) <= 0.5
-        rec["sha256"] = sha256(path)
+        y, rec, gr = build_master(mix, spec, name, mname, out_dir, tmp_dir, plan, N)
         masters[mname] = (y, rec)
         grs[mname] = gr
     res["masters"] = {k: v[1] for k, v in masters.items()}
+    res["aac_delivery"] = delivery_encoders()  # R3-04: the deliveries' encoders, read from tools/encode/encode.sh
     # what the music alone (ducked, no sound design) costs each master's limiter at that master's gain
     for mname, spec in sheet["masters"].items():
         g_m = 10 ** (res["masters"][mname]["gain_db"] / 20)

@@ -148,7 +148,12 @@ for nm, b in (("main", bm), ("x40", bx)):
         for k, m in b["masters"].items():
             a = m["aac"]
             print(f"  {nm} {k}: {m['integrated_lufs']} LUFS, TP {m['true_peak_dbtp']} dBTP; AAC FFmpeg {a['native_default']['true_peak_dbtp']} / "
-                  f"Apple {a['apple_audiotoolbox_cbr']['true_peak_dbtp']} dBTP; length {b['film_length_s']} s")
+                  f"Apple {a['apple_audiotoolbox_cbr']['true_peak_dbtp']} dBTP; length {b['film_length_s']} s; ceiling "
+                  f"{m['ceiling_used_dbtp']}, {len(m.get('ceiling_search', {}).get('local_dips', []))} local dips")
+            ta = m.get("title_arrival") or {}
+            if ta.get("min_lu") is not None:
+                print(f"    the title on {k}: {ta['step_1s_lu']:+.2f} LU over 1 s, {ta['step_400ms_lu']:+.2f} over 400 ms: "
+                      + ("PASS" if ta["pass"] else "FAIL"))
 PYEOF
 if [ "$CODA_FAILED" -ne 0 ]; then say "the coda's checks failed: the lead decides before the previews go anywhere"; exit 1; fi
 echo "Look at: $M/main-overview.png, main-seams.png, main-hits.png, x40-overview.png; $C/r3/main-overview.png; $M/main.coda.json;"

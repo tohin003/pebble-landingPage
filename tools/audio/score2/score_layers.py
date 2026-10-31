@@ -63,6 +63,30 @@ MASTERS = {  # the ceiling search keeps 0.2 dB under each gate on both encoders 
     "social": {"lufs": -14.0, "ceiling_dbtp": -1.5, "aac_kbps": 192, "release_ms": 100.0, "aac_tp_max_dbtp": -1.0,
                "aac_tp_margin_db": 0.2, "aac_reference_encoder": ENCODERS},
 }
+# the main film's masters since the R3-02 fix (the lead's ruling, 31 Oct): revision 3's first build lowered the whole web
+# ceiling from -2.0 to -4.5 and the social from -1.5 to -3.2 dBTP to keep FFmpeg's native AAC under its gate, which halved
+# the title's arrival on the social master. The fix round measured why (score lane, 31 Oct, on the mix as built): the
+# native encoder's overshoot is its perceptual noise substitution, a coin toss at the Drop and in B4's noisy bars (±0.02 dB
+# of gain moves the Drop's decoded peak between -2.0 and +0.8 dBTP; with '-aac_pns 0' it reads -1.7 to -1.8), and a softer
+# limiter attack or a 16.5 kHz low-pass changes nothing. So the search starts from revision 2's ceilings as built (the
+# masters the person heard on 28 Oct) and lowers the ceiling only around a spot where an encoder overshoots, by what it
+# overshoots; the whole ceiling falls only if a spot reaches its cap. 'ceiling_dbtp' stays the stated ceiling the limiter
+# budgets are fitted at, so every layer's level is the one revision 2 fitted. The 40-second cut keeps MASTERS unchanged.
+LOCAL_SEARCH = {"max_tries": 8, "global_fallback_tries": 4, "step_cap_db": 1.5, "total_cap_db": 3.0, "half_width_s": 0.06,
+                "ramp_s": 0.05, "merge_s": 0.25, "jitter_probe_db": [-0.02, 0.02],
+                "why": "R3-02 (31 Oct): each spot where a reference encoder's decoded true peak is over its gate less the "
+                       "margin gets its own ceiling, the master's peak there lowered by the excess and 0.1 dB (at most 1.5 dB "
+                       "a try and 3 dB in all), over 120 ms with 50 ms raised-cosine ramps; the rest of the film keeps the "
+                       "start ceiling"}
+MASTERS_MAIN = {
+    "web": {**MASTERS["web"], "start_ceiling_dbtp": -2.5, "local_search": LOCAL_SEARCH,
+            "start_ceiling_why": "revision 2's web ceiling as built (28 Oct, archive-2026-10-28-r2fix/main.build.json)"},
+    "social": {**MASTERS["social"], "start_ceiling_dbtp": -2.3, "local_search": LOCAL_SEARCH, "title_arrival_min_lu": 2.0,
+               "start_ceiling_why": "revision 2's social ceiling as built, the master of the preview the person heard on "
+                                    "28 Oct (the title +2.2 LU over the second before it)",
+               "title_arrival_why": "the lead's ruling on R3-02 (31 Oct): on the social master the title's first second "
+                                    "and its first 400 ms are each at least +2.0 LU over the same span before it"},
+}
 BUDGETS = [["drop_sub", 1.0], ["climax_sub", 1.0], ["title_sub", 1.0], ["swell", 1.0], ["mask", 1.0], ["drop", 2.5],
            ["climax", 2.5], ["title", 2.5], ["name", 0.5], ["slide", 0.5], ["tick1", 0.5], ["tick2", 0.5], ["tick3", 0.5],
            ["enter", 0.5], ["ring1", 0.5], ["ring2", 0.5], ["ring3", 0.5], ["ring4", 0.5], ["coda", 0.5]]  # the 40-s mask is a reverse
@@ -533,7 +557,7 @@ def main():
                  "about": f"What CUE_SHEET.json asks for on top of cuesheet/plan_{film}.json: EQ (§1, §3), the ducks "
                           f"(§3) and the sound-design layers (§4, §6, each cue's 'layers'). Times are film seconds read "
                           f"from the plan. Written by tools/audio/score2/score_layers.py.",
-                 "rules": RULES, "masters": MASTERS, "eq": eq, "ducks": ducks,
+                 "rules": RULES, "masters": MASTERS_MAIN if film == "main" else MASTERS, "eq": eq, "ducks": ducks,
                  "edges": {"fade_in_s": 0.005, "fade_out_s": 0.02}, "layers": lay,
                  "source_time_correction_s": old["source_time_correction_s"],
                  "source_time_correction_evidence": old["source_time_correction_evidence"],
