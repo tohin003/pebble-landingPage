@@ -33,6 +33,8 @@ export interface ActShot {
   crop?: Rect;
   /** the largest scale of the crop on the frame, frame px per CSS px at 1080 (a small crop is never blown up past it) */
   maxK?: number;
+  /** this shot's push, scale a second (default PUSH_PER_S): a still result held on a small crop drifts in faster */
+  pushPerS?: number;
   /**
    * a fast move inside the recording (macOS's Space slide) softened as the Return's first cell is (returnFirstCell.ts):
    * a blur and a veil toward the page, rising on a smoothstep over `ramp` source frames into [from, to) and out of it

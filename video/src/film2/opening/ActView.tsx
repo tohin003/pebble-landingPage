@@ -17,7 +17,7 @@ export const ActView: React.FC<{ act: ActPlan }> = ({ act }) => {
   const { shot, index, src, start } = shotAt(act, frame);
   // the film's slow drift (the set pieces' cameras never hold still): a push of PUSH_PER_S a second about the shot's
   // centre, on the recording inside its box and on a typographic beat's lines
-  const push = 1 + PUSH_PER_S * ((frame - start) / 60);
+  const push = 1 + (shot.pushPerS ?? PUSH_PER_S) * ((frame - start) / 60);
   const lay = shotLayout(act, index, W, H, safe, { size: typeSizePx, width: approxLineWidth });
   const lines = linesOfShot(act, index);
   const m = shot.take;

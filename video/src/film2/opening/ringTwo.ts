@@ -21,7 +21,7 @@ export const RS5C_CALENDAR = { x: 198, y: 505, w: 150, h: 76 } as const;
 const SHOTS: readonly ActShot[] = [
   { id: "calc", stands: "S11", kind: "take", take: TAKE_RS4_07, from: 3176, to: 3476, crop: RS4_CALCULATOR, note: "Calculator: the keys, '=' to 600" },
   { id: "card", stands: "S12 (S14's Calendar)", kind: "take", take: TAKE_RS5C_04, from: 2800, to: 2920, crop: RS5_CARD, note: "the Calendar card, Do it" },
-  { id: "calendar", stands: "S12 (S14's Calendar)", kind: "take", take: TAKE_RS5C_04, from: 6110, to: 6330, crop: RS5C_CALENDAR, maxK: 6, note: "Glaze order, 09:00, Monday 2 November" },
+  { id: "calendar", stands: "S12 (S14's Calendar)", kind: "take", take: TAKE_RS5C_04, from: 6110, to: 6330, crop: RS5C_CALENDAR, maxK: 6, pushPerS: 0.025, note: "Glaze order, 09:00, Monday 2 November" },
   { id: "asks", stands: "S13", kind: "type", frames: 320, note: "typographic: what still asks (RS-8 not kept)" },
 ];
 
