@@ -1,0 +1,43 @@
+{
+  "_what": "The take agent's allowlists and limits (capture/takes/README.md). Installed read-only (owned by the person's account) in /Users/Shared/pebble-takes/agent/; the agent reads it once, at start.",
+  "demo_user": "studio",
+  "root": "/Users/Shared/pebble-takes",
+  "world": "/Users/Shared/pebble-sample-world",
+  "pebble_app": "/Applications/Pebble.app",
+  "apps": {
+    "Pebble": "/Applications/Pebble.app",
+    "Google Chrome": "/Applications/Google Chrome.app",
+    "Calculator": "/System/Applications/Calculator.app",
+    "Notes": "/System/Applications/Notes.app",
+    "Music": "/System/Applications/Music.app",
+    "Calendar": "/System/Applications/Calendar.app",
+    "Preview": "/System/Applications/Preview.app",
+    "Shortcuts": "/System/Applications/Shortcuts.app",
+    "Finder": "/System/Library/CoreServices/Finder.app",
+    "Kiln Board": "~/Applications/Kiln Board.app"
+  },
+  "ax_processes": ["Pebble", "Google Chrome", "Calculator", "Notes", "Music", "Calendar", "Preview", "Shortcuts", "Finder", "Kiln Board", "NotificationCenter", "Dock", "ControlCenter", "SystemUIServer"],
+  "hideable": ["Terminal", "Finder", "Calculator", "Notes", "Music", "Calendar", "Preview", "Shortcuts", "Kiln Board", "Google Chrome"],
+  "urls": [
+    {"exact": "file:///Users/studio/Projects/studio-bookings/site/index.html", "why": "the booking page, Chrome full screen (RS-1, RS-9)"},
+    {"prefix": "https://www.youtube.com/", "why": "the video the person chooses (RUNBOOK §11 item 1); Pebble itself opens it in the take"},
+    {"exact": "chrome://extensions/", "why": "Pebble for Chrome's check in the dry run"}
+  ],
+  "file_roots": ["~", "/Users/Shared/pebble-takes", "/Applications"],
+  "tools": {
+    "ffmpeg": "/opt/homebrew/bin/ffmpeg",
+    "ffprobe": "/opt/homebrew/bin/ffprobe",
+    "screencapture": "/usr/sbin/screencapture",
+    "taskpolicy": "/usr/sbin/taskpolicy",
+    "osascript": "/usr/bin/osascript",
+    "open": "/usr/bin/open",
+    "caffeinate": "/usr/bin/caffeinate",
+    "bash": "/bin/bash"
+  },
+  "conform": {"fps": 60, "crf": 16, "preset": "medium"},
+  "disk": {"min_free_gib": 2.0, "take_mb_per_min": 375, "still_min_free_gib": 1.7},
+  "typing": {"cps": 6.5, "jitter": 0.35},
+  "heavy_wait_secs": 120,
+  "heartbeat_s": 5,
+  "poll_s": 0.5
+}
