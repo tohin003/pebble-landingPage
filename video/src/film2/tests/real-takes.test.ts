@@ -55,7 +55,7 @@ describe("the real 2.0.0 takes", () => {
 
   test("RS-9's beat: every shot at 1× inside its clip, never Clip A's 'which rival?', B's prompt or its adverts", () => {
     expect(checkRs9Beat()).toEqual([]);
-    expect(RS9_BEAT.map((x) => x.id)).toEqual(["ask", "slide", "play", "punch", "anyway"]);
+    expect(RS9_BEAT.map((x) => x.id)).toEqual(["ask", "tab", "play", "punch", "anyway"]);
     // 1×: consecutive beat frames inside a shot are consecutive source frames
     for (let f = 1; f < RS9_BEAT_FRAMES; f++) {
       const a = beatAt(f - 1);
@@ -64,7 +64,7 @@ describe("the real 2.0.0 takes", () => {
     }
     // the canary: a shot reaching into the adverts is refused
     const bad = { ...RS9_BEAT[2]!, from: RS9B_ADVERTS.to - 30 };
-    expect(bad.from < RS9B_ADVERTS.to && bad.to > RS9B_ADVERTS.from).toBe(true);
+    expect(bad.from < RS9B_ADVERTS.to && bad.to > RS9B_ADVERTS.from && bad.crop!.y + bad.crop!.h > 112).toBe(true);
     expect(RS9_SOUND_MARKS.scoreOut).toBeLessThan(RS9_SOUND_MARKS.scoreBack);
   });
 

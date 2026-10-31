@@ -19,6 +19,7 @@ export const RS9BeatView: React.FC<{ beat?: BeatName }> = ({ beat = "rs9" }) => 
   // the whole screen fills the frame's width; a crop sits inside the safe area, above the line's band
   const boxW = shot.crop ? W - 2 * safe : W;
   const boxH = shot.crop ? H * (shot.id === "ask" || shot.id === "keys" ? 0.78 : 0.7) : H;
+  // (a strip, the tab bars or a title, fills the safe width; its height follows)
   const k = Math.min(boxW / c.w, boxH / c.h);
   const w = c.w * k;
   const h = c.h * k;

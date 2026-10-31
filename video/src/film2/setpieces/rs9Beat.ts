@@ -3,12 +3,15 @@
 // 23:52 edit decisions). Each shot plays its clip at 1×; the cuts are between shots, never inside Pebble's reply:
 //   ask     Clip A, the companion: the request in the box, sent, "Task: running" (cut there; Pebble's later "which
 //           rival?" is never used). Cropped to the companion: the workspace behind it shows a usage line.
-//   slide   Clip B as Chrome's Space slides in, from the first frame it has cleared the workspace (B's prompt, with
-//           the URL, sits in the companion there) to the frame before YouTube's advert shows: the cut on motion.
+//   tab     Clip B from the first frame Chrome's Space has cleared the workspace (B's prompt, with the URL, sits in the
+//           companion there), cropped to Chrome's tab and address bars: Pebble's green group and its own tab on the
+//           video's address. YouTube's advert is already playing in the player below, which the crop leaves out
+//           (the first look, 1 Nov: the whole screen showed the advert's first frames).
 //   play    Clip B's playback (YouTube's adverts, about 55–116 s, are skipped by the composite's cut), cropped to the
 //           player and the title: no sidebar, no advert, no Pebble pill.
-//   punch   the same playback at 1×, punched in on "Introducing Claude Code" and the channel: the score cuts out,
-//           about a second of silence (the sound lane's mark)
+//   punch   the same playback at 1×, punched in on the title "Introducing Claude Code": the score cuts out, about a
+//           second of silence (the sound lane's mark). The channel's name is half cut by the screen's foot in the
+//           recording, so it stays out (the credit line names Anthropic)
 //   anyway  the line "Anyway." on the punch-in, then a hard cut back as the score picks up
 // No caption claims or compares anything; nothing of Pebble is altered; the end credits carry RS9_CREDIT.
 // Pure; no React.
@@ -35,16 +38,19 @@ export interface BeatShot {
 /** The companion in Clip A (its panel and box, above the pebble; the workspace and its usage line left of it). */
 export const RS9_COMPANION: Rect = { x: 636, y: 116, w: 370, h: 340 };
 /** YouTube's player and the video's title in Clip B (left of the sidebar, its adverts and Pebble's pill). */
-export const RS9_PLAYER: Rect = { x: 12, y: 232, w: 664, h: 434 };
-/** The punch-in: "Introducing Claude Code" and the channel, to the screen's foot. */
-export const RS9_TITLE: Rect = { x: 8, y: 606, w: 320, h: 60 };
+export const RS9_PLAYER: Rect = { x: 12, y: 232, w: 664, h: 420 };
+/** The punch-in: the title "Introducing Claude Code" alone. */
+export const RS9_TITLE: Rect = { x: 8, y: 610, w: 250, h: 42 };
+/** Chrome's tab and address bars in Clip B (above the default-browser notice and the player). */
+export const RS9_TABS: Rect = { x: 0, y: 28, w: 700, h: 84 };
 
-/** Clip B's adverts: never shown. */
-export const RS9B_ADVERTS = { from: 3282, to: 6960 } as const;
+/** Clip B's adverts, in the player: never shown (a shot over these frames is cropped above the player, y ≤ 112). */
+export const RS9B_ADVERTS = { from: 3276, to: 6960 } as const;
+const ABOVE_PLAYER_Y = 112;
 
 export const RS9_BEAT: readonly BeatShot[] = [
   { id: "ask", take: TAKE_RS9A_01, from: 1620, to: 1800, crop: RS9_COMPANION },
-  { id: "slide", take: TAKE_RS9B_02, from: 3276, to: 3282 },
+  { id: "tab", take: TAKE_RS9B_02, from: 3276, to: 3336, crop: RS9_TABS },
   { id: "play", take: TAKE_RS9B_02, from: 6990, to: 7140, crop: RS9_PLAYER },
   { id: "punch", take: TAKE_RS9B_02, from: 7140, to: 7200, crop: RS9_TITLE },
   { id: "anyway", take: TAKE_RS9B_02, from: 7200, to: 7260, crop: RS9_TITLE, line: RS9_TEXT.anyway },
@@ -83,7 +89,7 @@ export function checkRs9Beat(): string[] {
     if (s.from < 0 || s.to > s.take.frames || s.to <= s.from) out.push(`${s.id}: source ${s.from}–${s.to} outside ${s.take.id}`);
     if (s.take.id === "RS9A-01" && s.to > 37 * 60) out.push(`${s.id}: Clip A past 37 s (Pebble's 'which rival?')`);
     if (s.take.id === "RS9B-02" && s.from < TAKE_RS9B_02.events.chromeClear!) out.push(`${s.id}: Clip B before Chrome clears the workspace (its prompt carries the URL)`);
-    if (s.take.id === "RS9B-02" && s.from < RS9B_ADVERTS.to && s.to > RS9B_ADVERTS.from) out.push(`${s.id}: Clip B's adverts`);
+    if (s.take.id === "RS9B-02" && s.from < RS9B_ADVERTS.to && s.to > RS9B_ADVERTS.from && !(s.crop && s.crop.y + s.crop.h <= ABOVE_PLAYER_Y)) out.push(`${s.id}: Clip B's adverts`);
     if (s.crop && (s.crop.x < 0 || s.crop.y < 0 || s.crop.x + s.crop.w > s.take.w || s.crop.y + s.crop.h > s.take.h)) out.push(`${s.id}: its crop leaves the recording`);
   }
   if (!RS9_BEAT.some((s) => s.line === RS9_TEXT.anyway)) out.push("the beat has no 'Anyway.'");
