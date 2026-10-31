@@ -1207,6 +1207,63 @@ exist, so those frames stay pale and sparse whatever the camera and the light do
 conversation's hatching, the cut into Kiln shows the conversation's label for 1.0 s before the kept card lands, and the
 16:9 and 1:1 climax shows no ground for the evening light.
 
+## Fix round 3 (28–31 Oct): the trim to 35, verify-2's findings, the peak
+
+Verify-2 judged round 2's reels: 18 of the review's 23 findings fixed, none regressed, the reel still NOT READY ("it no
+longer reads static, but it still reads pale and sparse"), the kept card the film's lowest-contrast section, and four new
+findings (VF-01 to VF-04). OVERRIDES §61 put 35 readable features at about 2:15. Round 3 trims Ring 4 and Cascade 4 by
+content (MONTAGE_DESIGN §5.4), fixes VF-03 and VF-04, extends the stone count for VF-01's class (CR-15's last gap) and
+restages the peak. The music then gave Ring 4 and Cascade 4 two more bars (OVERRIDES §67, §68; the cue sheet's revision
+3). Each new check has a canary in `tests/fix-round3.test.ts`.
+
+| Finding | What changed | Held by |
+|---|---|---|
+| TRIM-R4 Ring 4's ring part, 19.35 s as built | the lean ring, MONTAGE_DESIGN §5.4's named cut (`RingContent.ask.shownOnly`): the held card is shown, not read (F11 in the history); HS-F enters after the person's click (TREATMENT §3.6 chain 9); the ring frames the ask and returns at once; the camera lands on the test card (F3), read at the 28 px floor, then glides to the Verified line (F12) in a framing of its own; the chapter line and its limit land on the 2nd and 3rd beats, during the ring's travel, and are gone before Verified lands; the cut on a half bar. 639 frames, 10.65 s (5.5 bars). §67's take entered at Done was measured and saves nothing (the reads set the length; its receipt would land under the lines), so the take stays entered after the click | `cueLengths` against the cue sheet's revision 3 (638.7 frames): closed, `review-ledger.ts` `CLOSED_DATA_FINDINGS` |
+| TRIM-C4 Cascade 4, 7.75 s as built | its four features stay (the person chose 35): the fixed line blurs in on the cut, word by word, so the first item lands on the first beat; each swap lands 2–3 frames before a beat, so the holds are 1.32, 0.83, 0.83 and 0.70 s; 290 frames, 4.83 s (2.5 bars) | `cueLengths` (revision 3: 290.3 frames): closed; `checkCascade`'s floors |
+| VF-04 Ring 4's reads 26 px from the 1:1 and 9:16 frames' left edge | the act's 424-px sentence is read at the 28 px floor, 60 px from each edge in the square and tall frames, from the frame its landing glide has carried it inside that margin. The rule also found the Drop's card in 1:1's aperture, the Dusk's palette row and the climax's cards in 1:1 and 9:16; each now keeps the margin | `readEdges` (in `checkPlan`) |
+| VF-03 the 1:1 and 9:16 cascade card off the left edge, its label hidden | the stage is fitted so its pan and push carry each card 60 px inside the frame outside the cut's sweep; the square and tall frames pan at 0.3 px a frame and do not push. In 16:9 the fit keeps to the layout's stage column (seen on the r2 reel: centred on the whole frame, the cards slid under the item lines) | `cascadeCards` (in `checkPlan`); a test holds every card clear of the item lines |
+| CR-15's last gap (VF-01's class) | `stoneCount` counts a pebble a Return cell pictures at 10 % of the stone's area or more (`picturedStonesOnFrame`); the stones scan counts dark blobs from 10 % of the stone's area (it was 25 %) and round ones inside each Return cell (`ReelMarks.cellsAt`) | `stoneCount`; the scan's stones; canaries for both |
+| The peak (verify-2's grand judgment, CR-14's remainder) | the kept card sits at the Kiln column's foot; the cut lands wide (the window's corner, the evening riverbed and the stone as the card lands), then the push to reading size runs about the card's trailing edge; L25 sits on the ground in 16:9 and 9:16 | the peak's tests in `tests/fix-round3.test.ts`; measured below |
+
+**Ring 4 planned fresh from the stone** (not how the film plans it) cannot clear its lines before the receipt in 16:9:
+the arrival is long, the captures cross the lines' band until about frame 91, and the pair is gone at 304, while the
+receipt must land by R284 to keep the click out of the take. The plan never shows the click to make room (round 3's
+first build fell back to a later beat and did); `typeOverPlanes` refuses it instead. Entered from the Drop, as
+`demo/plans.ts` does, the block is clean from 90 to 140 BPM in every aspect.
+
+**The reels** (fix round 3, the set-piece demo at half size; `luma-scan --marks` with the stones scan, `ground-light`,
+the peak's metrics: in-frame luma std and colourfulness, medians every 5th frame):
+
+Rendered at 2f5292e (16:9 and 9:16) and 80cbd25 (1:1; the set pieces are the same in both): drop 0, Ring 4 660 (its
+cut 1299), the Dusk 1589, the climax 2669 (the cut into Kiln 2909), the Return 3509, the coda 5282, 5750 frames.
+
+| Measure | 16:9 | 1:1 | 9:16 | target |
+|---|---|---|---|---|
+| the peak, 2909–3509: luma std, median (lowest frame) | 16.5 (11.4) | 20.3 (9.8) | 20.9 (13.6) | 16 or more |
+| the peak: colourfulness, median (lowest) | 17.6 (16.7) | **4.8** (4.5) | 16.5 (14.8) | 10 or more |
+| the peak's read hold: luma std / colourfulness | 16.6 / 17.5 | 20.3 / 4.7 | 20.9 / 15.8 | |
+| for comparison: the Drop's hold; the Veil | 34.7 / 17.5; 26.8 / 18.1 | 36.5 / 17.8; 33.6 / 21.1 | 29.2 / 19.4; 34.6 / 24.0 | |
+| ground R − B: evening against day | +37 against +7 | +39 against +5 | +37 against +6 | +10 or more |
+| the scan (luma, pops, stones) | passes | the Veil, 1954–1955 | the Veil, 1954–1955 | |
+
+- **The peak in 16:9 and 9:16** meets its medians: the evening riverbed beside or below Kiln's window, L25 on it. The
+  wide landing is the stretch's lowest (luma std 14.5 and 15.2), and single frames dip to 11–14 where the card is all
+  that moves.
+- **The peak in 1:1 does not.** At the reading floor the kept card is 522 px tall and fills the square's width, the
+  window's foot below it is 400 px, and L25 reaches y 187: no framing shows the ground while the card is read, so the
+  hold is window and card (colourfulness 4.7). The ground shows only at the landing and the push. Open for the lead
+  (the 2.0.0 card's own size may change the sum).
+- **The stones scan in 1:1 and 9:16** reports two blobs on 1954–1955: one pebble, the Veil (a render by Pebble's own
+  code), cut in two by its own light sweep on one frame (and none on the next two). Looked at; no second stone. The
+  Return's cells (VF-01) show no stone in any aspect.
+- **Looked at** (sheets in the lane's scratch, `look-r4-16`, `look-r2-1`, `look-r4-9`): Ring 4's arrival, its lines gone
+  before Verified lands, the act and the receipt read in turn; the cascade's four swaps with every card inside the
+  frame and its label drawn; the peak beside the Drop and the Dusk; every join. The r2 16:9 reel showed the cascade's
+  cards under the item lines (fixed above). In 1:1 the chapter line and its limit cross the HS-F slot's own label
+  (860–888): a slot today, `typeOverPlanes` reports it, and it becomes an error once the 2.0.0 capture has text there.
+- **Still placeholder-bound:** Ring 4's reads (luma std 12–14, colourfulness 3–4) and the Glaze ask (13–16, 3–5) are
+  slots on the riverbed's paper, as pale as before; the 2.0.0 captures, a later lane, decide them.
+
 ## The lead's rulings (OVERRIDES §52), as decided and as built
 
 - **L2, the frame rate: 60 fps.** Every master and cut renders natively at 60 fps in all three aspects; review proxies
