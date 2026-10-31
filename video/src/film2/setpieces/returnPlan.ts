@@ -7,8 +7,8 @@
 //
 //   returnGrid()        the music: B2 "Your Breath" run on in its own order from 1:36.53 (bar 48, R0) to the J5 beat cut
 //                       at 1:44.53 (R480) into A4 "Born Of The Sky" 2:40.52 (bar 80), bar 81 (R600), bar 82 (R720, the
-//                       title's hit), on the score lane's revised beat sheet (CUE_SHEET.md revision 2, "the Return";
-//                       BEAT_SHEET.json of 28 Oct), whose marks and bar lines all fall on the plan's frames
+//                       title's hit), on the score lane's beat sheet (BEAT_SHEET.json, cue sheet revision 3 of 28 Oct:
+//                       R0 at film 1:49.90), whose marks and bar lines all fall on the plan's frames
 //   returnCameraAt()    the camera of §2.6 on an R-frame: a log-space pull-back from S24's last frame to the whole field
 //                       (slow at first, E-move on u^1.3), panning from the kept card to the stone; a 12 % push from R200
 //                       to R480 overlapping it; a pan that lands the stone on the title stone's pose on R656 (with the
@@ -55,14 +55,15 @@ export const RETURN_MUSIC = {
 } as const;
 
 /**
- * Where the Return sits in the main film, seconds of film time, from the timing source: the score lane's revised beat
- * sheet (CUE_SHEET.md revision 2 of 27–28 Oct, "the Return"; BEAT_SHEET.json's `return`, 28 Oct 04:30): the piece from
- * 1:45.0333 (R−60), R0 on B2's bar 48 at 1:46.0333, J5 on A4's bar 80 at 1:54.0337, the title on A4's bar 82 at
- * 1:58.0332. These are MONTAGE_DESIGN §5.2's 1:45.03, 1:46.03, 1:54.03 and 1:58.03 to within 4 ms. At 60 fps R−60, R0,
- * R480 and R720 fall on film frames 6302, 6362, 6842 and 7082, as the beat sheet's do; J5 is 0.4 ms past R0 + 8 s
- * (B2's bar is 120.006 frames), which rounds to the same frame.
+ * Where the Return sits in the main film, seconds of film time, from the timing source: the score lane's beat sheet
+ * (BEAT_SHEET.json `return`, cue sheet revision 3 of 28 Oct, OVERRIDES §68: two more bars of B4 before Enter, so the
+ * Return is 232 frames later than in revision 2 and its own R-frame timing is unchanged): the piece from 1:48.90 (R−60),
+ * R0 on B2's bar 48 at 1:49.90, J5 on A4's bar 80 at 1:57.90, the title on A4's bar 82 at 2:01.90. At 60 fps R−60,
+ * R0, R480 and R720 fall on film frames 6534, 6594, 7074 and 7314, as the beat sheet's do (J5 is 0.4 ms past
+ * R0 + 8 s, B2's bar being 120.006 frames, which rounds to the same frame). Copied from the beat sheet by the Return
+ * lane's script, never typed in; return.test.ts holds every mark and bar line of the sheet on the plan's frames.
  */
-export const RETURN_FILM_S = { start: 105.0333, r0: 106.0333, j5: 114.0337, title: 118.0332 } as const;
+export const RETURN_FILM_S = { start: 108.9, r0: 109.9, j5: 117.9004, title: 121.8999 } as const;
 
 /** The Return's music, as the demo reel names a piece's stretch (setpieces/demo/grids.ts): the real cue, not an audition stretch. */
 export const RETURN_STRETCH: DemoStretch = {
