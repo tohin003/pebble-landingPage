@@ -20,5 +20,10 @@ case "$METHOD" in
     exec /opt/homebrew/bin/ffmpeg -hide_banner -nostats -n -f avfoundation -capture_cursor 1 -capture_mouse_clicks 0 \
       -framerate 60 -pixel_format nv12 -i "$DISP:none" -t "$MAX" -r 60 -c:v hevc_videotoolbox -b:v 24M -tag:v hvc1 -an \
       "$OUT" <"$FIFO" ;;
+  testsrc)
+    # TESTS ONLY (capture/takes/tests): a synthetic picture, no screen. Jobs can't ask for it (jobspec allows
+    # screencapture and avfoundation only); it exercises heavy.sh's copy, the control FIFO and the stop.
+    exec /opt/homebrew/bin/ffmpeg -hide_banner -nostats -n -re -f lavfi -i "testsrc2=size=160x104:rate=60" -t "$MAX" \
+      -c:v libx264 -preset ultrafast -pix_fmt yuv420p -an -f mov "$OUT" <"$FIFO" ;;
   *) echo "rec.sh: unknown method $METHOD" >&2; exit 64 ;;
 esac

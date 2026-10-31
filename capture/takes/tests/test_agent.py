@@ -344,6 +344,31 @@ class TestKillSwitch(unittest.TestCase):
         open(os.path.join(self.root, "STOP"), "w").close()
         self.check_stopped(p, t0)
 
+    def test_restart_execs_in_place_between_jobs(self):
+        p = subprocess.Popen([PY, "-I", "-B", os.path.join(AGENT, "takeagent.py"), "--simulate", "--root", self.root,
+                              "--heavy", FAKE_HEAVY], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        hb = os.path.join(self.root, "results", "agent.json")
+        try:
+            deadline = time.time() + 20
+            while not os.path.exists(hb):
+                self.assertLess(time.time(), deadline)
+                time.sleep(0.1)
+            first = load(hb)
+            time.sleep(0.2)
+            open(os.path.join(self.root, "RESTART"), "w").close()
+            deadline = time.time() + 20
+            while load(hb).get("started") == first["started"] or load(hb).get("state") != "idle":
+                self.assertLess(time.time(), deadline, "no restart")
+                time.sleep(0.1)
+            again = load(hb)
+            self.assertEqual(again["pid"], first["pid"])  # the same process: Terminal's permissions stay
+            time.sleep(1.5)
+            self.assertEqual(load(hb)["started"], again["started"])  # once, not a loop
+            self.assertEqual(read(os.path.join(self.root, "log", "agent.log")).count("RESTART:"), 1)
+        finally:
+            p.send_signal(signal.SIGINT)
+            p.wait(timeout=10)
+
     def test_ctrl_c(self):
         p = self.start()
         t0 = time.time()
@@ -538,6 +563,65 @@ class TestEnqueue(unittest.TestCase):
         res = result(self.root, "opt")
         self.assertEqual(res["status"], "done", res.get("error"))
         self.assertIn("skipped", res["steps"][1])
+
+
+@unittest.skipUnless(os.access(FFMPEG, os.X_OK), "needs Homebrew FFmpeg")
+class TestRecorderPlumbing(unittest.TestCase):
+    """The live recording path without a screen: heavy.sh's real copy (its lock and log in the take folder's .work),
+    rec.sh, the control FIFO and each stop, with rec.sh's test-only synthetic source in place of screencapture. The
+    account guard is lifted for this Media object only (it posts no input: Media has no hands)."""
+
+    def setUp(self):
+        self.root = make_root()
+        repo = os.path.dirname(os.path.dirname(TAKES))
+        for f in ("heavy.sh", "env.sh"):
+            shutil.copy(os.path.join(repo, "scripts", f), os.path.join(self.root, "scripts", f))
+        os.makedirs(os.path.join(self.root, "agent"))
+        shutil.copy(os.path.join(AGENT, "rec.sh"), os.path.join(self.root, "agent", "rec.sh"))
+        self.m = media.Media(dict(CFG, heavy_wait_secs=20), self.root, lambda s: None, live=True)
+        self.m._guard = lambda what: None
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def record(self, name, stop_with, seconds, max_s=20):
+        rec = self.m.start(name, max_s, "testsrc", stop_with, 1, "j", "dry", {"scale": 1.0})
+        self.assertIsNotNone(rec.proc)
+        time.sleep(seconds)
+        return self.m.stop()
+
+    def test_stop_by_key_then_conform_through_heavy(self):
+        meta = self.record("int-key", "key", 2.5)
+        self.assertIn("control pipe", meta["stopped_by"])
+        self.assertNotIn("SIGTERM", meta["stopped_by"])
+        self.assertIsNotNone(meta["probe"], meta.get("error"))
+        self.assertTrue(2.0 < meta["probe"]["duration_s"] < 4.5, meta["probe"]["duration_s"])  # FFmpeg reads its "q" between frames
+        log = read(os.path.join(self.root, ".work", "heavy.log"))
+        self.assertIn("START label=take-int-key", log)
+        self.assertIn("END label=take-int-key", log)
+        self.assertFalse(os.path.exists(os.path.join(self.root, ".work", "heavy.lock")))
+        rec = self.m.conform("int-key")
+        self.assertTrue(rec["_detail"]["ok"], rec["_detail"]["checks"])
+        self.assertIn("START label=conform-int-key", read(os.path.join(self.root, ".work", "heavy.log")))
+
+    def test_stop_by_signal(self):
+        meta = self.record("int-sig", "signal", 2.0)
+        self.assertTrue(meta["stopped_by"].startswith("SIGINT"), meta["stopped_by"])
+        self.assertIsNotNone(meta["probe"], meta.get("error"))
+
+    def test_stop_at_its_own_limit(self):
+        rec = self.m.start("int-dur", 3, "testsrc", "duration", 1, "j", "dry", {"scale": 1.0})
+        meta = self.m.stop()
+        self.assertIn("own limit", meta["stopped_by"])
+        self.assertAlmostEqual(meta["probe"]["duration_s"], 3.0, delta=0.3)
+
+    def test_a_hold_in_the_take_folder_refuses_cleanly(self):
+        with open(os.path.join(self.root, ".work", "HOLD"), "w") as f:
+            f.write("test hold\n")
+        with self.assertRaises(media.MediaError) as cm:
+            self.m.start("int-hold", 5, "testsrc", "key", 1, "j", "dry", {"scale": 1.0})
+        self.assertIn("stopped before it started", str(cm.exception))
+        self.assertFalse(os.path.exists(os.path.join(self.root, "raw", "int-hold.mov")))
 
 
 if __name__ == "__main__":

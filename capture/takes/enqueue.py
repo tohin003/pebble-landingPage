@@ -8,6 +8,7 @@
     $PY -I -B capture/takes/enqueue.py show <job-id>
     $PY -I -B capture/takes/enqueue.py check <template.json> [--n 1] [--set …]   # validate only
     $PY -I -B capture/takes/enqueue.py pause | resume | stop
+    $PY -I -B capture/takes/enqueue.py restart            # after install.sh: the agent starts again with the new code
 
 Templates (capture/takes/jobs/) are jobs with placeholders. A JSON string that is exactly "$name" becomes the value of
 `name` (a number, a text or a point {x, y}); "$name" inside a longer text becomes that text. Values come from, in
@@ -171,7 +172,7 @@ def main() -> int:
     w.add_argument("--timeout", type=float, default=600)
     s = sub.add_parser("show")
     s.add_argument("id")
-    for name in ("pause", "resume", "stop"):
+    for name in ("pause", "resume", "stop", "restart"):
         sub.add_parser(name)
     a = ap.parse_args()
     root = a.root
@@ -232,6 +233,11 @@ def main() -> int:
         return 0 if load_json(path).get("status") == "done" else 1
     if a.cmd == "show":
         print(summary(load_json(os.path.join(root, "results", a.id, "result.json"))))
+        return 0
+    if a.cmd == "restart":
+        with open(os.path.join(root, "RESTART"), "w") as f:
+            f.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S%z')} set by the lead\n")
+        print("RESTART set: between jobs, with no recording running, the agent starts again with the installed code")
         return 0
     flag = {"pause": "PAUSE", "resume": "PAUSE", "stop": "STOP"}[a.cmd]
     path = os.path.join(root, flag)

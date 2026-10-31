@@ -219,7 +219,7 @@ class Media:
         if rec.proc.poll() is None:
             if how == "key":
                 try:
-                    os.write(rec.fifo_fd, b"\n")
+                    os.write(rec.fifo_fd, b"q\n")  # any character stops screencapture -v; FFmpeg stops on "q"
                     stopped_by = "a key on its control pipe"
                 except OSError:
                     pass

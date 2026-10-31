@@ -1,0 +1,5 @@
+{
+  "_about": "Copy to .work/real-takes/positions.json (local) and fill from the dry run: points in screen POINTS (a still's pixels divided by preflight.json's scale). enqueue.py replaces \"$stone\" in a template with the point.",
+  "stone": {"x": 1180, "y": 760},
+  "video_message": "Play our glazing video on YouTube."
+}

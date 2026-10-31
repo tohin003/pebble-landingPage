@@ -14,6 +14,9 @@ Safety:
 - STOP: the moment /Users/Shared/pebble-takes/STOP exists (or Ctrl-C in its window), it lets go of any key or button,
   stops a running recording (keeping the file), writes the job's result and exits.
 - PAUSE: while /Users/Shared/pebble-takes/PAUSE exists, it starts no new job.
+- RESTART: when the lead writes /Users/Shared/pebble-takes/RESTART (after installing a fix), the agent, between jobs
+  and with no recording running, starts itself again in the same Terminal process (exec), so it loads the new code
+  at its new start and keeps Terminal's permissions; only the person's account can write that file.
 - A malformed job is refused whole, before any step runs; a job runs at most once (its result folder marks it).
 - It loads its code, its JXA helper and its config only at start, and checks the hashes of the scripts it runs
   (heavy.sh, env.sh, rec.sh, reset_take.sh) before each use.
@@ -213,6 +216,8 @@ class Agent:
         self.state = {"state": "starting", "job": None}
         self.last_beat = 0.0
         self.started = now_iso()
+        self.started_epoch = time.time()
+        self.argv: list[str] = []
         self.pebble_version = self.read_pebble_version()
 
     # ---- basics -----------------------------------------------------------------------------------------------
@@ -380,6 +385,8 @@ class Agent:
                         return 0
                     time.sleep(self.cfg.get("poll_s", 0.5))
                     continue
+                if self.restart_requested():
+                    self.restart()
                 todo = self.pending()
                 if not todo:
                     if self.state.get("state") != "idle":
@@ -402,6 +409,23 @@ class Agent:
             return 3
         finally:
             self.beat(force=True)
+
+    def restart_requested(self) -> bool:
+        try:
+            return os.path.getmtime(self.p("RESTART")) > self.started_epoch and not self.media.recording
+        except OSError:
+            return False
+
+    def restart(self) -> None:
+        """exec: the same process (so the same Terminal and its permissions), new code, a new start."""
+        self.log("RESTART: starting again with the installed code")
+        self.state = {"state": "restarting", "job": None}
+        self.beat(force=True)
+        self.logf.flush()
+        args = [sys.executable, "-I", "-B", os.path.realpath(__file__), *self.argv]
+        if self.live and "--restarted" not in args:
+            args.append("--restarted")
+        os.execv(sys.executable, args)
 
     def shutdown(self, why: str) -> None:
         self.log(f"stopping: {why}")
@@ -931,6 +955,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--heavy", help="simulate/tests: a pass-through runner instead of heavy.sh (never in live mode)")
     ap.add_argument("--home", help="simulate/tests: the demo user's home stand-in (never in live mode)")
     ap.add_argument("--no-selftest", action="store_true", help="live: skip the visible pointer test at start")
+    ap.add_argument("--restarted", action="store_true", help="set by a RESTART: no pointer test, caffeinate already runs")
     a = ap.parse_args(argv)
     cfg = jobspec.load_config(a.config)
     root = os.path.realpath(a.root or cfg["root"])
@@ -947,6 +972,7 @@ def main(argv: list[str] | None = None) -> int:
     fixture = json.load(open(a.fixture, encoding="utf-8")) if a.fixture else None
     heavy = [a.heavy] if a.heavy else None
     agent = Agent(cfg, root, a.live, fixture=fixture, heavy=heavy, home=os.path.realpath(a.home) if a.home else None)
+    agent.argv = list(argv if argv is not None else sys.argv[1:])
     agent.record_hashes()
     for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
         signal.signal(sig, agent.on_signal)
@@ -971,14 +997,15 @@ def main(argv: list[str] | None = None) -> int:
             for k in missing:
                 agent.say(f"  - {hints.get(k, k)}")
             return 2
-        if not a.no_selftest:
+        if not a.no_selftest and not a.restarted:
             agent.say("Permissions are fine. Watch the pointer: it moves a little and comes back …")
             try:
                 agent.selftest_visible()
             except Exception as e:  # noqa: BLE001
                 agent.say(f"The test failed: {e}. Tell the lead (it is in the agent's log).")
                 return 2
-        subprocess.Popen([cfg["tools"]["caffeinate"], "-dimsu", "-w", str(os.getpid())])
+        if not a.restarted:  # caffeinate waits on this pid, which an exec keeps
+            subprocess.Popen([cfg["tools"]["caffeinate"], "-dimsu", "-w", str(os.getpid())])
         agent.say("Ready. The take agent now waits for the lead's jobs. This window hides itself before each take.\n"
                   "You can leave the Mac now (keep it on this user's screen, plugged in).\n"
                   "To stop it: come back, click Terminal in the Dock, press Control-C.")
