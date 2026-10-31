@@ -539,10 +539,10 @@ export const TAKE_RSW_01: TakeManifest = {
   pattern: realPattern("RSW-01"),
   views: {
     conversation: { w: 830, h: 486, crop: { x: 245, y: 62, w: 830, h: 486 }, place: "kiln-ask", textPx: 14, words: 60 },
-    // (the card's title line, "Keep this tool in Pebble's Toolbox? · kiln_ramp_time", 7 words, cut at the card's
-    // padding above and the line below: CR-05, the card's 34 legible words can't be read in S23's 3 s, and the whole card
-    // is wider than 1:1's and 9:16's frames at the 28 px floor)
-    card: { w: 362, h: 30, crop: { x: 370, y: 361, w: 362, h: 30 }, place: "kiln-ask", textPx: 14, words: 7 },
+    // (the card's question, "Keep this tool in Pebble's Toolbox?", 6 words, cut at the card's padding above, the line
+    // below and the "· kiln_ramp_time" after it: CR-05, the card's 34 legible words can't be read in S23's 3 s on the
+    // score (with L24's three words, 9 in 3 s), and the whole card is wider than 1:1's and 9:16's frames at 28 px)
+    card: { w: 246, h: 30, crop: { x: 370, y: 361, w: 246, h: 30 }, place: "kiln-ask", textPx: 14, words: 6 },
   },
   placeholder: false,
   conform: realConform("RSW-01", 495.583333, { card: eye(5366) }),

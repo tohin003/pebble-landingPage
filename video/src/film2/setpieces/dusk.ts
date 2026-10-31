@@ -54,6 +54,12 @@ export interface DuskOptions {
    * Oct): for the canaries and the reels made before the takes
    */
   placeholders?: boolean;
+  /**
+   * the score's own length, local frames (BEAT_SHEET revision 3: the quiet passage, 892, from ⌘K on 4982 to S23 on
+   * 5874): the passage ends exactly there, the honest line held to its exit inside it (at least 12 s on screen, its exit
+   * whole); a length too short throws
+   */
+  length?: number;
 }
 
 interface DuskLayout {
@@ -229,7 +235,9 @@ export function planDusk(o: DuskOptions): ScenePlan {
   const veilCentreWorld = { x: 0, y: 0 };
   const veilPose: Pose = { x: veilCentreWorld.x - (vc.x - f.w / 2), y: veilCentreWorld.y - (vc.y - f.h / 2), zoom: 1 };
   const castAt = veilShotAt + rackF + f60(12, fps); // the cast plays once the render is in focus
-  const veilShotFrames = sec(7.0, fps);
+  // (on the score's 892 frames the Veil holds 6.5 s and the crane cuts on a beat, not a bar: the Dusk pad under it, from
+  // 5304, has no bar of its own, and the menu bar must be read before the honest line's exit)
+  const veilShotFrames = sec(o.length !== undefined ? 6.5 : 7.0, fps);
   // the push in on the render, about its centre, with a lateral orbit at VEIL_ORBIT_PX (2D: a drift with the ground's
   // parallax), the way the crane then carries it out (fix round 2: at 0.12 px a frame the render, the frame's subject,
   // moved 0.14 at its median: a zoom anchored on the subject leaves it still)
@@ -248,7 +256,7 @@ export function planDusk(o: DuskOptions): ScenePlan {
   let labelBox = L.label(f, vc, hw, hh, labelInset);
 
   /* ------------------------------------------------ the crane out of the render, into RS-13 --------------------- */
-  const cutP = place(veilShotAt + veilShotFrames, g, { level: "bar" });
+  const cutP = place(veilShotAt + veilShotFrames, g, { level: o.length !== undefined ? "beat" : "bar" });
   const cut = cutP.point ?? veilShotAt + veilShotFrames;
   music.push(musicHit("the crane to the Dock", cutP));
   // the camera carries the render and its label out of the frame before the cut, never through the honest line's
@@ -392,10 +400,17 @@ export function planDusk(o: DuskOptions): ScenePlan {
   const honestEarliestOff = Math.max(honestAt + sec(12.2, fps), arriveMenu + sec(1.6, fps) + (focus ? sec(2, fps) : 0));
   const endEarliest = honestEarliestOff + exitFramesOf("lineBlur", "blur", honest, fps) + 2;
   const endP = place(Math.max(endEarliest, honestEarliestOff + leaveF + 2), g, { level: "bar" });
-  const end = endP.point ?? Math.max(endEarliest, honestEarliestOff + leaveF + 2);
+  const end = o.length ?? endP.point ?? Math.max(endEarliest, honestEarliestOff + leaveF + 2);
+  if (o.length !== undefined) {
+    // the honest line on screen at least 12 s and its exit whole before the cut (as honestExit below); the menu bar
+    // read first
+    const need = Math.max(honestAt + sec(12.0, fps), arriveMenu + sec(1.6, fps) + (focus ? sec(2, fps) : 0)) + Math.max(leaveF, exitFramesOf("lineBlur", "blur", honest, fps) + 1) + 1;
+    if (o.length < need) throw new Error(`the Dusk needs ${need} frames for the honest line's 12 s and its exit; the score gives ${o.length}`);
+  }
   if (end > rsUse.until) throw new Error(`the Dusk passage ends on ${end}, after ${rsTake.id} ends (${rsUse.until}): never hold a take's last frame`);
   music.push(musicHit("the passage ends (the climax's build)", endP));
-  const honestExit = end - 1 - leaveF;
+  // (its exit whole before the passage's last frame: the blur exit or the camera's leave, whichever is longer)
+  const honestExit = end - 1 - Math.max(leaveF, exitFramesOf("lineBlur", "blur", honest, fps) + 1);
   types.push({ id: "L21", text: honest, tier: "functional", at: honestAt, exitAt: honestExit, sizeT: 0.15, box: honestBox, kind: "film", honest: true });
   // the label beside the render, carried with its world: it leaves the frame with the render on the crane
   types.push({ id: "L22", text: label, tier: "label", at: labelAt, exitAt: cut, sizeT: 0.4, box: labelBox, kind: "label", color: COLOR.ink2, exit: "camera", carry: { shot: "dusk-veil", at: labelLand, outFrom: veilShotAt + craneFrom } });

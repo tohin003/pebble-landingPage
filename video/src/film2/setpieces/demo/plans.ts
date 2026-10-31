@@ -8,7 +8,7 @@
 // cue (B2 run on, then A4's bars 80–82: returnPlan.ts returnGrid), and the title and the end card are planFinale's.
 import type { Aspect } from "../../tokens";
 import { sec } from "../../tokens";
-import type { MusicGrid } from "../music";
+import { steadyGrid, type MusicGrid } from "../music";
 import type { ScenePlan } from "../scene";
 import { planDrop, type DropTiming } from "../drop";
 import { planRingBlock, type RingTiming } from "../ringBlock";
@@ -23,6 +23,20 @@ import { ASPECTS, alignAspects } from "../align";
 import { cutVelocity, shareGround, type JoinKind } from "../joins";
 import { STRETCH, demoGrid, type DemoStretch } from "./grids";
 import { RS9_CREDIT } from "../rs9Beat";
+
+/**
+ * The Dusk's and the climax's lengths and music on the score (BEAT_SHEET.json revision 3, CUE_SHEET M3–M5), so the
+ * film places them whole (video/src/film2/opening/film.ts): the quiet passage 4982–5874, the climax 5874–6534 with the
+ * kept card on 6114.
+ */
+export const SCORE_LENGTHS = { dusk: 5874 - 4982, climax: 6534 - 5874, peak: 6114 - 5874 } as const;
+export const SCORE_GRIDS = {
+  // B4: bar 62 on 4982, bar 54 on 4053 (8 bars in 929 frames: 116.125 a bar, 124.0 BPM); the Dusk pad (M4, from
+  // 5304) carries on without a beat of its own, so the passage keeps B4's
+  dusk: steadyGrid({ bpm: (60 * 60 * 4) / 116.125, fps: 60, firstDownbeat: 0, from: 0, to: 6000 }),
+  // B2 at 120 BPM: bar 42 on 5874, the lift (bar 44) on 6114 a phrase line, a hit
+  climax: steadyGrid({ bpm: 120, fps: 60, firstDownbeat: 240, from: 0, to: 6000, hits: [240] }),
+} as const;
 
 export interface DemoEntry {
   plan: ScenePlan;
@@ -62,14 +76,17 @@ function buildAll(): Map<Aspect, DemoEntry[]> {
   });
   for (const a of ASPECTS) shareGround(drops[a], rings[a]);
   add(rings, ringGrid, STRETCH.ring);
-  // the Dusk passage: from the quiet section's first downbeat, cut into with the cascade's momentum
-  const duskGrid = demoGrid(STRETCH.dusk, 0, N, FPS);
-  const dusks = alignAspects((a) => planDusk({ ...SIZE[a], fps: FPS, grid: duskGrid, cutIn: { vScreen: cutVelocity(rings[a]), grade: rings[a].exit?.grade } }));
+  // the Dusk passage on the score (BEAT_SHEET revision 3): ⌘K on B4 bar 62 (film 4982), B4's bars 116.125 frames (B4's
+  // stop on 5214, two bars on), the quiet passage 892 frames to S23 on 5874; cut into with the cascade's momentum
+  const duskGrid = SCORE_GRIDS.dusk;
+  const dusks = alignAspects((a) => planDusk({ ...SIZE[a], fps: FPS, grid: duskGrid, length: SCORE_LENGTHS.dusk, cutIn: { vScreen: cutVelocity(rings[a]), grade: rings[a].exit?.grade } }));
   add(dusks, duskGrid, STRETCH.dusk);
   // the climax: the kept card lands on the peak's first strong downbeat, 5 s in; cut into with the crane's leave; it
   // ends on its hold's glide, into the Return
-  const climaxGrid = demoGrid(STRETCH.climax, 300, N, FPS);
-  const climaxes = alignAspects((a) => planClimax({ ...SIZE[a], fps: FPS, grid: climaxGrid, peak: 300, cutIn: { vScreen: cutVelocity(dusks[a]), grade: dusks[a].exit?.grade }, into: "return" }));
+  // (on the score: B2 at 120 BPM from S23 on 5874, the kept card on B2's lift, bar 44, film 6114 = local 240, the
+  // piece 660 frames to the Return's pull-back on 6534, half a bar before R0 on bar 48)
+  const climaxGrid = SCORE_GRIDS.climax;
+  const climaxes = alignAspects((a) => planClimax({ ...SIZE[a], fps: FPS, grid: climaxGrid, peak: SCORE_LENGTHS.peak, length: SCORE_LENGTHS.climax, cutIn: { vScreen: cutVelocity(dusks[a]), grade: dusks[a].exit?.grade }, into: "return" }));
   add(climaxes, climaxGrid, STRETCH.climax);
   {
     // the Return, the title and the end card (OVERRIDES §61: in place of the wall and the convergence): S24's last

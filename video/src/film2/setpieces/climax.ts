@@ -40,6 +40,8 @@ export const CLIMAX_CARDS = { ask: { words: 7, textPx: 13 }, kept: { words: 12, 
 
 /** The kept card's pan through its hold, px a frame at 1080 on screen (OVERRIDES §55: 0.3–0.6). */
 export const KEPT_PAN_PX = 0.42;
+/** L25's words ("Kept on its own only after an independent check."): its reading floor under the score's length. */
+const CLIMAX_CHECK_WORDS = 9;
 
 export interface ClimaxOptions {
   w: number;
@@ -57,14 +59,20 @@ export interface ClimaxOptions {
   into?: "cut" | "return";
   /** S23 on HS-G's placeholder slots instead of the real take RSW-01 (the default since 31 Oct): canaries, old reels */
   placeholders?: boolean;
+  /**
+   * the score's own length, local frames (BEAT_SHEET revision 3: 660, from S23 on 5874 to the Return's pull-back on
+   * 6534): the piece ends exactly there, L25 held as long as that allows above its reading floor; a length too short
+   * for the reads throws
+   */
+  length?: number;
 }
 
 /** The climax's world: "Glaze" and "Kiln", east of it (the cut travels east). PLACEHOLDERS: slots. */
 const GLAZE: Rect = { x: 0, y: 0, w: 1160, h: 800 };
 const ASK_SLOT: Rect = { x: 350, y: 240, w: SLOT.glazeCard.w, h: SLOT.glazeCard.h };
 /**
- * S23 on the real take RSW-01: the ask card's title line ("Keep this tool in Pebble's Toolbox? · kiln_ramp_time": 7
- * words) where it sits in the conversation's crop; the shot draws that line alone (CR-05: the whole card, 652 CSS px and
+ * S23 on the real take RSW-01: the ask card's question ("Keep this tool in Pebble's Toolbox?": 6 words) where it sits in
+ * the conversation's crop; the shot draws that line alone (CR-05: the whole card, 652 CSS px and
  * 34 legible words, can't be read in 3 s nor whole in 1:1 or 9:16 at the 28 px floor; the conversation around it is
  * legible text that nobody reads).
  */
@@ -194,13 +202,16 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
   const chapterText = breakLines(CLIMAX_TEXT.chapter, "expressive", f, f.w - 2 * f.safe, 0.3);
   // (it rose through its mask: it leaves through it with a lift, as it came; fix round 2: it blurred away)
   const chapter: TypeSpec = { id: "L24", text: chapterText, tier: "expressive", at: 0, sizeT: 0.3, box: L.chapter(f), kind: "film", key: true, exit: "lift" };
-  const landC = place(f60(30, fps) + landFrames(chapter, fps), g, { level: "beat", frames: landFrames(chapter, fps) });
+  // (on the score's length S23 is 3 s, the cut into Kiln on 180: the line lands on the first beat it can, and holds
+  // 2.2 s, three times its three words' reading floor)
+  const scoreFit = o.length !== undefined;
+  const landC = place((scoreFit ? 0 : f60(30, fps)) + landFrames(chapter, fps), g, { level: "beat", frames: landFrames(chapter, fps) });
   chapter.at = landC.at;
   music.push(musicHit("\"Its own tools.\" lands", landC));
   // the ask is read (7 words: 2.6 s) and the chapter line held (≥ 2.4 s) before the cut, which comes on the last beat
   // at least 0.75 s before the peak: the kept card then lands 0.75–1.25 s into S24 (§3.6 chain 11: about 1.0 s)
   const leaveF = f60(18, fps);
-  const minCut = Math.max(f60(8, fps) + sec(2.6, fps), chapter.at + landFrames(chapter, fps) + sec(2.4, fps) + leaveF);
+  const minCut = Math.max(f60(8, fps) + sec(2.6, fps), chapter.at + landFrames(chapter, fps) + sec(scoreFit ? 2.2 : 2.4, fps) + leaveF);
   const cutCandidate = g ? prevPoint(g, peak - f60(45, fps), "beat") : undefined;
   const cut = cutCandidate !== undefined && cutCandidate >= minCut && peak - cutCandidate <= f60(75, fps) ? cutCandidate : peak - f60(60, fps);
   if (cut < minCut) throw new Error(`the climax needs ${minCut - cut} more frames before its peak (the ask must be read first)`);
@@ -223,7 +234,9 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
   // the timing first: the incoming glide lands on the reading push's start, half a second after the card lands on
   // the peak; the push runs 160 frames; the check line lands on a beat after the card and holds 6.5 s
   const pushFrom = peak - cut + f60(30, fps);
-  const pushTo = pushFrom + f60(160, fps);
+  // (on the score's 660 frames the push to reading size takes 110 frames, so the card's 4.1 s read and L25's exit end
+  // before the Return's pull-back)
+  const pushTo = pushFrom + f60(scoreFit ? 110 : 160, fps);
   const ck = L.check(f);
   const checkText = breakLines(CLIMAX_TEXT.check, "functional", f, ck.maxW, 0.3);
   const check: TypeSpec = { id: "L25", text: checkText, tier: "functional", at: 0, sizeT: 0.3, box: ck.box, kind: "film" };
@@ -231,13 +244,17 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
   check.at = landK.at;
   music.push(musicHit("\"Kept on its own only after an independent check.\" lands", landK));
   // the card is read once the push-in has reached reading size (12 words: 4.1 s), and the check line held 6.5 s
-  const readEnd = Math.max(check.at + landFrames(check, fps) + sec(6.5, fps), cut + pushTo + sec(4.1, fps));
+  // (with the score's length: the check line held what the length leaves, at least its words at the reading rate and a
+  // second more; the card read at least its 4.1 s)
+  const checkFloor = Math.ceil(((CLIMAX_CHECK_WORDS / 3.14) + 1.0) * fps);
+  const readEnd = o.length !== undefined ? Math.max(check.at + landFrames(check, fps) + checkFloor, cut + pushTo + sec(4.1, fps)) : Math.max(check.at + landFrames(check, fps) + sec(6.5, fps), cut + pushTo + sec(4.1, fps));
   const minEnd = readEnd + leaveF + f60(12, fps);
+  if (o.length !== undefined && o.length < minEnd) throw new Error(`the climax needs ${minEnd} frames for its reads and L25's exit; the score gives ${o.length}`);
   const toReturn = o.into === "return";
   // into the Return: on the middle of a bar, so the Return's release (R0, half a bar later) lands on the next downbeat
   const mid = toReturn && g ? halfBars(g).find((x) => x >= minEnd && !g.downbeats.includes(x)) : undefined;
   const endP = toReturn ? (mid !== undefined ? { at: mid, point: mid, level: "half" as const, waited: mid - minEnd } : { at: minEnd, point: null, level: null, waited: 0 }) : place(minEnd, g, { level: "bar", maxWait: sec(2.2, fps) });
-  const end = endP.point ?? minEnd;
+  const end = o.length ?? endP.point ?? minEnd;
   music.push(musicHit(toReturn ? "the climax ends: S24's last frame becomes the Return's first cell" : "the climax ends (the convergence)", endP));
   const exitStart = end - 1 - leaveF;
   check.exitAt = exitStart;
@@ -306,8 +323,9 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
     }
     return to;
   };
-  // (the real take's title line is legible from the cut: it is read from the first frame it is whole in the frame)
-  const askReadFrom = readsFrom(camA, 0, askRead, CLIMAX_CARDS.ask.textPx, real ? 0 : f60(44, fps), leaveStart);
+  // (the real take's question is legible from the cut: it is read from the first frame it is whole in the frame, 2
+  // frames in at the earliest, where the arriving strip has cleared L24 in 16:9)
+  const askReadFrom = readsFrom(camA, 0, askRead, CLIMAX_CARDS.ask.textPx, real ? f60(2, fps) : f60(44, fps), leaveStart);
   const keptReadFrom = readsFrom(camB, cut, cardText(KEPT), CLIMAX_CARDS.kept.textPx, cut + pushFrom, exitStart);
 
   /* ------------------------------------------------ planes ----------------------------------------------------- */
@@ -315,7 +333,7 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
     ...(real ? [] : ([{ id: "glaze", kind: "pebble", rect: GLAZE_R, content: { kind: "take", use: hsgUse, view: "conversation" }, shadow: true }] as PlaneSpec[])),
     // read once the cut's momentum has settled into the glide (the card is arriving meanwhile)
     // (the real take: the card's title line alone, a strip of the recording)
-    { id: "ask", kind: "pebble", rect: ASK, content: { kind: "take", use: hsgUse, view: "card" }, shadow: true, read: { from: askReadFrom, to: leaveStart, words: CLIMAX_CARDS.ask.words, textPx: CLIMAX_CARDS.ask.textPx, rect: askRead } },
+    { id: "ask", kind: "pebble", rect: ASK, content: { kind: "take", use: hsgUse, view: "card" }, shadow: true, read: { from: askReadFrom, to: leaveStart, words: real ? RSW_CARD.words! : CLIMAX_CARDS.ask.words, textPx: CLIMAX_CARDS.ask.textPx, rect: askRead } },
   ];
   const planesB: PlaneSpec[] = [
     { id: "kiln", kind: "pebble", rect: KILN, content: { kind: "take", use, view: "conversation" }, shadow: true },

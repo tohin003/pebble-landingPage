@@ -329,7 +329,13 @@ picture frame by frame (their wall-clock time is the frame ÷ 60). The Dusk and 
   the Dock and the menu bar's status icons (right of macOS's recording pill, left of the clock) at their places on the
   recorded screen; its in-point puts the Dock icon's leaving on its beat, so it replays about 20 frames from before
   Return (the lead's call).
-- **S23, RSW-01.** The ask card's title line ("Keep this tool in Pebble's Toolbox? · kiln_ramp_time", 7 words) alone,
+- **On the score (1 Nov).** The reel's Dusk and climax are planned on the score's own lengths and grids
+  (`demo/plans.ts` `SCORE_LENGTHS`, `SCORE_GRIDS`, the plans' `length` option): the Dusk 892 frames (⌘K on 4982 to S23
+  on 5874, B4's 116.125-frame bars), the Veil 6.5 s and the crane on a beat, the honest line L21 on screen 12.03 s with
+  its exit whole before the cut; the climax 660 frames (5874–6534, B2 at 120 BPM), the cut into Kiln on 180 (6054),
+  the kept card on 240 (6114), L24 landing on the first beat and held 2.2 s, the kept card's push 110 frames, L25 held
+  to its exit on 641. `opening/film.ts` then places both whole (no trims).
+- **S23, RSW-01.** The ask card's question ("Keep this tool in Pebble's Toolbox?", 6 words: S23's 3 s hold it with L24) alone,
   from 4 frames after the card appears whole (frame 5366; before it the column shows the steps' timings, never shown).
   S24's kept card is still RS-W's placeholder.
 - **Not in the code yet:** RS15-01 (S01–S02), RS1-03 (S03) and RS4-07 (S11) have manifests with no views: Act I and
