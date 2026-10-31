@@ -27,7 +27,7 @@ import { ACTIVATE } from "../../../../shared/pebble/veil";
 import { BODY } from "../../../../shared/pebble";
 import { place, type MusicGrid } from "./music";
 import { breakLines, exitFramesOf, fitPose, frameBox, glideLz, insideFrame, lineHeightOf, lineRect, rectInFrame, zoomAbout, type FrameBox, type TypeBox } from "./frame";
-import { TAKE_HSB3, TAKE_RS13, eventFrame, solveInPoint } from "./take";
+import { STEALTH_GONE_FROM, TAKE_HSB3, TAKE_RS13, TAKE_RS13_03, eventFrame, solveInPoint, type TakeManifest } from "./take";
 import { DUSK_CUES } from "./pieces.cues";
 import { anchored, carryWith, landFrames, musicHit } from "./kit";
 import { move, type MusicHit, type PlaneSpec, type ScenePlan, type TypeSpec } from "./scene";
@@ -49,6 +49,11 @@ export interface DuskOptions {
   focusLine?: { text: string; releaseNotesConfirmed: true };
   /** a momentum cut into the passage: the previous piece's screen velocity on its last frame (px a frame), its light */
   cutIn?: { vScreen: Vec; grade?: GradeName | Grade };
+  /**
+   * the published-still placeholders (HS-B3 and RS-13's slots) instead of the real take RS13-03 (the default since 31
+   * Oct): for the canaries and the reels made before the takes
+   */
+  placeholders?: boolean;
 }
 
 interface DuskLayout {
@@ -143,11 +148,18 @@ export function planDusk(o: DuskOptions): ScenePlan {
   const centreV = (cam: VelocityCamera, fr: number): Vec => screenVelocity(cam.sample(fr), { x: f.w / 2, y: f.h / 2 }, f.w, f.h);
 
   /* ------------------------------------------------ S20: ⌘K over the workspace, Enter on a beat ---------------- */
-  const palette = TAKE_HSB3;
+  // the real take RS13-03 is one recording of both moments: ⌘K to Return (S20), and the Dock and the menu bar (S22)
+  const real = !o.placeholders;
+  const palette: TakeManifest = real ? TAKE_RS13_03 : TAKE_HSB3;
+  const rsTake: TakeManifest = real ? TAKE_RS13_03 : TAKE_RS13;
   const src = (e: string) => Math.ceil((palette.events[e]! * fps) / palette.fps);
   // the take shows from the passage's first frame (the workspace), and the palette opens at least half a second in
-  const earliestEnter = src("enter") - src("opens") + f60(30, fps);
-  const landEnter = place(earliestEnter, g, { level: "beat", maxWait: Math.max(1, src("enter") - earliestEnter) });
+  // (the real take: the palette's strip is the passage's first readable thing, so the palette opens within the 6 frames
+  // after the cut that CR-06 allows; the take's frames before it are the workspace, never drawn)
+  // (and Return lands where the take puts it, 170 frames after ⌘K, on a beat only if one falls within 4 frames: the
+  // take wins over B4's stop; the score's edit decides whether the stop moves to it)
+  const earliestEnter = src("enter") - src("opens") + (real ? 0 : f60(30, fps));
+  const landEnter = place(earliestEnter, g, { level: "beat", maxWait: real ? 4 : Math.max(1, src("enter") - earliestEnter) });
   const enter = landEnter.point ?? earliestEnter;
   music.push(musicHit("Enter (the switch)", landEnter));
   const paletteUse = solveInPoint(palette, "enter", enter, 0, 1, fps);
@@ -159,18 +171,23 @@ export function planDusk(o: DuskOptions): ScenePlan {
   const paletteWorld: Rect = { x: (ws.w - pv.w) / 2, y: 96, w: pv.w, h: pv.h };
   // the typed word and the lit row are read (L20, UI) at ≥ 28 px at 1080; the palette may bleed off the frame's sides
   const paletteTextPx = 15;
-  const needZoom = ((28 * f.unit) / paletteTextPx) * 1.03;
+  const needZoom = ((28 * f.unit) / paletteTextPx) * (real ? 1.06 : 1.03);
   // (the push grows it by up to 12 % before the rack, and the pan carries it sideways: the row it reads keeps the safe
   // margin, 60 px at 1080, to the read's end: fix round 3's readEdges (VF-04) measured 30 px in 9:16 and 52 in 1:1 at
   // 1.12; the typed word and the lit row, about 200–300 CSS px, sit inside it)
   const rowW = Math.min(paletteWorld.w, (f.w - 2 * f.safe) / needZoom / PALETTE_ROW_ROOM);
-  const paletteRead: Rect = { x: paletteWorld.x + (paletteWorld.w - rowW) / 2, y: paletteWorld.y, w: rowW, h: 170 };
+  const paletteRead: Rect = { x: paletteWorld.x + (paletteWorld.w - rowW) / 2, y: paletteWorld.y, w: rowW, h: Math.min(170, pv.h) };
   const p0fit = fitPose(paletteRead, L.palette(f), f, 0.92);
   // (at most the zoom that leaves the read row its room: filling the palette's region framed the row 874 px wide in
   // 1:1, and the push and the pan then carried it to 52 px from the frame's edge)
   const p0: Pose = { ...p0fit, zoom: Math.max(needZoom, Math.min(p0fit.zoom, (f.w - 2 * f.safe) / PALETTE_ROW_ROOM / rowW)) };
-  const rackAt = enter + f60(48, fps);
   const rackF = f60(36, fps);
+  // the real take: from source frame STEALTH_GONE_FROM Pebble's windows are gone from the recording (Stealth Lockdown
+  // on), and the film never shows a capture with Pebble missing; the rack's incoming shot is opaque from 64 % of it, so
+  // it starts early enough that the last frame of the palette's shot that shows at all is the one before that frame
+  // (the lit row is read; Return lands on the Veil coming into focus). The placeholders racked 48 frames after Enter.
+  const goneAt = real ? enter + Math.ceil(((STEALTH_GONE_FROM - palette.events.enter!) * fps) / palette.fps) : Infinity;
+  const rackAt = real ? Math.min(enter + f60(48, fps), goneAt - Math.ceil(rackF * 0.64) - 1) : enter + f60(48, fps);
   // in with the cut's momentum (a glide, never landing at rest), then the slow push toward the palette, panning on in
   // the cut's direction (fix round 2: the push about the palette alone moved it 0.27 px a frame at its median)
   const vIn: Vec = o.cutIn?.vScreen ?? { x: -3 * f.unit, y: 0 };
@@ -182,7 +199,8 @@ export function planDusk(o: DuskOptions): ScenePlan {
   const readMid = Math.round((src("opens") + src("enter")) / 2);
   const p0From: Pose = { x: p0.x - (pushV.x - push0.x) * (readMid - f60(80, fps)), y: p0.y - (pushV.y - push0.y) * (readMid - f60(80, fps)), zoom: p0.zoom };
   // (the glide lands its framing after five time constants: what is left of the cut's speed then is under 1 %)
-  const camA = arriveWithMomentum({ target: p0From, frames: f60(80, fps), vScreen: vIn, mode: "glide", tau: f60(16, fps), drift: pushV });
+  // (the real take's strip is legible from the cut: a shorter arrival puts it whole in the frame sooner, CR-05)
+  const camA = arriveWithMomentum({ target: p0From, frames: f60(real ? 44 : 80, fps), vScreen: vIn, mode: "glide", tau: f60(real ? 9 : 16, fps), drift: pushV });
   camA.glide(rackAt + rackF, f60(30, fps), pushV);
 
   /* ------------------------------------------------ the honest line, from just after the Enter ------------------ */
@@ -194,7 +212,8 @@ export function planDusk(o: DuskOptions): ScenePlan {
   const honestBox: TypeBox = { left: hb.left, top: hb.top ?? hb.bottom! - honestH, align: hb.align };
   const band = { top: honestBox.top, bottom: honestBox.top + honestH };
   // it enters as the rack begins, so it never sits over the palette's sharp rows (the palette defocuses under it)
-  const honestAt = enter + f60(48, fps);
+  // (the real take racks 24 frames before Return: the line enters with the rack all the same, through every seam)
+  const honestAt = real ? rackAt : enter + f60(48, fps);
 
   /* ------------------------------------------------ S21: the Veil, rendered, in macro --------------------------- */
   const veilShotAt = rackAt;
@@ -214,7 +233,11 @@ export function planDusk(o: DuskOptions): ScenePlan {
   // the push in on the render, about its centre, with a lateral orbit at VEIL_ORBIT_PX (2D: a drift with the ground's
   // parallax), the way the crane then carries it out (fix round 2: at 0.12 px a frame the render, the frame's subject,
   // moved 0.14 at its median: a zoom anchored on the subject leaves it still)
-  const orbit = { ...zoomAbout(veilPose, vc, lzHold, f), x: zoomAbout(veilPose, vc, lzHold, f).x - (L.orbit.x * VEIL_ORBIT_PX * f.unit * 60) / fps, y: zoomAbout(veilPose, vc, lzHold, f).y - (L.orbit.y * VEIL_ORBIT_PX * f.unit * 60) / fps };
+  // (the real take racks before Return, so the Veil's shot runs about 80 frames longer to the same bar: its push slows
+  // to three quarters, so the render grows as far as before, its label and its body leave the frame together (NF-03)
+  // and the label stays clear of the honest line in 1:1 (typeOverType); the content floor still holds)
+  const lzVeil = lzHold * (real ? 0.75 : 1);
+  const orbit = { ...zoomAbout(veilPose, vc, lzVeil, f), x: zoomAbout(veilPose, vc, lzVeil, f).x - (L.orbit.x * VEIL_ORBIT_PX * f.unit * 60) / fps, y: zoomAbout(veilPose, vc, lzVeil, f).y - (L.orbit.y * VEIL_ORBIT_PX * f.unit * 60) / fps };
   const camB = new VelocityCamera({ ...veilPose, zoom: 0.985 }, orbit);
   // the label: beside the render, in its world (TypeSpec.carry): it is on screen exactly as long as the render is
   const labelAt = rackAt + Math.round(rackF * 0.36);
@@ -301,17 +324,23 @@ export function planDusk(o: DuskOptions): ScenePlan {
   camB.hermite(cut - veilShotAt - 1, { x: pB.x - dir.x * travel + vB.x * craneOut * (dir.x === 0 ? 1 : 0), y: pB.y - dir.y * travel + vB.y * craneOut * (dir.y === 0 ? 1 : 0), zoom: pB.zoom * Math.exp(vB.lz * craneOut) }, { x: dir.x === 0 ? vB.x : (-dir.x * craneV) / pB.zoom, y: dir.y === 0 ? vB.y : (-dir.y * craneV) / pB.zoom, lz: vB.lz });
 
   /* ------------------------------------------------ S22: the Dock, then the menu bar ---------------------------- */
-  const desk: Rect = { x: 0, y: 0, w: 1440, h: 900 };
-  const menuBar: Rect = { x: 0, y: 0, w: TAKE_RS13.views.menuBar!.w, h: TAKE_RS13.views.menuBar!.h };
-  const dock: Rect = { x: (desk.w - TAKE_RS13.views.dock!.w) / 2, y: desk.h - TAKE_RS13.views.dock!.h - 8, w: TAKE_RS13.views.dock!.w, h: TAKE_RS13.views.dock!.h };
+  // (the real take: the menu bar's status items and the Dock where they sit on the recorded screen)
+  const desk: Rect = real ? { x: 0, y: 0, w: rsTake.w, h: rsTake.h } : { x: 0, y: 0, w: 1440, h: 900 };
+  const mbV = rsTake.views.menuBar!;
+  const dkV = rsTake.views.dock!;
+  const menuBar: Rect = real && mbV.crop ? { ...mbV.crop } : { x: 0, y: 0, w: mbV.w, h: mbV.h };
+  const dock: Rect = real && dkV.crop ? { ...dkV.crop } : { x: (desk.w - dkV.w) / 2, y: desk.h - dkV.h - 8, w: dkV.w, h: dkV.h };
   // the Dock and the menu bar are framed clear of the honest line's band
   const upper: Rect = L.stage(f, band);
   // the Dock in the band's upper half, so the crane up from it never carries it into the honest line's band
   const dockPose = fitPose(dock, { ...upper, h: upper.h * 0.55 }, f, 0.8);
   // the menu bar at 3.5× (the icon, 22 CSS px, reads at 77 px at 1080), on the status menus where Pebble's icon sits
-  const iconAt = { x: menuBar.w * 0.78, y: menuBar.h / 2 };
+  // (the real take's strip starts just right of macOS's recording pill, 16 px left of the icon: the icon sits left of
+  // the stage's middle so the status items fill the frame to its right)
+  const iconAt = mbV.anchor ? { x: menuBar.x + mbV.anchor.x, y: menuBar.y + mbV.anchor.y } : { x: menuBar.w * 0.78, y: menuBar.h / 2 };
   const menuZoom = 3.5 * f.unit;
-  const menuPose: Pose = { x: iconAt.x - (upper.x + upper.w * 0.5 - f.w / 2) / menuZoom, y: iconAt.y - (upper.y + upper.h * 0.42 - f.h / 2) / menuZoom, zoom: menuZoom };
+  const iconScreenX = upper.x + upper.w * (mbV.anchor ? 0.28 : 0.5);
+  const menuPose: Pose = { x: iconAt.x - (iconScreenX - f.w / 2) / menuZoom, y: iconAt.y - (upper.y + upper.h * 0.42 - f.h / 2) / menuZoom, zoom: menuZoom };
   const vOut1 = centreV(camB, cut - veilShotAt - 1);
   const holdDrift = (pose: Pose) => ({ x: 0, y: (-0.4 * f.unit * 60) / fps / pose.zoom, lz: 0 });
   const camC = arriveWithMomentum({ target: dockPose, frames: f60(40, fps), vScreen: vOut1, mode: "glide", tau: f60(15, fps), drift: holdDrift(dockPose) });
@@ -319,7 +348,9 @@ export function planDusk(o: DuskOptions): ScenePlan {
   const dockP = place(cut + f60(40, fps), g, { level: "beat" });
   const dockAt = dockP.point ?? cut + f60(40, fps);
   music.push(musicHit("the Dock icon leaves", dockP));
-  const rsUse = solveInPoint(TAKE_RS13, "dockLeaves", dockAt, cut, cut + sec(14, fps), fps);
+  // (shown to the passage's end at most: the real take holds 12.2 s after the Dock icon leaves)
+  const rsRoom = Math.floor(((rsTake.frames - 1 - rsTake.events.dockLeaves!) * fps) / rsTake.fps) + (dockAt - cut);
+  const rsUse = solveInPoint(rsTake, "dockLeaves", dockAt, cut, cut + Math.min(sec(14, fps), rsRoom), fps);
   const iconChange = eventFrame(rsUse, "iconChanges", fps);
   // then up again, accelerating, and a momentum cut on a beat into the crane's last stretch: the empty middle of the
   // desktop is skipped (CR-19), the take running on at 1× across the cut (the same recording, two framings)
@@ -362,6 +393,7 @@ export function planDusk(o: DuskOptions): ScenePlan {
   const endEarliest = honestEarliestOff + exitFramesOf("lineBlur", "blur", honest, fps) + 2;
   const endP = place(Math.max(endEarliest, honestEarliestOff + leaveF + 2), g, { level: "bar" });
   const end = endP.point ?? Math.max(endEarliest, honestEarliestOff + leaveF + 2);
+  if (end > rsUse.until) throw new Error(`the Dusk passage ends on ${end}, after ${rsTake.id} ends (${rsUse.until}): never hold a take's last frame`);
   music.push(musicHit("the passage ends (the climax's build)", endP));
   const honestExit = end - 1 - leaveF;
   types.push({ id: "L21", text: honest, tier: "functional", at: honestAt, exitAt: honestExit, sizeT: 0.15, box: honestBox, kind: "film", honest: true });
@@ -376,10 +408,16 @@ export function planDusk(o: DuskOptions): ScenePlan {
   camD.ease(end - cut2 - 1, { x: pD.x - (118 * f.unit) / pD.zoom, y: pD.y, zoom: pD.zoom }, "E-leave");
 
   /* ------------------------------------------------ planes ----------------------------------------------------- */
+  // (the real take: read from the first frame the strip is whole in the frame, 60 px inside its edges)
+  let paletteReadFrom = paletteAt;
+  if (real) while (paletteReadFrom < rackAt - 1 && !insideFrame(rectInFrame(paletteRead, camA.pose(paletteReadFrom), f), f, 60 * f.unit)) paletteReadFrom++;
   const paletteUseAll = solveInPoint(palette, "enter", enter, 0, rackAt + rackF, fps);
+  // (the real take draws the palette's strip alone: the workspace around it is legible text nobody reads, CR-05)
   const planesA: PlaneSpec[] = [
-    { id: "workspace", kind: "pebble", rect: workspaceWorld, content: { kind: "take", use: paletteUseAll, view: "workspace" }, shadow: true },
-    { id: "palette", kind: "pebble", rect: paletteWorld, content: { kind: "take", use: paletteUseAll, view: "palette" }, shadow: true, read: { from: paletteAt + f60(84, fps), to: enter + f60(30, fps), words: 5, textPx: paletteTextPx, rect: paletteRead } },
+    ...(real ? [] : ([{ id: "workspace", kind: "pebble", rect: workspaceWorld, content: { kind: "take", use: paletteUseAll, view: "workspace" }, shadow: true }] as PlaneSpec[])),
+    // (the real take: the palette's strip appears as the recording's palette does, on its frame, and is read from then to
+    // the rack, which comes before Return: see goneAt)
+    { id: "palette", kind: "pebble", rect: paletteWorld, content: { kind: "take", use: paletteUseAll, view: "palette" }, shadow: true, ...(real ? { from: paletteAt } : {}), read: { from: real ? paletteReadFrom : paletteAt + f60(84, fps), to: real ? rackAt : enter + f60(30, fps), words: real ? palette.views.palette!.words! : 5, textPx: paletteTextPx, rect: paletteRead } },
   ];
   const planesC: PlaneSpec[] = [{ id: "dock", kind: "apple", rect: dock, content: { kind: "take", use: rsUse, view: "dock" }, shadow: false, radius: 18, textless: true }];
   const planesD: PlaneSpec[] = [
@@ -431,7 +469,7 @@ export function planDusk(o: DuskOptions): ScenePlan {
     takes: [paletteUseAll, rsUse],
     music,
     moves: [
-      move("product", paletteAt, rackAt - paletteAt, "HS-B3: the palette's own entrance, typing and Enter"),
+      move("product", paletteAt, rackAt - paletteAt, real ? "RS13-03: the palette's own entrance, typing, the row lit" : "HS-B3: the palette's own entrance, typing and Enter"),
       move("push", 0, Math.min(rackAt + rackF, f60(240, fps)), "S20: the slow push-in (then a glide)"),
       move("light", 0, sec(6.1, fps), "the light cools to dusk"),
       move("push", rackAt, Math.min(craneFrom, f60(240, fps)), "S21: the push in on the render (then a glide)"),

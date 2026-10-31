@@ -54,6 +54,8 @@ export interface TakeView {
   labelFrom?: number;
   /** the real window the view shows: a still of the same window never shares a frame with it (CR-11) */
   place?: string;
+  /** real takes: the point a plan frames (Pebble's menu-bar icon), view px */
+  anchor?: { x: number; y: number };
   /** real takes: the view's body text (CSS px) and its legible words, for the legibility checks (CR-05) */
   textPx?: number;
   words?: number;
@@ -446,3 +448,160 @@ export const TAKE_RS13: TakeManifest = {
   },
   placeholder: true,
 };
+
+/* ---------------------------------------------------------------- the real 2.0.0 takes ---------------------------- */
+
+/**
+ * The kept 2.0.0 takes (route R, recorded in the Studio user on 31 Oct; .work/real-takes/TAKES_REPORT.md). Each one's
+ * conform record is copied from its `<take>.conform.json` (the timestamp conform, durations within a frame), and each
+ * event is either the take agent's log time less the recorder's start lag (`log`) or a frame read off the picture
+ * (`eye`: its wall-clock time is that frame ÷ 60, the take's own clock). Pictures are 1470 × 956 CSS px (2940 × 1912
+ * device px at 2×) unless said; the frames are exported by `setpieces/tools/export-takes.ts` (a heavy job) into
+ * `video/public/ui-frames/real-takes/<take>/`, gitignored like every capture.
+ */
+const REAL_PICTURE = { w: 1470, h: 956 } as const;
+const realConform = (take: string, durationS: number, events: Readonly<Record<string, { wallS: number }>>): TakeConform => ({
+  method: "fps-filter-cfr",
+  command: `/opt/homebrew/bin/ffmpeg -hide_banner -i raw/${take}.mov -vf fps=60 -fps_mode cfr -an -c:v libx264 -preset medium -crf 16 -pix_fmt yuv420p conformed/${take}.mp4`,
+  sourceDurationS: durationS,
+  outputDurationS: durationS,
+  events,
+});
+/** an event read off the picture: its wall-clock time is its frame on the take's own 60 fps clock */
+const eye = (frame: number) => ({ wallS: frame / 60 });
+const realPattern = (take: string) => `ui-frames/real-takes/${take}/{n}.jpg`;
+
+/** Where each kept take's conformed mp4 lives (the export tool reads them; .work is gitignored). */
+export const REAL_TAKE_SOURCES: Readonly<Record<string, string>> = {
+  "RS13-03": ".work/real-takes/takes/RS-13/RS13-03.mp4",
+  "RSW-01": ".work/real-takes/takes/RS-W/RSW-01.mp4",
+  "RS15-01": ".work/real-takes/takes/RS-15/RS15-01.mp4",
+  "RS1-03": ".work/real-takes/takes/RS-1/RS1-03.mp4",
+  "RS4-07": ".work/real-takes/takes/RS-4/RS4-07.mp4",
+  "RS11-02": ".work/real-takes/takes/RS-11/RS11-02.mp4",
+};
+
+/**
+ * RS13-03 (S20 and S22): ⌘K over the workspace, "stealth" typed, "Turn Stealth Lockdown on" lit, Return; the menu-bar
+ * icon becomes the filled pebble in a ring and the Dock icon leaves. Recorded with screencapture. Its log: ⌘K 4.368 s,
+ * typing from 5.230 s, Return 7.206 s; read off the picture: the row lit by 346 (±3), the icon's new state 434, the Dock
+ * icon gone by 455.
+ * Views: the workspace (its conversation column; kept for the record, S20 draws only the palette's strip, CR-05), the
+ * palette's input and lit row where they sit inside the workspace's crop, the menu bar's status icons right of macOS's
+ * purple recording pill (never in frame) and left of the clock, and the Dock.
+ * NEVER SHOWN PAST SOURCE FRAME 433 IN THE WORKSPACE OR PALETTE VIEWS: from 434 Pebble's windows are gone from the
+ * recording (Stealth Lockdown on), and the film never shows a capture with Pebble missing (`STEALTH_GONE_FROM`).
+ */
+export const STEALTH_GONE_FROM = 434;
+export const TAKE_RS13_03: TakeManifest = {
+  id: "RS13-03",
+  fps: 60,
+  frames: 1185,
+  ...REAL_PICTURE,
+  events: { sync: 170, opens: 262, typed: 314, lit: 346, enter: 432, switchOn: 432, iconChanges: 434, dockLeaves: 455 },
+  pattern: realPattern("RS13-03"),
+  views: {
+    workspace: { w: 1160, h: 800, crop: { x: 281, y: 62, w: 1160, h: 800 }, place: "workspace", textPx: 13, words: 60 },
+    // (the input and the lit row's title line, cut at the line under it: "stealth", "Turn Stealth Lockdown on"; CR-05,
+    // nothing legible beyond the read)
+    // (at most 7 at once: the prompt's "Search actions, settings, conversations" and a letter of "and", and "Light theme",
+    // before the typing; 290 px wide, cut right of the read row, so it reads whole in 1:1 and 9:16 at the 28 px floor;
+    // the row's subtitle is cut off below)
+    palette: { w: 290, h: 87, crop: { x: 581, y: 158, w: 290, h: 87 }, place: "workspace", textPx: 15, words: 7 },
+    // (Pebble's icon and the status icons right of it, left of the clock: no words)
+    menuBar: { w: 184, h: 32, crop: { x: 1132, y: 0, w: 184, h: 32 }, place: "menu bar", words: 0, anchor: { x: 16, y: 16 } },
+    dock: { w: 1010, h: 94, crop: { x: 230, y: 862, w: 1010, h: 94 }, place: "dock", words: 0 },
+  },
+  placeholder: false,
+  conform: realConform("RS13-03", 19.75, { sync: { wallS: 2.8331 }, opens: { wallS: 4.3679 }, typed: { wallS: 5.2304 }, lit: eye(346), enter: { wallS: 7.2062 }, switchOn: { wallS: 7.2062 }, iconChanges: eye(434), dockLeaves: eye(455) }),
+  note: "log events less the recorder's lag (sync 2.8331 s); lit, iconChanges and dockLeaves read off the picture (±3 frames)",
+};
+
+/**
+ * RSW-01 (S23): the Kiln brief in the workspace's Companion conversation; Pebble made kiln_ramp_time, the independent
+ * check passed 2 of 5, so it ASKS: "Keep this tool in Pebble's Toolbox? · kiln_ramp_time … Pebble asks because the
+ * independent check disagreed (2 of 5 tests passed)", View code, Discard, Keep. The card appears whole on frame 5366
+ * (read off the picture frame by frame: 5365 shows the steps, 5366 the card; the product has no entrance) and the
+ * column holds still for at least 5.5 s after. The log's times are uncorrected (its sync was not found), so only the
+ * picture's frames are used. The conversation's view stops above the "Thinking … 28 s" row and the Activity panel (its
+ * step timings): before 5366 the same region shows the steps with their timings, so the take is never shown earlier.
+ */
+export const TAKE_RSW_01: TakeManifest = {
+  id: "RSW-01",
+  fps: 60,
+  frames: 29735,
+  ...REAL_PICTURE,
+  events: { card: 5366 },
+  pattern: realPattern("RSW-01"),
+  views: {
+    conversation: { w: 830, h: 486, crop: { x: 245, y: 62, w: 830, h: 486 }, place: "kiln-ask", textPx: 14, words: 60 },
+    // (the card's title line, "Keep this tool in Pebble's Toolbox? · kiln_ramp_time", 7 words, cut at the card's
+    // padding above and the line below: CR-05, the card's 34 legible words can't be read in S23's 3 s, and the whole card
+    // is wider than 1:1's and 9:16's frames at the 28 px floor)
+    card: { w: 362, h: 30, crop: { x: 370, y: 361, w: 362, h: 30 }, place: "kiln-ask", textPx: 14, words: 7 },
+  },
+  placeholder: false,
+  conform: realConform("RSW-01", 495.583333, { card: eye(5366) }),
+  note: "the card's frame read off the picture; never shown before it (the steps' timings sit where the card lands)",
+};
+
+/** The first source frame RSW-01 may show (the ask card in place; before it the column shows step timings). */
+export const RSW_01_FIRST = 5366;
+
+/**
+ * The kept takes with no plan in the film's code yet (Act I and Ring 2 are not built in film2): their events only, no
+ * views. A plan that uses one gives it its crops, and must box or crop what TAKES_REPORT names (RS15-01's usage line
+ * from about frame 924; RS4-07's earlier reply's usage line, 0–8 s; RS1-03's booking page dated 14 November).
+ */
+export const TAKE_RS15_01: TakeManifest = {
+  id: "RS15-01",
+  fps: 60,
+  frames: 2828,
+  ...REAL_PICTURE,
+  events: { openChat: 172, typed: 230, send: 516, replyLands: 920 },
+  pattern: realPattern("RS15-01"),
+  views: {},
+  placeholder: false,
+  conform: realConform("RS15-01", 47.133333, { openChat: { wallS: 2.8612 }, typed: { wallS: 3.84 }, send: { wallS: 8.5936 }, replyLands: eye(920) }),
+  note: "S01–S02; the reply lands whole 920–928, its usage line under it from about 924 (box it); no slot in the code yet",
+};
+export const TAKE_RS1_03: TakeManifest = {
+  id: "RS1-03",
+  fps: 60,
+  frames: 697,
+  ...REAL_PICTURE,
+  events: { sync: 128, swipe: 238, slideVisible: 240, slideSettled: 262, pebbleBack: 270 },
+  pattern: realPattern("RS1-03"),
+  views: {},
+  placeholder: false,
+  conform: realConform("RS1-03", 11.616667, { sync: { wallS: 2.1331 }, swipe: { wallS: 3.9715 }, slideVisible: eye(240), slideSettled: eye(262), pebbleBack: eye(270) }),
+  note: "S03; no slot in the code yet",
+};
+export const TAKE_RS4_07: TakeManifest = {
+  id: "RS4-07",
+  fps: 60,
+  frames: 9000,
+  w: 1024,
+  h: 666,
+  events: { sync: 128, openApp: 262, card1: 1280, allow1: 2373, calculatorForward: 2600, equals600: 3386 },
+  pattern: realPattern("RS4-07"),
+  views: {},
+  placeholder: false,
+  // (the log's "equals600" at 238.1 s is a wait's timeout, not the press: the picture's frame 3386 is used)
+  conform: realConform("RS4-07", 150.0, { sync: { wallS: 2.133 }, openApp: { wallS: 4.361 }, card1: { wallS: 21.3304 }, allow1: { wallS: 39.5555 }, calculatorForward: { wallS: 43.3377 }, equals600: eye(3386) }),
+  note: "S11; 1024 × 666 CSS px (Larger Text); '=' turns the display to 600 on 3386; no slot in the code yet",
+};
+export const TAKE_RS11_02: TakeManifest = {
+  id: "RS11-02",
+  fps: 60,
+  frames: 568,
+  ...REAL_PICTURE,
+  events: { look: 130 },
+  pattern: realPattern("RS11-02"),
+  views: {},
+  placeholder: false,
+  conform: realConform("RS11-02", 9.466667, { look: { wallS: 2.1665 } }),
+  note: "the tour (Documents › Pebble); not in the main film",
+};
+
+export const REAL_TAKES: readonly TakeManifest[] = [TAKE_RS13_03, TAKE_RSW_01, TAKE_RS15_01, TAKE_RS1_03, TAKE_RS4_07, TAKE_RS11_02];

@@ -6,7 +6,7 @@ import { VelocityCamera, worldToFrame } from "../motion/camera";
 import type { Finding } from "../qa/checks";
 import { cascadeSchedule, swapLook } from "../type/Cascade";
 import { BODY } from "../../../../shared/pebble";
-import { demoPlans } from "../setpieces/demo/plans";
+import { demoDuskPlaceholders, demoPlans } from "../setpieces/demo/plans";
 import { CONTENT_FLOOR_PX, READ_AFTER_CUT_60, contentFloor, cutsReadable, slotLabels, sway, typeExitKind, typeExits, typeOverPlanes, typeOverType, typeTracks } from "../setpieces/qa";
 import { contentMotion } from "../setpieces/motion-qa";
 import { LABEL_FADE_FRAMES, drawnSlots, labelClear, labelOpacityOn } from "../setpieces/labels";
@@ -161,7 +161,8 @@ describe("a slot's label is whole or not drawn (NF-08)", () => {
   });
   test("the workspace hands its label to the palette as the palette opens over it (they were drawn one over the other)", () => {
     for (const a of ASPECTS) {
-      const p = piece(a, "dusk");
+      // (the Dusk on its placeholders: the reel's Dusk is the real take RS13-03 since 31 Oct, with no slots)
+      const p = demoDuskPlaceholders(a);
       const s = p.shots[0]!;
       const ws = drawnSlots(p, s, s.planes.find((pl) => pl.id === "workspace")!)[0]!;
       const opens = (p.extra as Record<string, number>).paletteAt;

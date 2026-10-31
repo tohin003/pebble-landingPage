@@ -108,3 +108,14 @@ export function demoPlans(aspect: Aspect): DemoEntry[] {
   if (cache.size === 0) for (const [a, list] of buildAll()) cache.set(a, list);
   return cache.get(aspect)!;
 }
+
+/**
+ * The demo's Dusk passage on its placeholders (HS-B3's and RS-13's slots), as it was before the real take RS13-03 (31
+ * Oct): the same grid and cut-in as the reel's Dusk, for the canaries that hold the slots' rules (NF-08, slotLabels).
+ */
+export function demoDuskPlaceholders(aspect: Aspect): ScenePlan {
+  const list = demoPlans(aspect);
+  const ring = list.find((e) => e.plan.id === "ring4")!.plan;
+  const dusk = list.find((e) => e.plan.id === "dusk")!;
+  return planDusk({ ...SIZE[aspect], fps: FPS, grid: dusk.grid, cutIn: { vScreen: cutVelocity(ring), grade: ring.exit?.grade }, placeholders: true });
+}

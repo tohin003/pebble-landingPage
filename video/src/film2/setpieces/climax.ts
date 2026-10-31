@@ -25,7 +25,7 @@ import type { Grade, GradeName, LightCue } from "../light/grades";
 import { halfBars, place, prevPoint, type MusicGrid } from "./music";
 import { breakLines, exitFramesOf, fitPose, frameBox, glideLz, holdGlide, rectInFrame, type FrameBox, type TypeBox } from "./frame";
 import { SLOT, cardText } from "./standins";
-import { TAKE_HSG, TAKE_RSW, eventFrame, solveInPoint, type TakeManifest, type TakeUse } from "./take";
+import { RSW_01_FIRST, TAKE_HSG, TAKE_RSW, TAKE_RSW_01, eventFrame, solveInPoint, type TakeManifest, type TakeUse } from "./take";
 import { CLIMAX_CUES } from "./pieces.cues";
 import { anchored, landFrames, musicHit } from "./kit";
 import { move, type MusicHit, type PlaneSpec, type ScenePlan, type TypeSpec } from "./scene";
@@ -55,11 +55,23 @@ export interface ClimaxOptions {
   entry?: { pose: Pose; vel: CamVel };
   /** "cut" (default): an E-leave into the next piece's cut; "return": end on the hold's glide, into the Return */
   into?: "cut" | "return";
+  /** S23 on HS-G's placeholder slots instead of the real take RSW-01 (the default since 31 Oct): canaries, old reels */
+  placeholders?: boolean;
 }
 
 /** The climax's world: "Glaze" and "Kiln", east of it (the cut travels east). PLACEHOLDERS: slots. */
 const GLAZE: Rect = { x: 0, y: 0, w: 1160, h: 800 };
-const ASK: Rect = { x: 350, y: 240, w: SLOT.glazeCard.w, h: SLOT.glazeCard.h };
+const ASK_SLOT: Rect = { x: 350, y: 240, w: SLOT.glazeCard.w, h: SLOT.glazeCard.h };
+/**
+ * S23 on the real take RSW-01: the ask card's title line ("Keep this tool in Pebble's Toolbox? · kiln_ramp_time": 7
+ * words) where it sits in the conversation's crop; the shot draws that line alone (CR-05: the whole card, 652 CSS px and
+ * 34 legible words, can't be read in 3 s nor whole in 1:1 or 9:16 at the 28 px floor; the conversation around it is
+ * legible text that nobody reads).
+ */
+const RSW_CONV = TAKE_RSW_01.views.conversation!;
+const RSW_CARD = TAKE_RSW_01.views.card!;
+const ASK_REAL: Rect = { x: RSW_CARD.crop!.x - RSW_CONV.crop!.x, y: RSW_CARD.crop!.y - RSW_CONV.crop!.y, w: RSW_CARD.w, h: RSW_CARD.h };
+const ASK_TITLE_REAL: Rect = ASK_REAL;
 const KILN: Rect = { x: 2600, y: 0, w: 1160, h: 800 };
 /**
  * The composer and the window's foot under a conversation's newest message, CSS px (Pebble 1.0.x's main window: the
@@ -157,20 +169,28 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
 
   /* ------------------------------------------------ S23: Glaze, opening on its take ------------------------------- */
   // the ask card's entrance is 4 frames along on the cut: it is arriving as the shot opens, and reads within 6 frames
-  const hsg = TAKE_HSG;
+  const real = !o.placeholders;
+  const hsg: TakeManifest = real ? TAKE_RSW_01 : TAKE_HSG;
   const cardSrc = hsg.events.card!;
+  // (the real card appears whole on its frame, with no entrance: the take opens 4 frames after it, never before it,
+  // where the column shows the steps' timings: RSW_01_FIRST)
   const askAt = -4; // the card's entrance starts 4 frames before the cut (local frames)
-  const askFit = fitPose(ASK, L.ask(f), f, 0.94);
+  if (real && cardSrc - askAt < RSW_01_FIRST) throw new Error("S23 would show RSW-01 before its card is in place");
+  const GLAZE_R: Rect = real ? { x: 0, y: 0, w: RSW_CONV.w, h: RSW_CONV.h } : GLAZE;
+  const ASK: Rect = real ? ASK_REAL : ASK_SLOT;
+  const askRead: Rect = real ? ASK_TITLE_REAL : cardText(ASK);
+  const askFit = fitPose(real ? askRead : ASK, L.ask(f), f, 0.94);
   const askPose: Pose = { ...askFit, zoom: Math.max(readZoom(CLIMAX_CARDS.ask.textPx), Math.min(askFit.zoom, readZoom(CLIMAX_CARDS.ask.textPx) * 1.05)) };
   // (cut into from another piece: that piece's leave; on its own, a cut arriving the climax's way)
   const vIn: Vec = o.cutIn?.vScreen ?? { x: 3 * f.unit * L.travel.x, y: 3 * f.unit * L.travel.y };
   // the shot's glide: a pan the climax's way at 0.45 px a frame with a slight push, centred on the card's framing
   // (estimated over the shot's usual length; fix round 2: the push alone about the card moved it 0.24 px a frame)
-  const askHold = holdGlide(f, ASK, askPose, Math.max(1, peak - f60(60, fps)), { pan: L.travel, px: 0.45, preferPan: true });
+  const askHold = holdGlide(f, real ? askRead : ASK, askPose, Math.max(1, peak - f60(60, fps)), { pan: L.travel, px: 0.45, preferPan: true });
   const pushA = { ...askHold.vel, lz: lzHold * 0.25 };
   // in with the cut's momentum, gliding into that glide (never from rest, never landing at rest)
   // (the glide lands its framing after five time constants: what is left of the cut's speed then is under 1 %)
-  const camA = o.entry ? new VelocityCamera(o.entry.pose, o.entry.vel) : arriveWithMomentum({ target: askHold.from, frames: f60(80, fps), vScreen: vIn, mode: "glide", tau: f60(16, fps), drift: pushA });
+  // (the real take's title line is legible from the cut: a shorter arrival puts it whole in the frame sooner, CR-05)
+  const camA = o.entry ? new VelocityCamera(o.entry.pose, o.entry.vel) : arriveWithMomentum({ target: askHold.from, frames: f60(real ? 36 : 80, fps), vScreen: vIn, mode: "glide", tau: f60(real ? 7 : 16, fps), drift: pushA });
   const chapterText = breakLines(CLIMAX_TEXT.chapter, "expressive", f, f.w - 2 * f.safe, 0.3);
   // (it rose through its mask: it leaves through it with a lift, as it came; fix round 2: it blurred away)
   const chapter: TypeSpec = { id: "L24", text: chapterText, tier: "expressive", at: 0, sizeT: 0.3, box: L.chapter(f), kind: "film", key: true, exit: "lift" };
@@ -286,14 +306,16 @@ export function planClimax(o: ClimaxOptions): ScenePlan {
     }
     return to;
   };
-  const askReadFrom = readsFrom(camA, 0, cardText(ASK), CLIMAX_CARDS.ask.textPx, f60(44, fps), leaveStart);
+  // (the real take's title line is legible from the cut: it is read from the first frame it is whole in the frame)
+  const askReadFrom = readsFrom(camA, 0, askRead, CLIMAX_CARDS.ask.textPx, real ? 0 : f60(44, fps), leaveStart);
   const keptReadFrom = readsFrom(camB, cut, cardText(KEPT), CLIMAX_CARDS.kept.textPx, cut + pushFrom, exitStart);
 
   /* ------------------------------------------------ planes ----------------------------------------------------- */
   const planesA: PlaneSpec[] = [
-    { id: "glaze", kind: "pebble", rect: GLAZE, content: { kind: "take", use: hsgUse, view: "conversation" }, shadow: true },
+    ...(real ? [] : ([{ id: "glaze", kind: "pebble", rect: GLAZE_R, content: { kind: "take", use: hsgUse, view: "conversation" }, shadow: true }] as PlaneSpec[])),
     // read once the cut's momentum has settled into the glide (the card is arriving meanwhile)
-    { id: "ask", kind: "pebble", rect: ASK, content: { kind: "take", use: hsgUse, view: "card" }, shadow: true, read: { from: askReadFrom, to: leaveStart, words: CLIMAX_CARDS.ask.words, textPx: CLIMAX_CARDS.ask.textPx, rect: cardText(ASK) } },
+    // (the real take: the card's title line alone, a strip of the recording)
+    { id: "ask", kind: "pebble", rect: ASK, content: { kind: "take", use: hsgUse, view: "card" }, shadow: true, read: { from: askReadFrom, to: leaveStart, words: CLIMAX_CARDS.ask.words, textPx: CLIMAX_CARDS.ask.textPx, rect: askRead } },
   ];
   const planesB: PlaneSpec[] = [
     { id: "kiln", kind: "pebble", rect: KILN, content: { kind: "take", use, view: "conversation" }, shadow: true },

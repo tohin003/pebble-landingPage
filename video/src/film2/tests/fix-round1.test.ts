@@ -14,7 +14,7 @@ import { carriedRect } from "../setpieces/kit";
 import { defaultEntranceOf, exitPlanOf, lineRect } from "../setpieces/frame";
 import { EXIT, blurTiming, exitOutFrames, wordsIn } from "../type/exits";
 import { checkJoins, firstReadableFrame } from "../setpieces/joins";
-import { DEMO_JOINS, demoPlans } from "../setpieces/demo/plans";
+import { DEMO_JOINS, demoDuskPlaceholders, demoPlans } from "../setpieces/demo/plans";
 import { FACT_GAP_EM, PAGE_GLIDE_PX, planFinale } from "../setpieces/finale";
 import { planClimax } from "../setpieces/climax";
 import { worldToFrame } from "../motion/camera";
@@ -82,7 +82,8 @@ describe("a frame of slots always shows a slot's label, and a read slot shows it
       })),
     });
     for (const a of ["1:1", "9:16"] as const) {
-      const dusk = demoPlans(a).find((e) => e.plan.id === "dusk")!.plan;
+      // (the Dusk on its placeholders: the reel's Dusk is the real take RS13-03 since 31 Oct, with no slots)
+      const dusk = demoDuskPlaceholders(a);
       const found = slotLabels(unfocused(dusk)).map((x) => x.message);
       expect(found.some((m) => m.startsWith("dusk-palette: slots fill the frame (workspace:workspace) with no slot's label"))).toBe(true);
       expect(found.some((m) => m.startsWith("dusk-palette/palette:palette: read with its label cut"))).toBe(true);

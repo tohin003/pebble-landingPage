@@ -313,6 +313,34 @@ foreground world, with the camera blur on the foreground only, at the cut, for 1
 7. **The convergence** (S25): one spec with `appear` → `return`, `echoes` and `echoMode: "all"`.
 8. **Render** in segments at half size for review, look at the sheets and seam strips, run `luma-scan`; then masters.
 
+## The real 2.0.0 takes in the reel (31 Oct)
+
+The kept takes (`.work/real-takes/TAKES_REPORT.md`) are manifests in `take.ts` (`REAL_TAKES`): each one's conform
+record copied from its `.conform.json`, its events from the take agent's log (less the recorder's lag) or read off the
+picture frame by frame (their wall-clock time is the frame ÷ 60). The Dusk and the climax use them by default
+(`placeholders: true` gives the old slots back, for the canaries: `demo/plans.ts` `demoDuskPlaceholders`).
+
+- **S20 and S22, RS13-03.** S20 draws the palette's input and lit row (a 290 × 87 strip: CR-05, nothing legible beyond
+  the read), appearing as the recording's palette does, on the cut; Return lands where the take puts it, 170 frames
+  after ⌘K (on a beat only if one is within 4 frames). From source frame 434 Pebble's windows are gone from the
+  recording, and the film never shows a capture with Pebble missing, so the rack to the Veil starts 24 frames before
+  Return and its incoming shot is opaque by Return's next frame (`STEALTH_GONE_FROM`, held by `tests/real-takes.test.ts`).
+  The Veil's shot is then about 80 frames longer to the same bar, so its push runs at 0.75. S22 is the same recording,
+  the Dock and the menu bar's status icons (right of macOS's recording pill, left of the clock) at their places on the
+  recorded screen; its in-point puts the Dock icon's leaving on its beat, so it replays about 20 frames from before
+  Return (the lead's call).
+- **S23, RSW-01.** The ask card's title line ("Keep this tool in Pebble's Toolbox? · kiln_ramp_time", 7 words) alone,
+  from 4 frames after the card appears whole (frame 5366; before it the column shows the steps' timings, never shown).
+  S24's kept card is still RS-W's placeholder.
+- **Not in the code yet:** RS15-01 (S01–S02), RS1-03 (S03) and RS4-07 (S11) have manifests with no views: Act I and
+  Ring 2 have no plan in film2. RS11-02 is the tour's.
+- **The frames:** `scripts/heavy.sh f2-export-takes /usr/sbin/taskpolicy -c utility bun
+  video/src/film2/setpieces/tools/export-takes.ts` writes the source frames the reel uses (every aspect, 2 frames of
+  margin) into `video/public/ui-frames/real-takes/<take>/` (gitignored); `--check` lists what is missing. Run it
+  before any render: a missing frame stops one.
+- **The Return's cells stay stand-ins:** the takes are in Pebble's dark theme, and `returnContent` refuses a cell
+  under 0.70 mean relative luminance (the light-theme rule).
+
 ## The set pieces (`setpieces/`)
 
 The lane's six set pieces, each a **plan** (pure data: `setpieces/scene.ts` `ScenePlan`) that one component draws
@@ -324,7 +352,7 @@ plan the music in local frames (`shiftGrid(grid, −start)`). Every piece is fra
 | File | What |
 |---|---|
 | `music.ts` | the music grid: `steadyGrid()`, `gridFromMap()` (a `map.json` stretch), `shiftGrid()`, `place()`, `nextPoint()`, `prevPoint()`, `halfBars()`, `leadFrames()` |
-| `take.ts` | takes at 1×: `TakeManifest` (events, views), `solveInPoint()`, `eventFrame()`, `checkTakeUse()`; the placeholder manifests RS-9, HS-F, RS-W, HS-B3, RS-13 |
+| `take.ts` | takes at 1×: `TakeManifest` (events, views), `solveInPoint()`, `eventFrame()`, `checkTakeUse()`; the placeholder manifests RS-9, HS-F, RS-W, HS-B3, RS-13; the kept 2.0.0 takes (`REAL_TAKES`, below) |
 | `standins.ts` | the PLACEHOLDERS: published stills (`STILL`), labelled slots (`SLOT`, each label at its `focus`, laid out by `slotLabelLayout()` for the view and the checks alike), the wall's 28 cells (`CELL_SOURCES`) |
 | `world.ts` | the composed world per aspect (browser, companion, Calculator, Finder, the project, the Toolbox; the stone) |
 | `scene.ts`, `kit.ts`, `frame.ts` | the plan model; type events, anchored cues, ring-clear frames; framing, line breaking, type timing |
