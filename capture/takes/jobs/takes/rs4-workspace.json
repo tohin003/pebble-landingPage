@@ -1,5 +1,5 @@
 {
- "_about": "RS-4 (S11, P0), sent from Pebble's workspace (31 Oct: the quick chat sends its cards to the workspace anyway). Calculator sits at the screen's left edge, under the workspace's sidebar. Declines a card left waiting, opens a new conversation, sends $message, approves up to four cards in a row, each with its exact 'Allow' or 'Open app' (never Always allow), brings Calculator forward from the Dock to watch the presses, then 600, the receipt and the reply.",
+ "_about": "RS-4 (S11, P0), sent from Pebble's workspace (31 Oct: the quick chat sends its cards to the workspace anyway). Calculator is first dragged over the left edge (its title bar to 110,118), under where the workspace's sidebar will be. Declines a card left waiting, opens a new conversation, sends $message, approves up to four cards in a row, each with its exact 'Allow' or 'Open app' (never Always allow), brings Calculator forward from the Dock to watch the presses, then 600, the receipt and the reply. The message box is clicked at $composer (positions.json).",
  "schema": "pebble-take-job/1",
  "id": "RS4-$n",
  "take": "RS-4",
@@ -8,6 +8,36 @@
   "message": "What's 48 × 12.5? Press the keys in Calculator."
  },
  "steps": [
+  {
+   "do": "activate",
+   "app": "Calculator"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "find",
+   "app": "Calculator",
+   "role": "AXWindow",
+   "anchor": "top",
+   "save_as": "@ct",
+   "timeout_s": 5
+  },
+  {
+   "do": "drag",
+   "from": "@ct",
+   "to": {
+    "x": 110,
+    "y": 118
+   },
+   "ms": 800,
+   "note": "Calculator over the workspace's sidebar"
+  },
+  {
+   "do": "wait",
+   "s": 0.8
+  },
   {
    "do": "key",
    "key": "space",
@@ -54,16 +84,6 @@
    "s": 1.5
   },
   {
-   "do": "find",
-   "app": "Pebble",
-   "role": "AXTextArea",
-   "name": "Message Pebble",
-   "window_contains": "Pebble",
-   "save_as": "@msg",
-   "timeout_s": 20,
-   "budget_ms": 15000
-  },
-  {
    "do": "move",
    "to": {
     "x": 900,
@@ -84,7 +104,7 @@
   },
   {
    "do": "click",
-   "at": "@msg",
+   "at": "$composer",
    "event": "composer"
   },
   {

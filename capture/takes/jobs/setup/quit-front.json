@@ -1,0 +1,12 @@
+{
+ "_about": "Quits the frontmost app with ⌘Q. Queue it only right after a still showed which app is in front (31 Oct: System Settings, left open after STUDIO_SETUP step 10). Then a still and Pebble's companion read.",
+ "schema": "pebble-take-job/1",
+ "id": "quit-front-$n",
+ "take": "setup",
+ "title": "Quit the frontmost app",
+ "steps": [
+  {"do": "key", "key": "q", "mods": ["cmd"]}, {"do": "wait", "s": 2},
+  {"do": "still", "name": "after"},
+  {"do": "ax_dump", "app": "Pebble", "max": 3000, "name": "pebble"}
+ ]
+}

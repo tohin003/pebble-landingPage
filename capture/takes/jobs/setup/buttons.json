@@ -1,0 +1,9 @@
+{
+ "_about": "A still, and every Pebble button whose name contains $label, with its place (31 Oct: an off-screen 'Allow' matched before the card's own).",
+ "schema": "pebble-take-job/1",
+ "id": "buttons-$n",
+ "take": "setup",
+ "title": "Probe: a card's buttons",
+ "defaults": {"label": "llow"},
+ "steps": [{"do": "still", "name": "now"}, {"do": "ax_dump", "app": "Pebble", "max": 3000, "name": "pebble"}]
+}

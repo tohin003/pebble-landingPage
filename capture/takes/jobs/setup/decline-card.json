@@ -1,0 +1,13 @@
+{
+ "_about": "Declines the card waiting in Pebble's workspace (its exact 'Don't allow'). 31 Oct: the Notes card from RS5N, which would have written to an iCloud account that isn't the demo's.",
+ "schema": "pebble-take-job/1",
+ "id": "decline-card-$n",
+ "take": "setup",
+ "title": "Decline the waiting card",
+ "steps": [
+  {"do": "key", "key": "space", "mods": ["cmd", "shift"]}, {"do": "wait", "s": 1.5},
+  {"do": "find", "app": "Pebble", "role": "AXButton", "name": "Don't allow", "save_as": "@no", "timeout_s": 10, "budget_ms": 15000},
+  {"do": "click", "at": "@no"}, {"do": "wait", "s": 2},
+  {"do": "move", "to": {"x": 600, "y": 300}, "ms": 300}
+ ]
+}

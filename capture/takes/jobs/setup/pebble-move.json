@@ -1,0 +1,14 @@
+{
+ "_about": "Drags the floating pebble from $from to $to (31 Oct: after Larger Text it sat mid-screen, over Pebble's Activity panel), then a still and its new place.",
+ "schema": "pebble-take-job/1",
+ "id": "pebble-move-$n",
+ "take": "setup",
+ "title": "Move the pebble",
+ "defaults": {"from": {"x": 774, "y": 366}, "to": {"x": 965, "y": 520}},
+ "steps": [
+  {"do": "drag", "from": "$from", "to": "$to", "ms": 900, "hold_ms": 300}, {"do": "wait", "s": 1.5},
+  {"do": "move", "to": {"x": 600, "y": 300}, "ms": 300},
+  {"do": "find", "app": "Pebble", "role": "AXButton", "name": "Chat with Pebble", "save_as": "@p", "optional": true, "timeout_s": 5},
+  {"do": "still", "name": "after"}
+ ]
+}
