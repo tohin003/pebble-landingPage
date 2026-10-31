@@ -558,7 +558,13 @@ session's held-out run held the Mac, §68: rendered, scanned and looked at in th
   and `codaCalibrateCli.ts` measure a render of the coda alone as the reel scan does (shrunk to about 192 px, the sRGB
   curve, 6 × 6 tiles), fit the ink share the model reads (CODA_LUMA.inkShare, 0.22) by least squares on page 2's frames
   and on the coda's lines, compare the grounds, count flashes on the render and in the model as planned and as fitted,
-  and list where their transitions disagree; exit 2 if the render or the fitted model flashes.
+  and list where their transitions disagree; exit 2 if the render or the fitted model flashes. **Calibrated (31 Oct, on
+  the round 2 renders):** no flash on any render; page 2's lines fit an ink share of 0.376 (16:9), 0.261 (1:1) and 0.247
+  (9:16), the coda's 0.068 to 0.091, so CODA_LUMA.inkShare is 0.38 (the largest, rounded up: the stricter model for
+  every line; the iris-in stays on L82 with no flash wait), and at 0.38 the model alone now finds the old exits' flash
+  (the canary). The calibration leaves out the bottom tile row, where the demo reels' slate sits (counted, it read as a
+  night plate 1.3× to 3× too light), and asks to recalibrate a ground only when it is a fifth off and more than 0.01
+  (`LEVEL_TOLERANCE`): 9:16's plate, framed on a darker patch, is 0.72× the model's, 0.005 below it.
 - **9:16 frames the night plate between its pebbles (P2-9's second half).** At any scale that covers the tall frame,
   every pebble of the plate is larger than the sleeping stone (the renders drew c1 at 1,105 × 607 px beside a stone of
   263 × 232). `CODA_PLATE_FRAMING`: 9:16 shows the plate ×3 (×1.41 of the others' 2.125 world px a plate unit) about its

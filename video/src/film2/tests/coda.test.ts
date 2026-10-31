@@ -28,7 +28,7 @@ import { CODA_CUES } from "../setpieces/coda.cues";
 import { CODA_GRADE, CODA_GRID, CODA_INK_EM_16x9, CODA_LUMA, CODA_PLATE, CODA_PLATE_FRAMING, CODA_TEXT, IRIS_FEATHER_SHARE, codaCut, codaFeather, codaFlashModel, codaHairline, codaIrisIn, codaIrisOut, codaLumaSeries, codaOf, codaOneShots, codaPlacement, irisCover, planCoda, plateRect, plateUnder, xCut, xCutFrames, type CodaExtra, type CodaSoundLayer, type FilmCut, type FilmPiece } from "../setpieces/coda";
 import { CODA_CHECKS, CODA_NEVER, CODA_NEVER_PHRASES, clipToFrame, codaCamera, codaCaptions, codaChecks, codaFlashes, codaHolds, codaLight, codaLockup, codaMarkStones, codaNoUi, codaPlate, codaPose, codaSound, codaStillBeforePush, codaStone, codaStonesOn, codaWords, forbiddenIn, joinedWaits, platePebblesOn } from "../setpieces/codaChecks";
 import { CODA_PLATE_PEBBLES, PLATE_SOURCE, PLATE_UNITS, platePebbles, platePebblesSource } from "../setpieces/codaPlate";
-import { RenderLuma, calibrate, fitInkShare, flashesOf, transitionDiffs, type TileSeries } from "../setpieces/codaCalibrate";
+import { LEVEL_TOLERANCE, RenderLuma, calibrate, fitInkShare, flashesOf, slateTiles, transitionDiffs, type TileSeries } from "../setpieces/codaCalibrate";
 import { finaleThen, planFinale, titleStoneSafe, withThen } from "../setpieces/finale";
 import { COMING_NEVER, COMING_NEVER_PHRASES } from "../../../../shared/coming/never";
 import type { ScenePlan, ShotSpec, TypeSpec } from "../setpieces/scene";
@@ -728,7 +728,7 @@ describe("the one flash (P2-1, OVERRIDES §65): page 2's lines have no exit in t
       }
     }
   });
-  test("the canary: page 2's exits as they were (a blur from L0, the rise before the fall the 16:9 and 1:1 renders showed) fail codaFlashes, which the model alone missed", () => {
+  test("the canary: page 2's exits as they were (a blur from L0, the rise before the fall the 16:9 and 1:1 renders showed) fail codaFlashes, and the calibrated model sees the flash too", () => {
     for (const a of ASPECTS) {
       const p = coda(a);
       let bad = p;
@@ -736,8 +736,12 @@ describe("the one flash (P2-1, OVERRIDES §65): page 2's lines have no exit in t
       const xs = errorsOf(codaFlashes(bad, X(bad)));
       expect(xs.some((f) => /leaves on its own \(a blur from L0\)/.test(f.message) && /rise before the fall/.test(f.message))).toBe(true);
       expect(checkPlan(bad, CODA_GRID).ok).toBe(false);
-      // the model as planned reads a line's ink at 0.22 of its box and sees no flash in it (codaCalibrate.ts measures the share)
-      expect(errorsOf(codaFlashModel(bad).findings)).toEqual([]);
+      // at 0.22 of a line's box (the estimate) the model missed it; at the share the renders fit (31 Oct) it finds it in
+      // every aspect: in 16:9 on tiles 2,2 and 2,3 (the render's 2,3 from L10), and in 9:16, whose render did not
+      // flash, too (the stricter model)
+      expect(errorsOf(codaFlashModel(bad, { ...CODA_LUMA, inkShare: 0.22 }).findings)).toEqual([]);
+      expect(errorsOf(codaFlashModel(bad).findings).length).toBeGreaterThan(0);
+      if (a === "16:9") expect(errorsOf(codaFlashModel(bad).findings).map((f) => f.message.split(":")[0])).toEqual(["tile 2,2", "tile 2,3"]);
     }
   });
 });
@@ -1060,11 +1064,41 @@ describe("the flash model's calibration against a render (codaCalibrate.ts; prep
     expect(r.levels.plate.ratio!).toBeCloseTo(1, 9);
   });
   test("a render whose glyphs cover more of their boxes: the fit finds the share, and the report says what to set", () => {
-    const r = calibrate(coda("16:9"), model(0.45));
-    expect(r.fit.page.share!).toBeCloseTo(0.45, 6);
-    expect(r.fit.night.share!).toBeCloseTo(0.45, 6);
-    expect(r.recommend.some((m) => /fits an ink share of 0\.450/.test(m))).toBe(true);
-    expect(fitInkShare(coda("16:9"), model(0.45), [0, 1, 2, 3]).rmsFitted).toBeLessThan(1e-9);
+    const r = calibrate(coda("16:9"), model(0.6));
+    expect(r.fit.page.share!).toBeCloseTo(0.6, 6);
+    expect(r.fit.night.share!).toBeCloseTo(0.6, 6);
+    expect(r.recommend.some((m) => /fits an ink share of 0\.600/.test(m))).toBe(true);
+    expect(fitInkShare(coda("16:9"), model(0.6), [0, 1, 2, 3]).rmsFitted).toBeLessThan(1e-9);
+  });
+  test("a render whose glyphs cover less (the night's lines, 0.07 to 0.09 on 31 Oct): the model is already the stricter, nothing to set", () => {
+    const r = calibrate(coda("16:9"), model(0.09));
+    expect(r.fit.night.share!).toBeCloseTo(0.09, 6);
+    expect(r.recommend).toEqual([]);
+    expect(r.ok).toBe(true);
+  });
+  test("the demo reels' slate (the bottom tile row, on every frame) is left out of the levels and the fit: a lit bottom row reads as a too-light plate only when the row is counted", () => {
+    const r0 = model(CODA_LUMA.inkShare);
+    const slate = slateTiles();
+    expect(slate).toEqual([30, 31, 32, 33, 34, 35]);
+    // the 1:1 slate of 31 Oct: about sRGB 108 over the bottom row against the plate's 35
+    const render: TileSeries = { tiles: r0.tiles.map((s, i) => (slate.includes(i) ? s.map(() => 0.15) : s)), whole: r0.whole };
+    const r = calibrate(coda("16:9"), render);
+    expect(r.levels.plate.ratio!).toBeCloseTo(1, 9);
+    expect(r.recommend).toEqual([]);
+    const counted = calibrate(coda("16:9"), render, { skip: [] });
+    expect(counted.levels.plate.ratio!).toBeGreaterThan(1.2);
+    expect(counted.recommend.some((m) => /night plate.*recalibrate/.test(m))).toBe(true);
+  });
+  test("a ground a fifth off but by less than LEVEL_TOLERANCE (near black) asks for nothing; one off by more does", () => {
+    const r0 = model(CODA_LUMA.inkShare);
+    const last = r0.whole.length - 1;
+    const scaled = (k: number): TileSeries => ({ tiles: r0.tiles.map((s) => s.map((v, f) => (f === last && Math.abs(v - CODA_LUMA.plate) < 1e-9 ? v * k : v))), whole: r0.whole });
+    expect(CODA_LUMA.plate * 0.28).toBeLessThan(LEVEL_TOLERANCE);
+    const dim = calibrate(coda("16:9"), scaled(0.72));
+    expect(dim.levels.plate.ratio!).toBeCloseTo(0.72, 6);
+    expect(dim.recommend).toEqual([]);
+    const lit = calibrate(coda("16:9"), scaled(2));
+    expect(lit.recommend.some((m) => /night plate.*2\.00×/.test(m))).toBe(true);
   });
   test("the canary: a render with the rise before the fall (page 2 leaving before the iris, as on 28 Oct) fails, and the model as planned is named as missing it", () => {
     const r0 = model(CODA_LUMA.inkShare);

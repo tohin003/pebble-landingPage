@@ -8,6 +8,9 @@
 //                night's ink on the frames after the opening one (the coda's lines), each on the tiles the lines touch
 //   levels       the grounds the model draws against the render's: the page on L0 and the night plate on the last frame,
 //                each over the tiles nothing else touches (render ÷ model)
+//   the slate    the demo reels' placeholder slate (StandInViews SetPiecesSlate, on every frame of F2-SP-coda-<aspect>;
+//                never in a film) sits in the bottom tile row in every aspect: the fit and the levels leave that row out
+//                (SLATE_TILES), or the slate reads as a night plate 1.3× to 3× too light (31 Oct, r2/probe/plate-level.ts)
 //   flashes      opposing pairs of large luminance changes within a second (qa/luma.ts's rule), per tile and for the
 //                whole frame: on the render, in the model as planned, and in the model with the fitted shares
 //   transitions  where the render's large transitions and the model's disagree (more than `tol` frames apart, or one
@@ -113,6 +116,12 @@ export function transitionDiffs(model: TileSeries, render: TileSeries, tol = 2):
   return out;
 }
 
+/**
+ * The tiles the demo reels' placeholder slate touches (row-major): the whole bottom row. The slate is at most about 40 px
+ * of 1080 tall at the bottom right, inside the bottom sixth in every aspect; a render without it only loses a row.
+ */
+export const slateTiles = (G: number = FLASH_GRID): readonly number[] => Array.from({ length: G }, (_, i) => (G - 1) * G + i);
+
 /** A least-squares fit of the ink share on some frames: the share, the samples it used, and the RMS error before and after. */
 export interface InkFit {
   share: number | null;
@@ -126,7 +135,7 @@ export interface InkFit {
  * tile (a line's glyphs scale its box's step from its ground), so share = Σ B(R − A) ÷ Σ B² over the tiles where a line
  * moves the model (|B| > 1e-4). null when no line is on those frames.
  */
-export function fitInkShare(p: ScenePlan, render: TileSeries, frames: readonly number[], base: Readonly<CodaLuma> = CODA_LUMA): InkFit {
+export function fitInkShare(p: ScenePlan, render: TileSeries, frames: readonly number[], base: Readonly<CodaLuma> = CODA_LUMA, skip: readonly number[] = []): InkFit {
   let sbb = 0;
   let sbr = 0;
   const rows: { A: number; B: number; R: number }[] = [];
@@ -138,7 +147,7 @@ export function fitInkShare(p: ScenePlan, render: TileSeries, frames: readonly n
       const A = col[0]!;
       const B = b.tiles[k]![0]! - A;
       const R = render.tiles[k]![fr]!;
-      if (Math.abs(B) <= 1e-4 || R === undefined) return;
+      if (Math.abs(B) <= 1e-4 || R === undefined || skip.includes(k)) return;
       rows.push({ A, B, R });
       sbb += B * B;
       sbr += B * (R - A);
@@ -154,19 +163,19 @@ export function fitInkShare(p: ScenePlan, render: TileSeries, frames: readonly n
  * A ground's level in the render against the model's, over the tiles that show only that ground on a frame (the model's
  * tile equal to the ground's own value): the render's mean ÷ the model's. null when no tile shows only it.
  */
-export function groundLevel(model: TileSeries, render: TileSeries, fr: number, value: number): { ratio: number | null; tiles: number } {
+export function groundLevel(model: TileSeries, render: TileSeries, fr: number, value: number, skip: readonly number[] = []): { ratio: number | null; diff: number | null; tiles: number } {
   let m = 0;
   let r = 0;
   let n = 0;
   model.tiles.forEach((col, k) => {
     const v = col[fr];
     const q = render.tiles[k]?.[fr];
-    if (v === undefined || q === undefined || Math.abs(v - value) > 1e-9) return;
+    if (v === undefined || q === undefined || Math.abs(v - value) > 1e-9 || skip.includes(k)) return;
     m += v;
     r += q;
     n++;
   });
-  return { ratio: n && m > 0 ? r / m : null, tiles: n };
+  return { ratio: n && m > 0 ? r / m : null, diff: n ? (r - m) / n : null, tiles: n };
 }
 
 /** The calibration's report. */
@@ -174,7 +183,7 @@ export interface CodaCalibration {
   plan: string;
   frames: { plan: number; render: number };
   fit: { page: InkFit; night: InkFit };
-  levels: { page: { ratio: number | null; tiles: number }; plate: { ratio: number | null; tiles: number } };
+  levels: { page: ReturnType<typeof groundLevel>; plate: ReturnType<typeof groundLevel> };
   flashes: { render: ReturnType<typeof flashesOf>; planned: ReturnType<typeof flashesOf>; fitted: ReturnType<typeof flashesOf> };
   transitions: ReturnType<typeof transitionDiffs>;
   recommend: string[];
@@ -182,31 +191,42 @@ export interface CodaCalibration {
   ok: boolean;
 }
 
-/** The share of CODA_LUMA.inkShare a fitted share may stray before the report recommends setting it. */
+/**
+ * The share of CODA_LUMA.inkShare a fitted share may exceed it by before the report recommends raising it. A fit below
+ * the plan's share needs nothing: the model then draws the ink stronger than the render, the stricter way round.
+ */
 export const INK_SHARE_TOLERANCE = 0.25;
 
+/**
+ * How far a ground's mean relative luminance may sit from the model's before a level off by more than a fifth is worth
+ * recalibrating: a tenth of WCAG's 0.1 step. Near black a fifth is tiny (the 9:16 plate, framed on a darker patch, is
+ * 0.72× the model's on 31 Oct: 0.005 below it), and no flash verdict can turn on it.
+ */
+export const LEVEL_TOLERANCE = 0.01;
+
 /** The coda's flash model against a render of it (the render's tile series, frame 0 = the coda's L0). */
-export function calibrate(p: ScenePlan, render: TileSeries, o: { tol?: number; base?: Readonly<CodaLuma> } = {}): CodaCalibration {
+export function calibrate(p: ScenePlan, render: TileSeries, o: { tol?: number; base?: Readonly<CodaLuma>; skip?: readonly number[] } = {}): CodaCalibration {
   const x = codaOf(p);
   if (!x) throw new Error(`${p.id} is not the coda`);
   const base = o.base ?? CODA_LUMA;
+  const skip = o.skip ?? slateTiles(Math.round(Math.sqrt(render.tiles.length)));
   const problems: string[] = [];
   const recommend: string[] = [];
   const n = render.whole.length;
   if (n !== p.duration) problems.push(`the render has ${n} frames; the plan ${p.duration}: render the coda alone (F2-SP-coda-<aspect>), whole`);
   const range = (a: number, b: number) => Array.from({ length: Math.max(0, b - a) }, (_, i) => a + i);
-  const page = fitInkShare(p, render, range(0, x.irisOut.at), base);
-  const night = fitInkShare(p, render, range(x.irisIn.at + x.irisIn.frames, p.duration), base);
+  const page = fitInkShare(p, render, range(0, x.irisOut.at), base, skip);
+  const night = fitInkShare(p, render, range(x.irisIn.at + x.irisIn.frames, p.duration), base, skip);
   const fitted: CodaLuma = { ...base };
   const shares = [page.share, night.share].filter((s): s is number => s !== null && s > 0);
   if (shares.length) fitted.inkShare = Math.max(...shares);
   for (const [name, f] of [["page 2's ink", page], ["the night's ink", night]] as const)
-    if (f.share !== null && Math.abs(f.share - base.inkShare) > INK_SHARE_TOLERANCE * base.inkShare) recommend.push(`${name}: the render fits an ink share of ${f.share.toFixed(3)} (RMS ${f.rmsFitted.toFixed(4)}, ${f.samples} tile samples) against CODA_LUMA.inkShare ${base.inkShare} (RMS ${f.rmsPlanned.toFixed(4)}): set it from the larger of the two (the stricter model)`);
+    if (f.share !== null && f.share - base.inkShare > INK_SHARE_TOLERANCE * base.inkShare) recommend.push(`${name}: the render fits an ink share of ${f.share.toFixed(3)} (RMS ${f.rmsFitted.toFixed(4)}, ${f.samples} tile samples) against CODA_LUMA.inkShare ${base.inkShare} (RMS ${f.rmsPlanned.toFixed(4)}): set it from the larger of the two (the stricter model)`);
   const planned = codaLumaSeries(p, 0, p.duration, base);
   const model = codaLumaSeries(p, 0, p.duration, fitted);
-  const levels = { page: groundLevel(planned, render, 0, base.page), plate: groundLevel(planned, render, p.duration - 1, base.plate) };
+  const levels = { page: groundLevel(planned, render, 0, base.page, skip), plate: groundLevel(planned, render, p.duration - 1, base.plate, skip) };
   for (const [name, l] of [["the page (L0)", levels.page], ["the night plate (the last frame)", levels.plate]] as const)
-    if (l.ratio !== null && Math.abs(l.ratio - 1) > 0.2) recommend.push(`${name}: the render's level is ${l.ratio.toFixed(2)}× the model's over ${l.tiles} tiles: recalibrate CODA_LUMA from the render`);
+    if (l.ratio !== null && l.diff !== null && Math.abs(l.ratio - 1) > 0.2 && Math.abs(l.diff) > LEVEL_TOLERANCE) recommend.push(`${name}: the render's level is ${l.ratio.toFixed(2)}× the model's (${l.diff > 0 ? "+" : "−"}${Math.abs(l.diff).toFixed(4)}) over ${l.tiles} tiles: recalibrate CODA_LUMA from the render`);
   const flashes = { render: flashesOf(render, p.fps), planned: flashesOf(planned, p.fps), fitted: flashesOf(model, p.fps) };
   if (flashes.render.worst > 0) problems.push(`the render flashes: ${flashes.render.flashing.map((f) => `${f.where} ${f.flashes} from L${f.at}`).join("; ")} (C8: no opposing pair)`);
   if (flashes.fitted.worst > 0) problems.push(`the model with the fitted ink share flashes: ${flashes.fitted.flashing.map((f) => `${f.where} ${f.flashes} from L${f.at}`).join("; ")}`);

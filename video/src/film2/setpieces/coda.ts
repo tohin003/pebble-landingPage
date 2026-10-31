@@ -747,8 +747,11 @@ export interface CodaLuma {
 
 /**
  * The relative luminances the model uses (WCAG), from the palette: the page under its grade, the night green, the
- * night plate (its measured median at its exposure), the two stones, the two inks. A line's glyphs cover about a fifth
- * of its box (an estimate: codaCalibrate.ts measures it on a render).
+ * night plate (its measured median at its exposure), the two stones, the two inks. The ink share (the share of a line's
+ * box its glyphs cover) is the largest the round 2 renders fit (31 Oct, codaCalibrate.ts on F2-SP-coda-<aspect>, the
+ * slate's row left out): page 2's lines 0.376 in 16:9, 0.261 in 1:1, 0.247 in 9:16; the night's lines 0.068 to 0.091.
+ * One share draws both, so it is the largest, rounded up: the model is then the stricter for every line (it was 0.22,
+ * an estimate). It moves no frame: the iris-in stays on L82 with no flash wait in every aspect (r2/probe/inkshare.ts).
  */
 export const CODA_LUMA: Readonly<CodaLuma> = {
   page: relLuminance(gradeColor(hexToRgb(COLOR.page), GRADES.page)),
@@ -760,7 +763,7 @@ export const CODA_LUMA: Readonly<CodaLuma> = {
   inkOnPage: relLuminance(hexToRgb(COLOR.ink)),
   inkOnNight: relLuminance(hexToRgb(COLOR.nightInk)),
   ink2OnNight: relLuminance(hexToRgb(NIGHT_INK2)),
-  inkShare: 0.22,
+  inkShare: 0.38,
 };
 
 /** The flash model's grid: WCAG's quarter of a 10° field is about 2.8 % of the screen, so 6 × 6 tiles (qa/luma.ts). */
