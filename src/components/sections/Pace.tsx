@@ -7,8 +7,8 @@
 //
 // - The three modes' words are Pebble's own (src/permissionModes.ts at tag v1.2.0, byte-identical through v1.5.0;
 //   copy.ts `explainers.permissionDial`, OVERRIDES §23, §25, §32), shown by the dial. Pebble 2.0.0 changed Auto in
-//   project and Full access: the dial now carries 2.0.0's words from its user guide, pending a re-quote from
-//   src/permissionModes.ts@v2.0.0 (copy.ts, C-200-8).
+//   project and Full access: the dial now carries 2.0.0's words, checked byte for byte against
+//   src/permissionModes.ts@v2.0.0:19-52 (copy.ts, C-200-8).
 // - The "In every mode, …" sentence is quoted and attributed ("In Pebble's Settings, under the three modes:"): it says
 //   "their switches below", which only makes sense in the app, so the next line explains where those switches are.
 //   The line after it says what an app launch is, and that using an app's window is a separate request you allow with

@@ -31,7 +31,7 @@ export const release = {
   tag: releaseFacts.tag,
   assetName: releaseFacts.assetName,
   sizeBytes: releaseFacts.sizeBytes, // [C-REL-2]
-  sizeLabel: formatMegabytes(releaseFacts.sizeBytes), // "72 MB" [C-REL-2]
+  sizeLabel: formatMegabytes(releaseFacts.sizeBytes), // "73 MB" [C-REL-2]
   publishedOn: releaseFacts.publishedOn, // [C-REL-3]
   repoUrl: "https://github.com/tohin003/Pebble",
   releaseNotesUrl: `https://github.com/tohin003/Pebble/releases/tag/${releaseFacts.tag}`,
@@ -50,7 +50,7 @@ export function formatMegabytes(bytes: number): string {
 }
 
 /**
- * The facts under a download button, each its own item: ["v1.5.0", "72 MB", "Apple silicon", "macOS 12 or later"].
+ * The facts under a download button, each its own item: ["v2.0.0", "73 MB", "Apple silicon", "macOS 12 or later"].
  * Render them as a list with hairline separators (ReleaseFacts), never joined into a middle-dot string (OVERRIDES §16,
  * §21; PHILOSOPHY "What we never do"). [C-REL-5]
  */
@@ -58,7 +58,7 @@ export function releaseMeta(version: string = release.version, sizeLabel: string
   return [`v${version}`, sizeLabel, "Apple silicon", "macOS 12 or later"];
 }
 
-/** The release notes page for a tag such as "v1.5.0". */
+/** The release notes page for a tag such as "v2.0.0". */
 export function releaseNotesUrl(tag: string = release.tag): string {
   return `https://github.com/tohin003/Pebble/releases/tag/${tag}`;
 }
@@ -187,13 +187,13 @@ export const honestLimits = {
     },
     {
       title: "Pebble for Chrome needs Developer mode",
-      // 2.0.0: checked end to end in Google Chrome, and Comet through Accessibility (README.md@checkout-2026-10-31:592-594;
-      // CHANGELOG.md 2.0.0:277-278). The simulated-Chrome line and the built-in browser line are gone.
+      // 2.0.0: checked end to end in Google Chrome, and Comet through Accessibility (README.md@v2.0.0:592-594;
+      // CHANGELOG.md@v2.0.0:277-278). The simulated-Chrome line and the built-in browser line are gone.
       body: "Pebble for Chrome isn't in the Chrome Web Store: you load it in your browser's Developer mode. It has been checked end to end in Google Chrome. In a browser that keeps extensions out of its pages, such as Comet, Pebble works in a new window through Accessibility, not in its own tab.", // [C-LIM-10] [C-200-18]
     },
     {
       // 2.0.0 replaces "Other apps" (C-LIM-15, retired: "Pebble can't see or operate other apps yet"). Sources:
-      // CHANGELOG.md 2.0.0:116-123, :273-274; docs/USER_GUIDE.md@checkout-2026-10-31:115-121.
+      // CHANGELOG.md@v2.0.0:116-123, :273-274; docs/USER_GUIDE.md@v2.0.0:115-121.
       title: "App windows",
       body: "Pebble uses another app's window only after you allow it, and never operates terminals, System Settings, Keychain Access, password managers, apps that run code or erase disks, or itself. A window that is minimised or on another desktop has to be brought back first. If Pebble restarts after turning on a Chromium app's page accessibility, the app keeps it on until it quits.", // [C-200-19]
     },
@@ -355,7 +355,7 @@ export const desktop = {
     "⌘⇧Space brings Pebble forward from any app.", // [C-DESK-2]
     "Its expression follows what Pebble is doing, such as reading, writing, testing or waiting, without asking the model anything.", // [C-DESK-3]
     "Close the main window and the pebble stays on screen. Quit Pebble stops it, and the model with it.", // [C-DESK-4]
-    "It stays over full-screen apps too, answers simple cards itself, such as allowing a site or an app window, and has Copy on every reply.", // [C-200-2] CHANGELOG.md 2.0.0:238-239
+    "It stays over full-screen apps too, answers simple cards itself, such as allowing a site or an app window, and has Copy on every reply.", // [C-200-2] CHANGELOG.md@v2.0.0:238-239
   ],
   limit: "Reduce motion, in Pebble's Settings or in macOS, keeps it still.", // [C-DESK-5]
   /** Lane F2a: the text alternative of the desktop vignette's quick chat (Pebble 1.0.1, sample data). [C-F2A-1] */
@@ -377,7 +377,7 @@ export const models = {
       title: "Continue with ChatGPT", // AdvancedSettings.vue:1171
       body: "Sign in with your ChatGPT account in your browser.", // [C-MOD-2]
       limit:
-        "Needs an eligible Plus or Pro plan through OpenAI's preview for open-source and approved clients. Plan limits apply, and API billing is separate. Fast replies, on by default, may use up those limits sooner.", // [C-MOD-3] [C-200-3] (2.0.0: CHANGELOG.md 2.0.0:262-264, :292)
+        "Needs an eligible Plus or Pro plan through OpenAI's preview for open-source and approved clients. Plan limits apply, and API billing is separate. Fast replies, on by default, may use up those limits sooner.", // [C-MOD-3] [C-200-3] (2.0.0: CHANGELOG.md@v2.0.0:262-264, :292)
     },
     {
       id: "provider",
@@ -430,7 +430,7 @@ export const project = {
     {
       n: "03",
       // 2.0.0: the old title ("… always wait for your review", true in every mode, OVERRIDES §8 C2) is no longer true in
-      // Auto in project or Full access (CHANGELOG.md 2.0.0:101-112), so the title names the default mode. [C-200-4]
+      // Auto in project or Full access (CHANGELOG.md@v2.0.0:101-112), so the title names the default mode. [C-200-4]
       title: "In the default mode, every terminal command and Git change waits for your review.",
       body:
         "Commands run without a shell, confined to the project by macOS's sandbox, with a time and output limit. Everyday Git, such as revert, stash, rebase, merge and bisect, shows the exact command and what it changes before it runs. Hooks, filters and editors never run, and Undo puts refs, the stash and your files back.", // [C-PROJ-7] [C-200-5]
@@ -474,8 +474,8 @@ export const project = {
 // 5b. Across your Mac (Pebble 2.0.0): work beyond a project, in a sandbox, and the app windows and websites you allow.
 //
 // Sources: Pebble 2.0.0's notes and guide, drafted from the checkout's candidates for the public tree until the tag
-// exists (CHANGELOG.md 2.0.0:83-97, :114-139, :290-291; docs/USER_GUIDE.md@checkout-2026-10-31:96-121). Every row is
-// pending: verify at v2.0.0 (docs/CLAIMS.md, "Pebble 2.0.0 on the page"). Each row is the feature, then its limit, at the
+// exists (CHANGELOG.md@v2.0.0:83-97, :114-139, :290-291; docs/USER_GUIDE.md@v2.0.0:96-121). Every row is
+// checked at the tag v2.0.0 on 31 October (docs/CLAIMS.md, "Pebble 2.0.0 on the page"). Each row is the feature, then its limit, at the
 // same size (PHILOSOPHY principle 3). Text only until the captures lane has real 2.0.0 stills: no UI is redrawn.
 // Left out until the tag settles it: seeing a window as a picture and using the mouse and keyboard in it (the README
 // says it stays off until measured, the notes say it is on by default; .work/page-2.0/PLAN.md).
@@ -523,7 +523,7 @@ export const acrossMac = {
 // ---------------------------------------------------------------------------------------------------------------
 // 5c. Pebble's Workshop (Code Mode since 1.5.0; tools Pebble makes and the Toolbox since 2.0.0)
 //
-// Sources: CHANGELOG.md 2.0.0:141-150 (pending: verify at v2.0.0); Code Mode's first two sentences are 1.5.0's own
+// Sources: CHANGELOG.md@v2.0.0:141-150; Code Mode's first two sentences are 1.5.0's own
 // About lines (App.vue@v1.5.0:1419-1420) and its limit 1.5.0's notes (CHANGELOG.md@v1.5.0:30-31), as in the tour until
 // 1.5.0 (C-TOUR-6). No numbers, savings or speed, and never 1.3.0's unannounced name (OVERRIDES §25, §32, §49).
 // ---------------------------------------------------------------------------------------------------------------
@@ -580,7 +580,7 @@ export const agentGuard = {
     "It reads test results as Pebble observed them, never as the model reports them. When tests cover the code a task changed and haven't passed since the change, Pebble holds the task at “verification required”: you run the tests, ask Pebble to finish, or accept it as unverified. Changed code without covering tests is not held.",
   ],
   /**
-   * Pebble 2.0.0, "AgentGuard: done means checked" (CHANGELOG.md 2.0.0:184-197): beside the Verified row, after the
+   * Pebble 2.0.0, "AgentGuard: done means checked" (CHANGELOG.md@v2.0.0:184-197): beside the Verified row, after the
    * result sentence. [C-200-7]
    */
   request:
@@ -688,10 +688,9 @@ export const explainers = {
 
   /**
    * PermissionDial: the three modes. Until 1.5.0, word for word from Pebble's src/permissionModes.ts at the tag v1.3.0
-   * (OVERRIDES §23, §25). Pebble 2.0.0 changed Auto in project and Full access (CHANGELOG.md 2.0.0:99-112), so these are
-   * now 2.0.0's words as the user guide's table gives them (docs/USER_GUIDE.md@checkout-2026-10-31:89-95). PENDING: the
-   * dial says "The words are the ones Pebble shows", so re-quote every string from src/permissionModes.ts@v2.0.0 before
-   * the push (.work/page-2.0/PLAN.md, "Verify at the tag"). [C-EXP-4..7] [C-200-8]
+   * (OVERRIDES §23, §25). Pebble 2.0.0 changed Auto in project and Full access (CHANGELOG.md@v2.0.0:99-112), so these are
+   * now 2.0.0's words, checked byte for byte against src/permissionModes.ts@v2.0.0:19-52 (the user guide's table,
+   * docs/USER_GUIDE.md@v2.0.0:89-95, says the same). [C-EXP-4..7] [C-200-8]
    */
   permissionDial: {
     legend: "How Pebble acts", // AdvancedSettings.vue:1365 ("HOW PEBBLE ACTS"), in sentence case
@@ -711,7 +710,7 @@ export const explainers = {
         runsWithoutAsking:
           "Edits to project files, test runs, read-only commands (ls, cat, rg and a few more), commands that stay in this project without network (Pebble copies the project first), and Git steps it can undo.",
         alwaysAsks:
-          "Changes to test files your request didn't ask for, commands with network, installs or paths outside the project, Git pushes, deletions and history rewrites, app launches and connector calls.", // USER_GUIDE.md@checkout-2026-10-31:92
+          "Changes to test files your request didn't ask for, commands with network, installs or paths outside the project, Git pushes, deletions and history rewrites, app launches and connector calls.", // permissionModes.ts@v2.0.0:32
       },
       {
         id: "full",
@@ -719,20 +718,20 @@ export const explainers = {
         runsWithoutAsking:
           "Commands that only read or make new files, and each step your messages ask for: commands (including grep and builds), installs, Git, connector calls, app launches, windows, sites, presses.",
         alwaysAsks:
-          "Spending money and your hooks' reviews. A step you didn't ask for, or a delete, push or send your words don't name, doesn't run; Pebble asks after 3 in a row or 20 in a task.", // USER_GUIDE.md@checkout-2026-10-31:93
+          "Spending money and your hooks' reviews. A step you didn't ask for, or a delete, push or send your words don't name, doesn't run; Pebble asks after 3 in a row or 20 in a task.", // permissionModes.ts@v2.0.0:46
       },
     ],
     everyMode:
-      "In every mode, reading project files, searching and reading the web, and creating views run without asking while their switches below are on, and signing in is yours. In Ask and Auto, connector calls, installs and every press in a Chrome tab you granted always ask; looking, typing and choosing in that tab run under your grant. Protected credentials stay blocked.", // USER_GUIDE.md@checkout-2026-10-31:95
+      "In every mode, reading project files, searching and reading the web, and creating views run without asking while their switches below are on, and signing in is yours. In Ask and Auto, connector calls, installs and every press in a Chrome tab you granted always ask; looking, typing and choosing in that tab run under your grant. Protected credentials stay blocked.", // permissionModes.ts@v2.0.0:52 (EVERY_MODE)
     switchesNote: "Below the modes, in Settings › Permissions, a switch for each kind of tool turns it off entirely.", // [C-EXP-9]
     /**
      * Under the quoted sentence (Pace.tsx): what an app launch is, and that using an app's window is its own request.
      * Until 1.5.0 it said Pebble couldn't see or operate other apps yet (OVERRIDES §12); 2.0.0 can, in a window you
-     * allow (docs/USER_GUIDE.md@checkout-2026-10-31:98-99, :115-117). [C-EXP-14] [C-200-9]
+     * allow (docs/USER_GUIDE.md@v2.0.0:98-99, :115-117). [C-EXP-14] [C-200-9]
      */
     appsNote: "An app launch only opens an app. Using one of its windows is a separate request you allow, with Screen control on.",
     fullAccessNote:
-      "Full access increases the impact of mistakes and prompt injection. AgentGuard is a reliability check; it cannot guarantee that every command or answer is safe.", // [C-EXP-10] AdvancedSettings.vue:1390-1392
+      "Full access increases the impact of mistakes and prompt injection. Pebble checks each step that would ask against your own messages and runs only what they ask for, never spending money; the check, like AgentGuard, can be wrong and cannot guarantee that every step is safe.", // [C-EXP-10] [C-200-28] AdvancedSettings.vue@v2.0.0:1564-1567 (was @v1.0.1:1390-1392)
     /** Lane F2a: the line under the "Interactive example" label (like approvalCard.intro). [C-F2A-7] */
     intro: "Choose a mode. The words are the ones Pebble shows.",
   },
@@ -818,7 +817,7 @@ export const memory = {
    * standing instructions (points below; 1.0.3 Corrections). [C-MEM-8]
    */
   // 2.0.0: what you asked Pebble to remember now reaches later conversations as your own instructions (CHANGELOG.md
-  // 2.0.0:174-176); what it learned on its own stays labelled data (README.md@checkout-2026-10-31:246, :259-261). [C-200-10]
+  // 2.0.0:174-176); what it learned on its own stays labelled data (README.md@v2.0.0:246, :259-261). [C-200-10]
   recall:
     "What you ask Pebble to remember reaches later conversations as your own standing instructions, and your request wins where it says otherwise. What Pebble learned on its own reaches the model as labelled data, with where it came from and when. No memory ever grants a permission.",
   relearn: "A memory you forget isn't learnt again from the same place. Forget all memories starts over, so Pebble can learn again.", // [C-MEM-9] (1.0.3)
@@ -827,7 +826,7 @@ export const memory = {
     "Start a message with “Remember that …” to save something right away: a preference when it is about you, otherwise a fact. Pebble still answers the rest.", // [C-MEM-3] (1.0.3)
     "Ask Pebble to forget something and it shows the memories that match. Nothing is forgotten until you confirm it in the main window.", // [C-MEM-4]
     "Write what Pebble should know about you in `~/.pebble/PEBBLE.md`, in your own words. Pebble follows it as your standing instructions, and it never grants a permission.", // [C-MEM-5] (1.0.3)
-    "Change or stop a saved preference in plain words, such as “Don't add the sign-off anymore”. Nothing is erased until you choose Forget in Settings › Memory.", // [C-200-11] CHANGELOG.md 2.0.0:180-182
+    "Change or stop a saved preference in plain words, such as “Don't add the sign-off anymore”. Nothing is erased until you choose Forget in Settings › Memory.", // [C-200-11] CHANGELOG.md@v2.0.0:180-182
   ],
   limit: "One switch, Remember useful context, turns memory off. Forgetting removes a memory for good.", // [C-MEM-6]
   chapterId: "memory",
@@ -840,7 +839,7 @@ export const views = {
   points: [
     "A quiz keeps its timer and your answers.", // [C-VIEW-2]
     "Export a view as Word, Excel, CSV or HTML. Saving always goes through the macOS Save dialog, and nothing is uploaded.", // [C-VIEW-3] (OVERRIDES §12: the four export formats)
-    "Replies draw their own visuals too: a table sorts by any column and can become a chart, and diagrams are drawn natively. Ask for a visual and Pebble can answer with a chart, a diagram, a comparison or a timeline, drawn from data only.", // [C-200-12] CHANGELOG.md 2.0.0:230-234
+    "Replies draw their own visuals too: a table sorts by any column and can become a chart, and diagrams are drawn natively. Ask for a visual and Pebble can answer with a chart, a diagram, a comparison or a timeline, drawn from data only.", // [C-200-12] CHANGELOG.md@v2.0.0:230-234
   ],
   limit: "A view can show and collect things, but it can never approve, run or change anything.", // [C-VIEW-4]
   chapterId: "views",
@@ -925,13 +924,13 @@ export const tour = {
     },
     {
       title: "Projects and Git",
-      // 2.0.0: "always asks" is no longer true in Full access (CHANGELOG.md 2.0.0:108-112), so the line names what is
+      // 2.0.0: "always asks" is no longer true in Full access (CHANGELOG.md@v2.0.0:108-112), so the line names what is
       // refused in every mode instead (:166-168). Code Mode, the next item until 1.5.0, is in Pebble's Workshop now.
       body: "Edit cards with Undo, tests in an isolated copy, and everyday Git with the exact command shown before it runs. A commit that would record a credential file, or a key that looks real, is refused.", // [C-TOUR-2] [C-200-13]
     },
     {
       title: "The work view",
-      body: "Each run's steps drawn as cards from Pebble's own records, without asking the model: files read and edited, commands and how they ended, test results, Git steps and your reviews.", // [C-200-14] CHANGELOG.md 2.0.0:227-229
+      body: "Each run's steps drawn as cards from Pebble's own records, without asking the model: files read and edited, commands and how they ended, test results, Git steps and your reviews.", // [C-200-14] CHANGELOG.md@v2.0.0:227-229
     },
     {
       title: "Skills, hooks and connectors",
@@ -981,7 +980,7 @@ export const infrastructure = {
       text: "A secret scan, a licence inventory, a scan for personal paths, and every published test run in a fresh clone.",
     }, // [C-INF-5]
     {
-      // README.md@checkout-2026-10-31:386's row ("Safe updates"), the term shortened: the copy lint bans "safe".
+      // README.md@v2.0.0:386's row ("Safe updates"), the term shortened: the copy lint bans "safe".
       term: "Updates",
       text: "The installer keeps the previous app. Database upgrades back up first. Every release is rehearsed on a copy of real data and drilled with a rollback before it ships.",
     }, // [C-200-15]
@@ -1068,10 +1067,12 @@ export const privacy = {
 // the summary keep their first clause, the Lockdown half is gone, the on state line loses its focus clause, and the
 // 1.1.0 captures of the Settings card, which show those lines, are off the page (C-STL-11, C-STL-12 retired).
 // Pebble 2.0.0 (31 October 2026): the release's notes say the fix ships ("Stealth Lockdown now leaves the app you were in
-// active when you click or type in the companion", CHANGELOG.md 2.0.0:240-243; OVERRIDES §49 allowed it "worded as the
-// release notes word it, and only if 2.0.0 ships it"), so the Lockdown half is back, in the 2.0.0 README's own words
-// (README.md@checkout-2026-10-31:152-154). PENDING: verify at v2.0.0. The 1.1.0 on line keeps its withdrawn clause out:
-// it is 1.1.0's wording, and stealthVeil.ts is vendored from 1.1.0.
+// active when you click or type in the companion", CHANGELOG.md@v2.0.0:240-243; OVERRIDES §49 allowed it "worded as the
+// release notes word it, and only if 2.0.0 ships it"), so the Lockdown half is back. The card's words are now Pebble
+// 2.0.0's own (App.vue@v2.0.0:3547-3571: the section "PRIVACY AND FOCUS" in the Settings tab "Privacy & Stealth", the
+// description, both halves), checked at the tag; the state lines and the honest line are byte for byte 2.0.0's too
+// (stealthVeil.ts@v2.0.0:13-16; the vendored shared/pebble/stealthVeil.ts stays 1.1.0's, its on line with the clause
+// 2.0.0 dropped).
 // ---------------------------------------------------------------------------------------------------------------
 
 export const stealth = {
@@ -1080,27 +1081,29 @@ export const stealth = {
   /** The H2: the setting's name. Its muted second line is `offByDefault` (two-tone, twoTone.ts). [C-STL-1] */
   h2: "Stealth Lockdown.",
   offByDefault: "Off by default.", // [C-STL-2] STATUS 04:16; OVERRIDES §21
-  /** The setting's own description (App.vue@v1.1.0:2810), its first clause only: the focus clause is withdrawn. [C-STL-3] */
-  description: "Keeps Pebble out of screen shares and recordings.",
+  /**
+   * The setting's own description, Pebble 2.0.0's (App.vue@v2.0.0:3559). Its second clause is 2.0.0's Lockdown, not
+   * 1.1.0's withdrawn focus clause. [C-STL-3] [C-200-29]
+   */
+  description: "Keeps Pebble out of screen shares and recordings, and keeps the companion with you over the app you're in.",
   /** The release's "What's new" line (App.vue@v1.1.0:1410), its first clause only: the FAQ's and llms.txt's. [C-STL-3] */
   summary: "Stealth Lockdown keeps Pebble out of screen shares and recordings.",
   /** Where to turn it on and the two shortcuts, from the release's "What's new" (App.vue@v1.1.0:1413, :1412). [C-STL-4] */
   turnOn: "Turn it on in Settings → Privacy and focus, from the menu-bar icon, or with ⌃⌥⌘S.",
-  hideAll: "⌃⌥⌘H hides every Pebble window at once; press it again, or use the menu-bar icon, to bring Pebble back.", // 2.0.0: README.md@checkout-2026-10-31:151 [C-200-16]
+  hideAll: "⌃⌥⌘H hides every Pebble window at once; press it again, or use the menu-bar icon, to bring Pebble back.", // 2.0.0: README.md@v2.0.0:151 [C-200-16]
   /**
-   * The Stealth half, word for word from the card's list under the switch (App.vue@v1.1.0:2820). The Lockdown half was
-   * withdrawn from 25 October (the correction above) and is back with 2.0.0, in the 2.0.0 README's words
-   * (README.md@checkout-2026-10-31:152-154), which promise no keyboard focus, only that the app you were in stays active.
-   * [C-STL-5] [C-200-17]
+   * Both halves, word for word from the card's list under the switch, Pebble 2.0.0's (App.vue@v2.0.0:3569-3570). The
+   * Lockdown half was withdrawn from 25 October (the correction above) and is back with 2.0.0; it promises no keyboard
+   * focus, only that the app you were in stays active. [C-STL-5] [C-200-17]
    */
   halves: [
     {
       term: "Stealth",
-      text: "Hidden from screen capture and screen sharing. No window shadow. Leaves the Dock, ⌘Tab and Mission Control. ⌃⌥⌘H hides Pebble at once; the menu-bar icon brings it back.",
+      text: "Hidden from screen capture and screen sharing. No window shadow. Leaves the Dock, ⌘Tab and Mission Control. ⌃⌥⌘H hides Pebble at once; press it again, or use the menu-bar icon, to bring it back.",
     },
     {
       term: "Lockdown",
-      text: "The companion stays with you over the app you are in, full-screen apps included, and opening the workspace takes you to the desktop. Clicking or typing in the companion leaves the app you were in active, with its menu bar.",
+      text: "The companion stays over the app you're in, full-screen apps included. Clicking or typing in the companion leaves the app you were in active.",
     },
   ] satisfies readonly Readonly<{ term: string; text: string }>[],
   /** The Veil, from the release's "What's new" (App.vue@v1.1.0:1411). [C-STL-6] */
@@ -1190,7 +1193,7 @@ export const install = {
   firstRun: {
     title: "First run",
     body:
-      "The first time, with no model connected, Pebble opens its full window with a welcome: Connect your ChatGPT account, or Use a local model. After that, Pebble starts as the pebble.", // [C-INST-12]
+      "The first time, with no model connected, Pebble opens its full window with a welcome: Connect your ChatGPT account, Use an API key, or Use a local model. After that, Pebble starts as the pebble.", // [C-INST-12] [C-200-30] (App.vue@v2.0.0:2494-2502)
   },
   update: {
     title: "Update",

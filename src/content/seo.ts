@@ -143,7 +143,7 @@ export function jsonLdString(data: Record<string, unknown>): string {
  * closed version with llmsTxtFor(false). Stealth Lockdown (Pebble 1.1.0) is one line, in Pebble's own words, and it
  * carries the honest line word for word (OVERRIDES §21; src/content/stealth.test.ts). Pebble 2.0.0's lines (Projects'
  * Auto and Git, Across your Mac, Pebble's Workshop, AgentGuard's request checks, Memory, and the two limits) are rows
- * C-200-23 to C-200-27, pending: verify at v2.0.0.
+ * C-200-23 to C-200-27; the "## Benchmark" block leads with golden set 2.0 (C-GS-12).
  */
 export function llmsTxtFor(benchmarksPublic: boolean): string {
   return `# Pebble
@@ -183,7 +183,8 @@ ${
 ## Benchmark
 
 ${benchmarkLlmsLinesFor(releaseFacts.version).map((line) => `- ${line}`).join("\n")}
-- [The full results](${benchmarkLinks.results})
+- [Golden set 2.0: the setup, the gates and what was not run](${benchmarkLinks.releaseNotes200})
+- [The 1.0.2 run: the full results](${benchmarkLinks.results})
 `
     : `- This site makes no speed or quality comparison with other tools.
 `

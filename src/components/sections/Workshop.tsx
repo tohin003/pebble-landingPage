@@ -2,7 +2,7 @@
 // The head through SectionHead: "Workshop / Tools it makes" in the rail, the H2 in two tones ("Pebble's Workshop." /
 // "Tools it makes for itself, checked before it keeps them."), the lead. The exhibit is the feature ledger: The Toolbox,
 // Checked before use, Code Mode, each with its limit, then the section's limit (a tool is a pure calculation). Copy:
-// copy.ts `workshop` (CLAIMS C-WS-1..5, C-TOUR-6; pending: verify at v2.0.0). No numbers, and never 1.3.0's
+// copy.ts `workshop` (CLAIMS C-WS-1..5, C-TOUR-6; checked at v2.0.0). No numbers, and never 1.3.0's
 // unannounced name (OVERRIDES §25).
 import { workshop } from "@/content/copy";
 import { labels } from "@/content/labels";

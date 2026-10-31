@@ -78,7 +78,7 @@ export const faq: readonly FaqItem[] = [
     links: [{ label: stealth.name, href: `/#${sectionIds.stealth}` }],
   },
   {
-    // Pebble 2.0.0 (CHANGELOG.md 2.0.0:114-133; docs/USER_GUIDE.md@checkout-2026-10-31:96-121): the answer was "not yet"
+    // Pebble 2.0.0 (CHANGELOG.md@v2.0.0:114-133; docs/USER_GUIDE.md@v2.0.0:96-121): the answer was "not yet"
     // until 1.5.0 (C-LIM-15, retired). The feature, then its limits, in copy.ts `acrossMac`'s words.
     id: "faq-apps",
     question: "Can Pebble use my other apps?",
