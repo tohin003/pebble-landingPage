@@ -382,7 +382,16 @@ class Media:
         """The recorder's start lag: the first pointer movement after the recording began, found in the picture.
         A small box around where the pointer started is watched; the first frame that changes there is the move."""
         moves = meta.get("moves") or []
+        # pixels per point: the picture's own width over the screen's width in points (the recorder's real size), else
+        # the display's backing scale at the recording's start
         scale = meta.get("scale") or 2.0
+        try:
+            pw = (meta.get("screen") or {}).get("points", {}).get("w")
+            vw = self.probe(conformed).get("width")
+            if pw and vw:
+                scale = vw / pw
+        except MediaError:
+            pass
         if sync:
             x, y, box = sync["x"], sync["y"], sync.get("box", 40)
             t_agent = None

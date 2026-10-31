@@ -67,7 +67,7 @@ A job is a JSON file `queue/NNNN-<id>.json`:
 |---|---|
 | `wait` `{s}` | waits (≤ 600 s) |
 | `wait_window` `{app, title or title_contains, gone, timeout_s}` | waits for a window (System Events) |
-| `wait_element` `{app, role, name, contains, window_contains, index, gone, optional, save_as, anchor, timeout_s}` | waits for an element; can save its point |
+| `wait_element` `{app, role, name, contains, window_contains, index, gone, optional, save_as, anchor, budget_ms, timeout_s}` | waits for an element; can save its point (`budget_ms`: how long one read of the tree may take, default 6000; `window_contains` narrows it to one window) |
 | `wait_file` `{path, gone, timeout_s}` | waits for a file in the allowed folders |
 | `find` `{…as wait_element…, save_as}` | finds an element now (10 s by default) and saves its centre, or `anchor` top/bottom/left/right (a window's top is its title bar) |
 | `ax_dump` `{app, window_contains, max, name}` | writes the app's Accessibility tree to `results/<id>/ax-*.json` (read only) |

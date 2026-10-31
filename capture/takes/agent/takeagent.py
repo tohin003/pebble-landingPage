@@ -89,8 +89,11 @@ class LiveUI:
         self.hands = macos.Hands(should_stop=agent.check_stop_bool, seed=int(time.time()))
 
     def ax(self, req: dict, timeout: float = 40) -> dict:
-        r = subprocess.run([self.a.cfg["tools"]["osascript"], "-l", "JavaScript", "-", json.dumps(req)], input=self.a.ax_src,
-                           capture_output=True, text=True, timeout=timeout)
+        try:
+            r = subprocess.run([self.a.cfg["tools"]["osascript"], "-l", "JavaScript", "-", json.dumps(req)], input=self.a.ax_src,
+                               capture_output=True, text=True, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            raise StepFailed(f"the Accessibility helper took longer than {timeout:.0f} s ({req.get('cmd')} {req.get('app', '')})") from None
         try:
             out = json.loads(r.stdout.strip() or "{}")
         except json.JSONDecodeError:
@@ -653,7 +656,7 @@ class Agent:
         last = None
         while True:
             self.check_stop()
-            r = self.ax_find(step)
+            r = self.ax_find(step, step.get("budget_ms", 6000))
             ms = r.get("matches", [])
             last = r
             if step.get("gone"):

@@ -83,7 +83,8 @@
   },
   {
    "do": "wait",
-   "s": 0.8
+   "s": 0.4,
+   "note": "a banner lasts about 5 s: click it soon"
   },
   {
    "do": "click",

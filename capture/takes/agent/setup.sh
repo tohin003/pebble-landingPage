@@ -75,7 +75,7 @@ step "3. The sample world, copied into this user's home"
 if [ -d "$HOME/Documents/Open day" ] && [ -n "$(ls -A "$HOME/Documents/Open day" 2>/dev/null)" ]; then
   ok "already copied (skipped)"
 else
-  bash "$WORLD/setup/copy_in.sh" | sed 's/^/  /' || { echo "copy_in.sh failed: tell the lead." >&2; exit 65; }
+  bash "$WORLD/setup/copy_in.sh" || { echo "copy_in.sh failed: tell the lead." >&2; exit 65; }
 fi
 mkdir -p "$HOME/Pebble Workbench"
 
@@ -108,14 +108,14 @@ n=$(osascript "$WORLD/setup/music.applescript" 2>&1) && ok "Studio playlist: $n 
 osascript -e 'tell application "Music" to quit' >/dev/null 2>&1
 
 step "7. Notes: the five sample notes"
-echo "  If Notes shows a welcome screen when it opens, click Continue."
 ask "\"Terminal\" wants access to control \"Notes\". Click Allow."
-osascript "$WORLD/setup/notes.applescript" >/dev/null 2>&1 && ok "notes made" || warn "Notes: open Notes once, close its welcome, and run this again"
-osascript -e 'tell application "Notes" to quit' >/dev/null 2>&1
+out=$(osascript "$WORLD/setup/notes.applescript" 2>&1) && ok "notes made" || warn "Notes: $out (open Notes once, close its welcome, and run this command again)"
 
 step "8. Calendar: the open-day week"
 ask "\"Terminal\" wants access to control \"Calendar\" (and perhaps access to your calendars). Click Allow / Allow Full Access."
-osascript "$WORLD/setup/calendar.applescript" >/dev/null 2>&1 && ok "calendar Studio made" || warn "Calendar: open Calendar once, close its welcome, and run this again"
+out=$(osascript "$WORLD/setup/calendar.applescript" 2>&1) && ok "calendar Studio made" || warn "Calendar: $out (open Calendar once, close its welcome, and run this command again)"
+wait_return "If Notes or Calendar shows a welcome screen, click Continue in it. Then press Return here."
+osascript -e 'tell application "Notes" to quit' >/dev/null 2>&1
 osascript -e 'tell application "Calendar" to quit' >/dev/null 2>&1
 
 step "9. Calculator (the reset between takes quits it)"
@@ -124,7 +124,7 @@ ask "\"Terminal\" wants access to control \"Calculator\". Click Allow."
 osascript -e 'tell application "Calculator" to quit' >/dev/null 2>&1 && ok "Calculator answered" || warn "Calculator: allow Terminal in Privacy & Security › Automation"
 
 step "10. A test picture of the screen"
-echo "  (Terminal's Screen & System Audio Recording was turned on in step 2 of the checklist, so nothing should ask."
+echo "  (Terminal's Screen & System Audio Recording was turned on in step 4 of the checklist, so nothing should ask."
 echo "   If macOS asks anyway, turn Terminal on, then quit Terminal, open it again and run this command again.)"
 mkdir -p "$TAKES/results/setup" 2>/dev/null
 if screencapture -x "$TAKES/results/setup/screen-$(date +%H%M%S).png" 2>/dev/null; then ok "screen picture saved"; else warn "no picture: Screen Recording for Terminal is still off"; fi
