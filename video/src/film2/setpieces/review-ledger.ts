@@ -92,21 +92,19 @@ export const CLOSED_FINDINGS: readonly { piece: string; check: string; cr: strin
  * Open findings of checks that need data a plan does not carry (fix round 3, 28 Oct): `cueLengths` holds Ring 4's ring
  * part and Cascade 4 to the cue sheet's lengths, read from the score lane's cue data (.work/score2/CUE_SHEET.json:
  * setpieces/tools/cue-data.ts). checkPlan cannot run it, so tests/fix-round3.test.ts holds these the same way: each must
- * still fire on the current plans with the cue data, until the lead rules a music flex and the cue sheet follows.
+ * still fire on the current plans with the cue data. None is open since the cue sheet's revision 3 (below).
  */
-export const OPEN_DATA_FINDINGS: readonly OpenFinding[] = [
-  {
-    piece: "ring4",
-    check: "cueLengths",
-    cr: "TRIM-R4",
-    note: "the ring part (MONTAGE_DESIGN §5.4's named cut: the held card shown, not read; the take entered after the click; the act and the Verified line read; two lines on the ring's travel) runs 639 frames, 10.65 s, against the cue sheet's 7.74 s: its 26 readable words (L17 3, L18 3, F3 13, F12 7) need 8.28 s at 3.14 a second, and in 1:1 and 9:16 the act's 424-px sentence at 28 px fills the width with the 60-px margin (2.26×) while the Verified line's 11-px text needs 2.55×, so the two are read in two framings with a glide between: 4.19 + 0.93 + 2.6 + 0.32 s after the act is legible (frames 148–153: the arrival from the Drop's whole Mac zooms 0.4× to 2.3×), 5.5 bars on one timeline. OVERRIDES §67's take entered at Done does not shorten it (fix round 3 part 2, measured in tests/fix-round3.test.ts: the same 639 frames in every aspect, its receipt landing on R87, during the travel, under the lines' band in 16:9 and 1:1), and even at the floors (13 and 7 words at 3.14 a second, the shortest glide) the ring part ends on frame 611, past 5 bars: 4.5 bars cannot keep the reading holds. §67's fallback: F2 doubled (+2 bars for Ring 4 and Cascade 4 together, 8 bars, the film about 2:18.90); the lead rules",
-  },
-  {
-    piece: "ring4",
-    check: "cueLengths",
-    cr: "TRIM-C4",
-    note: "Cascade 4's four features (the person chose 35) run 290 frames, 4.83 s, against the cue sheet's 3.87 s: each swap lands 2–3 frames before a beat (124 BPM), so the first item holds three beats (1.32 s; TREATMENT §3.8 about 1.1 s, checkCascade 0.95) and the rest two (0.83 s) or the cascade's end (0.70 s): the first item on the cut's first beat, the last at its 0.65-s floor, is 2.5 bars; 2 bars cannot hold four items at the floors (the fourth item would land on the 8th beat, then 0.65 s and the 19-frame leave)",
-  },
+export const OPEN_DATA_FINDINGS: readonly OpenFinding[] = [];
+
+/**
+ * The data findings closed (fix round 3 part 2, 31 Oct): OVERRIDES §68 gave Ring 4 and Cascade 4 two more bars of B4,
+ * and the score lane's cue sheet revision 3 carries them (bars 50–51 back in): Ring 4 67.548–78.194 s (10.646 s, 638.7
+ * frames), Cascade 4 78.194–83.033 s (4.839 s, 290.3 frames). The plans' 639 and 290 frames are within cueLengths'
+ * frame of them in every aspect; tests/fix-round3.test.ts holds them closed against the cue data.
+ */
+export const CLOSED_DATA_FINDINGS: readonly { piece: string; check: string; cr: string; how: string }[] = [
+  { piece: "ring4", check: "cueLengths", cr: "TRIM-R4", how: "the ring part (MONTAGE_DESIGN §5.4's named cut; the take entered after the click, OVERRIDES §67 measured) runs 639 frames, 5.5 bars, every reading hold kept; the cue sheet's revision 3 gives it 638.7 (OVERRIDES §68)" },
+  { piece: "ring4", check: "cueLengths", cr: "TRIM-C4", how: "Cascade 4's four features run 290 frames, 2.5 bars (holds 1.32, 0.83, 0.83, 0.70 s); the cue sheet's revision 3 gives it 290.3 (OVERRIDES §68)" },
 ];
 
 /**

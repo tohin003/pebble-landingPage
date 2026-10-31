@@ -60,8 +60,8 @@ for (const a of aspects) {
   }
 }
 // fix round 3 (OVERRIDES §61; MONTAGE_DESIGN §5.4): Ring 4's ring part and Cascade 4 against the cue sheet's lengths,
-// read from the cue data (.work/score2/CUE_SHEET.json); open until the lead's music flex rules (review-ledger.ts
-// OPEN_DATA_FINDINGS), and this tool fails while it is
+// read from the cue data (.work/score2/CUE_SHEET.json); closed on the cue sheet's revision 3 (OVERRIDES §68;
+// review-ledger.ts CLOSED_DATA_FINDINGS), and this tool fails if either part leaves it
 const cue = loadRingFourCue();
 for (const a of aspects) {
   const ring = demoPlans(a).find((e) => e.plan.id === "ring4")?.plan;

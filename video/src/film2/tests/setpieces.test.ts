@@ -10,7 +10,7 @@ import { maxScreenSpeed, worldToFrame } from "../motion/camera";
 import { breakLines } from "../setpieces/frame";
 import { halfBars, nextPoint, place, pointsOf, prevPoint, shiftGrid, steadyGrid, gridFromMap, type MusicGrid } from "../setpieces/music";
 import { checkTakeUse, eventFrame, frameOfSource, solveInPoint, sourceFrameAt, takeFramePath, TAKE_HSF, TAKE_RS9, TAKE_RSW } from "../setpieces/take";
-import { checkPlan, planQa } from "../setpieces/qa";
+import { checkPlan, planQa, typeOverPlanes } from "../setpieces/qa";
 import { isOpen } from "../setpieces/review-ledger";
 import { planDrop } from "../setpieces/drop";
 import { planRingBlock } from "../setpieces/ringBlock";
@@ -183,11 +183,18 @@ describe("the Drop works for any music hit", () => {
 });
 
 describe("the ring block (Ring 4 and Cascade 4)", () => {
+  // (fix round 3 part 2) Ring 4's lean ring (MONTAGE_DESIGN §5.4's named cut) continues the Drop's world: it is planned
+  // here as the film plans it, entered from a Drop on the same tempo. Its receipt must land by R284 to keep the click
+  // out of the take (7dd89fb: never a later landing that shows the earlier moment), and its lines must be gone first
+  const dropExit = (w: number, h: number, bpm: number) => {
+    const ex = planDrop({ w, h, fps: FPS, hit: 180, grid: steadyGrid({ bpm, fps: FPS, firstDownbeat: 180, from: 0, to: 4000 }) }).exit!;
+    return { pose: ex.pose, vel: ex.vel, ref: ex.ref, grade: ex.grade };
+  };
   test("every aspect, the demo's groove and other tempos", () => {
     for (const bpm of [96, 123.995, 128]) {
       const grid = steadyGrid({ bpm, fps: FPS, firstDownbeat: 0, from: 0, to: 4000 });
       for (const [w, h] of SIZES) {
-        const p = planRingBlock({ w, h, fps: FPS, content: ring4(w > h ? "16:9" : w === h ? "1:1" : "9:16"), grid });
+        const p = planRingBlock({ w, h, fps: FPS, content: ring4(w > h ? "16:9" : w === h ? "1:1" : "9:16"), grid, entry: dropExit(w, h, bpm) });
         expectClean(p, grid);
         const x = p.extra as Record<string, number>;
         // the take's receipt event IS the receipt's beat
@@ -210,6 +217,16 @@ describe("the ring block (Ring 4 and Cascade 4)", () => {
         for (const it of c.items) expect(wordCount(it.text)).toBeLessThanOrEqual(4);
       }
     }
+  });
+  test("a lean ring planned fresh from the stone never shows the click to clear its lines: the check catches it instead", () => {
+    // fresh from the stone, the 16:9 arrival is long (the act legible from 252, not 148), the captures cross the lines'
+    // band until about 91, and the pair is gone only at 304: no beat by R284 is after it. The receipt still lands in the
+    // take's history (fix round 3 fell back to a later beat and showed the click), and typeOverPlanes refuses the plan
+    const grid = steadyGrid({ bpm: 123.995, fps: FPS, firstDownbeat: 0, from: 0, to: 4000 });
+    const p = planRingBlock({ w: 1920, h: 1080, fps: FPS, content: ring4("16:9"), grid });
+    expect(p.takes[0]!.inPoint).toBeGreaterThanOrEqual(TAKE_HSF.events.click!);
+    expect(eventFrame(p.takes[0]!, "verified", FPS)).toBeLessThanOrEqual(TAKE_HSF.events.verified! - TAKE_HSF.events.click!);
+    expect(typeOverPlanes(p).some((x) => x.level === "error" && /ring4-act:verifiedTop/.test(x.message))).toBe(true);
   });
 });
 

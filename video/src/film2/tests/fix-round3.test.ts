@@ -2,7 +2,8 @@
 // the set-piece lane (VF-03, VF-04, CR-15's last gap, the peak), each held by a check with a planted canary: the fault
 // as rendered on r4 (or as planned before) fails, the plan as it is now passes. tests/setpieces.test.ts and
 // tests/review-checks.test.ts hold every plan to every check in checkPlan; cueLengths needs the cue data, so it is
-// held here with the ledger's OPEN_DATA_FINDINGS.
+// held here with the ledger's OPEN_DATA_FINDINGS and CLOSED_DATA_FINDINGS (TRIM-R4 and TRIM-C4 closed on the cue
+// sheet's revision 3, OVERRIDES §68).
 import { describe, expect, test } from "bun:test";
 import { VelocityCamera } from "../motion/camera";
 import type { Finding } from "../qa/checks";
@@ -12,7 +13,7 @@ import { demoPlans } from "../setpieces/demo/plans";
 import { PICTURED_STONE_SHARE, cascadeCards, checkPlan, cueLengths, picturedStonesOnFrame, readEdges, stoneCount, stonesOnFrame, typeOverPlanes } from "../setpieces/qa";
 import { planRingBlock } from "../setpieces/ringBlock";
 import { ring4 } from "../setpieces/rings";
-import { OPEN_DATA_FINDINGS } from "../setpieces/review-ledger";
+import { CLOSED_DATA_FINDINGS, OPEN_DATA_FINDINGS } from "../setpieces/review-ledger";
 import { loadRingFourCue } from "../setpieces/tools/cue-data";
 import { ringFourCue } from "../setpieces/cueSheet";
 import { TAKE_HSF, frameOfSource, stillsAt } from "../setpieces/take";
@@ -121,6 +122,17 @@ describe("the trim to 35: Ring 4 by MONTAGE_DESIGN §5.4's named cut, Cascade 4'
       const part = o.cr === "TRIM-R4" ? /the ring part/ : /the cascade/;
       // fixed? take it out of setpieces/review-ledger.ts (the ledger only shrinks)
       for (const a of ASPECTS) expect(errorsOf(cueLengths(piece(a, o.piece), cue), o.check).some((f) => part.test(f.message))).toBe(true);
+    }
+  });
+  test("the closed findings stay closed: Ring 4's ring part and Cascade 4 hold the cue sheet's lengths in every aspect (CLOSED_DATA_FINDINGS)", () => {
+    const cue = loadRingFourCue();
+    if (!cue) return;
+    expect(CLOSED_DATA_FINDINGS.map((c) => c.cr)).toEqual(["TRIM-R4", "TRIM-C4"]);
+    for (const c of CLOSED_DATA_FINDINGS) for (const a of ASPECTS) expect(errorsOf(cueLengths(piece(a, c.piece), cue), c.check).map((f) => `${a} ${f.message}`)).toEqual([]);
+    // (OVERRIDES §68: Ring 4 5.5 bars, Cascade 4 2.5 bars, nothing sped up; the plans did not move to meet the sheet)
+    for (const a of ASPECTS) {
+      const x = piece(a, "ring4").extra as Record<string, number>;
+      expect(`${a} ${x.ringPart} ${x.cascadePart}`).toBe(`${a} 639 290`);
     }
   });
 });

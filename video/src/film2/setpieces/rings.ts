@@ -53,7 +53,8 @@ export const ring4 = (A: Aspect): RingContent => {
     // 2): `after: "done"` plans the same 639 frames in every aspect, because the reads set the length, not the take
     // (the act legible from frame 149, 153 and 148, then its read, the glide, the receipt and the leave); and its
     // receipt then lands on R87, during the travel, under the lines' band in 16:9 and 1:1 (typeOverPlanes). So the take
-    // stays entered after the click until the lead rules (the review ledger's TRIM-R4)
+    // stays entered after the click, and the music gives the two bars instead (OVERRIDES §68: the cue sheet's revision 3;
+    // the review ledger's TRIM-R4, closed)
     ask: {
       view: "held",
       rect: held,
