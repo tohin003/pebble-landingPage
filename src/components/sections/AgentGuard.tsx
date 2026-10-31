@@ -22,6 +22,7 @@
 import { agentGuard, common } from "@/content/copy";
 import { labels } from "@/content/labels";
 import { UiCrop, type CropBox, type UiCropProps } from "@/components/media/UiCrop";
+import { Disclosure, DisclosureGroup } from "@/components/ui/Disclosure";
 import { SectionHead } from "@/components/ui/SectionHead";
 import { firstSentence } from "@/components/ui/twoTone";
 import { SECTIONS } from "@/lib/sections";
@@ -119,7 +120,12 @@ export function AgentGuard() {
         lead={agentGuard.layer[0]}
         chip="tested"
       >
-        <p className={styles.scope}>{agentGuard.layer[1]}</p>
+        {/* what it checks and where that check stops, together and one tap away (.work/page-declutter/PLAN.md) */}
+        <DisclosureGroup className={styles.scopeFold}>
+          <Disclosure summary={agentGuard.scopeMore}>
+            <p className={styles.scope}>{agentGuard.layer[1]}</p>
+          </Disclosure>
+        </DisclosureGroup>
       </SectionHead>
 
       <div className="wrap grid-12 sec-body">

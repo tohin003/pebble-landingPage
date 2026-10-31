@@ -31,6 +31,7 @@ import type { ReactNode } from "react";
 import { benchmarkLinks, benchmarks, golden, run } from "@/content/benchmarks";
 import { labels } from "@/content/labels";
 import { releaseFacts } from "@/content/releaseFacts";
+import { Caret } from "@/components/ui/Caret";
 import { SectionHead } from "@/components/ui/SectionHead";
 import { TextLink } from "@/components/ui/TextLink";
 import { getRelease } from "@/lib/release";
@@ -93,6 +94,27 @@ function Row({ id, title, level = 3, children }: { id: string; title: string; le
       </Heading>
       <div className={styles.rowBody}>{children}</div>
     </div>
+  );
+}
+
+/**
+ * A ledger row that opens on demand (.work/page-declutter/PLAN.md): its title stays on screen in a 44 px-plus summary,
+ * its evidence opens under it on the same columns. The browser's own <details>: keyboard, find-in-page and fragment
+ * links open it, and the figures stay in the DOM.
+ */
+function FoldRow({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  return (
+    <details className={styles.fold} data-fold={id}>
+      <summary className={styles.foldSummary}>
+        <h3 id={id} className={styles.foldTitle}>
+          {title}
+        </h3>
+        <Caret className={styles.foldCaret} />
+      </summary>
+      <div className={styles.foldBody}>
+        <div className={styles.rowBody}>{children}</div>
+      </div>
+    </details>
   );
 }
 
@@ -200,7 +222,12 @@ export async function Benchmarks({ open = releaseFacts.benchmarksPublic, offered
           <DifferenceFigure />
           <LedTrailed />
 
-          <Row id="golden-method" title={g.method.title}>
+          {/* stays visible, never folded: what was not run before this release (PLAN.md, "Must stay visible") */}
+          <p className={styles.notRun}>
+            <Figures text={g.limits.items[0]} />
+          </p>
+
+          <FoldRow id="golden-method" title={g.method.title}>
             <dl className={styles.method}>
               {g.method.items.map((item) => (
                 <div key={item.term} className={styles.methodItem}>
@@ -211,9 +238,9 @@ export async function Benchmarks({ open = releaseFacts.benchmarksPublic, offered
                 </div>
               ))}
             </dl>
-          </Row>
+          </FoldRow>
 
-          <Row id="golden-result" title={g.result.title}>
+          <FoldRow id="golden-result" title={g.result.title}>
             <div className={styles.goldenTables}>
               {g.result.tables.map((table) => (
                 <GoldenTable key={table.id} table={table} />
@@ -224,25 +251,25 @@ export async function Benchmarks({ open = releaseFacts.benchmarksPublic, offered
                 <li key={line}>{line}</li>
               ))}
             </ul>
-          </Row>
+          </FoldRow>
 
-          <Row id="golden-limits" title={g.limits.title}>
+          <FoldRow id="golden-limits" title={g.limits.title}>
             <ul className={styles.list}>
-              {g.limits.items.map((item) => (
+              {g.limits.items.slice(1).map((item) => (
                 <li key={item}>
                   <Figures text={item} />
                 </li>
               ))}
             </ul>
-          </Row>
+          </FoldRow>
 
-          <Row id="golden-data" title={g.data.title}>
+          <FoldRow id="golden-data" title={g.data.title}>
             <ul className={styles.links}>
               <li>
                 <TextLink href={benchmarkLinks.releaseNotes200}>{g.data.line}</TextLink>
               </li>
             </ul>
-          </Row>
+          </FoldRow>
         </div>
       </div>
 

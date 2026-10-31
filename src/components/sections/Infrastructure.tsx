@@ -10,6 +10,7 @@ import { infrastructure } from "@/content/copy";
 import { labels } from "@/content/labels";
 import { releaseFacts } from "@/content/releaseFacts";
 import { DataText } from "@/components/ui/Data";
+import { Disclosure, DisclosureGroup } from "@/components/ui/Disclosure";
 import { SectionHead } from "@/components/ui/SectionHead";
 import { TextLink } from "@/components/ui/TextLink";
 import { SECTIONS, sectionHref } from "@/lib/sections";
@@ -17,6 +18,8 @@ import styles from "./Infrastructure.module.css";
 
 /** "45 validator suites": a bare number before these words is a count */
 const COUNTS = ["validator suites"];
+/** the rows with numbers (Tests, Service checks) stay visible; the rest open on demand (.work/page-declutter/PLAN.md) */
+const SHOWN = 2;
 
 export type InfrastructureProps = Readonly<{
   /** the benchmark gate (default: releaseFacts.benchmarksPublic); the tests pass false */
@@ -38,7 +41,7 @@ export function Infrastructure({ benchmarkShown = releaseFacts.benchmarksPublic 
       <div className="wrap grid-12 sec-body">
         <div className="main">
           <dl className={styles.ledger}>
-            {infrastructure.facts.map((fact) => (
+            {infrastructure.facts.slice(0, SHOWN).map((fact) => (
               <div key={fact.term} className={styles.row}>
                 <dt>{fact.term}</dt>
                 <dd>
@@ -47,6 +50,16 @@ export function Infrastructure({ benchmarkShown = releaseFacts.benchmarksPublic 
               </div>
             ))}
           </dl>
+          {/* the counts stay on screen; how the build and the updates are kept honest is one tap away */}
+          <DisclosureGroup className={styles.more}>
+            {infrastructure.facts.slice(SHOWN).map((fact) => (
+              <Disclosure key={fact.term} summary={fact.term}>
+                <p>
+                  <DataText text={fact.text} counts={COUNTS} />
+                </p>
+              </Disclosure>
+            ))}
+          </DisclosureGroup>
           <p className={styles.note}>{infrastructure.note}</p>
         </div>
       </div>

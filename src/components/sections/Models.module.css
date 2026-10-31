@@ -2,19 +2,16 @@
    then the picture in 4–9 beside the note in 10–12. Lines, not boxes. */
 
 /* the three ways in: three columns of the main's nine each, a hairline on top, no cards */
+/* the three ways, one at a time (Tabs: tabs from 768 px, an accordion below; .work/page-declutter/PLAN.md) */
 .ways {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  column-gap: var(--gap);
+  min-width: 0;
 }
 
-.ways li {
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
+.way {
+  max-width: 40em;
 }
 
 .wayBody {
-  margin-top: 8px;
   font-size: 16px;
   line-height: 1.6;
 }
@@ -93,18 +90,6 @@
 }
 
 @media (max-width: 1023px) {
-  .ways {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .ways li {
-    padding-block: 16px 20px;
-  }
-
-  .ways li > * {
-    max-width: 40em;
-  }
-
   .showcase {
     margin-top: 28px;
   }

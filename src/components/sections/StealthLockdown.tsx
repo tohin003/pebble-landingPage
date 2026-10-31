@@ -23,6 +23,7 @@ import { stealth } from "@/content/copy";
 import { labels } from "@/content/labels";
 import { PebbleStatic } from "@/components/pebble/PebbleStatic";
 import { Horizon } from "@/components/ui/Horizon";
+import { Disclosure, DisclosureGroup } from "@/components/ui/Disclosure";
 import { SectionHead } from "@/components/ui/SectionHead";
 import { SECTIONS } from "@/lib/sections";
 import { StealthExample } from "./StealthLockdown.client";
@@ -41,22 +42,27 @@ export function StealthLockdown() {
             {stealth.description} {stealth.honest}
           </>
         }
-      >
-        <p>
-          {stealth.turnOn} {stealth.hideAll}
-        </p>
-      </SectionHead>
+      />
 
       <div className="wrap grid-12 sec-body">
         <div className="main">
-          <dl className={styles.halves}>
-            {stealth.halves.map((half) => (
-              <div key={half.term} className={styles.half}>
-                <dt>{half.term}</dt>
-                <dd>{half.text}</dd>
-              </div>
-            ))}
-          </dl>
+          {/* how to turn it on and what each half changes, one tap away; the honest line stays in the lead above and
+              under the switch below, never folded (.work/page-declutter/PLAN.md, "Must stay visible") */}
+          <DisclosureGroup className={styles.more}>
+            <Disclosure summary={stealth.more}>
+              <p>
+                {stealth.turnOn} {stealth.hideAll}
+              </p>
+              <dl className={styles.halves}>
+                {stealth.halves.map((half) => (
+                  <div key={half.term} className={styles.half}>
+                    <dt>{half.term}</dt>
+                    <dd>{half.text}</dd>
+                  </div>
+                ))}
+              </dl>
+            </Disclosure>
+          </DisclosureGroup>
 
           <StealthExample
             ground={<Horizon variant={2} className={styles.ground} />}

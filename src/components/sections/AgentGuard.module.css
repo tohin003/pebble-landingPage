@@ -3,6 +3,12 @@
    the captures sit in plain crop frames (UiCrop: radius 12, a 1 px ring), never on a card. */
 
 /* the scope paragraph under the lead (SectionHead's "more", columns 4–9) */
+/* "How it checks": one disclosure row under the lead */
+.scopeFold {
+  margin-top: 4px;
+  max-width: 40em;
+}
+
 .scope {
   font-size: 16px;
   line-height: 1.6;

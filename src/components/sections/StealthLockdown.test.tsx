@@ -80,7 +80,13 @@ describe("the Stealth Lockdown section", () => {
     expect((html.match(new RegExp(stealth.honest.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) ?? []).length).toBe(2);
     const paragraph = html.slice(html.lastIndexOf("<p", at), at);
     expect(paragraph).not.toMatch(/hidden|aria-hidden|sr-only/);
-    expect(html).not.toContain("<details");
+    // never inside a disclosure: the section may fold its how-to (.work/page-declutter/PLAN.md), never the honest line
+    const escaped = stealth.honest.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    for (const hit of html.matchAll(new RegExp(escaped, "g"))) {
+      const before = html.slice(0, hit.index);
+      const opened = (before.match(/<details/g) ?? []).length - (before.match(/<\/details>/g) ?? []).length;
+      expect(opened).toBe(0);
+    }
     // its paragraph is the switch's description (aria-describedby), as in the app
     const describedBy = /role="switch"[^>]*aria-describedby="([^"]+)"/.exec(html)?.[1];
     expect(paragraph).toContain(`id="${describedBy}"`);

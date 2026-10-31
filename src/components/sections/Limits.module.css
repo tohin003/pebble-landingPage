@@ -42,8 +42,22 @@
   color: var(--ink);
 }
 
+/* the product limits: disclosure rows, titles always on screen, in the same two columns from 1024 px */
+.products {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--gap);
+  align-items: start;
+  margin-top: 32px;
+}
+
+.products code {
+  color: var(--ink);
+}
+
 @media (max-width: 1023px) {
-  .list {
+  .list,
+  .products {
     display: block;
   }
 

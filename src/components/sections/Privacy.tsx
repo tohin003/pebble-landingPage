@@ -15,6 +15,7 @@
 // guide) under "Stored on your Mac"; the local model and web search under "What leaves your Mac".
 import { privacy } from "@/content/copy";
 import { labels } from "@/content/labels";
+import { InfoTip } from "@/components/ui/InfoTip";
 import { SectionHead } from "@/components/ui/SectionHead";
 import { TextLink } from "@/components/ui/TextLink";
 import { firstSentence } from "@/components/ui/twoTone";
@@ -59,7 +60,9 @@ export function Privacy() {
                 ))}
               </ul>
               <div className={styles.columnNotes}>
-                <p>{inline(privacy.toolsNote)}</p>
+                <p>
+                  <InfoTip label={privacy.tips.tools}>{inline(privacy.toolsNote)}</InfoTip>
+                </p>
                 <p>
                   <TextLink href={privacy.dataFoldersLink.href}>{privacy.dataFoldersLink.label}</TextLink>
                 </p>
@@ -82,7 +85,9 @@ export function Privacy() {
               </ul>
               <div className={styles.columnNotes}>
                 <p className={styles.local}>{privacy.leaves.localNote}</p>
-                <p>{privacy.searchNote}</p>
+                <p>
+                  <InfoTip label={privacy.tips.search}>{privacy.searchNote}</InfoTip>
+                </p>
               </div>
             </div>
           </div>

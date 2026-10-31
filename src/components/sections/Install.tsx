@@ -22,7 +22,9 @@ import { releaseFacts, sha256Line } from "@/content/releaseFacts";
 import { Pebble } from "@/components/pebble/Pebble";
 import { Icon } from "@/components/shell/icons";
 import { DataText } from "@/components/ui/Data";
+import { Disclosure, DisclosureGroup } from "@/components/ui/Disclosure";
 import { SectionHead } from "@/components/ui/SectionHead";
+import { Tabs } from "@/components/ui/Tabs";
 import { TextLink } from "@/components/ui/TextLink";
 import { firstSentence } from "@/components/ui/twoTone";
 import { inline } from "@/lib/inline";
@@ -74,104 +76,116 @@ export async function Install() {
           </dl>
 
           {live ? (
-            <>
-              <div className={styles.oneLine}>
-                <h3 className="sr-only">{install.oneLine.title}</h3>
-                <p className={styles.label}>{install.oneLine.lead}</p>
-                <div className={styles.pillWrap}>
-                  {/* decorative: the box lets the pointer through to the block; the Copy button makes it tap */}
-                  <div className={styles.perch} aria-hidden="true">
-                    <Pebble name={PEBBLE_NAME} className={styles.pebble} />
-                  </div>
-                  <InstallPill
-                    command={release.installCommand}
-                    pebble={PEBBLE_NAME}
-                    labels={{
-                      copy: install.oneLine.copy,
-                      copyAria: install.oneLine.copyAria,
-                      copied: install.oneLine.copied,
-                      copyFailed: install.oneLine.copyFailed,
-                    }}
-                  />
-                </div>
-                <ul className={styles.cmdMore}>
-                  <li>
-                    <TextLink href={install.oneLine.readFirst.href}>{install.oneLine.readFirst.label}</TextLink>
-                  </li>
-                  <li>{inline(install.oneLine.preview)}</li>
-                  <li>{inline(install.oneLine.uninstall)}</li>
-                </ul>
-              </div>
-
-              <div className={styles.ways}>
-                <div className={styles.way}>
-                  <h3>{install.oneLine.whatItDoesTitle}</h3>
-                  <ul className={styles.ticks}>
-                    {install.oneLine.whatItDoes.map((item) => (
-                      <li key={item}>
-                        <Icon name="Check" className={styles.tick} />
-                        <span>{inline(item)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className={styles.small}>{install.oneLine.quarantineNote}</p>
-                </div>
-
-                <div className={styles.way}>
-                  <h3>{install.byHand.title}</h3>
-                  <div className={styles.downloads}>
-                    <a className={styles.download} href={release.downloadUrl}>
-                      <Icon name="DownloadSimple" className={styles.downloadIcon} />
-                      <span>{install.byHand.downloadZip}</span>
-                    </a>
-                    <a className="chev" href={release.checksumsUrl} translate="no">
-                      {install.byHand.downloadChecksums}
-                    </a>
-                  </div>
-                  <p className={styles.honest}>
-                    {hero.honestLine} <TextLink href={sectionHref("limits")}>{install.limitsLink}</TextLink>
-                  </p>
-                  <ol className={styles.steps}>
-                    {checkStep ? (
-                      <li>
-                        {inline(checkStep)}
-                        <span className={styles.stepNote}>{install.byHand.checksumNote}</span>
-                        {showHash ? (
-                          <span className={styles.hash}>
-                            {inline(install.byHand.sha256Intro(release.version))}
-                            <code className={styles.hashLine} translate="no">
-                              {sha256Line()}
-                            </code>
-                          </span>
+            <Tabs
+              label={install.tabs.label}
+              className={styles.tabs}
+              items={[
+                {
+                  id: "terminal",
+                  label: install.tabs.oneLine,
+                  content: (
+                    <div className={styles.oneLine}>
+                      <h3 className="sr-only">{install.oneLine.title}</h3>
+                      <p className={styles.label}>{install.oneLine.lead}</p>
+                      <div className={styles.pillWrap}>
+                        {/* decorative: the box lets the pointer through to the block; the Copy button makes it tap */}
+                        <div className={styles.perch} aria-hidden="true">
+                          <Pebble name={PEBBLE_NAME} className={styles.pebble} />
+                        </div>
+                        <InstallPill
+                          command={release.installCommand}
+                          pebble={PEBBLE_NAME}
+                          labels={{
+                            copy: install.oneLine.copy,
+                            copyAria: install.oneLine.copyAria,
+                            copied: install.oneLine.copied,
+                            copyFailed: install.oneLine.copyFailed,
+                          }}
+                        />
+                      </div>
+                      <ul className={styles.cmdMore}>
+                        <li>
+                          <TextLink href={install.oneLine.readFirst.href}>{install.oneLine.readFirst.label}</TextLink>
+                        </li>
+                        <li>{inline(install.oneLine.preview)}</li>
+                        <li>{inline(install.oneLine.uninstall)}</li>
+                      </ul>
+                      <DisclosureGroup className={styles.fold}>
+                        <Disclosure summary={install.oneLine.whatItDoesTitle}>
+                          <ul className={styles.ticks}>
+                            {install.oneLine.whatItDoes.map((item) => (
+                              <li key={item}>
+                                <Icon name="Check" className={styles.tick} />
+                                <span>{inline(item)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                          <p className={styles.small}>{install.oneLine.quarantineNote}</p>
+                        </Disclosure>
+                      </DisclosureGroup>
+                    </div>
+                  ),
+                },
+                {
+                  id: "zip",
+                  label: install.tabs.byHand,
+                  content: (
+                    <div className={styles.way}>
+                      <h3 className="sr-only">{install.byHand.title}</h3>
+                      <div className={styles.downloads}>
+                        <a className={styles.download} href={release.downloadUrl}>
+                          <Icon name="DownloadSimple" className={styles.downloadIcon} />
+                          <span>{install.byHand.downloadZip}</span>
+                        </a>
+                        <a className="chev" href={release.checksumsUrl} translate="no">
+                          {install.byHand.downloadChecksums}
+                        </a>
+                      </div>
+                      {/* the zip's honest line stays beside its button (PLAN.md, "Must stay visible") */}
+                      <p className={styles.honest}>
+                        {hero.honestLine} <TextLink href={sectionHref("limits")}>{install.limitsLink}</TextLink>
+                      </p>
+                      <ol className={styles.steps}>
+                        {checkStep ? (
+                          <li>
+                            {inline(checkStep)}
+                            <span className={styles.stepNote}>{install.byHand.checksumNote}</span>
+                            {showHash ? (
+                              <span className={styles.hash}>
+                                {inline(install.byHand.sha256Intro(release.version))}
+                                <code className={styles.hashLine} translate="no">
+                                  {sha256Line()}
+                                </code>
+                              </span>
+                            ) : null}
+                          </li>
                         ) : null}
-                      </li>
-                    ) : null}
-                    {otherSteps.map((step) => (
-                      <li key={step}>{inline(step)}</li>
-                    ))}
-                  </ol>
-                  <p className={styles.gatekeeper}>{install.byHand.gatekeeper}</p>
-                </div>
-              </div>
-            </>
+                        {otherSteps.map((step) => (
+                          <li key={step}>{inline(step)}</li>
+                        ))}
+                      </ol>
+                      <p className={styles.gatekeeper}>{install.byHand.gatekeeper}</p>
+                    </div>
+                  ),
+                },
+              ]}
+            />
           ) : (
             <p className={styles.soon}>
               <TextLink href={links.repo}>{cta.github}</TextLink>
             </p>
           )}
 
-          <div className={styles.after}>
-            <div>
-              <h3>{install.firstRun.title}</h3>
+          <DisclosureGroup className={styles.after}>
+            <Disclosure summary={install.firstRun.title}>
               <p>{install.firstRun.body}</p>
-            </div>
-            <div>
-              <h3>{install.update.title}</h3>
+            </Disclosure>
+            <Disclosure summary={install.update.title}>
               <p>
                 {inline(install.update.body)} <TextLink href={install.update.link.href}>{install.update.link.label}</TextLink>
               </p>
-            </div>
-          </div>
+            </Disclosure>
+          </DisclosureGroup>
         </div>
       </div>
     </section>

@@ -1,6 +1,6 @@
 // Section 6, Your model, your choice (DESIGN-LEXINGTON §6 Your model): the head on the rail ("Models / Three ways
-// in"), then, from column 4, the three ways in as bare columns under hairlines (no cards, no icons): each its button's
-// own name, what it does, and its limit at the same size. Under them the picture in columns 4–9, Settings › Models on
+// in"), then, from column 4, the three ways in as tabs (an accordion below 768 px; .work/page-declutter/PLAN.md), no
+// cards, no icons: each tab its button's own name, its panel what it does and its limit at the same size. Under them the picture in columns 4–9, Settings › Models on
 // the riverbed, beside the note on local models in 10–12; below 1280 px the picture takes the main column and the note
 // goes under it (six columns there are too narrow for L2, drawn for 624 px).
 //
@@ -13,6 +13,7 @@ import { LoopVideo } from "@/components/media/LoopVideo";
 import { MediaFrame } from "@/components/media/MediaFrame";
 import { UiCrop } from "@/components/media/UiCrop";
 import { SectionHead } from "@/components/ui/SectionHead";
+import { Tabs } from "@/components/ui/Tabs";
 import { loopMedia } from "@/lib/media";
 import { SECTIONS } from "@/lib/sections";
 import styles from "./Models.module.css";
@@ -39,15 +40,20 @@ export function Models() {
 
       <div className="wrap grid-12 sec-body">
         <div className="main">
-          <ul className={styles.ways}>
-            {models.cards.map((way) => (
-              <li key={way.id}>
-                <h3>{way.title}</h3>
-                <p className={styles.wayBody}>{way.body}</p>
-                <p className={styles.wayLimit}>{way.limit}</p>
-              </li>
-            ))}
-          </ul>
+          <Tabs
+            label={models.tabsLabel}
+            className={styles.ways}
+            items={models.cards.map((way) => ({
+              id: way.id,
+              label: way.title,
+              content: (
+                <div className={styles.way}>
+                  <p className={styles.wayBody}>{way.body}</p>
+                  <p className={styles.wayLimit}>{way.limit}</p>
+                </div>
+              ),
+            }))}
+          />
 
           <div className={styles.showcase}>
             <figure className={styles.media}>
