@@ -1,0 +1,14 @@
+{
+ "_about": "Closes a notification prompt on the 1024-point screen (31 Oct, after Larger Text): hover on the banner so its close button shows, then the first button Notification Centre offers; a still after.",
+ "schema": "pebble-take-job/1",
+ "id": "banner-close2-$n",
+ "take": "setup",
+ "title": "Close a notification prompt",
+ "steps": [
+  {"do": "move", "to": {"x": 836, "y": 80}, "ms": 400}, {"do": "wait", "s": 1.2},
+  {"do": "find", "app": "NotificationCenter", "role": "AXButton", "save_as": "@x", "optional": true, "timeout_s": 4},
+  {"do": "click", "at": "@x", "if": "@x"}, {"do": "wait", "s": 1.5},
+  {"do": "move", "to": {"x": 600, "y": 300}, "ms": 300},
+  {"do": "still", "name": "after"}
+ ]
+}

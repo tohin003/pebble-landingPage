@@ -1,0 +1,416 @@
+{
+ "_about": "RS-5 (S14), one app action from Pebble's workspace (31 Oct): a new conversation, $message typed into the message box ($composer), up to three cards answered with their exact 'Do it', 'Allow' or 'Open app' (never Always allow) while the workspace is in front, then the app ($app) brought forward from the Dock to show the result. Notes first shows the sample note 'Open day checklist' (selected before the take rolls), then is hidden until the cards are answered.",
+ "schema": "pebble-take-job/1",
+ "id": "$tid-$n",
+ "take": "RS-5",
+ "title": "An app action",
+ "max_minutes": 25,
+ "defaults": {
+  "tid": "RS5N",
+  "app": "Notes",
+  "tail_s": 6,
+  "message": "Make a note: kiln unload at 9:00, glaze table ready by 9:30."
+ },
+ "steps": [
+  {
+   "do": "open_app",
+   "app": "Notes"
+  },
+  {
+   "do": "wait_window",
+   "app": "Notes",
+   "timeout_s": 15
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "find",
+   "app": "Notes",
+   "contains": "Open day checklist",
+   "save_as": "@od",
+   "timeout_s": 15,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@od",
+   "note": "the sample world's note in view, so no other note's contents show"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "hide",
+   "app": "Notes"
+  },
+  {
+   "do": "wait",
+   "s": 1
+  },
+  {
+   "do": "key",
+   "key": "space",
+   "mods": [
+    "cmd",
+    "shift"
+   ],
+   "note": "the workspace forward"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "key",
+   "key": "n",
+   "mods": [
+    "cmd"
+   ],
+   "note": "a new conversation"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 700,
+    "y": 300
+   },
+   "ms": 300
+  },
+  {
+   "do": "record_start",
+   "name": "$tid-$n",
+   "max_s": 300,
+   "method": "avfoundation"
+  },
+  {
+   "do": "wait",
+   "s": 3.5,
+   "note": "pre-roll: the picture is live before the first pointer move (the conform's sync)"
+  },
+  {
+   "do": "click",
+   "at": "$composer",
+   "event": "composer"
+  },
+  {
+   "do": "wait",
+   "s": 0.6
+  },
+  {
+   "do": "type",
+   "text": "$message",
+   "event": "typed"
+  },
+  {
+   "do": "wait",
+   "s": 0.4
+  },
+  {
+   "do": "key",
+   "key": "return",
+   "event": "send"
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Don't allow",
+   "timeout_s": 60,
+   "save_as": "@w1",
+   "event": "card1",
+   "optional": true,
+   "budget_ms": 15000
+  },
+  {
+   "do": "wait",
+   "s": 1.3,
+   "if": "@w1",
+   "note": "the person reads the card"
+  },
+  {
+   "do": "scroll",
+   "at": {
+    "x": 844,
+    "y": 450
+   },
+   "lines": 8,
+   "ms": 500,
+   "if": "@w1",
+   "note": "Pebble's Activity panel (the workspace is in front until every card is answered)"
+  },
+  {
+   "do": "wait",
+   "s": 0.8,
+   "if": "@w1"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Do it",
+   "save_as": "@d1",
+   "optional": true,
+   "timeout_s": 2,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@d1",
+   "if": "@d1",
+   "event": "d1"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "save_as": "@a1",
+   "optional": true,
+   "timeout_s": 2,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@a1",
+   "if": "@a1",
+   "event": "a1"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Open app",
+   "save_as": "@o1",
+   "optional": true,
+   "timeout_s": 2,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@o1",
+   "if": "@o1",
+   "event": "o1"
+  },
+  {
+   "do": "wait",
+   "s": 1.0
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Don't allow",
+   "timeout_s": 10,
+   "save_as": "@w2",
+   "event": "card2",
+   "optional": true,
+   "budget_ms": 15000
+  },
+  {
+   "do": "wait",
+   "s": 1.3,
+   "if": "@w2",
+   "note": "the person reads the card"
+  },
+  {
+   "do": "scroll",
+   "at": {
+    "x": 844,
+    "y": 450
+   },
+   "lines": 8,
+   "ms": 500,
+   "if": "@w2",
+   "note": "Pebble's Activity panel (the workspace is in front until every card is answered)"
+  },
+  {
+   "do": "wait",
+   "s": 0.8,
+   "if": "@w2"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Do it",
+   "save_as": "@d2",
+   "optional": true,
+   "timeout_s": 2,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@d2",
+   "if": "@d2",
+   "event": "d2"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "save_as": "@a2",
+   "optional": true,
+   "timeout_s": 2,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@a2",
+   "if": "@a2",
+   "event": "a2"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Open app",
+   "save_as": "@o2",
+   "optional": true,
+   "timeout_s": 2,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@o2",
+   "if": "@o2",
+   "event": "o2"
+  },
+  {
+   "do": "wait",
+   "s": 1.0
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Don't allow",
+   "timeout_s": 10,
+   "save_as": "@w3",
+   "event": "card3",
+   "optional": true,
+   "budget_ms": 15000
+  },
+  {
+   "do": "wait",
+   "s": 1.3,
+   "if": "@w3",
+   "note": "the person reads the card"
+  },
+  {
+   "do": "scroll",
+   "at": {
+    "x": 844,
+    "y": 450
+   },
+   "lines": 8,
+   "ms": 500,
+   "if": "@w3",
+   "note": "Pebble's Activity panel (the workspace is in front until every card is answered)"
+  },
+  {
+   "do": "wait",
+   "s": 0.8,
+   "if": "@w3"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Do it",
+   "save_as": "@d3",
+   "optional": true,
+   "timeout_s": 2,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@d3",
+   "if": "@d3",
+   "event": "d3"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "save_as": "@a3",
+   "optional": true,
+   "timeout_s": 2,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@a3",
+   "if": "@a3",
+   "event": "a3"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Open app",
+   "save_as": "@o3",
+   "optional": true,
+   "timeout_s": 2,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@o3",
+   "if": "@o3",
+   "event": "o3"
+  },
+  {
+   "do": "wait",
+   "s": 1.0
+  },
+  {
+   "do": "wait",
+   "s": "$tail_s",
+   "note": "the result and the reply"
+  },
+  {
+   "do": "find",
+   "app": "Dock",
+   "role": "AXDockItem",
+   "name": "$app",
+   "save_as": "@app",
+   "optional": true,
+   "timeout_s": 3
+  },
+  {
+   "do": "click",
+   "at": "@app",
+   "if": "@app",
+   "event": "appForward",
+   "note": "the person brings the app forward to see the result"
+  },
+  {
+   "do": "wait",
+   "s": 8
+  },
+  {
+   "do": "still",
+   "name": "result"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "record_stop"
+  },
+  {
+   "do": "conform",
+   "name": "$tid-$n"
+  }
+ ]
+}

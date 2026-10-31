@@ -1,0 +1,9 @@
+{
+ "_about": "Hides one app ($app), with no still (31 Oct: Notes, which may open on a note that must not be seen).",
+ "schema": "pebble-take-job/1",
+ "id": "hide-app-$n",
+ "take": "setup",
+ "title": "Hide an app",
+ "defaults": {"app": "Notes"},
+ "steps": [{"do": "hide", "app": "$app"}, {"do": "wait", "s": 1}]
+}
