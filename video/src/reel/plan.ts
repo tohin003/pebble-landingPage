@@ -27,6 +27,10 @@ export interface CardShot {
   lineTo: number;
   /** shot-local frames of punch-ins */
   punches: number[];
+  /** a tech feature's hero beat: its explainer leads, the real screen lands on its third beat */
+  hero?: "workshop";
+  /** a hero's muted second line, under its name */
+  sub?: string;
   /** the whip this shot arrives with, and the one it leaves with */
   enter: Dir;
   exit: Dir;
@@ -59,17 +63,19 @@ export interface Plan {
  * 2.0.0 copy, shortened, never invented; `claim` names the CLAIMS row (docs/CLAIMS.md) the words come from. A feature
  * with two screens cuts between them on its beats and keeps its line. "\n" is where the line breaks.
  */
-export const FEATURES: readonly { id: string; line: string; claim: string; beats: number; crops: readonly CropId[]; tint: CardShot["tint"] }[] = [
-  // "… use the apps and websites you allow …" (the hero's clause, copy.ts hero; C-MAC-1 "use the app windows … you allow")
-  { id: "apps", line: "Uses the apps\nyou allow.", claim: "C-200-1, C-MAC-1", beats: 3, crops: ["calculator"], tint: "sage" },
-  // the Across your Mac row's term, word for word (copy.ts models.rows[3].term)
-  { id: "actions", line: "Apps and\napp actions.", claim: "C-MAC-8", beats: 2, crops: ["calendar", "finder"], tint: "clay" },
-  // "… stays on top of your other windows and joins every Space." (copy.ts desktop.lead)
-  { id: "spaces", line: "Joins\nevery Space.", claim: "C-DESK-1", beats: 2, crops: ["spaces"], tint: "deep" },
-  // the Workshop's second line, "Tools it makes for itself, checked before it keeps them." (copy.ts workshop.then)
-  { id: "tools", line: "Tools it makes\nfor itself.", claim: "C-WS-1", beats: 2, crops: ["keepCard"], tint: "sage" },
-  // the section's heading, a sentence that states no fact (CLAIMS.md: "You set the pace." needs no row)
-  { id: "pace", line: "You set\nthe pace.", claim: "none needed (copy.ts pace.h2)", beats: 1, crops: ["reply"], tint: "clay" },
+export const FEATURES: readonly { id: string; line: string; sub?: string; claim: string; beats: number; crops: readonly CropId[]; tint: CardShot["tint"]; hero?: "workshop" }[] = [
+  // quick flashes: 2–3 words, so each reads at the checklist's 0.4 s a word within its beats
+  // "… use the apps and websites you allow …" (copy.ts hero; C-MAC-1 "use the app windows and websites you allow")
+  { id: "apps", line: "Apps you allow.", claim: "C-200-1, C-MAC-1", beats: 3, crops: ["calculator"], tint: "sage" },
+  // the Across your Mac row's term, "Apps and app actions" (copy.ts models.rows[3].term), shortened
+  { id: "actions", line: "App actions.", claim: "C-MAC-8", beats: 2, crops: ["calendar", "finder"], tint: "clay" },
+  // THE HERO BEAT (the person, 03:15): Pebble's Workshop as an explainer, then the real card. The Workshop's second
+  // line, "Tools it makes for itself, checked before it keeps them." (copy.ts workshop.then), shortened: 5 words, 2.25 s
+  // As on the page: the section's name, then its muted second line, shortened (7 words in 2.7 s).
+  { id: "workshop", line: "Pebble’s\nWorkshop.", sub: "Tools it makes for itself.", claim: "C-WS-1, C-WS-2, C-SYS-20", beats: 6, crops: ["keepCard"], tint: "deep", hero: "workshop" },
+  // for a longer map: "… joins every Space." (copy.ts desktop.lead), and the dial's heading (no row needed)
+  { id: "spaces", line: "Every Space.", claim: "C-DESK-1", beats: 2, crops: ["spaces"], tint: "sage" },
+  { id: "pace", line: "You set\nthe pace.", claim: "none needed (copy.ts pace.h2)", beats: 2, crops: ["reply"], tint: "clay" },
 ];
 
 const DIRS: readonly Dir[] = ["left", "up", "right", "down"];
@@ -119,8 +125,9 @@ export function buildPlan(map: BeatMap): Plan {
 
   // montage: shot boundaries on beats from revealTo; keep the last bar for the merge when there's room
   const beatsLeft = map.beats.filter((b) => b >= revealTo - 0.5 && b < length - 0.5).map(Math.round);
-  // the merge: its last six beats (two cards fly in on the next two, the lockup on the third, held to the end)
-  const mergeBeats = beatsLeft.length >= 12 ? 6 : 0;
+  // the merge: its last five beats (cards pulled in on the eighth notes over two beats, the lockup on the third, held
+  // to the end)
+  const mergeBeats = beatsLeft.length >= 12 ? 5 : 0;
   const montageEnd = mergeBeats ? beatsLeft[beatsLeft.length - mergeBeats] : length;
   const montage: CardShot[] = [];
   const beatAt = (from: number, n: number) => {
@@ -155,7 +162,9 @@ export function buildPlan(map: BeatMap): Plan {
         feature: ft.id,
         lineFrom: at,
         lineTo: fTo,
-        punches,
+        punches: ft.hero ? [3 * B, 4 * B].map(Math.round).filter((p) => p < len) : punches,
+        hero: ft.hero,
+        sub: ft.sub,
         enter: DIRS[i % DIRS.length],
         exit: DIRS[(i + 1) % DIRS.length],
         side,
@@ -172,7 +181,7 @@ export function buildPlan(map: BeatMap): Plan {
   let merge: Plan["merge"] = null;
   if (mergeBeats) {
     const from = montageEnd;
-    const lockup = beatsLeft[beatsLeft.length - mergeBeats + 3];
+    const lockup = beatsLeft[beatsLeft.length - mergeBeats + 2];
     const pulls: number[] = [];
     for (let t = from + B / 2; t < lockup - B * 0.25; t += B / 2) pulls.push(Math.round(t));
     merge = { from, to: length, arrivals: pulls, lockup };

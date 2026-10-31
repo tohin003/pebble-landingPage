@@ -15,6 +15,7 @@ import { Aura, type AuraState } from "./fx/Aura";
 import { STYLE_TEST_ENERGY } from "./maps/styleTest.energy";
 import { REEL, INTER_HEAVY, c01, expoIn, expoOut, hitEnv, inOut } from "./fx/look";
 import { Word, fitSize } from "./fx/Word";
+import { WorkshopExplainer, workshopStages } from "./fx/WorkshopExplainer";
 import type { BeatMap } from "./beats";
 
 const CREDIT = "Pebble's character engine: bloub by Jérémy Perret (MIT)";
@@ -67,8 +68,8 @@ const HookScene: React.FC<{ plan: Plan; f: number; W: number; H: number; vertica
   const { hook } = plan;
   const crop = CROPS.askHook.rect;
   const src = Math.round(hook.src.at(f));
-  const kCard = vertical ? (W * 0.8) / crop.w : (H * 0.8) / crop.h;
-  const home = vertical ? { x: W / 2, y: H * 0.64 } : { x: W * 0.67, y: H * 0.5 };
+  const kCard = vertical ? (W * 0.72) / crop.w : (H * 0.8) / crop.h;
+  const home = vertical ? { x: W / 2, y: H * 0.55 } : { x: W * 0.67, y: H * 0.5 };
   const input = { x: 2470, y: 1385 };
   const centre = { x: crop.x + crop.w / 2, y: crop.y + crop.h / 2 };
   const eye = { x: 2731, y: 1618 };
@@ -81,7 +82,7 @@ const HookScene: React.FC<{ plan: Plan; f: number; W: number; H: number; vertica
   const inputHome = { x: home.x + (input.x - centre.x) * kCard, y: home.y + (input.y - centre.y) * kCard };
   // where the input line sits on screen in the close-up: its left part in the frame's right half (16:9), centred (9:16)
   // (9:16: low enough that the card's top stays under the echo)
-  const inputClose = vertical ? { x: W * 0.6, y: H * 0.74 } : { x: W * 0.53 + (722 * kz) / 2, y: H * 0.56 };
+  const inputClose = vertical ? { x: W * 0.6, y: H * 0.66 } : { x: W * 0.53 + (722 * kz) / 2, y: H * 0.56 };
   const ip = { x: inputClose.x + (inputHome.x - inputClose.x) * pull, y: inputClose.y + (inputHome.y - inputClose.y) * pull };
   let zoom = 1;
   let at = centre;
@@ -278,10 +279,10 @@ const RevealScene: React.FC<{ plan: Plan; f: number; W: number; H: number; verti
 
 const cardTarget = (crop: CropId, W: number, H: number, vertical: boolean) => {
   const r = CROPS[crop].rect;
-  const wide = crop === "spaces";
-  const maxW = vertical ? W * 0.9 : W * (wide ? 0.52 : 0.52);
-  // (the companion pebble sits under the cards: they stop above about 0.8 of the height)
-  const maxH = vertical ? H * 0.4 : H * 0.66;
+  // (the companion pebble sits under the cards: they stop above about 0.8 of the height; on 9:16 everything stays
+  // inside the platforms' safe zone, clear of the bottom fifth and the right-hand buttons)
+  const maxW = vertical ? W * 0.8 : W * 0.52;
+  const maxH = vertical ? H * 0.3 : H * 0.66;
   return Math.min(maxW / r.w, maxH / r.h, crop === "calendar" ? 2.4 : 1.9);
 };
 
@@ -318,20 +319,24 @@ const DepthCards: React.FC<{ shot: CardShot; f: number; W: number; H: number; ve
   );
 };
 
-const MontageShot: React.FC<{ shot: CardShot; next?: CardShot; f: number; W: number; H: number; vertical: boolean }> = ({ shot, next, f, W, H, vertical }) => {
+const MontageShot: React.FC<{ shot: CardShot; next?: CardShot; f: number; W: number; H: number; vertical: boolean; B: number }> = ({ shot, next, f, W, H, vertical, B }) => {
   const dt = f - shot.from;
+  // a hero beat: its explainer leads and the real screen lands on the stage it names
+  const hero = shot.hero === "workshop";
+  const heroAt = hero ? Math.round(workshopStages(B).ask) : 0;
+  const cardDt = dt - heroAt;
   const len = shot.to - shot.from;
   const left = shot.to - f;
   const src = Math.round(shot.src.at(dt));
-  const k0 = cardTarget(shot.crop, W, H, vertical);
+  const k0 = hero ? (vertical ? (W * 0.78) / CROPS[shot.crop].rect.w : (W * 0.34) / CROPS[shot.crop].rect.w) : cardTarget(shot.crop, W, H, vertical);
   const sideSign = shot.side === "right" ? 1 : -1;
-  const home = vertical ? { x: W / 2, y: H * 0.53 } : { x: W / 2 + sideSign * W * 0.16, y: H * 0.45 };
+  const home = hero ? (vertical ? { x: W / 2, y: H * 0.6 } : { x: W * 0.72, y: H * 0.68 }) : vertical ? { x: W / 2, y: H * 0.46 } : { x: W / 2 + sideSign * W * 0.16, y: H * 0.45 };
 
   // arrive: a whip from `enter` (7 frames, expo-out), leave: a whip toward the next shot's arrival side's opposite
   const inV = VEC[shot.enter];
   // the cut lands mid-whip: on the beat's own frame the card is already most of the way in (blurred), settled by 6
-  const arrive = 0.45 * (1 - expoOut((dt + 1) / 6));
-  const arriveNext = 0.45 * (1 - expoOut((dt + 2) / 6));
+  const arrive = 0.45 * (1 - expoOut((cardDt + 1) / 6));
+  const arriveNext = 0.45 * (1 - expoOut((cardDt + 2) / 6));
   const outV = next ? VEC[next.enter] : { x: 0, y: 0 };
   const go = left <= 5 ? expoIn(1 - left / 5) : 0;
   const goNext = left - 1 <= 5 ? expoIn(1 - (left - 1) / 5) : 0;
@@ -345,8 +350,8 @@ const MontageShot: React.FC<{ shot: CardShot; next?: CardShot; f: number; W: num
 
   let k = k0 * (1 + 0.035 * (dt / Math.max(1, len)));
   for (const p of shot.punches) k *= 1 + 0.12 * hitEnv(dt - p, 2, 8);
-  k *= 1 + 0.05 * hitEnv(dt, 1, 6);
-  const settle = expoOut(dt / 18);
+  k *= 1 + 0.05 * hitEnv(cardDt, 1, 6);
+  const settle = expoOut(cardDt / 18);
   const pose: CardPose = {
     x: home.x + ox,
     y: home.y + oy,
@@ -355,16 +360,21 @@ const MontageShot: React.FC<{ shot: CardShot; next?: CardShot; f: number; W: num
     rotX: 5 - 2 * settle,
     rotZ: vertical ? 0 : sideSign * -1.2 * (1 - settle),
   };
-  const wordSize = vertical ? fitSize(shot.word, W * 0.88, 150) : fitSize(shot.word, W * 0.4, 150);
+  const wordSize = vertical ? fitSize(shot.word, W * 0.8, hero ? 120 : 140) : fitSize(shot.word, W * (hero ? 0.36 : 0.4), hero ? 128 : 150);
   const wordX = vertical ? W / 2 : shot.side === "right" ? W * 0.055 : W * 0.945;
-  const wordY = vertical ? H * 0.2 : H * 0.45;
+  const wordY = vertical ? H * (hero ? 0.14 : 0.2) : H * (hero ? 0.36 : 0.45);
+  // a hero's muted second line, under its name, as on the page (the H2 and its second line)
+  const subSize = Math.round(wordSize * 0.5);
+  const subY = wordY + wordSize * (shot.word.includes("\n") ? 1.12 : 0.62) + subSize * 0.9;
+  const box = vertical ? { x: W * 0.06, y: H * 0.23, w: W * 0.88, h: H * 0.3 } : { x: W * 0.43, y: H * 0.07, w: W * 0.53, h: H * 0.56 };
   // the feature's line lands with its first screen and stays through its others
   const lineDt = f - shot.lineFrom;
   const lineLeft = shot.lineTo - f;
   const energy = 1 + 0.35 * hitEnv(dt, 1, 10) + shot.punches.reduce((a, p) => a + 0.3 * hitEnv(dt - p, 1, 10), 0);
   return (
     <AbsoluteFill>
-      <Ground tint={shot.tint} focus={{ x: home.x / W, y: home.y / H }} energy={energy} shift={{ x: ox, y: oy }} />
+      <Ground tint={shot.tint} focus={hero ? { x: (box.x + box.w / 2) / W, y: (box.y + box.h * 0.45) / H } : { x: home.x / W, y: home.y / H }} energy={energy} shift={{ x: ox, y: oy }} />
+      {hero && <WorkshopExplainer x={box.x} y={box.y} w={box.w} h={box.h} dt={dt} B={B} energy={E(f)} />}
       <Word
         text={shot.word}
         dt={lineDt}
@@ -376,8 +386,22 @@ const MontageShot: React.FC<{ shot: CardShot; next?: CardShot; f: number; W: num
         sweep={lineDt >= 10 && lineDt <= 34 ? (lineDt - 10) / 24 : undefined}
         exitV={{ x: -outV.x * 9, y: -outV.y * 9 }}
       />
-      <DepthCards shot={shot} f={f} W={W} H={H} vertical={vertical} shift={{ x: ox, y: oy }} />
-      <Card
+      {shot.sub && (
+        <Word
+          text={shot.sub}
+          dt={lineDt - 8}
+          left={lineLeft}
+          size={subSize}
+          x={wordX}
+          y={subY}
+          align={vertical ? "center" : shot.side === "right" ? "left" : "right"}
+          color={REEL.inkSoft}
+          exitV={{ x: -outV.x * 9, y: -outV.y * 9 }}
+          style={{ fontWeight: 600, letterSpacing: "-0.02em", textShadow: "none" }}
+        />
+      )}
+      {!hero && <DepthCards shot={shot} f={f} W={W} H={H} vertical={vertical} shift={{ x: ox, y: oy }} />}
+      {cardDt >= 0 && <Card
         crop={shot.crop}
         src={src}
         pose={pose}
@@ -386,7 +410,7 @@ const MontageShot: React.FC<{ shot: CardShot; next?: CardShot; f: number; W: num
         sweep={dt >= 3 && dt <= 23 ? (dt - 3) / 20 : undefined}
         fadeRight={shot.crop === "keepCard"}
         glow={0.75}
-      />
+      />}
     </AbsoluteFill>
   );
 };
@@ -394,7 +418,7 @@ const MontageShot: React.FC<{ shot: CardShot; next?: CardShot; f: number; W: num
 /* ------------------------------------------------------------------------------------ the companion pebble ---- */
 
 /** Where the companion pebble stands through the montage: under the cards, centred. */
-const companionSpot = (W: number, H: number, vertical: boolean) => (vertical ? { x: W / 2, y: H * 0.92, size: 250 } : { x: W / 2, y: H * 0.955, size: 190 });
+const companionSpot = (W: number, H: number, vertical: boolean) => (vertical ? { x: W / 2, y: H * 0.74, size: 230 } : { x: W / 2, y: H * 0.94, size: 190 });
 
 /**
  * The companion through the montage: the real pebble (its own engine and poses), watching each screen as it lands, its
@@ -526,8 +550,8 @@ const SmallPrint: React.FC<{ text: string; W: number; H: number; side: "left" | 
   const vertical = H > W;
   // 9:16: both lines centred and stacked (side by side they would collide on a phone's width)
   const place: React.CSSProperties = vertical
-    ? { left: 0, right: 0, textAlign: "center", bottom: side === "left" ? H * 0.018 : H * 0.034 }
-    : { [side]: W * 0.04, bottom: H * 0.035 };
+    ? { left: 0, right: 0, textAlign: "center", bottom: side === "left" ? H * 0.205 : H * 0.222 }
+    : { [side]: W * 0.05, bottom: H * 0.05 };
   return (
     <div
       style={{
@@ -566,7 +590,7 @@ export const ReelStyleTest: React.FC<{ map?: BeatMap }> = ({ map }) => {
       {f < hook.to && <HookScene plan={plan} f={f} W={W} H={H} vertical={vertical} />}
       {f >= breath.from && f < breath.to && <AbsoluteFill style={{ background: "#020805" }} />}
       {f >= reveal.from && f < reveal.to && <RevealScene plan={plan} f={f} W={W} H={H} vertical={vertical} />}
-      {shotIdx >= 0 && <MontageShot shot={montage[shotIdx]} next={montage[shotIdx + 1]} f={f} W={W} H={H} vertical={vertical} />}
+      {shotIdx >= 0 && <MontageShot shot={montage[shotIdx]} next={montage[shotIdx + 1]} f={f} W={W} H={H} vertical={vertical} B={plan.B} />}
       {shotIdx >= 0 && <Companion plan={plan} f={f} W={W} H={H} vertical={vertical} />}
       {merge && f >= merge.from && <MergeScene plan={plan} f={f} W={W} H={H} vertical={vertical} />}
       </AbsoluteFill>
