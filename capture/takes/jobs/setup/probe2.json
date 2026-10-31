@@ -1,0 +1,16 @@
+{
+ "_about": "After the dry run (31 Oct): read the notification banners, Chrome's welcome dialog, then open Pebble (it was not running) and read its windows. Clicks nothing.",
+ "schema": "pebble-take-job/1",
+ "id": "probe2-$n",
+ "take": "setup",
+ "title": "Probe: banners, Chrome's dialog, Pebble",
+ "steps": [
+  {"do": "ax_dump", "app": "NotificationCenter", "max": 300, "name": "notifications"},
+  {"do": "ax_dump", "app": "Google Chrome", "max": 600, "name": "chrome"},
+  {"do": "open_app", "app": "Pebble"},
+  {"do": "wait", "s": 6},
+  {"do": "still", "name": "pebble-open"},
+  {"do": "ax_dump", "app": "Pebble", "max": 3000, "name": "pebble"},
+  {"do": "pointer"}
+ ]
+}

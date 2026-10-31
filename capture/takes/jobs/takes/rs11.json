@@ -17,7 +17,8 @@
   {
    "do": "record_start",
    "name": "RS11-$n",
-   "max_s": 20
+   "max_s": 20,
+   "method": "avfoundation"
   },
   {
    "do": "wait",

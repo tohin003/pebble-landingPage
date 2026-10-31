@@ -1,0 +1,25 @@
+{
+ "_about": "Clears the setup's leftovers from the Studio desktop (31 Oct): the editor and System Settings hidden (⌘H after a click on their Dock icons), Finder hidden; then the pointer rests on the first notification banner so its buttons show, and the banners are read. Closes nothing, changes no setting.",
+ "schema": "pebble-take-job/1",
+ "id": "tidy-$n",
+ "take": "setup",
+ "title": "Tidy the desktop, read the banners",
+ "steps": [
+  {"do": "find", "app": "Dock", "role": "AXDockItem", "name": "Antigravity IDE", "save_as": "@ide", "optional": true, "timeout_s": 5},
+  {"do": "click", "at": "@ide", "if": "@ide"},
+  {"do": "wait", "s": 1.2, "if": "@ide"},
+  {"do": "key", "key": "h", "mods": ["cmd"], "if": "@ide"},
+  {"do": "wait", "s": 0.8},
+  {"do": "find", "app": "Dock", "role": "AXDockItem", "name": "System Settings", "save_as": "@set", "optional": true, "timeout_s": 5},
+  {"do": "click", "at": "@set", "if": "@set"},
+  {"do": "wait", "s": 1.5, "if": "@set"},
+  {"do": "key", "key": "h", "mods": ["cmd"], "if": "@set"},
+  {"do": "wait", "s": 0.8},
+  {"do": "hide", "app": "Finder"},
+  {"do": "wait", "s": 0.8},
+  {"do": "move", "to": {"x": 1280, "y": 88}, "ms": 600},
+  {"do": "wait", "s": 1.0},
+  {"do": "ax_dump", "app": "NotificationCenter", "max": 300, "name": "banners-hover"},
+  {"do": "still", "name": "tidy"}
+ ]
+}

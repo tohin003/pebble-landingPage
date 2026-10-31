@@ -1,0 +1,123 @@
+{
+ "_about": "Answers macOS's two 'Google Chrome Notifications' prompts with Options › Don't Allow (31 Oct), so no Chrome banner can appear in a take (RUNBOOK §8). Pebble's own notifications are untouched.",
+ "schema": "pebble-take-job/1",
+ "id": "banners-$n",
+ "take": "setup",
+ "title": "Chrome's notification prompts: Don't Allow",
+ "steps": [
+  {
+   "do": "move",
+   "to": {
+    "x": 1280,
+    "y": 88
+   },
+   "ms": 500
+  },
+  {
+   "do": "wait",
+   "s": 0.9
+  },
+  {
+   "do": "find",
+   "app": "NotificationCenter",
+   "role": "AXMenuButton",
+   "name": "Options",
+   "save_as": "@opt1",
+   "optional": true,
+   "timeout_s": 4
+  },
+  {
+   "do": "click",
+   "at": "@opt1",
+   "if": "@opt1"
+  },
+  {
+   "do": "wait",
+   "s": 0.8
+  },
+  {
+   "do": "find",
+   "app": "NotificationCenter",
+   "role": "AXMenuItem",
+   "contains": "Don",
+   "save_as": "@no1",
+   "optional": true,
+   "timeout_s": 4
+  },
+  {
+   "do": "click",
+   "at": "@no1",
+   "if": "@no1"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 1280,
+    "y": 88
+   },
+   "ms": 500
+  },
+  {
+   "do": "wait",
+   "s": 0.9
+  },
+  {
+   "do": "find",
+   "app": "NotificationCenter",
+   "role": "AXMenuButton",
+   "name": "Options",
+   "save_as": "@opt2",
+   "optional": true,
+   "timeout_s": 4
+  },
+  {
+   "do": "click",
+   "at": "@opt2",
+   "if": "@opt2"
+  },
+  {
+   "do": "wait",
+   "s": 0.8
+  },
+  {
+   "do": "find",
+   "app": "NotificationCenter",
+   "role": "AXMenuItem",
+   "contains": "Don",
+   "save_as": "@no2",
+   "optional": true,
+   "timeout_s": 4
+  },
+  {
+   "do": "click",
+   "at": "@no2",
+   "if": "@no2"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 700,
+    "y": 700
+   },
+   "ms": 500
+  },
+  {
+   "do": "ax_dump",
+   "app": "NotificationCenter",
+   "max": 200,
+   "name": "after"
+  },
+  {
+   "do": "still",
+   "name": "after"
+  }
+ ]
+}

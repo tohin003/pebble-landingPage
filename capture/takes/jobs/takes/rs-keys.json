@@ -8,7 +8,8 @@
   {
    "do": "record_start",
    "name": "RSkeys-$n",
-   "max_s": 40
+   "max_s": 40,
+   "method": "avfoundation"
   },
   {
    "do": "wait",

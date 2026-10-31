@@ -9,7 +9,8 @@
   {
    "do": "record_start",
    "name": "RSG-$n",
-   "max_s": 480
+   "max_s": 480,
+   "method": "avfoundation"
   },
   {
    "do": "wait",

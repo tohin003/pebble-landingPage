@@ -9,7 +9,8 @@
   {
    "do": "record_start",
    "name": "RSF-$n",
-   "max_s": 420
+   "max_s": 420,
+   "method": "avfoundation"
   },
   {
    "do": "wait",

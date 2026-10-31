@@ -1,0 +1,81 @@
+{
+ "_about": "Closes macOS's two 'Google Chrome Notifications' prompts with their close button (shown on hover), so no Chrome banner shows in a take (RUNBOOK §8). banners.json's Options › Don't Allow couldn't read the menu.",
+ "schema": "pebble-take-job/1",
+ "id": "banners-close-$n",
+ "take": "setup",
+ "title": "Chrome's notification prompts: close",
+ "steps": [
+  {
+   "do": "key",
+   "key": "escape"
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 1280,
+    "y": 88
+   },
+   "ms": 500
+  },
+  {
+   "do": "wait",
+   "s": 1.0
+  },
+  {
+   "do": "click",
+   "at": {
+    "x": 1114,
+    "y": 55
+   },
+   "note": "the banner's close button (seen on hover in tidy-01's dump)"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "key",
+   "key": "escape"
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 1280,
+    "y": 88
+   },
+   "ms": 500
+  },
+  {
+   "do": "wait",
+   "s": 1.0
+  },
+  {
+   "do": "click",
+   "at": {
+    "x": 1114,
+    "y": 55
+   },
+   "note": "the banner's close button (seen on hover in tidy-01's dump)"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 700,
+    "y": 700
+   },
+   "ms": 500
+  },
+  {
+   "do": "wait",
+   "s": 0.5
+  },
+  {
+   "do": "still",
+   "name": "after"
+  }
+ ]
+}

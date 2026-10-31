@@ -8,7 +8,8 @@
   {
    "do": "record_start",
    "name": "RS5-music-$n",
-   "max_s": 90
+   "max_s": 90,
+   "method": "avfoundation"
   },
   {
    "do": "wait",

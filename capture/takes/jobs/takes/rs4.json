@@ -25,7 +25,8 @@
   {
    "do": "record_start",
    "name": "RS4-$n",
-   "max_s": 120
+   "max_s": 120,
+   "method": "avfoundation"
   },
   {
    "do": "wait",

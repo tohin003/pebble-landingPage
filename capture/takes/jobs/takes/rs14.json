@@ -24,7 +24,8 @@
   {
    "do": "record_start",
    "name": "RS14-$n",
-   "max_s": 40
+   "max_s": 40,
+   "method": "avfoundation"
   },
   {
    "do": "wait",

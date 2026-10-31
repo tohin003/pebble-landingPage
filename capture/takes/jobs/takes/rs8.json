@@ -36,7 +36,8 @@
   {
    "do": "record_start",
    "name": "RS8-$n",
-   "max_s": 150
+   "max_s": 150,
+   "method": "avfoundation"
   },
   {
    "do": "wait",
