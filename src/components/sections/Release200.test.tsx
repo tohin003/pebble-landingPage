@@ -88,7 +88,7 @@ describe("Pebble's Workshop", () => {
     expect(SECTIONS.workshop).toBe(sectionIds.workshop);
     expect(workshopHtml).toContain('id="workshop"');
     expect(checkTwoTone(workshop.h2, workshop.then)).toEqual({ ok: true });
-    expect(workshopHtml).toMatch(/class="[^"]*two-tone[^"]*"><span>Pebble(&#x27;|')s Workshop\.<\/span> <span>Tools it makes/);
+    expect(workshopHtml).toMatch(/class="[^"]*two-tone[^"]*"><span>Pebble(&#x27;|'|’)s Workshop\.<\/span> <span>Tools it makes/);
   });
 
   test("every row renders its limit beside it, and the section's own limit closes it", () => {

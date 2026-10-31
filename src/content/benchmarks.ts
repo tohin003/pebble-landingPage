@@ -530,19 +530,23 @@ export function benchmarkLlmsLinesFor(offered: string): readonly string[] {
  * differences, where Pebble led and trailed, what wasn't run, and that cost and time are reported, not claimed. [C-GS-12]
  */
 export function goldenLlmsLines(): readonly string[] {
-  const [cc, cx] = golden.result.tables;
-  const table = (t: GoldenTable) => {
-    const [correct, falseDone, cost, time] = t.rows;
-    return `${t.caption}: tasks done correctly, ${correct!.pebble} for Pebble and ${correct!.other} for ${t.other}; said done when it was not, ${falseDone!.pebble} and ${falseDone!.other}; cost per task, ${cost!.pebble} and ${cost!.other}; time per task (median, 95th percentile), ${time!.pebble} and ${time!.other}.`;
+  // no non-null assertions inside the strings: the copy lint's source scan reads every template literal as copy
+  const table = (t: GoldenTable): string => {
+    const cell = (i: number) => t.rows[i] ?? { measure: "", pebble: "", other: "" };
+    const [correct, falseDone, cost, time] = [cell(0), cell(1), cell(2), cell(3)];
+    return `${t.caption}: tasks done correctly, ${correct.pebble} for Pebble and ${correct.other} for ${t.other}; said done when it was not, ${falseDone.pebble} and ${falseDone.other}; cost per task, ${cost.pebble} and ${cost.other}; time per task (median, 95th percentile), ${time.pebble} and ${time.other}.`;
   };
+  const method = (term: string): string => golden.method.items.find((item) => item.term === term)?.text ?? "";
+  const [tasks, fixed, build, costTime] = [method("Tasks"), method("Fixed in advance"), method("Build"), method("Cost and time")];
+  const led = `${golden.sides.led.charAt(0).toLowerCase()}${golden.sides.led.slice(1)}`;
+  const differences = golden.result.differences.map((d) => d.replace(/\.$/, "")).join("; ");
   return [
-    `${golden.h2} ${golden.lead} ${golden.method.items[0]!.text} ${golden.method.items[1]!.text} ${golden.method.items[3]!.text}`,
-    table(cc!),
-    table(cx!),
-    `${golden.result.differenceTitle} ${golden.result.differences.map((d) => d.replace(/\.$/, "")).join("; ")}. ${golden.result.gates}`,
-    `Where Pebble led, ${golden.sides.led.charAt(0).toLowerCase()}${golden.sides.led.slice(1)} ${golden.sides.trailed}`,
-    golden.limits.items[0]!,
-    `${golden.reported.join(" ")} ${golden.method.items[4]!.text}`,
+    `${golden.h2} ${golden.lead} ${tasks} ${fixed} ${build}`,
+    ...golden.result.tables.map(table),
+    `${golden.result.differenceTitle} ${differences}. ${golden.result.gates}`,
+    `Where Pebble led, ${led} ${golden.sides.trailed}`,
+    golden.limits.items[0],
+    `${golden.reported.join(" ")} ${costTime}`,
   ];
 }
 

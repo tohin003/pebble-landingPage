@@ -529,7 +529,7 @@ export const acrossMac = {
 // ---------------------------------------------------------------------------------------------------------------
 
 export const workshop = {
-  h2: "Pebble's Workshop.",
+  h2: "Pebble’s Workshop.", // a typographic apostrophe: the H2 is set large, in Fraunces
   /** The H2's muted second line (≤ 60 characters, twoTone.ts). [C-WS-1] */
   then: "Tools it makes for itself, checked before it keeps them.",
   lead:

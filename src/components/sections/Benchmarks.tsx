@@ -108,6 +108,26 @@ function GoldenText({ text }: { text: string }) {
   );
 }
 
+/**
+ * A golden set 2.0 cell: "235 of 255 (92.2 %)" as Value sets it; a time pair ("12.1 s, 46.5 s": the median, then the
+ * 95th percentile, as the measure names them) on two lines, its comma kept, so two pairs never run together on a phone.
+ * The text stays the README's, character for character.
+ */
+function GoldenValue({ text }: { text: string }) {
+  const pair = /^(\d+\.\d s), (\d+\.\d s)$/.exec(text);
+  if (!pair) return <Value text={text} />;
+  return (
+    <>
+      <span className={styles.valueLine}>
+        <Figures text={pair[1]!} />,
+      </span>{" "}
+      <span className={styles.valueLine}>
+        <Figures text={pair[2]!} />
+      </span>
+    </>
+  );
+}
+
 /** One of the README's two tables, every cell as it prints it; the cells read as data, the rate's share in muted ink. */
 function GoldenTable({ table }: { table: (typeof golden.result.tables)[number] }) {
   const id = `golden-${table.id}`;
@@ -138,10 +158,10 @@ function GoldenTable({ table }: { table: (typeof golden.result.tables)[number] }
               <span className={styles.measureName}>{row.measure}</span>
             </th>
             <td className={styles.value}>
-              <Value text={row.pebble} />
+              <GoldenValue text={row.pebble} />
             </td>
             <td className={styles.value}>
-              <Value text={row.other} />
+              <GoldenValue text={row.other} />
             </td>
           </tr>
         ))}

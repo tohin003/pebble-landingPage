@@ -610,6 +610,10 @@
 .earlierHead {
   padding-block: 28px 32px;
   border-top: 1px solid var(--line);
+}
+
+/* the measure: the words, not the hairline above them (it spans the main column, like every row's) */
+.earlierHead > * {
   max-width: 44em;
 }
 
