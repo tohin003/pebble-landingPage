@@ -46,7 +46,12 @@ export const Card: React.FC<{
   shadow?: boolean;
   /** extra blur on the card itself, px (a fast move, or depth of field for a far card) */
   blurPx?: number;
-}> = ({ crop, src, pose, trail, inner, sweep, fadeRight, glow = 0.6, radiusPx, shadow = true, blurPx = 0 }) => {
+  /**
+   * light drawn INSIDE the card over the picture (screen blend), in the card's own box, so it follows the card's 3D
+   * pose exactly: `at(sx, sy)` maps a source device-px point to the box. For the aura on a captured pebble.
+   */
+  overlay?: (at: (sx: number, sy: number) => { x: number; y: number }, scale: number) => React.ReactNode;
+}> = ({ crop, src, pose, trail, inner, sweep, fadeRight, glow = 0.6, radiusPx, shadow = true, blurPx = 0, overlay }) => {
   const c = CROPS[crop];
   const r = c.rect;
   const w = r.w * pose.k;
@@ -90,6 +95,7 @@ export const Card: React.FC<{
       }}
     >
       <Img src={file} style={{ position: "absolute", left: imgLeft, top: imgTop, width: REEL_TAKES[c.take].w * pk, maxWidth: "none" }} />
+      {key === 0 && overlay && <div style={{ position: "absolute", inset: 0, mixBlendMode: "screen" }}>{overlay((sx, sy) => ({ x: imgLeft + sx * pk, y: imgTop + sy * pk }), pk)}</div>}
       {key === 0 && sweep !== undefined && sweep > 0 && sweep < 1 && (
         <div
           style={{

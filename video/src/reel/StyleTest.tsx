@@ -11,11 +11,40 @@ import type { Warp } from "./warp";
 import { Card, type CardPose } from "./fx/Card";
 import { Ground } from "./fx/Ground";
 import { Hero, ShockRing } from "./fx/Hero";
+import { Aura, type AuraState } from "./fx/Aura";
+import { STYLE_TEST_ENERGY } from "./maps/styleTest.energy";
 import { REEL, INTER_HEAVY, c01, expoIn, expoOut, hitEnv, inOut } from "./fx/look";
 import { Word, fitSize } from "./fx/Word";
 import type { BeatMap } from "./beats";
 
 const CREDIT = "Pebble's character engine: bloub by Jérémy Perret (MIT)";
+const HONEST = "Shown with sample data. Edited for time.";
+
+/** The score's smoothed loudness at frame f, 0..1 (energy.py over the style test's mix). */
+const E = (f: number): number => STYLE_TEST_ENERGY.level[Math.max(0, Math.min(STYLE_TEST_ENERGY.level.length - 1, Math.round(f)))];
+
+/** The pebble's place on screen in the take RS15-01 (source device px) and its radius. */
+const TAKE_PEBBLE = { x: 2750, y: 1625, r: 88 };
+
+/**
+ * The aura in the tension: a soft glow breathing with Starfire's pad (its 80 bpm pulse, a breath every 45 frames, the
+ * pad's own beats on 0 and 47), then with Vanguard's build on every beat, dimming with the suck-back as the score does,
+ * and swelling with rays through the dive before the drop.
+ */
+function tensionAura(plan: Plan, f: number): AuraState {
+  const { hook } = plan;
+  const drums = hook.accents[0] ?? hook.send;
+  let level: number;
+  if (f < drums) level = 0.22 + 0.42 * (0.5 + 0.5 * Math.cos((2 * Math.PI * f) / 45)) + 0.2 * E(f);
+  else level = 0.15 + 0.5 * E(f) + hook.pulses.reduce((a, p) => a + 0.28 * hitEnv(f - p, 1, 11), 0);
+  let rays = 0;
+  if (f >= hook.zoomFrom) {
+    const u = c01((f - hook.zoomFrom) / Math.max(1, hook.to - hook.zoomFrom));
+    level += 0.9 * u;
+    rays = 0.55 * u;
+  }
+  return { level, rays };
+}
 
 /** the first output frame (in [lo, hi]) at which a warp reaches source frame `src` */
 function outFrameOf(w: Warp, src: number, lo: number, hi: number): number {
@@ -77,10 +106,15 @@ const HookScene: React.FC<{ plan: Plan; f: number; W: number; H: number; vertica
     trail = { vx: 0, vy: 0, vlk: Math.log((1 + 15 * e2) / (1 + 15 * e)) * -1, n: u > 0.25 ? 5 : 0, span: 1.2 };
   }
 
+  const aura = tensionAura(plan, f);
+  const pebbleAt = { x: pose.x + (TAKE_PEBBLE.x - centre.x) * pose.k, y: pose.y + (TAKE_PEBBLE.y - centre.y) * pose.k };
+
   // the echo: the question as typed, huge, on the left (16:9) or above (9:16)
   const typed = typedAt(src);
   const lines = typed.length <= 8 ? [typed] : [typed.slice(0, 9).trimEnd(), typed.slice(9)];
-  const size = vertical ? fitSize("you do now?", W * 0.88, 170) : fitSize("you do now?", W * 0.5, 200);
+  // the first word lands huge and the type settles to its two-line size as the question grows (the hook's first second)
+  const settled = vertical ? fitSize("you do now?", W * 0.88, 170) : fitSize("you do now?", W * 0.5, 200);
+  const size = settled * (1 + 0.55 * (1 - c01((typed.length - 4) / 4)));
   // each word pops as its first letter lands
   const wordStarts = TYPED.filter(([c], i) => i === 0 || (TYPED[i - 1][0] === " " && c !== " ")).map(([, s]) => outFrameOf(hook.src, s, 0, hook.send + 2));
   const lastStart = Math.max(...wordStarts.filter((w) => w <= f), -99);
@@ -93,7 +127,7 @@ const HookScene: React.FC<{ plan: Plan; f: number; W: number; H: number; vertica
 
   return (
     <AbsoluteFill>
-      <Ground tint="sage" focus={{ x: pose.x / W, y: pose.y / H }} energy={0.8 + 0.5 * punch + beatGlow + 0.6 * leave} />
+      <Ground tint="sage" focus={{ x: c01(pebbleAt.x / W), y: c01(pebbleAt.y / H) }} energy={0.4 + 0.75 * aura.level + 0.4 * punch + 0.6 * leave} />
       <div
         style={{
           position: "absolute",
@@ -119,7 +153,24 @@ const HookScene: React.FC<{ plan: Plan; f: number; W: number; H: number; vertica
           </div>
         ))}
       </div>
-      <Card crop="askHook" src={src} pose={pose} inner={{ zoom, at }} trail={trail} sweep={sweep} glow={0.7 + beatGlow} radiusPx={28} />
+      {/* the pebble's light spilling from behind the card, breathing (on the dark ground it reads; on the poster it can't) */}
+      {f < hook.zoomFrom && <Aura x={pebbleAt.x} y={pebbleAt.y} r={TAKE_PEBBLE.r * pose.k * 2.4} state={{ level: aura.level * 1.15 }} frame={f} motes={0} />}
+      <Card
+        crop="askHook"
+        src={src}
+        pose={pose}
+        inner={{ zoom, at }}
+        trail={trail}
+        sweep={sweep}
+        glow={0.7 + beatGlow}
+        radiusPx={28}
+        overlay={(to, scale) => {
+          const p = to(TAKE_PEBBLE.x, TAKE_PEBBLE.y);
+          return <Aura x={p.x} y={p.y} r={TAKE_PEBBLE.r * scale} state={{ level: aura.level * 0.6, rays: aura.rays }} frame={f} motes={0} />;
+        }}
+      />
+      {/* motes drifting around it, in front of the card */}
+      {f < hook.zoomFrom && <Aura x={pebbleAt.x} y={pebbleAt.y} r={TAKE_PEBBLE.r * pose.k * 1.6} state={{ level: aura.level }} frame={f} motes={14} glow={false} />}
     </AbsoluteFill>
   );
 };
@@ -167,10 +218,11 @@ const Lockup: React.FC<{ f: number; w1: number; w2: number; x: number; y: number
   );
 };
 
-const revealCues = (D: number) => [
-  { at: D / 60, pose: "happy" as const },
-  { at: D / 60 + 0.75, look: { x: 0.5, y: -0.1 } },
-  { at: D / 60 + 1.35, look: null },
+// the drop's confident pose: "viewing" (its proud expression, with a spark), then a look at its name as it lands
+const revealCues = (D: number, word1: number) => [
+  { at: D / 60, pose: "viewing" as const },
+  { at: word1 / 60, look: { x: 0.6, y: -0.05 } },
+  { at: word1 / 60 + 0.9, look: null },
 ];
 
 const RevealScene: React.FC<{ plan: Plan; f: number; W: number; H: number; vertical: boolean }> = ({ plan, f, W, H, vertical }) => {
@@ -203,7 +255,20 @@ const RevealScene: React.FC<{ plan: Plan; f: number; W: number; H: number; verti
       />
       <ShockRing x={footX} y={pebbleCy} dt={f - D - 5} r0={size * 0.2} r1={Math.max(W, H) * 0.6} frames={30} />
       <ShockRing x={footX} y={pebbleCy} dt={f - word2} r0={size * 0.25} r1={size * 1.2} frames={20} />
-      <Hero cues={revealCues(D)} x={footX} y={footY} size={size} landAt={D} pulses={[word1, word2]} />
+      <Hero
+        cues={revealCues(D, word1)}
+        x={footX}
+        y={footY}
+        size={size}
+        landAt={D}
+        pulses={[word1, word2]}
+        aura={{
+          // the burst: everything at once on the drop, then a bright, steady glow that answers the two word hits
+          level: 0.55 + 0.45 * E(f) + 0.9 * Math.exp(-(f - D) / 18) + 0.3 * hitEnv(f - word1, 1, 10) + 0.3 * hitEnv(f - word2, 1, 10),
+          burstAge: f - D,
+          rays: 0.12 + 0.88 * Math.exp(-(f - D) / 30),
+        }}
+      />
       <Lockup f={f} w1={word1} w2={word2} x={vertical ? W / 2 : W * 0.4} y={vertical ? H * 0.68 : pebbleCy} size={lockSize} align={vertical ? "center" : "left"} />
     </AbsoluteFill>
   );
@@ -214,9 +279,10 @@ const RevealScene: React.FC<{ plan: Plan; f: number; W: number; H: number; verti
 const cardTarget = (crop: CropId, W: number, H: number, vertical: boolean) => {
   const r = CROPS[crop].rect;
   const wide = crop === "spaces";
-  const maxW = vertical ? W * 0.88 : W * (wide ? 0.5 : 0.5);
-  const maxH = vertical ? H * 0.42 : H * 0.7;
-  return Math.min(maxW / r.w, maxH / r.h, crop === "calendar" ? 2.2 : 1.6);
+  const maxW = vertical ? W * 0.9 : W * (wide ? 0.52 : 0.52);
+  // (the companion pebble sits under the cards: they stop above about 0.8 of the height)
+  const maxH = vertical ? H * 0.4 : H * 0.66;
+  return Math.min(maxW / r.w, maxH / r.h, crop === "calendar" ? 2.4 : 1.9);
 };
 
 /** Two far cards behind the shot's own (other screens of the montage), small, out of focus, at half the parallax: depth. */
@@ -228,7 +294,7 @@ const DepthCards: React.FC<{ shot: CardShot; f: number; W: number; H: number; ve
   const t = (f - shot.from) / 60;
   const spots = vertical
     ? [{ x: W * 0.16, y: H * 0.86 }, { x: W * 0.86, y: H * 0.36 }]
-    : [{ x: W * (0.5 + sideSign * 0.42), y: H * 0.16 }, { x: W * (0.5 - sideSign * 0.1), y: H * 0.88 }];
+    : [{ x: W * (0.5 + sideSign * 0.42), y: H * 0.14 }, { x: W * (0.5 - sideSign * 0.4), y: H * 0.86 }];
   return (
     <>
       {picks.map((crop, j) => {
@@ -259,7 +325,7 @@ const MontageShot: React.FC<{ shot: CardShot; next?: CardShot; f: number; W: num
   const src = Math.round(shot.src.at(dt));
   const k0 = cardTarget(shot.crop, W, H, vertical);
   const sideSign = shot.side === "right" ? 1 : -1;
-  const home = vertical ? { x: W / 2, y: H * 0.58 } : { x: W / 2 + sideSign * W * 0.15, y: H * 0.52 };
+  const home = vertical ? { x: W / 2, y: H * 0.53 } : { x: W / 2 + sideSign * W * 0.16, y: H * 0.45 };
 
   // arrive: a whip from `enter` (7 frames, expo-out), leave: a whip toward the next shot's arrival side's opposite
   const inV = VEC[shot.enter];
@@ -289,22 +355,25 @@ const MontageShot: React.FC<{ shot: CardShot; next?: CardShot; f: number; W: num
     rotX: 5 - 2 * settle,
     rotZ: vertical ? 0 : sideSign * -1.2 * (1 - settle),
   };
-  const wordSize = vertical ? fitSize(shot.word, W * 0.88, 150) : fitSize(shot.word, W * 0.4, 190);
-  const wordX = vertical ? W / 2 : shot.side === "right" ? W * 0.06 : W * 0.94;
-  const wordY = vertical ? H * 0.24 : H * 0.5;
+  const wordSize = vertical ? fitSize(shot.word, W * 0.88, 150) : fitSize(shot.word, W * 0.4, 150);
+  const wordX = vertical ? W / 2 : shot.side === "right" ? W * 0.055 : W * 0.945;
+  const wordY = vertical ? H * 0.2 : H * 0.45;
+  // the feature's line lands with its first screen and stays through its others
+  const lineDt = f - shot.lineFrom;
+  const lineLeft = shot.lineTo - f;
   const energy = 1 + 0.35 * hitEnv(dt, 1, 10) + shot.punches.reduce((a, p) => a + 0.3 * hitEnv(dt - p, 1, 10), 0);
   return (
     <AbsoluteFill>
       <Ground tint={shot.tint} focus={{ x: home.x / W, y: home.y / H }} energy={energy} shift={{ x: ox, y: oy }} />
       <Word
         text={shot.word}
-        dt={dt}
-        left={left}
+        dt={lineDt}
+        left={lineLeft}
         size={wordSize}
         x={wordX}
         y={wordY}
         align={vertical ? "center" : shot.side === "right" ? "left" : "right"}
-        sweep={dt >= 6 && dt <= 26 ? (dt - 6) / 20 : undefined}
+        sweep={lineDt >= 10 && lineDt <= 34 ? (lineDt - 10) / 24 : undefined}
         exitV={{ x: -outV.x * 9, y: -outV.y * 9 }}
       />
       <DepthCards shot={shot} f={f} W={W} H={H} vertical={vertical} shift={{ x: ox, y: oy }} />
@@ -319,6 +388,45 @@ const MontageShot: React.FC<{ shot: CardShot; next?: CardShot; f: number; W: num
         glow={0.75}
       />
     </AbsoluteFill>
+  );
+};
+
+/* ------------------------------------------------------------------------------------ the companion pebble ---- */
+
+/** Where the companion pebble stands through the montage: under the cards, centred. */
+const companionSpot = (W: number, H: number, vertical: boolean) => (vertical ? { x: W / 2, y: H * 0.92, size: 250 } : { x: W / 2, y: H * 0.955, size: 190 });
+
+/**
+ * The companion through the montage: the real pebble (its own engine and poses), watching each screen as it lands, its
+ * aura pulsing on every downbeat and breathing on the beats between, with the score's energy (the lead: "a subtle
+ * pulse on the downbeats in the montage").
+ */
+const Companion: React.FC<{ plan: Plan; f: number; W: number; H: number; vertical: boolean }> = ({ plan, f, W, H, vertical }) => {
+  const { montage, map } = plan;
+  const from = montage[0].from;
+  const to = plan.merge ? plan.merge.from : plan.length;
+  const spot = companionSpot(W, H, vertical);
+  const downs = map.downbeats.filter((d) => d >= from - 0.5 && d < to - 0.5).map(Math.round);
+  const beats = map.beats.filter((b) => b >= from - 0.5 && b < to - 0.5).map(Math.round);
+  // it looks up at each screen as it lands (toward the card's side), from Pebble's own gaze
+  const cues = [
+    { at: from / 60, pose: "viewing" as const },
+    ...montage.map((sh) => ({ at: sh.from / 60 + 0.05, look: { x: vertical ? 0 : sh.side === "right" ? 0.75 : -0.75, y: -0.7 } })),
+  ];
+  const down = downs.reduce((a, d) => a + hitEnv(f - d, 1, 12), 0);
+  const beat = beats.reduce((a, b) => a + hitEnv(f - b, 1, 7), 0);
+  return (
+    <Hero
+      cues={cues}
+      x={spot.x}
+      y={spot.y}
+      size={spot.size}
+      landAt={from}
+      enter="pop"
+      pulses={downs}
+      pulseGain={0.6}
+      aura={{ level: 0.3 + 0.35 * E(f) + 0.55 * down + 0.15 * beat }}
+    />
   );
 };
 
@@ -357,9 +465,9 @@ const MergeScene: React.FC<{ plan: Plan; f: number; W: number; H: number; vertic
     };
     const p0 = pos(u);
     const p1 = pos(u + 1 / pull);
-    const k0 = Math.min((Math.min(W, H) * 0.3) / Math.max(CROPS[crop].rect.w, CROPS[crop].rect.h), 1.2);
+    const k0 = Math.min((Math.min(W, H) * 0.42) / Math.max(CROPS[crop].rect.w, CROPS[crop].rect.h), 1.5);
     const k = k0 * (1 - 0.94 * p0.e);
-    const appear = c01((f - m.from) / 6 + 0.2 - i * 0.08);
+    const appear = c01(0.55 + (f - m.from) / 8 - i * 0.04);
     const src = CROPS[crop].allowed[0] + Math.round((CROPS[crop].allowed[1] - CROPS[crop].allowed[0]) * 0.6);
     const behind = Math.sin((i / n) * Math.PI * 2 + spin) < 0; // the far half of the orbit sits behind the pebble
     return {
@@ -387,7 +495,25 @@ const MergeScene: React.FC<{ plan: Plan; f: number; W: number; H: number; vertic
         <ShockRing key={a} x={px} y={cy} dt={f - a} r0={size * 0.18} r1={size * 0.55} frames={12} />
       ))}
       <ShockRing x={px} y={cy} dt={f - m.lockup} r0={size * 0.25} r1={Math.max(W, H) * 0.6} frames={28} />
-      <Hero cues={[{ at: m.from / 60, pose: "happy" }]} x={px} y={footY} size={size} landAt={m.from} pulses={[...m.arrivals, m.lockup]} />
+      <Hero
+        cues={[
+          { at: m.from / 60, pose: "viewing" },
+          { at: m.lockup / 60, pose: "happy" },
+        ]}
+        x={px}
+        y={footY}
+        size={size}
+        landAt={m.from}
+        enter={{ from: companionSpot(W, H, vertical), frames: 14 }}
+        pulses={[...m.arrivals, m.lockup]}
+        aura={{
+          // it gathers light as it takes each screen, then bursts on the lockup (the merge's big hit) and warms
+          level: 0.45 + 0.6 * (absorbed / Math.max(1, n)) + 0.25 * E(f) + m.arrivals.reduce((s, a) => s + 0.2 * hitEnv(f - a, 1, 6), 0) + 0.8 * hitEnv(f - m.lockup, 1, 20),
+          burstAge: f >= m.lockup ? f - m.lockup : undefined,
+          rays: f >= m.lockup ? 0.15 + 0.7 * Math.exp(-(f - m.lockup) / 36) : 0.2 * (absorbed / Math.max(1, n)),
+          warmth: f >= m.lockup ? 0.3 * c01((f - m.lockup) / 24) : 0,
+        }}
+      />
       {flights.filter((x) => x && !x.behind).map((x) => x!.el)}
       <Lockup f={f} w1={m.lockup} w2={m.lockup + 4} x={vertical ? W / 2 : W * 0.4} y={vertical ? H * 0.68 : cy} size={vertical ? fitSize("Pebble 2.0", W * 0.88, 190) : 236} align={vertical ? "center" : "left"} />
     </AbsoluteFill>
@@ -396,23 +522,29 @@ const MergeScene: React.FC<{ plan: Plan; f: number; W: number; H: number; vertic
 
 /* ------------------------------------------------------------------------------------------------ the whole ---- */
 
-const SmallPrint: React.FC<{ text: string; W: number; H: number; side: "left" | "right"; opacity: number }> = ({ text, W, H, side, opacity }) => (
-  <div
-    style={{
-      position: "absolute",
-      [side]: W * 0.04,
-      bottom: H * 0.035,
-      fontFamily: "Inter",
-      fontWeight: 500,
-      fontSize: Math.round(Math.min(W, H) * 0.02),
-      color: REEL.inkSoft,
-      opacity,
-      letterSpacing: "0.005em",
-    }}
-  >
-    {text}
-  </div>
-);
+const SmallPrint: React.FC<{ text: string; W: number; H: number; side: "left" | "right"; opacity: number }> = ({ text, W, H, side, opacity }) => {
+  const vertical = H > W;
+  // 9:16: both lines centred and stacked (side by side they would collide on a phone's width)
+  const place: React.CSSProperties = vertical
+    ? { left: 0, right: 0, textAlign: "center", bottom: side === "left" ? H * 0.018 : H * 0.034 }
+    : { [side]: W * 0.04, bottom: H * 0.035 };
+  return (
+    <div
+      style={{
+        position: "absolute",
+        ...place,
+        fontFamily: "Inter",
+        fontWeight: 500,
+        fontSize: Math.round(Math.min(W, H) * 0.02),
+        color: REEL.inkSoft,
+        opacity,
+        letterSpacing: "0.005em",
+      }}
+    >
+      {text}
+    </div>
+  );
+};
 
 export const ReelStyleTest: React.FC<{ map?: BeatMap }> = ({ map }) => {
   const frame = useCurrentFrame();
@@ -435,11 +567,13 @@ export const ReelStyleTest: React.FC<{ map?: BeatMap }> = ({ map }) => {
       {f >= breath.from && f < breath.to && <AbsoluteFill style={{ background: "#020805" }} />}
       {f >= reveal.from && f < reveal.to && <RevealScene plan={plan} f={f} W={W} H={H} vertical={vertical} />}
       {shotIdx >= 0 && <MontageShot shot={montage[shotIdx]} next={montage[shotIdx + 1]} f={f} W={W} H={H} vertical={vertical} />}
+      {shotIdx >= 0 && <Companion plan={plan} f={f} W={W} H={H} vertical={vertical} />}
       {merge && f >= merge.from && <MergeScene plan={plan} f={f} W={W} H={H} vertical={vertical} />}
       </AbsoluteFill>
       {flash > 0.01 && <AbsoluteFill style={{ background: `rgba(226, 248, 222, ${flash})` }} />}
-      {((f >= reveal.from && f < reveal.to) || (merge && f >= merge.from)) && <SmallPrint text={CREDIT} W={W} H={H} side="left" opacity={0.75} />}
-      {inMontage && <SmallPrint text="Edited for time." W={W} H={H} side="right" opacity={0.7} />}
+      {/* the pebble is on screen from the first frame (the take's own, then the engine's): its credit is too */}
+      {!(f >= breath.from && f < breath.to) && <SmallPrint text={CREDIT} W={W} H={H} side="left" opacity={0.7} />}
+      {inMontage && <SmallPrint text={HONEST} W={W} H={H} side="right" opacity={0.7} />}
     </AbsoluteFill>
   );
 };

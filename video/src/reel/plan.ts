@@ -19,7 +19,12 @@ export interface CardShot {
   crop: CropId;
   /** output frame (shot-local) → source file frame */
   src: Warp;
+  /** the feature's line (2–5 words from the page's 2.0.0 copy), held across the feature's screens */
   word: string;
+  /** the feature this screen belongs to, and when its line landed and leaves (absolute frames) */
+  feature: string;
+  lineFrom: number;
+  lineTo: number;
   /** shot-local frames of punch-ins */
   punches: number[];
   /** the whip this shot arrives with, and the one it leaves with */
@@ -48,14 +53,23 @@ export interface Plan {
   cuts: number[];
 }
 
-/** The order the montage takes its screens; it cycles if the map is long. */
-const MONTAGE: readonly { crop: CropId; beats: number; word: string; tint: CardShot["tint"] }[] = [
-  { crop: "calculator", beats: 2, word: "Calculator.", tint: "sage" },
-  { crop: "calendar", beats: 2, word: "Calendar.", tint: "clay" },
-  { crop: "finder", beats: 1, word: "Finder.", tint: "deep" },
-  { crop: "spaces", beats: 1, word: "Spaces.", tint: "sage" },
-  { crop: "keepCard", beats: 1, word: "Asks first.", tint: "clay" },
-  { crop: "reply", beats: 1, word: "Your call.", tint: "deep" },
+/**
+ * Pebble 2.0's features in the style test's montage bars (the lead, 03:00: "we also have to show pebbles main
+ * features"): each is a real screen and a line of 2–5 words that lands on the beat. The lines are the page's approved
+ * 2.0.0 copy, shortened, never invented; `claim` names the CLAIMS row (docs/CLAIMS.md) the words come from. A feature
+ * with two screens cuts between them on its beats and keeps its line. "\n" is where the line breaks.
+ */
+export const FEATURES: readonly { id: string; line: string; claim: string; beats: number; crops: readonly CropId[]; tint: CardShot["tint"] }[] = [
+  // "… use the apps and websites you allow …" (the hero's clause, copy.ts hero; C-MAC-1 "use the app windows … you allow")
+  { id: "apps", line: "Uses the apps\nyou allow.", claim: "C-200-1, C-MAC-1", beats: 3, crops: ["calculator"], tint: "sage" },
+  // the Across your Mac row's term, word for word (copy.ts models.rows[3].term)
+  { id: "actions", line: "Apps and\napp actions.", claim: "C-MAC-8", beats: 2, crops: ["calendar", "finder"], tint: "clay" },
+  // "… stays on top of your other windows and joins every Space." (copy.ts desktop.lead)
+  { id: "spaces", line: "Joins\nevery Space.", claim: "C-DESK-1", beats: 2, crops: ["spaces"], tint: "deep" },
+  // the Workshop's second line, "Tools it makes for itself, checked before it keeps them." (copy.ts workshop.then)
+  { id: "tools", line: "Tools it makes\nfor itself.", claim: "C-WS-1", beats: 2, crops: ["keepCard"], tint: "sage" },
+  // the section's heading, a sentence that states no fact (CLAIMS.md: "You set the pace." needs no row)
+  { id: "pace", line: "You set\nthe pace.", claim: "none needed (copy.ts pace.h2)", beats: 1, crops: ["reply"], tint: "clay" },
 ];
 
 const DIRS: readonly Dir[] = ["left", "up", "right", "down"];
@@ -68,7 +82,7 @@ function cardWarp(crop: CropId, len: number, B: number): { src: Warp; punches: n
     case "calculator":
       // keys pressed from 3260 (the "×"), "=" turns the display to 600 on 3387: the presses run fast, "=" lands on the beat
       return two
-        ? { src: ramp({ srcIn: 3200, srcEvent: 3387, outEvent: B, outEnd: len, landSpeed: 1, afterSpeed: 1, landFrames: 6 }), punches: [B] }
+        ? { src: ramp({ srcIn: 3200, srcEvent: 3387, outEvent: B, outEnd: len, landSpeed: 1, afterSpeed: 1, landFrames: 6 }), punches: len > B * 2.5 ? [B, 2 * B] : [B] }
         : { src: warp([[0, 3384], [len, 3384 + len]]), punches: [] }; // one beat: "=" lands 3 frames after the cut, which is the hit
     case "calendar":
       return { src: warp([[0, 6150], [len, 6150 + len]]), punches: two ? [B] : [] };
@@ -109,33 +123,49 @@ export function buildPlan(map: BeatMap): Plan {
   const mergeBeats = beatsLeft.length >= 12 ? 6 : 0;
   const montageEnd = mergeBeats ? beatsLeft[beatsLeft.length - mergeBeats] : length;
   const montage: CardShot[] = [];
-  let i = 0;
+  const beatAt = (from: number, n: number) => {
+    const idx = beatsLeft.indexOf(from);
+    return idx >= 0 && idx + n < beatsLeft.length ? beatsLeft[idx + n] : from + Math.round(n * B);
+  };
+  let i = 0; // shots
+  let fi = 0; // features
   let at = revealTo;
   while (at < montageEnd - B * 0.5) {
-    const m = MONTAGE[i % MONTAGE.length];
-    // the second time round every shot is one beat: the montage accelerates
-    const beats = i < MONTAGE.length ? m.beats : 1;
-    const idx = beatsLeft.indexOf(at);
-    const endBeat = idx >= 0 && idx + beats < beatsLeft.length ? beatsLeft[idx + beats] : at + Math.round(beats * B);
-    const to = Math.min(endBeat, montageEnd);
-    const len = to - at;
-    const { src, punches } = cardWarp(m.crop, len, B);
-    montage.push({
-      kind: "card",
-      id: `${m.crop}-${i}`,
-      from: at,
-      to,
-      crop: m.crop,
-      src,
-      word: m.word,
-      punches,
-      enter: DIRS[i % DIRS.length],
-      exit: DIRS[(i + 1) % DIRS.length],
-      side: i % 2 === 0 ? "right" : "left",
-      tint: m.tint,
+    const ft = FEATURES[fi % FEATURES.length];
+    // a second time round, every feature gets one beat: the montage accelerates into the merge
+    const beats = fi < FEATURES.length ? ft.beats : 1;
+    const fTo = Math.min(beatAt(at, beats), montageEnd);
+    const side: CardShot["side"] = fi % 2 === 0 ? "right" : "left";
+    const crops = beats >= ft.crops.length ? ft.crops : ft.crops.slice(0, 1);
+    // the feature's beats shared among its screens, a cut on a beat between them
+    const per = Math.max(1, Math.floor(beats / crops.length));
+    let sAt = at;
+    crops.forEach((crop, ci) => {
+      const to = ci === crops.length - 1 ? fTo : Math.min(beatAt(sAt, per), fTo);
+      const len = to - sAt;
+      const { src, punches } = cardWarp(crop, len, B);
+      montage.push({
+        kind: "card",
+        id: `${ft.id}-${crop}-${i}`,
+        from: sAt,
+        to,
+        crop,
+        src,
+        word: ft.line,
+        feature: ft.id,
+        lineFrom: at,
+        lineTo: fTo,
+        punches,
+        enter: DIRS[i % DIRS.length],
+        exit: DIRS[(i + 1) % DIRS.length],
+        side,
+        tint: ft.tint,
+      });
+      sAt = to;
+      i++;
     });
-    at = to;
-    i++;
+    at = fTo;
+    fi++;
   }
   // the merge: the montage's cards orbit the pebble and are pulled into it one by one on the eighth notes, then the
   // lockup lands on a beat and holds to the end
