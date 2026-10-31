@@ -25,7 +25,7 @@ export const workshopStages = (B: number) => ({
 const MONO = `"${FONT.mono}", ui-monospace, monospace`;
 
 /** One label: Inter 600, sentence case, fading up over 6 frames. */
-const Label: React.FC<{ text: string; x: number; y: number; size: number; dt: number; align?: "left" | "center" | "right"; color?: string }> = ({ text, x, y, size, dt, align = "center", color = REEL.inkSoft }) => {
+export const Label: React.FC<{ text: string; x: number; y: number; size: number; dt: number; align?: "left" | "center" | "right"; color?: string }> = ({ text, x, y, size, dt, align = "center", color = REEL.inkSoft }) => {
   if (dt < 0) return null;
   const p = expoOut(dt / 8);
   return (

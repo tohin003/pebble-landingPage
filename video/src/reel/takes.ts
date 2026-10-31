@@ -79,6 +79,19 @@ export const CROPS = {
   keepCard: { take: "RSW-01", rect: { x: 700, y: 668, w: 860, h: 360 }, allowed: [5369, 5612], radius: 0, note: "'Keep this tool in Pebble's Toolbox? · kiln_ramp_time', Discard, Keep" },
   /** the swipe across Spaces, the screen's lower part (below the booking page's dated kicker, y < 560) */
   spaces: { take: "RS1-03", rect: { x: 0, y: 600, w: 2900, h: 1312 }, allowed: [181, 370], note: "the poster slides away to Chrome's booking page; the pebble stays" },
+  // ---- the full reel (1 Nov, after the style test)
+  /** RS9A-01, the ask: the quick chat with "Show me a clip of your rival." (cut above the stale press card under it) */
+  rivalAsk: { take: "RS9A-01", rect: { x: 1270, y: 232, w: 736, h: 688 }, allowed: [1621, 1734], radius: 40, note: "the companion's quick chat; header, the typed ask, the send row" },
+  /** RS9B-02, the play: YouTube's player alone (the adverts, other creators' thumbnails and the region badge are cut away) */
+  rivalPlay: { take: "RS9B-02", rect: { x: 30, y: 474, w: 1318, h: 744 }, allowed: [6989, 7308], radius: 22, note: "“Introducing Claude Code”, Anthropic's video, playing in Pebble's own tab" },
+  /** RS9B-02, the same frames' tab strip: Chrome's green "Pebble" group and the video's tab (never the address bar) */
+  rivalTab: { take: "RS9B-02", rect: { x: 726, y: 62, w: 632, h: 74 }, allowed: [6989, 7308], radius: 0, note: "the green Pebble tab group and the tab “Introducing Claude Code”" },
+  /** RS9B-02, the video's title under the player (the channel's name is half cut by the screen's edge) */
+  rivalTitle: { take: "RS9B-02", rect: { x: 22, y: 1224, w: 520, h: 74 }, allowed: [6989, 7308], radius: 0, note: "the title “Introducing Claude Code”" },
+  /** RS13-03, the ⌘K palette: "stealth" typed and "Turn Stealth Lockdown on" lit (cut above its footer line); never past 433 */
+  stealthPalette: { take: "RS13-03", rect: { x: 1160, y: 312, w: 1124, h: 300 }, allowed: [257, 433], radius: 26, note: "the palette's input and its two rows; Pebble's windows leave the recording from 434" },
+  /** RS13-03, the menu bar right of macOS's recording pill: Pebble's icon turns to the filled pebble in a ring at 432–434 */
+  stealthMenu: { take: "RS13-03", rect: { x: 2262, y: 0, w: 678, h: 66 }, allowed: [257, 1185], radius: 0, note: "Pebble's menu-bar icon, the status icons, the date" },
 } as const satisfies Record<string, ReelCrop>;
 
 export type CropId = keyof typeof CROPS;
