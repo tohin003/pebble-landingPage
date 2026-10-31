@@ -4,6 +4,7 @@
 // returnWindows' model gives it IRIS's warning level only, as it gives the design's own bloom in 16:9); cameraFloor,
 // stoneCount and groundCoverage are shown to cover the Return's shot; R2's exemption from cutRate, holds and readingLoad
 // is shown to hold inside the Return's span only; and the post-credit scene (D157) plans after the Return's end card.
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
 import { VelocityCamera, worldToFrame } from "../motion/camera";
 import { E_MOVE } from "../motion/ease";
@@ -33,6 +34,7 @@ import {
   planTrace,
   returnContentOf,
   returnMergeOf,
+  returnEnd,
   returnFirstCell,
   returnOf,
   returnRadiusOf,
@@ -1288,3 +1290,31 @@ describe("qa/flash-rgb.ts's lean path (the first-cell guard)", () => {
   });
 });
 
+
+describe("the end card ends on the score's coda L0 (the coda review's F1, 1 Nov): returnEnd", () => {
+  test("the plan ends on film frame 8334 in every aspect, the end card held to the score's true ending; every mark stays", () => {
+    for (const a of ASPECTS) {
+      const p = planOf(a);
+      expect(filmFrameOfR(-60, 60) + p.duration).toBe(Math.round(RETURN_FILM_S.codaL0 * 60));
+      expect(filmFrameOfR(-60, 60) + p.duration).toBe(8334);
+      expect(errs(returnEnd(p))).toEqual([]);
+      expect(filmFrameOfR(720, 60)).toBe(7314);
+    }
+  });
+  test("canary: the end card's own length, as revision 3 planned it, ends on 8307 and fails", () => {
+    // (the demo's plans were aligned across the aspects to revision 3's 1773 frames)
+    const p = planFor("16:9", { endAtCoda: false, align: { end: 1773 } });
+    expect(filmFrameOfR(-60, 60) + p.duration).toBe(8307);
+    const e = errs(returnEnd(p));
+    expect(e.length).toBe(1);
+    expect(e[0]!.message).toContain("ends on film frame 8307");
+    expect(e[0]!.message).toContain("coda starts on 8334");
+  });
+  const sheet = `${import.meta.dir}/../../../../.work/score2/BEAT_SHEET.json`;
+  test.skipIf(!existsSync(sheet))("RETURN_FILM_S.codaL0 is BEAT_SHEET.json's coda L0 (when the score lane's sheet is in the tree)", () => {
+    const b = JSON.parse(readFileSync(sheet, "utf8"));
+    expect(RETURN_FILM_S.codaL0).toBe(b.coda.L0_film_s);
+    expect(Math.round(RETURN_FILM_S.codaL0 * 60)).toBe(b.coda.L0_frame);
+    expect(Math.round(RETURN_FILM_S.start * 60)).toBe(b.return.marks.find((m: { R: number }) => m.R === -60).frame);
+  });
+});

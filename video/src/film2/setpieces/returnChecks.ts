@@ -26,6 +26,7 @@
 //   returnFirstCell the first cell's worst-case content (setpieces/returnFirstCell.ts), moved by the plan's camera and
 //                   softened as drawn, through the verdict's own counter (qa/flash-rgb.ts) in the binding windows: an
 //                   error above 6 in a second, a warning at 4 (the R9 flash of 31 Oct, which returnWindows cannot see)
+//   returnEnd       the plan ends on the score's coda L0 (BEAT_SHEET.json coda.L0_frame; F1 of 1 Nov)
 //   cellText        a cell's largest text stays under 16 px at 1080 on every frame it shows, except the inner recalls
 //   blinkPlaced     the stone's idle blink starts within a frame of its plan (R646), none other in the keep-clear spans,
 //                   and 6–8 frames after the kept card is hidden in every aspect (§2.7: RV-08)
@@ -39,7 +40,7 @@ import type { FilmTimelineQa } from "../qa/timeline";
 import { planePose, screenVelocity, type CamSample, type Pose } from "../motion/camera";
 import type { Rect } from "../motion/geometry";
 import type { ScenePlan } from "./scene";
-import type { ReturnExtra } from "./returnPlan";
+import { RETURN_FILM_S, type ReturnExtra } from "./returnPlan";
 import { blinkStartsFor, blinkTouches } from "./blink";
 import { ENGINE_CELL_SIZE, manifestProblems, type ReturnCellSpec } from "./returnCells";
 import { RETURN_LUM, type DrawnLum } from "./returnLum";
@@ -1015,9 +1016,23 @@ export function returnFirstCell(p: ScenePlan): Finding[] {
   return [{ check: "returnFirstCell", level: "info", message: `${name}: the first cell's worst-case content makes at most ${w.n} transitions in a second (${where}; ${peak})` }];
 }
 
+/**
+ * returnEnd (the coda review's F1, 1 Nov): the score is the master clock, so the plan ends exactly on the score's coda
+ * L0 (BEAT_SHEET.json `coda.L0_frame`, copied into RETURN_FILM_S.codaL0): the end card's true ending, where the coda
+ * starts in picture and in sound. Revision 3's plan ended 27 frames early (8307 against 8334).
+ */
+export function returnEnd(p: ScenePlan): Finding[] {
+  if (!returnOf(p)) return [];
+  const start = Math.round(RETURN_FILM_S.start * p.fps);
+  const want = Math.round(RETURN_FILM_S.codaL0 * p.fps);
+  const end = start + p.duration;
+  if (end !== want) return [{ check: "returnEnd", level: "error", message: `${p.id} ${p.aspect}: the plan ends on film frame ${end} (${start} + ${p.duration}), the score's coda starts on ${want} (BEAT_SHEET.json coda.L0_frame): the end card must end on the score's true ending` }];
+  return [{ check: "returnEnd", level: "info", message: `${p.id} ${p.aspect}: the plan ends on film frame ${end}, the score's coda L0` }];
+}
+
 export function returnChecks(p: ScenePlan): Finding[] {
   if (!returnOf(p)) return [];
-  return [...returnSchedule(p), ...returnWindows(p), ...returnFirstCell(p), ...returnContent(p), ...returnMerge(p), ...returnRadius(p), ...cellText(p), ...blinkPlaced(p), ...joinPose(p)];
+  return [...returnSchedule(p), ...returnWindows(p), ...returnFirstCell(p), ...returnEnd(p), ...returnContent(p), ...returnMerge(p), ...returnRadius(p), ...cellText(p), ...blinkPlaced(p), ...joinPose(p)];
 }
 
 /** The checks R2 exempts the Return's span from. */

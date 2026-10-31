@@ -63,8 +63,10 @@ export const RETURN_MUSIC = {
  * R0, R480 and R720 fall on film frames 6534, 6594, 7074 and 7314, as the beat sheet's do (J5 is 0.4 ms past
  * R0 + 8 s, B2's bar being 120.006 frames, which rounds to the same frame). Copied from the beat sheet by the Return
  * lane's script, never typed in; return.test.ts holds every mark and bar line of the sheet on the plan's frames.
+ * codaL0 is the sheet's `coda.L0_film_s` (138.9 s, frame 8334): the end card's true ending, where the score's coda
+ * starts; the plan ends there (returnEnd: the score is the master clock, the coda review's F1 of 1 Nov).
  */
-export const RETURN_FILM_S = { start: 108.9, r0: 109.9, j5: 117.9004, title: 121.8999 } as const;
+export const RETURN_FILM_S = { start: 108.9, r0: 109.9, j5: 117.9004, title: 121.8999, codaL0: 138.9 } as const;
 
 /** The Return's music, as the demo reel names a piece's stretch (setpieces/demo/grids.ts): the real cue, not an audition stretch. */
 export const RETURN_STRETCH: DemoStretch = {
@@ -75,6 +77,9 @@ export const RETURN_STRETCH: DemoStretch = {
   anchorS: RETURN_MUSIC.b2.r0S,
   anchor: "R0 on B2's bar 48; J5 onto A4's bar 80 at R480; the title on bar 82 at R720",
 };
+
+/** The local frame the plan ends on (exclusive): the score's coda L0, from the piece's start (1800 at 60 fps). */
+export const returnEndLocal = (fps: number): number => Math.round(RETURN_FILM_S.codaL0 * fps) - Math.round(RETURN_FILM_S.start * fps);
 
 /** The film frame of an R-frame at `fps` (the piece's local frame 0 is R−60, on RETURN_FILM_S.start). */
 export const filmFrameOfR = (r: number, fps: number): number => Math.round(RETURN_FILM_S.start * fps) + localOfR(r, fps);
@@ -362,6 +367,11 @@ export interface ReturnOptions {
    * contrast ×4: black text on white), the worst-case stand-in the render measures the softening on
    */
   firstCellStress?: boolean;
+  /**
+   * the plan ends on the score's coda L0 (RETURN_FILM_S.codaL0; default true): the end card holds to the score's true
+   * ending. false leaves the end card's own length (the canary: returnEnd fails, as revision 3's 8307 did)
+   */
+  endAtCoda?: boolean;
 }
 
 /**
@@ -521,7 +531,8 @@ export function planReturn(o: ReturnOptions): ScenePlan {
     roomToneS: o.roomToneS,
     musicCredit: o.musicCredit,
     trademarks: o.trademarks,
-    align: o.align,
+    // the score is the master clock: the end card holds to its coda L0 (returnEnd)
+    align: o.endAtCoda === false ? o.align : { ...o.align, end: Math.max(o.align?.end ?? 0, returnEndLocal(fps)) },
     head,
   });
   const variant = [o.merge === "toned" ? "the toned matte" : "", o.curve === "r1" ? "revision 1's curve" : "", o.labels ? "the family labels" : "", o.fieldScale !== undefined && o.fieldScale !== RETURN_FIELD_SCALE ? `the field ×${o.fieldScale}` : "", o.firstCellStress ? "the first cell at full contrast" : ""].filter(Boolean).join(", ");
