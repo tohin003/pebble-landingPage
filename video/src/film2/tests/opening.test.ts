@@ -12,7 +12,7 @@ import { TAKE_RS15_01, TAKE_RS4_07, TAKE_RS9B_02 } from "../setpieces/take";
 import { usesNeverWord } from "../../../../src/content/neverWords";
 
 const ASPECTS = ["16:9", "1:1", "9:16"] as const;
-const EXPECT: Record<string, [number, number]> = { act1: [0, 1020], ring1: [1680, 600], ring2: [2280, 960], ring3: [3240, 813] };
+const EXPECT: Record<string, [number, number]> = { act1: [0, 1200], ring1: [1680, 600], ring2: [2280, 960], ring3: [3240, 813] };
 
 describe("the opening's acts", () => {
   test("every act holds its rules, on its block", () => {
@@ -78,6 +78,13 @@ describe("the canaries", () => {
     expect(checkAct({ ...RING_TWO, lines: [{ ...line, exitAt: 60 }] }).some((e) => e.includes("need"))).toBe(true);
     expect(checkAct({ ...RING_TWO, lines: [{ ...line, claim: "" }] }).some((e) => e.includes("claim"))).toBe(true);
   });
+  test("S03's booking page date (14 November) and RS9B-02's URL above its card are never in a crop", () => {
+    const swipe = ACT_ONE.shots.findIndex((s) => s.id === "swipe");
+    expect(checkAct(with_(ACT_ONE, swipe, { crop: undefined })).some((e) => e.includes("14 November"))).toBe(true);
+    const card = ACT_ONE.shots.findIndex((s) => s.id === "card");
+    expect(checkAct(with_(ACT_ONE, card, { crop: { x: 644, y: 190, w: 350, h: 164 } })).some((e) => e.includes("URL"))).toBe(true);
+    expect(checkAct(with_(ACT_ONE, card, { to: 2930 })).some((e) => e.includes("URL"))).toBe(true);
+  });
   test("an act off its block", () => {
     expect(checkAct(RING_THREE, 3241, 813).length).toBe(1);
   });
@@ -99,9 +106,11 @@ describe("the whole film", () => {
     expect(masterGain(xSegments("16:9"), SCORE.trueEnd - 1, SCORE.trueEnd)).toBe(0);
     expect(masterGain(xSegments("16:9"), SCORE.trueEnd - 40, SCORE.trueEnd)).toBe(1);
   });
-  test("the drop's own segment: the reel's take is the placeholder RS-9 (its plan, not this lane's)", () => {
+  test("the Drop starts on its hit, the frame of the real card's Allow click", () => {
+    expect(ACT_ONE.start + frameOfSource(ACT_ONE, "card", TAKE_RS9B_02.events.allow1!)).toBe(SCORE.drop);
     const drop = filmSegments("16:9").find((s) => s.id === "drop")!;
-    expect(drop.at).toBe(1020);
+    expect(drop.at).toBe(1200);
+    expect(drop.kind === "piece" && drop.from).toBe(180);
     expect(TAKE_RS9B_02.events.chromeClear).toBe(3276);
   });
 });

@@ -15,13 +15,13 @@ import { frameOfSource, type ActPlan, type ActShot } from "./kit";
 
 /** RS5C-04's and RS5F-03's card in the Activity panel (its text and its two buttons), above the step list. */
 export const RS5_CARD = { x: 680, y: 140, w: 330, h: 120 } as const;
-/** RS5C-04's Calendar, the month's lower-left: the last rows from Monday to Thursday, "Glaze order 09:00" on Mon 2. */
-export const RS5C_CALENDAR = { x: 196, y: 430, w: 420, h: 156 } as const;
+/** RS5C-04's Calendar, Monday 2 November's cell alone: "2", "Glaze order 09:00" (the Dock's tooltip, right of it, out). */
+export const RS5C_CALENDAR = { x: 198, y: 505, w: 150, h: 76 } as const;
 
 const SHOTS: readonly ActShot[] = [
   { id: "calc", stands: "S11", kind: "take", take: TAKE_RS4_07, from: 3176, to: 3476, crop: RS4_CALCULATOR, note: "Calculator: the keys, '=' to 600" },
   { id: "card", stands: "S12 (S14's Calendar)", kind: "take", take: TAKE_RS5C_04, from: 2800, to: 2920, crop: RS5_CARD, note: "the Calendar card, Do it" },
-  { id: "calendar", stands: "S12 (S14's Calendar)", kind: "take", take: TAKE_RS5C_04, from: 6110, to: 6330, crop: RS5C_CALENDAR, note: "Glaze order, 09:00, Monday 2 November" },
+  { id: "calendar", stands: "S12 (S14's Calendar)", kind: "take", take: TAKE_RS5C_04, from: 6110, to: 6330, crop: RS5C_CALENDAR, maxK: 6, note: "Glaze order, 09:00, Monday 2 November" },
   { id: "asks", stands: "S13", kind: "type", frames: 320, note: "typographic: what still asks (RS-8 not kept)" },
 ];
 

@@ -1165,3 +1165,4 @@ nothing and has no row; the beat's credit line is DECISION-RS9's, in the end car
 | C-F2O-13 | Ring 3's typographic beat, L14: "Your files. The terminal." | `CHANGELOG.md@v2.0.0:85-86` ("run commands, read and write files … the way you would at a terminal") | Q |
 | C-F2O-14 | L15: "Commands in a sandbox. File changes with Undo." | `CHANGELOG.md@v2.0.0:87` ("A sandbox for each command"), `:92-93` ("keeps a copy before each change, so its card has 'Undo this change'") | Q |
 | C-F2O-15 | L15's limit: "Deleting or moving outside the workbench asks every time." | `CHANGELOG.md@v2.0.0:91-92` | Q |
+| C-F2O-16 | Act I, L04 over RS9B-02's real card "Use youtube.com": "Allow it right where you are." | `CHANGELOG.md@v2.0.0:116-119` ("nothing happens until you allow it, in the workspace or right in the companion"), `:239` (the companion "answers simple cards itself (a site, an app window …)") | Q |

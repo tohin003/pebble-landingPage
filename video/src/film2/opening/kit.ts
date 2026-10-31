@@ -31,7 +31,23 @@ export interface ActShot {
   frames?: number;
   /** the part of the recording shown, CSS px (undefined: the whole screen) */
   crop?: Rect;
+  /** the largest scale of the crop on the frame, frame px per CSS px at 1080 (a small crop is never blown up past it) */
+  maxK?: number;
+  /**
+   * a fast move inside the recording (macOS's Space slide) softened as the Return's first cell is (returnFirstCell.ts):
+   * a blur and a veil toward the page, rising on a smoothstep over `ramp` source frames into [from, to) and out of it
+   */
+  soften?: { from: number; to: number; ramp: number; blurPx: number; veil: number };
   note: string;
+}
+
+const smooth = (x: number): number => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+/** The softening on a source frame of a shot: blur (px at 1080) and veil (0…1). */
+export function softenAt(s: ActShot, src: number): { blur: number; veil: number } {
+  const o = s.soften;
+  if (!o) return { blur: 0, veil: 0 };
+  const w = Math.min(smooth((src - (o.from - o.ramp)) / o.ramp), smooth((o.to + o.ramp - src) / o.ramp));
+  return { blur: o.blurPx * w, veil: o.veil * w };
 }
 
 export interface ActLine {
@@ -142,9 +158,12 @@ export const FORBIDDEN: Readonly<Record<string, readonly Forbidden[]>> = {
   // RS9B-02: its prompt carries the URL until Chrome's Space clears it; YouTube's adverts fill the player until about
   // 116 s (the tab and address bars above the player may show over them)
   "RS9B-02": [
-    { rect: { x: 0, y: 0, w: 1024, h: 666 }, to: 3276, why: "Clip B's prompt with the URL, and its usage lines" },
+    { rect: { x: 0, y: 0, w: 640, h: 666 }, to: 3276, why: "Clip B's workspace (its prompt, usage lines and conversations)" },
+    { rect: { x: 640, y: 0, w: 384, h: 228 }, to: 3276, why: "Clip B's prompt with the URL, above the card in the companion" },
+    { rect: { x: 640, y: 356, w: 384, h: 310 }, to: 3276, why: "the companion below the card" },
+    { rect: { x: 640, y: 228, w: 384, h: 128 }, from: 2915, to: 3276, why: "the URL and a usage line, in the card's place once it is allowed" },
     { rect: { x: 0, y: 113, w: 1024, h: 553 }, from: 3276, to: 6960, why: "YouTube's adverts" },
-    { rect: { x: 680, y: 113, w: 344, h: 553 }, why: "the sidebar's adverts and thumbnails" },
+    { rect: { x: 680, y: 113, w: 344, h: 553 }, from: 3276, why: "the sidebar's adverts and thumbnails" },
   ],
   // RS5C-04 and RS5F-03: the chat's usage line until the app's window covers it; the Activity panel's step timings;
   // the run's Done box (tokens)
@@ -158,7 +177,8 @@ export const FORBIDDEN: Readonly<Record<string, readonly Forbidden[]>> = {
     { rect: { x: 950, y: 280, w: 74, h: 386 }, why: "the Activity panel's step timings" },
     { rect: { x: 640, y: 500, w: 384, h: 60 }, why: "the run's Done box" },
   ],
-  "RS1-03": [],
+  // RS1-03: the booking page's date ("Saturday 14 November", against the poster's 7 November) once the slide settles
+  "RS1-03": [{ rect: { x: 60, y: 200, w: 300, h: 80 }, from: 262, why: "the booking page's date (14 November, against the poster's 7)" }],
 };
 
 const meets = (a: Rect, b: Rect): boolean => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
@@ -294,7 +314,7 @@ export function shotLayout(p: ActPlan, index: number, W: number, H: number, safe
   const c = shot.crop ?? { x: 0, y: 0, w: take.w, h: take.h };
   const regionW = W - 2 * safe;
   const regionH = H - 2 * safe - bandH - gap;
-  const k = Math.min(regionW / c.w, regionH / c.h);
+  const k = Math.min(regionW / c.w, regionH / c.h, shot.maxK ? shot.maxK * (H / 1080) : Infinity);
   const w = c.w * k;
   const h = c.h * k;
   // the box and the band as one block, centred on the frame

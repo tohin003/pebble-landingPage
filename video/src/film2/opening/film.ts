@@ -17,6 +17,11 @@
 import type { Aspect } from "../tokens";
 import type { ScenePlan } from "../setpieces/scene";
 import { demoPlans } from "../setpieces/demo/plans";
+import { STRETCH, demoGrid } from "../setpieces/demo/grids";
+import { planDrop, type DropTiming } from "../setpieces/drop";
+import { alignAspects } from "../setpieces/align";
+import { TAKE_RS9 } from "../setpieces/take";
+import { STILL } from "../setpieces/standins";
 import { RS9_CREDIT } from "../setpieces/rs9Beat";
 import { ACT_ONE } from "./actOne";
 import { RING_ONE } from "./ringOne";
@@ -64,6 +69,26 @@ const piece = (a: Aspect, id: string): ScenePlan => {
   return e.plan;
 };
 
+/**
+ * The film's Drop: the reel's own plan (the same grid, hit and alignment as setpieces/demo/plans.ts), with one change:
+ * its companion never shows the placeholder card slot, because the film shows the real card (RS9B-02) in Act I up to the
+ * Allow click, and the Drop starts on its hit (the click). From the hit the companion is the published still of it at
+ * work, as the reel's is after its receipt. Nothing else of the piece changes.
+ */
+const FILM_DROP_TAKE = {
+  ...TAKE_RS9,
+  views: { ...TAKE_RS9.views, companion: { ...TAKE_RS9.views.companion!, stills: [{ from: 0, standIn: STILL.companionWorking }] } },
+};
+let filmDrops: Record<Aspect, ScenePlan> | null = null;
+export const filmDrop = (a: Aspect): ScenePlan => {
+  if (!filmDrops) {
+    const SIZE: Record<Aspect, { w: number; h: number }> = { "16:9": { w: 1920, h: 1080 }, "1:1": { w: 1080, h: 1080 }, "9:16": { w: 1080, h: 1920 } };
+    const grid = demoGrid(STRETCH.drop, 180, 6000, 60);
+    filmDrops = alignAspects<DropTiming>((x, align) => planDrop({ ...SIZE[x], fps: 60, hit: 180, grid, align, take: FILM_DROP_TAKE }));
+  }
+  return filmDrops[a];
+};
+
 /** Each reel piece's anchor, local frames (where its plan puts the event the score places). */
 const anchorOf = (p: ScenePlan, event: RegExp): number => {
   const m = p.music.find((x) => event.test(x.event));
@@ -80,9 +105,10 @@ export function filmSegments(a: Aspect): FilmSegment[] {
     out.push({ kind: "piece", id, plan, at, from, to, frames: to - from });
   };
   act(ACT_ONE);
-  const drop = piece(a, "drop");
+  // the Drop from its hit (the Allow click ends Act I's real card on the same frame)
+  const drop = filmDrop(a);
   const hit = drop.hits[0]!;
-  put("drop", SCORE.drop - hit, 0, SCORE.ring1 - (SCORE.drop - hit));
+  out.push({ kind: "piece", id: "drop", plan: drop, at: SCORE.drop, from: hit, to: hit + (SCORE.ring1 - SCORE.drop), frames: SCORE.ring1 - SCORE.drop });
   act(RING_ONE);
   act(RING_TWO);
   act(RING_THREE);

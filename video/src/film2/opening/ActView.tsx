@@ -8,7 +8,7 @@ import { approxLineWidth, safeMarginPx, typeSizePx } from "../type/scale";
 import { FontGate } from "../type/FontGate";
 import { KineticLine } from "../type/KineticLine";
 import { takeFramePath } from "../setpieces/take";
-import { LINE_EXIT, PUSH_PER_S, linesOfShot, shotAt, shotLayout, type ActPlan } from "./kit";
+import { LINE_EXIT, PUSH_PER_S, linesOfShot, shotAt, shotLayout, softenAt, type ActPlan } from "./kit";
 
 export const ActView: React.FC<{ act: ActPlan }> = ({ act }) => {
   const frame = useCurrentFrame();
@@ -24,11 +24,13 @@ export const ActView: React.FC<{ act: ActPlan }> = ({ act }) => {
   const c = m ? (shot.crop ?? { x: 0, y: 0, w: m.w, h: m.h }) : null;
   const b = lay.box;
   const u = H / 1080;
+  const soft = src !== undefined ? softenAt(shot, src) : { blur: 0, veil: 0 };
   return (
     <AbsoluteFill style={{ background: COLOR.page }}>
       {m && c && b && src !== undefined ? (
         <div style={{ position: "absolute", left: b.left, top: b.top, width: b.w, height: b.h, overflow: "hidden", borderRadius: (shot.crop ? 10 : 6) * u, boxShadow: `0 ${18 * u}px ${48 * u}px rgba(${COLOR.shadeRgb}, 0.22)` }}>
-          <Img src={staticFile(takeFramePath(m, src))} style={{ position: "absolute", left: -c.x * b.k, top: -c.y * b.k, width: m.w * b.k, height: m.h * b.k, maxWidth: "none", transform: `scale(${push.toFixed(5)})`, transformOrigin: `${(c.x + c.w / 2) * b.k}px ${(c.y + c.h / 2) * b.k}px` }} />
+          <Img src={staticFile(takeFramePath(m, src))} style={{ position: "absolute", left: -c.x * b.k, top: -c.y * b.k, width: m.w * b.k, height: m.h * b.k, maxWidth: "none", transform: `scale(${push.toFixed(5)})`, transformOrigin: `${(c.x + c.w / 2) * b.k}px ${(c.y + c.h / 2) * b.k}px`, filter: soft.blur > 0.05 ? `blur(${(soft.blur * u).toFixed(2)}px)` : undefined }} />
+          {soft.veil > 0.002 ? <div style={{ position: "absolute", inset: 0, background: COLOR.page, opacity: soft.veil }} /> : null}
         </div>
       ) : null}
       <FontGate>

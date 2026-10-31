@@ -5,7 +5,7 @@ import type { Aspect } from "../tokens";
 import { DEMO_SIZE } from "../setpieces/demo/SetPiecesDemo";
 import { ActView } from "./ActView";
 import { FilmView, filmLength } from "./FilmView";
-import { ACTS } from "./film";
+import { ACTS, SCORE } from "./film";
 import { actFrames } from "./kit";
 
 const ASPECTS: readonly [Aspect, string][] = [
@@ -13,6 +13,15 @@ const ASPECTS: readonly [Aspect, string][] = [
   ["1:1", "1x1"],
   ["9:16", "9x16"],
 ];
+
+/** The film's length, or the score's when a piece's plan can't be built right now (another lane mid-edit): never a throw at registration. */
+const lengthOr = (a: Aspect, x: boolean): number => {
+  try {
+    return filmLength(a, x);
+  } catch {
+    return x ? SCORE.trueEnd : SCORE.codaEnd;
+  }
+};
 
 export const OpeningCompositions: React.FC = () => (
   <Folder name="Film">
@@ -22,8 +31,8 @@ export const OpeningCompositions: React.FC = () => (
       )),
     )}
     {ASPECTS.flatMap(([a, tag]) => [
-      <Composition key={`film-${tag}`} id={`F2-Film-${tag}`} component={FilmView} defaultProps={{ aspect: a, x: false, audio: true }} durationInFrames={filmLength(a)} fps={60} width={DEMO_SIZE[a].w} height={DEMO_SIZE[a].h} />,
-      <Composition key={`x-${tag}`} id={`F2-Film-X-${tag}`} component={FilmView} defaultProps={{ aspect: a, x: true, audio: true }} durationInFrames={filmLength(a, true)} fps={60} width={DEMO_SIZE[a].w} height={DEMO_SIZE[a].h} />,
+      <Composition key={`film-${tag}`} id={`F2-Film-${tag}`} component={FilmView} defaultProps={{ aspect: a, x: false, audio: true }} durationInFrames={lengthOr(a, false)} fps={60} width={DEMO_SIZE[a].w} height={DEMO_SIZE[a].h} />,
+      <Composition key={`x-${tag}`} id={`F2-Film-X-${tag}`} component={FilmView} defaultProps={{ aspect: a, x: true, audio: true }} durationInFrames={lengthOr(a, true)} fps={60} width={DEMO_SIZE[a].w} height={DEMO_SIZE[a].h} />,
     ])}
   </Folder>
 );
