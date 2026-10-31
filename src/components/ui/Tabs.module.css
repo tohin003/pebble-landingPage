@@ -1,0 +1,139 @@
+/* Tabs (Tabs.tsx): an accordion below 768 px, a row of text tabs from 768 px, over the same <details> panels. No
+   fills, no boxes (DESIGN-LEXINGTON's hairline language): the selected tab is ink with a 2 px inset rule under it,
+   never an ink fill (ui.test.ts); the others are muted ink. Every target is at least 44 px; the tab row wraps rather than scrolls, so it never widens the
+   page at any width. */
+.tabs {
+  min-width: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.list {
+  display: none;
+}
+
+.item {
+  border-top: 1px solid var(--line);
+  min-width: 0;
+  scroll-margin-top: calc(var(--header-h, 64px) + 8px);
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 52px;
+  padding: 12px 2px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ink);
+  list-style: none;
+  cursor: pointer;
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary:focus-visible {
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+
+.caret {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--ink-2);
+}
+
+.item[open] > .summary .caret {
+  transform: rotate(180deg);
+}
+
+.panel {
+  min-width: 0;
+  padding: 2px 2px 24px;
+  overflow-wrap: anywhere;
+}
+
+.panel:focus-visible {
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+:global(:root[data-motion="on"]) .caret {
+  transition: transform var(--dur-base) var(--ease-firm);
+}
+
+/* ---- from 768 px: tabs ---- */
+@media (min-width: 768px) {
+  .tabs {
+    border-bottom: 0;
+  }
+
+  .list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 28px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .tab {
+    position: relative;
+    min-height: 48px;
+    padding: 12px 0 10px;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--ink-2);
+    background: none;
+    border: 0;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .tab:hover {
+    color: var(--ink);
+  }
+
+  .tab[aria-selected="true"] {
+    color: var(--ink);
+    box-shadow: inset 0 -2px 0 var(--ink);
+  }
+
+  .tab:focus-visible {
+    outline-offset: -2px;
+    border-radius: 6px;
+  }
+
+  .item {
+    border-top: 0;
+  }
+
+  .item:not([open]) {
+    display: none;
+  }
+
+  .summary {
+    display: none;
+  }
+
+  .panel {
+    padding: 24px 0 0;
+  }
+
+  :global(:root[data-motion="on"]) .tabs[data-switched] .panel {
+    animation: tab-in var(--dur-fast) var(--ease-out);
+  }
+}
+
+@keyframes tab-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

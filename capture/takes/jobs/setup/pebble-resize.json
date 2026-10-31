@@ -1,0 +1,20 @@
+{
+ "_about": "Narrows Pebble's workspace so it no longer covers the floating pebble at (1376, 810) (31 Oct): moved 130 pt left by its title bar, then its right edge (read from Accessibility) dragged 255 pt left. Then to the poster's Space from Chrome's, with a still.",
+ "schema": "pebble-take-job/1",
+ "id": "pebble-resize-$n",
+ "take": "setup",
+ "title": "Narrow Pebble's workspace",
+ "steps": [
+  {"do": "activate", "app": "Pebble"}, {"do": "wait", "s": 1.2},
+  {"do": "drag", "from": {"x": 700, "y": 66}, "to": {"x": 570, "y": 66}, "ms": 900},
+  {"do": "wait", "s": 1},
+  {"do": "find", "app": "Pebble", "role": "AXWindow", "name": "Pebble", "anchor": "right", "save_as": "@r", "timeout_s": 5},
+  {"do": "drag", "from": {"ref": "@r", "dx": -2, "dy": 0}, "to": {"ref": "@r", "dx": -257, "dy": 0}, "ms": 1000},
+  {"do": "wait", "s": 1},
+  {"do": "move", "to": {"x": 735, "y": 640}, "ms": 300},
+  {"do": "still", "name": "desktop"},
+  {"do": "activate", "app": "Google Chrome"}, {"do": "wait", "s": 2.5},
+  {"do": "key", "key": "left", "mods": ["ctrl"]}, {"do": "wait", "s": 2.5},
+  {"do": "still", "name": "poster"}
+ ]
+}

@@ -1,13 +1,17 @@
 {
- "_about": "Conforms a recording whose job failed after record_stop (31 Oct: RS13-01), with a still and the Dock read first. Changes nothing on screen.",
+ "_about": "Conforms a recording whose job ended after record_stop (31 Oct: RS13-01; RSW-01, whose conform the job's 20-minute limit cut). Changes nothing on screen.",
  "schema": "pebble-take-job/1",
  "id": "conform-look-$n",
  "take": "setup",
  "title": "Conform a stopped take, and look",
  "steps": [
-  {"do": "still", "name": "now"},
-  {"do": "ax_dump", "app": "Dock", "max": 200, "name": "dock"},
-  {"do": "ax_dump", "app": "Pebble", "max": 400, "name": "pebble"},
-  {"do": "conform", "name": "$take_name"}
- ]
+  {
+   "do": "conform",
+   "name": "$take_name"
+  }
+ ],
+ "max_minutes": 45,
+ "defaults": {
+  "take_name": "RS4-01"
+ }
 }

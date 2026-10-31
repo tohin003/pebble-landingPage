@@ -450,7 +450,7 @@ async function session(base, width, theme, motion) {
   } else {
     // the evidence ledger: both states on the page at once, so there is nothing to switch; check its rows instead
     const ledger = await page.evaluate(async () => {
-      const rows = [...document.querySelectorAll("#agentguard [data-ledger] > li")];
+      const rows = [...document.querySelectorAll("#agentguard [data-ledger] [data-row]")]; // cards in tabs since the page declutter
       rows[0]?.scrollIntoView({ block: "center" });
       await new Promise((r) => setTimeout(r, 600));
       return rows.map((li) => ({

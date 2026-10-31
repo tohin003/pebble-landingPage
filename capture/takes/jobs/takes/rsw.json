@@ -1,11 +1,81 @@
 {
- "_about": "UNVERIFIED until the dry run: element names (Allow, the composer, the conversation list) and the pebble's place come from the dry run's Accessibility dumps and stills; the lead adjusts this template before the take. RS-W (S24, the climax, P0): follow briefs/KILN_BRIEF.md exactly. A fresh conversation (⌘N, no project; 'Kiln' if renaming is possible, R15); the message typed, never a file; the Toolbox without kiln_ramp_time; the dry run's permission mode. The answer must be 10 hours 10 minutes (610 min) or the take is not used. If the tool isn't kept on its own: stop and show the lead (HS-G playback is the fallback).",
+ "_about": "RS-W (S24, the climax, P0): follow briefs/KILN_BRIEF.md exactly: a fresh conversation (⌘N, no project), the message typed, never a file; the Toolbox without kiln_ramp_time; Ask for approval. Checked 31 Oct: set-up before the take rolls (Calculator hidden, the workspace forward, Pebble's iCloud note dismissed, ⌘N); the message goes into 'Message Pebble'; the take waits up to 7 minutes for 'Kept in Pebble' and records whatever comes.",
  "schema": "pebble-take-job/1",
  "id": "RSW-$n",
  "take": "RS-W",
  "title": "The kept tool",
- "max_minutes": 20,
+ "max_minutes": 45,
  "steps": [
+  {
+   "do": "hide",
+   "app": "Calculator"
+  },
+  {
+   "do": "wait",
+   "s": 0.8
+  },
+  {
+   "do": "key",
+   "key": "space",
+   "mods": [
+    "cmd",
+    "shift"
+   ],
+   "note": "the workspace forward"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Dismiss note",
+   "save_as": "@note",
+   "optional": true,
+   "timeout_s": 4,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@note",
+   "if": "@note"
+  },
+  {
+   "do": "wait",
+   "s": 1
+  },
+  {
+   "do": "key",
+   "key": "n",
+   "mods": [
+    "cmd"
+   ],
+   "note": "a new conversation, no project"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXTextArea",
+   "name": "Message Pebble",
+   "window_contains": "Pebble",
+   "save_as": "@msg",
+   "timeout_s": 20,
+   "budget_ms": 15000
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 900,
+    "y": 650
+   },
+   "ms": 300
+  },
   {
    "do": "record_start",
    "name": "RSW-$n",
@@ -15,33 +85,16 @@
   {
    "do": "wait",
    "s": 3.5,
-   "note": "pre-roll: avfoundation's first ~0.35 s repeat a stale frame (RS1-02), so the first pointer move (the conform's sync) comes after the picture is live"
+   "note": "pre-roll: the picture is live before the first pointer move (the conform's sync)"
   },
   {
-   "do": "open_app",
-   "app": "Pebble",
-   "note": "opening Pebble again brings the main window forward (USER_GUIDE)"
-  },
-  {
-   "do": "wait_window",
-   "app": "Pebble",
-   "timeout_s": 15
+   "do": "click",
+   "at": "@msg",
+   "event": "composer"
   },
   {
    "do": "wait",
-   "s": 1.5
-  },
-  {
-   "do": "key",
-   "key": "n",
-   "mods": [
-    "cmd"
-   ],
-   "note": "a new conversation (⌘N, main window)"
-  },
-  {
-   "do": "wait",
-   "s": 1.2
+   "s": 0.6
   },
   {
    "do": "type",
@@ -50,12 +103,21 @@
   },
   {
    "do": "wait",
-   "s": 0.4
+   "s": 0.5
   },
   {
    "do": "key",
    "key": "return",
    "event": "send"
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 1000,
+    "y": 560
+   },
+   "ms": 600,
+   "note": "the pointer rests clear of the reply"
   },
   {
    "do": "wait_element",
@@ -64,11 +126,12 @@
    "timeout_s": 420,
    "event": "cardLands",
    "optional": true,
-   "save_as": "@kept"
+   "save_as": "@kept",
+   "budget_ms": 15000
   },
   {
    "do": "wait",
-   "s": 5
+   "s": 6
   },
   {
    "do": "still",

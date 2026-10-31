@@ -61,6 +61,11 @@ export interface FlashRgbOptions {
   name?: string;
   /** the frame's aspect (default from the grid): which windows bind (R3 §1.7) */
   aspect?: "16:9" | "1:1" | "9:16";
+  /**
+   * only the general rule in the binding windows, on grey frames fed by pushGrey() (the plan's first-cell guard,
+   * setpieces/returnFirstCell.ts, which runs the verdict on synthetic frames many times); the rest of the report empty
+   */
+  lean?: boolean;
 }
 
 export interface FlashWindow {
@@ -158,6 +163,42 @@ export class FlashRgb {
 
   get frames(): number {
     return this.L.length;
+  }
+
+  /**
+   * The lean path (FlashRgbOptions.lean; setpieces/returnFirstCell.ts): one grey byte a cell, the general rule's per-cell
+   * events only, computed as push() computes them for a grey pixel (the same table and float32 arithmetic), so its
+   * general verdict equals push()'s on the same grey frames; no red, qual66, scene or frame-mean data.
+   */
+  pushGrey(grey: Uint8Array): void {
+    const { N } = this;
+    const t = this.L.length;
+    const L = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      const R = LUT[grey[i]!]!;
+      L[i] = f32(f32(f32(K.r * R) + f32(K.g * R)) + f32(K.b * R));
+    }
+    const eg = new Int8Array(N);
+    if (t === 0) this.gAnchor.set(L);
+    else {
+      const prev = this.L[t - 1]!;
+      for (let i = 0; i < N; i++) {
+        const cur = L[i]!;
+        const p = prev[i]!;
+        const d = cur > p ? 1 : cur < p ? -1 : 0;
+        if (d !== 0 && d !== this.gDir[i]) {
+          this.gAnchor[i] = p;
+          this.gDir[i] = d;
+        }
+        const a = this.gAnchor[i]!;
+        if (this.gDir[i] !== 0 && Math.abs(f32(cur - a)) >= T01 && Math.min(cur, a) < T08) {
+          eg[i] = this.gDir[i]!;
+          this.gAnchor[i] = cur;
+        }
+      }
+    }
+    this.L.push(L);
+    this.evGen.push(eg);
   }
 
   push(rgb: Uint8Array): void {
@@ -589,13 +630,35 @@ export class FlashRgb {
       tv: [this.H, this.W, this.H],
     };
     const binding = aspect === "9:16" ? ["w400", "css9x16", "tv"] : ["desk27", "css2560", "tv"];
-    const general = Object.fromEntries(Object.entries(cases).map(([k, v]) => [k, this.windowReport(this.evGen, ...v)]));
-    const general_qual66 = Object.fromEntries(
-      Object.entries(cases)
-        .filter(([k]) => k !== "css2560")
-        .map(([k, v]) => [k, this.windowReport(this.evQual, ...v)]),
-    );
-    const red = Object.fromEntries(Object.entries(cases).map(([k, v]) => [k, this.windowReport(this.evRed, ...v)]));
+    const lean = !!this.o.lean;
+    const general = Object.fromEntries(Object.entries(cases).filter(([k]) => !lean || binding.includes(k)).map(([k, v]) => [k, this.windowReport(this.evGen, ...v)]));
+    if (lean) {
+      // the general rule in the binding windows only (pushGrey's frames carry nothing else)
+      const none = { maxTransitions1s: 0, at: null, window: null, extended: false, maxArea: 0, windowsWithTransitions: 0, fail: false, warn: false };
+      return {
+        name: this.o.name ?? "",
+        frames: this.L.length,
+        grid: [this.W, this.H],
+        sync: this.sync,
+        binding,
+        general,
+        general_qual66: {},
+        red: Object.fromEntries(binding.map((k) => [k, none])),
+        redCellsMaxFrac: 0,
+        sceneChanges: { count: 0, max1s: 0, fail: false, maxFrac: 0 },
+        irisLike: { transitions: 0, maxTransitions1s: 0, fail: false },
+        pattern: { maxPairs: 0, where: null, over5: false },
+        steps: { frameMeanStep1: 0, frameMeanStep4: 0, windowMeanStep1: 0, windowMeanStep4: 0, framesFrameMeanStepGe003: 0, framesWindowStepGe005: 0, meanLRange: [0, 0] },
+      };
+    }
+    const general_qual66 = lean
+      ? {}
+      : Object.fromEntries(
+          Object.entries(cases)
+            .filter(([k]) => k !== "css2560")
+            .map(([k, v]) => [k, this.windowReport(this.evQual, ...v)]),
+        );
+    const red = lean ? {} : Object.fromEntries(Object.entries(cases).map(([k, v]) => [k, this.windowReport(this.evRed, ...v)]));
     const mean = this.frameMeans();
     return {
       name: this.o.name ?? "",

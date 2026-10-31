@@ -57,7 +57,7 @@
 
 /* ---- the one line ---- */
 .oneLine {
-  margin-top: 48px;
+  min-width: 0;
 }
 
 .label {
@@ -267,25 +267,20 @@
   margin-bottom: 4px;
 }
 
-/* ---- the two ways: a 4 | 5 split of the main column ---- */
-.ways {
-  display: grid;
-  grid-template-columns: subgrid;
-  margin-top: 56px;
+/* ---- the two ways, as tabs (Tabs: an accordion below 768 px; .work/page-declutter/PLAN.md) ---- */
+.tabs {
+  grid-column: 1 / -1;
+  margin-top: 48px;
 }
 
 .way {
   min-width: 0;
-  padding-top: 24px;
-  border-top: 1px solid var(--line);
+  max-width: 44em;
 }
 
-.way:first-child {
-  grid-column: 1 / span 4;
-}
-
-.way:last-child {
-  grid-column: 5 / -1;
+/* "What the installer does", one tap under the command's options */
+.fold {
+  margin-top: 24px;
 }
 
 .ticks {
@@ -433,25 +428,10 @@
   color: var(--ink);
 }
 
-/* ---- first run and updates: 4 | 5 ---- */
+/* ---- first run and updates: two disclosure rows ---- */
 .after {
-  display: grid;
-  grid-template-columns: subgrid;
-  margin-top: 48px;
-}
-
-.after > div {
-  min-width: 0;
-  padding-top: 20px;
-  border-top: 1px solid var(--line);
-}
-
-.after > div:first-child {
-  grid-column: 1 / span 4;
-}
-
-.after > div:last-child {
-  grid-column: 5 / -1;
+  grid-column: 1 / -1;
+  margin-top: 40px;
 }
 
 .after p {
@@ -487,20 +467,13 @@
     border-top: 1px solid var(--line);
   }
 
-  .ways,
-  .after {
-    display: block;
-  }
-
-  .way + .way,
-  .after > div + div {
-    margin-top: 36px;
+  .tabs {
+    margin-top: 40px;
   }
 
   /* one column: the words keep a 40 em measure; the hairlines keep the column's width */
   .ticks li,
   .steps li,
-  .way > .small,
   .after p {
     padding-right: max(0px, calc(100% - 40em));
   }
@@ -560,9 +533,5 @@
 
   .cell:nth-child(2n) {
     padding-left: 12px;
-  }
-
-  .oneLine {
-    margin-top: 40px;
   }
 }

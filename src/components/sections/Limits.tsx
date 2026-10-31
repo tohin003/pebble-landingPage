@@ -8,6 +8,7 @@
 // marks: the hairlines do the separating. The hero's "Read the limits" and every honest line land here (#limits).
 import { honestLimits } from "@/content/copy";
 import { labels } from "@/content/labels";
+import { Disclosure, DisclosureGroup } from "@/components/ui/Disclosure";
 import { SectionHead } from "@/components/ui/SectionHead";
 import { firstSentence } from "@/components/ui/twoTone";
 import { inline } from "@/lib/inline";
@@ -29,13 +30,15 @@ export function Limits() {
                 {inline(line)}
               </li>
             ))}
-            {honestLimits.product.map((item) => (
-              <li key={item.title}>
-                <span className={styles.title}>{item.title}</span>
-                <span className={styles.text}>{inline(item.body)}</span>
-              </li>
-            ))}
           </ul>
+          {/* every product limit stays on screen by its title; its reasons are one tap away (.work/page-declutter/PLAN.md) */}
+          <DisclosureGroup className={styles.products}>
+            {honestLimits.product.map((item) => (
+              <Disclosure key={item.title} summary={item.title}>
+                <p>{inline(item.body)}</p>
+              </Disclosure>
+            ))}
+          </DisclosureGroup>
         </div>
       </div>
     </section>

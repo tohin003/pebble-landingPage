@@ -1,0 +1,8 @@
+{
+ "_about": "One still of the screen, nothing else (31 Oct).",
+ "schema": "pebble-take-job/1",
+ "id": "look-still-$n",
+ "take": "setup",
+ "title": "A still",
+ "steps": [{"do": "still", "name": "now"}]
+}

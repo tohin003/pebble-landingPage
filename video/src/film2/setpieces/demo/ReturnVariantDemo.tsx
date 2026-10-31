@@ -10,6 +10,8 @@
 //   F2-SP-return-unscaled-<aspect> the size test's other side (§9 item 7, §10): the rings and their cells at the
 //                                  design's own size (fieldScale 1); G1 chose ×1.1, which the film now plans
 //                                  (RETURN_FIELD_SCALE), so F2-SP-return-<aspect> is the ×1.1 field
+//   F2-SP-return-stress-<aspect>   not an A/B: the film's own Return (×1.1) with its first cell, S24's frame, at full
+//                                  contrast, the worst-case stand-in the R9 flash fix is measured on (31 Oct)
 import { useMemo } from "react";
 import type { Aspect } from "../../tokens";
 import { PieceView } from "../views/PieceView";
@@ -26,6 +28,8 @@ export const RETURN_G1_VARIANTS: readonly { tag: string; options: Partial<Return
   { tag: "curve1", options: { curve: "r1", fieldScale: 1 } },
   { tag: "labels", options: { labels: true, fieldScale: 1 } },
   { tag: "unscaled", options: { fieldScale: 1 } },
+  // the R9 fix's worst-case stand-in (31 Oct): the film's Return with its first cell at full contrast
+  { tag: "stress", options: { firstCellStress: true } },
 ];
 
 export const ReturnVariantDemo: React.FC<{ aspect: Aspect; variant: string }> = ({ aspect, variant }) => {

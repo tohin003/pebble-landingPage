@@ -803,6 +803,25 @@ lands on A4's bar 82. Frames are R-frames at 60 fps (a local frame is R + 60): 1
   model the first cell's content. The join on pixels is continuous: S24's last frame to the Return's first is S24's own
   step (mean 0.63, 0.57 and 0.80 levels against S24's 0.62, 0.66 and 0.81; the 99th percentile 17–18 levels in every
   case), as the camera starts one frame along S24's glide. The record is in the Return lane's scratch, `g1/G1.md` §6–§7.
+- **The R9 flash fixed (31 Oct evening; `setpieces/returnFirstCell.ts`).** While the first cell pulls back, the view
+  softens it by its content's speed alone, whatever S24's frame holds: a round blur and a veil of the page, on a ramp
+  q = smoothstep(0.6, 3, v) of the content's fastest point in frame (v, px a frame at 1080); σ = q × max(20, 2v) px at
+  1080 and the veil q × 0.4 (`FIRST_CELL_SOFTEN`), full while the cell's scale is 0.2 or more and gone by 0.12, where
+  it is a cell of the field; nothing at the join (v 0.39), so the join stays S24's own step. Slowing the pull-back alone
+  cannot pass (2× or 4× slower gives no fewer transitions: fine detail still crosses each grid cell many times a
+  second). The guard, `returnFirstCell` (returnChecks, so checkPlan runs it): the first cell's worst-case content,
+  S24's frame at full contrast as black text-like rows and columns (`FIRST_CELL_MODEL`), moved by the plan's camera
+  and softened as drawn, through the verdict's own counter (`qa/flash-rgb.ts`'s lean `pushGrey`, parity tested) in
+  the binding windows; an error above 6 in a second. Unsoftened it reads 35, 34 and 32 (the canary); the film 3, 3
+  and 2; the G1 variants 2–3. Rendered (half size, R−60 to R720, the default and `F2-SP-return-stress-<aspect>`, the
+  first cell at full contrast): flash-rgb 16:9 desk27 1, css2560 4 (R140, the bloom, as before), 1:1 1 and 2, 9:16 1
+  and 1, no red, no scene change, the same with the stress cell; the stress cell at full size over R−60 to R120 reads 2
+  in css2560 (it was 7); `luma-scan --marks` ok in every aspect. The cost, seen on the frames: from about R−40 S24's
+  frame defocuses and lifts toward the paper as it recedes, a rack focus away from it while the field blooms in sharp;
+  the kept card cannot be read from about a third of a second after the join until it is a small card of the field.
+  Black-and-white square waves are not the bound: they fail the verdict at any motion over about 1 px a frame, as every
+  reading glide in the film would. No check models the content inside the other cells: judge the 2.0.0 crops' cells on
+  renders with flash-rgb (G4).
 
 ### The demo and the checks
 

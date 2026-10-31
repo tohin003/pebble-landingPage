@@ -1,0 +1,74 @@
+{
+ "_about": "Opens a review waiting in the quick chat (31 Oct: 2.0.0 shows 'An action needs your review in the workspace' with Open), then narrows the workspace from its left edge so a window on the left (Calculator) stays in view; dumps the workspace to read the card's buttons. Approves nothing.",
+ "schema": "pebble-take-job/1",
+ "id": "review-open-$n",
+ "take": "setup",
+ "title": "Open the waiting review; narrow the workspace",
+ "steps": [
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Open",
+   "window_contains": "companion",
+   "save_as": "@open",
+   "timeout_s": 6
+  },
+  {
+   "do": "click",
+   "at": "@open"
+  },
+  {
+   "do": "wait",
+   "s": 3
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXWindow",
+   "name": "Pebble",
+   "anchor": "left",
+   "save_as": "@l",
+   "timeout_s": 6
+  },
+  {
+   "do": "drag",
+   "from": {
+    "ref": "@l",
+    "dx": 2,
+    "dy": 0
+   },
+   "to": {
+    "ref": "@l",
+    "dx": "$shift",
+    "dy": 0
+   },
+   "ms": 1000
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 735,
+    "y": 900
+   },
+   "ms": 300
+  },
+  {
+   "do": "still",
+   "name": "review"
+  },
+  {
+   "do": "ax_dump",
+   "app": "Pebble",
+   "max": 2500,
+   "name": "review"
+  }
+ ],
+ "defaults": {
+  "shift": 592
+ }
+}

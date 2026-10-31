@@ -1,0 +1,8 @@
+{
+ "_about": "Reads Pebble's whole tree (31 Oct: is a kept-tool notice below the visible reply?). Clicks nothing.",
+ "schema": "pebble-take-job/1",
+ "id": "pebble-dump-$n",
+ "take": "setup",
+ "title": "Probe: Pebble's tree",
+ "steps": [{"do": "ax_dump", "app": "Pebble", "max": 4000, "name": "pebble"}]
+}

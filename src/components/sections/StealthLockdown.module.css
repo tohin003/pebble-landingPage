@@ -41,10 +41,12 @@
 }
 
 /* --- 1. The two halves: a ruled ledger, as Built like infrastructure's (terms on 4–6, the text on 7–12) --- */
+/* inside the disclosure (.work/page-declutter/PLAN.md): a two-column list of its own, the term then its text */
 .halves {
   display: grid;
-  grid-template-columns: subgrid;
-  border-bottom: 1px solid var(--line);
+  grid-template-columns: minmax(6em, 1fr) minmax(0, 3fr);
+  column-gap: var(--gap);
+  margin-top: 8px;
 }
 
 .half {
@@ -52,12 +54,12 @@
   grid-column: 1 / -1;
   grid-template-columns: subgrid;
   align-items: baseline;
-  padding: 19px 0 20px;
+  padding: 14px 0 15px;
   border-top: 1px solid var(--line);
 }
 
 .half dt {
-  grid-column: 1 / span 3;
+  grid-column: 1;
   font-size: 16px;
   font-weight: 500;
   line-height: 1.6;
@@ -65,7 +67,7 @@
 }
 
 .half dd {
-  grid-column: 4 / -1;
+  grid-column: 2;
   max-width: 36em;
   font-size: 16px;
   line-height: 1.6;

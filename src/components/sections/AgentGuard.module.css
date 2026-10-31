@@ -3,6 +3,12 @@
    the captures sit in plain crop frames (UiCrop: radius 12, a 1 px ring), never on a card. */
 
 /* the scope paragraph under the lead (SectionHead's "more", columns 4–9) */
+/* "How it checks": one disclosure row under the lead */
+.scopeFold {
+  margin-top: 4px;
+  max-width: 40em;
+}
+
 .scope {
   font-size: 16px;
   line-height: 1.6;
@@ -168,5 +174,33 @@
 
   .figure {
     margin-top: 16px;
+  }
+}
+
+/* --- detail on demand (.work/page-declutter/PLAN.md): the three rows are cards in Tabs (one at a time from 768 px,
+   an accordion below). Inside a card the row keeps its 3 | 6 split from 1280 px; the tablist's rule replaces the row's
+   own. Each card's longer paragraph, and Reliability's three points, sit in one disclosure row. --- */
+.cards .row {
+  border-top: 0;
+  padding-block: 0 8px;
+}
+
+.how {
+  margin-top: 16px;
+}
+
+.how .points {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  margin-top: 4px;
+}
+
+.how .points li {
+  padding-block: 10px;
+}
+
+@media (max-width: 767px) {
+  .cards .row {
+    padding-block: 0 4px;
   }
 }

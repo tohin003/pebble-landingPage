@@ -22,7 +22,9 @@
 import { agentGuard, common } from "@/content/copy";
 import { labels } from "@/content/labels";
 import { UiCrop, type CropBox, type UiCropProps } from "@/components/media/UiCrop";
+import { Disclosure, DisclosureGroup } from "@/components/ui/Disclosure";
 import { SectionHead } from "@/components/ui/SectionHead";
+import { Tabs } from "@/components/ui/Tabs";
 import { firstSentence } from "@/components/ui/twoTone";
 import { SECTIONS } from "@/lib/sections";
 import styles from "./AgentGuard.module.css";
@@ -57,7 +59,18 @@ const VERIFIED_NARROW: CropBox = { x: 266, y: 288, w: 260, h: 48 };
 /** The ledger's figure: columns 7–12 at 1440 (624 px), at most 624 px when the rows stack, the phone's width below. */
 const FIGURE: UiCropProps["display"] = { wide: 624, tablet: "calc(100vw - 48px)", phone: "calc(100vw - 32px)" };
 
-type Row = Readonly<{ key: string; title: string; verified?: boolean; notes: readonly string[]; crop: UiCropProps }>;
+/** A card: its tab label, the app's words as its title, one visible sentence, the rest in "How it works", its capture. */
+type Row = Readonly<{ key: string; tab: string; title: string; verified?: boolean; note: string; more: string; crop: UiCropProps }>;
+
+/** "AgentGuard checks evidence; it is not a sandbox and not a security layer." stays visible; "Protection comes from
+ *  Pebble itself:" opens with the three points. */
+const [RELIABILITY, PROTECTION] = firstSentence(agentGuard.reliability.body);
+
+/** One visible sentence; the rest goes in the card's "How it works" (the same words, split at the first sentence). */
+function split(text: string): Readonly<{ note: string; more: string }> {
+  const [note, more] = firstSentence(text);
+  return { note, more };
+}
 
 export function AgentGuard() {
   const held = agentGuard.held;
@@ -65,8 +78,9 @@ export function AgentGuard() {
   const rows: readonly Row[] = [
     {
       key: "challenge",
+      tab: agentGuard.cards.challenge,
       title: agentGuard.challenge.summary(5),
-      notes: [agentGuard.challenge.caption, common.sampleData],
+      ...split(agentGuard.challenge.caption),
       crop: {
         name: "main-challenge",
         alt: agentGuard.media.challenge,
@@ -80,8 +94,9 @@ export function AgentGuard() {
     },
     {
       key: "held",
+      tab: agentGuard.toggle.held,
       title: held.message,
-      notes: [agentGuard.layer[2], common.sampleData],
+      ...split(agentGuard.layer[2]),
       crop: {
         name: "held-unverified",
         alt: agentGuard.media.held,
@@ -95,9 +110,12 @@ export function AgentGuard() {
     },
     {
       key: "verified",
+      tab: agentGuard.toggle.verified,
       title: agentGuard.result,
       verified: true,
-      notes: [resultSentence, agentGuard.request, agentGuard.resultCaption], // 2.0.0: what you asked for is checked too
+      // 2.0.0: what you asked for is checked too (`request`), in "How it works"
+      note: resultSentence,
+      more: agentGuard.request,
       crop: {
         name: "main-done",
         alt: agentGuard.media.verified,
@@ -119,41 +137,65 @@ export function AgentGuard() {
         lead={agentGuard.layer[0]}
         chip="tested"
       >
-        <p className={styles.scope}>{agentGuard.layer[1]}</p>
+        {/* what it checks and where that check stops, together and one tap away (.work/page-declutter/PLAN.md) */}
+        <DisclosureGroup className={styles.scopeFold}>
+          <Disclosure summary={agentGuard.scopeMore}>
+            <p className={styles.scope}>{agentGuard.layer[1]}</p>
+          </Disclosure>
+        </DisclosureGroup>
       </SectionHead>
 
       <div className="wrap grid-12 sec-body">
         <div className="main">
-          <ol className={styles.ledger} data-ledger="">
-            {rows.map((row) => (
-              <li key={row.key} className={styles.row} data-row={row.key}>
-                <div className={styles.words}>
-                  <h3 className={styles.title}>
-                    {row.verified ? <span className={`galet ${styles.verified}`} aria-hidden="true" /> : null}
-                    <q>{row.title}</q>
-                  </h3>
-                  {row.notes.map((note) => (
-                    <p key={note} className={note === common.sampleData ? styles.sample : styles.note}>
-                      {note}
-                    </p>
-                  ))}
-                </div>
-                <figure className={styles.figure}>
-                  <UiCrop {...row.crop} className={styles.crop} />
-                </figure>
-              </li>
-            ))}
-          </ol>
+          {/* the three examples as cards: one at a time from 768 px, an accordion below; each keeps its sample-data
+              label beside its capture, and its longer paragraph one tap away (.work/page-declutter/PLAN.md) */}
+          <div data-ledger="">
+            <Tabs
+              label={agentGuard.cards.label}
+              className={styles.cards}
+              items={rows.map((row) => ({
+                id: row.key,
+                label: row.tab,
+                content: (
+                  <div className={styles.row} data-row={row.key}>
+                    <div className={styles.words}>
+                      <h3 className={styles.title}>
+                        {row.verified ? <span className={`galet ${styles.verified}`} aria-hidden="true" /> : null}
+                        <q>{row.title}</q>
+                      </h3>
+                      <p className={styles.note}>{row.note}</p>
+                      <p className={styles.sample}>{common.sampleData}</p>
+                      {row.more ? (
+                        <DisclosureGroup className={styles.how}>
+                          <Disclosure summary={agentGuard.cards.howItWorks}>
+                            <p>{row.more}</p>
+                          </Disclosure>
+                        </DisclosureGroup>
+                      ) : null}
+                    </div>
+                    <figure className={styles.figure}>
+                      <UiCrop {...row.crop} className={styles.crop} />
+                    </figure>
+                  </div>
+                ),
+              }))}
+            />
+          </div>
 
           <div className={styles.reliability}>
             <h3 className={styles.reliabilityTitle}>{agentGuard.reliability.title}</h3>
             <div className={styles.reliabilityBody}>
-              <p>{agentGuard.reliability.body}</p>
-              <ul className={styles.points}>
-                {agentGuard.reliability.points.map((point) => (
-                  <li key={point}>{point}</li>
-                ))}
-              </ul>
+              <p>{RELIABILITY}</p>
+              <DisclosureGroup className={styles.how}>
+                <Disclosure summary={agentGuard.reliability.more}>
+                  <p>{PROTECTION}</p>
+                  <ul className={styles.points}>
+                    {agentGuard.reliability.points.map((point) => (
+                      <li key={point}>{point}</li>
+                    ))}
+                  </ul>
+                </Disclosure>
+              </DisclosureGroup>
             </div>
           </div>
         </div>

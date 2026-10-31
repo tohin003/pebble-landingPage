@@ -1,0 +1,355 @@
+{
+ "_about": "RS-4 (S11), resuming the two cards already waiting in the workspace (31 Oct): 'Open Calculator' (Open app), then 'Use Calculator', the window card (Allow, below the fold: the Activity panel is scrolled first), then any press cards the same way (exact 'Allow', never Always allow). The person brings Calculator forward from the Dock after the first Allow. Sends nothing.",
+ "schema": "pebble-take-job/1",
+ "id": "RS4-$n",
+ "take": "RS-4",
+ "title": "Calculator (the waiting cards)",
+ "max_minutes": 30,
+ "steps": [
+  {
+   "do": "key",
+   "key": "space",
+   "mods": [
+    "cmd",
+    "shift"
+   ],
+   "note": "the workspace forward"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Open app",
+   "save_as": "@open",
+   "timeout_s": 10,
+   "budget_ms": 15000
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 760,
+    "y": 520
+   },
+   "ms": 300
+  },
+  {
+   "do": "record_start",
+   "name": "RS4-$n",
+   "max_s": 150,
+   "method": "avfoundation"
+  },
+  {
+   "do": "wait",
+   "s": 3.5,
+   "note": "pre-roll: the picture is live before the first pointer move (the conform's sync)"
+  },
+  {
+   "do": "move",
+   "to": {
+    "x": 820,
+    "y": 470
+   },
+   "ms": 500,
+   "event": "sync"
+  },
+  {
+   "do": "wait",
+   "s": 1.0
+  },
+  {
+   "do": "click",
+   "at": "@open",
+   "event": "openApp"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Don't allow",
+   "timeout_s": 25,
+   "save_as": "@w1",
+   "event": "card1",
+   "optional": true,
+   "budget_ms": 15000
+  },
+  {
+   "do": "scroll",
+   "at": {
+    "x": 844,
+    "y": 450
+   },
+   "lines": 8,
+   "ms": 500,
+   "if": "@w1",
+   "note": "the Activity panel down, so the card's buttons are on screen"
+  },
+  {
+   "do": "wait",
+   "s": 1.2,
+   "if": "@w1"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "save_as": "@a1",
+   "optional": true,
+   "timeout_s": 3,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@a1",
+   "if": "@a1",
+   "event": "allow1"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "find",
+   "app": "Dock",
+   "role": "AXDockItem",
+   "name": "Calculator",
+   "save_as": "@calc",
+   "timeout_s": 4
+  },
+  {
+   "do": "click",
+   "at": "@calc",
+   "event": "calculatorForward",
+   "note": "the person brings Calculator forward to watch"
+  },
+  {
+   "do": "wait",
+   "s": 0.8
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Don't allow",
+   "timeout_s": 25,
+   "save_as": "@w2",
+   "event": "card2",
+   "optional": true,
+   "budget_ms": 15000
+  },
+  {
+   "do": "scroll",
+   "at": {
+    "x": 844,
+    "y": 450
+   },
+   "lines": 8,
+   "ms": 500,
+   "if": "@w2",
+   "note": "the Activity panel down, so the card's buttons are on screen"
+  },
+  {
+   "do": "wait",
+   "s": 1.2,
+   "if": "@w2"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "save_as": "@a2",
+   "optional": true,
+   "timeout_s": 3,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@a2",
+   "if": "@a2",
+   "event": "allow2"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Don't allow",
+   "timeout_s": 25,
+   "save_as": "@w3",
+   "event": "card3",
+   "optional": true,
+   "budget_ms": 15000
+  },
+  {
+   "do": "scroll",
+   "at": {
+    "x": 844,
+    "y": 450
+   },
+   "lines": 8,
+   "ms": 500,
+   "if": "@w3",
+   "note": "the Activity panel down, so the card's buttons are on screen"
+  },
+  {
+   "do": "wait",
+   "s": 1.2,
+   "if": "@w3"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "save_as": "@a3",
+   "optional": true,
+   "timeout_s": 3,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@a3",
+   "if": "@a3",
+   "event": "allow3"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Don't allow",
+   "timeout_s": 25,
+   "save_as": "@w4",
+   "event": "card4",
+   "optional": true,
+   "budget_ms": 15000
+  },
+  {
+   "do": "scroll",
+   "at": {
+    "x": 844,
+    "y": 450
+   },
+   "lines": 8,
+   "ms": 500,
+   "if": "@w4",
+   "note": "the Activity panel down, so the card's buttons are on screen"
+  },
+  {
+   "do": "wait",
+   "s": 1.2,
+   "if": "@w4"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "save_as": "@a4",
+   "optional": true,
+   "timeout_s": 3,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@a4",
+   "if": "@a4",
+   "event": "allow4"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "wait_element",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Don't allow",
+   "timeout_s": 25,
+   "save_as": "@w5",
+   "event": "card5",
+   "optional": true,
+   "budget_ms": 15000
+  },
+  {
+   "do": "scroll",
+   "at": {
+    "x": 844,
+    "y": 450
+   },
+   "lines": 8,
+   "ms": 500,
+   "if": "@w5",
+   "note": "the Activity panel down, so the card's buttons are on screen"
+  },
+  {
+   "do": "wait",
+   "s": 1.2,
+   "if": "@w5"
+  },
+  {
+   "do": "find",
+   "app": "Pebble",
+   "role": "AXButton",
+   "name": "Allow",
+   "save_as": "@a5",
+   "optional": true,
+   "timeout_s": 3,
+   "budget_ms": 15000
+  },
+  {
+   "do": "click",
+   "at": "@a5",
+   "if": "@a5",
+   "event": "allow5"
+  },
+  {
+   "do": "wait",
+   "s": 1.2
+  },
+  {
+   "do": "wait_element",
+   "app": "Calculator",
+   "contains": "600",
+   "timeout_s": 40,
+   "event": "equals600",
+   "optional": true,
+   "save_as": "@six"
+  },
+  {
+   "do": "wait",
+   "s": 9,
+   "note": "the receipt and the reply"
+  },
+  {
+   "do": "still",
+   "name": "calc-600"
+  },
+  {
+   "do": "wait",
+   "s": 2
+  },
+  {
+   "do": "record_stop"
+  },
+  {
+   "do": "conform",
+   "name": "RS4-$n"
+  }
+ ]
+}

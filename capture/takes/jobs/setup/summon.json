@@ -1,0 +1,14 @@
+{
+ "_about": "Probe (31 Oct): ⌘⇧Space on the current Space, a still and Pebble's tree, then Escape and a still. Sends nothing.",
+ "schema": "pebble-take-job/1",
+ "id": "summon-$n",
+ "take": "setup",
+ "title": "Probe: ⌘⇧Space",
+ "steps": [
+  {"do": "key", "key": "space", "mods": ["cmd", "shift"]}, {"do": "wait", "s": 1.8},
+  {"do": "still", "name": "summoned"},
+  {"do": "ax_dump", "app": "Pebble", "max": 800, "name": "pebble"},
+  {"do": "key", "key": "escape"}, {"do": "wait", "s": 1.5},
+  {"do": "still", "name": "after"}
+ ]
+}

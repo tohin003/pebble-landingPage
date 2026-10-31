@@ -258,8 +258,13 @@ export const controls = {
 
 export const hero = {
   h1: "A little help, right here.", // [C-HERO-1] Pet.vue:692
-  lead:
-    "Pebble is a small, free, open-source AI companion that lives on your Mac's screen. Click it to chat, or open the full window to work in a project under your review, use the apps and websites you allow, keep memory you control and build small interactive views.", // [C-HERO-2] (aligned with the showcase brief, OVERRIDES §7; 2.0.0: C-200-1)
+  /**
+   * One sentence (.work/page-declutter/PLAN.md: a hero lead of about 15 words). Its former second sentence, "Click it to
+   * chat, or open the full window to work in a project under your review, use the apps and websites you allow, keep
+   * memory you control and build small interactive views.", is the page's own outline: each clause is a section's head
+   * below (On your desktop, Works in your project, Across your Mac, Memory, Views). [C-HERO-2] [C-200-1]
+   */
+  lead: "Pebble is a small, free, open-source AI companion that lives on your Mac's screen.",
   /** Separate items, never joined into a middle-dot string (PHILOSOPHY "What we never do"). [C-HERO-3] */
   requirements: ["Free and open source", "Apache-2.0", "Macs with Apple silicon (M1 or later)", "macOS 12 or later"],
   /**
@@ -401,6 +406,8 @@ export const models = {
   mediaAlt:
     "Pebble's Settings, on the Models tab: a GGUF model file on this Mac, the buttons Add a model file and Connect provider, and Continue with ChatGPT.",
   chapterId: "model",
+  /** The tablist's accessible name: the three ways show one at a time (.work/page-declutter/PLAN.md). Not a claim. */
+  tabsLabel: "Three ways to connect a model",
 } as const;
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -518,6 +525,8 @@ export const acrossMac = {
   /** Under the ledger: where the switch is, and macOS's own permissions. [C-MAC-10] */
   note:
     "Screen control is off until you turn it on in Settings › Permissions. macOS asks you for its own permissions first: Accessibility for app windows, and Screen & System Audio Recording for screenshots.",
+  /** The tablist's accessible name: the rows show one at a time (.work/page-declutter/PLAN.md). Not a claim. */
+  tabsLabel: "What Pebble can use across your Mac",
 } as const;
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -563,6 +572,14 @@ export const workshop = {
  * full-width verdict of the project story's step 04. Framed as reliability, never as security (OVERRIDES §7).
  */
 export const agentGuard = {
+  /** The disclosure that holds `layer[1]`, the scope and its Python-only limit (.work/page-declutter/PLAN.md). A UI label. */
+  scopeMore: "How it checks",
+  /**
+   * The three examples as cards (tabs from 768 px, an accordion below; .work/page-declutter/PLAN.md): the tablist's
+   * name, each card's short label (the second and third are the app's own state words, `toggle`), and the per-card
+   * disclosure. UI labels, not claims.
+   */
+  cards: { label: "What AgentGuard shows", challenge: "Scope challenge", howItWorks: "How it works" },
   kicker: "AgentGuard",
   heading: "Evidence before “done”.", // [C-AG-5] the heading of the README's AgentGuard section (OVERRIDES §7: one story)
   lead:
@@ -599,6 +616,8 @@ export const agentGuard = {
   /** Reliability, not security (OVERRIDES §7): where protection comes from instead. [C-AG-11] */
   reliability: {
     title: "Reliability, not security.",
+    /** The disclosure that holds "Protection comes from Pebble itself:" and the three points. A UI label. */
+    more: "Where protection comes from",
     body: "AgentGuard checks evidence; it is not a sandbox and not a security layer. Protection comes from Pebble itself:",
     points: [
       "Approvals happen only in Pebble's main window.",
@@ -1027,6 +1046,8 @@ export const privacy = {
   toolsNote:
     "Pebble's own tools can never read or change `~/.pebble` or `~/Documents/Pebble`, even when your project contains them.", // [C-PRIV-11]
   dataFoldersLink: { label: "Where Pebble keeps your things", href: links.dataFolders, external: true } satisfies Link,
+  /** The disclosure under both columns (.work/page-declutter/PLAN.md). A UI label, not a claim. */
+  more: "More on what stays and what leaves",
   /** The head's one link: the next section, Stealth Lockdown (the setting's name; its honest line is there). [C-STL-1] */
   stealthLink: { label: "Stealth Lockdown", href: `/#${sectionIds.stealth}` } satisfies Link,
   diagram: {
@@ -1131,6 +1152,8 @@ export const stealth = {
    * v1.1.0 byte for byte), drawn by the site, so it is a render and never called a recording (OVERRIDES §21). [C-STL-10]
    */
   renderNote: "This pebble uses Pebble's own Veil code: a render, not a screen recording.",
+  /** The disclosure that holds turnOn, hideAll and the halves (.work/page-declutter/PLAN.md). A UI label, not a claim. */
+  more: "How to turn it on, and what changes",
 } as const;
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -1138,6 +1161,8 @@ export const stealth = {
 // ---------------------------------------------------------------------------------------------------------------
 
 export const install = {
+  /** The two ways as tabs (.work/page-declutter/PLAN.md), named after the lead's own halves. UI labels, not claims. */
+  tabs: { label: "Two ways to install", oneLine: "In Terminal", byHand: "By hand" },
   h2: "Install Pebble.",
   lead: "One line in Terminal, or the zip by hand. Both install the same app from the GitHub release.", // [C-INST-1]
   /** Four cells, each a value and a note under it (design comp 2). The download cell's value is the release's size. */

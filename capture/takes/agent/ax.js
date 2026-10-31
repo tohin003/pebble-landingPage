@@ -22,14 +22,24 @@ function centre(n) {
   return n.position && n.size ? { x: n.position[0] + n.size[0] / 2, y: n.position[1] + n.size[1] / 2 } : null;
 }
 
+// Plain data only: a value can be a reference to another element (an object specifier), and turning that into text
+// sends an Apple Event that fails with "Can't convert types" (31 Oct: every read of Pebble's tree stopped on one).
+function plain(v) {
+  if (v === null || v === undefined) return null;
+  const t = typeof v;
+  if (t === "string" || t === "number" || t === "boolean") return v;
+  if (Array.isArray(v)) return v.every((x) => typeof x === "number") ? v : null;
+  return null;
+}
+
 function bulk(spec, prop, count) {
   try {
     const v = spec[prop]();
-    if (Array.isArray(v) && v.length === count) return v;
+    if (Array.isArray(v) && v.length === count) return v.map(plain);
   } catch (e) { /* the property is missing on some element: fetch one by one below */ }
   const out = [];
   for (let i = 0; i < count; i++) {
-    try { out.push(spec.at(i)[prop]()); } catch (e) { out.push(null); }
+    try { out.push(plain(spec.at(i)[prop]())); } catch (e) { out.push(null); }
   }
   return out;
 }
@@ -38,7 +48,7 @@ function bulk(spec, prop, count) {
 function bulkOrNull(spec, prop, count) {
   try {
     const v = spec[prop]();
-    return Array.isArray(v) && v.length === count ? v : null;
+    return Array.isArray(v) && v.length === count ? v.map(plain) : null;
   } catch (e) { return null; }
 }
 
@@ -52,7 +62,7 @@ function walk(win, limits, visit) {
     const { spec, depth, path } = stack.pop();
     if (depth >= limits.depth || seen >= limits.max || Date.now() > deadline) continue;
     let roles;
-    try { roles = spec.uiElements.role(); } catch (e) { continue; }
+    try { roles = spec.uiElements.role().map(plain); } catch (e) { continue; }
     const k = roles.length;
     if (!k) continue;
     const names = bulk(spec.uiElements, "name", k);
@@ -79,8 +89,16 @@ function processNamed(se, name) {
   return ps.length ? ps[0] : null;
 }
 
+// The windows' names, one by one where the list can't be read whole (a window whose name doesn't convert, 31 Oct:
+// "Can't convert types" stopped every read of Pebble's tree); an unreadable name is "".
+function windowNames(p) {
+  let count = 0;
+  try { count = p.windows.length; } catch (e) { return []; }
+  return bulk(p.windows, "name", count).map((v) => (typeof v === "string" ? v : ""));
+}
+
 function windowsOf(p, contains) {
-  const names = p.windows.name();
+  const names = windowNames(p);
   const out = [];
   for (let i = 0; i < names.length; i++) {
     if (!contains || (names[i] || "").indexOf(contains) >= 0) out.push({ spec: p.windows.at(i), title: names[i] || "" });
@@ -141,9 +159,9 @@ const handlers = {
     const found = [];
     const limits = { depth: q.depth || 30, max: q.max || 4000, deadline: Date.now() + (q.ms || 8000) };
     let seen = 0;
-    const wpos = bulk(p.windows, "position", p.windows.length);
-    const wsize = bulk(p.windows, "size", p.windows.length);
-    const wnames = p.windows.name();
+    const wnames = windowNames(p);
+    const wpos = bulk(p.windows, "position", wnames.length);
+    const wsize = bulk(p.windows, "size", wnames.length);
     for (let i = 0; i < wnames.length; i++) {
       // the windows themselves are candidates too (role AXWindow, named by their title): a window's frame finds its title bar
       const n = { role: "AXWindow", name: wnames[i], position: wpos[i], size: wsize[i], depth: 0 };

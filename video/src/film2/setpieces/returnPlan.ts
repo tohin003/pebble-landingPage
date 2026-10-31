@@ -23,6 +23,7 @@
 // move (R1: "all in one continuous shot"), declared to no §5.1 push range; it is held to the camera floor and to the
 // travel limit (30 px a frame at the corners) instead.
 // Pure; no React.
+import { FIRST_CELL_SOFTEN, type FirstCellSoften } from "./returnFirstCell";
 import { COLOR, f60 } from "../tokens";
 import { typeSizePx } from "../type/scale";
 import { lineHeightOf } from "./frame";
@@ -314,6 +315,8 @@ export interface ReturnExtra {
   /** G1's variants: the travel, and whether the family labels are drawn */
   curve: ReturnCurve;
   labels: boolean;
+  /** G1's stress test of the R9 fix: the first cell drawn at full contrast (never in a film) */
+  firstCellStress?: boolean;
 }
 
 export interface ReturnOptions {
@@ -349,6 +352,16 @@ export interface ReturnOptions {
    * own size (RETURN_GEOMETRY)
    */
   fieldScale?: number;
+  /**
+   * the first cell's softening by its content's speed (default FIRST_CELL_SOFTEN; setpieces/returnFirstCell.ts, the R9
+   * flash of 31 Oct); null draws it unsoftened (the canary: returnFirstCell fails)
+   */
+  firstCellSoften?: FirstCellSoften | null;
+  /**
+   * G1's stress test of the R9 fix (31 Oct; never in a film): the first cell's S24 frame drawn at full contrast (grey,
+   * contrast ×4: black text on white), the worst-case stand-in the render measures the softening on
+   */
+  firstCellStress?: boolean;
 }
 
 /**
@@ -442,6 +455,8 @@ export function planReturn(o: ReturnOptions): ScenePlan {
     camera.glide(irisAt, 1e9, { lz: lzPage });
     const ref = camera.pose(Math.round(localOfR(480, fps)));
     field.view = { camera, ref, w: f.w, h: f.h, unit };
+    // the first cell softens by its content's speed (the R9 flash, 31 Oct: setpieces/returnFirstCell.ts)
+    field.soften = o.firstCellSoften === undefined ? FIRST_CELL_SOFTEN : o.firstCellSoften;
     // every entry begins out of frame, on this aspect's camera (fitEntries; the review's RV-02 scan)
     if (o.fitEntries !== false) fitEntries(field);
 
@@ -490,6 +505,7 @@ export function planReturn(o: ReturnOptions): ScenePlan {
       merge,
       curve,
       labels: !!o.labels,
+      ...(o.firstCellStress ? { firstCellStress: true } : {}),
     };
     return { shot, lightInitial: "evening", lightCues, music, moves, extra: { return: extra }, stone: { clockOffset, layer: "film" } };
   };
@@ -508,7 +524,7 @@ export function planReturn(o: ReturnOptions): ScenePlan {
     align: o.align,
     head,
   });
-  const variant = [o.merge === "toned" ? "the toned matte" : "", o.curve === "r1" ? "revision 1's curve" : "", o.labels ? "the family labels" : "", o.fieldScale !== undefined && o.fieldScale !== RETURN_FIELD_SCALE ? `the field ×${o.fieldScale}` : ""].filter(Boolean).join(", ");
+  const variant = [o.merge === "toned" ? "the toned matte" : "", o.curve === "r1" ? "revision 1's curve" : "", o.labels ? "the family labels" : "", o.fieldScale !== undefined && o.fieldScale !== RETURN_FIELD_SCALE ? `the field ×${o.fieldScale}` : "", o.firstCellStress ? "the first cell at full contrast" : ""].filter(Boolean).join(", ");
   return { ...plan, id: "return", name: `The Return${variant ? ` (${variant})` : ""}, title, end ${plan.aspect}`, ...(o.labels ? { types: [...plan.types, ...returnLabelTypes(plan, fps)] } : {}) };
 }
 

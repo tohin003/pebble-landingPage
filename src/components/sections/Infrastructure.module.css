@@ -57,3 +57,8 @@
     margin-top: 3px;
   }
 }
+
+/* the facts without numbers, as disclosure rows under the ledger: the ledger's last rule is the first row's top */
+.more > details:first-child {
+  border-top: 0;
+}

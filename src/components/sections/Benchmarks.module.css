@@ -644,3 +644,84 @@
     margin-top: 56px;
   }
 }
+
+/* ---- detail on demand (.work/page-declutter/PLAN.md): golden set 2.0's ledger rows fold under their titles ---- */
+/* the one line that never folds: what was not run before this release */
+.notRun {
+  max-width: 40em;
+  margin-top: 40px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.fold {
+  border-top: 1px solid var(--line);
+  min-width: 0;
+}
+
+.fold:first-of-type {
+  margin-top: 20px;
+}
+
+.fold:last-of-type {
+  border-bottom: 1px solid var(--line);
+}
+
+.foldSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+  padding: 14px 2px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.foldSummary::-webkit-details-marker {
+  display: none;
+}
+
+.foldSummary:focus-visible {
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+
+.foldTitle {
+  min-width: 0;
+}
+
+.foldCaret {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--ink-2);
+}
+
+.fold[open] > .foldSummary .foldCaret {
+  transform: rotate(180deg);
+}
+
+:global(:root[data-motion="on"]) .foldCaret {
+  transition: transform var(--dur-base) var(--ease-firm);
+}
+
+/* the evidence keeps the ledger's columns: six of the main's nine, from its fourth */
+.foldBody {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  column-gap: var(--gap);
+  padding: 4px 0 36px;
+}
+
+@media (max-width: 1023px) {
+  .foldBody {
+    display: block;
+    padding-bottom: 28px;
+  }
+
+  .foldBody > .rowBody {
+    margin-top: 0;
+  }
+}

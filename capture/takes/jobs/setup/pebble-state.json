@@ -1,0 +1,22 @@
+{
+ "_about": "Reads Pebble's state before a take (31 Oct): a still and the workspace's and companion's Accessibility trees. Clicks nothing, sends nothing.",
+ "schema": "pebble-take-job/1",
+ "id": "pebble-state-$n",
+ "take": "setup",
+ "title": "Probe: Pebble's state",
+ "steps": [
+  {
+   "do": "screen_info"
+  },
+  {
+   "do": "still",
+   "name": "now"
+  },
+  {
+   "do": "ax_dump",
+   "app": "Pebble",
+   "max": 2500,
+   "name": "pebble"
+  }
+ ]
+}
