@@ -43,7 +43,7 @@ describe("the opening's acts", () => {
       }
   });
   test("every shot's box and lines sit inside the frame in every aspect", () => {
-    const size = () => 40;
+    const size = { size: () => 40, width: (t: string) => t.length * 20 };
     for (const [W, H] of [[1920, 1080], [1080, 1080], [1080, 1920]] as const)
       for (const p of ACTS)
         p.shots.forEach((_, i) => {

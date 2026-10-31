@@ -30,6 +30,7 @@ const marks = {
   hits: [],
   types: [],
   stones: [],
+  apertures: [],
 };
 writeFileSync(out, JSON.stringify(marks, null, 1));
 console.log(`${id} ${aspect}: ${marks.cuts.length} cuts, ${marks.transitions.length} transitions → ${out}`);

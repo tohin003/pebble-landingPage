@@ -77,6 +77,8 @@ export const LINE_IN = 18;
 /** Reading speed, words a second (the set pieces' reading model), and the floor of any line's hold. */
 export const WORDS_PER_S = 3.14;
 export const MIN_HOLD_S = 2.0;
+/** The slow push on every shot of the opening, scale a second (0.4 % a second: about 2 px a second at the box's edge). */
+export const PUSH_PER_S = 0.004;
 
 export const shotFrames = (s: ActShot): number => (s.kind === "take" ? s.to! - s.from! : s.frames!);
 export const actFrames = (p: ActPlan): number => p.shots.reduce((n, s) => n + shotFrames(s), 0);
@@ -215,6 +217,27 @@ export function checkAct(p: ActPlan, expectStart?: number, expectFrames?: number
 
 /* ---------------------------------------------------------------- layout -------------------------------------- */
 
+/** A type measure: a line's size (typeSizePx) and its advance width (approxLineWidth), passed in from type/scale.ts. */
+export interface TypeMeasure {
+  size: (tier: TypeTier, w: number, h: number, t?: number) => number;
+  width: (text: string, tier: TypeTier, w: number, h: number, t?: number) => number;
+}
+
+/** A line broken into rows that fit `maxW` (greedy, at spaces): the film's lines are never re-flowed by the browser. */
+export function wrapLine(l: ActLine, maxW: number, W: number, H: number, m: TypeMeasure): string[] {
+  const rows: string[] = [];
+  let cur = "";
+  for (const word of l.text.split(" ")) {
+    const next = cur ? `${cur} ${word}` : word;
+    if (cur && m.width(next, l.tier, W, H, l.sizeT ?? 0.5) > maxW) {
+      rows.push(cur);
+      cur = word;
+    } else cur = next;
+  }
+  if (cur) rows.push(cur);
+  return rows;
+}
+
 /** One line's row height in the band, px (its tier's size at its sizeT, with the line's leading). */
 const rowPx = (l: ActLine, W: number, H: number, size: (tier: TypeTier, w: number, h: number, t?: number) => number): number =>
   size(l.tier, W, H, l.sizeT ?? 0.5) * (l.tier === "expressive" ? 1.25 : 1.3) + 0.012 * H;
@@ -231,6 +254,10 @@ export interface ShotLayout {
   box?: { left: number; top: number; w: number; h: number; k: number };
   /** each line's top, px, by its id */
   lineTop: Record<string, number>;
+  /** each line's rows (a long line wrapped to the frame's safe width), by its id */
+  rows: Record<string, string[]>;
+  /** a row's height, px, by the line's id */
+  rowH: Record<string, number>;
 }
 
 /**
@@ -238,11 +265,17 @@ export interface ShotLayout {
  * as fits inside the safe margin, above a band that holds the shot's lines in their slots; a typographic beat's lines
  * centred as one block. `size` is type/scale.ts typeSizePx (passed in so this stays free of the type module's CSS).
  */
-export function shotLayout(p: ActPlan, index: number, W: number, H: number, safe: number, size: (tier: TypeTier, w: number, h: number, t?: number) => number): ShotLayout {
+export function shotLayout(p: ActPlan, index: number, W: number, H: number, safe: number, m: TypeMeasure): ShotLayout {
   const shot = p.shots[index]!;
   const lines = linesOfShot(p, index);
+  const rows: Record<string, string[]> = {};
+  const rowH: Record<string, number> = {};
+  for (const l of lines) {
+    rows[l.id] = wrapLine(l, W - 2 * safe, W, H, m);
+    rowH[l.id] = rowPx(l, W, H, m.size);
+  }
   const slots = [...new Set(lines.map((l) => l.slot ?? 0))].sort((a, b) => a - b);
-  const slotH = slots.map((s) => Math.max(...lines.filter((l) => (l.slot ?? 0) === s).map((l) => rowPx(l, W, H, size))));
+  const slotH = slots.map((s) => Math.max(...lines.filter((l) => (l.slot ?? 0) === s).map((l) => rowH[l.id]! * rows[l.id]!.length)));
   const bandH = slotH.reduce((n, h) => n + h, 0);
   const gap = lines.length ? 0.035 * H : 0;
   const lineTop: Record<string, number> = {};
@@ -255,10 +288,10 @@ export function shotLayout(p: ActPlan, index: number, W: number, H: number, safe
   };
   if (shot.kind === "type") {
     place((H - bandH) / 2);
-    return { lineTop };
+    return { lineTop, rows, rowH };
   }
-  const m = shot.take!;
-  const c = shot.crop ?? { x: 0, y: 0, w: m.w, h: m.h };
+  const take = shot.take!;
+  const c = shot.crop ?? { x: 0, y: 0, w: take.w, h: take.h };
   const regionW = W - 2 * safe;
   const regionH = H - 2 * safe - bandH - gap;
   const k = Math.min(regionW / c.w, regionH / c.h);
@@ -267,5 +300,5 @@ export function shotLayout(p: ActPlan, index: number, W: number, H: number, safe
   // the box and the band as one block, centred on the frame
   const top = (H - (h + gap + bandH)) / 2;
   place(top + h + gap);
-  return { box: { left: (W - w) / 2, top, w, h, k }, lineTop };
+  return { box: { left: (W - w) / 2, top, w, h, k }, lineTop, rows, rowH };
 }

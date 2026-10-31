@@ -1,6 +1,7 @@
 // Ring 1, your browser (S08–S09, film 0:28.00–0:38.00, frames 1680–2280): RS-9's composite (RS9B-02, Clip B), edited
 // deadpan as DECISION-RS9 decided (the 23:10 sarcastic edit, the 23:40 composite, the lead's 23:52 edit decisions):
-//   tab      Clip B from the first frame Chrome's Space has cleared the workspace (its prompt carries the URL), cropped to
+//   tab      Clip B from the frame Chrome's Space has settled over the bars' strip (3292: at its clear frame, 3276, the
+//            strip still shows the workspace's edge), cropped to
 //            Chrome's tab and address bars: Pebble's green group, its own tab on the video's address. L07 and its limit.
 //   play     the playback after YouTube's adverts (skipped by the composite's cut), cropped to the player and the title,
 //            3 s at 1×.
@@ -18,10 +19,10 @@ import { RS9_PLAYER, RS9_TABS, RS9_TEXT, RS9_TITLE } from "../setpieces/rs9Beat"
 import type { ActPlan, ActShot } from "./kit";
 
 const SHOTS: readonly ActShot[] = [
-  { id: "tab", stands: "S08", kind: "take", take: TAKE_RS9B_02, from: 3276, to: 3576, crop: RS9_TABS, note: "Pebble's own tab in its green group, on the video's address" },
-  { id: "play", stands: "S08", kind: "take", take: TAKE_RS9B_02, from: 6990, to: 7170, crop: RS9_PLAYER, note: "the video plays (after the adverts), player and title" },
-  { id: "punch", stands: "S09", kind: "take", take: TAKE_RS9B_02, from: 7170, to: 7230, crop: RS9_TITLE, note: "the punch-in on the title; the score cuts out" },
-  { id: "anyway", stands: "S09", kind: "take", take: TAKE_RS9B_02, from: 7230, to: 7290, crop: RS9_TITLE, note: "'Anyway.'; a hard cut" },
+  { id: "tab", stands: "S08", kind: "take", take: TAKE_RS9B_02, from: 3292, to: 3576, crop: RS9_TABS, note: "Pebble's own tab in its green group, on the video's address" },
+  { id: "play", stands: "S08", kind: "take", take: TAKE_RS9B_02, from: 6990, to: 7186, crop: RS9_PLAYER, note: "the video plays (after the adverts), player and title" },
+  { id: "punch", stands: "S09", kind: "take", take: TAKE_RS9B_02, from: 7186, to: 7246, crop: RS9_TITLE, note: "the punch-in on the title; the score cuts out" },
+  { id: "anyway", stands: "S09", kind: "take", take: TAKE_RS9B_02, from: 7246, to: 7306, crop: RS9_TITLE, note: "'Anyway.'; a hard cut" },
 ];
 
 export const RING_ONE: ActPlan = {
@@ -30,8 +31,8 @@ export const RING_ONE: ActPlan = {
   start: 1680,
   shots: SHOTS,
   lines: [
-    { id: "L07", text: "Its own tab in your browser, on sites you approve.", tier: "functional", at: 12, exitAt: 270, claim: "C-F2O-3" },
-    { id: "L08", text: "Pebble for Chrome needs Developer mode.", tier: "functional", at: 72, exitAt: 276, claim: "C-F2O-4", slot: 1, sizeT: 0.3 },
+    { id: "L07", text: "Its own tab in your browser, on sites you approve.", tier: "functional", at: 12, exitAt: 254, claim: "C-F2O-3" },
+    { id: "L08", text: "Pebble for Chrome needs Developer mode.", tier: "functional", at: 72, exitAt: 260, claim: "C-F2O-4", slot: 1, sizeT: 0.3 },
     { id: "anyway", text: RS9_TEXT.anyway, tier: "functional", at: 540, exitAt: 600, claim: "", sizeT: 0.6, cutOut: true },
   ],
   marks: [

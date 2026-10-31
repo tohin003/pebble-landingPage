@@ -16,7 +16,7 @@ import { frameOfSource, type ActPlan, type ActShot } from "./kit";
 /** RS5C-04's and RS5F-03's card in the Activity panel (its text and its two buttons), above the step list. */
 export const RS5_CARD = { x: 680, y: 140, w: 330, h: 120 } as const;
 /** RS5C-04's Calendar, the month's lower-left: the last rows from Monday to Thursday, "Glaze order 09:00" on Mon 2. */
-export const RS5C_CALENDAR = { x: 196, y: 380, w: 480, h: 200 } as const;
+export const RS5C_CALENDAR = { x: 196, y: 430, w: 420, h: 156 } as const;
 
 const SHOTS: readonly ActShot[] = [
   { id: "calc", stands: "S11", kind: "take", take: TAKE_RS4_07, from: 3176, to: 3476, crop: RS4_CALCULATOR, note: "Calculator: the keys, '=' to 600" },
@@ -35,7 +35,7 @@ export const RING_TWO: ActPlan = {
     { id: "L11-limit", text: "Never terminals, System Settings or password managers.", tier: "functional", at: 60, exitAt: 276, claim: "C-F2O-6", slot: 1, sizeT: 0.3 },
     { id: "cal", text: "Calendar events, without the screen.", tier: "functional", at: 430, exitAt: 620, claim: "C-F2O-7" },
     { id: "cal-limit", text: "No invitations.", tier: "functional", at: 470, exitAt: 620, claim: "C-F2O-8", slot: 1, sizeT: 0.3 },
-    { id: "L12", text: "A press that may send, save or delete asks you.", tier: "functional", at: 652, exitAt: 900, claim: "C-F2O-9" },
+    { id: "L12", text: "A press that may send, save or delete asks you.", tier: "expressive", sizeT: 0.2, at: 652, exitAt: 900, claim: "C-F2O-9" },
     { id: "L12-limit", text: "In Full access, Pebble's check of your messages decides.", tier: "functional", at: 700, exitAt: 905, claim: "C-F2O-10", slot: 1, sizeT: 0.3 },
   ],
   marks: [
