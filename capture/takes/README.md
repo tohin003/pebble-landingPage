@@ -160,7 +160,7 @@ and `chmod g-w`). The agent's umask is 002, so the lead can read and append to w
 ## Tests
 
 ```
-cd <repo> && TMPDIR=/private/tmp/claude-501/takes-tests /usr/sbin/taskpolicy -b \
+cd <repo> && TMPDIR="$(mktemp -d)" /usr/sbin/taskpolicy -b \
   /Library/Frameworks/Python.framework/Versions/3.14/bin/python3 -I -B -m unittest discover -s capture/takes/tests -v
 ```
 
