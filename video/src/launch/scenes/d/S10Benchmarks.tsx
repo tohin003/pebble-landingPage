@@ -1,13 +1,14 @@
-// S10 Benchmarks (13.5 s): the payoff of the hook's open question (TREATMENT §3 "The numbers"; REVIEW-1 M4, M5, S4,
-// S6, S7, S9; FIXES-1 WP-D).
+// S10 Benchmarks (13.954 s, 79.101 to 93.055): the payoff of the hook's open question (TREATMENT §3 "The numbers";
+// REVIEW-1 M4, M5, S4, S6, S7, S9; FIXES-1 WP-D; REVIEW-2 S-3, S-5, N-2, N-3; FIXES-2 R2-D).
 //
 // 0.00  S09's last frame: the Veil pebble centred at (0.5 W, 0.5 H), its body 12 % of the frame's height, on the dusk
-//       night. It sheds the Veil (Pebble's own release, 0.65 s) while the daylight opens out of its outline (0.10 to
-//       0.70 s: a hard-edged wipe whose covered area grows nearly evenly, so the frame brightens over 18 frames, never
-//       in a flash), and the pebble's colour changes only where the wipe has passed. No bloom, no glow.
-// 0.50  "So. How did it do?" is revealed by the daylight, already set, and holds still through the music's stop
-//       (about 0.80 to 1.45 s: the master ducks the music).
-// 1.50  The payoff (81.051): picture and impact on the same frame. "Tasks done correctly." and the scaffold (method
+//       night. At once the daylight opens in a pebble-shaped blob centred on the question's line (not on the pebble), so
+//       the question is never cut by the blob's edge: it is set, whole, on the frame the blob first holds all of it
+//       (about 0.15 s, 79.25 on the film), with a short blur-in. The pebble sheds the Veil (Pebble's own release,
+//       0.65 s) inside the blob; its colour changes only where the blob has passed. No bloom, no glow.
+// 0.15  "So. How did it do?" holds still through the music's stop (about 1.25 to 1.9 s: the master ducks the music):
+//       about 1.8 s readable.
+// 1.95  The payoff (81.051): picture and impact on the same frame. "Tasks done correctly." and the scaffold (method
 //       lines, names, tracks, divider, footnote) land together; both bars of a panel start on the same frame with the
 //       same 0.75 s grow and ease, so their ratio holds on every frame, and their numbers land with them: a number is
 //       never counted, so no unpublished value is ever drawn. The first panel, then the second half a beat later.
@@ -34,7 +35,8 @@ import type { SceneProps } from "../types";
 import { PLACE_SFX, SFX, clamp01, lerp, peakAt, useRetime, useT } from "./common";
 import { VeilShed } from "./VeilShed";
 
-export const S10_NOMINAL = 13.5;
+/** its slot on the master (FIXES-2: 79.101 to 93.055) */
+export const S10_NOMINAL = 13.954;
 
 /** TREATMENT §3's footnote, word for word ("Pebble 1.9.29" is kept on one line where it is drawn). */
 export const S10_FOOTNOTE =
@@ -121,18 +123,23 @@ export const S10_METRICS: readonly Metric[] = [
 export const S10_BEATS = {
   /** the Veil's switch: Pebble's own release plays from here (0.65 s) */
   veilOff: 0,
-  /** the daylight opens out of the pebble's outline */
-  wipe: 0.1,
-  /** the music's stop (the master's duck, about 80.35 to 81.0 on the film) */
-  stop: 0.8,
-  /** each metric's mark: the first is the payoff's impact (81.051); the next two swap the headline */
-  metrics: [1.5, 4.75, 8.5],
+  /** the daylight opens in a blob centred on the question's line, at once */
+  wipe: 0,
+  /** the blob holds the whole question: it is set (79.25 on the film) */
+  question: 0.15,
+  /** the music's stop (the master's duck, 80.35 to 81.0 on the film) */
+  stop: 1.25,
+  /** each metric's mark: the first is the payoff's impact (81.051); the next two swap the headline (84.301, 88.051) */
+  metrics: [1.95, 5.2, 8.95],
+  /** the cost chart: the pebble's happy reaction once both panels have landed (90.3 on the film; REVIEW-2 S-5) */
+  costHappy: 11.2,
   /** the chart leaves */
-  exit: 12.45,
+  exit: 12.9,
   /** the pebble's hop to its end mark; it lands happy */
-  hop: 12.55,
+  hop: 13.0,
 } as const;
-const WIPE_DUR = 0.6;
+/** the blob: it holds the question at `question`, and has covered the frame at WIPE_DUR */
+const WIPE_DUR = 0.5;
 const RELEASE_END = 0.68;
 const GROW = 0.75;
 const RETRACT = 0.3;
@@ -141,8 +148,8 @@ const PANEL_GAP = 0.5;
 /** each metric's bars start this long after its mark: the first on the impact, the next ones once the headline has landed */
 const BAR_DELAY = [0, 0.75, 0.75] as const;
 const HOP_DUR = 0.4;
-/** the pebble nods on these downbeats while a chart holds */
-const NODS = [3.5, 7.5, 11.5] as const;
+/** the pebble nods on these downbeats while a chart holds (the cost chart's after its happy reaction) */
+const NODS = [3.95, 7.95, 12.05] as const;
 const HEAD_OUT = 0.18;
 /** how far the chart's body drifts in over a hold (a fraction of its size) */
 const DRIFT = 0.012;
@@ -153,14 +160,16 @@ const landAt = (m: number, p: number) => barStartAt(m, p) + GROW;
 const HAPPY = S10_BEATS.hop + HOP_DUR;
 
 export const S10_MARKS = [
-  { name: "the Veil sheds; the daylight opens out of the pebble", s: S10_BEATS.wipe },
-  { name: "\"So. How did it do?\" set, still (the music's stop)", s: S10_BEATS.stop },
+  { name: "the daylight opens in a blob on the question's line; the Veil sheds inside it", s: S10_BEATS.wipe },
+  { name: "\"So. How did it do?\" set, whole, inside the blob", s: S10_BEATS.question },
+  { name: "the music's stop: the question still", s: S10_BEATS.stop },
   { name: "the payoff: chart 1 and the impact (tasks done correctly)", s: S10_BEATS.metrics[0] },
   ...S10_METRICS.flatMap((_, m) => [
     ...(m > 0 ? [{ name: `metric ${m + 1}: the headline swaps (${m === 1 ? "said done when it wasn't" : "cost per task"})`, s: S10_BEATS.metrics[m] }] : []),
     { name: `metric ${m + 1}: panel 1 lands`, s: landAt(m, 0) },
     { name: `metric ${m + 1}: panel 2 lands`, s: landAt(m, 1) },
   ]),
+  { name: "the cost chart: the pebble's happy reaction", s: S10_BEATS.costHappy },
   { name: "the chart leaves", s: S10_BEATS.exit },
   { name: "the pebble lands happy at (0.5 W, 0.56 H)", s: HAPPY },
 ] as const;
@@ -168,8 +177,8 @@ export const S10_MARKS = [
 /** The scene's SFX cues for the master (seconds from the scene's start, at nominal length × k; `at` is the file's start). */
 export const s10Sfx = (k = 1): SfxCue[] => {
   const out: SfxCue[] = [
-    // the daylight opening out of the pebble: a short whoosh peaking at the wipe's fastest frame, gone before the stop
-    peakAt(SFX.whoosh, (S10_BEATS.wipe + WIPE_DUR * 0.55) * k, -19),
+    // the daylight opening: a short whoosh peaking as the blob takes the question, gone well before the stop
+    peakAt(SFX.whoosh, (S10_BEATS.wipe + 0.12) * k, -19),
     // the payoff's impact on the chart's first frame (the master plays the list's first thud as the full impact)
     peakAt(SFX.thud, S10_BEATS.metrics[0] * k, -12),
   ];
@@ -179,6 +188,8 @@ export const s10Sfx = (k = 1): SfxCue[] => {
     // one tick as each panel's bars and numbers land
     for (let p = 0; p < 2; p++) out.push(peakAt(SFX.tick, landAt(m, p) * k, -16));
   });
+  // the cost chart: a soft click under the pebble's happy reaction
+  out.push(peakAt(SFX.click2, S10_BEATS.costHappy * k, -17));
   // the pebble lands happy
   out.push(peakAt(SFX.shimmer, HAPPY * k + 0.02, -15));
   return out.sort((a, b) => a.at - b.at);
@@ -188,6 +199,8 @@ export const s10Sfx = (k = 1): SfxCue[] => {
 
 interface Geo {
   question: Rect;
+  /** the question's ink, about (what the blob must hold whole before it is set) */
+  questionInk: Rect;
   questionText: string;
   questionSize: number;
   headline: Rect;
@@ -225,6 +238,7 @@ const geometry = (L: Layout): Geo => {
     const cx = L.W / 2;
     return {
       question: { x: x0, y: p(200), w, h: p(230) },
+      questionInk: { x: L.W / 2 - p(690), y: p(250), w: p(1380), h: p(190) },
       questionText: "So. How did it do?",
       questionSize: L.type.display,
       headline: { x: x0, y: p(40), w, h: p(136) },
@@ -260,11 +274,13 @@ const geometry = (L: Layout): Geo => {
   const cy = L.H / 2;
   return {
     question: { x: x0, y: p(250), w, h: p(320) },
+    questionInk: { x: L.W / 2 - p(440), y: p(270), w: p(880), h: p(310) },
     questionText: "So.\nHow did it do?",
     questionSize: p(128),
-    headline: { x: x0, y: p(36), w, h: p(178) },
+    // headline and "Lower is better." 16 px higher, so the method line has 16 px more air under it (REVIEW-2 N-3)
+    headline: { x: x0, y: p(20), w, h: p(178) },
     headlineSize: p(84),
-    lower: { x: x0, y: p(222), w, h: p(62) },
+    lower: { x: x0, y: p(206), w, h: p(62) },
     lowerSize: p(52),
     // the two comparisons stacked, with the band between them centred on the pebble (its handoff place and size)
     panels: [
@@ -282,8 +298,8 @@ const geometry = (L: Layout): Geo => {
       [x0, cy, L.W / 2 - p(124), cy],
       [L.W / 2 + p(124), cy, x0 + w, cy],
     ],
-    foot: { x: x0, y: p(1128), w, h: p(190) },
-    footSize: p(26),
+    foot: { x: x0, y: p(1112), w, h: p(214) },
+    footSize: p(28),
     chartH: 0.12,
     lookAt: [
       { x: 0.1, y: -0.85 },
@@ -316,23 +332,44 @@ const covered = (w: number, cx: number, cy: number, W: number, H: number): numbe
   return area / (W * H);
 };
 
-/** The wipe's width at progress p: the covered area follows a nearly even ramp (0.7 linear + 0.3 smoothstep). */
-const wipeWidth = (p: number, w0: number, cx: number, cy: number, W: number, H: number): number => {
+/** The narrowest blob (the galet as an ellipse of half-axes 0.5 w and 0.44 w, with a margin for its flatter flanks) centred
+ * at (cx, cy) that holds every corner of `r`. */
+const containWidth = (r: Rect, cx: number, cy: number): number => {
+  const corners = [
+    [r.x, r.y],
+    [r.x + r.w, r.y],
+    [r.x, r.y + r.h],
+    [r.x + r.w, r.y + r.h],
+  ];
+  // (dx / 0.5w)² + (dy / 0.44w)² ≤ 1  ⇔  w ≥ 2 √(dx² + (dy / 0.88)²)
+  const w = Math.max(...corners.map(([x, y]) => 2 * Math.hypot(x - cx, (y - cy) / 0.88)));
+  return w * 1.1;
+};
+
+/**
+ * The blob's width `dt` seconds after it starts: from nothing to holding the question (wQ) at `tQ`, decelerating a
+ * little into it, then on to past the frame's farthest corner at `tEnd`, the covered area growing nearly evenly.
+ */
+const blobWidth = (dt: number, tQ: number, tEnd: number, wQ: number, cx: number, cy: number, W: number, H: number): number => {
+  if (dt <= 0) return 0;
   const far = Math.max(Math.hypot(cx, cy), Math.hypot(W - cx, cy), Math.hypot(cx, H - cy), Math.hypot(W - cx, H - cy));
   const wEnd = (far / 0.44) * 1.04;
-  const q = clamp01(p);
+  if (dt < tQ) {
+    const q = dt / tQ;
+    return wQ * (1 - Math.pow(1 - q, 1.6));
+  }
+  const q = clamp01((dt - tQ) / Math.max(0.01, tEnd - tQ));
   if (q >= 1) return wEnd;
-  const e = 0.7 * q + 0.3 * q * q * (3 - 2 * q);
-  const f0 = covered(w0, cx, cy, W, H);
-  const target = f0 + (1 - f0) * e;
-  let lo = w0;
+  const fQ = covered(wQ, cx, cy, W, H);
+  const target = fQ + (1 - fQ) * (0.7 * q + 0.3 * q * q * (3 - 2 * q));
+  let lo = wQ;
   let hi = wEnd;
   for (let i = 0; i < 28; i++) {
     const mid = (lo + hi) / 2;
     if (covered(mid, cx, cy, W, H) < target) lo = mid;
     else hi = mid;
   }
-  return (lo + hi) / 2;
+  return Math.max(wQ, (lo + hi) / 2);
 };
 
 /* ---------- time ---------- */
@@ -346,19 +383,30 @@ const retractEase = (x: number) => clamp01(x) * clamp01(x);
 const pebbleCues = (a: (s: number) => number, G: Geo) =>
   cues(
     pose(0, "idle"),
-    // up at the question as the daylight reveals it, then still through the stop
-    look(a(0.6), 0, -0.8),
+    // up at the question once the Veil is off, then still through the stop
+    look(a(0.7), 0, -0.8),
     // the payoff: attentive
     pose(a(S10_BEATS.metrics[0]), "hover"),
-    ...S10_METRICS.flatMap((_, m) => [
-      look(a(barStartAt(m, 0)) + 0.04, G.lookAt[0].x, G.lookAt[0].y),
-      // the first panel lands: happy eyes
-      pose(a(landAt(m, 0)), "tap"),
-      look(a(landAt(m, 0)) + 0.12, G.lookAt[1].x, G.lookAt[1].y),
-      // back to attentive once the second has landed
-      pose(a(landAt(m, 1)) + 0.7, "hover"),
-      lookBack(a(landAt(m, 1)) + 0.7),
-    ]),
+    ...S10_METRICS.flatMap((_, m) =>
+      m < S10_METRICS.length - 1
+        ? [
+            look(a(barStartAt(m, 0)) + 0.04, G.lookAt[0].x, G.lookAt[0].y),
+            // the first panel lands: happy eyes
+            pose(a(landAt(m, 0)), "tap"),
+            look(a(landAt(m, 0)) + 0.12, G.lookAt[1].x, G.lookAt[1].y),
+            // back to attentive once the second has landed
+            pose(a(landAt(m, 1)) + 0.7, "hover"),
+            lookBack(a(landAt(m, 1)) + 0.7),
+          ]
+        : [
+            // the cost chart: it watches both panels land, then reacts happy (REVIEW-2 S-5: 90.3, not 89.6)
+            look(a(barStartAt(m, 0)) + 0.04, G.lookAt[0].x, G.lookAt[0].y),
+            look(a(landAt(m, 0)) + 0.12, G.lookAt[1].x, G.lookAt[1].y),
+            lookBack(a(S10_BEATS.costHappy) - 0.12),
+            pose(a(S10_BEATS.costHappy), "tap"),
+            pose(a(S10_BEATS.costHappy) + 0.75, "hover"),
+          ],
+    ),
     // the end: it hops to its mark and lands happy
     pose(a(HAPPY), "happy"),
   );
@@ -377,7 +425,7 @@ export const S10Benchmarks: React.FC<SceneProps> = ({ durationInFrames }) => {
 
   // the daylight opens out of the pebble's outline (a little wider than the body, so the whole pebble is inside it)
   const wipeAt = a(S10_BEATS.wipe);
-  const wipeP = clamp01((t - wipeAt) / WIPE_DUR);
+  const wipeP = clamp01((t - wipeAt) / a(WIPE_DUR));
   const dayOn = t >= wipeAt;
   const nightOn = wipeP < 1;
 
@@ -391,8 +439,12 @@ export const S10Benchmarks: React.FC<SceneProps> = ({ durationInFrames }) => {
   const footNow = { x: start.x, y: start.cy + (sizeNow * BODY.height) / VIEWBOX_SIZE / 2 };
   const hopAt = a(S10_BEATS.hop);
   // a squash at the impact and at each landing; in the holds it nods on the bar's downbeat (it never holds dead still)
-  const pulses = [impact, ...S10_METRICS.flatMap((_, m) => [a(landAt(m, 0)), a(landAt(m, 1))]), ...NODS.map(a)];
-  const wipeW = dayOn ? wipeWidth(wipeP, start.bodyW * 1.3, start.x, start.cy, L.W, L.H) : 0;
+  const pulses = [impact, ...S10_METRICS.flatMap((_, m) => [a(landAt(m, 0)), a(landAt(m, 1))]), a(S10_BEATS.costHappy), ...NODS.map(a)];
+  // the blob: centred on the question's line; it holds the whole question at `question`, then covers the frame
+  const qc = { x: G.question.x + G.question.w / 2, y: G.questionInk.y + G.questionInk.h / 2 };
+  const wQ = containWidth(G.questionInk, qc.x, qc.y);
+  const wipeW = dayOn ? blobWidth(t - wipeAt, a(S10_BEATS.question) - wipeAt, a(WIPE_DUR), wQ, qc.x, qc.y, L.W, L.H) : 0;
+  const qAt = a(S10_BEATS.question);
 
   const sfx = PLACE_SFX ? <SfxTrack cues={s10Sfx(k)} /> : null;
 
@@ -408,10 +460,10 @@ export const S10Benchmarks: React.FC<SceneProps> = ({ durationInFrames }) => {
           </AbsoluteFill>
         )}
         {dayOn && (
-          <AbsoluteFill style={nightOn ? { clipPath: pebblePath(start.x, start.cy, wipeW) } : undefined}>
+          <AbsoluteFill style={nightOn ? { clipPath: pebblePath(qc.x, qc.y, wipeW) } : undefined}>
             <Stage world="daylight" keyLight={L.portrait ? { x: 0.4, y: 0.08, r: 0.95 } : { x: 0.32, y: 0.06, r: 0.95 }}>
               {t < impact && (
-                <Headline text={G.questionText} at={-1} size={G.questionSize} align="center" valign="bottom" box={G.question} lineStagger={0} />
+                <Headline text={G.questionText} at={qAt - 0.02} entrance="blur" together dur={0.13} size={G.questionSize} align="center" valign="bottom" box={G.question} lineStagger={0} />
               )}
               <Chart G={G} a={a} />
               {t < a(RELEASE_END) ? (
@@ -583,7 +635,9 @@ const Panel: React.FC<{ G: Geo; p: number; m: number; a: (s: number) => number }
         </>
       ) : (
         <div style={{ position: "absolute", left: 0, top: 0, lineHeight: 1.12, whiteSpace: "nowrap" }}>
-          <span style={methodLead}>{panel.lead}</span> <span style={methodRest}>{panel.rest}</span>
+          {/* the word space inside the lead's own span, at its size (REVIEW-2 N-3: it was a thin space at the default size) */}
+          <span style={methodLead}>{`${panel.lead} `}</span>
+          <span style={methodRest}>{panel.rest}</span>
         </div>
       )}
       {[0, 1].map((r) => {
