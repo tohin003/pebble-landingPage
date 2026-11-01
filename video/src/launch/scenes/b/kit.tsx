@@ -2,6 +2,7 @@
 // motion system. If the director wants any of it shared, it can move to launch/components.
 import { useId, type CSSProperties, type ReactNode } from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
+import { useWindowSize } from "../../components/FloatingWindow";
 import { BODY, VIEWBOX_SIZE } from "../../../../../shared/pebble";
 import type { Box } from "../../camera";
 import { ScreenZoom, type ScreenZoomProps } from "../../components/ScreenZoom";
@@ -75,8 +76,12 @@ export interface Mask {
   box: Box;
   s0: number;
   s1: number;
-  /** "blur" (default): frosted in place; "fill": painted over in the UI's own colour (a CSS background) */
-  kind?: "blur" | "fill";
+  /**
+   * "blur" (default): frosted in place; "fill": painted over in the UI's own colour (a CSS background); "wallpaper":
+   * the box is cut out of the picture and filled from what surrounds it (REVIEW-3 M-1: a normalised blur of the
+   * picture round the hole, so it reads as the wallpaper's own soft texture, never as a window: no edge, no shadow)
+   */
+  kind?: "blur" | "fill" | "wallpaper";
   /** blur, SOURCE px (default 20): it scales with the camera, so a push never sharpens what it hides */
   px?: number;
   /** kind "blur": the opaque colour under the frosted copy (the UI's own ground; default near-black) */
@@ -90,6 +95,37 @@ export interface Mask {
   /** kind "fill": corner radius, view px */
   radius?: number;
 }
+
+/**
+ * The "wallpaper" fill's filter: a wide blur of the picture with its holes cut out (alpha 0), un-premultiplied to
+ * opaque, is the normalised average of what surrounds each point (the holes' contents never count); a second, smaller
+ * blur smooths the 8-bit steps where little alpha reached.
+ */
+const InpaintFilter: React.FC<{ id: string; wide: number; smooth: number }> = ({ id, wide, smooth }) => (
+  <svg width={0} height={0} style={{ position: "absolute" }}>
+    <filter id={id} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
+      <feGaussianBlur stdDeviation={wide.toFixed(2)} edgeMode="none" />
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="4096" intercept="0" />
+      </feComponentTransfer>
+      <feGaussianBlur stdDeviation={smooth.toFixed(2)} edgeMode="duplicate" />
+    </filter>
+  </svg>
+);
+
+/** An SVG data URL (view px) for a CSS mask: `rects` opaque (feathered by `feather` px), or the inverse with holes. */
+const maskUrl = (w: number, h: number, rects: readonly Rect[], mode: "rects" | "holes", feather = 0) => {
+  const f = (v: number) => v.toFixed(1);
+  const body =
+    mode === "rects"
+      ? `<filter id='f' x='-50%' y='-50%' width='200%' height='200%'><feGaussianBlur stdDeviation='${f(feather)}'/></filter><g filter='url(#f)' fill='white'>${rects
+          .map((r) => `<rect x='${f(r.x)}' y='${f(r.y)}' width='${f(r.w)}' height='${f(r.h)}'/>`)
+          .join("")}</g>`
+      : `<path fill='white' fill-rule='evenodd' d='M0 0H${f(w)}V${f(h)}H0Z ${rects.map((r) => `M${f(r.x)} ${f(r.y)}h${f(r.w)}v${f(r.h)}h${f(-r.w)}Z`).join(" ")}'/>`;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${f(w)}' height='${f(h)}' viewBox='0 0 ${f(w)} ${f(h)}'>${body}</svg>`;
+  return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+};
+const maskStyle = (url: string): CSSProperties => ({ maskImage: url, WebkitMaskImage: url, maskSize: "100% 100%", WebkitMaskSize: "100% 100%", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat" });
 
 /** The SVG blur a frosted copy uses: edges duplicated, so the copy stays opaque to its own edges. */
 const FrostFilter: React.FC<{ id: string; px: number }> = ({ id, px }) => (
@@ -118,6 +154,10 @@ const roundRect = (r: Rect, rad: number) => {
 export const MaskedZoom: React.FC<ScreenZoomProps & { masks: readonly Mask[] }> = ({ masks, ...zoom }) => {
   const id = `fz${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const map = zoom.time ?? realTime(zoom.srcStart ?? 0);
+  const win = useWindowSize();
+  const cfg = useVideoConfig();
+  const vw = zoom.width ?? win?.w ?? cfg.width;
+  const vh = zoom.height ?? win?.h ?? cfg.height;
   const overlay = (toView: (p: { x: number; y: number }) => { x: number; y: number }, scale: number, t: number): ReactNode => {
     const src = map.at(t);
     const active = masks.filter((m) => src >= m.s0 && src < m.s1);
@@ -130,7 +170,7 @@ export const MaskedZoom: React.FC<ScreenZoomProps & { masks: readonly Mask[] }> 
     // one frosted copy per blur strength (view px, rounded), clipped to the union of its boxes minus their holes
     const groups = new Map<number, { paths: string[]; backing: string }>();
     for (const m of active) {
-      if (m.kind === "fill") continue;
+      if (m.kind === "fill" || m.kind === "wallpaper") continue;
       const sigma = Math.max(2, Math.round((m.px ?? 20) * scale));
       const g = groups.get(sigma) ?? { paths: [], backing: m.backing ?? "#141615" };
       const r = view(m);
@@ -138,8 +178,30 @@ export const MaskedZoom: React.FC<ScreenZoomProps & { masks: readonly Mask[] }> 
       for (const h of m.holes ?? []) g.paths.push(roundRect(toRect(h.box), h.r * scale));
       groups.set(sigma, g);
     }
+    // the wallpaper fill: the holes cut out of a copy, the copy inpainted by a normalised blur, shown inside the holes
+    // with a feathered edge that lands on wallpaper (where the fill and the picture agree), so no edge ever shows
+    const walls = active.filter((m) => m.kind === "wallpaper");
+    const wallFill = (() => {
+      if (!walls.length) return null;
+      const holes = walls.map((m) => view(m));
+      const feather = 80 * scale; // source px: a wide, soft hand-over to the wallpaper round the hole (no rectangle reads)
+      const grow = 2 * feather;
+      const shown = holes.map((r) => ({ x: r.x - grow, y: r.y - grow, w: r.w + 2 * grow, h: r.h + 2 * grow }));
+      const wide = Math.max(4, (walls[0].px ?? 400) * scale);
+      return (
+        <div key="wall" style={{ position: "absolute", inset: 0, ...maskStyle(maskUrl(vw, vh, shown, "rects", feather)) }}>
+          <InpaintFilter id={`${id}-wall`} wide={wide} smooth={Math.max(2, wide * 0.15)} />
+          <div style={{ position: "absolute", inset: 0, filter: `url(#${id}-wall)` }}>
+            <div style={{ position: "absolute", inset: 0, ...maskStyle(maskUrl(vw, vh, holes, "holes")) }}>
+              <ScreenZoom {...zoom} overlay={undefined} motionBlur={false} edgeFade={false} />
+            </div>
+          </div>
+        </div>
+      );
+    })();
     return (
       <>
+        {wallFill}
         {[...groups.entries()].map(([sigma, g]) => (
           <div key={`b${sigma}`} style={{ position: "absolute", inset: 0, clipPath: `path(evenodd, "${g.paths.join(" ")}")` }}>
             <div style={{ position: "absolute", inset: 0, background: g.backing }} />
