@@ -61,3 +61,20 @@ is missing. claude-p sessions keep running (another account). Status:
    text, posters (frame 0), the post text with the benchmark method, CLAIMS rows for the film's lines.
 7. Landing page: per SITE_AUDIT.md, loops cut from the locked film's scenes into /media/v3, the film + phone cut,
    tests, `next build` via heavy.sh, copy lint. Never deploy: the owner pushes main.
+
+## Update, 1 Nov ~19:20 IST (after the usage reset)
+
+- Done and committed: scenes A (4b9451a), C (4429644), D (cherry-picked from its worktree branch as 648d851, b77d7ae);
+  takes map (0c709ed, `.work/launch/assets/TAKES.md`); 2.0.1 UI captures in dark and light (`data/ui.ts`, 51208c3;
+  `.work/launch/ui/UI_CAPTURE.md`). Footage findings that bind: blur RS5C-04's month view (the owner's own iCloud
+  events); the Calculator keys never light (zoom the display); RS9B-02 has ~1.1 s of clean Chrome; RS13-03's
+  "empty" desktop has a Finder window and a widget to blur; RS9A-01 is unusable.
+- Director's review notes are in `.work/launch/briefs/rev-d.md` and `rev-ac.md` (scale-ups, must-read sizes, new
+  nominal lengths for music A).
+- Running unattended on claude-p in print mode (`-p --permission-mode auto --permission-prompts none`, outputs in
+  `.work/launch/runs/*.out`): scenes B restart (`scenes-b2`), revision D (`rev-d`), revision A+C (`rev-ac`), the
+  master edit (`master`, brief `briefs/master.md`). Background `--bg` sessions stalled on permission prompts; don't
+  use `--bg` for unattended work. Workers sometimes create worktrees; the `_unattended.md` brief forbids it.
+- Still on claude-w: the iPhone worker (resumed). Not resumed: the motion-system worker (its handoff exists).
+- Next: group E (S08 Remote) once `data/remote.ts` lands; the site session (brief to write from SITE_AUDIT.md);
+  review every revision; the music pick (A assumed in all timings).
