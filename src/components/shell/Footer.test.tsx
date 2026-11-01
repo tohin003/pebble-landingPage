@@ -11,6 +11,7 @@ import path from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { footer } from "@/content/copy";
 import { comingNext, comingNextShown } from "@/content/next";
+import { releaseFacts } from "@/content/releaseFacts";
 import { firstSentence } from "@/components/ui/twoTone";
 import { Footer } from "./Footer";
 
@@ -95,6 +96,11 @@ describe("the gate (C13): only through comingNextShown, and nothing else changes
     expect(at150).toBe(closed);
     const at200 = renderToStaticMarkup(<Footer nextShown={comingNextShown("2.0.0")} />);
     expect(at200).toBe(open);
+    // 2.0.1, the release the page states now, is in 2.0.0's line: the hint stays (C-NEXT-1, C-NEXT-2 (2.0.1))
+    const at201 = renderToStaticMarkup(<Footer nextShown={comingNextShown("2.0.1")} />);
+    expect(at201).toBe(open);
+    expect(releaseFacts.version).toBe("2.0.1");
+    expect(comingNextShown()).toBe(true);
   });
 
   test("by default the release facts decide", () => {

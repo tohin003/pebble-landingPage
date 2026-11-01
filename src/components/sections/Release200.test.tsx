@@ -9,7 +9,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
-import { acrossMac, agentGuard, explainers, honestLimits, project, sectionIds, workshop } from "@/content/copy";
+import { acrossMac, agentGuard, explainers, honestLimits, orchestration, project, remote, sectionIds, workshop } from "@/content/copy";
 import { faq } from "@/content/faq";
 import { labels } from "@/content/labels";
 import { STEALTH_NEVER } from "@/content/neverWords";
@@ -33,13 +33,15 @@ const text = (html: string) =>
 const macHtml = renderToStaticMarkup(<AcrossYourMac />);
 const workshopHtml = renderToStaticMarkup(<Workshop />);
 
-/** Every string of the two sections, the way a visitor reads them. */
-const sectionStrings = [acrossMac, workshop].flatMap((block) => [
+/** Every string of the two sections, and of Pebble Remote's (2.0.0's Mac side, on the page since 2.0.1's notes published
+ *  its app's source: Launch201.test.tsx), the way a visitor reads them. */
+const sectionStrings = [acrossMac, workshop, remote].flatMap((block) => [
   block.h2,
   block.lead,
   block.note,
   ...block.rows.flatMap((row) => [row.term, row.text, row.limit]),
   ...("then" in block ? [block.then] : []),
+  ...("sourceOnly" in block ? [block.sourceOnly] : []),
 ]);
 
 /** The release's new and changed copy outside the two sections. */
@@ -51,6 +53,9 @@ const changedStrings = [
   explainers.permissionDial.appsNote,
   ...honestLimits.product.map((item) => item.body),
   ...(faq.find((item) => item.id === "faq-apps")?.answer ?? []),
+  orchestration.longTasks.title,
+  orchestration.longTasks.text,
+  orchestration.longTasks.limit,
 ];
 
 describe("Across your Mac", () => {
