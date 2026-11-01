@@ -1,7 +1,7 @@
 // S04 AgentGuard (EDIT_PLAN "S04", TREATMENT §3 act 4). Daylight world: the real 2.0.1 UI floats on warm stone.
 //
-// Frame 0 is the seam from S03: a centred card about 60 % of the frame wide, carrying Pebble's own window (the capture
-// harness clip, v2.0.1, dark theme, sample data) on the held task: "Pebble's change isn't verified yet." with Run the
+// Frame 0 is the seam from S03: a card under the title, already framed on the held block at readable size (the capture
+// harness clip, v2.0.1, dark theme, sample data): "Pebble's change isn't verified yet." with Run the
 // tests / Ask Pebble to finish / Accept as unverified, a clay glow on the held block. "Done means checked." lands above
 // it. The camera pushes onto the held block; the person's pointer clicks Run the tests; the "Run isolated tests" card;
 // Run tests; the tests run (the wait compressed, every frame real); their result; then Details' newest cards land and
@@ -25,14 +25,13 @@ import { timeMap } from "../../timeMap";
 import { C, EASE } from "../../tokens";
 import { DAY, useWorld } from "../../world";
 import type { SceneProps } from "../types";
-import { Check, box, centred, clamp01, glowRing, hit, ramp, rectAt, sfxSrc, sfxStart, useClock, type SfxNote } from "./common";
+import { Check, box, clamp01, glowRing, hit, ramp, rectAt, sfxSrc, sfxStart, useClock, type SfxNote } from "./common";
 
 export const S04_NOMINAL = 8;
 
 const AG = UI_CLIPS.agentguard;
 const SRC = AG.src.dark;
 const SIZE = AG.size; // 3600 × 2250
-const FULL = box(0, 0, SIZE.w, SIZE.h);
 
 /** Beats, seconds at the nominal length (they scale with the scene's length through the clock's T). */
 const B = {
@@ -65,50 +64,59 @@ export const S04_MARKS = [
 
 /** Source boxes (the clip's own px, data/ui.ts), framed on UI boundaries. */
 const HELD_16 = box(700, 1300, 1250, 600); // "Blocked", the held sentence and the three buttons
-const HELD_45 = box(740, 1180, 960, 800);
+const HELD_45 = box(712, 1300, 960, 600); // above the composer (its placeholder would be sliced)
 const HELD_ROW = AG.boxes.heldRow.box;
 const CARD = AG.boxes.testsCard.box; // the "Run isolated tests" card, Run tests ready
 const RUNNING = AG.boxes.testsCardRunning.box; // the card in Earlier actions, Running
 const RESULT = box(2543, 1480, 1018, 620); // the card's Result (passed 42) and the output "42 passed in 1.84s"
 const VCTX = box(2500, 230, 1100, 880); // Details › Steps: Tests · pytest, the Verified check card, Done
 const VERIFIED = AG.boxes.verifiedWorkCard.box; // "What your request requires · Verified · pytest 42 passed on current files"
+/** The same card framed on its own border (x 2548–3564, y 664–860 when the shrink lands) plus ~20 px of panel. */
+const VCARD = box(2526, 644, 1060, 236);
 
 const CHIPS = ["Tests the host ran, not the model’s word.", "Files you asked to keep, kept.", "Output compared byte for byte."] as const;
 
 const geo = (L: Layout) => {
   const W = L.W;
   if (!L.portrait) {
-    const cardW = L.px(720);
+    // the end frame is a diagonal: the title and the three rows top-left, the evidence card large at the bottom right
+    const cardW = L.px(1100);
+    const cardH = (cardW * VCARD.h) / VCARD.w;
+    // frame 0 (the seam from S03): the held block itself, already readable, in a card under the title
+    const r0W = L.px(1360);
+    const r0H = (r0W * HELD_16.h) / HELD_16.w;
     return {
-      R0: centred(W / 2, L.H / 2, W * 0.6, W * 0.6 / 1.6),
-      R1: { x: (W - W * 0.6) / 2, y: L.px(290), w: W * 0.6, h: (W * 0.6) / 1.6 },
+      R0: { x: (W - r0W) / 2, y: L.px(318), w: r0W, h: r0H },
+      R1: { x: (W - r0W * 1.03) / 2, y: L.px(306), w: r0W * 1.03, h: r0H * 1.03 },
       R2a: { x: L.px(150), y: L.px(270), w: L.px(1620), h: L.px(770) },
       R2: L.window,
-      R3: { x: W - L.margin.x - cardW, y: L.px(132), w: cardW, h: (cardW * VERIFIED.h) / VERIFIED.w },
+      R3: { x: W - L.margin.x - cardW, y: L.content.y + L.content.h - cardH, w: cardW, h: cardH },
       title: { text: "Done means *checked.*", box: { x: L.content.x, y: L.px(84), w: L.content.w, h: L.px(190) }, size: L.type.headline },
       ag: { x: L.content.x, y: L.px(96), w: L.px(900), h: L.px(170) },
       agSize: L.type.headline,
       sub: { x: L.content.x, y: L.px(268), w: L.px(1000), h: L.px(80) },
-      chipTop: L.px(470),
-      chipH: L.px(122),
+      chipTop: L.px(388),
+      chipH: L.px(108),
       chipSize: L.type.sub,
       held: HELD_16,
     };
   }
   const cardW = L.content.w;
+  const r0W = L.px(1000);
+  const r0H = (r0W * HELD_45.h) / HELD_45.w;
   return {
-    R0: centred(W / 2, L.H / 2, W * 0.6, (W * 0.6) / 1.6),
-    R1: { x: L.px(40), y: L.px(430), w: L.px(1000), h: L.px(625) },
-    R2a: { x: L.px(40), y: L.px(410), w: L.px(1000), h: L.px(830) },
+    R0: { x: (W - r0W) / 2, y: L.px(400), w: r0W, h: r0H },
+    R1: { x: L.px(40), y: L.px(410), w: L.px(1000), h: r0H },
+    R2a: { x: L.px(40), y: L.px(400), w: L.px(1000), h: L.px(1000) / 1.6 },
     R2: L.window,
-    R3: { x: L.content.x, y: L.px(330), w: cardW, h: (cardW * VERIFIED.h) / VERIFIED.w },
+    R3: { x: L.content.x, y: L.px(330), w: cardW, h: (cardW * VCARD.h) / VCARD.w },
     title: { text: "Done means\n*checked.*", box: { x: L.content.x, y: L.px(110), w: L.content.w, h: L.px(260) }, size: L.type.headline },
     ag: { x: L.content.x, y: L.px(96), w: L.content.w, h: L.px(140) },
     agSize: L.type.headline,
     sub: { x: L.content.x, y: L.px(238), w: L.content.w, h: L.px(64) },
-    chipTop: L.px(640),
-    chipH: L.px(200),
-    chipSize: L.type.sub,
+    chipTop: L.px(650),
+    chipH: L.px(180),
+    chipSize: L.px(46),
     held: HELD_45,
   };
 };
@@ -211,8 +219,7 @@ export const S04AgentGuard: React.FC<SceneProps> = ({ durationInFrames }) => {
   );
 
   const keys: ZoomKey[] = [
-    { t: 0, box: FULL },
-    { t: T(1.05), box: FULL },
+    { t: 0, box: g.held },
     { t: T(B.pushHeld), box: g.held, dur: 0.6 },
     { t: T(1.9), box: g.held },
     { t: T(B.card), box: CARD, dur: 0.42 },
@@ -223,7 +230,7 @@ export const S04AgentGuard: React.FC<SceneProps> = ({ durationInFrames }) => {
     { t: T(3.62), box: RESULT },
     { t: T(B.verified) + 0.05, box: VCTX, dur: 0.45 },
     { t: T(B.shrink), box: VCTX },
-    { t: shrinkEnd, box: VERIFIED, dur: 0.65 },
+    { t: shrinkEnd, box: VCARD, dur: 0.65 },
   ];
 
   // the clay glow on the held block until the click, the sage glow on the verified card from its landing
@@ -236,6 +243,7 @@ export const S04AgentGuard: React.FC<SceneProps> = ({ durationInFrames }) => {
     return dt > -0.05 && dt < 0.12 ? 1 - Math.abs(dt - 0.03) / 0.09 : 0;
   };
 
+  const feather = 1 - ramp(t, T(B.card) - 0.42, 0.25);
   const overlay = (toView: (p: { x: number; y: number }) => { x: number; y: number }, k: number) => {
     const s = tSrc(t);
     const p = toView(pointerAt(s));
@@ -254,6 +262,10 @@ export const S04AgentGuard: React.FC<SceneProps> = ({ durationInFrames }) => {
       <>
         {glowRing(toView, HELD_ROW, C.clay, clamp01(clay), { radius: 16 * k, pad: 14, spread: 34 * k })}
         {glowRing(toView, VERIFIED, C.glow, clamp01(sage), { radius: 22 * k, pad: 6, spread: 40 * k, line: 2.5 })}
+        {/* the held sentence runs past the framing's right edge: feather it into the window's own ground, never a sliced word */}
+        {feather > 0.01 ? (
+          <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "17%", opacity: feather, background: "linear-gradient(90deg, rgba(22,26,23,0) 0%, rgba(22,26,23,0.92) 55%, rgb(22,26,23) 100%)" }} />
+        ) : null}
         {ripple(1.4)}
         {ripple(3.1)}
         {cursorOn > 0.01 ? <Pointer x={p.x} y={p.y} h={19 * 2.5 * k} press={pr} opacity={cursorOn} /> : null}

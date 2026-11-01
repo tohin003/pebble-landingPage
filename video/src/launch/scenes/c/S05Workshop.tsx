@@ -33,12 +33,17 @@ const SRC = "launch/takes/RSW-01.mp4";
 const SIZE = { w: 2940, h: 1912 };
 
 /** RSW-01 framings (source px): data/takes.ts ROIs, tightened on UI boundaries. */
-const REQUEST = box(640, 240, 1380, 776); // the request bubble, the status line, the first steps
+/** the opening: the kiln request's bubble (836–2010 × 318–556 once sent, source 61.75) and the first steps under it */
+const REQUEST = box(816, 298, 1214, 278);
 const SCRIPT = box(610, 660, 950, 530);
 const SCRIPT_45 = box(650, 640, 840, 740); // status + steps: "Running a script: Create, test, keep and use a kiln_ramp_time tool for…"
 const KEEP_CARD = box(700, 664, 1324, 398); // the Keep card (714–2009 × 677–1048)
-/** the question, the description, the bullet "Pebble asks because … (2 of 5 tests passed)." whole, the buttons */
-const KEEP_ASK = box(700, 712, 1190, 337);
+/**
+ * The push: the bullet "Pebble asks because … (2 of 5 tests passed)." whole (795–1822 × 895–925), the buttons and the
+ * card's bottom edge, under the description's last line (838–862); the window narrows to it, so on 16:9 the bullet
+ * renders at ≈ 1.45× (≈ 39 px type, ≈ 45 px from ascender to descender).
+ */
+const KEEP_STRIP = box(712, 872, 1148, 182);
 /** The bullet's "(2 of 5 tests passed)." on the source, for the drawn underline (an annotation). */
 const TWO_OF_FIVE = { x0: 1555, x1: 1822, y: 935 };
 
@@ -84,14 +89,21 @@ export const S05_SFX: SfxNote[] = [
   { scene: "S05", s: B.asks + 0.08, file: "sfx-pop-soft-b.wav", db: -18, note: "the pebble pops in to ask" },
 ];
 
-/** Diagram geometry, px, per aspect. */
+/**
+ * Diagram geometry, in the diagram's own px (per aspect). The diagram is drawn at this size and shown through a camera
+ * at `scale` (1.6× on 16:9, 1.25× on 4:5) that travels along the flow, so its marks and words read big; the type sizes
+ * here are divided by the scale so they land at the sizes asked for (box labels ≥ 32 px, the titles ≥ 48 px, "2 of 5"
+ * ≥ 80 px on screen).
+ */
 const diagram = (L: Layout) => {
   const P = L.px;
   if (!L.portrait) {
+    const S = 1.6;
     const top = P(372);
     const h = P(330);
     return {
       portrait: false,
+      S,
       chipStart: { x: P(128), y: P(505), w: P(350), h: P(84) },
       bars: { x: P(128), y: P(440), w: P(350) },
       sandbox: { x: P(560), y: top, w: P(440), h },
@@ -102,50 +114,80 @@ const diagram = (L: Layout) => {
       blindLabel: { x: P(1080), y: top + P(30), w: P(440) },
       marks: { x: P(1120), y: top + P(130), d: P(58), gap: P(74) },
       two: { x: P(1080), y: top + P(206), w: P(440), h: P(100) },
+      twoSize: P(62),
       pebble: { x: P(1690), y: top + P(250), size: P(190) },
-      labels: { y: top + h + P(40), h: P(80) },
+      labels: { y: top + h + P(30), h: P(50) },
       arrows: [
         { x0: P(488), y0: top + h / 2, x1: P(548), y1: top + h / 2 },
         { x0: P(1010), y0: top + h / 2, x1: P(1068), y1: top + h / 2 },
         { x0: P(1530), y0: top + h / 2, x1: P(1588), y1: top + h / 2 },
       ],
-      labelSize: L.type.sub,
-      smallSize: L.type.label,
+      labelSize: P(60 / S),
+      smallSize: P(34 / S),
       cols: [
         { x: P(560), w: P(440), text: "Sandbox" },
         { x: P(1080), w: P(440), text: "Blind check" },
         { x: P(1560), w: P(260), text: "Asks you." },
       ],
+      // where the camera looks (diagram px) at each beat: the chip, the sandbox, the blind check, the last pair
+      focus: [
+        { at: B.chip, x: P(303), y: P(560) },
+        { at: B.intoBox + 0.1, x: P(800), y: P(575) },
+        { at: B.blind + 0.15, x: P(1180), y: P(585) },
+        { at: B.twoOfFive, x: P(1450), y: P(590) },
+      ],
     };
   }
-  // 4:5: the same flow top to bottom
+  // 4:5: the same flow top to bottom, the camera travelling down it
+  const S = 1.25;
   return {
     portrait: true,
+    S,
     chipStart: { x: P(365), y: P(150), w: P(350), h: P(84) },
     bars: { x: P(365), y: P(110), w: P(350) },
-    sandbox: { x: P(64), y: P(300), w: P(952), h: P(250) },
-    chipIn: { x: P(104), y: P(390), w: P(350), h: P(84) },
-    ticks: { x: P(620), y: P(375), d: P(64), gap: P(92) },
-    ticksLabel: { x: P(560), y: P(455), w: P(400) },
-    blind: { x: P(64), y: P(620), w: P(952), h: P(300) },
-    blindLabel: { x: P(104), y: P(700), w: P(560) },
-    marks: { x: P(104), y: P(790), d: P(58), gap: P(76) },
-    two: { x: P(560), y: P(740), w: P(420), h: P(140) },
+    sandbox: { x: P(152), y: P(300), w: P(776), h: P(250) },
+    chipIn: { x: P(192), y: P(400), w: P(350), h: P(84) },
+    ticks: { x: P(600), y: P(380), d: P(64), gap: P(92) },
+    ticksLabel: { x: P(600), y: P(462), w: P(320) },
+    blind: { x: P(152), y: P(620), w: P(776), h: P(300) },
+    blindLabel: { x: P(192), y: P(704), w: P(420) },
+    marks: { x: P(192), y: P(800), d: P(58), gap: P(76) },
+    two: { x: P(560), y: P(760), w: P(340), h: P(130) },
+    twoSize: P(80),
     pebble: { x: P(380), y: P(1190), size: P(190) },
-    labels: { y: 0, h: P(64) },
+    labels: { y: 0, h: P(50) },
     arrows: [
       { x0: P(540), y0: P(244), x1: P(540), y1: P(292) },
       { x0: P(540), y0: P(558), x1: P(540), y1: P(612) },
       { x0: P(540), y0: P(928), x1: P(540), y1: P(990) },
     ],
-    labelSize: L.type.sub,
-    smallSize: L.type.label,
+    labelSize: P(54 / S),
+    smallSize: P(32 / S),
     cols: [
-      { x: P(104), w: P(500), y: P(320), text: "Sandbox" },
-      { x: P(104), w: P(560), y: P(636), text: "Blind check" },
-      { x: P(500), w: P(520), y: P(1080), text: "Asks you." },
+      { x: P(192), w: P(500), y: P(322), text: "Sandbox" },
+      { x: P(192), w: P(560), y: P(642), text: "Blind check" },
+      { x: P(500), w: P(420), y: P(1084), text: "Asks you." },
+    ],
+    focus: [
+      { at: B.chip, x: P(540), y: P(560) },
+      { at: B.twoOfFive, x: P(540), y: P(722) },
     ],
   };
+};
+
+/** The diagram camera at `t`: diagram px → screen px is `p · S + o`. */
+const diagramCam = (L: Layout, t: number, T: (x: number) => number) => {
+  const g = diagram(L);
+  const f = g.focus;
+  let fx = f[0].x;
+  let fy = f[0].y;
+  for (let i = 1; i < f.length; i++) {
+    const a = T(f[i - 1].at);
+    const p = ramp(t, a, Math.max(0.2, T(f[i].at) - a), EASE.camera);
+    fx = lerp(fx, f[i].x, p);
+    fy = lerp(fy, f[i].y, p);
+  }
+  return { S: g.S, ox: L.W / 2 - fx * g.S, oy: L.H / 2 - fy * g.S };
 };
 
 type DG = ReturnType<typeof diagram>;
@@ -192,10 +234,6 @@ const Chip: React.FC<{ r: Rect; text: number; textOpacity: number; opacity?: num
   </div>
 );
 
-/** The diagram's sideways camera on 16:9: the chip starts near the frame's centre, the finished flow ends centred. */
-const diagramPan = (L: Layout, t: number, T: (x: number) => number) =>
-  L.portrait ? 0 : lerp(L.px(360), L.px(-200), ramp(t, T(B.chip), T(B.asks) + 0.35 - T(B.chip), EASE.camera));
-
 const Diagram: React.FC<{ t: number; T: (x: number) => number; L: Layout }> = ({ t, T, L }) => {
   const g = diagram(L);
   const stroke = L.px(2.5);
@@ -224,7 +262,7 @@ const Diagram: React.FC<{ t: number; T: (x: number) => number; L: Layout }> = ({
   const sb = boxIn(B.sandbox);
   const bl = boxIn(B.blind);
   const twoIn = ramp(t, T(B.twoOfFive), 0.25, EASE.enter);
-  const pan = diagramPan(L, t, T);
+  const cam = diagramCam(L, t, T);
 
   const frame = (r: Rect, p: number, dashed: boolean) =>
     p <= 0 ? null : (
@@ -255,12 +293,14 @@ const Diagram: React.FC<{ t: number; T: (x: number) => number; L: Layout }> = ({
       align={g.portrait ? "left" : "center"}
       valign="top"
       fit={false}
-      box={{ x: c.x, y: "y" in c && c.y !== undefined ? (c.y as number) : g.labels.y, w: c.w, h: g.labels.h + L.px(20) }}
+      box={{ x: c.x, y: "y" in c && c.y !== undefined ? (c.y as number) : g.labels.y, w: c.w, h: size * 1.4 }}
     />
   );
 
   return (
-    <AbsoluteFill style={{ opacity: 1 - out, transform: `translate(${pan}px, ${-L.px(40) * out}px)` }}>
+    <AbsoluteFill
+      style={{ opacity: 1 - out, transformOrigin: "0 0", transform: `translate(${cam.ox}px, ${cam.oy - L.px(40) * out}px) scale(${cam.S})` }}
+    >
       {/* the code lines */}
       {barW.map((w, i) => {
         const appear = ramp(t, T(B.bars) + i * 0.045, 0.22, EASE.enter);
@@ -311,7 +351,7 @@ const Diagram: React.FC<{ t: number; T: (x: number) => number; L: Layout }> = ({
           opacity: ramp(t, T(B.ticks[0]) + 0.1, 0.3),
         }}
       >
-        {g.portrait ? "" : "its own tests"}
+        its own tests
       </div>
 
       <Arrow a={g.arrows[1]} p={ramp(t, T(B.blind) - 0.1, 0.25, EASE.enter)} color={DAY.ink2} w={stroke} />
@@ -355,7 +395,7 @@ const Diagram: React.FC<{ t: number; T: (x: number) => number; L: Layout }> = ({
           justifyContent: g.portrait ? "flex-end" : "center",
           fontFamily: FAMILY.sans,
           fontWeight: 700,
-          fontSize: g.portrait ? L.px(96) : L.px(72),
+          fontSize: g.twoSize,
           letterSpacing: "-0.03em",
           color: "#B5562F",
           opacity: twoIn,
@@ -387,9 +427,8 @@ export const S05Workshop: React.FC<SceneProps> = ({ durationInFrames }) => {
   // RSW-01, the request: 1× as the bubble lands, the thinking compressed, 1× into the clay line (every frame real)
   const time = timeMap(
     [
-      [0, 61.4],
-      [T(0.55), 61.7],
-      [T(0.85), 62.0],
+      [0, 61.75],
+      [T(0.6), 62.0],
       [T(B.script) - 0.1, 71.62],
       [T(B.script) + 0.9, 72.62],
     ],
@@ -403,9 +442,13 @@ export const S05Workshop: React.FC<SceneProps> = ({ durationInFrames }) => {
     { tail: 1, head: 0 },
   );
 
-  const media = L.feature.media;
+  // the opening: the kiln request's bubble, already sent, the window shaped to it and as wide as the content allows
+  const openW = pick(L, { "16x9": L.content.w, "4x5": L.px(1040) });
+  const openH = (openW * REQUEST.h) / REQUEST.w;
+  const media: Rect = { x: (L.W - openW) / 2, y: pick(L, { "16x9": L.px(372), "4x5": L.px(470) }), w: openW, h: openH };
   const big = L.window;
-  const foldTo = { ...g.chipStart, x: g.chipStart.x + diagramPan(L, T(B.chip), T) };
+  const c0 = diagramCam(L, T(B.chip), T);
+  const foldTo = { x: g.chipStart.x * c0.S + c0.ox, y: g.chipStart.y * c0.S + c0.oy, w: g.chipStart.w * c0.S, h: g.chipStart.h * c0.S };
   const foldP = ramp(t, T(B.fold), 0.45, EASE.camera);
   const rect = rectAt(
     [
@@ -423,15 +466,30 @@ export const S05Workshop: React.FC<SceneProps> = ({ durationInFrames }) => {
     { t: T(B.script), box: pick(L, { "16x9": SCRIPT, "4x5": SCRIPT_45 }), dur: 0.65 },
   ];
 
-  const card: Rect = pick(L, {
-    "16x9": { x: L.px(260), y: L.px(468), w: L.px(1400), h: (L.px(1400) * KEEP_ASK.h) / KEEP_ASK.w },
-    "4x5": { x: L.px(40), y: L.px(660), w: L.px(1000), h: (L.px(1000) * KEEP_ASK.h) / KEEP_ASK.w },
-  });
+  // the Keep card rises whole, then the window narrows onto its bullet while the camera pushes in
+  const cardW0 = pick(L, { "16x9": L.px(1400), "4x5": L.px(1000) });
+  const card0: Rect = { x: (L.W - cardW0) / 2, y: pick(L, { "16x9": L.px(520), "4x5": L.px(830) }), w: cardW0, h: (cardW0 * KEEP_CARD.h) / KEEP_CARD.w };
+  const stripW = pick(L, { "16x9": L.content.w, "4x5": L.px(1040) });
+  const strip: Rect = { x: (L.W - stripW) / 2, y: pick(L, { "16x9": L.px(560), "4x5": L.px(860) }), w: stripW, h: (stripW * KEEP_STRIP.h) / KEEP_STRIP.w };
+  const card = rectAt(
+    [
+      { t: T(B.keepIn), rect: card0 },
+      { t: T(B.push), rect: strip, dur: 0.6 },
+    ],
+    t,
+  );
   const keepKeys: ZoomKey[] = [
     { t: T(B.keepIn), box: KEEP_CARD },
     { t: T(B.push) - 0.6, box: KEEP_CARD },
-    { t: T(B.push), box: KEEP_ASK, dur: 0.6 },
+    { t: T(B.push), box: KEEP_STRIP, dur: 0.6 },
   ];
+
+  // the steps run past the push's right edge: feather it into the window's own ground (never a sliced word)
+  const featherK = ramp(t, T(B.grow), 0.4);
+  const feather = () =>
+    featherK > 0.01 ? (
+      <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "16%", opacity: featherK, background: "linear-gradient(90deg, rgba(22,26,23,0) 0%, rgba(22,26,23,0.92) 55%, rgb(22,26,23) 100%)" }} />
+    ) : null;
 
   const underline = ramp(t, T(B.push) + 0.15, 0.45, EASE.enter);
   const keepOverlay = (toView: (p: { x: number; y: number }) => { x: number; y: number }, k: number) => {
@@ -443,8 +501,8 @@ export const S05Workshop: React.FC<SceneProps> = ({ durationInFrames }) => {
 
   const lineText = pick(L, { "16x9": "When the check disagrees,\nit asks you.", "4x5": "When the check\ndisagrees,\nit asks you." });
   const lineBox: Rect = pick(L, {
-    "16x9": { x: L.content.x, y: L.px(150), w: L.content.w, h: L.px(260) },
-    "4x5": { x: L.content.x, y: L.px(150), w: L.content.w, h: L.px(400) },
+    "16x9": { x: L.content.x, y: L.px(230), w: L.content.w, h: L.px(270) },
+    "4x5": { x: L.content.x, y: L.px(370), w: L.content.w, h: L.px(420) },
   });
 
   return (
@@ -459,17 +517,17 @@ export const S05Workshop: React.FC<SceneProps> = ({ durationInFrames }) => {
               flattenDur={0.7}
               style={{ opacity: 1 - foldP }}
             >
-              <ScreenZoom src={SRC} srcSize={SIZE} time={time} keys={keys} drift={0.01} />
+              <ScreenZoom src={SRC} srcSize={SIZE} time={time} keys={keys} drift={0.01} overlay={feather} />
             </FloatingWindow>
           ) : null}
           <Headline
-            text={pick(L, { "16x9": "It builds\nits own\ntools.", "4x5": "It builds\nits own tools." })}
+            text={pick(L, { "16x9": "It builds its own tools.", "4x5": "It builds\nits own tools." })}
             at={T(B.title)}
             exitAt={T(B.titleOut)}
             size={L.type.title}
-            align="left"
-            valign={L.portrait ? "middle" : "middle"}
-            box={L.feature.text}
+            align={L.portrait ? "left" : "center"}
+            valign="middle"
+            box={pick(L, { "16x9": { x: L.content.x, y: L.px(130), w: L.content.w, h: L.px(190) }, "4x5": { x: L.content.x, y: L.px(150), w: L.content.w, h: L.px(280) } })}
           />
 
           <Diagram t={t} T={T} L={L} />
