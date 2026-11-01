@@ -14,10 +14,11 @@ const kit = JSON.parse(readFileSync(join(repo, "tools", "audio", "sfx_kit.json")
 const rolesInUse = new Set(cues.filter((c) => c.file && c.role).map((c) => c.role!));
 
 describe("the film's credits", () => {
-  test("the music is one score, synthesised in code, with no samples and no third-party music", () => {
+  test("the trailer's music is one score, synthesised in code, with no samples and no third-party music", () => {
     const music = section("music");
-    expect(music.items.length).toBe(1);
+    expect(music.items.length).toBe(2);
     const score = music.items[0]!;
+    expect(score.name).toBe("Pebble launch trailer score");
     expect(score.use).toContain("synthesised in code");
     expect(score.use).toContain("no samples");
     expect(score.use).toContain("no third-party music");
@@ -34,6 +35,24 @@ describe("the film's credits", () => {
     }
     for (const retired of ["riser", "shimmer", "soft hit", "downlifter"]) expect(original.use).not.toContain(retired);
     for (const role of ["riser", "shimmer", "hit"]) expect(rolesInUse.has(role)).toBe(false);
+  });
+
+  test("the launch film's music is Mixkit's “Your Breath” by Eugenio Mininni, a courtesy line (the director's X12)", () => {
+    const track = section("music").items.find((i) => i.name === "Your Breath")!;
+    expect(track.by).toBe("Eugenio Mininni (Mixkit)");
+    expect(track.licence).toBe("Mixkit Stock Music Free License");
+    expect(track.use).toContain("courtesy");
+    const sfx = section("sound").items.find((i) => i.name === "Sound effects of the Pebble 2.0 launch film")!;
+    expect(sfx.licence).toBe("CC0 1.0");
+    expect(sfx.by).toContain("Kenney");
+  });
+
+  test("CREDITS.md says the same as /credits", () => {
+    const md = readFileSync(join(repo, "CREDITS.md"), "utf8").replace(/\s+/g, " ");
+    expect(md).toContain("**\"Your Breath\"** by Eugenio Mininni (Mixkit)");
+    expect(md).toContain("Mixkit Stock Music Free License");
+    expect(md).toContain("no credit is required; this line is a courtesy");
+    expect(md).toContain("\"Impact Sounds\" and \"Interface Sounds\", CC0 1.0, and sounds designed in code");
   });
 
   test("Kenney's entry stays while the cue list plays its takes, and names only what they are", () => {

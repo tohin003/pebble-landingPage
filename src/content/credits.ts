@@ -6,6 +6,8 @@
 // An entry with a `todo` is unfinished: the credits page hides it, so no placeholder ever ships. The music and sound
 // entries follow what the launch trailer plays (OVERRIDES §45): its score is synthesised in code with no samples, and
 // its effects are the takes the final cue list uses (tools/audio/cues.json; credits.test.ts checks the two agree).
+// The Pebble 2.0 launch film's music ("Your Breath" by Eugenio Mininni, Mixkit, no credit required: a courtesy line)
+// and its effects (Kenney CC0 and designed sounds) follow them (the director's X12).
 // Sources, hashes and the music choice are in docs/media-provenance.json (music.trailer_score, sfx).
 
 import { links } from "./copy";
@@ -65,6 +67,14 @@ export const creditSections: readonly CreditSection[] = [
         licence: "Part of the film media, © 2026 Tohin Majumder",
         use: "An original score for the launch trailer, synthesised in code. It uses no samples and no third-party music.",
       },
+      {
+        // the Pebble 2.0 launch film's music (the director's X12): no credit required, so this is a courtesy line
+        name: "Your Breath",
+        by: "Eugenio Mininni (Mixkit)",
+        licence: "Mixkit Stock Music Free License",
+        licenceUrl: "https://mixkit.co/license/",
+        use: "The music of the Pebble 2.0 launch film, edited to picture. Its licence asks for no credit; this line is a courtesy.",
+      },
     ],
   },
   {
@@ -85,6 +95,15 @@ export const creditSections: readonly CreditSection[] = [
         licenceUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
         url: "https://kenney.nl",
         use: "Recorded clicks, ticks and soft thuds, trimmed and tuned for the launch trailer.",
+      },
+      {
+        // the Pebble 2.0 launch film's effects (the director's X12): Kenney's two CC0 packs and sounds designed in code
+        name: "Sound effects of the Pebble 2.0 launch film",
+        by: "Kenney (Impact Sounds and Interface Sounds), and sounds designed for this project",
+        licence: "CC0 1.0",
+        licenceUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+        url: "https://kenney.nl",
+        use: "The launch film's clicks, impacts and transitions. Pebble itself makes no sounds.",
       },
     ],
   },

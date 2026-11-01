@@ -42,6 +42,16 @@ the media or the third-party work below: each keeps its own licence. The site sh
   listed in `docs/media-provenance.json`.
 - Which take plays where is the final cue list, `tools/audio/cues.json` (exported from `video/src/film/timeline.ts`).
 
+## Pebble 2.0 launch film: music and sound effects
+
+- **"Your Breath"** by Eugenio Mininni (Mixkit), edited to picture: the music of the Pebble 2.0 launch film. Mixkit Stock
+  Music Free License (https://mixkit.co/license/): no credit is required; this line is a courtesy. The edit and its
+  build record are in `.work/launch/music/MUSIC.md` (not committed) and, once the film is published,
+  `docs/media-provenance.json`.
+- Sound effects: Kenney (www.kenney.nl), "Impact Sounds" and "Interface Sounds", CC0 1.0, and sounds designed in code
+  for this project, CC0 1.0. Pebble itself makes no sounds.
+- Until the launch film is published on the site, the site's film is the launch trailer above.
+
 ## Fonts
 
 All three are under the SIL Open Font License 1.1. The same files are used by the site (`src/fonts/`) and the films
