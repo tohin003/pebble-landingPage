@@ -224,12 +224,21 @@ export const golden = {
         text: "The plan (its gates, graders, prices and budgets) was registered before the first run.", // README.md@v2.0.0:394-395
       },
       {
+        // the rival CLIs' versions from the 2.0.0 notes (CHANGELOG.md@v2.0.0:27-28: "`claude-opus-5-5` with Claude Code
+        // 2.1.310, and `gpt-6.1-sol` with Codex 0.163.0"), plain text, never a logo (the director's X1) [C-GS-17]
         term: "Models",
-        text: "claude-opus-5-5 for both Pebble and Claude Code, and gpt-6.1-sol for both Pebble and Codex.", // README.md@v2.0.0:398, :405
+        text: "claude-opus-5-5 for both Pebble and Claude Code 2.1.310, and gpt-6.1-sol for both Pebble and Codex 0.163.0.", // README.md@v2.0.0:398, :405; CHANGELOG.md@v2.0.0:27-28
       },
       {
         term: "Build",
         text: "Pebble ran as 1.9.29, the build whose source 2.0.0 is, apart from its version number and notes.", // README.md@v2.0.0:395-396
+      },
+      {
+        // the release the page offers: 2.0.1 changes nothing this run measured (CHANGELOG.md@v2.0.1:9-10: "A patch
+        // release for Stealth Lockdown, with two packaging and guide fixes. Nothing else changes from 2.0.0: the same
+        // model routes, tools and AgentGuard, and the same data.") [C-GS-19]
+        term: "Pebble 2.0.1",
+        text: "Pebble 2.0.1 changes only Stealth Lockdown, packaging and the guide. Its model routes, tools and AgentGuard are 2.0.0's.",
       },
       {
         term: "Cost and time",
@@ -274,6 +283,14 @@ export const golden = {
     gates: "The plan's five measured gates were met against both.",
   },
 
+  /**
+   * The safety families, a loss stated beside the wins (the director's X3; PHILOSOPHY 6, "losses included"), in the
+   * 2.0.0 notes' words (CHANGELOG.md@v2.0.0:64-65). Never folded: it stays visible under "Where Pebble trailed".
+   * [C-GS-18]
+   */
+  safety:
+    "Safety: neither product had an unsafe outcome in the two safety families, risky actions and planted instructions. One research task on claude-opus-5-5 was graded unsafe for Pebble; Claude Code had none.",
+
   /** 3. Where Pebble led and where it trailed, at the same weight. [C-GS-6] [C-GS-7] */
   sides: {
     title: "Where Pebble led and where it trailed",
@@ -283,9 +300,13 @@ export const golden = {
     trailed: "Where Pebble trails, by one task each: remembering across sessions against Claude Code, and long tasks against Codex.",
   },
 
-  /** 4. Cost and time: reported, never a claim (STATUS 14:53: "No speed claim"). [C-GS-8] */
+  /**
+   * 4. Cost and time (STATUS 14:53: "No speed claim"). Cost was measured, and the README's own headline says "lower
+   * cost per task" (the director's X2), so the line says how, never "cheaper" or "saves"; time stays reported, never a
+   * win. [C-GS-8]
+   */
   reported: [
-    "Cost is reported here, not claimed.",
+    "Cost per task was measured at public list prices.",
     "Time is reported, not claimed: Pebble's median time per task is a little lower, and its 95th percentile higher.",
   ],
 
@@ -617,12 +638,14 @@ export function goldenLlmsLines(): readonly string[] {
   const led = `${golden.sides.led.charAt(0).toLowerCase()}${golden.sides.led.slice(1)}`;
   const differences = golden.result.differences.map((d) => d.replace(/\.$/, "")).join("; ");
   return [
-    `${golden.h2} ${golden.lead} ${tasks} ${fixed} ${build}`,
+    `${golden.h2} ${golden.lead} ${tasks} ${fixed} ${method("Models")} ${build}`,
     ...golden.result.tables.map(table),
     `${golden.result.differenceTitle} ${differences}. ${golden.result.gates}`,
     `Where Pebble led, ${led} ${golden.sides.trailed}`,
+    golden.safety,
+    method("Pebble 2.0.1"),
     golden.limits.items[0],
-    `${golden.reported.join(" ")} ${costTime}`,
+    `${costTime} ${golden.reported[1] ?? ""}`,
   ];
 }
 

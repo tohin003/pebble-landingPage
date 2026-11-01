@@ -225,6 +225,20 @@ describe("the words follow the rules", () => {
   });
 });
 
+/** The release notes' lines the section cites beside the README's (copied byte for byte from the tags on 1 Nov 2026). */
+const NOTES = [
+  // CHANGELOG.md@v2.0.0:27-28
+  "the first run. Each comparison used one model for both products: `claude-opus-5-5` with Claude Code 2.1.310, and",
+  "`gpt-6.1-sol` with Codex 0.163.0. Pebble ran as 1.9.29, the build whose source 2.0.0 is, apart from its version number",
+  // CHANGELOG.md@v2.0.0:64-65
+  "- **Safety.** Neither product had an unsafe outcome in the two safety families (risky actions and planted instructions).",
+  "  One research task on `claude-opus-5-5` was graded unsafe for Pebble; Claude Code had none.",
+  // CHANGELOG.md@v2.0.1:7, :9-10
+  "## [2.0.1]",
+  "A patch release for Stealth Lockdown, with two packaging and guide fixes. Nothing else changes from 2.0.0: the same",
+  "model routes, tools and AgentGuard, and the same data.",
+].join("\n");
+
 // ---- golden set 2.0 (Pebble 2.0.0): the latest run, public with the "2.0.0 published" post (STATUS 2026-10-31 14:53) ----
 describe("golden set 2.0", () => {
   // README.md@v2.0.0:390-424, copied byte for byte from the tag (the file's first line says so)
@@ -271,8 +285,11 @@ describe("golden set 2.0", () => {
     expect(golden.lead).toContain("255 runs per product");
   });
 
-  test("no figure that isn't in the README's Benchmarks section", () => {
-    const flat = README.replace(/\n/g, " ");
+  test("no figure that isn't in the README's Benchmarks section or the notes' lines it cites", () => {
+    // README's lines, then the release notes' lines the section adds (copied from the tags on 1 Nov 2026): the rival
+    // CLIs' versions and the safety families (CHANGELOG.md@v2.0.0:27-28, :64-65), and what 2.0.1 changes
+    // (CHANGELOG.md@v2.0.1:9-10, with its heading). [C-GS-17] [C-GS-18] [C-GS-19]
+    const flat = `${README} ${NOTES}`.replace(/\n/g, " ");
     // the "Earlier" heading names the 1.0.2 run (README.md@v2.0.0:426, after the vendored lines); everything else counts
     const latest = JSON.stringify({ ...golden, earlier: null }) + goldenLlmsLines().join("\n");
     const figures = latest.match(/[+−-]?\$?\d+(?:\.\d+)?(?:\s?%)?/g) ?? [];
@@ -282,7 +299,26 @@ describe("golden set 2.0", () => {
   test("no 'beats', 'better', 'faster', 'cheaper' or 'saves', and no speed claim", () => {
     expect(words).not.toMatch(/\b(beats?|better|faster|quicker|cheaper|saves?|savings|outperform\w*|wins?|superior)\b/i);
     expect(words).toContain("Time is reported, not claimed");
-    expect(words).toContain("Cost is reported here, not claimed.");
+    expect(words).toContain("Cost per task was measured at public list prices.");
+  });
+
+  test("the rival CLIs' versions, the safety line and 2.0.1's line are the notes' words (the director's X1 to X3)", () => {
+    const flat = NOTES.replace(/\*\*/g, "").replace(/`/g, "").replace(/\n\s*/g, " ");
+    const models = golden.method.items.find((item) => item.term === "Models")?.text ?? "";
+    expect(models).toContain("Claude Code 2.1.310");
+    expect(models).toContain("Codex 0.163.0");
+    expect(flat).toContain("claude-opus-5-5 with Claude Code 2.1.310, and gpt-6.1-sol with Codex 0.163.0");
+    // the safety line: the notes' two sentences, the parenthesis as a list after a comma
+    expect(golden.safety).toBe(
+      "Safety: neither product had an unsafe outcome in the two safety families, risky actions and planted instructions. One research task on claude-opus-5-5 was graded unsafe for Pebble; Claude Code had none.",
+    );
+    expect(flat).toContain("One research task on claude-opus-5-5 was graded unsafe for Pebble; Claude Code had none.");
+    const release = golden.method.items.find((item) => item.term === "Pebble 2.0.1")?.text ?? "";
+    expect(release).toBe("Pebble 2.0.1 changes only Stealth Lockdown, packaging and the guide. Its model routes, tools and AgentGuard are 2.0.0's.");
+    expect(flat).toContain("A patch release for Stealth Lockdown, with two packaging and guide fixes. Nothing else changes from 2.0.0");
+    // in llms.txt's block too
+    const lines = goldenLlmsLines().join("\n");
+    for (const line of [golden.safety, release, models]) expect(lines).toContain(line);
   });
 
   test("the 1.0.2 run stays below as dated history, and its not-covered line stays true", () => {

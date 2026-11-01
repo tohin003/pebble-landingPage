@@ -222,6 +222,9 @@ export async function Benchmarks({ open = releaseFacts.benchmarksPublic, offered
           <DifferenceFigure />
           <LedTrailed />
 
+          {/* the safety families: a loss, stated beside the wins and never folded (the director's X3) */}
+          <p className={styles.notRun}>{g.safety}</p>
+
           {/* stays visible, never folded: what was not run before this release (PLAN.md, "Must stay visible") */}
           <p className={styles.notRun}>
             <Figures text={g.limits.items[0]} />
