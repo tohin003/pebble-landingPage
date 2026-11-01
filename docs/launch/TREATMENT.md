@@ -17,6 +17,10 @@ Don't reuse its edit, its look or its rule-by-rule caution.
 | **Landing loops** | 6–10 s silent loops per feature, 16:9 (and a 4:5 crop where the page needs it), H.264 + poster | the site's feature sections |
 | **Post kit** | LinkedIn post text, description with the credits, thumbnail/poster stills, SRT of on-screen text | the post |
 
+**The owner's decisions (1 Nov 2026):** no voiceover: kinetic type, music and SFX tell the story (it must read
+muted); the sealed-context feature is titled "Context warping." on screen, with Pebble's own explanation under it;
+deliver the ~90 s film in 16:9 and a 4:5 re-layout (1080×1350, not a crop). Every scene is laid out for both.
+
 ## 2. The story: "Small pebble. Real work."
 
 An underdog story with an open loop, told mostly in kinetic type over real footage:
@@ -49,7 +53,7 @@ Voice: British spelling, sentence case, statements end with a period, no exclama
 | 4 | AgentGuard | 0:33–0:43 | Real UI (harness): "Pebble's change isn't verified yet." → tests run → "Verified · pytest 42 passed on current files"; a check-list motion graphic | "Most agents say "done"." / "Pebble checks." / "AgentGuard." + "Evidence before "done"." |
 | 5 | Pebble's Workshop | 0:43–0:52 | RSW-01 (the kiln request, "Create, test, keep and use a kiln_ramp_time tool", the Keep card) + a forge → sandbox → blind check → Toolbox graphic | "It builds its own tools." / "Tested in a sandbox. Kept after a blind check." / "When the check disagrees, it asks you." |
 | 6 | Memory | 0:52–0:59 | Six layers stack (Profile, Semantic, Procedural, Episodic, Temporal, Working); real Settings › Memory with Forget | "It remembers what matters." / "Six layers. All visible." / "Forget anything." |
-| 7 | Sealed context | 0:59–1:05 | A long task's context: older tool results fold into short stubs, the newest stay word for word; one stub opens back exactly | "Long tasks stay light." / "Older results sealed. Any one returned exactly." |
+| 7 | Context warping | 0:59–1:05 | A long task's context: older tool results fold into short stubs, the newest stay word for word; one stub opens back exactly | "Context warping." (the owner's name for Pebble's sealed context, 1.4.0+) / "Long tasks stay light." / "Older results sealed. Any one returned exactly." |
 | 8 | Pebble Remote | 1:05–1:12 | iPhone with the real Pebble Remote app (Simulator recordings): a conversation, an approval, Face ID | "Your Mac, in your pocket." / "Pebble Remote for iPhone." / "Approve with Face ID." / small: "Open source. Build it with Xcode." |
 | 9 | Stealth Lockdown | 1:12–1:20 | RS13-03 (⌘K, "Turn Stealth Lockdown on", the windows leave the recording); the Veil pebble (rendered by Pebble's own code) | "Presenting?" / "Stealth Lockdown." + the honest line, word for word (below) |
 | 10 | Benchmarks | 1:20–1:33 | Bar charts, count-ups; the pebble watches, then happy | "So. How did it do?" / "Tasks done correctly." / "Said "done" when it wasn't." / "Cost per task." + the method footnote |
