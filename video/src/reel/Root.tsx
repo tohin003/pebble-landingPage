@@ -16,7 +16,7 @@ const fullLengthOr = (): number => {
   try {
     return fullReelLength();
   } catch {
-    return 3246;
+    return 3261;
   }
 };
 

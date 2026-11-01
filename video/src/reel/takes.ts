@@ -53,9 +53,8 @@ export const REEL_TAKES: Readonly<Record<string, ReelTake>> = {
   "RS5F-03": { id: "RS5F-03", ...LARGER_TEXT, runs: [[2539, 2962]], events: { doIt: 2633, finderOpens: 2753 } },
   "RSW-01": { id: "RSW-01", ...RETINA, runs: [[5369, 5612]], events: { card: 5366 } },
   "RS13-03": { id: "RS13-03", ...RETINA, runs: [[257, 1185]], events: { opens: 262, lit: 346, enter: 432 } },
-  // 1352–1620 exported for the reel (its typing) into ui-frames/reel-takes/RS9A-01 (framePath)
-  "RS9A-01": { id: "RS9A-01", ...LARGER_TEXT, runs: [[1352, 1802]], events: { typingFrom: 1352, typed: 1693, send: 1722 } },
-  "RS9B-02": { id: "RS9B-02", ...LARGER_TEXT, runs: [[2729, 2912], [3275, 3578], [6989, 7308]], events: { allow1: 2910, chromeClear: 3276 } },
+  // round 3: the rival beat is out (the person, 1 Nov 12:03); RS9B-02 lends only its browser moments, never the video
+  "RS9B-02": { id: "RS9B-02", ...LARGER_TEXT, runs: [[2729, 2912], [3275, 3578]], events: { allow1: 2910, chromeClear: 3276 } },
 };
 
 /** The crops the reel uses. */
@@ -78,17 +77,17 @@ export const CROPS = {
   finder: { take: "RS5F-03", rect: { x: 404, y: 112, w: 1150, h: 560 }, allowed: [2745, 2962], note: "Documents › Open day: flyer.md, glazes, plan.md, poster-screen.png, poster.pdf, price-list.pdf, tickets.csv" },
   /** the Keep card, its question and buttons (the bullet's text runs off right: the card fades out there) */
   keepCard: { take: "RSW-01", rect: { x: 700, y: 668, w: 860, h: 360 }, allowed: [5369, 5612], radius: 0, note: "'Keep this tool in Pebble's Toolbox? · kiln_ramp_time', Discard, Keep" },
-  /** the swipe across Spaces, the screen's lower part (below the booking page's dated kicker, y < 560) */
-  spaces: { take: "RS1-03", rect: { x: 0, y: 600, w: 2900, h: 1312 }, allowed: [181, 370], note: "the poster slides away to Chrome's booking page; the pebble stays" },
+  /** the swipe across Spaces, the screen's lower part (below the booking page's dated kicker, y < 560), stopping left of
+   * the mouse pointer, which sits at about (2580, 1495) in every frame of the take, a crosshair then an arrow (REVIEW-v2
+   * S12; never retouched), and of the programme's right column ("No ticket needed" from x ≈ 2476: whole or out) */
+  spaces: { take: "RS1-03", rect: { x: 0, y: 600, w: 2460, h: 1312 }, allowed: [181, 370], note: "the poster's Space, then Chrome's booking page" },
   // ---- the full reel (1 Nov, after the style test)
-  /** RS9A-01, the ask: the quick chat with "Show me a clip of your rival." (cut above the stale press card under it) */
-  rivalAsk: { take: "RS9A-01", rect: { x: 1270, y: 232, w: 736, h: 688 }, allowed: [1352, 1734], radius: 40, note: "the companion's quick chat; header, the typed ask, the send row" },
-  /** RS9B-02, the play: YouTube's player alone (the adverts, other creators' thumbnails and the region badge are cut away) */
-  rivalPlay: { take: "RS9B-02", rect: { x: 30, y: 474, w: 1318, h: 744 }, allowed: [6989, 7308], radius: 22, note: "“Introducing Claude Code”, Anthropic's video, playing in Pebble's own tab" },
-  /** RS9B-02, the same frames' tab strip: Chrome's green "Pebble" group and the video's tab (never the address bar) */
-  rivalTab: { take: "RS9B-02", rect: { x: 726, y: 62, w: 632, h: 74 }, allowed: [6989, 7308], radius: 0, note: "the green Pebble tab group and the tab “Introducing Claude Code”" },
-  /** RS9B-02, the video's title under the player (the channel's name is half cut by the screen's edge) */
-  rivalTitle: { take: "RS9B-02", rect: { x: 22, y: 1224, w: 520, h: 74 }, allowed: [6989, 7308], radius: 0, note: "the title “Introducing Claude Code”" },
+  /** RS9B-02, the website approval card: "Use youtube.com", Pebble working in its own tab, Deny and Allow (Allow pressed
+   * on 2910); cut below "Play this video in Chrome" and its address, above the quick chat's input */
+  browserCard: { take: "RS9B-02", rect: { x: 1290, y: 462, w: 705, h: 238 }, allowed: [2735, 2910], radius: 18, note: "'Use youtube.com · Pebble uses these sites in its own tab in your browser …', Details, Deny, Allow" },
+  /** RS9B-02, Pebble's own tab at work: the pill "Pebble is working in this tab" and its Stop (clean until about 3352,
+   * when the page's thumbnails load under it) */
+  browserWorking: { take: "RS9B-02", rect: { x: 1494, y: 1229, w: 520, h: 72 }, allowed: [3296, 3350], radius: 36, note: "'● Pebble is working in this tab', Stop" },
   /** RS13-03, the ⌘K palette: "stealth" typed and "Turn Stealth Lockdown on" lit (cut above its footer line); never past 433 */
   stealthPalette: { take: "RS13-03", rect: { x: 1160, y: 312, w: 1124, h: 300 }, allowed: [257, 433], radius: 26, note: "the palette's input and its two rows; Pebble's windows leave the recording from 434" },
   /** RS13-03, the menu bar right of macOS's recording pill: Pebble's icon turns to the filled pebble in a ring at 432–434 */
@@ -110,10 +109,7 @@ export type CropId = keyof typeof CROPS;
 /** The file of a take's source frame `n` (the file's own 1-based number), under video/public. */
 export function framePath(take: string, n: number): string {
   if (!REEL_TAKES[take]) throw new Error(`reel: unknown take ${take}`);
-  const r = Math.round(n);
-  // frames the reel exported itself (the edit lane's export starts later): RS9A-01's typing
-  const dir = take === "RS9A-01" && r < 1621 ? "reel-takes" : "real-takes";
-  return `ui-frames/${dir}/${take}/${String(r).padStart(5, "0")}.jpg`;
+  return `ui-frames/real-takes/${take}/${String(Math.round(n)).padStart(5, "0")}.jpg`;
 }
 
 /** Whether a take has source frame `n` on disk (by its runs; check.ts also stats the files). */

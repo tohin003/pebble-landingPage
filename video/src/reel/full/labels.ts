@@ -4,6 +4,8 @@ export interface HeroLabel {
   text: string;
   /** the beat it lands on, from the hero's start */
   at: number;
+  /** the beat it fades on, if before the hero's end */
+  until?: number;
 }
 
 export const HERO_LABELS: Readonly<Record<string, readonly HeroLabel[]>> = {
@@ -17,9 +19,11 @@ export const HERO_LABELS: Readonly<Record<string, readonly HeroLabel[]>> = {
     { text: "a small tool", at: 0.1 },
     { text: "a blind check", at: 1 },
   ],
+  // the table's rows land on the eighths, it sorts on beat 2 and its bars rise one per eighth from beat 2½; "a table"
+  // fades as they do (REVIEW-v2 S11, N8)
   visual: [
-    { text: "a table", at: 0.1 },
-    { text: "becomes a chart", at: 2 },
+    { text: "a table", at: 0.1, until: 2.5 },
+    { text: "becomes a chart", at: 2.5 },
   ],
   longtasks: [
     { text: "older tool results", at: 0.5 },

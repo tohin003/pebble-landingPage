@@ -1,18 +1,19 @@
-// The full reel's edit (50.1 s, 3006 frames at 60 fps), built from the locked score's beat map. Pure; no React.
+// The full reel's edit (the locked 50.1-s score, 3006 frames at 60 fps, and the last card past it), built from the
+// score's beat map. Pure; no React.
 //
-// Every segment starts on a beat of the map; check.ts proves it. The arc follows the score (the lead, 02:55 and 03:35):
-//   0–540     tension: the real question typed in the quick chat, echoed huge; light breathing with Starfire's pad,
-//             then Vanguard's build (270), the suck-back (378); the send on the pickup (486); the dive into the
-//             pebble's eye; a dark breath
-//   540       THE DROP: the pebble's burst; "Pebble" and "2.0" on the next two beats
-//   648–2160  the montage, Vanguard's driving 133.33 BPM: quick feature flashes (real screens, 2–3 beats) around the
-//             tech features' hero beats (6 beats, 2.7 s, each an explainer); the step-up at 1296 lands on a hero
-//   2025–2160 the rival set-up (RS-9's composite: the ask, then Pebble's own tab playing the video)
-//   2160–2268 true silence: the punch-in on the video's title, the pebble waits, "Anyway." (2214)
-//   2268      THE SLAM: Stealth Lockdown, its honest line on screen from here to the end
-//   2430–2592 the features flash faster and faster and collapse into the pebble
-//   2592      THE LOGO: the aura's warm burst, the lockup; the end card's lines
-//   2727–3006 the tease (D157), the pebble sleepy
+// Every segment starts on a beat of the map; check.ts proves it. Round 3 (the person, 1 Nov 12:03 and 12:05; the lead):
+//   0–270     the title on Starfire's pad: "Introducing Pebble 2.0" on the first hit, "A better companion / with
+//             superior agentic capabilities." on the next beats
+//   270–540   the hook: Vanguard's drums bring in the real quick chat (RS15-01), the question typed and echoed huge, a
+//             cut closer on the suck-back (378), the send on the pickup (486), the dive into the pebble's eye; a breath
+//   540       THE DROP: the pebble's burst, the pebble alone (its name waits for the logo)
+//   621–2160  the montage, Vanguard's driving 133.33 BPM: quick flashes over real screens (Spaces, apps, app actions,
+//             browser actions) around the tech features' heroes (7 beats each); the step-up at 1296 lands on a hero
+//   2160–2268 true silence: the pebble alone, its aura drawing in, no words
+//   2268      THE SLAM: Stealth Lockdown, its honest line on screen from here to the score's end
+//   2430–2592 the features fly into the pebble
+//   2592      THE LOGO: the lockup and its tagline, through the tease (D157)
+//   2961      the last card, on the score's fade: the lockup, "Open source under Apache 2.0.", the GitHub address
 import { type BeatMap, beatPeriod } from "../beats";
 import type { CropId } from "../takes";
 import { ramp, warp, type Warp } from "../warp";
@@ -58,29 +59,19 @@ export interface Hero {
   tint: Tint;
 }
 
-export interface Rival {
-  kind: "rival";
-  from: number;
-  to: number;
-  /** RS9A-01's ask, then the cut on motion into RS9B-02's own tab playing the video */
-  ask: { from: number; to: number; src: Warp };
-  play: { from: number; to: number; src: Warp };
-}
-
 export type Segment =
+  | { kind: "title"; from: number; to: number; lines: number[] }
   | { kind: "hook"; from: number; to: number; src: Warp; send: number; zoomFrom: number; accents: number[]; pulses: number[] }
   | { kind: "breath"; from: number; to: number }
   | { kind: "reveal"; from: number; to: number; w1: number; w2: number }
   | Flash
   | TypeBeat
   | Hero
-  | Rival
-  | { kind: "silence"; from: number; to: number; anyway: number }
-  | { kind: "rush"; from: number; to: number; flashes: number[] }
+  | { kind: "silence"; from: number; to: number }
   | { kind: "merge"; from: number; to: number; pulls: number[] }
-  | { kind: "logo"; from: number; to: number; credits: number }
+  | { kind: "logo"; from: number; to: number }
   | { kind: "tease"; from: number; to: number; lines: number[] }
-  | { kind: "credits"; from: number; to: number };
+  | { kind: "card"; from: number; to: number };
 
 export interface FullPlan {
   map: BeatMap;
@@ -93,7 +84,7 @@ export interface FullPlan {
   segments: Segment[];
   /** Stealth Lockdown's honest line: on screen from `from` to the end */
   honest: { from: number; to: number };
-  /** the score's last frame (the reel runs on past it into the silent credits tail) */
+  /** the score's last frame (the last card runs on past it) */
   scoreEnd: number;
   /** every frame the edit cuts or hits on, for the check */
   cuts: number[];
@@ -106,29 +97,32 @@ export const VISUAL_NAME = "Visual\nanswers.";
 export const STEALTH_HONEST =
   "Hidden from screen capture and screen sharing, not from a camera, a capture card or a process list. Exams and interviews that forbid assistants still forbid it.";
 
+/** The opening (the person, 1 Nov 12:05: "introducing Pebble 2.0- a better companion with superior agentic
+ * capabilities"): two lines, the break replacing the comma. Narrow frames wrap the second line once more, never leaving a
+ * word alone. */
+export const TITLE = {
+  intro: "Introducing",
+  name: "Pebble 2.0",
+  line: ["A better companion", "with superior agentic capabilities."],
+  lineNarrow: ["A better companion", "with superior", "agentic capabilities."],
+} as const;
+
 /** The tease (D157; the person's words, as in the first cut's coda), one line per hit. */
 export const TEASE_LINES = ["Pebble rests.", "Soon, it may learn while it does.", "Not built yet."] as const;
 
-/** The end card's lines and credits (the lead, 03:35; the music lane's CREDITS; DECISION-RS9; the engine's licence). */
+/** The end card (the lead, 03:35; B5) and the last card (the person, 1 Nov 12:03: "just write pebble 2.0 open sourced
+ * with apace 2.0 and show the github link"). The credits are in the descriptions (.work/reel/full/DESCRIPTION.txt). */
 export const END_CARD = {
-  // the lead's "Pebble 2.0 · Free and open source · for Mac", set without middle dots (PHILOSOPHY: no middle-dot meta
-  // strings): the name is the lockup, the rest one plain line. Open for the lead's ruling.
+  // the lead's "Pebble 2.0 · Free and open source · for Mac", set without middle dots (PHILOSOPHY): the name is the
+  // lockup, the rest one plain line
   tagline: "Free and open source, for Mac.",
-  honestSmall: "Shown with sample data. Edited for time.",
-  // the tail's billing block (PRO_CHECKLIST's exception, the lead's ruling 3): the music condensed to one line (titles,
-  // artist, "edited", licence, link); the full three lines stay in every description and the SRT
-  credits: [
-    "‘Starfire’, ‘Vanguard’ and ‘Born Of The Sky’ by Scott Buckley (edited), released under CC BY 4.0. scottbuckley.com.au",
-    "Claude Code launch video: Anthropic, on YouTube. Claude and Claude Code are trademarks of Anthropic.",
-    "Pebble’s character engine: bloub by Jérémy Perret (MIT)",
-  ],
-  /** the music's three CC BY lines in full (the music lane's README), for the SRT and every description */
-  musicFull: [
-    "‘Vanguard’ by Scott Buckley (edited) – released under CC-BY 4.0. www.scottbuckley.com.au",
-    "‘Starfire’ by Scott Buckley (edited) – released under CC-BY 4.0. www.scottbuckley.com.au",
-    "‘Born Of The Sky’ by Scott Buckley (edited) – released under CC-BY 4.0. www.scottbuckley.com.au",
-  ],
+  licence: "Open source under Apache 2.0.",
+  repo: "github.com/tohin003/Pebble",
 } as const;
+
+/** The real screens that fly into the pebble before the logo: dark crops only (bright ones flickered: round 1's scan). */
+export const CONVERGE: readonly CropId[] = ["calculator", "keepAsk", "browserCard", "calCard", "stealthPalette", "reply", "calendar", "modelRow", "calculator", "keepAsk", "browserCard", "calCard", "reply"];
+export const CONVERGE_SRC: Partial<Record<CropId, number>> = { calculator: 3420, keepAsk: 5500, browserCard: 2880, calCard: 2880, stealthPalette: 420, reply: 1000, calendar: 6250, modelRow: 960 };
 
 const hit = (m: BeatMap, name: RegExp, fallback: number) => Math.round(m.hits.find((h) => name.test(h.kind))?.frame ?? fallback);
 
@@ -138,32 +132,33 @@ export function buildFullPlan(map: BeatMap): FullPlan {
   const drop = hit(map, /drop/i, 540);
   const stepUp = hit(map, /splice|lift|step/i, 1296);
   const stops = hit(map, /stops|silence/i, 2160);
-  const anyway = hit(map, /anyway/i, 2214);
   const slam = hit(map, /slam/i, 2268);
   const logo = hit(map, /logo/i, 2592);
   const teaseIn = hit(map, /tease/i, 2781);
-  // the lead, 04:10: a 3–4 s credits tail after the score's last note, in silence, so the reel is about 54 s
   const scoreEnd = map.durationFrames;
-  const TAIL = 240; // 4.0 s
-  const length = scoreEnd + TAIL;
   const segs: Segment[] = [];
   const at = (n: number) => Math.round(n * B); // n beats
 
-  // ---- tension: the hook card, the send on the pickup, the dive, the breath
+  // ---- the title on Starfire's pad: the first line on its first hit (readable in the first second, sound off), the
+  // second line's two halves on the pad's next beats; held to Vanguard's drums
   const vanguardIn = hit(map, /vanguard_in|build/i, 270);
   const suck = hit(map, /suck/i, 378);
   const send = hit(map, /pickup/i, 486);
+  const padBeats = map.beats.filter((b) => b > 0.5 && b < vanguardIn - 0.5).map(Math.round);
+  segs.push({ kind: "title", from: 0, to: vanguardIn, lines: [0, padBeats[1] ?? 89, padBeats[2] ?? 134] });
+
+  // ---- the hook: the card on the drums, the question typed (edited for time, about 1.5×), held, sent on the pickup;
+  // the dive; the breath
   const breathFrom = drop - 6;
-  // the typing at about real time (0.85×) from the first letter, then the finished question held to the send
   const hookSrc = warp([
-    [0, 241],
-    [300, 495],
+    [vanguardIn, 241],
+    [vanguardIn + 170, 495],
     [send, 517],
     [breathFrom, 517],
   ]);
   segs.push({
     kind: "hook",
-    from: 0,
+    from: vanguardIn,
     to: breathFrom,
     src: hookSrc,
     send,
@@ -172,10 +167,11 @@ export function buildFullPlan(map: BeatMap): FullPlan {
     pulses: map.beats.filter((b) => b >= vanguardIn - 0.5 && b < send - 0.5).map(Math.round),
   });
   segs.push({ kind: "breath", from: breathFrom, to: drop });
-  segs.push({ kind: "reveal", from: drop, to: drop + at(4), w1: drop + at(1), w2: drop + at(2) });
+  // the drop: the pebble alone (its name waits for the logo: "Pebble 2.0" is said at the title and the logo only)
+  segs.push({ kind: "reveal", from: drop, to: drop + at(3), w1: drop + at(1), w2: drop + at(2) });
 
   // ---- the montage
-  let t = drop + at(4);
+  let t = drop + at(3);
   let side: "left" | "right" = "right";
   const flip = () => (side = side === "right" ? "left" : "right");
   const flash = (id: string, line: string, claim: string, beats: number, tint: Tint, shots: { crop: CropId; beats: number; srcIn: number; event?: { src: number; beat: number } }[]) => {
@@ -202,46 +198,41 @@ export function buildFullPlan(map: BeatMap): FullPlan {
     t += at(beats);
   };
 
-  // part 1 (to the step-up): the round-2 budget (REVIEW B1, B2, B4; the lead 10:15): flashes held to the reading floor,
-  // the type beats at their floor or folded, the heroes 5–6 beats, the rival ask about 2.5 s and the video 2 s
-  // "Every Space.": a hard match cut on its second beat from the poster's Space to Chrome's, the pebble held in place
+  // part 1 (to the step-up, 25 beats): four flashes held to the reading floor, then AgentGuard and the Workshop; the
+  // rival beat's time went to the heroes (the lead, round 3)
+  // "Every Space.": a hard match cut on its second beat from the poster's Space to Chrome's (the crop stops left of the
+  // take's pointer, REVIEW-v2 S12; the companion holds its place across the cut)
   flash("spaces", "Every Space.", "C-REEL-3", 2, "deep", [
     { crop: "spaces", beats: 1, srcIn: 200 },
     { crop: "spaces", beats: 1, srcIn: 300 },
   ]);
   flash("apps", "Apps you allow.", "C-REEL-4", 3, "sage", [{ crop: "calculator", beats: 3, srcIn: 3200, event: { src: 3387, beat: 1 } }]);
-  // "App actions.": the action itself (Calendar's card, "Do it" pressed on 2908), then the event in Calendar
+  // "App actions.": the action itself (Calendar's card, before "Do it" is pressed on 2908), then the event in Calendar
   flash("actions", "App actions.", "C-REEL-5", 3, "clay", [
     { crop: "calCard", beats: 2, srcIn: 2853 },
     { crop: "calendar", beats: 1, srcIn: 6200 },
   ]);
-  hero("agentguard", "AgentGuard.", "Evidence before “done”.", "C-REEL-6", "deep");
-  hero("workshop", "Pebble’s\nWorkshop.", undefined, "C-REEL-7", "sage");
+  // "Browser actions." (the person, 12:03: "just write that pebble handles browser actions and move to next"): RS9B-02's
+  // website approval, Allow pressed on its last frames, then Pebble's own tab at work; nothing names the video
+  flash("browser", "Browser actions.", "C-REEL-23", 3, "deep", [
+    { crop: "browserCard", beats: 2, srcIn: 2857 },
+    { crop: "browserWorking", beats: 1, srcIn: 3310 },
+  ]);
+  hero("agentguard", "AgentGuard.", "Evidence before “done”.", "C-REEL-6", "deep", 7);
+  hero("workshop", "Pebble’s\nWorkshop.", undefined, "C-REEL-7", "sage", 7);
+  if (t !== stepUp) t = beat(stepUp); // the step-up lands on the next hero, to the frame
+  // part 2 (32 beats; the step-up: bigger, faster, brighter; builds on eighths): heroes and quick lines alternate
+  hero("visual", VISUAL_NAME, undefined, "C-REEL-9", "deep", 7);
+  type("memory", "Memory\nyou control.", "C-REEL-10", 3, "sage");
+  hero("longtasks", "Long tasks.", undefined, "C-REEL-14, C-REEL-21", "clay", 7);
   // "Your model, your choice." over the real model chip in the quick chat (RS15-01's send row)
   flash("model", "Your model,\nyour choice.", "C-REEL-13", 4, "deep", [{ crop: "modelRow", beats: 4, srcIn: 940 }]);
-  if (t !== stepUp) t = beat(stepUp); // the step-up lands on the next hero, to the frame
-  // part 2 (the step-up: bigger, faster, brighter; builds on eighths)
-  hero("visual", VISUAL_NAME, undefined, "C-REEL-9", "deep", 5);
-  type("memory", "Memory\nyou control.", "C-REEL-10", 3, "sage");
-  hero("longtasks", "Long tasks.", undefined, "C-REEL-14, C-REEL-21", "clay", 5);
-  hero("remote", "Pebble\nRemote.", "Open source.", "C-REEL-11, C-REEL-12", "deep", 5);
+  hero("remote", "Pebble\nRemote.", "Open source.", "C-REEL-11, C-REEL-12", "deep", 7);
   // the three modes as kinetic type on the eighths (no drawn control: "real UI only" means no look-alikes, N5)
   type("pace", "You set\nthe pace.", "C-REEL-8", 4, "clay");
-
-  // the rival: the ask about 2.5 s (typed, echoed, sent), then Pebble's own tab playing the video 2 s, to the stop
-  const rivalFrom = Math.round(stops - B * 10);
-  t = rivalFrom;
-  const askLen = Math.round(B * 5.5);
-  segs.push({
-    kind: "rival",
-    from: rivalFrom,
-    to: stops,
-    // RS9A-01: "Show me a clip of your rival." typed from 1352 (complete on 1693), sent on 1722: the typing runs fast
-    // (edited for time) so the whole question is up early, and its echo stays over the video
-    ask: { from: rivalFrom, to: rivalFrom + askLen, src: warp([[0, 1352], [96, 1693], [140, 1722], [askLen, 1722 + askLen - 140]]) },
-    play: { from: rivalFrom + askLen, to: stops, src: warp([[0, 6995], [stops - rivalFrom - askLen, 6995 + stops - rivalFrom - askLen]]) },
-  });
-  segs.push({ kind: "silence", from: stops, to: slam, anyway });
+  if (t !== stops) throw new Error(`reel: the montage ends on ${t}, the music stops on ${stops}`);
+  // the silence: a breath before the slam, the pebble alone (the rival beat is out: the person, 12:03)
+  segs.push({ kind: "silence", from: stops, to: slam });
 
   // ---- the return: the slam, Stealth Lockdown, the rush, the merge into the logo
   t = slam;
@@ -255,20 +246,25 @@ export function buildFullPlan(map: BeatMap): FullPlan {
   for (let f = logo - 0.75 * B; f < logo - 1; f += B / 4) arrivals.push(Math.round(f));
   segs.push({ kind: "merge", from: convergeFrom, to: logo, pulls: arrivals });
   const teaseFrom = beat(teaseIn - at(2));
-  segs.push({ kind: "logo", from: logo, to: teaseFrom, credits: beat(logo + at(4)) });
-  segs.push({ kind: "tease", from: teaseFrom, to: scoreEnd, lines: [teaseFrom, teaseIn, Math.round(map.downbeats.find((d) => d > teaseIn + 1) ?? teaseIn + at(4))] });
+  segs.push({ kind: "logo", from: logo, to: teaseFrom });
+  // the tease's lines on its beats; the last card on the beat inside Born Of The Sky's fade-out (48.75–49.95 s), so it
+  // arrives with the score's last breath rather than in dead silence; 5 s: a 1.5-s settle to the centre, then 3 s a still
+  const cardFrom = beat(teaseIn + at(6.6));
+  segs.push({ kind: "tease", from: teaseFrom, to: cardFrom, lines: [teaseFrom, teaseIn, beat(teaseIn + at(2.2))] });
+  const length = cardFrom + 300;
+  segs.push({ kind: "card", from: cardFrom, to: length });
 
   const cuts = segs.flatMap((s) => {
     const own = [s.from];
     if (s.kind === "flash") own.push(...s.shots.map((x) => x.from), ...s.punches);
     if (s.kind === "reveal") own.push(s.w1, s.w2);
-    if (s.kind === "rival") own.push(s.play.from);
-    if (s.kind === "hook") own.push(s.send);
+    if (s.kind === "title") own.push(...s.lines);
+    if (s.kind === "tease") own.push(...s.lines);
+    if (s.kind === "hook") own.push(s.send, ...s.accents);
     return own;
   });
-  segs.push({ kind: "credits", from: scoreEnd, to: length });
   // the honest line: on screen from the slam (where Stealth first appears, REVIEW S8) to the score's end, 12.3 s for its
-  // 21 words, so the tail doesn't repeat it (the lead's ruling 4)
+  // 21 words (as in round 2: the lead, round 3, "exactly as now")
   return { map, B, length, scoreEnd, drop, stepUp, slam, logo, segments: segs, honest: { from: slam, to: scoreEnd }, cuts };
 }
 

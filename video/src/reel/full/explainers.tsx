@@ -175,46 +175,58 @@ export const WorkshopExplainer2: React.FC<ExplainerProps & { stepBack?: number }
 
 /**
  * Visual answers (CHANGELOG.md@v2.0.0:230-234; C-REEL-9): one idea, a reply's table becoming a chart. Bars, never figures.
+ * Built on the eighths (REVIEW-v2 S11): a row on each of the first four, the sort on beat 2, then one bar rising on each
+ * eighth from beat 2½, as "a table" fades (N8).
  */
 export const VisualExplainer: React.FC<ExplainerProps> = ({ x, y, w, h, dt, B, vertical }) => {
   const u = vertical ? Math.min(w / 600, h / 700) : Math.min(w / 680, h / 520);
+  const E8 = B / 2;
   const values = [0.55, 0.92, 0.36, 0.74];
   const order = [1, 3, 0, 2];
-  const sortP = inOut(c01((dt - 0.5 * B) / 10)); // sorted on the first eighth after the downbeat
-  const chartP = inOut(c01((dt - 2 * B) / 12)); // a chart on beat 2
+  const sortAt = 2 * B;
+  const barsAt = 2.5 * B;
+  const sortP = inOut(c01((dt - sortAt) / 8));
+  const barP = (rank: number) => inOut(c01((dt - barsAt - rank * E8) / 9));
+  const chartP = barP(0);
   const tw = (vertical ? 520 : 600) * u;
   const left = x + (w - tw) / 2;
   const top = y + (vertical ? 120 : 70) * u;
   const rowH = 78 * u;
   const base = top + 70 * u + 4 * rowH + 10 * u;
-  const tableIn = expoOut(c01(dt / 8));
+  const tableIn = expoOut(c01((dt + 1) / 6));
+  const tableOut = c01((dt - barsAt) / (4 * E8));
   return (
     <div style={{ position: "absolute", inset: 0, opacity: tableIn }}>
       <svg style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }} width={1} height={1}>
-        <rect x={left} y={top} width={tw} height={58 * u} rx={14 * u} fill={`rgba(${REEL.sage}, ${0.22 * (1 - chartP)})`} stroke={SAGE} strokeOpacity={0.6 * (1 - chartP)} strokeWidth={2.5 * u} />
-        <rect x={left + tw * 0.45} y={top + 10 * u} width={tw * 0.4} height={38 * u} rx={10 * u} fill={`rgba(${REEL.sageCore}, ${(0.45 * pulse(dt, 0.5 * B, 12) + 0.12) * (1 - chartP)})`} />
+        <rect x={left} y={top} width={tw} height={58 * u} rx={14 * u} fill={`rgba(${REEL.sage}, ${0.22 * (1 - tableOut)})`} stroke={SAGE} strokeOpacity={0.6 * (1 - tableOut)} strokeWidth={2.5 * u} />
+        <rect x={left + tw * 0.45} y={top + 10 * u} width={tw * 0.4} height={38 * u} rx={10 * u} fill={`rgba(${REEL.sageCore}, ${(0.45 * pulse(dt, sortAt, 12) + 0.12) * (1 - tableOut)})`} />
         {values.map((v, i) => {
           const rank = order.indexOf(i);
+          const rowIn = expoOut(c01((dt - i * E8 + 1) / 6));
+          const bp = barP(rank);
           const yRow = top + 70 * u + (i + (rank - i) * sortP) * rowH;
           const colW = (tw - 80 * u) / 4;
           const colX = left + 40 * u + rank * colW + colW * 0.18;
           const colH = v * (vertical ? 330 : 300) * u;
-          const bx = (left + tw * 0.45) * (1 - chartP) + colX * chartP;
-          const by = (yRow + 24 * u) * (1 - chartP) + (base - colH) * chartP;
-          const bw = v * tw * 0.42 * (1 - chartP) + colW * 0.64 * chartP;
-          const bh = 26 * u * (1 - chartP) + colH * chartP;
+          const bx = (left + tw * 0.45) * (1 - bp) + colX * bp;
+          const by = (yRow + 24 * u) * (1 - bp) + (base - colH) * bp;
+          const bw = v * tw * 0.42 * (1 - bp) + colW * 0.64 * bp;
+          const bh = 26 * u * (1 - bp) + colH * bp;
+          const slide = (1 - rowIn) * 40 * u;
           return (
-            <g key={i}>
-              <rect x={left} y={yRow} width={tw} height={rowH - 8 * u} rx={12 * u} fill={`rgba(${REEL.sage}, ${0.08 * (1 - chartP)})`} />
-              <rect x={left + 26 * u} y={yRow + 28 * u} width={tw * 0.26} height={16 * u} rx={8 * u} fill={`rgba(232, 238, 230, ${0.4 * (1 - chartP)})`} />
-              <rect x={bx} y={by} width={bw} height={bh} rx={10 * u} fill={i === 1 ? SAGE : `rgba(${REEL.sage}, 0.78)`} />
+            <g key={i} opacity={rowIn}>
+              <rect x={left + slide} y={yRow} width={tw} height={rowH - 8 * u} rx={12 * u} fill={`rgba(${REEL.sage}, ${0.08 * (1 - bp)})`} />
+              <rect x={left + 26 * u + slide} y={yRow + 28 * u} width={tw * 0.26} height={16 * u} rx={8 * u} fill={`rgba(232, 238, 230, ${0.4 * (1 - bp)})`} />
+              <rect x={bx + slide} y={by} width={bw} height={bh} rx={10 * u} fill={i === 1 ? SAGE : `rgba(${REEL.sage}, 0.78)`} />
             </g>
           );
         })}
         <line x1={left + 20 * u} y1={base + 4 * u} x2={left + tw - 20 * u} y2={base + 4 * u} stroke={SAGE} strokeWidth={3 * u} strokeOpacity={chartP} />
       </svg>
-      <Tag text="a table" x={left} y={top - 50 * u} size={46 * u} dt={dt - 3} align="left" color={REEL.inkSoft} />
-      <Tag text="becomes a chart" x={left + tw / 2} y={base + 70 * u} size={52 * u} dt={dt - 2 * B} />
+      <div style={{ position: "absolute", inset: 0, opacity: 1 - c01((dt - barsAt) / 8) }}>
+        <Tag text="a table" x={left} y={top - 50 * u} size={46 * u} dt={dt - 3} align="left" color={REEL.inkSoft} />
+      </div>
+      <Tag text="becomes a chart" x={left + tw / 2} y={base + 70 * u} size={52 * u} dt={dt - barsAt} />
     </div>
   );
 };
