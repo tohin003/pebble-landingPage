@@ -99,6 +99,9 @@ const geometry = (L: Layout) => {
       tag: p(32),
       budgetLabel: p(40),
       budgetText: "context budget",
+      /** the dashed line's span; the label left of its start */
+      budgetSpan: { x: p(840) - p(44), w: p(940) + p(88) },
+      labelAbove: false,
       push: 1.035,
     };
   }
@@ -107,13 +110,17 @@ const geometry = (L: Layout) => {
     titleSize: p(96),
     lines: { x: p(64), y: p(214), w: p(952), h: p(170) },
     lineSize: p(52),
-    col: { x: p(262), w: p(754), floor: p(1290) },
+    // REVIEW-2 N-6: the rows end 60 px from the right edge at rest (40 px or more at the push's largest scale, 1.06),
+    // clear of "context budget", which now sits on one line above the line's left end
+    col: { x: p(360), w: p(660), floor: p(1290) },
     block: { full: p(120), stub: p(70), gap: p(12) },
     budget: p(700),
     label: p(48),
     tag: p(32),
     budgetLabel: p(40),
-    budgetText: "context\nbudget",
+    budgetText: "context budget",
+    budgetSpan: { x: p(64), w: p(1020) - p(64) },
+    labelAbove: true,
     push: 1.03,
   };
 };
@@ -203,7 +210,7 @@ export const S07ContextWarping: React.FC<SceneProps> = ({ durationInFrames }) =>
           {/* the diagram */}
           <div style={{ position: "absolute", inset: 0, transform: `scale(${(push * drift).toFixed(5)})`, transformOrigin: `${colCx.toFixed(1)}px ${focusY.toFixed(1)}px` }}>
             {/* the budget sits behind the column: the blocks that cross it read as over it */}
-            <BudgetLine x={g.col.x - L.px(44)} w={g.col.w + L.px(88)} y={budgetY} over={over} at={a(S07_BEATS.firstBlock)} size={g.budgetLabel} text={g.budgetText} />
+            <BudgetLine x={g.budgetSpan.x} w={g.budgetSpan.w} y={budgetY} over={over} at={a(S07_BEATS.firstBlock)} size={g.budgetLabel} text={g.budgetText} above={g.labelAbove} />
             {BLOCKS.map((b, i) =>
               enters[i] <= 0 ? null : (
                 <WarpBlock
@@ -236,9 +243,9 @@ export const S07ContextWarping: React.FC<SceneProps> = ({ durationInFrames }) =>
   );
 };
 
-/** The budget: a dashed hairline across the column; its label (Inter) sits outside the column's left edge. It warms to
- * clay while the column is over it. */
-const BudgetLine: React.FC<{ x: number; w: number; y: number; over: number; at: number; size: number; text: string }> = ({ x, w, y, over, at, size, text }) => {
+/** The budget: a dashed hairline across the column; its label (Inter) sits outside the column's left edge, or (4:5) on
+ * one line above the line's left end. It warms to clay while the column is over it. */
+const BudgetLine: React.FC<{ x: number; w: number; y: number; over: number; at: number; size: number; text: string; above?: boolean }> = ({ x, w, y, over, at, size, text, above = false }) => {
   const t = useT();
   const p = prog(t, at - 0.1, 0.5, EASE.enter);
   if (p <= 0) return null;
@@ -249,16 +256,16 @@ const BudgetLine: React.FC<{ x: number; w: number; y: number; over: number; at: 
       <div
         style={{
           position: "absolute",
-          left: x - size * 0.4,
-          top: y,
-          transform: "translate(-100%, -50%)",
+          left: above ? x : x - size * 0.4,
+          top: above ? y - size * 0.3 : y,
+          transform: above ? "translateY(-100%)" : "translate(-100%, -50%)",
           fontFamily: TYPE.support.fontFamily,
           fontVariationSettings: '"opsz" 32',
           fontWeight: 520,
           fontSize: size,
           letterSpacing: "-0.012em",
           lineHeight: 1.08,
-          textAlign: "right",
+          textAlign: above ? "left" : "right",
           color: ink,
           opacity: p,
           whiteSpace: "pre",
