@@ -1,9 +1,12 @@
-// S06 Memory (7 s): "It remembers what matters." (EDIT_PLAN "S06").
+// S06 Memory (8 s): "It remembers what matters." (EDIT_PLAN "S06"; the director's review r2: hero type, a stack that
+// fills the frame, the capture zoomed until its records and Forget are big).
 //
-// Six translucent stone slabs stack in 3D on six beats, each labelled with its layer (a diagram: drawn shapes, never
-// Pebble's interface). The Semantic slab (facts and knowledge) lifts and carries the seam: the real Settings › Memory
-// capture (Pebble 2.0.1's own frontend, sample data) grows out of it onto the Daylight ground, on its own Facts &
-// knowledge layer: a record's trash, Keep and Forget, Forget, the record gone. "All visible. Forget anything."
+// The headline lands at hero size in the middle of the frame, then settles to the top as six translucent stone slabs
+// stack in 3D on six beats, each labelled with its layer (a diagram: drawn shapes, never Pebble's interface); the view
+// eases back as the stack grows. The Semantic slab (facts and knowledge) lifts and carries the seam: the real Settings ›
+// Memory capture (Pebble 2.0.1's own frontend, sample data) grows out of it on its own Facts & knowledge layer. The
+// trash on a record, then the camera pushes onto Keep and Forget, Forget, the record gone, and back out to the layer
+// whose count now reads 2. "All visible." / "Forget anything."
 import { AbsoluteFill, Sequence, useVideoConfig } from "remotion";
 import { FloatingWindow } from "../../components/FloatingWindow";
 import { FontGate } from "../../components/FontGate";
@@ -18,10 +21,10 @@ import { prog, tween } from "../../timing";
 import { EASE, TYPE } from "../../tokens";
 import { useWorld } from "../../world";
 import type { SceneProps } from "../types";
-import { PLACE_SFX, SFX, clamp01, lerp, useRetime, useT } from "./common";
+import { PLACE_SFX, SFX, Settle, clamp01, lerp, peakAt, useRetime, useT } from "./common";
 import { MEMORY_CAPTURE as MC } from "./memoryCapture";
 
-export const S06_NOMINAL = 7;
+export const S06_NOMINAL = 8;
 
 /** Bottom first. Pebble's six memory layers (memory KINDS at v2.0.1), with plain descriptions. */
 export const LAYERS = [
@@ -37,65 +40,97 @@ const CARRY = 1;
 
 export const S06_BEATS = {
   headline: 0.05,
+  /** the headline leaves the middle for the top as the stack starts */
+  settle: 0.8,
   /** the slabs land on these beats (contact frames) */
   slabs: [1.0, 1.5, 2.0, 2.5, 3.0, 3.5],
   lift: 3.8,
   capture: 4.0,
-  line: 4.35,
+  line: 4.4,
 } as const;
 const FALL = 0.36;
 const MORPH = 0.75;
 
-/** the capture's time map, local to its start: 2× through to the trash, then real time, then the last frame held */
+/** The capture's moments in clip px (CSS px × 2.5; .work/launch/ui/meta/launch-memory-dark.timeline.json). */
+const c = (v: number) => v * 2.5;
+/** the six layers with their counts and the top of the Facts & knowledge records (trash buttons inside) */
+const VIEW_LAYER = { x: c(536), y: c(162), w: c(568), h: c(438) };
+/** the second record, Keep and Forget, with the records above and below it */
+const VIEW_FORGET = { x: c(534), y: c(455), w: c(424), h: c(295) };
+const TRASH_AT = { x: c(1075), y: c(567) };
+const FORGET_AT = { x: MC.box.forget.x + MC.box.forget.w / 2, y: MC.box.forget.y + MC.box.forget.h / 2 };
+
+/** the capture's time map, local to its start: 1.3× through to the trash, then real time, the last frame held */
 const captureTime = timeMap(
   [
     [0, MC.t.records],
-    [0.9, MC.t.trash],
-    [1.35, MC.t.trash + 0.45],
-    [2.75, MC.t.after + 0.15],
+    [0.85, MC.t.trash],
+    [0.85 + (MC.duration - MC.t.trash), MC.duration],
   ],
   { tail: 0 },
 );
 const TRASH_OUT = captureTime.inv(MC.t.trash);
 const FORGET_OUT = captureTime.inv(MC.t.forget);
+const GONE_OUT = captureTime.inv(MC.t.after);
+/** the camera inside the capture (output seconds from the capture's start) */
+const CAM = { pushArrive: 1.6, pullStart: 2.7, pullArrive: 3.4 } as const;
 
 export const S06_MARKS = [
+  { name: "headline lands (hero)", s: S06_BEATS.headline + 0.5 },
   ...S06_BEATS.slabs.map((s, i) => ({ name: `slab ${i + 1} lands (${LAYERS[i].name})`, s })),
   { name: "the Semantic slab lifts", s: S06_BEATS.lift },
   { name: "the capture grows out of it", s: S06_BEATS.capture },
   { name: "trash clicked (Keep / Forget)", s: S06_BEATS.capture + TRASH_OUT },
-  { name: "Forget clicked", s: S06_BEATS.capture + FORGET_OUT },
+  { name: "Forget clicked; \"Forget anything.\"", s: S06_BEATS.capture + FORGET_OUT },
+  { name: "the record is gone (Facts & knowledge 3 → 2)", s: S06_BEATS.capture + GONE_OUT },
 ] as const;
 
 export const s06Sfx = (k = 1): SfxCue[] => [
-  ...S06_BEATS.slabs.map((s, i) => ({ src: SFX.thud, at: s * k + 1 / 60, db: i === 5 ? -13 : -16 })),
-  { src: SFX.whoosh, at: S06_BEATS.capture * k + 0.25, db: -15 },
-  { src: SFX.click, at: S06_BEATS.capture * k + TRASH_OUT + 1 / 60, db: -14 },
-  { src: SFX.click, at: S06_BEATS.capture * k + FORGET_OUT + 1 / 60, db: -13 },
+  ...S06_BEATS.slabs.map((s, i) => peakAt(SFX.thud, s * k, i === 5 ? -20 : -24)),
+  peakAt(SFX.whoosh, (S06_BEATS.capture + MORPH * 0.5) * k, -17),
+  peakAt(SFX.click, S06_BEATS.capture * k + TRASH_OUT, -15),
+  peakAt(SFX.click2, S06_BEATS.capture * k + FORGET_OUT, -13),
 ];
 
 const geometry = (L: Layout) => {
   if (!L.portrait) {
-    const a = L.px(290);
+    const a = L.px(300);
     return {
-      headline: { x: L.px(128), y: L.px(96), w: L.px(1500), h: L.px(170) } as Rect,
-      headlineSize: L.px(104),
+      // hero in the middle, then settled to the top at 110 px
+      headline: { x: L.px(128), y: L.px(440), w: L.px(1700), h: L.px(200) } as Rect,
+      headlineSize: L.px(124),
       headlineText: "It remembers what matters.",
-      slab: { cx: L.px(470), a, b: a * 0.4, d: L.px(20), floor: L.px(915), step: L.px(102) },
-      label: { x: L.px(830), name: L.px(56), desc: L.px(28), inline: true },
-      text: L.feature.text,
-      media: L.feature.media,
+      heroAnchor: { x: L.px(128), y: L.px(540) },
+      topAnchor: { x: L.px(128), y: L.px(128) },
+      topScale: 110 / 124,
+      slab: { cx: L.px(128) + a, a, b: a * 0.4, d: L.px(26), floor: L.px(854), step: L.px(85) },
+      label: { x: L.px(800), name: L.px(60), desc: L.px(36), inline: true },
+      view: { scale: 1.08, origin: { x: L.px(900), y: L.px(1000) } },
+      media: { x: L.px(648), y: L.px(80), w: L.px(1176), h: L.px(920) } as Rect,
+      line1: { x: L.px(112), y: L.px(250), w: L.px(500), h: L.px(160) } as Rect,
+      line2: { x: L.px(112), y: L.px(430), w: L.px(500), h: L.px(170) } as Rect,
+      line1Text: "All visible.",
+      line2Text: "Forget\nanything.",
+      lineSize: L.px(72),
     };
   }
-  const a = L.px(205);
+  const a = L.px(210);
   return {
-    headline: { x: L.px(64), y: L.px(104), w: L.px(952), h: L.px(280) } as Rect,
-    headlineSize: L.type.headline * 0.9,
+    headline: { x: L.px(64), y: L.px(520), w: L.px(952), h: L.px(300) } as Rect,
+    headlineSize: L.px(100),
     headlineText: "It remembers\nwhat matters.",
-    slab: { cx: L.px(290), a, b: a * 0.4, d: L.px(14), floor: L.px(1120), step: L.px(114) },
-    label: { x: L.px(560), name: L.px(44), desc: L.px(26), inline: false },
-    text: { x: L.px(64), y: L.px(96), w: L.px(952), h: L.px(300) } as Rect,
-    media: L.feature.media,
+    heroAnchor: { x: L.px(64), y: L.px(670) },
+    topAnchor: { x: L.px(64), y: L.px(196) },
+    topScale: 0.92,
+    slab: { cx: L.px(64) + a, a, b: a * 0.4, d: L.px(20), floor: L.px(1136), step: L.px(134) },
+    label: { x: L.px(530), name: L.px(50), desc: L.px(31), inline: false },
+    view: { scale: 1.08, origin: { x: L.px(540), y: L.px(1240) } },
+    media: { x: L.px(40), y: L.px(400), w: L.px(1000), h: L.px(880) } as Rect,
+    line1: { x: L.px(64), y: L.px(110), w: L.px(952), h: L.px(100) } as Rect,
+    line2: { x: L.px(64), y: L.px(212), w: L.px(952), h: L.px(100) } as Rect,
+    line1Text: "All visible.",
+    line2Text: "Forget anything.",
+    lineSize: L.px(72),
   };
 };
 
@@ -107,6 +142,9 @@ export const S06Memory: React.FC<SceneProps> = ({ durationInFrames }) => {
   const g = geometry(L);
   const capAt = a(S06_BEATS.capture);
   const liftAt = a(S06_BEATS.lift);
+
+  // the view eases back as the stack grows (the first slabs land big)
+  const vs = lerp(g.view.scale, 1, prog(t, a(S06_BEATS.slabs[0]) - 0.2, a(S06_BEATS.slabs[5]) - a(S06_BEATS.slabs[0]) + 0.4, EASE.camera));
 
   // the carried slab's centre on screen (the capture starts there)
   const carryCy = g.slab.floor - CARRY * g.slab.step;
@@ -122,38 +160,36 @@ export const S06Memory: React.FC<SceneProps> = ({ durationInFrames }) => {
     <FontGate>
       <AbsoluteFill>
         <Stage world="daylight" keyLight={L.portrait ? { x: 0.35, y: 0.3, r: 0.95 } : { x: 0.3, y: 0.1, r: 0.95 }}>
-          <Headline text={g.headlineText} at={a(S06_BEATS.headline)} exitAt={liftAt} exit="rise" size={g.headlineSize} align="left" valign={L.portrait ? "top" : "middle"} box={g.headline} fit />
-          <Slabs g={g} a={a} lift={lift} gone={prog(t, liftAt, 0.3, EASE.exit)} carryFade={clamp01((t - capAt - 0.1) / 0.25)} />
-          <Headline
-            text={"All visible.\nForget anything."}
-            at={a(S06_BEATS.line)}
-            entrance="blur"
-            size={L.portrait ? L.type.title * 0.9 : L.type.title * 0.86}
-            align="left"
-            valign={L.portrait ? "top" : "middle"}
-            box={L.portrait ? { ...g.text, y: L.px(110), h: L.px(240) } : g.text}
-            lineStagger={0.25}
-            fit
-          />
+          <Settle from={g.heroAnchor} to={g.topAnchor} scale={g.topScale} at={a(S06_BEATS.settle)} dur={0.7}>
+            <Headline text={g.headlineText} at={a(S06_BEATS.headline)} exitAt={liftAt} exit="rise" size={g.headlineSize} align="left" valign="middle" box={g.headline} fit />
+          </Settle>
+          <div style={{ position: "absolute", inset: 0, transform: `scale(${vs.toFixed(5)})`, transformOrigin: `${g.view.origin.x}px ${g.view.origin.y}px` }}>
+            <Slabs g={g} a={a} lift={lift} gone={prog(t, liftAt, 0.3, EASE.exit)} carryFade={clamp01((t - capAt - 0.1) / 0.25)} />
+          </div>
+          <Headline text={g.line1Text} at={a(S06_BEATS.line)} entrance="blur" size={g.lineSize} align="left" valign="bottom" box={g.line1} fit={false} />
+          <Headline text={g.line2Text} at={capAt + FORGET_OUT - 0.04} entrance="rise" size={g.lineSize} align="left" valign="top" box={g.line2} fit={false} />
           <Sequence from={Math.round(capAt * fps)} layout="none" name="Settings › Memory (v2.0.1 capture)">
-            <FloatingWindow rect={media} at={0} enter="scale" offset={offset} scale={winScale} flattenAt={0.25} flattenDur={0.8} shadow={1.1}>
+            <FloatingWindow rect={media} at={0} enter="scale" offset={offset} scale={winScale} flattenAt={0.25} flattenDur={0.7} shadow={1.1}>
               <ScreenZoom
                 src={MC.src}
                 srcSize={MC.size}
                 srcDuration={MC.duration}
                 time={captureTime}
                 keys={[
-                  // the six layers and the records: the slabs' names in the product's own words
-                  { t: 0, box: { x: MC.box.layers.x - 60, y: MC.box.layers.y - 70, w: MC.box.layers.w + 120, h: 1000 } },
-                  { t: 1.0, box: { x: MC.box.layers.x - 60, y: MC.box.layers.y - 70, w: MC.box.layers.w + 120, h: 1000 } },
-                  // one push onto the record, its Keep and Forget (arrives before the Forget click)
-                  { t: 1.6, box: { x: MC.box.record.x - 50, y: 925, w: MC.box.record.w + 100, h: 1030 }, dur: 0.6 },
+                  // the six layers with their counts and the records (the slabs' names in the product's own words)
+                  { t: 0, box: VIEW_LAYER },
+                  { t: TRASH_OUT + 0.15, box: VIEW_LAYER },
+                  // one push onto the record, Keep and Forget (arrives before the Forget click)
+                  { t: CAM.pushArrive, box: VIEW_FORGET, dur: 0.6 },
+                  { t: CAM.pullStart, box: VIEW_FORGET },
+                  // back out: the record is gone and Facts & knowledge reads 2
+                  { t: CAM.pullArrive, box: VIEW_LAYER, dur: 0.7 },
                 ]}
-                drift={0.01}
+                drift={0.012}
                 overlay={(toView, scale, tt) => (
                   <>
-                    <ClickRing at={TRASH_OUT} t={tt} p={toView({ x: MC.box.record.x + MC.box.record.w - 37, y: MC.box.confirm.y + MC.box.confirm.h / 2 })} r={22 * scale} />
-                    <ClickRing at={FORGET_OUT} t={tt} p={toView({ x: MC.box.forget.x + MC.box.forget.w / 2, y: MC.box.forget.y + MC.box.forget.h / 2 })} r={30 * scale} />
+                    <ClickRing at={TRASH_OUT} t={tt} p={toView(TRASH_AT)} r={24 * scale} />
+                    <ClickRing at={FORGET_OUT} t={tt} p={toView(FORGET_AT)} r={34 * scale} />
                   </>
                 )}
               />
@@ -199,9 +235,9 @@ const Slabs: React.FC<{ g: Geo; a: (s: number) => number; lift: number; gone: nu
   const items = LAYERS.map((layer, i) => {
     const land = a(S06_BEATS.slabs[i]);
     const p = clamp01((t - (land - FALL)) / FALL);
-    // falls in with gravity, lands on the beat, a 2 % settle (no bounce: UI rule)
-    const fall = p < 1 ? -(1 - p * p) * L.px(110) : 0;
-    const settle = p >= 1 ? Math.exp(-(t - land) / 0.08) * L.px(3) : 0;
+    // falls in with gravity, lands on the beat, a small settle (no bounce: UI rule)
+    const fall = p < 1 ? -(1 - p * p) * L.px(140) : 0;
+    const settle = p >= 1 ? Math.exp(-(t - land) / 0.08) * L.px(4) : 0;
     const carry = i === CARRY;
     const restY = g.slab.floor - i * g.slab.step;
     const cy = restY + fall + settle + (carry ? -L.px(34) * lift : gone * L.px(40));
@@ -215,8 +251,8 @@ const Slabs: React.FC<{ g: Geo; a: (s: number) => number; lift: number; gone: nu
       <svg width={L.W} height={L.H} style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }} aria-hidden>
         <defs>
           <linearGradient id="d-slab-top" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#FCFAF4" stopOpacity="0.9" />
-            <stop offset="1" stopColor="#DFD8CA" stopOpacity="0.78" />
+            <stop offset="0" stopColor="#FCFAF4" stopOpacity="0.92" />
+            <stop offset="1" stopColor="#DCD4C4" stopOpacity="0.82" />
           </linearGradient>
         </defs>
         {items.map(({ i, cy, op, hi }) => {
@@ -228,10 +264,10 @@ const Slabs: React.FC<{ g: Geo; a: (s: number) => number; lift: number; gone: nu
           return (
             <g key={i} opacity={op}>
               {/* a soft shadow on the slab below */}
-              <ellipse cx={cx} cy={cy + hb * 0.55 + d} rx={ha * 0.82} ry={hb * 0.5} fill="rgba(74, 62, 44, 0.07)" />
-              <polygon points={leftFace} fill={hi > 0 ? `rgba(${sage}, ${0.25 + 0.3 * hi})` : "rgba(170, 160, 138, 0.72)"} />
-              <polygon points={rightFace} fill={hi > 0 ? `rgba(${sage}, ${0.35 + 0.3 * hi})` : "rgba(140, 130, 110, 0.78)"} />
-              <polygon points={top} fill="url(#d-slab-top)" stroke={hi > 0 ? `rgba(${sage}, ${0.4 + 0.5 * hi})` : "rgba(96, 86, 68, 0.55)"} strokeWidth={L.px(1.5)} />
+              <ellipse cx={cx} cy={cy + hb * 0.55 + d} rx={ha * 0.82} ry={hb * 0.5} fill="rgba(74, 62, 44, 0.08)" />
+              <polygon points={leftFace} fill={hi > 0 ? `rgba(${sage}, ${0.25 + 0.3 * hi})` : "rgba(170, 160, 138, 0.74)"} />
+              <polygon points={rightFace} fill={hi > 0 ? `rgba(${sage}, ${0.35 + 0.3 * hi})` : "rgba(140, 130, 110, 0.8)"} />
+              <polygon points={top} fill="url(#d-slab-top)" stroke={hi > 0 ? `rgba(${sage}, ${0.4 + 0.5 * hi})` : "rgba(96, 86, 68, 0.55)"} strokeWidth={L.px(2)} />
               {hi > 0 && <polygon points={top} fill={`rgba(${sage}, ${0.16 * hi})`} />}
             </g>
           );
@@ -244,17 +280,17 @@ const Slabs: React.FC<{ g: Geo; a: (s: number) => number; lift: number; gone: nu
         return (
           <div key={`l${i}`} style={{ position: "absolute", left: 0, top: 0, opacity: op }}>
             {/* the leader from the slab's corner to its label */}
-            <div style={{ position: "absolute", left: lineFrom, top: cy, width: (lx - L.px(16) - lineFrom) * EASE.enter(labelP), height: Math.max(1, L.px(1.5)), background: W.line }} />
+            <div style={{ position: "absolute", left: lineFrom, top: cy, width: Math.max(0, lx - L.px(18) - lineFrom) * EASE.enter(labelP), height: Math.max(1, L.px(2)), background: W.line }} />
             <div
               style={{
                 position: "absolute",
                 left: lx,
                 top: cy,
-                transform: `translateY(-${g.label.inline ? 52 : 50}%)`,
+                transform: `translateY(-${g.label.inline ? 56 : 50}%)`,
                 display: "flex",
                 flexDirection: g.label.inline ? "row" : "column",
                 alignItems: g.label.inline ? "baseline" : "flex-start",
-                gap: g.label.inline ? L.px(22) : L.px(4),
+                gap: g.label.inline ? L.px(26) : L.px(2),
                 whiteSpace: "nowrap",
                 opacity: labelP,
                 filter: labelP < 1 ? `blur(${((1 - labelP) * 6 * L.u).toFixed(2)}px)` : undefined,
@@ -263,7 +299,7 @@ const Slabs: React.FC<{ g: Geo; a: (s: number) => number; lift: number; gone: nu
               <span style={{ fontFamily: TYPE.headline.fontFamily, fontVariationSettings: TYPE.headline.fontVariationSettings, fontWeight: 650, letterSpacing: "-0.025em", fontSize: g.label.name, lineHeight: 1.05, color: W.ink }}>
                 {layer.name}
               </span>
-              <span style={{ fontFamily: TYPE.mono.fontFamily, fontWeight: 500, fontSize: g.label.desc, color: W.ink2 }}>{layer.desc}</span>
+              <span style={{ fontFamily: TYPE.mono.fontFamily, fontWeight: 500, fontSize: g.label.desc, lineHeight: 1.15, color: W.ink2 }}>{layer.desc}</span>
             </div>
           </div>
         );

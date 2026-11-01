@@ -30,7 +30,7 @@ export const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 export const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 
 /** Small print in the world's small ink, wrapped, bottom-aligned in its box. */
-export const SmallPrint: React.FC<{ text: string; box: Rect; at?: number; maxWidth?: number; opacity?: number }> = ({ text, box, at = 0, maxWidth, opacity = 1 }) => {
+export const SmallPrint: React.FC<{ text: string; box: Rect; at?: number; maxWidth?: number; opacity?: number; size?: number }> = ({ text, box, at = 0, maxWidth, opacity = 1, size }) => {
   const L = useLayout();
   const W = useWorld();
   const t = useT();
@@ -50,7 +50,7 @@ export const SmallPrint: React.FC<{ text: string; box: Rect; at?: number; maxWid
         fontFamily: TYPE.support.fontFamily,
         fontVariationSettings: '"opsz" 14',
         fontWeight: 420,
-        fontSize: L.type.foot,
+        fontSize: size ?? L.type.foot,
         lineHeight: 1.45,
         color: W.small,
         letterSpacing: "0.003em",
@@ -64,19 +64,34 @@ export const SmallPrint: React.FC<{ text: string; box: Rect; at?: number; maxWid
 /* ---------- sound ---------- */
 
 /**
- * The group's SFX files (TREATMENT §4 "Sound"; EDIT_PLAN "Sound map"). video/public/launch/audio/sfx/ was empty when
- * these scenes were built, so the scenes export their cue lists (for the master) and only place them themselves when
- * PLACE_SFX is on. Turn it on once the files exist under these names.
+ * The group's SFX, from the kit in video/public/launch/audio/sfx/ (kit.json). The director lays the master's sound, so
+ * the scenes export their cue lists and only place them themselves when PLACE_SFX is on. A cue's `at` is the FILE's
+ * start: `peakAt()` puts the file's measured peak (kit.json `measure.peak_time_s`) on the picture's contact frame,
+ * half a frame late.
  */
 export const PLACE_SFX = false;
 export const SFX = {
-  tick: "launch/audio/sfx/tick.wav",
-  click: "launch/audio/sfx/click.wav",
-  thud: "launch/audio/sfx/thud-soft.wav",
-  whoosh: "launch/audio/sfx/whoosh-short.wav",
-  shimmer: "launch/audio/sfx/shimmer.wav",
-  swell: "launch/audio/sfx/swell-soft.wav",
+  tick: "launch/audio/sfx/sfx-tick.wav",
+  click: "launch/audio/sfx/sfx-click-soft-a.wav",
+  click2: "launch/audio/sfx/sfx-click-soft-b.wav",
+  thud: "launch/audio/sfx/sfx-impact-low.wav",
+  whoosh: "launch/audio/sfx/sfx-whoosh-short.wav",
+  whoosh2: "launch/audio/sfx/sfx-whoosh-short-b.wav",
+  shimmer: "launch/audio/sfx/sfx-shimmer.wav",
+  swell: "launch/audio/sfx/sfx-swell-soft.wav",
 } as const;
+const PEAK: Record<string, number> = {
+  [SFX.tick]: 0.0006,
+  [SFX.click]: 0.0022,
+  [SFX.click2]: 0.0005,
+  [SFX.thud]: 0.0039,
+  [SFX.whoosh]: 0.2809,
+  [SFX.whoosh2]: 0.2401,
+  [SFX.shimmer]: 0.0007,
+  [SFX.swell]: 1.5715,
+};
+/** A cue whose peak lands at `event` seconds (+ half a frame at 60 fps). */
+export const peakAt = (src: string, event: number, db: number): SfxCue => ({ src, at: +(event + 1 / 120 - (PEAK[src] ?? 0)).toFixed(4), db });
 
 /**
  * Count-up ticks, rate-limited (EDIT_PLAN: one per 3 frames at most): a tick on each frame the shown digits change,
@@ -106,10 +121,41 @@ export const countTicks = (o: {
     const t = f / fps;
     const now = shownAt(t);
     if (now !== prev && t - last >= minGap - 1e-6) {
-      out.push({ src: SFX.tick, at: +t.toFixed(4), db: o.db ?? -16 });
+      out.push(peakAt(SFX.tick, t, o.db ?? -16));
       last = t;
     }
     prev = now;
   }
   return out;
+};
+
+/**
+ * A landed title that moves once: from its hero place (`from`, the anchor the children are laid out around) to `to`,
+ * scaling by `scale` about that anchor, on the camera ease. Before and after the move it is dead still.
+ */
+export const Settle: React.FC<{
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+  scale: number;
+  at: number;
+  dur?: number;
+  children: React.ReactNode;
+}> = ({ from, to, scale, at, dur = 0.6, children }) => {
+  const t = useT();
+  const p = EASE.camera(clamp01((t - at) / dur));
+  const dx = (to.x - from.x) * p;
+  const dy = (to.y - from.y) * p;
+  const s = lerp(1, scale, p);
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        transform: p > 0 ? `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px) scale(${s.toFixed(5)})` : undefined,
+        transformOrigin: `${from.x.toFixed(1)}px ${from.y.toFixed(1)}px`,
+      }}
+    >
+      {children}
+    </div>
+  );
 };
