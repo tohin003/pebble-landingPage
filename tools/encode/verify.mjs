@@ -4,12 +4,14 @@
 //   node tools/encode/verify.mjs [<file or folder> ...] [--json] [--no-public] [--no-analysis] [--no-loudness] [--no-seams]
 //
 // What it reads: every file under the versioned media folders public/media/v1, v2, ... (unless --no-public), plus the
-// paths given (for example the social masters in "~/Desktop/Pebble launch film/"). The film's own files are in v2 (its
-// videos, the 1:1 cut for phones, its text tracks and, since the trailer, its poster) and the loops and the wallpaper
-// in v1 (src/lib/media.ts MEDIA and FILM_MEDIA); a file in a folder the page doesn't read it from is a stray (a
-// warning): the retired teaser T0 and the first film's poster among them (OVERRIDES §46). A file's role comes from its
-// name:
-//   film-{1080,720}.{hevc,h264}.mp4   the website film       film-square.{hevc,h264}.mp4  its 1:1 cut for phones
+// paths given (for example the social masters in "~/Desktop/Pebble launch film/"). The 1.x trailer's files are in v2
+// (its videos, the 1:1 cut for phones, its text tracks and its poster), the 1.x loops and the wallpaper in v1, and the
+// Pebble 2.0 launch's film (with its 4:5 cut film-phone and its poster) and loops in v3 (src/lib/media.ts MEDIA,
+// FILM_MEDIA and LAUNCH_MEDIA; a 2.0 loop's id is a LaunchLoopId); a file in a folder the page doesn't read it from is
+// a stray (a warning): the retired teaser T0 and the first film's poster among them (OVERRIDES §46). A file's role
+// comes from its name:
+//   film-{1080,720}.{hevc,h264}.mp4   the website film       film-square.{hevc,h264}.mp4  the trailer's 1:1 cut (v2)
+//   film-phone.{hevc,h264}.mp4        the launch film's 4:5 cut for phones (v3), 1080x1350
 //   loop-<id>[-phone].{hevc,h264}.mp4 a feature loop         <name>.poster.{avif,webp}    a poster
 //   teaser-720.{hevc,h264}.mp4        the retired teaser
 //   film.en.vtt, film.chapters.vtt, film.descriptions.en.vtt, *.vtt, *.srt                text tracks
@@ -20,12 +22,12 @@
 //   page's <source type> (src/lib/media.ts: hvc1.1.6.L120.90 / avc1.640028; Safari needs the hvc1 sample entry), the
 //   peak bitrate over any second under that level's ceiling (12 Mb/s HEVC Main 4.0, 25 Mb/s H.264 High 4.0; a social
 //   file: its own level), yuv420p, BT.709 primaries/transfer/matrix and limited range (stream and colr box), 30 fps
-//   (D7), square pixels, frame count and duration (the film and its 1:1 cut: docs/film-captions.json total_frames),
+//   (D7), square pixels, frame count and duration (the film and its phone cut: docs/film-captions.json total_frames),
 //   moov before mdat.
 // - Audio: the film has AAC-LC 48 kHz stereo at about 160 kb/s and lasts as long as the picture; loops and the teaser
 //   have no audio track (D11); social masters have AAC-LC 48 kHz stereo at about 192 kb/s (OVERRIDES §4).
 // - Size: every file under public/ <= 45 MB and public/ <= 90 MB (D16); the film set, its 1:1 cut included, <= 45 MB
-//   (OVERRIDES §8, §46, critic C6; per-file 12 / 18 / 6 / 9 MB, and 6 / 9 MB for the 1:1 cut, are warnings); teaser
+//   (OVERRIDES §8, §46, critic C6; per-file 12 / 18 / 6 / 9 MB, and 6 / 9 MB for the 1:1 or 4:5 cut, are warnings); teaser
 //   <= 1.5 MB; loop HEVC <= 0.9 MB; loop H.264 <= 1.5 MB (over
 //   1.2 MB is a warning); poster AVIF <= 60 KB, WebP <= 90 KB (MASTER_PLAN §5.5); social <= 512 MB and 3-140 s (X,
 //   LinkedIn; OVERRIDES §14).
@@ -64,7 +66,7 @@ export const LIMITS = Object.freeze({
   file: 45 * MB,
   public: 90 * MB,
   filmSet: 45 * MB,
-  film: { "1080.hevc": 12 * MB, "1080.h264": 18 * MB, "720.hevc": 6 * MB, "720.h264": 9 * MB, "square.hevc": 6 * MB, "square.h264": 9 * MB },
+  film: { "1080.hevc": 12 * MB, "1080.h264": 18 * MB, "720.hevc": 6 * MB, "720.h264": 9 * MB, "square.hevc": 6 * MB, "square.h264": 9 * MB, "phone.hevc": 6 * MB, "phone.h264": 9 * MB },
   teaser: 1.5 * MB,
   loopHevc: 0.9 * MB,
   loopH264Target: 1.2 * MB,
@@ -79,10 +81,10 @@ export const LOUDNESS = Object.freeze({
   social: { lufs: -14, tolerance: 1, planTolerance: 0.5, truePeak: -1.0, why: "OVERRIDES §4" },
 });
 export const SEAM = Object.freeze({ width: 400, capDb: 45, marginDb: 3 });
-const FRAMES = { film: { "1080": [1920, 1080], "720": [1280, 720], square: [1080, 1080] }, teaser: [1280, 720] };
+const FRAMES = { film: { "1080": [1920, 1080], "720": [1280, 720], square: [1080, 1080], phone: [1080, 1350] }, teaser: [1280, 720] };
 const LOOP_FRAMES = ["1600x1000", "1080x1080", "1080x1350"];
 const SOCIAL_FRAMES = ["1920x1080", "1080x1080", "1080x1920"];
-const POSTER_FRAMES = { film: "1920x1080", teaser: "1280x720" };
+const POSTER_FRAMES = { film: "1920x1080", "film-phone": "1080x1350", teaser: "1280x720" };
 
 // ---- arguments and the heavy job -----------------------------------------------------------------------------------
 
@@ -136,7 +138,7 @@ function walk(dir, out = []) {
 function classify(file) {
   const name = path.basename(file);
   let m;
-  if ((m = /^film-(1080|720|square)\.(hevc|h264)\.mp4$/.exec(name))) return { kind: "film", res: m[1], codec: m[2], web: true };
+  if ((m = /^film-(1080|720|square|phone)\.(hevc|h264)\.mp4$/.exec(name))) return { kind: "film", res: m[1], codec: m[2], web: true };
   if ((m = /^teaser-720\.(hevc|h264)\.mp4$/.exec(name))) return { kind: "teaser", codec: m[1], web: true };
   if ((m = /^loop-([a-z0-9-]+?)(-phone)?\.(hevc|h264)\.mp4$/.exec(name))) return { kind: "loop", id: m[1], phone: Boolean(m[2]), codec: m[3], web: true };
   if ((m = /^(.+)\.poster\.(avif|webp)$/.exec(name))) return { kind: "poster", base: m[1], format: m[2], web: true };
@@ -151,9 +153,12 @@ function classify(file) {
   return { kind: "other" };
 }
 
-/** The film's own files: the ones src/lib/media.ts reads from FILM_MEDIA (public/media/v2): its videos, the 1:1 cut,
- *  the text tracks and the poster. */
+/** The 1.x trailer's own files: the ones src/lib/media.ts reads from FILM_MEDIA (public/media/v2): its videos, the 1:1
+ *  cut, the text tracks and the poster. */
 const FILM_FILE = /^(film-(1080|720|square)\.(hevc|h264)\.mp4|film\.(en|chapters|descriptions\.en)\.vtt|film\.poster\.(avif|webp))$/;
+/** The launch film's files, read from LAUNCH_MEDIA (public/media/v3): its videos, the 4:5 cut, the tracks and the two
+ *  posters (no 1:1 cut: the 4:5 one replaces it). */
+const LAUNCH_FILM_FILE = /^(film-(1080|720|phone)\.(hevc|h264)\.mp4|film\.(en|chapters|descriptions\.en)\.vtt|film(-phone)?\.poster\.(avif|webp))$/;
 
 /**
  * The folders src/lib/media.ts reads from, as public paths: MEDIA for most files, FILM_MEDIA for the film's videos and
@@ -162,14 +167,15 @@ const FILM_FILE = /^(film-(1080|720|square)\.(hevc|h264)\.mp4|film\.(en|chapters
 export function mediaBases(text) {
   const media = /const MEDIA\s*=\s*"([^"]+)"/.exec(text)?.[1] ?? "/media/v1";
   const film = /const FILM_MEDIA\s*=\s*"([^"]+)"/.exec(text)?.[1] ?? media;
-  return { media, film };
+  const launch = /const LAUNCH_MEDIA\s*=\s*"([^"]+)"/.exec(text)?.[1] ?? null;
+  return { media, film, launch };
 }
 
 function mediaBasesFromMedia() {
   try {
     return mediaBases(fs.readFileSync(path.join(REPO, "src/lib/media.ts"), "utf8"));
   } catch {
-    return { media: "/media/v1", film: "/media/v1" };
+    return { media: "/media/v1", film: "/media/v1", launch: null };
   }
 }
 
@@ -193,9 +199,14 @@ function mediaFolderOf(file) {
  * Names the page can use from the folder a file is in (src/lib/media.ts: the film's videos and tracks from FILM_MEDIA,
  * the rest from MEDIA), so a stray file in a versioned media folder is reported.
  */
-function pageKnows(name, loopIds, folder, bases) {
-  if (folder !== (FILM_FILE.test(name) ? bases.film : bases.media)) return false;
+export function pageKnows(name, loopIds, folder, bases) {
   const loop = /^loop-([a-z0-9-]+?)(-phone)?\.(hevc\.mp4|h264\.mp4|poster\.avif|poster\.webp)$/.exec(name);
+  // the launch's folder: its film and its own loops (LaunchLoopId), nothing else
+  if (bases.launch && folder === bases.launch) {
+    if (loop) return loopIds.launch.size === 0 || loopIds.launch.has(loop[1]);
+    return LAUNCH_FILM_FILE.test(name);
+  }
+  if (folder !== (FILM_FILE.test(name) ? bases.film : bases.media)) return false;
   if (loop) return loopIds.size === 0 || loopIds.has(loop[1]);
   // the teaser T0 and the first film's poster are retired (OVERRIDES §46): a copy left anywhere is a stray
   return (
@@ -206,13 +217,21 @@ function pageKnows(name, loopIds, folder, bases) {
   );
 }
 
+/** The 1.x LoopIds, with the 2.0 LaunchLoopIds as `.launch` (an empty set from an older media.ts). */
+export function loopIdsOf(text) {
+  const ids = (type) => new Set([...(new RegExp(`export type ${type} =([^;]*);`).exec(text)?.[1] ?? "").matchAll(/"([a-z0-9-]+)"/g)].map((m) => m[1]));
+  const set = ids("LoopId");
+  set.launch = ids("LaunchLoopId");
+  return set;
+}
+
 function loopIdsFromMedia() {
   try {
-    const text = fs.readFileSync(path.join(REPO, "src/lib/media.ts"), "utf8");
-    const block = /export type LoopId =([^;]*);/.exec(text)?.[1] ?? "";
-    return new Set([...block.matchAll(/"([a-z0-9-]+)"/g)].map((m) => m[1]));
+    return loopIdsOf(fs.readFileSync(path.join(REPO, "src/lib/media.ts"), "utf8"));
   } catch {
-    return new Set();
+    const set = new Set();
+    set.launch = new Set();
+    return set;
   }
 }
 
@@ -221,22 +240,33 @@ function loopIdsFromMedia() {
  * "WxH" strings: {loops: Map(id -> size), phone, film, teaser}. Missing entries stay null (older media.ts).
  */
 export function pageFrames(text) {
-  const loops = new Map();
-  const block = /const LOOP_FRAMES[^=]*=\s*\{([\s\S]*?)\n\};/.exec(text)?.[1];
-  if (block) for (const m of block.matchAll(/"?([a-z0-9-]+)"?\s*:\s*\{\s*width:\s*(\d+),\s*height:\s*(\d+)\s*\}/g)) loops.set(m[1], `${m[2]}x${m[3]}`);
+  const table = (name) => {
+    const map = new Map();
+    const block = new RegExp(`const ${name}[^=]*=\\s*\\{([\\s\\S]*?)\\n\\};`).exec(text)?.[1];
+    if (block) for (const m of block.matchAll(/"?([a-z0-9-]+)"?\s*:\s*\{\s*width:\s*(\d+),\s*height:\s*(\d+)\s*\}/g)) map.set(m[1], `${m[2]}x${m[3]}`);
+    return map;
+  };
   const phone = /LOOP_PHONE_FRAME\s*=\s*\{\s*width:\s*(\d+),\s*height:\s*(\d+)\s*\}/.exec(text);
+  // the first imageSet(`${…MEDIA}/<name>.poster`, w, h) for the name (the launch film's and the trailer's are both 1920 x 1080)
   const poster = (name) => {
-    const m = new RegExp(`imageSet\\(\`\\$\\{(?:FILM_)?MEDIA\\}/${name}\\.poster\`,\\s*(\\d+),\\s*(\\d+)\\)`).exec(text);
+    const m = new RegExp(`imageSet\\(\`\\$\\{(?:FILM_|LAUNCH_)?MEDIA\\}/${name}\\.poster\`,\\s*(\\d+),\\s*(\\d+)\\)`).exec(text);
     return m ? `${m[1]}x${m[2]}` : null;
   };
-  return { loops, phone: phone ? `${phone[1]}x${phone[2]}` : null, film: poster("film"), teaser: poster("teaser") };
+  return {
+    loops: table("LOOP_FRAMES"),
+    launchLoops: table("LAUNCH_LOOP_FRAMES"),
+    phone: phone ? `${phone[1]}x${phone[2]}` : null,
+    film: poster("film"),
+    "film-phone": poster("film-phone"),
+    teaser: poster("teaser"),
+  };
 }
 
 function pageFramesFromMedia() {
   try {
     return pageFrames(fs.readFileSync(path.join(REPO, "src/lib/media.ts"), "utf8"));
   } catch {
-    return { loops: new Map(), phone: null, film: null, teaser: null };
+    return { loops: new Map(), launchLoops: new Map(), phone: null, film: null, "film-phone": null, teaser: null };
   }
 }
 
@@ -418,14 +448,16 @@ function checkVideo(rec, cls, ctx) {
       rec.budget = LIMITS.teaser;
       if (size > LIMITS.teaser) fail(`${fmtSize(size)}, over the teaser's ${fmtSize(LIMITS.teaser)}`);
     } else {
-      const page = cls.phone ? ctx.frames.phone : ctx.frames.loops.get(cls.id);
+      const launch = Boolean(ctx.bases.launch) && mediaFolderOf(rec.file) === ctx.bases.launch;
+      const page = cls.phone ? ctx.frames.phone : (launch ? ctx.frames.launchLoops : ctx.frames.loops).get(cls.id);
       if (page) {
         if (dims !== page) fail(`${dims}; src/lib/media.ts lays out loop-${cls.id}${cls.phone ? "-phone" : ""} at ${page}`);
       } else {
         if (!LOOP_FRAMES.includes(dims)) warn(`${dims} is none of the loop frames (${LOOP_FRAMES.join(", ")})`);
         if (cls.phone && dims !== "1080x1350") warn(`${dims}; the phone cuts are 4:5, 1080x1350`);
       }
-      if (!ctx.loopIds.has(cls.id) && ctx.loopIds.size) warn(`loop id "${cls.id}" is not a LoopId in src/lib/media.ts`);
+      const ids = launch ? ctx.loopIds.launch : ctx.loopIds;
+      if (!ids.has(cls.id) && ids.size) warn(`loop id "${cls.id}" is not a ${launch ? "LaunchLoopId" : "LoopId"} in src/lib/media.ts`);
       if (cls.codec === "hevc") {
         rec.budget = LIMITS.loopHevc;
         if (size > LIMITS.loopHevc) fail(`${fmtSize(size)}, over the HEVC loop budget ${fmtSize(LIMITS.loopHevc)}`);
@@ -484,14 +516,14 @@ function checkLoudness(rec, gate) {
 }
 
 /** The size src/lib/media.ts gives a poster ("loop-models", "loop-models-phone", "film", "teaser"), or null. */
-function pagePosterSize(base, frames) {
-  if (base === "film" || base === "teaser") return frames[base];
+function pagePosterSize(base, frames, launch = false) {
+  if (base === "film" || base === "film-phone" || base === "teaser") return frames[base] ?? null;
   const m = /^loop-([a-z0-9-]+?)(-phone)?$/.exec(base);
   if (!m) return null;
-  return m[2] ? frames.phone : frames.loops.get(m[1]) ?? null;
+  return m[2] ? frames.phone : (launch ? frames.launchLoops : frames.loops).get(m[1]) ?? null;
 }
 
-function checkPoster(rec, cls, videos, frames) {
+function checkPoster(rec, cls, videos, frames, bases = { launch: null }) {
   const info = imageInfo(rec.file);
   rec.facts.image = info;
   if (info.error) return rec.fail(info.error);
@@ -506,9 +538,10 @@ function checkPoster(rec, cls, videos, frames) {
     return w / h;
   };
   const sameAspect = (s) => Math.abs(aspect(size) - aspect(s)) <= 0.01 * aspect(s);
-  const video = videos.get(cls.base);
+  const launch = Boolean(bases.launch) && mediaFolderOf(rec.file) === bases.launch;
+  const video = videos.get(`${launch ? "v3:" : ""}${cls.base}`);
   const videoSize = video ? `${video.width}x${video.height}` : null;
-  const page = pagePosterSize(cls.base, frames);
+  const page = pagePosterSize(cls.base, frames, launch);
   if (videoSize && !sameAspect(videoSize)) rec.fail(`${size} does not have its video's aspect (${videoSize})`);
   if (page && !sameAspect(page)) rec.fail(`${size} does not have the aspect src/lib/media.ts gives it (${page})`);
   else if (page && size !== page) rec.warn(`${size}; src/lib/media.ts declares ${page} for its srcset`);
@@ -635,7 +668,7 @@ async function main() {
     console.error(`verify.mjs: cannot build the reference tracks (${error.message}); text tracks are checked for syntax and rules only`);
   }
   const frames = pageFramesFromMedia();
-  const ctx = { loudness: opts.loudness, seams: opts.seams, loopIds, frames, tracks, texts, totalFrames: tracks?.totalFrames ?? null };
+  const ctx = { loudness: opts.loudness, seams: opts.seams, loopIds, bases, frames, tracks, texts, totalFrames: tracks?.totalFrames ?? null };
 
   const records = [...files].sort().map((file) => {
     const rec = { file, kind: "", size: fs.statSync(file).size, budget: null, facts: {}, fails: [], warns: [], cells: {} };
@@ -652,8 +685,11 @@ async function main() {
       if (["film", "teaser", "loop", "social"].includes(cls.kind)) {
         checkVideo(rec, cls, ctx);
         if (rec.facts.width) {
-          // the poster is the 16:9 film's: the 1:1 cut keeps its own name, so the poster's aspect is checked against 16:9
-          const base = cls.kind === "film" ? (cls.res === "square" ? "film-square" : "film") : cls.kind === "teaser" ? "teaser" : cls.kind === "loop" ? `loop-${cls.id}${cls.phone ? "-phone" : ""}` : null;
+          // the poster is the 16:9 film's: the phone cuts keep their own names (film-square, film-phone), so the
+          // film poster's aspect is checked against 16:9 and film-phone.poster's against the 4:5 cut. Launch files
+          // (public/media/v3) are keyed apart, so a 2.0 loop is never measured against a 1.x loop of the same id.
+          const name = cls.kind === "film" ? (cls.res === "square" || cls.res === "phone" ? `film-${cls.res}` : "film") : cls.kind === "teaser" ? "teaser" : cls.kind === "loop" ? `loop-${cls.id}${cls.phone ? "-phone" : ""}` : null;
+          const base = name && bases.launch && mediaFolderOf(rec.file) === bases.launch ? `v3:${name}` : name;
           if (base && !videos.has(base)) videos.set(base, { width: rec.facts.width, height: rec.facts.height });
         }
       }
@@ -667,7 +703,7 @@ async function main() {
   for (const rec of records) {
     const cls = classify(rec.file);
     try {
-      if (cls.kind === "poster") checkPoster(rec, cls, videos, frames);
+      if (cls.kind === "poster") checkPoster(rec, cls, videos, frames, bases);
       else if (cls.kind === "vtt" || cls.kind === "srt") checkTrack(rec, cls, ctx);
       else if (cls.kind === "image" && /\.(avif|webp)$/i.test(rec.file)) {
         const info = imageInfo(rec.file);

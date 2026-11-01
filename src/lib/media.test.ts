@@ -1,7 +1,10 @@
-// The film's own files come from /media/v2: its videos (with the 1:1 cut for phones), its text tracks and, since the
-// trailer, its poster, the 16:9 film's frame 0 (OVERRIDES §35 decision 8, §46). The first film's poster and its teaser
-// T0 are retired; the loops stay in /media/v1. media.ts caches the build's file list (PEBBLE_MEDIA_FILES) on first use,
-// so each case runs media.ts in its own Bun process with its own list. Run: bun test ./src/lib
+// The film's own files: the 1.x trailer's in /media/v2 (its videos, the 1:1 cut for phones, its text tracks and its
+// poster, the 16:9 film's frame 0; OVERRIDES §35 decision 8, §46), and the Pebble 2.0 launch film's in /media/v3 (its
+// videos, the 4:5 `film-phone` cut, its tracks and two posters; SITE_AUDIT §4.4, the director's X7 and X15), which the
+// page plays as soon as one of its 16:9 files exists. The 1.x loops stay in /media/v1; the 2.0 loops are in /media/v3,
+// under their own ids. The first film's poster and its teaser T0 are retired. media.ts caches the build's file list
+// (PEBBLE_MEDIA_FILES) on first use, so each case runs media.ts in its own Bun process with its own list.
+// Run: bun test ./src/lib
 import { describe, expect, test } from "bun:test";
 import path from "node:path";
 import { FILM_PHONE_QUERY, HD_PIXELS, filmSourceOrder, isPhoneSource } from "./filmSources";
@@ -19,15 +22,22 @@ type Manifest = {
     chapters: File;
     descriptions: File;
     poster: { avif: File; webp: File; width: number; height: number; available: boolean };
+    phoneFrame: { width: number; height: number };
+    phonePoster?: { avif: File; webp: File; width: number; height: number; available: boolean };
+    set: "launch" | "trailer";
     available: boolean;
   };
   hasTeaser: boolean;
   loop: { sources: Source[]; poster: { avif: File } };
+  launchLoops: Record<string, { id: string; width: number; height: number; sources: Source[]; phoneSources: Source[]; poster: { avif: File; webp: File; available: boolean }; available: boolean; showable: boolean }>;
+  launchStill: { files: { light: Record<"1200" | "2400", { avif: File }> }; available: boolean };
+  v1Still: { files: { light: Record<"1200" | "2400", { avif: File }> } };
 };
 
 function manifest(files: readonly string[]): Manifest {
   const code = `const m = await import(${JSON.stringify(MEDIA_TS)});
-console.log(JSON.stringify({ film: m.filmMedia(), hasTeaser: "teaserMedia" in m, loop: m.loopMedia("memory") }));`;
+const launchLoops = Object.fromEntries(m.LAUNCH_LOOP_IDS.map((id) => { const l = m.launchLoopMedia(id); return [id, { ...l, showable: m.loopShowable(l) }]; }));
+console.log(JSON.stringify({ film: m.filmMedia(), hasTeaser: "teaserMedia" in m, loop: m.loopMedia("memory"), launchLoops, launchStill: m.launchUiStill("settings-memory"), v1Still: m.uiStill("settings-memory") }));`;
   const run = Bun.spawnSync([process.execPath, "-e", code], { env: { ...process.env, PEBBLE_MEDIA_FILES: JSON.stringify(files) } });
   if (run.exitCode !== 0) throw new Error(run.stderr.toString());
   return JSON.parse(run.stdout.toString()) as Manifest;
@@ -106,6 +116,107 @@ describe("the media manifest's versioned folders", () => {
   });
 });
 
+/** What the launch lane puts in public/media/v3 for the film (SITE_AUDIT §4.4, §4.5). */
+const V3_FILM = [
+  "film-1080.hevc.mp4",
+  "film-1080.h264.mp4",
+  "film-720.hevc.mp4",
+  "film-720.h264.mp4",
+  "film-phone.hevc.mp4",
+  "film-phone.h264.mp4",
+  "film.en.vtt",
+  "film.chapters.vtt",
+  "film.descriptions.en.vtt",
+  "film.poster.avif",
+  "film.poster.webp",
+  "film-phone.poster.avif",
+  "film-phone.poster.webp",
+];
+const at = (folder: string, names: readonly string[]) => names.map((f) => `/media/${folder}/${f}`);
+
+describe("the Pebble 2.0 launch film in /media/v3", () => {
+  test("until a 16:9 launch file exists, the page plays the 1.x trailer exactly as before", () => {
+    // tracks, posters and the phone cut alone don't switch the film: its 16:9 files decide
+    const early = at("v3", V3_FILM.filter((f) => !/^film-(1080|720)\./.test(f)));
+    const { film } = manifest([...at("v2", V2_FILM), ...early]);
+    expect(film.set).toBe("trailer");
+    expect(film.sources["1080"].map((s) => s.src)).toEqual(["/media/v2/film-1080.hevc.mp4", "/media/v2/film-1080.h264.mp4"]);
+    expect(film.phoneSources.map((s) => s.src)).toEqual(["/media/v2/film-square.hevc.mp4", "/media/v2/film-square.h264.mp4"]);
+    expect(film.phoneFrame).toEqual({ width: 1080, height: 1080 });
+    expect(film.phonePoster).toBeUndefined();
+    expect(film.captions.src).toBe("/media/v2/film.en.vtt");
+    expect(film.poster.avif.src).toBe("/media/v2/film.poster.avif");
+  });
+
+  test("with its files, the launch film comes whole from /media/v3: videos, tracks and the 16:9 poster", () => {
+    const { film } = manifest([...at("v2", V2_FILM), ...at("v3", V3_FILM)]);
+    expect(film.set).toBe("launch");
+    expect(film.sources["1080"].map((s) => s.src)).toEqual(["/media/v3/film-1080.hevc.mp4", "/media/v3/film-1080.h264.mp4"]);
+    expect(film.sources["720"].map((s) => s.src)).toEqual(["/media/v3/film-720.hevc.mp4", "/media/v3/film-720.h264.mp4"]);
+    for (const track of [film.captions, film.chapters, film.descriptions]) {
+      expect(track.src.startsWith("/media/v3/")).toBe(true);
+      expect(track.available).toBe(true);
+    }
+    expect(film.poster.webp.src).toBe("/media/v3/film.poster.webp");
+    expect([film.poster.width, film.poster.height]).toEqual([1920, 1080]);
+    expect(film.available).toBe(true);
+  });
+
+  test("phones get the 4:5 film-phone (1080 × 1350) with its own poster, never the trailer's square", () => {
+    const { film } = manifest([...at("v2", V2_FILM), ...at("v3", V3_FILM)]);
+    expect(film.phoneSources.map((s) => s.src)).toEqual(["/media/v3/film-phone.hevc.mp4", "/media/v3/film-phone.h264.mp4"]);
+    expect(film.phoneFrame).toEqual({ width: 1080, height: 1350 });
+    expect(film.phonePoster?.webp.src).toBe("/media/v3/film-phone.poster.webp");
+    expect([film.phonePoster?.width, film.phonePoster?.height]).toEqual([1080, 1350]);
+    const noPhone = manifest([...at("v2", V2_FILM), ...at("v3", V3_FILM.filter((f) => !f.startsWith("film-phone")))]).film;
+    expect(noPhone.set).toBe("launch");
+    expect(noPhone.phoneSources).toEqual([]); // the phone plays the 16:9 film then (filmSourceOrder)
+  });
+});
+
+describe("the Pebble 2.0 loops in /media/v3", () => {
+  const ids = ["desk", "mac-apps", "mac-actions", "mac-web", "guard", "workshop", "memory", "long-tasks", "remote", "stealth"];
+
+  test("the director's ten ids, each read from /media/v3 only, never from a 1.x file of the same name", () => {
+    const { launchLoops, loop } = manifest(at("v1", ["loop-memory.hevc.mp4", "loop-memory.h264.mp4", "loop-memory.poster.avif"]));
+    expect(Object.keys(launchLoops)).toEqual(ids);
+    expect(launchLoops.memory!.available).toBe(false);
+    expect(launchLoops.memory!.showable).toBe(false);
+    expect(loop.sources.length).toBe(2); // the 1.x memory loop is still there for the 1.x slot
+    for (const id of ids) {
+      const l = launchLoops[id]!;
+      expect(l.poster.avif.src).toBe(`/media/v3/loop-${id}.poster.avif`);
+      expect(l.showable).toBe(false); // nothing rendered: every slot falls back
+    }
+  });
+
+  test("frames: 16:10 at 1600 × 1000, Pebble Remote's iPhone recording at 4:5", () => {
+    const { launchLoops } = manifest([]);
+    for (const id of ids) {
+      const l = launchLoops[id]!;
+      expect([l.width, l.height]).toEqual(id === "remote" ? [1080, 1350] : [1600, 1000]);
+    }
+  });
+
+  test("a loop shows from its poster alone, plays from its video, and finds its 4:5 cut", () => {
+    const files = at("v3", ["loop-guard.poster.avif", "loop-workshop.hevc.mp4", "loop-workshop.h264.mp4", "loop-workshop-phone.h264.mp4"]);
+    const { launchLoops } = manifest(files);
+    expect(launchLoops.guard!.showable).toBe(true);
+    expect(launchLoops.guard!.available).toBe(false);
+    expect(launchLoops.workshop!.available).toBe(true);
+    expect(launchLoops.workshop!.sources.map((s) => s.src)).toEqual(["/media/v3/loop-workshop.hevc.mp4", "/media/v3/loop-workshop.h264.mp4"]);
+    expect(launchLoops.workshop!.phoneSources.map((s) => s.src)).toEqual(["/media/v3/loop-workshop-phone.h264.mp4"]);
+  });
+
+  test("Pebble 2.0.x stills come from /ui/v2, with /ui/v1's names and sizes", () => {
+    const { launchStill, v1Still } = manifest(["/ui/v2/settings-memory-light-2400.avif"]);
+    expect(launchStill.files.light["2400"].avif.src).toBe("/ui/v2/settings-memory-light-2400.avif");
+    expect(launchStill.files.light["1200"].avif.src).toBe("/ui/v2/settings-memory-light-1200.avif");
+    expect(launchStill.available).toBe(true);
+    expect(v1Still.files.light["2400"].avif.src).toBe("/ui/v1/settings-memory-light-2400.avif");
+  });
+});
+
 describe("the order the theatre tries the film's files in (filmSources.ts)", () => {
   const source = (src: string, codec: "hevc" | "h264"): VideoSource => ({
     src,
@@ -124,6 +235,8 @@ describe("the order the theatre tries the film's files in (filmSources.ts)", () 
     chapters: file,
     descriptions: file,
     poster: { avif: file, webp: file, width: 1920, height: 1080, available: true },
+    phoneFrame: { width: 1080, height: 1080 },
+    set: "trailer",
     available: true,
   };
   const all = () => true;

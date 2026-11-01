@@ -2,14 +2,22 @@
 // the file exists (MASTER_PLAN §5.3, §5.5; critic H3, H5, C6). Use it from server components and pass the entries to
 // client components as props.
 //
-// `available` is decided at build time: next.config.ts lists the files under public/media/v1, public/media/v2 and
-// public/ui/v1 when the build starts and inlines the list as process.env.PEBBLE_MEDIA_FILES. (An `fs` check here would
-// run again inside Vercel's functions on each hourly revalidation, where public/ isn't on disk, and would hide every
-// video.) Media that isn't rendered yet degrades to its poster or a still, never to a broken player. Paths are
-// versioned (/v1/); a re-render goes to v2/, because /media/v1 and /ui/v1 are cached as immutable for a year. The
-// launch trailer is one: its videos (with a 1:1 cut for phones), its text tracks and its poster (the 16:9 film's own
-// frame 0) are in /media/v2 (FILM_MEDIA); the loops and the wallpaper stay in /media/v1. The first film's poster and
-// its teaser T0 are retired (OVERRIDES §46: they showed Pebble 1.0.4's rows and a usage line with a rate).
+// `available` is decided at build time: next.config.ts lists the files under public/media/v1, v2 and v3 and
+// public/ui/v1 and v2 when the build starts and inlines the list as process.env.PEBBLE_MEDIA_FILES. (An `fs` check here
+// would run again inside Vercel's functions on each hourly revalidation, where public/ isn't on disk, and would hide
+// every video.) Media that isn't rendered yet degrades to its poster or a still, never to a broken player. Paths are
+// versioned, because /media/v1, /media/v2 and /ui/v1 are cached as immutable for a year: a re-render goes to a new
+// folder, never over an old one.
+// - /media/v1 (MEDIA): the 1.x loops and the wallpaper.
+// - /media/v2 (FILM_MEDIA): the 1.x launch trailer, its 1:1 cut for phones, its text tracks and its poster (the 16:9
+//   film's own frame 0). The first film's poster and its teaser T0 are retired (OVERRIDES §46).
+// - /media/v3 (LAUNCH_MEDIA): the Pebble 2.0 launch (.work/launch/site/SITE_AUDIT.md §4; the director's X7, X15): the
+//   film at 1080 and 720, its 4:5 cut `film-phone` (1080 × 1350, replacing the 1:1 cut for phones), its tracks and two
+//   posters, and the 2.0 loops (LaunchLoopId), each with its poster and an optional 4:5 phone cut. The page plays the
+//   launch film as soon as one of its 16:9 files exists (filmMedia), and a 2.0 loop as soon as its file or poster
+//   exists (launchLoopMedia; the sections fall back to what they showed before). Publish a v3 file only when it is
+//   final: a fix goes to v4.
+// - /ui/v1 (UI) and /ui/v2 (UI_LAUNCH): real-UI stills, 1.x and 2.0.x.
 
 export type MediaFile = Readonly<{ src: string; available: boolean }>;
 
@@ -36,8 +44,39 @@ export type LoopId =
   | "memory"
   | "views";
 
+/**
+ * The Pebble 2.0 launch's loops in /media/v3 (SITE_AUDIT §4.2; the director's list): one per feature, silent, real
+ * takes or harness scenes of a published release, or a labelled diagram. Their own type, so an id here never reads a
+ * 1.x file of the same name (`memory` is in both: /media/v1/loop-memory is the 1.0.4 Settings, /media/v3/loop-memory
+ * the 2.0 one).
+ */
+export type LaunchLoopId =
+  | "desk"
+  | "mac-apps"
+  | "mac-actions"
+  | "mac-web"
+  | "guard"
+  | "workshop"
+  | "memory"
+  | "long-tasks"
+  | "remote"
+  | "stealth";
+
+export const LAUNCH_LOOP_IDS: readonly LaunchLoopId[] = [
+  "desk",
+  "mac-apps",
+  "mac-actions",
+  "mac-web",
+  "guard",
+  "workshop",
+  "memory",
+  "long-tasks",
+  "remote",
+  "stealth",
+];
+
 export type LoopMedia = Readonly<{
-  id: LoopId;
+  id: LoopId | LaunchLoopId;
   /** the main cut's frame: 16:10 for the wide slots, square for the project story's tile (LOOP_FRAMES) */
   width: number;
   height: number;
@@ -70,23 +109,52 @@ const LOOP_FRAMES: Readonly<Record<LoopId, Readonly<{ width: number; height: num
 /** Every loop's phone cut (critic H2): 4:5, 1080 × 1350 (loops/plans.ts FRAME.tall). */
 export const LOOP_PHONE_FRAME = { width: 1080, height: 1350 } as const;
 
+/**
+ * Each 2.0 loop's frame in /media/v3: 16:10 where the section already has a 16:10 frame (the takes are 1.54:1), and
+ * Pebble Remote's iPhone recording at 4:5 (SITE_AUDIT §4.2). Their phone cuts are LOOP_PHONE_FRAME. tools/encode/
+ * verify.mjs reads this table by name.
+ */
+const LAUNCH_LOOP_FRAMES: Readonly<Record<LaunchLoopId, Readonly<{ width: number; height: number }>>> = {
+  desk: { width: 1600, height: 1000 },
+  "mac-apps": { width: 1600, height: 1000 },
+  "mac-actions": { width: 1600, height: 1000 },
+  "mac-web": { width: 1600, height: 1000 },
+  guard: { width: 1600, height: 1000 },
+  workshop: { width: 1600, height: 1000 },
+  memory: { width: 1600, height: 1000 },
+  "long-tasks": { width: 1600, height: 1000 },
+  remote: { width: 1080, height: 1350 },
+  stealth: { width: 1600, height: 1000 },
+};
+
 export type FilmQuality = "720" | "1080";
 
-/** The 1:1 film for phones (OVERRIDES §46 P2-9): at phone width the 16:9 film's interface text is about 5 px, and the
- *  square film keeps it at 11 px or more. Its timing is the 16:9 film's, frame for frame, so the text tracks are shared.
- *  The theatre picks it below FILM_PHONE_QUERY (src/lib/filmSources.ts). */
-export const FILM_PHONE_FRAME = { width: 1080, height: 1080 } as const;
+/** The 1.x trailer's 1:1 film for phones (OVERRIDES §46 P2-9): at phone width the 16:9 film's interface text is about
+ *  5 px, and the square film keeps it at 11 px or more. Its timing is the 16:9 film's, frame for frame, so the text
+ *  tracks are shared. The theatre picks it below FILM_PHONE_QUERY (src/lib/filmSources.ts). */
+export const FILM_SQUARE_FRAME = { width: 1080, height: 1080 } as const;
+
+/** The launch film's 4:5 cut for phones, `film-phone` (SITE_AUDIT §4.1; the director's X7: it replaces the 1:1 cut).
+ *  Like the square, its timing is the 16:9 film's, frame for frame, so the text tracks are shared. */
+export const FILM_PHONE_FRAME = { width: 1080, height: 1350 } as const;
 
 export type FilmMedia = Readonly<{
   /** per quality, HEVC first, then H.264; only the available ones */
   sources: Readonly<Record<FilmQuality, readonly VideoSource[]>>;
-  /** the 1:1 film for phones (filmSources.ts FILM_PHONE_QUERY), HEVC first, then H.264; only the available ones */
+  /** the phone cut (filmSources.ts FILM_PHONE_QUERY), HEVC first, then H.264; only the available ones: the launch
+   *  film's 4:5 `film-phone`, or the trailer's 1:1 `film-square` */
   phoneSources: readonly VideoSource[];
+  /** the phone cut's frame: FILM_PHONE_FRAME (4:5) for the launch film, FILM_SQUARE_FRAME for the trailer */
+  phoneFrame: Readonly<{ width: number; height: number }>;
+  /** the phone cut's own poster (the launch film's; the trailer's square cut has none, so its theatre shows no poster) */
+  phonePoster?: ImageSet;
+  /** which film this is: the 2.0 launch film in /media/v3, or the 1.x trailer in /media/v2 until the launch film exists */
+  set: "launch" | "trailer";
   captions: MediaFile;
   chapters: MediaFile;
   /** text descriptions for the audio-description toggle (critic H4a) */
   descriptions: MediaFile;
-  /** the 16:9 film's frame 0 (the trailer's cold open: the pebble's eyes in the right third, the centre dark) */
+  /** the 16:9 film's poster, 1920 × 1080 (the trailer's: its frame 0, the pebble's eyes in the right third) */
   poster: ImageSet;
   available: boolean;
 }>;
@@ -105,11 +173,20 @@ const MEDIA = "/media/v1";
  * this name.
  */
 const FILM_MEDIA = "/media/v2";
+/**
+ * The Pebble 2.0 launch (SITE_AUDIT §4.4; the director's X15): film-1080 and film-720 (HEVC and H.264), the 4:5
+ * film-phone (HEVC and H.264), the three text tracks (tools/captions/build.mjs --out-dir public/media/v3),
+ * film.poster (1920 × 1080) and film-phone.poster (1080 × 1350), and the loops (LaunchLoopId) with their posters and
+ * 4:5 cuts. tools/encode/verify.mjs reads this name.
+ */
+const LAUNCH_MEDIA = "/media/v3";
 const UI = "/ui/v1";
+/** Pebble 2.0.x's real-UI stills, the same names and sizes as /ui/v1's (launchUiStill). */
+const UI_LAUNCH = "/ui/v2";
 
 let known: ReadonlySet<string> | null = null;
 
-/** The files that exist under public/media/v1, public/media/v2 and public/ui/v1, as listed by next.config.ts at build time. */
+/** The files that exist under public/media/v1 to v3 and public/ui/v1 and v2, as listed by next.config.ts at build time. */
 function knownFiles(): ReadonlySet<string> {
   if (!known) {
     let list: unknown = [];
@@ -139,26 +216,63 @@ function videoSources(base: string): VideoSource[] {
     .filter((source) => source.available);
 }
 
-export function loopMedia(id: LoopId): LoopMedia {
-  const frame = LOOP_FRAMES[id];
-  const sources = videoSources(`${MEDIA}/loop-${id}`);
+function loopFiles(base: string, id: LoopId | LaunchLoopId, frame: Readonly<{ width: number; height: number }>): LoopMedia {
+  const sources = videoSources(`${base}/loop-${id}`);
   return {
     id,
     width: frame.width,
     height: frame.height,
     sources,
-    phoneSources: videoSources(`${MEDIA}/loop-${id}-phone`),
-    poster: imageSet(`${MEDIA}/loop-${id}.poster`, frame.width, frame.height),
-    phonePoster: imageSet(`${MEDIA}/loop-${id}-phone.poster`, LOOP_PHONE_FRAME.width, LOOP_PHONE_FRAME.height),
+    phoneSources: videoSources(`${base}/loop-${id}-phone`),
+    poster: imageSet(`${base}/loop-${id}.poster`, frame.width, frame.height),
+    phonePoster: imageSet(`${base}/loop-${id}-phone.poster`, LOOP_PHONE_FRAME.width, LOOP_PHONE_FRAME.height),
     available: sources.length > 0,
   };
 }
 
+/** A 1.x loop, from /media/v1. */
+export function loopMedia(id: LoopId): LoopMedia {
+  return loopFiles(MEDIA, id, LOOP_FRAMES[id]);
+}
+
+/** A Pebble 2.0 loop, from /media/v3 (LAUNCH_LOOP_FRAMES). */
+export function launchLoopMedia(id: LaunchLoopId): LoopMedia {
+  return loopFiles(LAUNCH_MEDIA, id, LAUNCH_LOOP_FRAMES[id]);
+}
+
+/** Whether a loop has anything to show: its video or its poster. Sections show nothing new until it does. */
+export function loopShowable(loop: LoopMedia): boolean {
+  return loop.available || loop.poster.available;
+}
+
+/**
+ * The film the theatre plays: the 2.0 launch film from /media/v3 as soon as one of its 16:9 files exists, with its 4:5
+ * cut for phones; until then the 1.x trailer from /media/v2, with its 1:1 cut, exactly as before. The launch film's
+ * chapters and captions come with it: when its files land, src/content/chapters.ts and docs/film-captions.json must
+ * already describe it (their tests and tools/captions/build.mjs --check compare them with the tracks).
+ */
 export function filmMedia(): FilmMedia {
+  const launch = { "720": videoSources(`${LAUNCH_MEDIA}/film-720`), "1080": videoSources(`${LAUNCH_MEDIA}/film-1080`) };
+  if (launch["720"].length > 0 || launch["1080"].length > 0) {
+    return {
+      sources: launch,
+      phoneSources: videoSources(`${LAUNCH_MEDIA}/film-phone`),
+      phoneFrame: FILM_PHONE_FRAME,
+      phonePoster: imageSet(`${LAUNCH_MEDIA}/film-phone.poster`, 1080, 1350),
+      set: "launch",
+      captions: mediaFile(`${LAUNCH_MEDIA}/film.en.vtt`),
+      chapters: mediaFile(`${LAUNCH_MEDIA}/film.chapters.vtt`),
+      descriptions: mediaFile(`${LAUNCH_MEDIA}/film.descriptions.en.vtt`),
+      poster: imageSet(`${LAUNCH_MEDIA}/film.poster`, 1920, 1080),
+      available: true,
+    };
+  }
   const sources = { "720": videoSources(`${FILM_MEDIA}/film-720`), "1080": videoSources(`${FILM_MEDIA}/film-1080`) };
   return {
     sources,
     phoneSources: videoSources(`${FILM_MEDIA}/film-square`),
+    phoneFrame: FILM_SQUARE_FRAME,
+    set: "trailer",
     captions: mediaFile(`${FILM_MEDIA}/film.en.vtt`),
     chapters: mediaFile(`${FILM_MEDIA}/film.chapters.vtt`),
     descriptions: mediaFile(`${FILM_MEDIA}/film.descriptions.en.vtt`),
@@ -208,6 +322,15 @@ export function uiStill(name: UiStillName | (string & {})): UiStill {
 }
 
 /**
+ * A Pebble 2.0.x still from /ui/v2 (SITE_AUDIT §4.4: the harness stills of the frozen 2.0.1 release), named and sized
+ * like /ui/v1's: `<name>-<theme>-<1200|2400>.<avif|webp>`, 16:10 unless a crop gives its own size at 2400 px wide.
+ * Until it exists, `available` is false and a section keeps its 1.x still.
+ */
+export function launchUiStill(name: string, size: Readonly<{ width: number; height: number }> = { width: 2400, height: 1500 }): UiStill {
+  return stillFiles(name, size.width, size.height, UI_LAUNCH);
+}
+
+/**
  * Real-UI stills that are a crop with their own aspect, not the 16:10 window: Pebble 1.1.0's Settings › Privacy and
  * focus section alone, Stealth Lockdown off and on, one frame for both (516 × 372 pt at 5x; HANDOFF-1.1-captures).
  * Their size at 2400 px wide; the 1200 px files are half of it.
@@ -225,16 +348,16 @@ export function uiCropStill(name: UiCropStillName): UiStill {
   return stillFiles(name, width, height);
 }
 
-function stillFiles(name: string, width: number, height: number): UiStill {
+function stillFiles(name: string, width: number, height: number, base: string = UI): UiStill {
   const half = { width: width / 2, height: Math.round(height / 2) };
   const files = {
     light: {
-      1200: imageSet(`${UI}/${name}-light-1200`, half.width, half.height),
-      2400: imageSet(`${UI}/${name}-light-2400`, width, height),
+      1200: imageSet(`${base}/${name}-light-1200`, half.width, half.height),
+      2400: imageSet(`${base}/${name}-light-2400`, width, height),
     },
     dark: {
-      1200: imageSet(`${UI}/${name}-dark-1200`, half.width, half.height),
-      2400: imageSet(`${UI}/${name}-dark-2400`, width, height),
+      1200: imageSet(`${base}/${name}-dark-1200`, half.width, half.height),
+      2400: imageSet(`${base}/${name}-dark-2400`, width, height),
     },
   };
   return { name, width, height, files, available: files.light[2400].available || files.light[1200].available };

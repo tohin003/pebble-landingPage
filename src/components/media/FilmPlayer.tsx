@@ -4,8 +4,9 @@
 // - Mount it once per page, with the film's manifest entry and its timed chapters. Open it with openFilm() from
 //   film-events.ts (FilmTrigger, ChapterChip): the click's handler dispatches the event, and this component sets the
 //   source, opens the dialog and calls video.play() synchronously, inside the same user activation (M5).
-// - The source is chosen at click time: on phones (FILM_PHONE_QUERY, max-width 560px) the 1:1 film first, whose
-//   interface text stays readable at phone width (OVERRIDES §46 P2-9), in a square screen; otherwise 1080p when
+// - The source is chosen at click time: on phones (FILM_PHONE_QUERY, max-width 560px) the phone cut first, whose
+//   interface text stays readable at phone width (OVERRIDES §46 P2-9): the launch film's 4:5 cut in a portrait screen
+//   with its own poster, or the 1.x trailer's 1:1 cut in a square one (film.phoneFrame); otherwise 1080p when
 //   screen.width × devicePixelRatio ≥ 1700, else 720p (C6, C9); HEVC first when the browser can play it, then H.264.
 //   A browser can say it plays HEVC and then fail to decode the file: when the chosen source errors, the next one it
 //   can play (the H.264 file first, then the 16:9 films) takes over, from where the film was, and only when none is
@@ -40,6 +41,20 @@ function playableSources(film: FilmMedia, video: HTMLVideoElement): VideoSource[
   });
 }
 
+type PhoneAspect = "square" | "portrait";
+
+/** The phone cut's screen: square for a 1:1 frame, portrait for a taller one (the launch film's 4:5). */
+function phoneAspect(film: FilmMedia): PhoneAspect {
+  return film.phoneFrame.height > film.phoneFrame.width ? "portrait" : "square";
+}
+
+/** The poster over the screen: the 16:9 one over the 16:9 film, the phone cut's own over the phone cut (none for the
+ *  trailer's square cut, which has no poster of its shape). */
+function posterFor(film: FilmMedia, aspect: PhoneAspect | undefined): string | undefined {
+  const set = aspect ? film.phonePoster : film.poster;
+  return set?.webp.available ? set.webp.src : undefined;
+}
+
 export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: readonly TimedChapter[] }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const video = useRef<HTMLVideoElement>(null);
@@ -49,7 +64,8 @@ export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: read
   const fallbacks = useRef<VideoSource[]>([]);
   const describer = useRef<Describer | null>(null);
   const [failed, setFailed] = useState(false);
-  const [square, setSquare] = useState(false);
+  /** the screen's shape: the phone cut's ("square" 1:1, "portrait" 4:5) while it plays, else the 16:9 default */
+  const [aspect, setAspect] = useState<PhoneAspect | undefined>(undefined);
   const [canSpeak, setCanSpeak] = useState(false);
   const [describe, setDescribe] = useState(false);
 
@@ -90,7 +106,7 @@ export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: read
       const [source = null, ...rest] = playableSources(film, v);
       fallbacks.current = rest;
       setFailed(!source);
-      setSquare(isPhoneSource(film, source));
+      setAspect(isPhoneSource(film, source) ? phoneAspect(film) : undefined);
       if (source && v.getAttribute("src") !== source.src) v.src = source.src;
       if (!d.open) d.showModal();
       const start = detail.chapter ? chapters.find((c) => c.id === detail.chapter)?.startSeconds : undefined;
@@ -138,14 +154,14 @@ export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: read
           <Icon name="X" className={styles.closeIcon} />
           <span className="sr-only">{filmDialog.close}</span>
         </button>
-        <div className={styles.screen} data-aspect={square ? "square" : undefined}>
+        <div className={styles.screen} data-aspect={aspect}>
           <video
             ref={video}
             className={styles.video}
             controls
             playsInline
             preload="none"
-            poster={!square && film.poster.webp.available ? film.poster.webp.src : undefined}
+            poster={posterFor(film, aspect)}
             onLoadedMetadata={() => {
               const v = video.current;
               if (v && pendingSeek.current !== null) {
@@ -158,7 +174,7 @@ export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: read
               const next = fallbacks.current.shift();
               if (!v || !next) return setFailed(true);
               if (v.currentTime > 0) pendingSeek.current = v.currentTime;
-              setSquare(isPhoneSource(film, next));
+              setAspect(isPhoneSource(film, next) ? phoneAspect(film) : undefined);
               v.src = next.src;
               void v.play().catch(() => {});
             }}
