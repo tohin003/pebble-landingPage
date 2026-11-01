@@ -108,12 +108,13 @@ export const S02OnYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
   const aspect = F.media.w / F.media.h;
 
   /* shot A: the window grows out of full-bleed */
-  const pA = ramp(t, 0.1, 0.95);
+  // The director (the 4:5 flash scan, 8 transitions a second at 13.47 s): the pull-out takes 1.75 s, not 0.95
+  const pA = ramp(t, 0.1, 1.75);
   const rectA = lerpRect({ x: 0, y: 0, w: L.W, h: L.H }, F.media, pA);
   const tiltA = Math.sin(Math.PI * pA);
   const keysA = [
     { t: 0, box: A_TIGHT },
-    { t: 1.05, box: A_WIDE(aspect), dur: 0.95, ease: EASE.camera },
+    { t: 1.85, box: A_WIDE(aspect), dur: 1.75, ease: EASE.camera },
     // hold through the swipe (the camera still, the Spaces move), then close in on the pebble: the match into shot B
     { t: Math.max(A_SETTLED_OUT + 0.55, M.cut - 0.12), box: PEBBLE_MATCH, dur: 0.6 },
   ];
@@ -155,7 +156,7 @@ export const S02OnYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
             spill={0.5 * pA}
             background="#EFE8DC"
           >
-            <ScreenZoom src={A.file} srcSize={A_SIZE} time={A_TIME} srcDuration={A.durationS} keys={keysA} drift={0.01} />
+            <ScreenZoom src={A.file} srcSize={A_SIZE} time={A_TIME} srcDuration={A.durationS} keys={keysA} drift={0.01} motionBlur={8} />
           </FloatingWindow>
           <Headline text={lineA} at={0.8} exitAt={A_SWIPE_OUT - 0.4} size={size} align="left" valign={tvalign} box={F.text} />
           <Headline text={"On every\nSpace."} at={A_SWIPE_OUT - 0.3} entrance="blur" size={size} align="left" valign={tvalign} box={F.text} />

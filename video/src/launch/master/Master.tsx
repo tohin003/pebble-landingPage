@@ -63,16 +63,18 @@ const SceneSlot: React.FC<{ index: number }> = ({ index }) => {
   };
   const wrap = (node: ReactNode) => {
     let out = node;
+    // A scene is wrapped in its seams' layers for its WHOLE slot, with the progress clamped to 0..1, so its element
+    // tree never changes shape. Wrapping only inside the seam's window (as the first version did) remounted the scene's
+    // subtree on the window's edges: the incoming scene was drawn whole on the overlap's first frame (a one-frame flash
+    // at every carried seam in draft 1: 39.90, 55.97, 62.80, 92.57 s), and a remounted OffthreadVideo drew one black
+    // frame where the outgoing scene's wrap began (the 4:5 draft: the Memory capture at 56.00 s, the phone at 71.83 s).
+    // The layers are identity at rest (in at 1, out at 0).
+    const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
     if (before && isCarried(before)) {
-      const p = progressOf(before, from);
-      // p = 0 is the overlap's first frame: the incoming scene must already be masked there (at 0 it is fully hidden).
-      // Leaving it unwrapped drew the incoming scene whole over the outgoing one for that frame: a one-frame flash
-      // (the 16:9 draft's frame scan found one at every carried seam: 39.90, 55.97, 62.80, 92.57 s).
-      if (p >= 0 && p < 1) out = <SeamLayer seam={before} role="in" progress={Math.max(p, 0)}>{out}</SeamLayer>;
+      out = <SeamLayer seam={before} role="in" progress={clamp01(progressOf(before, from))}>{out}</SeamLayer>;
     }
     if (after && isCarried(after)) {
-      const p = progressOf(after, from + len);
-      if (p > 0 && p < 1) out = <SeamLayer seam={after} role="out" progress={p}>{out}</SeamLayer>;
+      out = <SeamLayer seam={after} role="out" progress={clamp01(progressOf(after, from + len))}>{out}</SeamLayer>;
     }
     return out;
   };
