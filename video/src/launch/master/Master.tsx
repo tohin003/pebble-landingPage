@@ -1,24 +1,41 @@
-// The launch film's master edit: every scene on the music (master/timeline.ts), the seams carried by the motion
-// system's transition layers, the music under everything and the SFX lane (master/sfx.ts).
+// The launch film's master edit: every scene on the music (master/timeline.ts), the seams carried by the master's seam
+// layers (master/seams.tsx), the music under everything and the SFX lane (master/sfx.ts).
 //
-// Each scene plays live in its slot, starting exactly on its mark with durationInFrames = its slot's length. A seam
-// borrows frozen frames on either side of the cut (the incoming scene's first frame before it, the outgoing scene's
-// last frame after it) and wraps both in the seam's layer (WhipLayer, ScaleThroughLayer, SoftWipeLayer), so no scene
-// is retimed by a transition.
+// Each scene is mounted ONCE, from a premount before its seam opens to the end of its tail, and never remounted: a
+// remount (a new frozen head or tail, a new live copy) drew the takes' windows empty for a frame in draft 2 (REVIEW-1
+// M1: 12.57, 31.80, 32.07, 56.07, 72.07 s). Inside its mount the scene sees:
+//   premount   its first frame, frozen and invisible (its takes and stills are fetched and decoded before they show);
+//   head       its first frame, frozen, inside the seam's layer (before the cut);
+//   live       its own frames, exactly from its music mark (durationInFrames = its slot's length);
+//   tail       its last frame, frozen, inside the seam's layer (after the cut).
+// A frozen span never plays sound: its audio is held back from the render (a frozen <Audio> repeats one frame's slice).
+// Every frame also waits for the compositor (PaintSettle) before Remotion takes its screenshot.
 import { Audio } from "@remotion/media";
-import type { ReactNode } from "react";
-import { AbsoluteFill, Freeze, Sequence, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { FontGate, ScaleThroughLayer, SoftWipeLayer, WhipLayer } from "../components";
+import { useContext, useLayoutEffect, useMemo, type ReactNode } from "react";
+import {
+  AbsoluteFill,
+  Freeze,
+  Internals,
+  Sequence,
+  continueRender,
+  delayRender,
+  getRemotionEnvironment,
+  staticFile,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
+import { FontGate } from "../components";
 import { MUSIC, MUSIC_PICK, type MusicId } from "../data/music";
 import { ALL_SCENES } from "../scenes/Previews";
 import { Placeholder } from "./Placeholder";
-import { SFX_DIR, ducks, masterCues } from "./sfx";
-import { SEAMS, TIMELINE, fr, seamAfter, seamBefore, type Seam } from "./timeline";
+import { SeamLayer } from "./seams";
+import { SFX_DIR, musicDucks, masterCues, type Duck } from "./sfx";
+import { SEAMS, TIMELINE, fr, isCarried, seamAfter, seamBefore, type Seam } from "./timeline";
 
 export interface MasterProps extends Record<string, unknown> {
   /** which music edit plays (data/music.ts); the timeline is written for A */
   music?: MusicId;
-  /** false: the master's SFX lane is muted (scene-placed SFX, group C's, still play: use final.sh --music-only for a true music-only file) */
+  /** false: the master's SFX lane is muted (scene-placed SFX, groups B's and C's, still play: use final.sh --music-only for a true music-only file) */
   sfx?: boolean;
   /** a trim on the whole SFX lane, dB */
   sfxDb?: number;
@@ -26,23 +43,74 @@ export interface MasterProps extends Record<string, unknown> {
   musicDb?: number;
 }
 
-/** a seam the master carries with a layer (cuts and in-scene seams are plain cuts here) */
-const isCarried = (s: Seam) => s.kind !== "cut" && s.kind !== "in-scene";
-
 const db = (v: number) => Math.pow(10, v / 20);
+const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
+/** frames a scene is mounted (frozen, invisible) before it first shows */
+export const PREMOUNT_S = 1.0;
 
-/** Wraps a scene in its seam's layer while the seam's window is open; plain otherwise. */
-const SeamLayer: React.FC<{ seam: Seam; role: "in" | "out"; progress: number; children: ReactNode }> = ({ seam, role, progress, children }) => {
-  const { width: W, height: H } = useVideoConfig();
-  if (seam.kind === "whip") return <WhipLayer progress={progress} role={role} direction={seam.direction}>{children}</WhipLayer>;
-  if (seam.kind === "softWipe") return <SoftWipeLayer progress={progress} role={role} direction={seam.direction}>{children}</SoftWipeLayer>;
-  if (seam.kind === "scaleThrough" && seam.rect) return <ScaleThroughLayer progress={progress} role={role} rect={seam.rect(W, H)}>{children}</ScaleThroughLayer>;
-  return <AbsoluteFill>{children}</AbsoluteFill>;
+/* ---------- frozen spans make no sound ---------- */
+
+type AssetCtx = React.ContextType<typeof Internals.RenderAssetManager>;
+/** While `mute` is on, the subtree's audio assets are not registered with the render (other assets pass). */
+const HoldAudio: React.FC<{ mute: boolean; children: ReactNode }> = ({ mute, children }) => {
+  const ctx = useContext(Internals.RenderAssetManager);
+  const value = useMemo<AssetCtx>(
+    () =>
+      mute
+        ? {
+            ...ctx,
+            registerRenderAsset: (a) => {
+              if (a.type === "audio" || a.type === "inline-audio") return;
+              ctx.registerRenderAsset(a);
+            },
+          }
+        : ctx,
+    [ctx, mute],
+  );
+  return <Internals.RenderAssetManager.Provider value={value}>{children}</Internals.RenderAssetManager.Provider>;
 };
 
-/** One scene, its frozen head (before its slot, inside the seam in) and its frozen tail (after it, inside the seam out). */
-const SceneSlot: React.FC<{ index: number }> = ({ index }) => {
+/* ---------- every frame waits for the compositor ---------- */
+
+/**
+ * Holds each frame until every other delayRender() handle has cleared and three animation frames have passed with none
+ * open, so the compositor has painted and rastered whatever the frame mounted or uncovered (a take's first frame, a
+ * window under a new filter) before Remotion takes its screenshot. Rendering only.
+ */
+const PaintSettle: React.FC = () => {
   const frame = useCurrentFrame();
+  useLayoutEffect(() => {
+    if (!getRemotionEnvironment().isRendering || typeof window === "undefined") return;
+    const handle = delayRender(`paint settle (frame ${frame})`, { timeoutInMilliseconds: 25000 });
+    const w = window as unknown as { remotion_delayRenderHandles?: number[] };
+    let live = true;
+    let quiet = 0;
+    let fallback: ReturnType<typeof setTimeout> | null = null;
+    const done = () => {
+      if (!live) return;
+      live = false;
+      if (fallback) clearTimeout(fallback);
+      continueRender(handle);
+    };
+    const tick = () => {
+      if (!live) return;
+      if (fallback) clearTimeout(fallback);
+      const open = (w.remotion_delayRenderHandles ?? []).filter((h) => h !== handle).length;
+      quiet = open === 0 ? quiet + 1 : 0;
+      if (quiet >= 3) return done();
+      requestAnimationFrame(tick);
+      // never hang on a page that stops producing animation frames
+      fallback = setTimeout(tick, 120);
+    };
+    requestAnimationFrame(tick);
+    return done;
+  }, [frame]);
+  return null;
+};
+
+/* ---------- one scene in its slot ---------- */
+
+const SceneSlot: React.FC<{ index: number }> = ({ index }) => {
   const { fps } = useVideoConfig();
   const slot = TIMELINE[index];
   const def = ALL_SCENES.find((s) => s.id === slot.id);
@@ -52,53 +120,75 @@ const SceneSlot: React.FC<{ index: number }> = ({ index }) => {
   const after = seamAfter(index);
   const head = before && isCarried(before) ? fr(before.pre, fps) : 0;
   const tail = after && isCarried(after) ? fr(after.post, fps) : 0;
-
-  const scene = def ? <def.component durationInFrames={len} /> : <Placeholder slot={slot} />;
-
-  // the seam's progress at this frame (0 → 1 across [cut − pre, cut + post])
-  const progressOf = (seam: Seam, cutFrame: number) => {
-    const a = cutFrame - fr(seam.pre, fps);
-    const b = cutFrame + fr(seam.post, fps);
-    return b > a ? (frame - a) / (b - a) : 1;
-  };
-  const wrap = (node: ReactNode) => {
-    let out = node;
-    // A scene is wrapped in its seams' layers for its WHOLE slot, with the progress clamped to 0..1, so its element
-    // tree never changes shape. Wrapping only inside the seam's window (as the first version did) remounted the scene's
-    // subtree on the window's edges: the incoming scene was drawn whole on the overlap's first frame (a one-frame flash
-    // at every carried seam in draft 1: 39.90, 55.97, 62.80, 92.57 s), and a remounted OffthreadVideo drew one black
-    // frame where the outgoing scene's wrap began (the 4:5 draft: the Memory capture at 56.00 s, the phone at 71.83 s).
-    // The layers are identity at rest (in at 1, out at 0).
-    const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
-    if (before && isCarried(before)) {
-      out = <SeamLayer seam={before} role="in" progress={clamp01(progressOf(before, from))}>{out}</SeamLayer>;
-    }
-    if (after && isCarried(after)) {
-      out = <SeamLayer seam={after} role="out" progress={clamp01(progressOf(after, from + len))}>{out}</SeamLayer>;
-    }
-    return out;
-  };
-
+  const pre = Math.min(fr(PREMOUNT_S, fps), from - head);
+  const start = from - head - pre;
   return (
-    <>
-      {head > 0 && (
-        <Sequence from={from - head} durationInFrames={head} name={`${slot.id} head (frozen)`}>
-          {wrap(<Freeze frame={0}>{scene}</Freeze>)}
-        </Sequence>
-      )}
-      <Sequence from={from} durationInFrames={len} name={slot.id}>
-        {wrap(scene)}
-      </Sequence>
-      {tail > 0 && (
-        <Sequence from={from + len} durationInFrames={tail} name={`${slot.id} tail (frozen)`}>
-          {wrap(<Freeze frame={len - 1}>{scene}</Freeze>)}
-        </Sequence>
-      )}
-    </>
+    <Sequence from={start} durationInFrames={pre + head + len + tail} name={`${slot.id}${pre ? " (premounted)" : ""}`}>
+      <SlotBody index={index} def={def} pre={pre} head={head} len={len} tail={tail} before={before} after={after} />
+    </Sequence>
   );
 };
 
-const MusicBed: React.FC<{ id: MusicId; level: number; duckList: { at: number; db: number; len: number }[] }> = ({ id, level, duckList }) => {
+const SlotBody: React.FC<{
+  index: number;
+  def: (typeof ALL_SCENES)[number] | undefined;
+  pre: number;
+  head: number;
+  len: number;
+  tail: number;
+  before?: Seam;
+  after?: Seam;
+}> = ({ index, def, pre, head, len, tail, before, after }) => {
+  const f = useCurrentFrame(); // local to the slot's mount
+  const { fps } = useVideoConfig();
+  const slot = TIMELINE[index];
+  const sceneFrame = f - pre - head;
+  const frozen = sceneFrame < 0 || sceneFrame >= len;
+  const shown = Math.max(0, Math.min(len - 1, sceneFrame));
+  const visible = f >= pre;
+
+  // a seam's progress at this frame: 0 → 1 across [cut − its pre, cut + its post] (in frames, local to the mount)
+  const prog = (seam: Seam, cutLocal: number) => {
+    const a = fr(seam.pre, fps);
+    const b = fr(seam.post, fps);
+    return a + b > 0 ? clamp01((f - (cutLocal - a)) / (a + b)) : f >= cutLocal ? 1 : 0;
+  };
+
+  const scene = def ? <def.component durationInFrames={len} /> : <Placeholder slot={slot} />;
+  // the scene's own clock: a Sequence starting at its music mark; Freeze holds its first or last frame outside its slot
+  let out: ReactNode = (
+    <Freeze frame={pre + head + shown} active={frozen}>
+      <Sequence from={pre + head} durationInFrames={len} name={`${slot.id} (its own frames)`}>
+        {scene}
+      </Sequence>
+    </Freeze>
+  );
+  // wrapped in its seams' layers for the whole mount (the layers are the identity at rest), so it never remounts
+  if (before && isCarried(before)) {
+    out = (
+      <SeamLayer seam={before} role="in" progress={prog(before, pre + head)}>
+        {out}
+      </SeamLayer>
+    );
+  }
+  if (after && isCarried(after)) {
+    out = (
+      <SeamLayer seam={after} role="out" progress={prog(after, pre + head + len)}>
+        {out}
+      </SeamLayer>
+    );
+  }
+  void tail;
+  return (
+    <AbsoluteFill style={{ opacity: visible ? 1 : 0 }}>
+      <HoldAudio mute={frozen}>{out}</HoldAudio>
+    </AbsoluteFill>
+  );
+};
+
+/* ---------- the music ---------- */
+
+const MusicBed: React.FC<{ id: MusicId; level: number; duckList: readonly Duck[] }> = ({ id, level, duckList }) => {
   const { fps } = useVideoConfig();
   const m = MUSIC[id];
   const volume = (f: number) => {
@@ -106,10 +196,10 @@ const MusicBed: React.FC<{ id: MusicId; level: number; duckList: { at: number; d
     let g = level;
     for (const d of duckList) {
       const x = t - d.at;
-      if (x < -0.02 || x > d.len + 0.15) continue;
-      // 20 ms in, held for len, 150 ms out
-      const k = x < 0 ? (x + 0.02) / 0.02 : x <= d.len ? 1 : 1 - (x - d.len) / 0.15;
-      g *= db(d.db * Math.max(0, Math.min(1, k)));
+      if (x < -d.attack || x > d.len + d.release) continue;
+      // `attack` s down to the duck, held for `len`, `release` s back
+      const k = x < 0 ? (x + d.attack) / d.attack : x <= d.len ? 1 : 1 - (x - d.len) / d.release;
+      g *= db(d.db * clamp01(k));
     }
     return g;
   };
@@ -126,13 +216,14 @@ export const Master: React.FC<MasterProps> = ({ music = MUSIC_PICK, sfx = true, 
         {TIMELINE.map((_, i) => (
           <SceneSlot key={TIMELINE[i].id} index={i} />
         ))}
-        <MusicBed id={music} level={db(musicDb)} duckList={sfx ? ducks(played) : []} />
+        <MusicBed id={music} level={db(musicDb)} duckList={musicDucks(sfx ? played : [])} />
         {sfx &&
           played.map((c, i) => (
             <Sequence key={`${c.file}-${i}`} from={Math.max(0, Math.round(c.at * fps))} layout="none" name={`sfx ${c.role} @${c.peak.toFixed(2)}`}>
               <Audio src={staticFile(SFX_DIR + c.file)} volume={db(c.db + sfxDb)} playbackRate={c.rate} />
             </Sequence>
           ))}
+        <PaintSettle />
       </AbsoluteFill>
     </FontGate>
   );

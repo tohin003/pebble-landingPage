@@ -7,7 +7,9 @@ cd "$REPO"
 source scripts/env.sh >/dev/null
 HEAVY="$REPO/scripts/heavy.sh"
 SHELL145="$HOME/.cache/puppeteer/chrome-headless-shell/mac_arm-145.0.7632.77/chrome-headless-shell-mac-arm64/chrome-headless-shell"
-CHROME_FLAGS=(--browser-executable="$SHELL145" --chrome-mode=headless-shell --gl=angle)
+[ -x "$SHELL145" ] || { echo "the headless shell 145 is missing: $SHELL145" >&2; exit 69; }
+# the shell, through master/chrome.sh: every stage of the compositor completes before a frame is drawn (REVIEW-1 M1)
+CHROME_FLAGS=(--browser-executable="$REPO/video/src/launch/master/chrome.sh" --chrome-mode=headless-shell --gl=angle)
 OUT_DIR="$REPO/video/out/launch"
 DRAFT_DIR="$REPO/.work/launch/master"
 FF="${FF:-/opt/homebrew/bin/ffmpeg}"

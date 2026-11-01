@@ -8,6 +8,7 @@
 //   2. the seams' whooshes (master/timeline.ts);
 // Group C places its SFX inside its scenes (Sfx in S04/S05): they are listed here for the density count only. The
 // music-only variant (final.sh --music-only) muxes the bare music under the picture, so it has none of them.
+import { MUSIC, MUSIC_PICK } from "../data/music";
 import { ALL_SCENES } from "../scenes/Previews";
 import { A_SFX } from "../scenes/a";
 import { C_SFX } from "../scenes/c";
@@ -23,28 +24,28 @@ import { FILM_FPS, SEAMS, TIMELINE } from "./timeline";
 
 export const SFX_DIR = "launch/audio/sfx/";
 
-/** The kit's "ready" files (no hand-download alternates): peak offset (s) and starting level (dB, from mix_hint − lufs_m_max). */
+/** The kit's "ready" files (no hand-download alternates): peak offset (s), starting level (dB, from mix_hint − lufs_m_max) and length (s). */
 export const KIT = {
-  "sfx-whoosh-short.wav": { peak: 0.2809, db: -13.2 },
-  "sfx-whoosh-short-b.wav": { peak: 0.2401, db: -12.4 },
-  "sfx-whoosh-medium.wav": { peak: 0.3575, db: -13.1 },
-  "sfx-whoosh-medium-b.wav": { peak: 0.351, db: -13.2 },
-  "sfx-whoosh-long.wav": { peak: 1.1257, db: -14.2 },
-  "sfx-click-soft-a.wav": { peak: 0.0022, db: -7.4 },
-  "sfx-click-soft-b.wav": { peak: 0.0005, db: -3.9 },
-  "sfx-key-tap-a.wav": { peak: 0.001, db: -7.0 },
-  "sfx-key-tap-b.wav": { peak: 0.001, db: -7.9 },
-  "sfx-key-tap-c.wav": { peak: 0.002, db: -8.9 },
-  "sfx-pop-soft.wav": { peak: 0.0005, db: -5.8 },
-  "sfx-pop-soft-b.wav": { peak: 0.0006, db: -6.6 },
-  "sfx-tick.wav": { peak: 0.0006, db: -8.6 },
-  "sfx-tick-b.wav": { peak: 0.0006, db: -6.5 },
-  "sfx-impact-low.wav": { peak: 0.0039, db: -1.8 },
-  "sfx-shimmer.wav": { peak: 0.0007, db: -21.3 },
-  "sfx-shimmer-b.wav": { peak: 1.4196, db: -16.7 },
-  "sfx-riser.wav": { peak: 2.5149, db: -14.1 },
-  "sfx-swell-soft.wav": { peak: 1.5715, db: -18.2 },
-  "sfx-swell-soft-b.wav": { peak: 1.8476, db: -19.9 },
+  "sfx-whoosh-short.wav": { peak: 0.2809, db: -13.2, dur: 0.44 },
+  "sfx-whoosh-short-b.wav": { peak: 0.2401, db: -12.4, dur: 0.386 },
+  "sfx-whoosh-medium.wav": { peak: 0.3575, db: -13.1, dur: 0.914 },
+  "sfx-whoosh-medium-b.wav": { peak: 0.351, db: -13.2, dur: 0.879 },
+  "sfx-whoosh-long.wav": { peak: 1.1257, db: -14.2, dur: 2.048 },
+  "sfx-click-soft-a.wav": { peak: 0.0022, db: -7.4, dur: 0.04 },
+  "sfx-click-soft-b.wav": { peak: 0.0005, db: -3.9, dur: 0.01 },
+  "sfx-key-tap-a.wav": { peak: 0.001, db: -7.0, dur: 0.26 },
+  "sfx-key-tap-b.wav": { peak: 0.001, db: -7.9, dur: 0.25 },
+  "sfx-key-tap-c.wav": { peak: 0.002, db: -8.9, dur: 0.12 },
+  "sfx-pop-soft.wav": { peak: 0.0005, db: -5.8, dur: 0.53 },
+  "sfx-pop-soft-b.wav": { peak: 0.0006, db: -6.6, dur: 0.58 },
+  "sfx-tick.wav": { peak: 0.0006, db: -8.6, dur: 0.02 },
+  "sfx-tick-b.wav": { peak: 0.0006, db: -6.5, dur: 0.02 },
+  "sfx-impact-low.wav": { peak: 0.0039, db: -1.8, dur: 2.93 },
+  "sfx-shimmer.wav": { peak: 0.0007, db: -21.3, dur: 1.85 },
+  "sfx-shimmer-b.wav": { peak: 1.4196, db: -16.7, dur: 1.958 },
+  "sfx-riser.wav": { peak: 2.5149, db: -14.1, dur: 2.643 },
+  "sfx-swell-soft.wav": { peak: 1.5715, db: -18.2, dur: 2.294 },
+  "sfx-swell-soft-b.wav": { peak: 1.8476, db: -19.9, dur: 2.39 },
 } as const;
 export type KitFile = keyof typeof KIT;
 
@@ -171,14 +172,14 @@ const groupD = (): Cue[] => {
   return lists.flatMap(([id, fn]) => {
     const slot = slotOf(id);
     if (!slot || !ALL_SCENES.some((s) => s.id === id)) return [];
-    return fn().flatMap((c, i) => {
-      let role = roleOfFile(c.src);
+    return fn().flatMap((c) => {
+      const role = roleOfFile(c.src);
       if (!role) return [];
-      // the payoff's first chart: S10's first thud is the film's strongest landing, a full impact
-      if (id === "S10-Benchmarks" && role === "thud" && i <= 1) role = "impact";
       const f = (c.src.split("/").pop() ?? "") as KitFile;
       const peak = slot.in + c.at + (KIT[f]?.peak ?? 0) - 1 / 120;
-      return [{ peak, role, trim: role === "impact" ? -3 : undefined, scene: id, what: f } as Cue];
+      // the payoff's own hit is the master's (payoff() below): a scene's cue on the same moment would double it
+      if (Math.abs(peak - PAYOFF) < 0.12 && (role === "thud" || role === "impact")) return [];
+      return [{ peak, role, scene: id, what: f } as Cue];
     });
   });
 };
@@ -208,9 +209,31 @@ const seams = (): Cue[] =>
   SEAMS.flatMap((seam, i) => {
     if (!seam.whoosh) return [];
     const at = TIMELINE[i].out;
-    // the whoosh's peak meets the moment the picture moves fastest: the seam's middle (a cut's own frame)
-    const mid = at + (seam.post - seam.pre) / 2;
-    return [{ peak: mid, role: seam.whoosh === "short" ? "whoosh-short" : "whoosh-medium", trim: -2, scene: seam.from, what: `seam: ${seam.kind} → ${TIMELINE[i + 1].id}` } as Cue];
+    // the whoosh's peak meets the moment the picture moves fastest: a zoom-through's swap (the cut itself), a whip's or
+    // a push's middle, a cut's own frame
+    const peak = seam.kind === "zoomThrough" ? at : at + (seam.post - seam.pre) / 2;
+    return [{ peak, role: seam.whoosh === "short" ? "whoosh-short" : "whoosh-medium", trim: -2, scene: seam.from, what: `seam: ${seam.kind} → ${TIMELINE[i + 1].id}` } as Cue];
+  });
+
+/* ---------- the stop and the payoff (FIXES-1: a real stop before the payoff) ---------- */
+
+/** The music's payoff: its strongest lift (music A's beat at 81.054), where the first chart lands. */
+export const PAYOFF = MUSIC[MUSIC_PICK].beats.reduce((a, b) => (Math.abs(b - 81.051) < Math.abs(a - 81.051) ? b : a));
+/** The stop: the bed ducked about 25 dB from 80.35 until the frame before the payoff, with "So. How did it do?" still. */
+export const STOP = { from: 80.35, to: 81.0, db: -25 } as const;
+
+/** The payoff's impact: its peak on the music's own hit (13 ms before the first chart's frame, 81.067), one composite hit. */
+const payoff = (): Cue[] =>
+  slotOf("S10-Benchmarks") ? [{ peak: PAYOFF, role: "impact", trim: 0, scene: "S10-Benchmarks", what: "the payoff: the first chart's frame, after the stop" }] : [];
+
+/** Nothing the master plays may sound inside the stop: a cue whose file overlaps it is dropped (the payoff's own hit starts after it). */
+const keepStopClear = (cues: Cue[]): Cue[] =>
+  cues.filter((c) => {
+    if (c.sceneOwned) return true;
+    const take = ROLES[c.role].takes[0];
+    const start = c.peak - KIT[take].peak;
+    const end = start + KIT[take].dur;
+    return end <= STOP.from || start >= STOP.to + 0.02;
   });
 
 /**
@@ -247,7 +270,7 @@ const rateLimitTicks = (cues: Cue[]): Cue[] => {
 
 /** Every cue on the master, sorted, with its file (takes rotated per role), start and level. */
 export const masterCues = (): PlacedCue[] => {
-  const all = thin(rateLimitTicks([...groupA(), ...groupB(), ...groupC(), ...groupD(), ...seams()].sort((a, b) => a.peak - b.peak)));
+  const all = keepStopClear(thin(rateLimitTicks([...groupA(), ...groupB(), ...groupC(), ...groupD(), ...seams(), ...payoff()].sort((a, b) => a.peak - b.peak))));
   const used: Partial<Record<Role, number>> = {};
   return all.map((c) => {
     const r = ROLES[c.role];
@@ -260,9 +283,24 @@ export const masterCues = (): PlacedCue[] => {
   });
 };
 
-/** The music's ducks: 2.5 dB for ~0.25 s under every full impact (kit.json's mix hint). */
-export const ducks = (cues: readonly PlacedCue[]): { at: number; db: number; len: number }[] =>
-  cues.filter((c) => c.role === "impact").map((c) => ({ at: c.peak, db: -2.5, len: 0.25 }));
+/** A dip in the music: `attack` s down to `db`, held for `len` s from `at`, `release` s back. */
+export interface Duck {
+  at: number;
+  db: number;
+  len: number;
+  attack: number;
+  release: number;
+}
+
+/**
+ * The music's ducks: 2.5 dB for ~0.25 s under every full impact (kit.json's mix hint), and the stop before the payoff
+ * (−25 dB from 80.35 s; the music is evaluated once a frame, so it is back to full on the frame that holds the payoff's
+ * hit, 81.033–81.067 s, and its attack takes the 3 frames before 80.35).
+ */
+export const musicDucks = (cues: readonly PlacedCue[]): Duck[] => [
+  ...cues.filter((c) => c.role === "impact").map((c) => ({ at: c.peak, db: -2.5, len: 0.25, attack: 0.02, release: 0.15 })),
+  ...(slotOf("S10-Benchmarks") ? [{ at: STOP.from, db: STOP.db, len: STOP.to - STOP.from, attack: 0.1, release: 1 / FILM_FPS }] : []),
+];
 
 /**
  * Effects per 30 s window (the craft rule: about 8–15). Cues closer than 0.3 s to the one before join its cluster and
