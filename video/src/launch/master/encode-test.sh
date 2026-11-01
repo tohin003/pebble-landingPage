@@ -26,7 +26,7 @@ for r in "${RANGES[@]}"; do
   "$HEAVY" "encode-test-5m-$a" "$FF" -hide_banner -loglevel error -y -i "$M" -c:v libx264 -preset medium -profile:v high \
     -b:v 5M -maxrate 5M -bufsize 10M -g 60 -pix_fmt yuv420p -an "$L"
   {
-    echo "$a–$b s:"
+    echo "${a}-${b} s:"
     echo "  master: $(bun "$HERE/blockiness.ts" "$M" | sed 's/^[^:]*: //')"
     echo "  5 Mbps: $(bun "$HERE/blockiness.ts" "$L" | sed 's/^[^:]*: //')"
     echo "  5 Mbps bitrate: $("$FP" -v error -show_entries format=bit_rate -of csv=p=0 "$L" | awk '{printf "%.2f Mbps", $1/1e6}')"
