@@ -8,8 +8,10 @@
 // - world="desktop": a real take as the ground, full-bleed (`sharp`) or as a soft, dimmed blur of itself for a window
 //   of the same take to float over. Pass the same time map to both, so the ground moves with the window.
 //
-// The lights drift and breathe slowly (the ground never holds dead still) and the grain dithers every gradient. It
-// provides the world's palette to everything inside (useWorld()).
+// The lights drift and breathe slowly, and the lit ground pushes in about 0.8 % a second (REVIEW-1 N4: no hold is dead
+// still; the type and the UI on it never drift from here). The grain (3 % at most, REVIEW-1 S11) dithers the ground's
+// gradients and sits UNDER everything inside the stage, so large flat type stays clean. It provides the world's palette
+// to everything inside (useWorld()).
 import type { ReactNode } from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import type { Box, Size } from "../camera";
@@ -58,11 +60,11 @@ export interface StageProps {
   pool?: { x: number; y: number; w: number; strength?: number };
   /** world="desktop": the take behind */
   desktop?: DesktopGround;
-  /** film grain, per cent (default 5 at night, 3 in daylight; 0 = off) */
+  /** film grain on the ground, per cent (default 3 at night and on the desktop, 2.5 in daylight; at most 3; 0 = off) */
   grain?: number;
   /** vignette strength 0..1 */
   vignette?: number;
-  /** slow drift and breathing of the lights (default on) */
+  /** slow drift and breathing of the lights, and the ground's push (default on) */
   drift?: boolean;
   children?: ReactNode;
 }
@@ -80,6 +82,11 @@ const soft = (rgb: string, a: number): string => {
   ] as const;
   return stops.map(([p, k]) => `rgba(${rgb}, ${(a * k).toFixed(4)}) ${(p * 100).toFixed(0)}%`).join(", ");
 };
+
+/** The lit ground's push, per second of the scene (REVIEW-1 N4: 0.5–1 %/s). */
+const GROUND_PUSH = 0.008;
+/** The most grain any stage draws, per cent (REVIEW-1 S11: 3 % at most; LinkedIn's re-encode turns more into blocking). */
+const GRAIN_MAX = 3;
 
 const ellipse = (rx: number, ry: number, x: number, y: number, rgb: string, a: number) =>
   `radial-gradient(${rx.toFixed(1)}px ${ry.toFixed(1)}px at ${x.toFixed(1)}px ${y.toFixed(1)}px, ${soft(rgb, a)})`;
@@ -107,6 +114,9 @@ export const Stage: React.FC<StageProps> = ({
   const breathe = drift ? 1 + 0.06 * Math.sin(w * t * 0.9 + 0.7) : 1;
   const dx = drift ? 0.025 * Math.sin(w * t) : 0;
   const dy = drift ? 0.018 * Math.cos(w * t * 0.8 + 1.1) : 0;
+  // the ground's push: 0.8 % a second about the frame's centre (the lights' sizes and their offsets from the centre)
+  const push = drift ? 1 + GROUND_PUSH * Math.max(0, t) : 1;
+  const pushed = (x: number, y: number, r: number) => ({ x: W / 2 + (x - W / 2) * push, y: H / 2 + (y - H / 2) * push, r: r * push });
   const palette = WORLDS[world];
 
   let ground: ReactNode;
@@ -115,9 +125,9 @@ export const Stage: React.FC<StageProps> = ({
   let vigA = 0.92;
   if (world === "daylight") {
     const kl = keyLight ?? { x: 0.3, y: 0.05, r: 0.95 };
-    const k = { x: (kl.x + dx) * W, y: (kl.y + dy) * H, r: kl.r * R };
+    const k = pushed((kl.x + dx) * W, (kl.y + dy) * H, kl.r * R);
     const cl = counter ?? { x: 0.88, y: 1.05, r: 0.7 };
-    const c = { x: (cl.x - dx) * W, y: (cl.y - dy) * H, r: cl.r * R };
+    const c = pushed((cl.x - dx) * W, (cl.y - dy) * H, cl.r * R);
     vigRgb = "120, 106, 84";
     vigA = 0.32;
     ground = (
@@ -164,9 +174,9 @@ export const Stage: React.FC<StageProps> = ({
     );
   } else {
     const kl = keyLight ?? { x: 0.42, y: 0.18, r: 0.72 };
-    const k = { x: (kl.x + dx) * W, y: (kl.y + dy) * H, r: kl.r * R };
+    const k = pushed((kl.x + dx) * W, (kl.y + dy) * H, kl.r * R);
     const cl = counter ?? { x: 1 - kl.x + 0.18, y: 0.95, r: 0.5 };
-    const c = { x: (cl.x - dx * 1.4) * W, y: (cl.y - dy) * H, r: cl.r * R };
+    const c = pushed((cl.x - dx * 1.4) * W, (cl.y - dy) * H, cl.r * R);
     const dusk = tint === "dusk";
     // the sage light is a pale, luminous sage over a quieter sage-grey spill: light on a dark stage, not green paint
     const broadRgb = dusk ? RGB.dusk : "62, 80, 66";
@@ -190,11 +200,13 @@ export const Stage: React.FC<StageProps> = ({
   }
 
   v = Math.max(0, Math.min(1, v));
-  const grainPct = grain ?? (world === "daylight" ? 3 : LIGHT.grainPct);
+  const grainPct = Math.min(GRAIN_MAX, grain ?? (world === "daylight" ? 2.5 : GRAIN_MAX));
   return (
     <WorldProvider value={palette}>
       <AbsoluteFill style={{ backgroundColor: palette.ground, overflow: "hidden" }}>
         {ground}
+        {/* the grain dithers the ground only: under the type and the UI (REVIEW-1 S11) */}
+        <Grain amountPct={grainPct} />
         {children}
         {v > 0 && (
           <AbsoluteFill
@@ -204,7 +216,6 @@ export const Stage: React.FC<StageProps> = ({
             }}
           />
         )}
-        <Grain amountPct={grainPct} />
       </AbsoluteFill>
     </WorldProvider>
   );

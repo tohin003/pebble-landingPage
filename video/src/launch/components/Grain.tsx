@@ -1,11 +1,12 @@
 // <Grain>: film grain made in code, deterministic (the seed comes from the frame, so every render tab draws the same
 // grain), re-seeded `hz` times a second like film, never on every 60 fps frame. The noise is drawn at half the frame's
-// size and scaled up, which gives a soft two-pixel grain and costs a quarter of a full-size turbulence. It sits over
-// everything (the stage, the UI, the type), as grain on a film does. `amountPct` is the treatment's 4-6 %.
+// size and scaled up, which gives a soft two-pixel grain and costs a quarter of a full-size turbulence. <Stage> draws it
+// on the ground, UNDER the type and the UI (REVIEW-1 S11: it read as speckle on large flat type, and LinkedIn's
+// re-encode turns grain into blocking on dark gradients), at 3 % at most. `amountPct` is that percentage.
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { LIGHT } from "../tokens";
 
-export const Grain: React.FC<{ amountPct?: number; hz?: number }> = ({ amountPct = LIGHT.grainPct, hz = LIGHT.grainHz }) => {
+export const Grain: React.FC<{ amountPct?: number; hz?: number }> = ({ amountPct = 3, hz = LIGHT.grainHz }) => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
   if (amountPct <= 0) return null;
