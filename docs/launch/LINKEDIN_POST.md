@@ -28,8 +28,9 @@ keep the numbers, the method sentence and Stealth Lockdown's honest line exactly
 > • cost less per task: $0.091 against $0.117, and $0.042 against $0.050
 >
 > What's new in 2.0:
-> • It uses your Mac: only the app windows and websites you allow.
-> • AgentGuard: "done" means checked. Tests the host ran, files you asked to keep, output compared byte for byte.
+> • It uses your Mac: the app windows and websites you allow.
+> • AgentGuard: "done" means checked. Tests the host ran, files you asked to keep, output matched to its file
+>   byte for byte.
 > • Pebble's Workshop: it makes small tools, tests them in a sandbox, and keeps one on its own only after a blind
 >   check. When the check disagrees, it asks you.
 > • Memory in six layers, all visible, any one forgettable.
@@ -41,12 +42,25 @@ keep the numbers, the method sentence and Stealth Lockdown's honest line exactly
 > Free and open source (Apache-2.0), for Macs with Apple silicon:
 > github.com/tohin003/Pebble
 >
-> Full results, including time and safety, are in the 2.0.0 release notes. The film is shown with sample data.
+> Full results, including time, safety and where Pebble trails, are in the 2.0.0 release notes. Costs are at
+> public list prices. The film is shown with sample data and edited for time.
 > Music: "Your Breath" by Eugenio Mininni (Mixkit).
 >
 > #opensource #AI #macOS #developertools
 
+## The video's description (YouTube, the site, or a first comment)
+
+> Pebble 2.0, the launch film. Shown with sample data. Edited for time. Pebble's interface is real: recordings of
+> Pebble 2.0 on a Mac, Pebble 2.0.1's own interface running with sample data, and the Pebble Remote app (open source)
+> in the iOS Simulator against a stand-in Mac. Benchmark: golden set 2.0's held-out split, 255 runs per product, one
+> model for both products in each comparison; full results in the 2.0.0 release notes. Pebble isn't affiliated with
+> Anthropic or OpenAI; Claude Code and Codex are their products. Music: "Your Breath" by Eugenio Mininni (Mixkit).
+> Pebble's character engine: bloub by Jérémy Perret (MIT).
+
 ## Notes for the owner
+
+- **Thumbnail:** on desktop, upload a custom thumbnail. The critic suggests the frame with the rivals' names and "Same
+  model. Same tasks." over the tiny pebble; it sells the story better than frame 0.
 
 - "we" can become "I" if you post it as a solo maker.
 - Where Pebble trailed (by one task each: remembering across sessions against Claude Code, long tasks against Codex)
