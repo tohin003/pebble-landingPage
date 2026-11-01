@@ -485,14 +485,14 @@ export const S05Workshop: React.FC<SceneProps> = ({ durationInFrames }) => {
   const upper = L.portrait ? 0 : clamp01(keepP / 0.4) * (1 - clamp01((settleP - 0.7) / 0.3));
 
   // 4:5: the stacked card at 92 % of the frame's width (40-px margins), centred under the headline; it rises, drifts
-  // 0.6 %/s, and settles to 60 % of the width for the master's punch
+  // 1.2 %/s, and settles to 60 % of the width for the master's punch
   const stackW = L.W * 0.92;
   const stackK = stackW / STACK.w;
   const stackRect: Rect = { x: (L.W - stackW) / 2, y: L.px(840) - (STACK.h * stackK) / 2, w: stackW, h: STACK.h * stackK };
   const stackEndW = L.W * 0.6;
   const stackEnd: Rect = { x: (L.W - stackEndW) / 2, y: (L.H - (stackEndW * STACK.h) / STACK.w) / 2, w: stackEndW, h: (stackEndW * STACK.h) / STACK.w };
   const stackCard = mixRegion(stackRect, stackEnd, settleP);
-  const stackDrift = 1 + 0.006 * Math.max(0, Math.min(t, T(B.settle)) - T(B.keepIn) - 0.75);
+  const stackDrift = 1 + 0.012 * Math.max(0, Math.min(t, T(B.settle)) - T(B.keepIn) - 0.75);
   const keepOverlay = (toView: (p: { x: number; y: number }) => { x: number; y: number }, k: number) => {
     const a = toView({ x: TWO_OF_FIVE.x0, y: TWO_OF_FIVE.y });
     const b = toView({ x: TWO_OF_FIVE.x1, y: TWO_OF_FIVE.y });
@@ -512,8 +512,8 @@ export const S05Workshop: React.FC<SceneProps> = ({ durationInFrames }) => {
       </>
     );
   };
-  // the strip's hold drifts (0.8 %/s on the window, never on the type)
-  const keepDrift = 1 + 0.008 * Math.max(0, Math.min(t, T(B.settle)) - T(B.keepPush)) + 0.006 * Math.max(0, t - T(B.settle) - SETTLE);
+  // the strip's hold drifts (1.2 %/s on the window, never on the type: 0.8 %/s read as a freeze at 30 fps)
+  const keepDrift = 1 + 0.012 * Math.max(0, Math.min(t, T(B.settle)) - T(B.keepPush)) + 0.006 * Math.max(0, t - T(B.settle) - SETTLE);
 
   const head: Rect = pick(L, {
     "16x9": { x: L.content.x, y: L.px(96), w: L.content.w, h: L.px(250) },
