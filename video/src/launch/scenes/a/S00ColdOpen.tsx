@@ -113,10 +113,12 @@ export const coldOpenGeo = (L: Layout) => {
     if (i > 0) base -= lines[i].size * 0.97 * (i === lines.length - 1 ? 1 : 1.02);
   }
   const capTop1 = lines[0].base - INTER.cap * lines[0].size;
-  // story-critical, read on a phone: at least 64 / 48 px (the director's review)
-  const introSize = pick(L, { "16x9": 68, "4x5": 50 }) * L.u;
+  // story-critical, read on a phone (REVIEW-3 S-3, FIXES-3): measured as the rendered cap height at 1080p, "It just went
+  // up against" is 56 px (16:9) / 48 px (4:5) and "Same model. Same tasks." 60 / 48 px (Inter's caps are 0.727 em,
+  // Geist Mono's about 0.72 em). The giant rival names stay as they are: the contrast in size is the joke.
+  const introSize = pick(L, { "16x9": 77, "4x5": 66 }) * L.u;
   const introBase = capTop1 - L.px(pick(L, { "16x9": 50, "4x5": 44 }));
-  const monoSize = pick(L, { "16x9": 62, "4x5": 46 }) * L.u;
+  const monoSize = pick(L, { "16x9": 86, "4x5": 69 }) * L.u;
   return {
     peb,
     pebbleTop,
