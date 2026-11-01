@@ -82,3 +82,24 @@ Outputs stay in this repo and are gitignored: `shots/`, `frames*/`, `logs/`, `vi
 100 MB, safe to delete), `demo-build/`, `previews/`, `sheets/`. `PEBBLE_REPO` comes from the environment, else from the
 gitignored `.work/local.env` (`PEBBLE_REPO=/path/to/the/checkout`), or is a frozen copy (above); no local path is
 committed.
+
+## The 2.0 launch film (Pebble 2.0.1, `?world=launch`)
+
+`mock/launch-world.js` is a second fixture world for **Pebble 2.0.1** (tag `v2.0.1`, commit `c85ed02`): Maya's pottery
+studio (invoice-kit, a kiln firing, a celadon glaze batch, a glaze order, an open day), the demo account's model as the
+real takes show it (Claude Opus 5.5 on "Anthropic-API", High), and v2.0.1's host strings, work views (`view` on each
+activity item, the run_activity `header` and `summary`), Toolbox, memory layers and held-task routes. `entry.js` loads
+it for `?world=launch`; every 1.x scene keeps `fixtures.js`. Its scenes and timelines live in `launch/` and plug into
+the two runners: `capture.mjs --scenes=capture/launch/scenes.mjs` and `record.mjs --timelines=capture/launch/timelines.mjs`.
+Freeze the tag first (`freeze-release.py v2.0.1 <dir>`, then `export PEBBLE_REPO=<dir>`); the Pebble checkout is past it.
+
+| Command (after `source scripts/env.sh`, through `scripts/heavy.sh`) | Writes |
+|---|---|
+| `capture/with-server.sh node capture/record.mjs launch-agentguard --timelines=capture/launch/timelines.mjs --theme=dark --fps=60 --scale=2.5 "--hide=.token-stats, .work-summary .summary-chips li:last-child" --out=.work/launch/ui/frames/launch-agentguard-dark` (also `launch-memory`, `launch-visual-answer`; `--theme=light`) | 60-fps PNG frames, `timeline.json` with the clip's moments, boxes and pointer (`meta`) |
+| `capture/launch/encode.sh <frames-dir> video/public/launch/ui/<clip>-<theme>.mp4` | H.264 CRF 14 yuv420p BT.709, a keyframe a second; deletes the PNGs, keeps the meta in `.work/launch/ui/meta/` |
+| `capture/with-server.sh node capture/capture.mjs launch- --scenes=capture/launch/scenes.mjs --themes=dark --scale=3 --naming=video --out=video/public/launch/ui/stills/dark --locale=en-GB --tz=Europe/London --version=2.0.1 "--hide=.token-stats, .work-summary .summary-chips li:last-child"` | the stills (and `light`) |
+| `node capture/launch/manifest.mjs` (light, no heavy.sh) | `video/src/launch/data/ui.ts` from the clips, their meta and the stills |
+
+The launch timelines drive CSS animations from the virtual clock too (the work view's ring and live cards, spinners,
+toasts), log the person's pointer for a drawn cursor, and measure the boxes the film aims at. Usage lines are hidden at
+capture (the treatment keeps them out of the film). Details: `.work/launch/ui/UI_CAPTURE.md` (local).
