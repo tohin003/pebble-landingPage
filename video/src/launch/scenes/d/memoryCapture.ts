@@ -37,5 +37,7 @@ export const MEMORY_CAPTURE = {
     record: css([552, 542.3, 538, 117.8]),
     confirm: css([824.5, 552.3, 265.5, 33]),
     forget: css([883.5, 552.3, 61.3, 33]),
+    /** the trash button on "Wheel taster: 10.00" (the record the take forgets) */
+    trash: css([1060, 552.3, 30, 30]),
   },
 } as const;
