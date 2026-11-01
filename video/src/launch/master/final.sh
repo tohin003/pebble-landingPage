@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The full-resolution 60 fps master (one browser tab), and its mix as a 48 kHz WAV for delivery:
+# The full-resolution 30 fps master (one browser tab; the owner's ruling, 1 Nov), and its mix as a 48 kHz WAV for delivery:
 #   video/src/launch/master/final.sh 16x9|4x5            -> video/out/launch/LaunchFilm-<aspect>-master.mp4 (+ .wav)
 #   video/src/launch/master/final.sh 16x9|4x5 --music-only
 #        -> LaunchFilm-<aspect>-musiconly.mp4 (+ .wav): the master's picture with the bare music under it (no SFX at

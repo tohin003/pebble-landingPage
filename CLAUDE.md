@@ -65,8 +65,9 @@ sequences and masters once they have been used.
 - **Stealth Lockdown.** Wherever it is shown, its honest line goes with it, word for word: "Hidden from screen capture
   and screen sharing, not from a camera, a capture card or a process list. Exams and interviews that forbid assistants
   still forbid it." Never "undetectable" or "invisible", and nothing about exams, interviews, proctoring, monitoring,
-  cheating, bypassing or evading beyond that line (`src/content/neverWords.ts`; the copy lint enforces it). Never show
-  or fake a screen share with Pebble missing. The Veil on the page is a render by Pebble's own code, never called a
+  cheating, bypassing or evading beyond that line (`src/content/neverWords.ts`; the copy lint enforces it). Never stage
+  or fake a screen-share view with Pebble missing. A real screen recording in which Pebble's windows leave the capture
+  as Stealth Lockdown turns on may be shown, with the honest line beside it (the owner's ruling, 1 Nov 2026). The Veil on the page is a render by Pebble's own code, never called a
   recording, and its dusk blue stays inside the Stealth section.
 - **Code boundaries.** The site never imports `video/src/**`; `shared/pebble/` (plain TypeScript, no React, no
   Remotion) is the only code the two share. Remotion stays pinned at 4.0.538; never run `npx remotion upgrade`.

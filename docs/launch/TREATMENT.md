@@ -12,7 +12,7 @@ Don't reuse its edit, its look or its rule-by-rule caution.
 
 | Deliverable | Spec | Use |
 |---|---|---|
-| **Launch film** | 16:9, 1920×1080, 60 fps, 85–100 s, H.264 High, AAC 48 kHz, −14 LUFS, −1 dBTP | LinkedIn (the main post), the landing page, YouTube |
+| **Launch film** | 16:9, 1920×1080, 30 fps (the owner's ruling of 1 Nov; was 60), 85–100 s, H.264 High, AAC 48 kHz, −14 LUFS, −1 dBTP | LinkedIn (the main post), the landing page, YouTube |
 | **Mobile cut** | 4:5, 1080×1350, same edit re-laid-out (not a centre crop) | LinkedIn mobile feed |
 | **Landing loops** | 6–10 s silent loops per feature, 16:9 (and a 4:5 crop where the page needs it), H.264 + poster | the site's feature sections |
 | **Post kit** | LinkedIn post text, description with the credits, thumbnail/poster stills, SRT of on-screen text | the post |

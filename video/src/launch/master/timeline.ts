@@ -21,7 +21,8 @@ export interface Slot {
 }
 
 export const FILM_S = 100.0;
-export const FILM_FPS = 60;
+/** The owner's ruling (1 Nov 2026): the delivered films are 30 fps (about half the render time of 60 on this Mac). */
+export const FILM_FPS = 30;
 
 export const TIMELINE: readonly Slot[] = [
   { id: "S00-ColdOpen", in: 0, out: 8.051, worldIn: "night", worldOut: "night", note: "the drop at 8.051" },
