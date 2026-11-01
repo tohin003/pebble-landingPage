@@ -318,7 +318,8 @@ describe("golden set 2.0", () => {
     expect(flat).toContain("A patch release for Stealth Lockdown, with two packaging and guide fixes. Nothing else changes from 2.0.0");
     // in llms.txt's block too
     const lines = goldenLlmsLines().join("\n");
-    for (const line of [golden.safety, release, models]) expect(lines).toContain(line);
+    for (const line of [golden.safety, golden.patchLlms, models]) expect(lines).toContain(line);
+    expect(flat).toContain("Nothing else changes from 2.0.0: the same model routes, tools and AgentGuard");
   });
 
   test("the 1.0.2 run stays below as dated history, and its not-covered line stays true", () => {

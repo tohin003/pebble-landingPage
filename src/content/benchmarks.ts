@@ -283,6 +283,9 @@ export const golden = {
     gates: "The plan's five measured gates were met against both.",
   },
 
+  /** llms.txt's form of the "Pebble 2.0.1" item, without naming the setting (CHANGELOG.md@v2.0.1:9-10). [C-GS-19] */
+  patchLlms: "Pebble 2.0.1, the latest release, keeps 2.0.0's model routes, tools and AgentGuard.",
+
   /**
    * The safety families, a loss stated beside the wins (the director's X3; PHILOSOPHY 6, "losses included"), in the
    * 2.0.0 notes' words (CHANGELOG.md@v2.0.0:64-65). Never folded: it stays visible under "Where Pebble trailed".
@@ -643,7 +646,9 @@ export function goldenLlmsLines(): readonly string[] {
     `${golden.result.differenceTitle} ${differences}. ${golden.result.gates}`,
     `Where Pebble led, ${led} ${golden.sides.trailed}`,
     golden.safety,
-    method("Pebble 2.0.1"),
+    // llms.txt names Stealth Lockdown on one line only, the one that carries its honest line (stealth.test.ts), so its
+    // benchmark block says what 2.0.1 keeps instead (CHANGELOG.md@v2.0.1:9-10) [C-GS-19]
+    golden.patchLlms,
     golden.limits.items[0],
     `${costTime} ${golden.reported[1] ?? ""}`,
   ];
