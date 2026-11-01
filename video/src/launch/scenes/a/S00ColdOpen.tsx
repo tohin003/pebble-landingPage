@@ -4,8 +4,9 @@
 // "This is Pebble." already landed. Then "It's small." with a tiny hop; "It just went up against" and the rivals'
 // names as huge mute-grey monoliths, the pebble at their feet looking up (the premise is complete by 2.7 s); "Same
 // model. Same tasks." in Geist Mono, sage, under it (landed by 4.0 s). The rest is the pebble's, in its own poses: it
-// reads the terms, sizes the giants up (one eye narrowed), turns to us, settles into a sure squint and gathers itself
-// for the drop while the light closes in on it. The last 3 frames darken about 40 % (a dip before the drop); S01 takes
+// reads the terms, sizes the giants up (one eye narrowed), rears up to look at them (5.0), turns to us, gives a small
+// sure squash with its proud squint (6.6) and gathers itself for the drop while the light closes in on it and the set
+// (names and pebble) drifts in 0.5 % a second (REVIEW-2 S-5: no 4-s still). The last 3 frames darken about 40 % (a dip before the drop); S01 takes
 // off from this exact spot on the drop frame. Plain text names only: no rival logos, marks or screenshots.
 import { AbsoluteFill } from "remotion";
 import { FontGate } from "../../components/FontGate";
@@ -41,12 +42,17 @@ export const S00_BEATS = {
   sameTasks: 3.8,
   read: 3.66,
   sizeUp: 4.3,
-  toCamera: 5.55,
-  bounce1: 6.05,
-  bounce2: 6.55,
-  sure: 6.55,
+  lookUp: 5.0,
+  toCamera: 5.85,
+  squash: 6.6,
+  sure: 6.6,
   crouch: 7.3,
 } as const;
+/** REVIEW-2 S-5: from here the set (the names and the pebble) drifts in 0.5 % a second, about the pebble's foot */
+const DRIFT_FROM = 3.9;
+const DRIFT_RATE = 0.005;
+/** the set's scale at the scene's end: S01's take-off starts at this size (coldOpenGeo's peb.size × this) */
+export const S00_END_DRIFT = 1 + DRIFT_RATE * (S00_NOMINAL - DRIFT_FROM);
 const B = S00_BEATS;
 
 export const S00_MARKS = [
@@ -58,8 +64,9 @@ export const S00_MARKS = [
   { name: "same-model", s: B.sameModel },
   { name: "same-tasks", s: B.sameTasks },
   { name: "size-up", s: B.sizeUp },
+  { name: "look-up", s: B.lookUp },
   { name: "to-camera", s: B.toCamera },
-  { name: "bounce", s: B.bounce1 },
+  { name: "squash", s: B.squash },
   { name: "sure", s: B.sure },
   { name: "crouch", s: B.crouch },
   { name: "darken", s: S00_NOMINAL - 3 / 30 },
@@ -69,6 +76,7 @@ export const S00_SFX: SfxSuggestion[] = [
   { scene: "S00", s: B.smallLand, kind: "pop (soft)", note: "the tiny hop's landing squash" },
   { scene: "S00", s: B.claude, kind: "soft thud (low)", note: "\"Claude Code\" slams" },
   { scene: "S00", s: B.codex, kind: "soft thud (low), second take", note: "\"and Codex.\" slams" },
+  { scene: "S00", s: B.squash, kind: "pop (soft), second take", note: "the pebble's small, sure squash" },
   { scene: "S00", s: B.sameModel, kind: "riser start", note: "rises to the drop at S01 0.0; the crouch from 7.3 rides its last bar" },
 ];
 
@@ -91,7 +99,9 @@ const rivalLines = (L: Layout): { text: string; slam: 0 | 1 }[] =>
 
 /** Where everything stands on this layout. S01 takes off from `peb` (the pebble's foot and size). */
 export const coldOpenGeo = (L: Layout) => {
-  const peb = { ...stagePebble(L), ...(L.portrait ? { y: L.px(950) } : {}) };
+  // 4:5 (REVIEW-2 N-1): the group sits 30 px lower than in draft 3, so frame 0's optical centre (the cover in the
+  // feed) is at 50 % of the height and the rivals' block at about 48 %
+  const peb = { ...stagePebble(L), ...(L.portrait ? { y: L.px(980) } : {}) };
   const pebbleTop = peb.y - peb.size * BODY_H;
   // the monoliths: each line as wide as the content allows, capped so the block stands on the pebble's head-height;
   // the lines are stacked upward from the last one's baseline, just above the pebble
@@ -113,7 +123,7 @@ export const coldOpenGeo = (L: Layout) => {
     lines,
     intro: { size: introSize, box: lineBox(L.content.x, L.content.w, introBase, introSize, 1) },
     // "This is Pebble." and "It's small.": one display line above the pebble (frame 0's composition)
-    title: lineBox(L.content.x, L.content.w, pick(L, { "16x9": 560, "4x5": 660 }) * L.u, L.type.display, 1),
+    title: lineBox(L.content.x, L.content.w, pick(L, { "16x9": 560, "4x5": 690 }) * L.u, L.type.display, 1),
     mono: { size: monoSize, top: peb.y + L.px(pick(L, { "16x9": 46, "4x5": 50 })) },
   };
 };
@@ -133,10 +143,15 @@ export const s00ActorCues = (T: (s: number) => number) =>
     // and sizes the giants up: one eye narrowed (Pebble's "testing" face), in the engine's blink at 4.22
     pose(onBlink(T(B.sizeUp)), "testing"),
     look(onBlink(T(B.sizeUp)) + 0.05, -0.1, -0.9),
+    // REVIEW-2 S-5: it rears up to look the names over (Pebble's own attentive "sending" face and its small bob; the
+    // gaze straight up). Not "review" (its engine state "alert" morphs the body into a "!") and not "searching" (its
+    // scan cue touches the names' baseline)
+    pose(T(B.lookUp), "sending"),
+    look(T(B.lookUp), 0.05, -1),
     // to us, attentive
     pose(T(B.toCamera), "hover"),
     lookBack(T(B.toCamera)),
-    // a sure squint ("writing": Pebble's proud face), held through the crouch and the take-off
+    // a small, sure squash and Pebble's proud squint ("writing"), held through the crouch and the take-off
     pose(T(B.sure), "writing"),
   );
 
@@ -214,16 +229,11 @@ export const S00ColdOpen: React.FC<SceneProps> = ({ durationInFrames }) => {
   const g = coldOpenGeo(L);
   const { peb } = g;
 
-  // the tiny hop on "It's small."; two small bounces on its toes, landing on the 6.05 and 6.55 beats (it squares up;
-  // low enough to keep ≥ 10 px under "and Codex.");
-  // then the take-off itself at the scene's end: S00 shows only its anticipation squash (the last 0.15 s), S01 draws
+  // the tiny hop on "It's small."; then the take-off itself at the scene's end: S00 shows only its anticipation squash (the last 0.15 s), S01 draws
   // the flight from its frame 0
   const bodyPx = peb.size * BODY_H;
-  const BOUNCE = 0.22;
   const hops = [
     { at: T(B.hop), to: { x: peb.x, y: peb.y }, duration: T(B.smallLand) - T(B.hop), height: bodyPx * 0.42 },
-    { at: T(B.bounce1) - BOUNCE, to: { x: peb.x, y: peb.y }, duration: BOUNCE, height: bodyPx * 0.16 },
-    { at: T(B.bounce2) - BOUNCE, to: { x: peb.x, y: peb.y }, duration: BOUNCE, height: bodyPx * 0.16 },
     { at: D, to: { x: peb.x, y: peb.y - L.px(100) }, duration: 0.45 },
   ];
   const slams = [T(B.claude), T(B.codex)];
@@ -233,7 +243,15 @@ export const S00ColdOpen: React.FC<SceneProps> = ({ durationInFrames }) => {
   const close = tween(t, [T(B.sizeUp), D - 0.1], [0, 1], EASE.camera);
   // the wind-up: the pebble gathers itself (a slow squash about its foot) before the anticipation of the leap
   const crouch = tween(t, [T(B.crouch), D - 0.15], [0, 1], EASE.camera);
-  const csy = 1 - 0.07 * crouch;
+  // REVIEW-2 S-5: rearing up to look at the names (a stretch about the foot, in 0.2 s; it settles back as it turns to
+  // us), and the small squash on 6.6 (0.07 s down, then a damped jelly rebound)
+  const rear = tween(t, [T(B.lookUp) - 0.05, T(B.lookUp) + 0.2, T(B.toCamera) - 0.05, T(B.toCamera) + 0.25], [0, 1, 1, 0], EASE.camera);
+  const ds = t - T(B.squash);
+  const sq = ds < 0 ? 0 : ds < 0.07 ? ds / 0.07 : Math.exp(-(ds - 0.07) / 0.13) * Math.cos((ds - 0.07) * 2 * Math.PI * 2.4);
+  const csy = (1 - 0.07 * crouch) * (1 + 0.08 * rear) * (1 - 0.13 * sq);
+  const csx = (1 / (1 - 0.07 * crouch)) * (1 - 0.055 * rear) * (1 + 0.11 * sq);
+  // the set's drift (the names and the pebble; never "Same model. Same tasks.", a landed line)
+  const drift = 1 + DRIFT_RATE * Math.max(0, (t * S00_NOMINAL) / D - DRIFT_FROM);
   const dip = frame >= frames - 3;
 
   return (
@@ -265,20 +283,22 @@ export const S00ColdOpen: React.FC<SceneProps> = ({ durationInFrames }) => {
                 leading={1}
               />
             </ExitWrap>
-            {g.lines.map((l) => (
-              <Monolith key={l.text} text={l.text} size={l.size} baseline={l.base} at={slams[l.slam]} t={t} dim={monoDim} />
-            ))}
-            <div style={{ position: "absolute", inset: 0, transform: `scale(${(1 / csy).toFixed(5)}, ${csy.toFixed(5)})`, transformOrigin: `${peb.x.toFixed(2)}px ${peb.y.toFixed(2)}px` }}>
-              <PebbleActor
-                x={peb.x}
-                y={peb.y}
-                size={peb.size}
-                cues={s00ActorCues(T)}
-                hops={hops}
-                pulses={slams.map((x) => x + 0.02)}
-                pool
-                glow={0.35 + 0.3 * close}
-              />
+            <div style={{ position: "absolute", inset: 0, transform: drift > 1 ? `scale(${drift.toFixed(6)})` : undefined, transformOrigin: `${peb.x.toFixed(2)}px ${peb.y.toFixed(2)}px` }}>
+              {g.lines.map((l) => (
+                <Monolith key={l.text} text={l.text} size={l.size} baseline={l.base} at={slams[l.slam]} t={t} dim={monoDim} />
+              ))}
+              <div style={{ position: "absolute", inset: 0, transform: `scale(${csx.toFixed(5)}, ${csy.toFixed(5)})`, transformOrigin: `${peb.x.toFixed(2)}px ${peb.y.toFixed(2)}px` }}>
+                <PebbleActor
+                  x={peb.x}
+                  y={peb.y}
+                  size={peb.size}
+                  cues={s00ActorCues(T)}
+                  hops={hops}
+                  pulses={slams.map((x) => x + 0.02)}
+                  pool
+                  glow={0.35 + 0.3 * close}
+                />
+              </div>
             </div>
             <SameLine t={t} a={T(B.sameModel)} b={T(B.sameTasks)} size={g.mono.size} top={g.mono.top} />
           </AbsoluteFill>
