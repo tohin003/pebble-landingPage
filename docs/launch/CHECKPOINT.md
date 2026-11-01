@@ -92,3 +92,16 @@ is missing. claude-p sessions keep running (another account). Status:
 - Next: a NEW critic reviews draft 3 (round 2: verify every REVIEW-1 item FIXED/PARTLY/STILL, then regressions and
   new issues) → fix → repeat until "ship"; then the full-resolution masters (`master/final.sh`, 30 fps) and a last
   verification round; then delivery and the site's phase 2 (the film and loops into /media/v3).
+
+## Update, 2 Nov ~01:50 IST: verification loop round 2
+
+- Round 1's fixes produced draft 3 (`.work/launch/master/draft3-{16x9,4x5}.mp4`); the gates pass (no unpainted
+  frames; flash passes except css2560 16:9 at 7/6 on S02's pull-back). Round 2's critic (claude-p):
+  `.work/launch/critic/REVIEW-2.md`, "fix then ship" (M-1 4:5 Keep card crop, M-2 a 2-frame first-run flash at
+  S08→S09, M-3 the S04→S05 whip's blur samples; SHOULDs S-1 to S-8).
+- The plan: `.work/launch/critic/FIXES-2.md` (S09 70.051–79.101, S10 79.101–93.055; the S01→S02 pebble match; the
+  S09→S10 question in the blob). Four claude-p fix workers run unattended (`.work/launch/runs/fix2-{a,b,c,d}.out`,
+  reports `FIX2-R2-*.md`).
+- Next: draft 4 + gates → a light round-3 check (dense strips of the changed windows + the gates) → if "ship": final
+  masters (`master/final.sh`, 30 fps), `deliver.sh` (−14 / −16 LUFS, −1 dBTP), SRT, posters, the encode test, a last
+  verification; then the site's phase 2.
