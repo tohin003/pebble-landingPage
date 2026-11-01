@@ -7,7 +7,7 @@
 // at the squeeze, and it settles into a thin sealed stub (a seal and its label), while the newest stay full and the
 // column falls back under the line. Then one stub opens back into its full block: the same block, unchanged. No saving
 // is claimed.
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, useVideoConfig } from "remotion";
 import { FontGate } from "../../components/FontGate";
 import { Headline } from "../../components/Headline";
 import type { SfxCue } from "../../components/Sfx";
@@ -126,22 +126,31 @@ const warpOf = (t: number, i: number, a: (s: number) => number): number => {
 export const S07ContextWarping: React.FC<SceneProps> = ({ durationInFrames }) => {
   const L = useLayout();
   const t = useT();
+  const { fps } = useVideoConfig();
   const { at: a, k } = useRetime(S07_NOMINAL, durationInFrames);
   const g = geometry(L);
   const u = L.u;
 
   // each block: how far it has entered (0..1) and how far it has warped (0..1)
-  const enters = BLOCKS.map((_, i) => prog(t, a(S07_BEATS.firstBlock) + i * S07_BEATS.blockStep, 0.42, EASE.enter));
-  const warps = BLOCKS.map((_, i) => warpOf(t, i, a));
-  const heights = BLOCKS.map((_, i) => lerp(g.block.full, g.block.stub, warps[i]) * enters[i]);
-  const gaps = BLOCKS.map((_, i) => g.block.gap * enters[i]);
-  let y = g.col.floor;
-  const bottoms = heights.map((h, i) => {
-    const b = y;
-    y -= h + gaps[i];
-    return b;
-  });
-  const top = y + g.block.gap;
+  // the column's stacking at any time (pure in tt), so each block's speed can be read from one frame back
+  const stackAt = (tt: number) => {
+    const en = BLOCKS.map((_, i) => prog(tt, a(S07_BEATS.firstBlock) + i * S07_BEATS.blockStep, 0.42, EASE.enter));
+    const wa = BLOCKS.map((_, i) => warpOf(tt, i, a));
+    const hs = BLOCKS.map((_, i) => lerp(g.block.full, g.block.stub, wa[i]) * en[i]);
+    let yy = g.col.floor;
+    const bs = hs.map((h, i) => {
+      const b = yy;
+      yy -= h + g.block.gap * en[i];
+      return b;
+    });
+    return { enters: en, warps: wa, heights: hs, bottoms: bs, top: yy + g.block.gap };
+  };
+  const { enters, warps, heights, bottoms, top } = stackAt(t);
+  // The director (flash scan, draft 2): as stubs seal (and one reopens) the blocks above slide, and their crisp labels
+  // and track lines swept the same pixels ~15 times a second (WCAG 2.3.1's general flash at desk distance). A block in
+  // motion now carries a vertical-speed motion blur, as a camera's shutter would, so nothing crisp sweeps.
+  const prevBottoms = stackAt(t - 1 / fps).bottoms;
+  const motionOf = (i: number) => Math.abs(bottoms[i] - prevBottoms[i]);
   const budgetY = g.col.floor - g.budget;
   const over = clamp01((budgetY - top) / L.px(40));
 
@@ -230,6 +239,7 @@ export const S07ContextWarping: React.FC<SceneProps> = ({ durationInFrames }) =>
                   stub={g.block.stub}
                   enter={enters[i]}
                   warp={warps[i]}
+                  motion={motionOf(i)}
                   labelSize={g.label}
                   stubLabel={g.stubLabel}
                   overTint={over * (bottoms[i] - heights[i] < budgetY - L.px(4) ? 1 : 0)}
@@ -332,19 +342,26 @@ const WarpBlock: React.FC<{
   stub: number;
   enter: number;
   warp: number;
+  /** this block's vertical speed, px a frame (a motion blur above about 1 px a frame) */
+  motion: number;
   labelSize: number;
   stubLabel: number;
   ring: number;
   u: number;
   /** 0..1: the block reaches over the budget line (a clay edge) */
   overTint: number;
-}> = ({ label, lines, x, w, bottom, full, stub, enter, warp, labelSize, stubLabel, ring, u: uFrame, overTint }) => {
+}> = ({ label, lines, x, w, bottom, full, stub, enter, warp, motion, labelSize, stubLabel, ring, u: uFrame, overTint }) => {
   // the card's own unit: its inner layout scales with its height (104 px at u = 1 in the first round)
   const u = full / 104;
   const radius = 16 * u;
   const lens = Math.sin(Math.PI * warp); // 0 at rest, 1 mid-warp
   const h = lerp(full, stub, warp);
   const top = bottom - h * enter;
+  // The director (flash scan, draft 2): squeezing the dark label and track lines to nothing in ~0.3 s flickered a
+  // small region 15–16 times a second (WCAG 2.3.1's general flash, desk-distance bindings). The card's content fades
+  // to low contrast over the first 30 % of the warp, so the squeeze happens on a near-blank light card; on the reopen
+  // (warp back to 0) it fades in again at the end.
+  const innerA = 1 - 0.85 * clamp01(warp / 0.3);
   const content = (
     <div
       style={{
@@ -355,15 +372,17 @@ const WarpBlock: React.FC<{
         boxShadow: `inset 0 0 0 ${(Math.max(1, u) * (1 + 1.2 * overTint)).toFixed(2)}px ${overTint > 0 ? `rgba(181, 88, 47, ${(0.3 + 0.45 * overTint).toFixed(3)})` : DAY.line}, 0 ${(6 * u).toFixed(1)}px ${(18 * u).toFixed(1)}px rgba(74, 62, 44, 0.10)`,
       }}
     >
-      <div style={{ position: "absolute", left: 22 * u, top: 11 * u, fontFamily: TYPE.mono.fontFamily, fontWeight: 500, fontSize: labelSize, color: DAY.ink2, whiteSpace: "nowrap" }}>
-        {label}
+      <div style={{ position: "absolute", inset: 0, opacity: innerA }}>
+        <div style={{ position: "absolute", left: 22 * u, top: 11 * u, fontFamily: TYPE.mono.fontFamily, fontWeight: 500, fontSize: labelSize, color: DAY.ink2, whiteSpace: "nowrap" }}>
+          {label}
+        </div>
+        {lines.map((lw, li) => (
+          <div
+            key={li}
+            style={{ position: "absolute", left: 22 * u, top: (60 + li * 13) * u, width: (w - 44 * u) * lw, height: 6.5 * u, borderRadius: 4 * u, background: DAY.track }}
+          />
+        ))}
       </div>
-      {lines.map((lw, li) => (
-        <div
-          key={li}
-          style={{ position: "absolute", left: 22 * u, top: (60 + li * 13) * u, width: (w - 44 * u) * lw, height: 6.5 * u, borderRadius: 4 * u, background: DAY.track }}
-        />
-      ))}
     </div>
   );
 
@@ -423,7 +442,10 @@ const WarpBlock: React.FC<{
         width: w,
         height: h,
         opacity: enter,
-        filter: enter < 1 ? `blur(${((1 - enter) * 6 * u).toFixed(2)}px)` : undefined,
+        filter: (() => {
+          const blurPx = Math.max(enter < 1 ? (1 - enter) * 6 * u : 0, motion > 0.5 ? Math.min(16, (motion - 0.5) * 2.0) : 0);
+          return blurPx > 0.05 ? `blur(${blurPx.toFixed(2)}px)` : undefined;
+        })(),
       }}
     >
       {body && <div style={{ position: "absolute", inset: 0, opacity: bodyA }}>{body}</div>}
