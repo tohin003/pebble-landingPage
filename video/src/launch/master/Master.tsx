@@ -65,7 +65,10 @@ const SceneSlot: React.FC<{ index: number }> = ({ index }) => {
     let out = node;
     if (before && isCarried(before)) {
       const p = progressOf(before, from);
-      if (p > 0 && p < 1) out = <SeamLayer seam={before} role="in" progress={p}>{out}</SeamLayer>;
+      // p = 0 is the overlap's first frame: the incoming scene must already be masked there (at 0 it is fully hidden).
+      // Leaving it unwrapped drew the incoming scene whole over the outgoing one for that frame: a one-frame flash
+      // (the 16:9 draft's frame scan found one at every carried seam: 39.90, 55.97, 62.80, 92.57 s).
+      if (p >= 0 && p < 1) out = <SeamLayer seam={before} role="in" progress={Math.max(p, 0)}>{out}</SeamLayer>;
     }
     if (after && isCarried(after)) {
       const p = progressOf(after, from + len);

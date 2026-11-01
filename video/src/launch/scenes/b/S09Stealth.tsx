@@ -94,7 +94,9 @@ const frame = (L: Layout) =>
 
 export const s09Moments = (lenS: number) => {
   const k = lenS / S09_NOMINAL;
-  const lead = 0.8 * Math.min(1.2, k);
+  // The director (1 Nov, draft 1): the take's workspace is in its first-run "Welcome to Pebble / Connect a model"
+  // state, which reads oddly right before Stealth Lockdown. Hold it for a beat only; the palette covers it once open.
+  const lead = 0.15 * Math.min(1.2, k);
   const m = takeTime(lead);
   const leave = m.inv(LEAVE);
   const wipe = leave + 0.55 * Math.min(1.2, k);
