@@ -1,12 +1,15 @@
-// S06 Memory (8 s): "It remembers what matters." (EDIT_PLAN "S06"; the director's review r2: hero type, a stack that
-// fills the frame, the capture zoomed until its records and Forget are big).
+// S06 Memory (7.0 s): "It remembers what matters." (REVIEW-1 BANNED "isometric slab stacks", S8, S9, N2; FIXES-1 WP-D).
 //
-// The headline lands at hero size in the middle of the frame, then settles to the top as six translucent stone slabs
-// stack in 3D on six beats, each labelled with its layer (a diagram: drawn shapes, never Pebble's interface); the view
-// eases back as the stack grows. The Semantic slab (facts and knowledge) lifts and carries the seam: the real Settings ›
-// Memory capture (Pebble 2.0.1's own frontend, sample data) grows out of it on its own Facts & knowledge layer. The
-// trash on a record, then the camera pushes onto Keep and Forget, Forget, the record gone, and back out to the layer
-// whose count now reads 2. "All visible." / "Forget anything."
+// 0.00  "It remembers what matters." rises in at the top.
+// 0.50  Pebble's six memory layers land one a beat (0.50 to 3.00), as a typographic table in Inter: each layer's name
+//       and what it holds. A diagram in type, never Pebble's interface.
+// 3.25  Semantic (facts and knowledge) turns sage; at 3.50 the real Settings › Memory capture (Pebble 2.0.1's own
+//       frontend at its published tag, sample data) grows out of that row, framed at about 2× on that layer's records
+//       and their Keep and Forget. "All visible."
+// 4.25  A record's trash: Keep and Forget appear. 5.00: Forget, on the beat: the record is gone (in one frame, as the app
+//       does it) and "Forget anything." lands on the click, held to the cut (2 s).
+// The camera never scrolls: one framing, a slow drift and a small punch on the click (REVIEW-1 S8: no motion-blur
+// samples on text).
 import { AbsoluteFill, Sequence, useVideoConfig } from "remotion";
 import { FloatingWindow } from "../../components/FloatingWindow";
 import { FontGate } from "../../components/FontGate";
@@ -17,16 +20,16 @@ import { SfxTrack } from "../../components/Sfx";
 import { Stage } from "../../components/Stage";
 import { centreOf, useLayout, type Layout, type Rect } from "../../layout";
 import { timeMap } from "../../timeMap";
-import { prog, tween } from "../../timing";
+import { prog } from "../../timing";
 import { EASE, TYPE } from "../../tokens";
-import { useWorld } from "../../world";
+import { DAY } from "../../world";
 import type { SceneProps } from "../types";
-import { PLACE_SFX, SFX, Settle, clamp01, lerp, peakAt, useRetime, useT } from "./common";
+import { PLACE_SFX, SFX, clamp01, lerp, peakAt, useRetime, useT } from "./common";
 import { MEMORY_CAPTURE as MC } from "./memoryCapture";
 
-export const S06_NOMINAL = 8;
+export const S06_NOMINAL = 7;
 
-/** Bottom first. Pebble's six memory layers (memory KINDS at v2.0.1), with plain descriptions. */
+/** Pebble's six memory layers (memory KINDS at v2.0.1; README "Memory"), with plain descriptions (C-FILM2-22). */
 export const LAYERS = [
   { name: "Profile", desc: "your preferences" },
   { name: "Semantic", desc: "facts and knowledge" },
@@ -35,104 +38,111 @@ export const LAYERS = [
   { name: "Temporal", desc: "things that expire" },
   { name: "Working", desc: "the current task" },
 ] as const;
-/** the slab that becomes the capture (the capture opens on Facts & knowledge) */
+/** the row that becomes the capture (the capture opens on Facts & knowledge) */
 const CARRY = 1;
 
 export const S06_BEATS = {
-  headline: 0.05,
-  /** the headline leaves the middle for the top as the stack starts */
-  settle: 0.8,
-  /** the slabs land on these beats (contact frames) */
-  slabs: [1.0, 1.5, 2.0, 2.5, 3.0, 3.5],
-  lift: 3.8,
-  capture: 4.0,
-  line: 4.4,
+  headline: 0,
+  /** each row lands on a beat (its contact frame) */
+  rows: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0],
+  /** the Semantic row turns sage */
+  pick: 3.25,
+  /** the capture grows out of it; the table leaves */
+  capture: 3.5,
+  /** "All visible." */
+  visible: 3.75,
+  /** the record's trash: Keep and Forget */
+  trash: 4.25,
+  /** Forget: the record is gone, "Forget anything." */
+  forget: 5.0,
 } as const;
-const FALL = 0.36;
-const MORPH = 0.75;
+const ROW_IN = 0.2;
+const GROW = 0.55;
 
-/** The capture's moments in clip px (CSS px × 2.5; .work/launch/ui/meta/launch-memory-dark.timeline.json). */
-const c = (v: number) => v * 2.5;
-/** the six layers with their counts and the top of the Facts & knowledge records (trash buttons inside) */
-const VIEW_LAYER = { x: c(536), y: c(162), w: c(568), h: c(438) };
-/** the second record, Keep and Forget, with the records above and below it */
-const VIEW_FORGET = { x: c(534), y: c(455), w: c(424), h: c(295) };
-const TRASH_AT = { x: c(1075), y: c(567) };
-const FORGET_AT = { x: MC.box.forget.x + MC.box.forget.w / 2, y: MC.box.forget.y + MC.box.forget.h / 2 };
-
-/** the capture's time map, local to its start: 1.3× through to the trash, then real time, the last frame held */
+/** The capture's time map, local to its start: the layer's records drawn, the trash, Forget, then real time. */
+const CAP = {
+  trash: S06_BEATS.trash - S06_BEATS.capture,
+  forget: S06_BEATS.forget - S06_BEATS.capture,
+} as const;
 const captureTime = timeMap(
   [
     [0, MC.t.records],
-    [0.85, MC.t.trash],
-    [0.85 + (MC.duration - MC.t.trash), MC.duration],
+    [CAP.trash, MC.t.trash],
+    [CAP.forget, MC.t.forget],
+    [CAP.forget + (MC.duration - MC.t.forget), MC.duration],
   ],
   { tail: 0 },
 );
-const TRASH_OUT = captureTime.inv(MC.t.trash);
-const FORGET_OUT = captureTime.inv(MC.t.forget);
-const GONE_OUT = captureTime.inv(MC.t.after);
-/** the camera inside the capture (output seconds from the capture's start) */
-const CAM = { pushArrive: 1.6, pullStart: 2.7, pullArrive: 3.4 } as const;
+
+/**
+ * The one framing (clip px = CSS px × 2.5): the layer's column from "Learning and recall in this layer · Facts &
+ * knowledge" through its three records, Keep and Forget and "Check waiting memories now". Every text line of that column
+ * (CSS x 552 to 1090) is inside it with room for the drift, so no word is cut at an edge.
+ */
+const c = (v: number) => v * 2.5;
+const FRAME = { x: c(526), y: c(356), w: c(588), h: c(468) } as const;
+/** the Settings panel's own colour in the capture (sampled): the window's ground under its soft edges */
+const PANEL = { hex: "#212822", rgb: "33, 40, 34" } as const;
 
 export const S06_MARKS = [
-  { name: "headline lands (hero)", s: S06_BEATS.headline + 0.5 },
-  ...S06_BEATS.slabs.map((s, i) => ({ name: `slab ${i + 1} lands (${LAYERS[i].name})`, s })),
-  { name: "the Semantic slab lifts", s: S06_BEATS.lift },
+  { name: "headline lands", s: 0.6 },
+  ...S06_BEATS.rows.map((s, i) => ({ name: `row ${i + 1} lands (${LAYERS[i].name})`, s })),
+  { name: "the Semantic row turns sage", s: S06_BEATS.pick },
   { name: "the capture grows out of it", s: S06_BEATS.capture },
-  { name: "trash clicked (Keep / Forget)", s: S06_BEATS.capture + TRASH_OUT },
-  { name: "Forget clicked; \"Forget anything.\"", s: S06_BEATS.capture + FORGET_OUT },
-  { name: "the record is gone (Facts & knowledge 3 → 2)", s: S06_BEATS.capture + GONE_OUT },
+  { name: "\"All visible.\"", s: S06_BEATS.visible },
+  { name: "the trash: Keep / Forget", s: S06_BEATS.trash },
+  { name: "Forget: the record is gone; \"Forget anything.\"", s: S06_BEATS.forget },
 ] as const;
 
 export const s06Sfx = (k = 1): SfxCue[] => [
-  ...S06_BEATS.slabs.map((s, i) => peakAt(SFX.thud, s * k, i === 5 ? -20 : -24)),
-  peakAt(SFX.whoosh, (S06_BEATS.capture + MORPH * 0.5) * k, -17),
-  peakAt(SFX.click, S06_BEATS.capture * k + TRASH_OUT, -15),
-  peakAt(SFX.click2, S06_BEATS.capture * k + FORGET_OUT, -13),
+  // a soft tick as each row lands
+  ...S06_BEATS.rows.map((s) => peakAt(SFX.tick, s * k, -21)),
+  peakAt(SFX.whoosh, (S06_BEATS.capture + GROW * 0.5) * k, -18),
+  peakAt(SFX.click, S06_BEATS.trash * k, -15),
+  peakAt(SFX.click2, S06_BEATS.forget * k, -13),
 ];
 
 const geometry = (L: Layout) => {
+  const p = L.px;
   if (!L.portrait) {
-    const a = L.px(300);
     return {
-      // hero in the middle, then settled to the top at 110 px
-      headline: { x: L.px(128), y: L.px(440), w: L.px(1700), h: L.px(200) } as Rect,
-      headlineSize: L.px(124),
+      headline: { x: p(128), y: p(60), w: p(1664), h: p(150) } as Rect,
       headlineText: "It remembers what matters.",
-      heroAnchor: { x: L.px(128), y: L.px(540) },
-      topAnchor: { x: L.px(128), y: L.px(128) },
-      topScale: 110 / 124,
-      slab: { cx: L.px(128) + a, a, b: a * 0.4, d: L.px(26), floor: L.px(854), step: L.px(85) },
-      label: { x: L.px(800), name: L.px(60), desc: L.px(36), inline: true },
-      view: { scale: 1.08, origin: { x: L.px(900), y: L.px(1000) } },
-      media: { x: L.px(648), y: L.px(80), w: L.px(1176), h: L.px(920) } as Rect,
-      line1: { x: L.px(112), y: L.px(250), w: L.px(500), h: L.px(160) } as Rect,
-      line2: { x: L.px(112), y: L.px(430), w: L.px(500), h: L.px(170) } as Rect,
+      headlineSize: L.type.title,
+      rowTop: (i: number) => p(292) + i * p(114),
+      rowH: p(96),
+      name: { x: p(128), size: p(68) },
+      desc: { x: p(620), dy: 0, size: p(48) },
+      rule: { x: p(128), w: p(1664) },
+      media: { x: p(624), y: p(56), w: p(1216), h: p(968) } as Rect,
+      line1: { x: p(112), y: p(300), w: p(500), h: p(170) } as Rect,
+      line2: { x: p(112), y: p(490), w: p(500), h: p(200) } as Rect,
       line1Text: "All visible.",
       line2Text: "Forget\nanything.",
-      lineSize: L.px(72),
+      lineSize: p(76),
+      inline: true,
     };
   }
-  const a = L.px(210);
   return {
-    headline: { x: L.px(64), y: L.px(520), w: L.px(952), h: L.px(300) } as Rect,
-    headlineSize: L.px(100),
+    headline: { x: p(64), y: p(64), w: p(952), h: p(240) } as Rect,
     headlineText: "It remembers\nwhat matters.",
-    heroAnchor: { x: L.px(64), y: L.px(670) },
-    topAnchor: { x: L.px(64), y: L.px(196) },
-    topScale: 0.92,
-    slab: { cx: L.px(64) + a, a, b: a * 0.4, d: L.px(20), floor: L.px(1136), step: L.px(134) },
-    label: { x: L.px(530), name: L.px(50), desc: L.px(31), inline: false },
-    view: { scale: 1.08, origin: { x: L.px(540), y: L.px(1240) } },
-    media: { x: L.px(40), y: L.px(400), w: L.px(1000), h: L.px(880) } as Rect,
-    line1: { x: L.px(64), y: L.px(110), w: L.px(952), h: L.px(100) } as Rect,
-    line2: { x: L.px(64), y: L.px(212), w: L.px(952), h: L.px(100) } as Rect,
+    headlineSize: p(100),
+    rowTop: (i: number) => p(372) + i * p(150),
+    rowH: p(124),
+    name: { x: p(64), size: p(60) },
+    desc: { x: p(64), dy: p(68), size: p(44) },
+    rule: { x: p(64), w: p(952) },
+    // the same aspect as 16:9's window, so the one framing shows the same column with nothing cut
+    media: { x: p(40), y: p(420), w: p(1000), h: p(796) } as Rect,
+    line1: { x: p(64), y: p(96), w: p(952), h: p(110) } as Rect,
+    line2: { x: p(64), y: p(214), w: p(952), h: p(110) } as Rect,
     line1Text: "All visible.",
     line2Text: "Forget anything.",
-    lineSize: L.px(72),
+    lineSize: p(76),
+    inline: false,
   };
 };
+type Geo = ReturnType<typeof geometry>;
 
 export const S06Memory: React.FC<SceneProps> = ({ durationInFrames }) => {
   const L = useLayout();
@@ -141,59 +151,37 @@ export const S06Memory: React.FC<SceneProps> = ({ durationInFrames }) => {
   const { at: a, k } = useRetime(S06_NOMINAL, durationInFrames);
   const g = geometry(L);
   const capAt = a(S06_BEATS.capture);
-  const liftAt = a(S06_BEATS.lift);
 
-  // the view eases back as the stack grows (the first slabs land big)
-  const vs = lerp(g.view.scale, 1, prog(t, a(S06_BEATS.slabs[0]) - 0.2, a(S06_BEATS.slabs[5]) - a(S06_BEATS.slabs[0]) + 0.4, EASE.camera));
-
-  // the carried slab's centre on screen (the capture starts there)
-  const carryCy = g.slab.floor - CARRY * g.slab.step;
-  const lift = tween(t, [liftAt, liftAt + 0.3], [0, 1], EASE.enter);
-  const morph = prog(t, capAt, MORPH, EASE.camera);
+  // the capture grows out of the Semantic row: from the row's place and a fifth of its size to its own rect
+  const grow = EASE.camera(clamp01((t - capAt) / GROW));
   const media = g.media;
   const mc = centreOf(media);
-  const from = { x: g.slab.cx, y: carryCy - g.slab.d - L.px(34) * lift };
-  const offset = { x: (from.x - mc.x) * (1 - morph), y: (from.y - mc.y) * (1 - morph) };
-  const winScale = lerp((g.slab.a * 2) / media.w, 1, morph);
+  const rowCy = g.rowTop(CARRY) + g.rowH / 2;
+  const rowCx = g.inline ? g.desc.x + L.px(200) : g.name.x + L.px(260);
+  const offset = { x: (rowCx - mc.x) * (1 - grow), y: (rowCy - mc.y) * (1 - grow) };
+  // a small punch on the Forget click (a hit that decays, never a creep)
+  const forgetAt = a(S06_BEATS.forget);
+  const punch = t >= forgetAt ? 0.022 * Math.exp(-(t - forgetAt) / 0.12) : 0;
+  const winScale = lerp(0.22, 1, grow) * (1 + punch);
+  const winOpacity = clamp01((t - capAt) / 0.12);
 
   return (
     <FontGate>
       <AbsoluteFill>
-        <Stage world="daylight" keyLight={L.portrait ? { x: 0.35, y: 0.3, r: 0.95 } : { x: 0.3, y: 0.1, r: 0.95 }}>
-          <Settle from={g.heroAnchor} to={g.topAnchor} scale={g.topScale} at={a(S06_BEATS.settle)} dur={0.7}>
-            <Headline text={g.headlineText} at={a(S06_BEATS.headline)} exitAt={liftAt} exit="rise" size={g.headlineSize} align="left" valign="middle" box={g.headline} fit />
-          </Settle>
-          <div style={{ position: "absolute", inset: 0, transform: `scale(${vs.toFixed(5)})`, transformOrigin: `${g.view.origin.x}px ${g.view.origin.y}px` }}>
-            <Slabs g={g} a={a} lift={lift} gone={prog(t, liftAt, 0.3, EASE.exit)} carryFade={clamp01((t - capAt - 0.1) / 0.25)} />
-          </div>
-          <Headline text={g.line1Text} at={a(S06_BEATS.line)} entrance="blur" size={g.lineSize} align="left" valign="bottom" box={g.line1} fit={false} />
-          <Headline text={g.line2Text} at={capAt + FORGET_OUT - 0.04} entrance="rise" size={g.lineSize} align="left" valign="top" box={g.line2} fit={false} />
+        <Stage world="daylight" keyLight={L.portrait ? { x: 0.35, y: 0.25, r: 0.95 } : { x: 0.3, y: 0.08, r: 0.95 }}>
+          {/* already rising on the scene's first frame: the seam never lands on a bare ground */}
+          <Headline text={g.headlineText} at={a(S06_BEATS.headline) - 0.2} exitAt={capAt} exit="fade" size={g.headlineSize} align="left" valign="bottom" box={g.headline} fit />
+          <Table g={g} a={a} />
+          <Headline text={g.line1Text} at={a(S06_BEATS.visible)} entrance="blur" size={g.lineSize} align="left" valign="bottom" box={g.line1} fit={false} />
+          <Headline text={g.line2Text} at={forgetAt - 0.04} entrance="rise" size={g.lineSize} align="left" valign="top" box={g.line2} fit={false} />
           <Sequence from={Math.round(capAt * fps)} layout="none" name="Settings › Memory (v2.0.1 capture)">
-            <FloatingWindow rect={media} at={0} enter="scale" offset={offset} scale={winScale} flattenAt={0.25} flattenDur={0.7} shadow={1.1}>
-              <ScreenZoom
-                src={MC.src}
-                srcSize={MC.size}
-                srcDuration={MC.duration}
-                time={captureTime}
-                keys={[
-                  // the six layers with their counts and the records (the slabs' names in the product's own words)
-                  { t: 0, box: VIEW_LAYER },
-                  { t: TRASH_OUT + 0.15, box: VIEW_LAYER },
-                  // one push onto the record, Keep and Forget (arrives before the Forget click)
-                  { t: CAM.pushArrive, box: VIEW_FORGET, dur: 0.6 },
-                  { t: CAM.pullStart, box: VIEW_FORGET },
-                  // back out: the record is gone and Facts & knowledge reads 2
-                  { t: CAM.pullArrive, box: VIEW_LAYER, dur: 0.7 },
-                ]}
-                drift={0.012}
-                overlay={(toView, scale, tt) => (
-                  <>
-                    <ClickRing at={TRASH_OUT} t={tt} p={toView(TRASH_AT)} r={24 * scale} />
-                    <ClickRing at={FORGET_OUT} t={tt} p={toView(FORGET_AT)} r={34 * scale} />
-                  </>
-                )}
-              />
-            </FloatingWindow>
+            <div style={{ position: "absolute", inset: 0, opacity: winOpacity }}>
+              <FloatingWindow rect={media} enter="none" offset={offset} scale={winScale} tilt={{ rx: 5, ry: -7 }} flattenAt={0} flattenDur={GROW + 0.1} shadow={1.1} background={PANEL.hex}>
+                <ScreenZoom src={MC.src} srcSize={MC.size} srcDuration={MC.duration} time={captureTime} keys={[{ t: 0, box: FRAME }]} drift={0.012} motionBlur={false} edgeFade={24} />
+                {/* the list runs on below the window: its foot fades into the panel's colour, as a scrolled list does */}
+                <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: media.h * 0.1, background: `linear-gradient(to bottom, rgba(${PANEL.rgb}, 0), rgba(${PANEL.rgb}, 0.96))` }} />
+              </FloatingWindow>
+            </div>
           </Sequence>
           {PLACE_SFX ? <SfxTrack cues={s06Sfx(k)} /> : null}
         </Stage>
@@ -202,108 +190,75 @@ export const S06Memory: React.FC<SceneProps> = ({ durationInFrames }) => {
   );
 };
 
-/** A soft ring where the person clicked (the pointer itself is not in the capture). */
-const ClickRing: React.FC<{ at: number; t: number; p: { x: number; y: number }; r: number }> = ({ at, t, p, r }) => {
-  const d = t - at;
-  if (d < -0.02 || d > 0.55) return null;
-  const q = clamp01(d / 0.5);
-  const rr = r * (0.6 + 1.2 * EASE.enter(q));
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: p.x - rr,
-        top: p.y - rr,
-        width: rr * 2,
-        height: rr * 2,
-        borderRadius: "50%",
-        border: `${Math.max(2, r * 0.12).toFixed(2)}px solid rgba(166, 199, 149, ${(0.9 * (1 - q)).toFixed(3)})`,
-        background: `rgba(166, 199, 149, ${(0.18 * (1 - q)).toFixed(3)})`,
-      }}
-    />
-  );
-};
-
-type Geo = ReturnType<typeof geometry>;
-
-/** The six slabs and their labels. */
-const Slabs: React.FC<{ g: Geo; a: (s: number) => number; lift: number; gone: number; carryFade: number }> = ({ g, a, lift, gone, carryFade }) => {
+/** The six layers as a typographic table: a hairline, then the name and what it holds, landing one a beat. */
+const Table: React.FC<{ g: Geo; a: (s: number) => number }> = ({ g, a }) => {
   const t = useT();
-  const W = useWorld();
   const L = useLayout();
-  const { cx, a: ha, b: hb, d } = g.slab;
-  const items = LAYERS.map((layer, i) => {
-    const land = a(S06_BEATS.slabs[i]);
-    const p = clamp01((t - (land - FALL)) / FALL);
-    // falls in with gravity, lands on the beat, a small settle (no bounce: UI rule)
-    const fall = p < 1 ? -(1 - p * p) * L.px(140) : 0;
-    const settle = p >= 1 ? Math.exp(-(t - land) / 0.08) * L.px(4) : 0;
-    const carry = i === CARRY;
-    const restY = g.slab.floor - i * g.slab.step;
-    const cy = restY + fall + settle + (carry ? -L.px(34) * lift : gone * L.px(40));
-    const op = p <= 0 ? 0 : Math.min(1, p * 1.6) * (carry ? 1 - carryFade : 1 - gone);
-    const hi = carry ? lift : 0;
-    const labelP = clamp01((t - land) / 0.25);
-    return { layer, i, cy, op, hi, labelP, carry };
-  });
+  const leave = a(S06_BEATS.capture);
+  const pick = prog(t, a(S06_BEATS.pick), 0.25, EASE.enter);
   return (
     <>
-      <svg width={L.W} height={L.H} style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }} aria-hidden>
-        <defs>
-          <linearGradient id="d-slab-top" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#FCFAF4" stopOpacity="0.92" />
-            <stop offset="1" stopColor="#DCD4C4" stopOpacity="0.82" />
-          </linearGradient>
-        </defs>
-        {items.map(({ i, cy, op, hi }) => {
-          if (op <= 0) return null;
-          const top = `${cx - ha},${cy} ${cx},${cy - hb} ${cx + ha},${cy} ${cx},${cy + hb}`;
-          const leftFace = `${cx - ha},${cy} ${cx},${cy + hb} ${cx},${cy + hb + d} ${cx - ha},${cy + d}`;
-          const rightFace = `${cx},${cy + hb} ${cx + ha},${cy} ${cx + ha},${cy + d} ${cx},${cy + hb + d}`;
-          const sage = "80, 110, 84";
-          return (
-            <g key={i} opacity={op}>
-              {/* a soft shadow on the slab below */}
-              <ellipse cx={cx} cy={cy + hb * 0.55 + d} rx={ha * 0.82} ry={hb * 0.5} fill="rgba(74, 62, 44, 0.08)" />
-              <polygon points={leftFace} fill={hi > 0 ? `rgba(${sage}, ${0.25 + 0.3 * hi})` : "rgba(170, 160, 138, 0.74)"} />
-              <polygon points={rightFace} fill={hi > 0 ? `rgba(${sage}, ${0.35 + 0.3 * hi})` : "rgba(140, 130, 110, 0.8)"} />
-              <polygon points={top} fill="url(#d-slab-top)" stroke={hi > 0 ? `rgba(${sage}, ${0.4 + 0.5 * hi})` : "rgba(96, 86, 68, 0.55)"} strokeWidth={L.px(2)} />
-              {hi > 0 && <polygon points={top} fill={`rgba(${sage}, ${0.16 * hi})`} />}
-            </g>
-          );
-        })}
-      </svg>
-      {items.map(({ layer, i, cy, op, labelP }) => {
-        if (op <= 0 || labelP <= 0) return null;
-        const lx = g.label.x;
-        const lineFrom = cx + ha + L.px(14);
+      {LAYERS.map((layer, i) => {
+        const land = a(S06_BEATS.rows[i]);
+        // lands on its beat: sharp on the contact frame, from a short rise and blur just before it
+        const pIn = clamp01((t - (land - ROW_IN)) / ROW_IN);
+        if (pIn <= 0) return null;
+        const e = EASE.enter(pIn);
+        // leaves as the capture grows (the carried row last, under the window)
+        const pOut = EASE.exit(clamp01((t - leave - (i === CARRY ? 0.12 : 0.02 * i)) / 0.2));
+        if (pOut >= 1) return null;
+        const top = g.rowTop(i);
+        const carry = i === CARRY ? pick : 0;
+        const ruleW = g.rule.w * EASE.enter(clamp01((t - (land - ROW_IN)) / 0.35));
         return (
-          <div key={`l${i}`} style={{ position: "absolute", left: 0, top: 0, opacity: op }}>
-            {/* the leader from the slab's corner to its label */}
-            <div style={{ position: "absolute", left: lineFrom, top: cy, width: Math.max(0, lx - L.px(18) - lineFrom) * EASE.enter(labelP), height: Math.max(1, L.px(2)), background: W.line }} />
+          <div key={i} style={{ position: "absolute", left: 0, top: 0, opacity: (pIn < 1 ? Math.min(1, pIn * 1.8) : 1) * (1 - pOut), transform: `translateY(${((1 - e) * L.px(18) + pOut * L.px(12)).toFixed(2)}px)` }}>
+            <div style={{ position: "absolute", left: g.rule.x, top: top - L.px(14), width: ruleW, height: Math.max(1, L.px(2)), background: carry > 0 ? mix(DAY.line, DAY.sage, carry) : DAY.line }} />
             <div
               style={{
                 position: "absolute",
-                left: lx,
-                top: cy,
-                transform: `translateY(-${g.label.inline ? 56 : 50}%)`,
-                display: "flex",
-                flexDirection: g.label.inline ? "row" : "column",
-                alignItems: g.label.inline ? "baseline" : "flex-start",
-                gap: g.label.inline ? L.px(26) : L.px(2),
+                left: g.name.x,
+                top,
+                fontFamily: TYPE.headline.fontFamily,
+                fontVariationSettings: TYPE.headline.fontVariationSettings,
+                fontWeight: 650,
+                fontSize: g.name.size,
+                letterSpacing: "-0.03em",
+                lineHeight: 1.1,
+                color: carry > 0 ? mix(DAY.ink, DAY.sage, carry) : DAY.ink,
                 whiteSpace: "nowrap",
-                opacity: labelP,
-                filter: labelP < 1 ? `blur(${((1 - labelP) * 6 * L.u).toFixed(2)}px)` : undefined,
+                filter: pIn < 1 ? `blur(${((1 - e) * 7 * L.u).toFixed(2)}px)` : undefined,
               }}
             >
-              <span style={{ fontFamily: TYPE.headline.fontFamily, fontVariationSettings: TYPE.headline.fontVariationSettings, fontWeight: 650, letterSpacing: "-0.025em", fontSize: g.label.name, lineHeight: 1.05, color: W.ink }}>
-                {layer.name}
-              </span>
-              <span style={{ fontFamily: TYPE.mono.fontFamily, fontWeight: 500, fontSize: g.label.desc, lineHeight: 1.15, color: W.ink2 }}>{layer.desc}</span>
+              {layer.name}
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: g.desc.x,
+                top: g.inline ? top + (g.name.size - g.desc.size) * 0.78 : top + g.desc.dy,
+                fontFamily: TYPE.support.fontFamily,
+                fontVariationSettings: TYPE.support.fontVariationSettings,
+                fontWeight: 460,
+                fontSize: g.desc.size,
+                letterSpacing: "-0.012em",
+                lineHeight: 1.1,
+                color: carry > 0 ? mix(DAY.ink2, DAY.sage, carry) : DAY.ink2,
+                whiteSpace: "nowrap",
+                filter: pIn < 1 ? `blur(${((1 - e) * 7 * L.u).toFixed(2)}px)` : undefined,
+              }}
+            >
+              {layer.desc}
             </div>
           </div>
         );
       })}
     </>
   );
+};
+
+const hex = (s: string) => [1, 3, 5].map((i) => parseInt(s.slice(i, i + 2), 16));
+const mix = (x: string, y: string, k: number) => {
+  const A = hex(x);
+  const B = hex(y);
+  return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * k)).join(", ")})`;
 };

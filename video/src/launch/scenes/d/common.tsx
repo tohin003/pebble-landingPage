@@ -2,9 +2,6 @@
 // Nothing here is part of the motion system; anything worth sharing more widely is listed in the group's handoff.
 import { useCurrentFrame, useVideoConfig } from "remotion";
 import type { SfxCue } from "../../components/Sfx";
-import { useLayout, type Rect } from "../../layout";
-import { EASE, TYPE } from "../../tokens";
-import { useWorld } from "../../world";
 
 /** Local time, seconds. */
 export const useT = (): number => {
@@ -28,38 +25,6 @@ export const useRetime = (nominalS: number, durationInFrames?: number): { k: num
 
 export const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 export const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
-
-/** Small print in the world's small ink, wrapped, bottom-aligned in its box. */
-export const SmallPrint: React.FC<{ text: string; box: Rect; at?: number; maxWidth?: number; opacity?: number; size?: number }> = ({ text, box, at = 0, maxWidth, opacity = 1, size }) => {
-  const L = useLayout();
-  const W = useWorld();
-  const t = useT();
-  const p = EASE.enter(clamp01((t - at) / 0.5));
-  if (p <= 0) return null;
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: box.x,
-        top: box.y,
-        width: box.w,
-        height: box.h,
-        display: "flex",
-        alignItems: "flex-end",
-        opacity: p * opacity,
-        fontFamily: TYPE.support.fontFamily,
-        fontVariationSettings: '"opsz" 14',
-        fontWeight: 420,
-        fontSize: size ?? L.type.foot,
-        lineHeight: 1.45,
-        color: W.small,
-        letterSpacing: "0.003em",
-      }}
-    >
-      <div style={{ maxWidth: maxWidth ?? box.w }}>{text}</div>
-    </div>
-  );
-};
 
 /* ---------- sound ---------- */
 
@@ -92,70 +57,3 @@ const PEAK: Record<string, number> = {
 };
 /** A cue whose peak lands at `event` seconds (+ half a frame at 60 fps). */
 export const peakAt = (src: string, event: number, db: number): SfxCue => ({ src, at: +(event + 1 / 120 - (PEAK[src] ?? 0)).toFixed(4), db });
-
-/**
- * Count-up ticks, rate-limited (EDIT_PLAN: one per 3 frames at most): a tick on each frame the shown digits change,
- * never closer than `minGap` seconds to the one before. Mirrors BarCompare's own timing (rows start `at + 0.1 + i ×
- * rowStagger` and count over `dur` on EASE.count), so the ticks follow the digits exactly.
- */
-export const countTicks = (o: {
-  at: number;
-  rows: readonly { value: number }[];
-  decimals: number;
-  dur: number;
-  rowStagger?: number;
-  fps?: number;
-  minGap?: number;
-  db?: number;
-}): SfxCue[] => {
-  const fps = o.fps ?? 60;
-  const minGap = o.minGap ?? 3 / 60;
-  const stagger = o.rowStagger ?? 0.22;
-  const out: SfxCue[] = [];
-  let last = -Infinity;
-  const start = o.at + 0.1;
-  const end = start + (o.rows.length - 1) * stagger + o.dur;
-  const shownAt = (t: number) => o.rows.map((r, i) => (r.value * EASE.count(clamp01((t - (start + i * stagger)) / o.dur))).toFixed(o.decimals)).join("|");
-  let prev = shownAt(start - 1 / fps);
-  for (let f = Math.floor(start * fps); f <= Math.ceil(end * fps); f++) {
-    const t = f / fps;
-    const now = shownAt(t);
-    if (now !== prev && t - last >= minGap - 1e-6) {
-      out.push(peakAt(SFX.tick, t, o.db ?? -16));
-      last = t;
-    }
-    prev = now;
-  }
-  return out;
-};
-
-/**
- * A landed title that moves once: from its hero place (`from`, the anchor the children are laid out around) to `to`,
- * scaling by `scale` about that anchor, on the camera ease. Before and after the move it is dead still.
- */
-export const Settle: React.FC<{
-  from: { x: number; y: number };
-  to: { x: number; y: number };
-  scale: number;
-  at: number;
-  dur?: number;
-  children: React.ReactNode;
-}> = ({ from, to, scale, at, dur = 0.6, children }) => {
-  const t = useT();
-  const p = EASE.camera(clamp01((t - at) / dur));
-  const dx = (to.x - from.x) * p;
-  const dy = (to.y - from.y) * p;
-  const s = lerp(1, scale, p);
-  return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        transform: p > 0 ? `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px) scale(${s.toFixed(5)})` : undefined,
-        transformOrigin: `${from.x.toFixed(1)}px ${from.y.toFixed(1)}px`,
-      }}
-    >
-      {children}
-    </div>
-  );
-};
