@@ -16,7 +16,7 @@ import { WORLDS } from "../../world";
 import type { SceneProps } from "../types";
 import { BODY_W, TITLE_TEXT, lockupGeo, useClock, type SfxSuggestion } from "./common";
 
-export const S01_NOMINAL = 4;
+export const S01_NOMINAL = 4.5;
 
 export const TAGLINE = "The desktop companion that does real work,\nand shows its evidence.";
 

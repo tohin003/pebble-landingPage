@@ -3,7 +3,8 @@
 // The pebble stands where the film began (centre-low, small). "Small pebble." then "Real work." (the accent face, sage).
 // Then it hops up into the lockup (the title's arrangement): "Pebble 2.0", "Free and open source for Mac." and
 // "github.com/tohin003/Pebble" (Geist Mono). The end lines arrive, the pebble settles into `sleepy` and rests, and the
-// light dims a little. Nothing new arrives in the last 1.5 s.
+// light dims a little. Nothing new arrives in the last 1.5 s. Timed to the score (6.95 s): the two lines are set on the
+// drum hits at 0.0 and 0.248 (a 0.1 s line entrance each), the pebble lands in the lockup at 2.0, it rests at 4.0.
 import { AbsoluteFill } from "remotion";
 import { FontGate } from "../../components/FontGate";
 import { Headline, Label } from "../../components/Headline";
@@ -16,24 +17,25 @@ import { WORLDS } from "../../world";
 import type { SceneProps } from "../types";
 import { BODY_H, TITLE_TEXT, lineBox, lockupGeo, stagePebble, useClock, type SfxSuggestion } from "./common";
 
-export const S11_NOMINAL = 8;
+export const S11_NOMINAL = 6.95;
 
 export interface S11Props extends SceneProps {
   /** a music credit line, if the track's licence asks for one on the end card (empty: none) */
   musicCredit?: string;
 }
 
+/** On the music: the two lines on the drum hits (0.0, 0.248), the lockup at 2.0, the rest at 4.0. */
 const B = {
   small: 0,
-  real: 1.0,
-  wordsExit: 2.3,
-  hop: 2.6,
-  land: 3.1,
-  lockup: 3.05,
-  free: 3.4,
-  github: 3.8,
-  endLines: 4.9,
-  rest: 5.6,
+  real: 0.248,
+  wordsExit: 1.42,
+  hop: 1.56,
+  land: 2.0,
+  lockup: 1.97,
+  free: 2.3,
+  github: 2.65,
+  endLines: 3.3,
+  rest: 4.0,
 } as const;
 
 export const S11_MARKS = [
@@ -85,8 +87,8 @@ export const S11Outro: React.FC<S11Props> = ({ durationInFrames, musicCredit = "
     <FontGate>
       <AbsoluteFill>
         <Stage keyLight={{ x: 0.5, y: 0.32, r: 0.8 }} energy={energy}>
-          <Headline text="Small pebble." at={T(B.small)} exitAt={T(B.wordsExit)} size={ds} align="center" valign="top" box={line1} leading={1} />
-          <Headline text="*Real work.*" at={T(B.real)} exitAt={T(B.wordsExit) + 0.05} entrance="blur" size={ds} align="center" valign="top" box={line2} leading={1} />
+          <Headline text="Small pebble." at={T(B.small)} entrance="line" dur={0.1} exitAt={T(B.wordsExit)} size={ds} align="center" valign="top" box={line1} leading={1} />
+          <Headline text="*Real work.*" at={T(B.real)} exitAt={T(B.wordsExit) + 0.05} entrance="line" dur={0.1} size={ds} align="center" valign="top" box={line2} leading={1} />
           <PebbleActor
             x={peb.x}
             y={peb.y}

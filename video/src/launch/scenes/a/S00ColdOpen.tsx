@@ -16,10 +16,12 @@ import { C, EASE, TYPE, rgba } from "../../tokens";
 import type { SceneProps } from "../types";
 import { BODY_H, INTER, baselineFromTop, lineBox, stagePebble, useClock, type SfxSuggestion } from "./common";
 
-export const S00_NOMINAL = 7.5;
+export const S00_NOMINAL = 8.05;
+/** the first cut was choreographed for 7.5 s; the music's 8.05 s stretches every beat by the same factor */
+const STRETCH = 8.05 / 7.5;
 
 /** Beats, seconds at the nominal length (they scale with the scene's length; `darken` stays the last 3 frames). */
-const B = {
+const B0 = {
   thisExit: 1.05,
   small: 1.2,
   hop: 1.5,
@@ -33,6 +35,7 @@ const B = {
   sameTasks: 5.3,
   toCamera: 6.2,
 } as const;
+const B = Object.fromEntries(Object.entries(B0).map(([k, v]) => [k, Math.round(v * STRETCH * 1000) / 1000])) as Record<keyof typeof B0, number>;
 
 export const S00_MARKS = [
   { name: "small", s: B.small },
@@ -84,9 +87,10 @@ export const coldOpenGeo = (L: Layout) => {
     if (i > 0) base -= lines[i].size * 0.97 * (i === lines.length - 1 ? 1 : 1.02);
   }
   const capTop1 = lines[0].base - INTER.cap * lines[0].size;
-  const introSize = pick(L, { "16x9": 64, "4x5": 46 }) * L.u;
+  // story-critical, read on a phone: at least 64 / 48 px (the director's review)
+  const introSize = pick(L, { "16x9": 68, "4x5": 50 }) * L.u;
   const introBase = capTop1 - L.px(pick(L, { "16x9": 50, "4x5": 44 }));
-  const monoSize = pick(L, { "16x9": 56, "4x5": 42 }) * L.u;
+  const monoSize = pick(L, { "16x9": 62, "4x5": 46 }) * L.u;
   return {
     peb,
     pebbleTop,
