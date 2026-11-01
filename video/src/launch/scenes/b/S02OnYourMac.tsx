@@ -13,7 +13,7 @@
 //
 // Every frame inside the screen is a real frame of a take (time maps choose frames; nothing is drawn on Pebble's UI
 // except masks over hazards).
-import { Sequence } from "remotion";
+import { AbsoluteFill, Sequence } from "remotion";
 import type { Box } from "../../camera";
 import { FloatingWindow } from "../../components/FloatingWindow";
 import { FontGate } from "../../components/FontGate";
@@ -34,21 +34,31 @@ const A = TAKES["RS11-02"];
 const B = TAKES["RS1-03"];
 const C = TAKES["RS15-01"];
 
-/** shot starts, scene seconds at nominal (the master's beats fall on 13.551 + 0.5 k: 3.0 is a beat, 4.5 a downbeat) */
-const AT = { b: 3.0, c: 4.5 } as const;
+/**
+ * shot starts, scene seconds at nominal (the master's beats fall on 13.551 + 0.5k: 2.0 a beat, 4.5 a downbeat); see
+ * B_TIME for where the slide sits between them (the flash scan).
+ */
+const AT = { b: 2.0, c: 4.5 } as const;
+/** the first caption bridges the cut to the Spaces (it sits under the screen, never over a picture) */
+const CAPTION_A_EXIT = 2.9;
 /** the opening pull-back from the pebble to the whole Mac */
 const PULL_S = 0.85;
 const WHIP_S = 0.14;
 
 /** RS11-02's companion pebble: body centre and width, source px */
 const PEBBLE = { x: 2750, y: 1621, w: 173 };
-/** the opening pebble's sharpness: take px shown at this many frame px (REVIEW-1 S4: 2× or less) */
-const OPEN_MAG = 1.8;
+/** the opening pebble's sharpness: take px shown at this many frame px (REVIEW-1 S4: 2× or less; 1.5 keeps the pull-back's sweep short) */
+const OPEN_MAG = 1.5;
 
 /* ---------- the takes' time maps and masks ---------- */
 
 const A_TIME = realTime(0.6); // a still tour shot: the pointer barely moves
-const B_TIME = realTime(3.6); // ⌃→ at 3.967, the slide 4.0–4.3, the pebble back on its spot at 4.433
+/**
+ * The poster Space 1.07 s, ⌃→ at 3.967, the slide 4.0–4.3 (its fast part 3.1–3.3 in the scene), the pebble back on its
+ * spot at 4.433. The slide's 20 fps steps flip big type light and dark about six times, so it sits more than 1 s from
+ * both cuts: no second of the scene holds more than the flash scan's six.
+ */
+const B_TIME = realTime(2.9);
 const C_CLICK = eventS("RS15-01", "click");
 const C_PANEL = eventS("RS15-01", "panelOpens");
 const C_TYPE = eventS("RS15-01", "typeW");
@@ -89,14 +99,13 @@ const slideDx = (s: number) => {
   for (const [t, v] of SLIDE) if (s >= t - 1e-4) dx = v;
   return { dx, dy: 0 };
 };
-
 /** the menu bar's own colour by the clock (RS11-02: #c9dabf on its left, #c2d4b6 under the clock) */
 const MENU_FILL = "linear-gradient(to right, rgba(201, 218, 191, 0) 0%, rgb(201, 218, 191) 10%, rgb(195, 213, 185) 100%)";
 
 const A_MASKS: Mask[] = [
   { box: { x: 2622, y: 0, w: 318, h: 60 }, s0: 0, s1: 99, kind: "fill", fill: MENU_FILL }, // the clock and the recording dot
   { box: { x: 590, y: 290, w: 1820, h: 48 }, s0: 0, s1: 99, px: 24 }, // the take's own Finder window behind ("pebble-takes")
-  { box: { x: 630, y: 945, w: 290, h: 180 }, s0: 0, s1: 99, px: 22 }, // Finder's sidebar: iCloud Drive, the account, On My Mac
+  { box: { x: 618, y: 938, w: 326, h: 256 }, s0: 0, s1: 99, px: 22 }, // Finder's sidebar, takes.ts's identity box (630, 950, 300 × 230) with a margin: iCloud Drive, the account, On My Mac
   { box: { x: 1110, y: 1765, w: 118, h: 110 }, s0: 0, s1: 99, px: 24 }, // the Dock's dated Calendar icon
   { box: { x: 1858, y: 1750, w: 62, h: 58 }, s0: 0, s1: 99, px: 24 }, // the System Settings badge
 ];
@@ -159,9 +168,22 @@ export const S02OnYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
   const m1 = G.screen.w / SRC.w; // frame px per take px at 1.0×
   const pebFinal = { x: G.screen.x + PEBBLE.x * m1, y: G.screen.y + PEBBLE.y * m1 };
   const s0 = OPEN_MAG / m1;
-  const pa = ramp(t, 0, PULL_S, EASE.push);
-  const sA = Math.exp(Math.log(s0) * (1 - pa)) * (1 + 0.01 * Math.max(0, t - PULL_S)); // then a slow drift (≈ 1 %/s)
-  const pebNow = { x: lerp(L.W / 2, pebFinal.x, pa), y: lerp(L.H / 2, pebFinal.y, pa) };
+  // the camera's in-out ease: the pebble holds a beat after the match, then the Mac opens round it (no first-frame lunge)
+  const poseA = (time: number) => {
+    const pa = ramp(time, 0, PULL_S, EASE.camera);
+    return {
+      s: Math.exp(Math.log(s0) * (1 - pa)) * (1 + 0.01 * Math.max(0, time - PULL_S)), // then a slow drift (≈ 1 %/s)
+      p: { x: lerp(L.W / 2, pebFinal.x, pa), y: lerp(L.H / 2, pebFinal.y, pa) },
+    };
+  };
+  // A shutter blur on the pull-back (180° at 30 fps, as delivered): equal-weight samples of the window across the
+  // shutter while it moves fast, so the Dock's icons sweep as a blur instead of strobing (the flash scan's css2560).
+  const SHUTTER = 1 / 60;
+  const now = poseA(t);
+  const prev = poseA(t - SHUTTER);
+  const shift = Math.hypot(now.p.x - prev.p.x, now.p.y - prev.p.y) + Math.abs(now.s / prev.s - 1) * Math.hypot(L.W, L.H);
+  const nA = t > 0 && t < PULL_S + 0.05 ? Math.max(1, Math.min(6, Math.ceil(shift / 3))) : 1;
+  const samplesA = Array.from({ length: nA }, (_, i) => (nA === 1 ? now : poseA(t - SHUTTER * (1 - i / (nA - 1)))));
   const capA = PULL_S * 0.82;
 
   /* shot C: the push onto the input once the quick chat is open */
@@ -183,18 +205,35 @@ export const S02OnYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
       <EdgeWhip role="out" start={M.whip} dur={WHIP_S}>
         <DesktopGround>
           <Sequence durationInFrames={f(M.b)} name="A · RS11-02 the Mac">
-            <ZoomAbout s={sA} from={pebFinal} to={pebNow}>
-              <FloatingWindow rect={G.screen} enter="none" spill={0} shadow={0.55} background="#C9D7C0">
-                <MaskedZoom src={A.file} srcSize={SRC} time={A_TIME} srcDuration={A.durationS} drift={0} masks={A_MASKS} />
-              </FloatingWindow>
-            </ZoomAbout>
-            {caption(G.lines ? "It lives on\nyour Mac." : "It lives on your Mac.", capA, "line")}
+            {samplesA.map((q, i) => (
+              <AbsoluteFill key={i} style={{ opacity: i === 0 ? 1 : 1 / (i + 1) }}>
+                <ZoomAbout s={q.s} from={pebFinal} to={q.p}>
+                  <FloatingWindow rect={G.screen} enter="none" spill={0} shadow={i === 0 ? 0.55 : 0} background="#C9D7C0">
+                    <MaskedZoom src={A.file} srcSize={SRC} time={A_TIME} srcDuration={A.durationS} drift={0} masks={A_MASKS} />
+                  </FloatingWindow>
+                </ZoomAbout>
+              </AbsoluteFill>
+            ))}
           </Sequence>
           <Sequence from={f(M.b)} durationInFrames={f(M.c) - f(M.b)} premountFor={pre} name="B · RS1-03 the Spaces swipe">
             <FloatingWindow rect={G.screen} enter="none" spill={0} shadow={0.55} background="#000">
               <MaskedZoom src={B.file} srcSize={SRC} time={B_TIME} srcDuration={B.durationS} drift={0} masks={B_MASKS} />
             </FloatingWindow>
-            {caption(G.lines ? "On every\nSpace." : "On every Space.", 0.04, "blur")}
+            {caption(G.lines ? "On every\nSpace." : "On every Space.", CAPTION_A_EXIT * M.k + 0.29 - M.b, "blur")}
+          </Sequence>
+          <Sequence durationInFrames={f(CAPTION_A_EXIT * M.k + 0.25)} name="caption A (bridges the cut to the Spaces)">
+            <Headline
+              text={G.lines ? "It lives on\nyour Mac." : "It lives on your Mac."}
+              at={capA}
+              exitAt={CAPTION_A_EXIT * M.k}
+              exit="rise"
+              entrance="line"
+              size={G.cSize}
+              align="center"
+              valign={G.cValign}
+              box={G.caption}
+              color={INK}
+            />
           </Sequence>
           <Sequence from={f(M.c)} premountFor={pre} name="C · RS15-01 click, ask">
             <FloatingWindow rect={G.screen} enter="none" spill={0} shadow={0.55} background="#EFE8DC">

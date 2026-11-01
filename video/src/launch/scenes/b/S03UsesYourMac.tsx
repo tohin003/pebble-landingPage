@@ -75,7 +75,8 @@ const CAL_CELL: Box = { x: 395, y: 658, w: 752, h: 493 };
 /** the person's own iCloud events in the 23 and 24 Oct cells (takes.ts 'identity'), frosted with room round them */
 const PERSONAL = CAL.hazards.find((h) => h.kind === "identity")!;
 const CAL_MASKS: Mask[] = [
-  { box: { x: PERSONAL.box.x - 16, y: PERSONAL.box.y - 8, w: PERSONAL.box.w + 16, h: PERSONAL.box.h + 16 }, s0: PERSONAL.s0, s1: PERSONAL.s1, px: 44, backing: "#272727" },
+  // wide margins toward the push (down and left), where the camera blur's earlier poses would place the events
+  { box: { x: PERSONAL.box.x - 40, y: PERSONAL.box.y - 10, w: PERSONAL.box.w + 40, h: PERSONAL.box.h + 40 }, s0: PERSONAL.s0, s1: PERSONAL.s1, px: 44, backing: "#272727" },
 ];
 
 /* ---------- RS9B-02: your browser ---------- */
@@ -83,7 +84,12 @@ const CAL_MASKS: Mask[] = [
 const WEB = TAKES["RS9B-02"];
 const WEB_SIZE = { w: WEB.width, h: WEB.height };
 const CHROME_IN = eventS("RS9B-02", "chromeInPlace");
-const webTime = fromRamps([{ s0: CHROME_IN, s1: CHROME_IN + 3, speed: 1 }], { tail: 1 });
+/**
+ * Chrome in place to the pill's last clean frame (takes.ts: from f3354, 55.9 s, the video page's suggestions load round
+ * and over the pill): a still page under the frost, so 0.56× only repeats frames; then that frame held.
+ */
+const PILL_LAST_CLEAN = 55.867;
+const webTime = fromRamps([{ s0: CHROME_IN, s1: PILL_LAST_CLEAN, speed: 0.56 }], { tail: 0 });
 /** "● Pebble is working in this tab · Stop" (1505–2015 × 1224–1300) */
 const PILL: Box = { x: 1505, y: 1224, w: 510, h: 76 };
 /** Chrome whole (its tab strip with the green Pebble group, the frosted page, the pill), then the pill read big (≈ 1.8×) */
@@ -250,7 +256,8 @@ export const S03UsesYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
                   { t: 1.35, box: PILL_ZOOM, dur: 0.6, ease: EASE.camera },
                 ]}
                 drift={0.012}
-                motionBlur={32}
+                // no camera blur samples here: through the pill's sharp hole they would show the page at other poses
+                motionBlur={false}
                 masks={WEB_MASKS}
               />
             </FloatingWindow>

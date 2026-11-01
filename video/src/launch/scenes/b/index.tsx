@@ -23,7 +23,7 @@ export const GROUP_B: SceneDef[] = [
     nominalS: S02_NOMINAL,
     marks: marks({
       "the Mac, the pebble sharp (S01's sage cuts here)": 0,
-      "cut to the Spaces (beat)": m02.b,
+      "cut to the Spaces (beat; the caption bridges it)": m02.b,
       "spaces-swipe": m02.swipe,
       "pebble-settled": m02.settled,
       "cut to click, ask (downbeat)": m02.c,

@@ -46,7 +46,12 @@ const DOCK_CLOSED = eventS("RS13-03", "dockClosed");
 
 /** the beats, scene seconds at nominal */
 /** the pebble comes in only once the recording has gone (it must never read as inside the capture) */
-const AT = { strip: 1.8, stripOut: 4.45, pebble: 4.85, veil: 5.25, glide: 8.65, glideS: 0.6, typeOut: 9.2 } as const;
+/**
+ * The director's ruling (2 Nov): the title and the honest line stay to the last frames and leave only in the final 2
+ * (at 30 fps), since S10 sheds the Veil (Stealth turning off) in its first 0.6 s. The recording leaves at 4.3 so the
+ * locked-off empty desktop never holds dead still for more than 1 s.
+ */
+const AT = { strip: 1.8, stripOut: 4.3, pebble: 4.7, veil: 5.1, glide: 8.65, glideS: 0.6, typeOut: S09_NOMINAL - 2 / 30 } as const;
 /** the recording's lead before the vanish (FIXES-1: about 1.2 s with Pebble's window in it) and its tail (about 1.5 s) */
 const LEAD = 1.2;
 
@@ -171,12 +176,12 @@ export const S09Stealth: React.FC<SceneProps> = ({ durationInFrames }) => {
 
         {/* the title and the honest line: with the recording, under it, through the Veil */}
         <Sequence from={f(M.strip)} name="Stealth Lockdown + the honest line">
-          <Headline text="Stealth Lockdown." at={0} exitAt={M.typeOut - M.strip} exit="rise" entrance="line" size={G.titleSize} align="center" valign="middle" box={G.title} color={C.stone0} />
+          <Headline text="Stealth Lockdown." at={0} exitAt={M.typeOut - M.strip} exit="cut" entrance="line" size={G.titleSize} align="center" valign="middle" box={G.title} color={C.stone0} />
           <Headline
             text={HONEST_LINE}
             at={0.08}
             exitAt={M.typeOut - M.strip}
-            exit="rise"
+            exit="cut"
             entrance="line"
             variant="support"
             wrap
