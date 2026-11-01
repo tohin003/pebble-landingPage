@@ -43,6 +43,9 @@ export default function scenes({ click, settle, emit, region, first, blur, WIDE 
     await page.waitForFunction(() => !!document.querySelector(".message.latest .thinking-verdict"), { timeout: 8000 });
     await blur(page);
     await settle(page, 600);
+    // the held block sits under the reply: at the conversation's end, as a person reads it
+    await page.evaluate(() => { const s = document.querySelector(".conversation-scroll"); s.scrollTop = s.scrollHeight; });
+    await settle(page, 500);
   }
   // The finished run's receipt above the reply, opened: the work view's cards under it (Phase 46, WorkView.vue).
   async function workView(page) {
@@ -72,7 +75,7 @@ export default function scenes({ click, settle, emit, region, first, blur, WIDE 
       name: "launch-held-row", query: W + "scene=held", viewport: WIDE,
       run: async (page, shot) => {
         await held(page);
-        await shot("", { clip: await region(page, [".message.latest .thinking-verdict", ".message.latest blockquote", ".run-panel.run-conversation"], { pad: { x: 20, y: 14 } }) });
+        await shot("", { clip: await region(page, [".message.latest .thinking-summary", ".message.latest .thinking-verdict", ".message.latest blockquote", ".run-panel.run-conversation"], { pad: { x: 20, y: 14 } }) });
       },
     },
     // (d) the work view: the finished run's steps as cards, opened under its receipt
@@ -85,16 +88,20 @@ export default function scenes({ click, settle, emit, region, first, blur, WIDE 
         await page.evaluate(() => {
           const list = document.querySelector(".message.latest .work-list");
           const last = list && [...list.querySelectorAll(".work-entry")].at(-1);
-          if (list && last) list.scrollTop += last.getBoundingClientRect().top - list.getBoundingClientRect().top - 150;
+          if (!list || !last) return;
+          list.scrollTop += last.getBoundingClientRect().top - list.getBoundingClientRect().top - 150;
+          // no half row at the list's top: the first row that shows starts at its edge
+          const top = list.getBoundingClientRect().top, row = [...list.children].find((li) => li.getBoundingClientRect().bottom > top + 1);
+          if (row) list.scrollTop += row.getBoundingClientRect().top - top;
         });
         await settle(page, 600);
         await shot();
-        await shot("cards", { clip: await region(page, [".message.latest .work"], { pad: { x: 16, y: 12 } }) });
+        await shot("cards", { clip: await region(page, [".message.latest .thinking-summary", ".message.latest .thinking-verdict", ".message.latest .work"], { pad: { x: 8, y: 12 } }) });
       },
     },
     {
       name: "launch-work-view-cards", query: W + "scene=work-view", viewport: WIDE,
-      run: async (page, shot) => { await workView(page); await shot("", { clip: await region(page, [".message.latest .work"], { pad: { x: 16, y: 12 } }) }); },
+      run: async (page, shot) => { await workView(page); await shot("", { clip: await region(page, [".message.latest .thinking-summary", ".message.latest .thinking-verdict", ".message.latest .work"], { pad: { x: 8, y: 12 } }) }); },
     },
     // (d) Pebble's Toolbox in Settings › Skills & connectors, the kiln tool's code open
     {
@@ -114,7 +121,8 @@ export default function scenes({ click, settle, emit, region, first, blur, WIDE 
         await settings(page, "extensions");
         const rows = await page.evaluate(() => [...document.querySelectorAll(".advanced-section > .setting-row")].length);
         if (rows < 2) throw new Error("the Toolbox lists fewer than two tools");
-        await shot("", { clip: await region(page, [first(".advanced-section > .section-label"), ".advanced-section > .setting-note", ".advanced-section > .setting-row"], { pad: { x: 18, y: 12 }, within: ".modal" }) });
+        // the Toolbox alone: its label down to its last tool (the Workshop's two notes lie between)
+        await shot("", { clip: await region(page, [first(".advanced-section > .section-label"), ".advanced-section > .setting-row:has(button[aria-label^='View the code of'])"], { pad: { x: 18, y: 12 }, within: ".modal" }) });
       },
     },
     // (d) the Workshop's notice: a tool Pebble kept on its own (the real take RSW-01 has the ask card)

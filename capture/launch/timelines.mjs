@@ -37,13 +37,21 @@ export default function timelines({ emit, live, fixture }) {
       };
     });
   }
+  // An element's box and, tighter, the box of its text (a Range over its contents: the lines' own boxes), CSS px.
   const box = (page, selector, pick = "first") =>
     page.evaluate((sel, which) => {
       const all = [...document.querySelectorAll(sel)].filter((el) => { const b = el.getBoundingClientRect(); return b.width && b.height; });
       const el = which === "last" ? all.at(-1) : all[0];
       if (!el) return null;
-      const b = el.getBoundingClientRect();
-      return [b.left, b.top, b.width, b.height].map((v) => Math.round(v * 10) / 10);
+      const r1 = (b) => [b.left, b.top, b.width, b.height].map((v) => Math.round(v * 10) / 10);
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const lines = [...range.getClientRects()].filter((b) => b.width > 1 && b.height > 1);
+      const text = lines.length ? (() => {
+        const l = Math.min(...lines.map((b) => b.left)), t = Math.min(...lines.map((b) => b.top));
+        return r1({ left: l, top: t, width: Math.max(...lines.map((b) => b.right)) - l, height: Math.max(...lines.map((b) => b.bottom)) - t });
+      })() : null;
+      return { box: r1(el.getBoundingClientRect()), text };
     }, selector, pick);
   // The union of several elements' boxes (CSS px), or null.
   const union = (page, selectors) =>
@@ -91,8 +99,11 @@ export default function timelines({ emit, live, fixture }) {
     };
     const rest = (t, x, y) => on(t, async (page) => { meta.pointer.push([r3(t), x, y, "move"]); await page.mouse.move(x, y); });
     const measure = (t, name, selectors, pick) => on(t, async (page) => {
-      const b = Array.isArray(selectors) ? await union(page, selectors) : await box(page, selectors, pick);
-      meta.boxes[name] = { t: r3(t), box: b };
+      if (Array.isArray(selectors)) meta.boxes[name] = { t: r3(t), box: await union(page, selectors) };
+      else {
+        const b = await box(page, selectors, pick);
+        meta.boxes[name] = { t: r3(t), box: b?.box ?? null, ...(b?.text ? { text: b.text } : {}) };
+      }
     });
     const moment = (t, name) => { meta.moments[name] = r3(t); };
     const blur = (t) => on(t, (page) => page.evaluate(() => document.activeElement?.blur()));

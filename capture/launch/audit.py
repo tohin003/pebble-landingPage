@@ -31,11 +31,12 @@ def norm(text):
     return re.sub(r"\s+", " ", text).strip()
 
 
-corpus = read_tree(os.path.join(opts["frozen"], "src"), (".vue", ".ts")) + read_tree(opts["backend"], (".py",))
+pebble = norm("\n".join(read_tree(os.path.join(opts["frozen"], "src"), (".vue", ".ts")) + read_tree(opts["backend"], (".py",))))
+ours = []
 for f in ("../mock/launch-world.js", "timelines.mjs", "scenes.mjs"):
     with open(os.path.join(HERE, f), encoding="utf-8") as fh:
-        corpus.append(fh.read())
-blob = norm("\n".join(corpus))
+        ours.append(fh.read())
+ours = norm("\n".join(ours))
 
 seen = {}
 for d in args:
@@ -45,10 +46,14 @@ for d in args:
         for _, _, text in lines:
             seen.setdefault(text, set()).add((os.path.basename(os.path.normpath(d)), int(frame)))
 
-found, composed = [], []
+found, sample, composed = [], [], []
 for text, where in sorted(seen.items()):
-    (found if norm(text) in blob else composed).append((text, where))
-print(f"AUDIT: {len(seen)} visible strings; {len(found)} found literally in the sources; {len(composed)} composed at run time:")
-for text, where in composed:
-    first = sorted(where)[0]
-    print(f"  {text!r}  ({first[0]} frame {first[1]}, {len(where)} sightings)")
+    t = norm(text)
+    (found if t in pebble else sample if t in ours else composed).append((text, where))
+print(f"AUDIT: {len(seen)} visible strings; {len(found)} in Pebble's v2.0.1 sources; {len(sample)} only in the launch "
+      f"world (sample data: read them, none may be a host or window string); {len(composed)} composed at run time:")
+for title, rows in (("sample data", sample), ("composed", composed)):
+    print(f"-- {title}")
+    for text, where in rows:
+        first = sorted(where)[0]
+        print(f"  {text!r}  ({first[0]} frame {first[1]}, {len(where)} sightings)")
