@@ -44,7 +44,7 @@ SILENT="$OUT.silent.mp4"
 (cd "$PARTS" && "$FF" -hide_banner -loglevel error -y -f concat -safe 0 -i list.txt -c copy "$SILENT")
 if [ -n "$WAV" ]; then
   "$REPO/scripts/heavy.sh" "reel-$COMP-mux" /usr/sbin/taskpolicy -c utility \
-    "$FF" -hide_banner -loglevel error -y -i "$SILENT" -i "$WAV" -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 256k -aac_pns 0 -ar 48000 -shortest -movflags +faststart "$OUT"
+    "$FF" -hide_banner -loglevel error -y -i "$SILENT" -i "$WAV" -map 0:v:0 -map 1:a:0 -c:v copy -af apad -c:a aac -b:a 256k -aac_pns 0 -ar 48000 -shortest -movflags +faststart "$OUT"
   rm -f "$SILENT"
 else
   mv "$SILENT" "$OUT"

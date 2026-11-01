@@ -369,47 +369,6 @@ export const RemoteExplainer: React.FC<{ x: number; y: number; w: number; h: num
   );
 };
 
-/* ------------------------------------------------------------------------------------------ Stealth's split ---- */
-
-/**
- * Stealth Lockdown as a diagram (the lead, 03:15): your screen and your screen share side by side; Pebble on yours,
- * not in the share. Outlines only (no screenshot), and only what the honest line says.
- */
-export const StealthSplit: React.FC<{ x: number; y: number; w: number; h: number; dt: number; B: number; vertical?: boolean }> = ({ x, y, w, h, dt, vertical }) => {
-  const u = unit(w, h);
-  const inP = expoOut(c01(dt / 10));
-  const sw = vertical ? w * 0.8 : w * 0.44;
-  const sh = sw * 0.62;
-  const a = vertical ? { x: x + w / 2, y: y + h * 0.27 } : { x: x + w * 0.25, y: y + h * 0.5 };
-  const b = vertical ? { x: x + w / 2, y: y + h * 0.75 } : { x: x + w * 0.75, y: y + h * 0.5 };
-  const screen = (c: { x: number; y: number }, label: string, withPebble: boolean, delay: number) => {
-    const p = expoOut(c01((dt - delay) / 10));
-    return (
-      <div style={{ position: "absolute", left: c.x - sw / 2, top: c.y - sh / 2, width: sw, height: sh, opacity: p, transform: `translateY(${(1 - p) * 20 * u}px)` }}>
-        <div style={{ position: "absolute", inset: 0, borderRadius: 18 * u, border: `${3 * u}px solid ${SAGE}`, background: "#0B140E", boxShadow: `0 0 ${16 * u}px rgba(${REEL.sage}, 0.35)` }} />
-        {/* a window */}
-        <div style={{ position: "absolute", left: sw * 0.08, top: sh * 0.14, width: sw * 0.56, height: sh * 0.62, borderRadius: 10 * u, border: `${2 * u}px solid rgba(${REEL.sage}, 0.55)`, background: `rgba(${REEL.sage}, 0.06)` }} />
-        {/* where the companion sits */}
-        {withPebble ? (
-          <div style={{ position: "absolute", left: sw * 0.74, top: sh * 0.56, width: sw * 0.13, height: sw * 0.11, borderRadius: "50% 50% 46% 46%", background: "#B4CDA6", boxShadow: `0 0 ${18 * u}px rgba(${REEL.sageCore}, 0.7)` }}>
-            <div style={{ position: "absolute", left: "34%", top: "34%", width: "9%", height: "26%", borderRadius: 4, background: "#23351f" }} />
-            <div style={{ position: "absolute", left: "57%", top: "34%", width: "9%", height: "26%", borderRadius: 4, background: "#23351f" }} />
-          </div>
-        ) : (
-          <div style={{ position: "absolute", left: sw * 0.74, top: sh * 0.56, width: sw * 0.13, height: sw * 0.11, borderRadius: "50% 50% 46% 46%", border: `${2 * u}px dashed rgba(${REEL.sage}, 0.45)` }} />
-        )}
-        <div style={{ position: "absolute", left: 0, right: 0, top: sh + 18 * u, textAlign: "center", fontFamily: FONT.sans, fontWeight: 600, fontSize: 34 * u, color: withPebble ? REEL.ink : REEL.inkSoft }}>{label}</div>
-      </div>
-    );
-  };
-  return (
-    <div style={{ position: "absolute", inset: 0, opacity: inP }}>
-      {screen(a, "Your screen", true, 0)}
-      {screen(b, "Your screen share", false, 6)}
-    </div>
-  );
-};
-
 /* ------------------------------------------------------------------------------------------- type beats' motifs ---- */
 
 /** The permission dial (the modes' own names, C-200-8): a pill that moves between them on the beats. */

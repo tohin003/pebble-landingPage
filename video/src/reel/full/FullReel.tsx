@@ -16,7 +16,7 @@ import { Aura } from "../fx/Aura";
 import { INTER_HEAVY, REEL, c01, expoIn, expoOut, hitEnv, inOut } from "../fx/look";
 import { Word, fitSize } from "../fx/Word";
 import { WorkshopExplainer, workshopStages } from "../fx/WorkshopExplainer";
-import { AgentGuardExplainer, ChipRow, LongTasksExplainer, MemoryChips, PaceDial, RemoteExplainer, StealthSplit, VisualExplainer } from "./explainers";
+import { AgentGuardExplainer, ChipRow, LongTasksExplainer, MemoryChips, PaceDial, RemoteExplainer, VisualExplainer } from "./explainers";
 import { buildFullPlan, END_CARD, segmentAt, STEALTH_HONEST, TEASE_LINES, type Flash, type FullPlan, type Hero as HeroSeg, type Rival, type Segment, type TypeBeat } from "./timeline";
 
 type Aspect = "16x9" | "9x16" | "1x1";
@@ -292,7 +292,6 @@ const HeroScene: React.FC<{ seg: HeroSeg; f: number; W: number; H: number; a: As
   const subY = nameY + size * (twoLine ? 1.12 : 0.62) + subSize * 0.9;
   const e = E(f);
   const box = L.box;
-  const stage = (n: number) => dt >= n * B;
   const energy = 1.05 + 0.3 * e + 0.35 * Math.max(0, ...[0, 1, 2, 3, 4, 5].map((i) => hitEnv(dt - i * B, 1, 10)));
   // the real screens inside a hero: the Workshop's card; Stealth's palette, then its menu-bar icon
   let real: React.ReactNode = null;
@@ -303,15 +302,21 @@ const HeroScene: React.FC<{ seg: HeroSeg; f: number; W: number; H: number; a: As
     if (dt >= askAt) real = <Card crop="keepCard" src={5400 + Math.min(200, dt)} pose={{ x: pos.x, y: pos.y, k: k * (1 + 0.06 * hitEnv(dt - askAt, 1, 8) + 0.05 * hitEnv(dt - 4 * B, 2, 8)), rotY: a === "16x9" ? -8 : 0, rotX: 3, opacity: c01((dt - askAt + 1) / 3) }} fadeRight glow={0.8} bright={1.1} sweep={dt - askAt >= 2 && dt - askAt <= 22 ? (dt - askAt - 2) / 20 : undefined} />;
   }
   if (seg.id === "stealth") {
+    // Stealth Lockdown, told by RS13-03 alone (the lead's ruling, 04:10): ⌘K and "Turn Stealth Lockdown on" lit, Return
+    // on the second beat (the palette is never shown past source 433); the menu-bar icon turning to the filled pebble in
+    // a ring; the Dock icon leaving. No screen share and no desktop with Pebble missing is ever drawn (CLAUDE.md).
     const center = a === "16x9" ? { x: W * 0.68, y: H * 0.4 } : a === "9x16" ? { x: W / 2, y: H * 0.42 } : { x: W / 2, y: H * 0.48 };
-    if (!stage(4)) {
-      const onMenu = stage(2);
-      const crop: CropId = onMenu ? "stealthMenu" : "stealthPalette";
-      // the palette: "stealth" typed and the row lit, Return on the second beat (never past 433); then the icon turns
-      const src = onMenu ? Math.min(1185, 426 + (dt - 2 * B)) : Math.min(433, Math.round(300 + (132 * Math.min(dt, 2 * B - 2)) / (2 * B - 2)));
-      const w = a === "16x9" ? W * 0.56 : W * 0.9;
-      real = <ScreenCard crop={crop} src={src} f={f} from={seg.from + (onMenu ? 2 * B : 0)} to={seg.from + (onMenu ? 4 * B : 2 * B)} i={onMenu ? 1 : 0} a={a} W={W} H={H} punches={[seg.from + B, seg.from + 3 * B]} at={center} scale={(w / CROPS[crop].rect.w) / bigCard(crop, a, W, H).k} leaveTo={onMenu ? "left" : "up"} />;
-    }
+    const phase = dt < 2 * B ? 0 : dt < 4 * B ? 1 : 2;
+    const crop: CropId = phase === 0 ? "stealthPalette" : phase === 1 ? "stealthMenu" : "stealthDock";
+    const t0 = phase * 2 * B;
+    const src =
+      phase === 0
+        ? Math.min(433, Math.round(300 + (132 * Math.min(dt, 2 * B - 2)) / (2 * B - 2)))
+        : phase === 1
+          ? Math.min(1185, 426 + (dt - t0)) // the icon turns at 432–434, six frames into the phase
+          : Math.min(1185, 434 + (dt - t0)); // the Dock icon shrinks from about 440 and is gone by about 455
+    const w = a === "16x9" ? W * (phase === 2 ? 0.6 : 0.56) : W * 0.9;
+    real = <ScreenCard crop={crop} src={src} f={f} from={seg.from + t0} to={seg.from + t0 + 2 * B} i={phase} a={a} W={W} H={H} punches={[seg.from + t0 + B]} at={center} scale={(w / CROPS[crop].rect.w) / bigCard(crop, a, W, H).k} leaveTo={phase === 2 ? undefined : phase === 0 ? "up" : "left"} />;
   }
   return (
     <AbsoluteFill>
@@ -321,7 +326,6 @@ const HeroScene: React.FC<{ seg: HeroSeg; f: number; W: number; H: number; a: As
       {seg.id === "visual" && <VisualExplainer {...box} dt={dt} B={B} energy={e} />}
       {seg.id === "longtasks" && <LongTasksExplainer {...box} dt={dt} B={B} energy={e} />}
       {seg.id === "remote" && <RemoteExplainer {...box} dt={dt} B={B} energy={e} />}
-      {seg.id === "stealth" && stage(4) && <StealthSplit {...box} dt={dt - 4 * B} B={B} vertical={a === "9x16"} />}
       {real}
       <Word text={seg.name} dt={dt} left={seg.to - f} size={size} x={L.name.x} y={nameY} align={L.name.align} sweep={dt >= 10 && dt <= 36 ? (dt - 10) / 26 : undefined} />
       {seg.sub && <Word text={seg.sub} dt={dt - 8} left={seg.to - f} size={subSize} x={L.name.x} y={subY} align={L.name.align} color={REEL.inkSoft} style={{ fontWeight: 600, letterSpacing: "-0.02em", textShadow: "none" }} />}
@@ -463,7 +467,9 @@ const EndScene: React.FC<{ plan: FullPlan; f: number; W: number; H: number; a: A
   const footY = a === "9x16" ? H * 0.34 : a === "1x1" ? H * 0.33 : H * 0.5;
   const cy = footY - size * 0.3;
   const teaseOn = f >= tease.from;
-  const dimLock = teaseOn ? inOut(c01((f - tease.from) / 20)) : 0;
+  // the silent credits tail: the lockup and the tease step back so the credits read
+  const tail = inOut(c01((f - plan.scoreEnd) / 20));
+  const dimLock = Math.min(1, (teaseOn ? inOut(c01((f - tease.from) / 20)) : 0) + tail * 0.3);
   const lockSize = tall ? fitSize("Pebble 2.0", W * 0.8, a === "1x1" ? 150 : 170) : 210;
   const lock = { x: tall ? W / 2 : W * 0.43, y: a === "9x16" ? H * 0.43 : a === "1x1" ? H * 0.42 : H * 0.36 };
   const lineSize = Math.round(Math.min(W, H) * (tall ? 0.048 : 0.05));
@@ -493,7 +499,7 @@ const EndScene: React.FC<{ plan: FullPlan; f: number; W: number; H: number; a: A
       {!teaseOn && <Word text={END_CARD.tagline} dt={f - logo - 10} size={lineSize * 1.15} x={lock.x} y={tagY} align={tall ? "center" : "left"} color={REEL.inkSoft} style={{ fontWeight: 600, letterSpacing: "-0.015em", textShadow: "none" }} />}
       {teaseOn &&
         TEASE_LINES.map((t, i) => (
-          <Word key={t} text={t} dt={f - tease.lines[i]} size={lineSize * 1.15} x={lock.x} y={tagY + i * lineSize * (tall ? 1.3 : 1.45)} align={tall ? "center" : "left"} color={i === 2 ? REEL.inkSoft : REEL.ink} style={{ fontWeight: i === 0 ? 700 : 600, letterSpacing: "-0.015em", textShadow: "none" }} />
+          <Word key={t} text={t} dt={f - tease.lines[i]} size={lineSize * 1.15} x={lock.x} y={tagY + i * lineSize * (tall ? 1.3 : 1.45)} align={tall ? "center" : "left"} color={i === 2 ? REEL.inkSoft : REEL.ink} style={{ fontWeight: i === 0 ? 700 : 600, letterSpacing: "-0.015em", textShadow: "none", opacity: 1 - 0.75 * tail }} />
         ))}
     </AbsoluteFill>
   );
@@ -503,8 +509,8 @@ const EndScene: React.FC<{ plan: FullPlan; f: number; W: number; H: number; a: A
 
 /** Stealth Lockdown's honest line, word for word, legible (AA on its band) from the slam's next beat to the end. */
 const HonestLine: React.FC<{ plan: FullPlan; f: number; W: number; H: number; a: Aspect }> = ({ plan, f, W, H, a }) => {
-  if (f < plan.honest.from) return null;
-  const p = expoOut(c01((f - plan.honest.from) / 12));
+  if (f < plan.honest.from || f >= plan.honest.to + 14) return null;
+  const p = expoOut(c01((f - plan.honest.from) / 12)) * (1 - c01((f - plan.honest.to) / 14));
   const end = f >= plan.logo ? inOut(c01((f - plan.logo) / 20)) : 0; // on the end card it rises into its place
   const size = Math.round(Math.min(W, H) * (a === "16x9" ? 0.03 : 0.032));
   const yBand = a === "9x16" ? H * 0.69 : a === "1x1" ? H * 0.88 : H * 0.885;
@@ -524,8 +530,12 @@ const Credits: React.FC<{ plan: FullPlan; f: number; W: number; H: number; a: As
   const logo = plan.segments.find((s) => s.kind === "logo") as Extract<Segment, { kind: "logo" }>;
   if (f < logo.credits) return null;
   const p = expoOut(c01((f - logo.credits) / 14));
-  const size = Math.round(Math.min(W, H) * (a === "16x9" ? 0.017 : 0.019));
-  const top = a === "9x16" ? H * 0.715 : a === "1x1" ? H * 0.815 : H * 0.81;
+  // in the silent tail (the lead's ruling 4) the credits rise into the honest line's place and grow to read easily
+  const tail = inOut(c01((f - plan.scoreEnd - 4) / 20));
+  const size = Math.round(Math.min(W, H) * (a === "16x9" ? 0.017 : 0.019) * (1 + 0.3 * tail));
+  const top0 = a === "9x16" ? H * 0.715 : a === "1x1" ? H * 0.815 : H * 0.81;
+  const top1 = a === "9x16" ? H * 0.62 : a === "1x1" ? H * 0.7 : H * 0.71; // clear of the dimmed tease lines
+  const top = top0 + (top1 - top0) * tail;
   return (
     <div style={{ position: "absolute", left: W * 0.06, right: W * 0.06, top, opacity: p, fontFamily: FONT.sans, fontWeight: 500, fontSize: size, lineHeight: 1.45, color: REEL.inkSoft, textAlign: "center" }}>
       <div style={{ color: REEL.ink, fontWeight: 600 }}>{END_CARD.honestSmall}</div>
@@ -628,6 +638,7 @@ export const FullReel: React.FC = () => {
         break;
       case "logo":
       case "tease":
+      case "credits":
         scene = <EndScene plan={plan} f={f} W={W} H={H} a={a} />;
         break;
     }

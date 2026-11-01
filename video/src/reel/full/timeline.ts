@@ -79,7 +79,8 @@ export type Segment =
   | { kind: "rush"; from: number; to: number; flashes: number[] }
   | { kind: "merge"; from: number; to: number; pulls: number[] }
   | { kind: "logo"; from: number; to: number; credits: number }
-  | { kind: "tease"; from: number; to: number; lines: number[] };
+  | { kind: "tease"; from: number; to: number; lines: number[] }
+  | { kind: "credits"; from: number; to: number };
 
 export interface FullPlan {
   map: BeatMap;
@@ -91,7 +92,9 @@ export interface FullPlan {
   logo: number;
   segments: Segment[];
   /** Stealth Lockdown's honest line: on screen from `from` to the end */
-  honest: { from: number };
+  honest: { from: number; to: number };
+  /** the score's last frame (the reel runs on past it into the silent credits tail) */
+  scoreEnd: number;
   /** every frame the edit cuts or hits on, for the check */
   cuts: number[];
 }
@@ -110,7 +113,10 @@ export const END_CARD = {
   tagline: "Free and open source, for Mac.",
   honestSmall: "Shown with sample data. Edited for time.",
   credits: [
-    "Music: “Vanguard”, “Starfire” and “Born Of The Sky” by Scott Buckley (edited), CC BY 4.0. www.scottbuckley.com.au",
+    // the music's three CC BY lines, as the music lane's README gives them
+    "‘Vanguard’ by Scott Buckley (edited) – released under CC-BY 4.0. www.scottbuckley.com.au",
+    "‘Starfire’ by Scott Buckley (edited) – released under CC-BY 4.0. www.scottbuckley.com.au",
+    "‘Born Of The Sky’ by Scott Buckley (edited) – released under CC-BY 4.0. www.scottbuckley.com.au",
     "Claude Code launch video: Anthropic, on YouTube. Claude and Claude Code are trademarks of Anthropic.",
     "Pebble's character engine: bloub by Jérémy Perret (MIT)",
   ],
@@ -128,7 +134,10 @@ export function buildFullPlan(map: BeatMap): FullPlan {
   const slam = hit(map, /slam/i, 2268);
   const logo = hit(map, /logo/i, 2592);
   const teaseIn = hit(map, /tease/i, 2781);
-  const length = map.durationFrames;
+  // the lead, 04:10: a 3–4 s credits tail after the score's last note, in silence, so the reel is about 54 s
+  const scoreEnd = map.durationFrames;
+  const TAIL = 240; // 4.0 s
+  const length = scoreEnd + TAIL;
   const segs: Segment[] = [];
   const at = (n: number) => Math.round(n * B); // n beats
 
@@ -186,25 +195,26 @@ export function buildFullPlan(map: BeatMap): FullPlan {
   };
 
   // part 1 (to the step-up)
-  flash("spaces", "Every Space.", "C-DESK-1 (“… joins every Space.”)", 2, "deep", [{ crop: "spaces", beats: 2, srcIn: 234 }]);
-  flash("apps", "Apps you allow.", "C-200-1, C-MAC-1 (“use the apps … you allow”)", 3, "sage", [{ crop: "calculator", beats: 3, srcIn: 3200, event: { src: 3387, beat: 1 } }]);
-  flash("actions", "App actions.", "C-MAC-8 (the row's term “Apps and app actions”)", 2, "clay", [
+  flash("spaces", "Every Space.", "C-REEL-3", 2, "deep", [{ crop: "spaces", beats: 2, srcIn: 234 }]);
+  flash("apps", "Apps you allow.", "C-REEL-4", 3, "sage", [{ crop: "calculator", beats: 3, srcIn: 3200, event: { src: 3387, beat: 1 } }]);
+  flash("actions", "App actions.", "C-REEL-5", 2, "clay", [
     { crop: "calendar", beats: 1, srcIn: 6150 },
     { crop: "finder", beats: 1, srcIn: 2790 },
   ]);
-  hero("agentguard", "AgentGuard.", "Evidence before “done”.", "C-AG-5, C-200-7, C-200-20", "deep");
-  hero("workshop", "Pebble’s\nWorkshop.", "Tools it makes for itself.", "C-WS-1, C-WS-2, C-SYS-20", "sage");
-  type("pace", "You set\nthe pace.", "copy.ts pace.h2 (no row needed); the modes' names C-200-8", stepUp - t > at(5) ? 6 : 5, "clay");
+  hero("agentguard", "AgentGuard.", "Evidence before “done”.", "C-REEL-6", "deep");
+  hero("workshop", "Pebble’s\nWorkshop.", "Tools it makes for itself.", "C-REEL-7", "sage");
+  type("pace", "You set\nthe pace.", "C-REEL-8", stepUp - t > at(5) ? 6 : 5, "clay");
   if (t !== stepUp) t = beat(stepUp); // the step-up lands on the next hero, to the frame
   // part 2 (the step-up: bigger, faster)
-  hero("visual", "Visual answers.", "Drawn from data only.", "C-200-12; CHANGELOG.md@v2.0.0:230-234, :313", "deep");
-  type("memory", "Memory you\ncontrol.", "C-200-1 (“keep memory you control”)", 3, "sage");
-  // the lead's name for it; the README's own words ("a long task's older tool results are sealed in large chunks") are
-  // the diagram's labels. Never the name D55 keeps unnamed; no cost or speed claim. Needs its CLAIMS row.
-  hero("longtasks", "Long tasks\nstay light.", undefined, "README.md@v2.0.0:445 (needs its CLAIMS row)", "clay");
-  hero("remote", "Pebble Remote.", "Open source. Build it yourself.", "CHANGELOG.md@v2.0.0:213-221; the lead 03:15 (needs its CLAIMS row)", "deep");
-  type("model", "Your model,\nyour choice.", "copy.ts models h2 (“Your model, your choice.”)", 4, "sage");
-  type("telemetry", "No telemetry.", "C-PRIV-5", 2, "clay");
+  hero("visual", "Visual answers.", "Drawn from data only.", "C-REEL-9", "deep");
+  type("memory", "Memory you\ncontrol.", "C-REEL-10", 3, "sage");
+  // the README's own words (README.md@v2.0.0:445: "a long task's older tool results are sealed in large chunks"),
+  // shortened; "stay light" was dropped (no source says it, and it leans toward a cost claim). Never the name D55 keeps
+  // unnamed. C-REEL-14.
+  hero("longtasks", "Long tasks.", "Older tool results, sealed.", "C-REEL-14", "clay");
+  hero("remote", "Pebble Remote.", "Open source. Build it yourself.", "C-REEL-11, C-REEL-12", "deep");
+  type("model", "Your model,\nyour choice.", "C-REEL-13", 4, "sage");
+  type("telemetry", "No telemetry.", "C-REEL-15", 2, "clay");
 
   // the rival set-up: the last five beats before the music stops
   const rivalFrom = beat(stops - at(5));
@@ -223,7 +233,7 @@ export function buildFullPlan(map: BeatMap): FullPlan {
 
   // ---- the return: the slam, Stealth Lockdown, the rush, the merge into the logo
   t = slam;
-  hero("stealth", "Stealth\nLockdown.", undefined, "C-200-17, C-200-29; the honest line (CLAUDE.md)", "deep");
+  hero("stealth", "Stealth\nLockdown.", undefined, "C-REEL-16", "deep");
   const rushFrom = t;
   const mergeFrom = beat(logo - at(3));
   const flashes: number[] = [];
@@ -234,7 +244,7 @@ export function buildFullPlan(map: BeatMap): FullPlan {
   segs.push({ kind: "merge", from: mergeFrom, to: logo, pulls });
   const teaseFrom = beat(teaseIn - at(2));
   segs.push({ kind: "logo", from: logo, to: teaseFrom, credits: beat(logo + at(4)) });
-  segs.push({ kind: "tease", from: teaseFrom, to: length, lines: [teaseFrom, teaseIn, Math.round(map.downbeats.find((d) => d > teaseIn + 1) ?? teaseIn + at(4))] });
+  segs.push({ kind: "tease", from: teaseFrom, to: scoreEnd, lines: [teaseFrom, teaseIn, Math.round(map.downbeats.find((d) => d > teaseIn + 1) ?? teaseIn + at(4))] });
 
   const cuts = segs.flatMap((s) => {
     const own = [s.from];
@@ -244,7 +254,10 @@ export function buildFullPlan(map: BeatMap): FullPlan {
     if (s.kind === "hook") own.push(s.send);
     return own;
   });
-  return { map, B, length, drop, stepUp, slam, logo, segments: segs, honest: { from: slam + Math.round(B) }, cuts };
+  segs.push({ kind: "credits", from: scoreEnd, to: length });
+  // the honest line: on screen from the slam's next beat to the score's end, 11.85 s for its 21 words, so the tail
+  // doesn't repeat it (the lead's ruling 4)
+  return { map, B, length, scoreEnd, drop, stepUp, slam, logo, segments: segs, honest: { from: slam + Math.round(B), to: scoreEnd }, cuts };
 }
 
 /** The segment on screen at frame f (the last one starting at or before it). */

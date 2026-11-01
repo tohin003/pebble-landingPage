@@ -2,7 +2,7 @@
 // segment and cut lands on a beat (the breath and the silence on their own edges), every source frame a shot shows
 // exists and is allowed, every line holds 0.4 s a word, and no forbidden word is on screen.
 //   cd video && bun src/reel/full/check.ts
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { stealth } from "../../../../src/content/copy";
@@ -68,7 +68,14 @@ for (const c of plan.cuts) {
   if (s && s.kind === "breath") continue; // the breath runs from 6 frames before the drop
   if (!onBeat(c)) problems.push(`cut or hit at ${c} (${(c / 60).toFixed(3)} s) is off the beat`);
 }
-readable("honest line", STEALTH_HONEST, plan.length - plan.honest.from);
+readable("honest line", STEALTH_HONEST, plan.honest.to - plan.honest.from);
+// the credits: on the end card from logo.credits through the silent tail. Reported, not failed: ~80 words of small print
+// can't reach 0.4 s a word inside a ~54 s reel (they also go in every description)
+const logoSeg = plan.segments.find((s) => s.kind === "logo");
+if (logoSeg && logoSeg.kind === "logo") {
+  const words = [END_CARD.honestSmall, ...END_CARD.credits].join(" ").split(/\s+/).length;
+  console.log(`note: the credits are on screen ${((plan.length - logoSeg.credits) / 60).toFixed(1)} s for ${words} words (${(words * 0.4).toFixed(1)} s at 0.4 s a word)`);
+}
 const tease = plan.segments.find((s) => s.kind === "tease");
 if (tease && tease.kind === "tease") readable("tease", TEASE_LINES.join(" "), tease.to - tease.lines[0]);
 
@@ -83,6 +90,11 @@ const printed = [
   "Anyway.",
   STEALTH_HONEST,
 ];
+// the explainers' labels and chips, read from their source (every quoted string a component prints)
+for (const file of ["explainers.tsx", "../fx/WorkshopExplainer.tsx"]) {
+  const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), file), "utf8");
+  for (const m of src.matchAll(/text="([^"]+)"|"([A-Za-z][^"{}<>]{2,60})"/g)) printed.push(m[1] ?? m[2]);
+}
 const PHILOSOPHY_NEVER = [/\bmagic/i, /\bseamless/i, /\brevolutionary/i, /\bsecure\b/i, /private by design/i, /\bbeats?\b/i, /!/];
 for (const p of printed) {
   if (usesNeverWord(p, [STEALTH_HONEST])) problems.push(`"${p}" uses a Stealth never-word (neverWords.ts)`);

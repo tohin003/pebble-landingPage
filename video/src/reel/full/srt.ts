@@ -16,12 +16,12 @@ for (const s of plan.segments) {
   if (s.kind === "hero") cues.push({ from: s.from, to: s.to, text: one(s.name) + (s.sub ? `\n${s.sub}` : "") });
   if (s.kind === "silence") cues.push({ from: s.anyway, to: s.to, text: "Anyway." });
 }
-cues.push({ from: plan.honest.from, to: plan.length, text: STEALTH_HONEST });
+cues.push({ from: plan.honest.from, to: plan.honest.to, text: STEALTH_HONEST });
 const logo = plan.segments.find((s) => s.kind === "logo");
 const tease = plan.segments.find((s) => s.kind === "tease");
 if (logo && logo.kind === "logo" && tease && tease.kind === "tease") {
   cues.push({ from: logo.from, to: tease.from, text: `Pebble 2.0\n${END_CARD.tagline}` });
-  TEASE_LINES.forEach((t, i) => cues.push({ from: tease.lines[i], to: plan.length, text: t }));
+  TEASE_LINES.forEach((t, i) => cues.push({ from: tease.lines[i], to: plan.scoreEnd, text: t }));
   cues.push({ from: logo.credits, to: plan.length, text: [END_CARD.honestSmall, ...END_CARD.credits].join("\n") });
 }
 cues.sort((a, b) => a.from - b.from);

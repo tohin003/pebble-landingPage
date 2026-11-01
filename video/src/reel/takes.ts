@@ -92,6 +92,8 @@ export const CROPS = {
   stealthPalette: { take: "RS13-03", rect: { x: 1160, y: 312, w: 1124, h: 300 }, allowed: [257, 433], radius: 26, note: "the palette's input and its two rows; Pebble's windows leave the recording from 434" },
   /** RS13-03, the menu bar right of macOS's recording pill: Pebble's icon turns to the filled pebble in a ring at 432–434 */
   stealthMenu: { take: "RS13-03", rect: { x: 2262, y: 0, w: 678, h: 66 }, allowed: [257, 1185], radius: 0, note: "Pebble's menu-bar icon, the status icons, the date" },
+  /** RS13-03, the Dock: Pebble's icon shrinks from about 440 and is gone by about 455 (the Dock only: never the desktop) */
+  stealthDock: { take: "RS13-03", rect: { x: 460, y: 1724, w: 2020, h: 188 }, allowed: [257, 1185], radius: 0, note: "the Dock, Pebble's icon leaving" },
 } as const satisfies Record<string, ReelCrop>;
 
 export type CropId = keyof typeof CROPS;
