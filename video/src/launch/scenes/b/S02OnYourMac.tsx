@@ -68,10 +68,10 @@ const INPUT_TIGHT = (aspect: number): Box => ({ x: 2116, y: 1395 - 210 / aspect,
 const bTime = (shotS: number) => {
   const fixed = (3.85 - B_PANEL) / 2 + (8.25 - 3.85) / 2.7 + (8.9 - 8.25);
   const first = Math.max(0.55, shotS - fixed);
-  const s0 = Math.max(0.4, 2.975 - first);
+  const s0 = Math.max(0.4, 2.95 - first);
   return fromRamps(
     [
-      { s0, s1: 2.975, speed: 1 }, // the pointer comes, the pebble watches it, the click (2.867)
+      { s0, s1: 2.95, speed: 1 }, // the pointer comes, the pebble watches it, the click (2.867); the pebble is already gone at f178 (2.967)
       { s0: B_PANEL, s1: 3.85, speed: 2 }, // a jump over the glitch frames (2.983–3.050); the panel is open
       { s0: 3.85, s1: 8.25, speed: 2.7 }, // the typing, ≈ 13 characters a second on screen
       { s0: 8.25, s1: 8.9, speed: 1 }, // Return (8.594), "Sending" (8.667)

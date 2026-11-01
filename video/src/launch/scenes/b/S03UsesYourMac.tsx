@@ -2,8 +2,7 @@
 //
 // 0.0   Act card "Now it can use your Mac." over a soft blur of the desktop (the in half of S02's whip lands on it).
 // 1.5   RS4-07 (hard cut on the beat): the window card "Use Calculator" and its Allow; a jump to Calculator brought
-//       forward, the wait ramped ×20; the eight real key presses (×2.2); "=" → 600 with a punch-in, then a push onto
-//       the display. "Your apps."
+//       forward, the wait ramped ×20; the eight real key presses (×2.2); "=" → 600 with a punch-in. "Your apps."
 // 5.5   RS5C-04 (hard cut): the app-action card and its "Do it"; a jump to Calendar with "Glaze order 09:00" on
 //       Monday 2; a push onto the event (the personal iCloud events are blurred in place). "Your calendar."
 // 8.5   RS9B-02 (hard cut): the "Use youtube.com" approval card and its Allow; a jump to the pill "Pebble is working
@@ -58,8 +57,15 @@ const calcTime = fromRamps(
 const CALC_CARD = roiOf("RS4-07", "allowCard");
 /** the whole display, four key rows, the companion pebble working beside it (≈ 1.8×) */
 const CALC_TOP = roiOf("RS4-07", "calculatorTop");
-/** "48×12.5" over "600" and the top key rows */
-const CALC_DISPLAY = roiOf("RS4-07", "display");
+/**
+ * "48×12.5" over "600", the AC and 7 8 9 rows: the bottom edge falls in the gap between the 7 8 9 and 4 5 6 rows
+ * (y ≈ 764), so the crop never slices a key; the Calculator window's sides are inside it.
+ */
+export const CALC_DISPLAY = (aspect: number): Box => {
+  const h = 464;
+  const w = h * aspect;
+  return { x: 801 - w / 2, y: 300, w, h };
+};
 
 /* ---------- RS5C-04: your calendar ---------- */
 
@@ -80,9 +86,12 @@ const CAL_MONTH = (tall: boolean): Box => {
   const r = roiOf("RS5C-04", "calendarMonth");
   return tall && r.tall ? r.tall : r;
 };
-/** Monday 2's cell and its neighbours, above the Dock's dated Calendar icon (y ≥ 1190) (≈ 2.2×) */
-const CAL_EVENT: Box = { x: 330, y: 847, w: 480, h: 343 };
-const CAL_EVENT_TALL: Box = { x: 330, y: 797, w: 480, h: 393 };
+/**
+ * Monday 2's cell from the Calendar window's left edge (x 395, so no Pebble sidebar text is sliced), the Dock
+ * tooltip "Calendar" whole (an accepted hazard), above the Dock's dated Calendar icon (y ≥ 1190) (≈ 2.1×)
+ */
+const CAL_EVENT: Box = { x: 395, y: 826, w: 510, h: 364 };
+const CAL_EVENT_TALL: Box = { x: 395, y: 772, w: 510, h: 418 };
 /** the person's own iCloud events in the month view: blurred in place */
 const PERSONAL = CAL.hazards.find((h) => h.kind === "identity")!;
 
@@ -166,8 +175,8 @@ export const S03UsesYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
   const keysApps = [
     { t: 0, box: CALC_CARD },
     { t: calcTime.inv(CALC_FORWARD), box: CALC_TOP, dur: 0 },
-    { t: aEq + 0.12, box: CALC_TOP },
-    { t: aEq + 0.72, box: CALC_DISPLAY, dur: 0.6 },
+    // "600" lands with a 5 % punch-in on this framing; at nominal there are only ≈ 0.85 s left in the shot, too
+    // little for a push to land and hold (CALC_DISPLAY is the push if the director lengthens the shot)
   ];
 
   /* calendar */
@@ -233,7 +242,7 @@ export const S03UsesYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
       </Sequence>
 
       <Sequence from={f(M.browser)} name="browser · RS9B-02 approval and pill">
-        <Stage world="desktop" desktop={{ src: WEB.file, srcSize: WEB_SIZE, time: webTime, box: WEB_PILL, dim: 0.62, blur: 40 }}>
+        <Stage world="desktop" desktop={{ src: WEB.file, srcSize: WEB_SIZE, time: webTime, box: WEB_CARD, dim: 0.66, blur: 40 }}>
           {/* the shrink: the ground turns to Daylight under the card (a soft wipe, never a cut between worlds) */}
           {pS > 0 && (
             <SoftWipeLayer progress={pS} role="in" direction="down" feather={0.5}>

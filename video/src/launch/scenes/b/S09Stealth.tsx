@@ -130,7 +130,10 @@ export const S09Stealth: React.FC<SceneProps> = ({ durationInFrames }) => {
   const M = s09Moments(lenS);
   const map = takeTime(M.lead);
   const pal = roiOf("RS13-03", "palette");
-  const row = roiOf("RS13-03", "paletteRow");
+  // the input ("stealth") and the lit row, ≈ 1.8×: the row's own words read at the window's size
+  const rowH = 428;
+  const rowAspect = G.win.w / G.win.h;
+  const row: Box = L.portrait ? { x: 1170, y: 280, w: 760, h: 760 / rowAspect } : { x: 1550 - (rowH * rowAspect) / 2, y: 300, w: rowH * rowAspect, h: rowH };
   const keys = [
     { t: 0, box: pal },
     { t: Math.max(0.2, M.rowLit - 0.45), box: pal },
@@ -169,7 +172,7 @@ export const S09Stealth: React.FC<SceneProps> = ({ durationInFrames }) => {
             <VeilPebble
               x={G.pebble.x}
               y={G.pebble.y}
-              size={G.pebble.size}
+              size={G.pebble.size * lerp(1.45, 1, ramp(t, M.veilOn + 0.9, Math.max(0.8, lenS - M.veilOn - 1.4)))}
               initial={false}
               veil={[{ at: M.veilOn - M.wipe, on: true }]}
               cues={cues(pose(0, "idle"), look(M.title - M.wipe + 0.1, 0, -0.6), lookBack(M.honest - M.wipe + 1.4))}
