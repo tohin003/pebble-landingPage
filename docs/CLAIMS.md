@@ -1317,3 +1317,10 @@ of the section and of llms.txt's block in them or in the vendored README lines.
 |---|---|---|---|
 | C-CRED-201-1 | /credits, Film music: "Your Breath", by "Eugenio Mininni (Mixkit)", licence "Mixkit Stock Music Free License", "The music of the Pebble 2.0 launch film, edited to picture. Its licence asks for no credit; this line is a courtesy." | `.work/launch/music/MUSIC.md` (edit A, the director's pick; "Mixkit Stock Music Free License: no credit"); `docs/launch/CHECKPOINT.md:15-18` | Q. The trailer's score entry stays while the trailer is the site's film |
 | C-CRED-201-2 | /credits, Film sound effects: "Sound effects of the Pebble 2.0 launch film", by "Kenney (Impact Sounds and Interface Sounds), and sounds designed for this project", CC0 1.0, "The launch film's clicks, impacts and transitions. Pebble itself makes no sounds." | `.work/launch/music/sfx/_licences/kenney-impact-License.txt`, `kenney-interface-License.txt` (CC0); the director's X12 ("Kenney CC0 and designed sounds") | Q |
+
+### The copy lint's named scope (`tools/qa/copy-lint.mjs`; the director's X1)
+
+"Claude Code" and "Codex" may now be read on the film's page (`/film`, the transcript of a film that names both) and in
+`src/content/filmCaptions.ts` and `chapters.ts`, as well as in `#benchmarks`, the strip, llms.txt's "## Benchmark" block
+and `benchmarks.ts`. Plain text only, never a logo, frame or title of the other products (C-REEL-17); "beats",
+"better", "faster" and "cheaper" stay banned everywhere, the named scope included.
