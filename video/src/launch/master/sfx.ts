@@ -6,7 +6,6 @@
 //   1. the scene groups' own suggestions, retimed to their slots (A_SFX; s06Sfx, s07Sfx, s10Sfx while group D doesn't
 //      place them itself; S02's click and Return from its exported moments);
 //   2. the seams' whooshes (master/timeline.ts);
-//   3. the master's own accents (the drop, the payoff's first chart).
 // Group C places its SFX inside its scenes (Sfx in S04/S05): they are listed here for the density count only. The
 // music-only variant (final.sh --music-only) muxes the bare music under the picture, so it has none of them.
 import { ALL_SCENES } from "../scenes/Previews";
@@ -15,7 +14,8 @@ import { C_SFX } from "../scenes/c";
 import { PLACE_SFX as D_PLACES_SFX } from "../scenes/d/common";
 import { s06Sfx } from "../scenes/d/S06Memory";
 import { s07Sfx } from "../scenes/d/S07ContextWarping";
-import { s10Sfx, S10_MARKS } from "../scenes/d/S10Benchmarks";
+import { s10Sfx } from "../scenes/d/S10Benchmarks";
+import { PLACE_SFX as E_PLACES_SFX, s08Sfx } from "../scenes/e/S08Remote";
 import { s02Moments } from "../scenes/b/S02OnYourMac";
 import { S03_SFX } from "../scenes/b/S03UsesYourMac";
 import { S09_SFX } from "../scenes/b/S09Stealth";
@@ -158,18 +158,27 @@ const roleOfFile = (src: string): Role | null => {
   return null;
 };
 const groupD = (): Cue[] => {
-  if (D_PLACES_SFX) return [];
-  const lists: [string, (k: number) => { src: string; at: number }[]][] = [
-    ["S06-Memory", s06Sfx],
-    ["S07-ContextWarping", s07Sfx],
-    ["S10-Benchmarks", s10Sfx],
-  ];
+  // the groups' `at` is the file's START (their peakAt: event + 1/120 − the file's peak): back to the peak here
+  const lists: [string, () => { src: string; at: number }[]][] = [];
+  const k = (id: string) => kOf(id, true);
+  const len = (id: string) => (slotOf(id) ? slotOf(id)!.out - slotOf(id)!.in : 0);
+  if (!D_PLACES_SFX) {
+    lists.push(["S06-Memory", () => s06Sfx(k("S06-Memory"))]);
+    lists.push(["S07-ContextWarping", () => s07Sfx(k("S07-ContextWarping"))]);
+    lists.push(["S10-Benchmarks", () => s10Sfx(k("S10-Benchmarks"))]);
+  }
+  if (!E_PLACES_SFX) lists.push(["S08-Remote", () => s08Sfx(len("S08-Remote"))]);
   return lists.flatMap(([id, fn]) => {
     const slot = slotOf(id);
-    if (!slot) return [];
-    return fn(kOf(id, true)).flatMap((c) => {
-      const role = roleOfFile(c.src);
-      return role ? [{ peak: slot.in + c.at, role, scene: id, what: c.src.split("/").pop() ?? "" }] : [];
+    if (!slot || !ALL_SCENES.some((s) => s.id === id)) return [];
+    return fn().flatMap((c, i) => {
+      let role = roleOfFile(c.src);
+      if (!role) return [];
+      // the payoff's first chart: S10's first thud is the film's strongest landing, a full impact
+      if (id === "S10-Benchmarks" && role === "thud" && i <= 1) role = "impact";
+      const f = (c.src.split("/").pop() ?? "") as KitFile;
+      const peak = slot.in + c.at + (KIT[f]?.peak ?? 0) - 1 / 120;
+      return [{ peak, role, trim: role === "impact" ? -3 : undefined, scene: id, what: f } as Cue];
     });
   });
 };
@@ -203,15 +212,6 @@ const seams = (): Cue[] =>
     const mid = at + (seam.post - seam.pre) / 2;
     return [{ peak: mid, role: seam.whoosh === "short" ? "whoosh-short" : "whoosh-medium", trim: -2, scene: seam.from, what: `seam: ${seam.kind} → ${TIMELINE[i + 1].id}` } as Cue];
   });
-
-/** The master's own accents. */
-const accents = (): Cue[] => {
-  const s10 = slotOf("S10-Benchmarks");
-  const card1 = S10_MARKS.find((m) => m.name.startsWith("card 1"));
-  const out: Cue[] = [];
-  if (s10 && card1) out.push({ peak: s10.in + card1.s * kOf(s10.id, true), role: "impact", trim: -3, scene: s10.id, what: "the payoff: the first chart lands" });
-  return out;
-};
 
 /**
  * The master's own thinning (the craft rule: about 8–15 effects per 30 s). Within one scene, a cue of a role closer
@@ -247,7 +247,7 @@ const rateLimitTicks = (cues: Cue[]): Cue[] => {
 
 /** Every cue on the master, sorted, with its file (takes rotated per role), start and level. */
 export const masterCues = (): PlacedCue[] => {
-  const all = thin(rateLimitTicks([...groupA(), ...groupB(), ...groupC(), ...groupD(), ...seams(), ...accents()].sort((a, b) => a.peak - b.peak)));
+  const all = thin(rateLimitTicks([...groupA(), ...groupB(), ...groupC(), ...groupD(), ...seams()].sort((a, b) => a.peak - b.peak)));
   const used: Partial<Record<Role, number>> = {};
   return all.map((c) => {
     const r = ROLES[c.role];

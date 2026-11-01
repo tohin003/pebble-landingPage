@@ -56,9 +56,12 @@ export interface Seam {
   why: string;
 }
 
-/** The window a FloatingWindow sits in by default (layout.ts L.feature.media), as fractions: the card that carries. */
-const featureCard = (W: number, H: number): Rect =>
-  W > H ? { x: W * 0.47, y: H * 0.17, w: W * 0.46, h: H * 0.66 } : { x: W * 0.08, y: H * 0.42, w: W * 0.84, h: H * 0.46 };
+/** S03's last frame: its window shrunk to a centred card, 60 % of the width at 1.6:1 (scenes/b/kit.ts seamCard). */
+const s03Card = (W: number, H: number): Rect => {
+  const w = W * 0.6;
+  const h = w / 1.6;
+  return { x: (W - w) / 2, y: (H - h) / 2, w, h };
+};
 /** A centred block (S06's last capture → S07's first block). */
 const centreBlock = (W: number, H: number): Rect =>
   W > H ? { x: W * 0.3, y: H * 0.25, w: W * 0.4, h: H * 0.5 } : { x: W * 0.12, y: H * 0.3, w: W * 0.76, h: H * 0.4 };
@@ -72,7 +75,7 @@ export const SEAMS: readonly Seam[] = [
     kind: "scaleThrough",
     pre: 0.25,
     post: 0.25,
-    rect: featureCard,
+    rect: s03Card,
     whoosh: "medium",
     why: "desktop to daylight: S03's last window becomes the card S04 opens on; the ground changes behind it",
   },
@@ -87,7 +90,7 @@ export const SEAMS: readonly Seam[] = [
     whoosh: "medium",
     why: "daylight to daylight: the memory block becomes the context column",
   },
-  { from: "S07-ContextWarping", kind: "softWipe", pre: 0.25, post: 0.25, direction: "down", whoosh: "medium", why: "daylight to night: the light drains from the top (a wipe, never a cut)" },
+  { from: "S07-ContextWarping", kind: "softWipe", pre: 0.25, post: 0.25, direction: "down", whoosh: null, why: "daylight to night: the light drains from the top (a wipe, never a cut); no whoosh: S08's phone rises on its own 0.45 s later" },
   { from: "S08-Remote", kind: "softWipe", pre: 0.25, post: 0.25, direction: "left", whoosh: null, why: "night to desktop on the breath: no whoosh, the music thins" },
   { from: "S09-Stealth", kind: "cut", pre: 0, post: 0, whoosh: null, why: "the Veil's night to the question's night: the frames match, a straight cut" },
   {
