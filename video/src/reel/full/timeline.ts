@@ -38,7 +38,7 @@ export interface Flash {
 
 export interface TypeBeat {
   kind: "type";
-  id: "pace" | "memory" | "model" | "telemetry";
+  id: "pace" | "memory";
   from: number;
   to: number;
   line: string;
@@ -99,6 +99,9 @@ export interface FullPlan {
   cuts: number[];
 }
 
+/** Visual answers' on-screen name, one swappable string (the lead may switch it to the README's "Interactive views"). */
+export const VISUAL_NAME = "Visual\nanswers.";
+
 /** The required line, word for word (CLAUDE.md; src/content/neverWords.ts). */
 export const STEALTH_HONEST =
   "Hidden from screen capture and screen sharing, not from a camera, a capture card or a process list. Exams and interviews that forbid assistants still forbid it.";
@@ -117,7 +120,7 @@ export const END_CARD = {
   credits: [
     "‘Starfire’, ‘Vanguard’ and ‘Born Of The Sky’ by Scott Buckley (edited), released under CC BY 4.0. scottbuckley.com.au",
     "Claude Code launch video: Anthropic, on YouTube. Claude and Claude Code are trademarks of Anthropic.",
-    "Pebble's character engine: bloub by Jérémy Perret (MIT)",
+    "Pebble’s character engine: bloub by Jérémy Perret (MIT)",
   ],
   /** the music's three CC BY lines in full (the music lane's README), for the SRT and every description */
   musicFull: [
@@ -199,38 +202,43 @@ export function buildFullPlan(map: BeatMap): FullPlan {
     t += at(beats);
   };
 
-  // part 1 (to the step-up)
-  flash("spaces", "Every Space.", "C-REEL-3", 2, "deep", [{ crop: "spaces", beats: 2, srcIn: 266 }]);
+  // part 1 (to the step-up): the round-2 budget (REVIEW B1, B2, B4; the lead 10:15): flashes held to the reading floor,
+  // the type beats at their floor or folded, the heroes 5–6 beats, the rival ask about 2.5 s and the video 2 s
+  // "Every Space.": a hard match cut on its second beat from the poster's Space to Chrome's, the pebble held in place
+  flash("spaces", "Every Space.", "C-REEL-3", 2, "deep", [
+    { crop: "spaces", beats: 1, srcIn: 200 },
+    { crop: "spaces", beats: 1, srcIn: 300 },
+  ]);
   flash("apps", "Apps you allow.", "C-REEL-4", 3, "sage", [{ crop: "calculator", beats: 3, srcIn: 3200, event: { src: 3387, beat: 1 } }]);
-  // one screen for both beats: three hard cuts inside a second (Calculator, Calendar, Finder, AgentGuard) flickered
-  // past the photosensitivity limit (flash scan, 1 Nov); Finder still appears in the rush and the merge
-  flash("actions", "App actions.", "C-REEL-5", 2, "clay", [{ crop: "calendar", beats: 2, srcIn: 6150 }]);
+  // "App actions.": the action itself (Calendar's card, "Do it" pressed on 2908), then the event in Calendar
+  flash("actions", "App actions.", "C-REEL-5", 3, "clay", [
+    { crop: "calCard", beats: 2, srcIn: 2853 },
+    { crop: "calendar", beats: 1, srcIn: 6200 },
+  ]);
   hero("agentguard", "AgentGuard.", "Evidence before “done”.", "C-REEL-6", "deep");
-  hero("workshop", "Pebble’s\nWorkshop.", "Tools it makes for itself.", "C-REEL-7", "sage");
-  type("pace", "You set\nthe pace.", "C-REEL-8", stepUp - t > at(5) ? 6 : 5, "clay");
+  hero("workshop", "Pebble’s\nWorkshop.", undefined, "C-REEL-7", "sage");
+  // "Your model, your choice." over the real model chip in the quick chat (RS15-01's send row)
+  flash("model", "Your model,\nyour choice.", "C-REEL-13", 4, "deep", [{ crop: "modelRow", beats: 4, srcIn: 940 }]);
   if (t !== stepUp) t = beat(stepUp); // the step-up lands on the next hero, to the frame
-  // part 2 (the step-up: bigger, faster)
-  hero("visual", "Visual\nanswers.", "Drawn from data only.", "C-REEL-9", "deep");
-  type("memory", "Memory you\ncontrol.", "C-REEL-10", 3, "sage");
-  // the README's own words (README.md@v2.0.0:445: "a long task's older tool results are sealed in large chunks"),
-  // shortened; "stay light" was dropped (no source says it, and it leans toward a cost claim). Never the name D55 keeps
-  // unnamed. C-REEL-14.
-  hero("longtasks", "Long\ntasks.", "Older tool results,\nsealed.", "C-REEL-14", "clay");
-  hero("remote", "Pebble\nRemote.", "Open source.\nBuild it yourself.", "C-REEL-11, C-REEL-12", "deep");
-  type("model", "Your model,\nyour choice.", "C-REEL-13", 4, "sage");
-  type("telemetry", "No telemetry.", "C-REEL-15", 2, "clay");
+  // part 2 (the step-up: bigger, faster, brighter; builds on eighths)
+  hero("visual", VISUAL_NAME, undefined, "C-REEL-9", "deep", 5);
+  type("memory", "Memory\nyou control.", "C-REEL-10", 3, "sage");
+  hero("longtasks", "Long tasks.", undefined, "C-REEL-14, C-REEL-21", "clay", 5);
+  hero("remote", "Pebble\nRemote.", "Open source.", "C-REEL-11, C-REEL-12", "deep", 5);
+  // the three modes as kinetic type on the eighths (no drawn control: "real UI only" means no look-alikes, N5)
+  type("pace", "You set\nthe pace.", "C-REEL-8", 4, "clay");
 
-  // the rival set-up: the last five beats before the music stops
-  const rivalFrom = beat(stops - at(5));
+  // the rival: the ask about 2.5 s (typed, echoed, sent), then Pebble's own tab playing the video 2 s, to the stop
+  const rivalFrom = Math.round(stops - B * 10);
   t = rivalFrom;
-  const askLen = at(2);
+  const askLen = Math.round(B * 5.5);
   segs.push({
     kind: "rival",
     from: rivalFrom,
     to: stops,
-    // the ask: "Show me a clip of your rival." typed and sent (RS9A-01 1621 → the send on 1721, "Task: running" 1726)
-    ask: { from: rivalFrom, to: rivalFrom + askLen, src: ramp({ srcIn: 1640, srcEvent: 1722, outEvent: askLen - 10, outEnd: askLen, landFrames: 6 }) },
-    // the play: Pebble's own tab, the video playing (RS9B-02 from 6995, past the adverts), real time
+    // RS9A-01: "Show me a clip of your rival." typed from 1352 (complete on 1693), sent on 1722: the typing runs fast
+    // (edited for time) so the whole question is up early, and its echo stays over the video
+    ask: { from: rivalFrom, to: rivalFrom + askLen, src: warp([[0, 1352], [96, 1693], [140, 1722], [askLen, 1722 + askLen - 140]]) },
     play: { from: rivalFrom + askLen, to: stops, src: warp([[0, 6995], [stops - rivalFrom - askLen, 6995 + stops - rivalFrom - askLen]]) },
   });
   segs.push({ kind: "silence", from: stops, to: slam, anyway });
@@ -238,16 +246,14 @@ export function buildFullPlan(map: BeatMap): FullPlan {
   // ---- the return: the slam, Stealth Lockdown, the rush, the merge into the logo
   t = slam;
   hero("stealth", "Stealth\nLockdown.", undefined, "C-REEL-16", "deep");
-  const rushFrom = t;
-  const mergeFrom = beat(logo - at(3));
-  const flashes: number[] = [];
-  // on the beats: then the merge's eighths carry the acceleration (eighth-note cuts here flickered past the limit)
-  for (let f = rushFrom; f < mergeFrom - 2; f += B) flashes.push(Math.round(f));
-  segs.push({ kind: "rush", from: rushFrom, to: mergeFrom, flashes });
-  const pulls: number[] = [];
-  // on the eighths (the sixteenths flickered the frame's centre past the photosensitivity limit, flash scan 1 Nov)
-  for (let f = mergeFrom + B / 2; f < logo - 2; f += B / 2) pulls.push(Math.round(f));
-  segs.push({ kind: "merge", from: mergeFrom, to: logo, pulls });
+  // the features converge into the pebble (REVIEW S3): cards fly in on curved paths, arriving on the beats, then the
+  // eighths, then the sixteenths of the last beat, into the logo chord
+  const convergeFrom = t;
+  const arrivals: number[] = [];
+  for (let f = convergeFrom + B; f < convergeFrom + 3 * B + 1; f += B) arrivals.push(Math.round(f));
+  for (let f = convergeFrom + 3.5 * B; f < logo - B + 1; f += B / 2) arrivals.push(Math.round(f));
+  for (let f = logo - 0.75 * B; f < logo - 1; f += B / 4) arrivals.push(Math.round(f));
+  segs.push({ kind: "merge", from: convergeFrom, to: logo, pulls: arrivals });
   const teaseFrom = beat(teaseIn - at(2));
   segs.push({ kind: "logo", from: logo, to: teaseFrom, credits: beat(logo + at(4)) });
   segs.push({ kind: "tease", from: teaseFrom, to: scoreEnd, lines: [teaseFrom, teaseIn, Math.round(map.downbeats.find((d) => d > teaseIn + 1) ?? teaseIn + at(4))] });
@@ -261,9 +267,9 @@ export function buildFullPlan(map: BeatMap): FullPlan {
     return own;
   });
   segs.push({ kind: "credits", from: scoreEnd, to: length });
-  // the honest line: on screen from the slam's next beat to the score's end, 11.85 s for its 21 words, so the tail
-  // doesn't repeat it (the lead's ruling 4)
-  return { map, B, length, scoreEnd, drop, stepUp, slam, logo, segments: segs, honest: { from: slam + Math.round(B), to: scoreEnd }, cuts };
+  // the honest line: on screen from the slam (where Stealth first appears, REVIEW S8) to the score's end, 12.3 s for its
+  // 21 words, so the tail doesn't repeat it (the lead's ruling 4)
+  return { map, B, length, scoreEnd, drop, stepUp, slam, logo, segments: segs, honest: { from: slam, to: scoreEnd }, cuts };
 }
 
 /** The segment on screen at frame f (the last one starting at or before it). */

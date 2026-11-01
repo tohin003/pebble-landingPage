@@ -53,7 +53,8 @@ export const REEL_TAKES: Readonly<Record<string, ReelTake>> = {
   "RS5F-03": { id: "RS5F-03", ...LARGER_TEXT, runs: [[2539, 2962]], events: { doIt: 2633, finderOpens: 2753 } },
   "RSW-01": { id: "RSW-01", ...RETINA, runs: [[5369, 5612]], events: { card: 5366 } },
   "RS13-03": { id: "RS13-03", ...RETINA, runs: [[257, 1185]], events: { opens: 262, lit: 346, enter: 432 } },
-  "RS9A-01": { id: "RS9A-01", ...LARGER_TEXT, runs: [[1621, 1802]], events: { send: 1721, taskRunning: 1726 } },
+  // 1352–1620 exported for the reel (its typing) into ui-frames/reel-takes/RS9A-01 (framePath)
+  "RS9A-01": { id: "RS9A-01", ...LARGER_TEXT, runs: [[1352, 1802]], events: { typingFrom: 1352, typed: 1693, send: 1722 } },
   "RS9B-02": { id: "RS9B-02", ...LARGER_TEXT, runs: [[2729, 2912], [3275, 3578], [6989, 7308]], events: { allow1: 2910, chromeClear: 3276 } },
 };
 
@@ -81,7 +82,7 @@ export const CROPS = {
   spaces: { take: "RS1-03", rect: { x: 0, y: 600, w: 2900, h: 1312 }, allowed: [181, 370], note: "the poster slides away to Chrome's booking page; the pebble stays" },
   // ---- the full reel (1 Nov, after the style test)
   /** RS9A-01, the ask: the quick chat with "Show me a clip of your rival." (cut above the stale press card under it) */
-  rivalAsk: { take: "RS9A-01", rect: { x: 1270, y: 232, w: 736, h: 688 }, allowed: [1621, 1734], radius: 40, note: "the companion's quick chat; header, the typed ask, the send row" },
+  rivalAsk: { take: "RS9A-01", rect: { x: 1270, y: 232, w: 736, h: 688 }, allowed: [1352, 1734], radius: 40, note: "the companion's quick chat; header, the typed ask, the send row" },
   /** RS9B-02, the play: YouTube's player alone (the adverts, other creators' thumbnails and the region badge are cut away) */
   rivalPlay: { take: "RS9B-02", rect: { x: 30, y: 474, w: 1318, h: 744 }, allowed: [6989, 7308], radius: 22, note: "“Introducing Claude Code”, Anthropic's video, playing in Pebble's own tab" },
   /** RS9B-02, the same frames' tab strip: Chrome's green "Pebble" group and the video's tab (never the address bar) */
@@ -94,6 +95,14 @@ export const CROPS = {
   stealthMenu: { take: "RS13-03", rect: { x: 2258, y: 2, w: 236, h: 62 }, allowed: [257, 1185], radius: 12, note: "Pebble's menu-bar icon (tight, with the battery beside it for scale)" },
   /** RS13-03, the Dock: Pebble's icon shrinks from about 440 and is gone by about 455 (the Dock only: never the desktop) */
   stealthDock: { take: "RS13-03", rect: { x: 460, y: 1724, w: 2020, h: 188 }, allowed: [257, 1185], radius: 0, note: "the Dock, Pebble's icon leaving" },
+  // ---- round 2 (REVIEW S10, B2; the lead 10:15)
+  /** RS5C-04, Calendar's approval card: "Pebble asks Calendar through its own scripting …", Don't allow, Do it (pressed on 2908); cut above the step list and its timings */
+  // (never past 2907: once "Do it" is pressed the card goes and the step list with its timings shows in its place)
+  calCard: { take: "RS5C-04", rect: { x: 1356, y: 270, w: 664, h: 280 }, allowed: [2799, 2907], radius: 22, note: "the app action's card and its Do it" },
+  /** RS15-01, the quick chat's send row after the reply: the placeholder and the model chip "claude-opus-5-5 · API" (the usage line sits above it, outside) */
+  modelRow: { take: "RS15-01", rect: { x: 2113, y: 1330, w: 722, h: 205 }, allowed: [600, 1060], radius: 0, note: "the input row with the model chip" },
+  /** RSW-01, the Keep card's question and its buttons (Discard, Keep), legible; the bullet runs off right (faded) */
+  keepAsk: { take: "RSW-01", rect: { x: 705, y: 715, w: 760, h: 300 }, allowed: [5369, 5612], radius: 0, note: "'Keep this tool in Pebble's Toolbox? · kiln_ramp_time', Discard, Keep" },
 } as const satisfies Record<string, ReelCrop>;
 
 export type CropId = keyof typeof CROPS;
@@ -101,7 +110,10 @@ export type CropId = keyof typeof CROPS;
 /** The file of a take's source frame `n` (the file's own 1-based number), under video/public. */
 export function framePath(take: string, n: number): string {
   if (!REEL_TAKES[take]) throw new Error(`reel: unknown take ${take}`);
-  return `ui-frames/real-takes/${take}/${String(Math.round(n)).padStart(5, "0")}.jpg`;
+  const r = Math.round(n);
+  // frames the reel exported itself (the edit lane's export starts later): RS9A-01's typing
+  const dir = take === "RS9A-01" && r < 1621 ? "reel-takes" : "real-takes";
+  return `ui-frames/${dir}/${take}/${String(r).padStart(5, "0")}.jpg`;
 }
 
 /** Whether a take has source frame `n` on disk (by its runs; check.ts also stats the files). */

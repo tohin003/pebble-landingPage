@@ -15,6 +15,7 @@ for (const s of plan.segments) {
   if (s.kind === "flash" || s.kind === "type") cues.push({ from: s.from, to: s.to, text: one(s.line) });
   if (s.kind === "hero") cues.push({ from: s.from, to: s.to, text: one(s.name) + (s.sub ? `\n${s.sub}` : "") });
   if (s.kind === "silence") cues.push({ from: s.anyway, to: s.to, text: "Anyway." });
+  if (s.kind === "rival") cues.push({ from: s.from, to: s.to, text: "Show me a clip of your rival." });
 }
 cues.push({ from: plan.honest.from, to: plan.honest.to, text: STEALTH_HONEST });
 const logo = plan.segments.find((s) => s.kind === "logo");

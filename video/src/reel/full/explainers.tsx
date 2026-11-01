@@ -1,131 +1,172 @@
-// The tech features' explainers (the person, 03:15: "highlight … the features which are internal … using additional
-// generated animation"). Diagrams in Pebble's style, never product screens: sage strokes on the dark ground, Inter for
-// labels, Geist Mono for names, checks and marks that land on the beat. Every label is the release's or the page's own
-// words, shortened, never invented (the source is beside each). No numbers anywhere.
+// The tech features' explainers, round 2 (REVIEW.md B2, S1, S4, S5, S6, S7; the lead's 10:15 rulings): ONE idea each,
+// at most three labels (about six label words), every label landing on a beat (or an eighth after the step-up) and held
+// at least 0.4 s a word. Diagrams in Pebble's style, never product screens and never look-alike controls. Every label is
+// the release's own words, shortened (CLAIMS C-REEL-6, -7, -9, -11, -14, -21). No numbers.
 //
-// Each explainer draws inside a box (x, y, w, h) at the unit u = min(w / 980, h / 560); `dt` is frames since its hero
-// beat began, `B` the beat (27 frames). Stages land on beats.
+// Each draws inside a box (x, y, w, h). `vertical` stacks the idea top to bottom for 9:16 (its own grid, B3). `dt` is
+// frames since the hero began, `B` the beat. `pace` < 1 builds faster (the step-up's eighths).
 import { FONT } from "../../fonts";
-import { Label } from "../fx/WorkshopExplainer";
 import { REEL, backOut, c01, expoOut, inOut } from "../fx/look";
 
 const MONO = `"${FONT.mono}", ui-monospace, monospace`;
 const SAGE = REEL.accent;
 const CLAY = `rgb(${REEL.clay})`;
-const unit = (w: number, h: number) => Math.min(w / 980, h / 560);
 const pulse = (dt: number, at: number, tau = 7) => (dt >= at ? Math.exp(-(dt - at) / tau) : 0);
 
-const Check: React.FC<{ x: number; y: number; s: number; color?: string }> = ({ x, y, s, color = SAGE }) => (
-  <path d={`M ${x - 9 * s} ${y} l ${6 * s} ${7 * s} l ${12 * s} ${-14 * s}`} fill="none" stroke={color} strokeWidth={3.5 * s} strokeLinecap="round" strokeLinejoin="round" />
-);
+export interface ExplainerProps {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  dt: number;
+  B: number;
+  vertical?: boolean;
+  energy?: number;
+}
 
-/** A rounded chip with text, drawn in HTML so the type renders crisply. */
-const Chip: React.FC<{ x: number; y: number; text: string; u: number; p: number; mono?: boolean; color?: string; fill?: string; size?: number; glow?: number }> = ({ x, y, text, u, p, mono, color = REEL.ink, fill = "#0E1A12", size = 30, glow = 0 }) =>
-  p <= 0 ? null : (
+/** A label: Inter 700, sentence case, landing with a short rise (no long blur: the review's "dim and blur-in"). */
+export const Tag: React.FC<{ text: string; x: number; y: number; size: number; dt: number; align?: "left" | "center" | "right"; color?: string }> = ({ text, x, y, size, dt, align = "center", color = REEL.ink }) => {
+  if (dt < 0) return null;
+  const p = expoOut(dt / 6);
+  return (
     <div
       style={{
         position: "absolute",
         left: x,
         top: y,
-        transform: `translate(-50%, -50%) scale(${0.7 + 0.3 * backOut(c01(p), 1.8)})`,
-        opacity: c01(p * 1.6),
-        padding: `${12 * u}px ${24 * u}px`,
-        borderRadius: 999,
-        background: fill,
-        border: `${2.5 * u}px solid ${color === REEL.ink ? SAGE : color}`,
-        boxShadow: `0 0 ${(14 + 26 * glow) * u}px rgba(${REEL.sage}, ${0.25 + 0.45 * glow})`,
-        fontFamily: mono ? MONO : FONT.sans,
-        fontWeight: mono ? 500 : 600,
-        fontSize: size * u,
-        letterSpacing: mono ? 0 : "-0.01em",
+        transform: `translate(${align === "center" ? "-50%" : align === "right" ? "-100%" : "0"}, -50%) translateY(${(1 - p) * 12}px) scale(${1.12 - 0.12 * p})`,
+        fontFamily: FONT.sans,
+        fontWeight: 700,
+        fontSize: size,
+        letterSpacing: "-0.015em",
         color,
+        opacity: c01((dt + 1) / 3),
         whiteSpace: "nowrap",
+        textShadow: `0 0 ${size * 0.4}px rgba(${REEL.sage}, 0.35)`,
       }}
     >
       {text}
     </div>
   );
+};
+
+const Mark: React.FC<{ cx: number; cy: number; r: number; state: "empty" | "ok" | "fail" | "fixing"; p: number }> = ({ cx, cy, r, state, p }) => {
+  const color = state === "fail" ? CLAY : state === "empty" ? `rgba(${REEL.sage}, 0.5)` : SAGE;
+  const s = r / 26;
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={r} fill="#0E1A12" stroke={color} strokeWidth={3.5 * s} />
+      {state === "fixing" && <circle cx={cx} cy={cy} r={r * (1.2 + 0.5 * p)} fill="none" stroke={SAGE} strokeWidth={3 * s} opacity={1 - p} />}
+      {state === "ok" && (
+        <path d={`M ${cx - 11 * s} ${cy} l ${7 * s} ${8 * s} l ${15 * s} ${-17 * s}`} fill="none" stroke={SAGE} strokeWidth={5 * s} strokeLinecap="round" strokeLinejoin="round" transform={`translate(${cx} ${cy}) scale(${backOut(p, 2.4)}) translate(${-cx} ${-cy})`} />
+      )}
+      {state === "fail" && (
+        <path d={`M ${cx - 10 * s} ${cy - 10 * s} l ${20 * s} ${20 * s} M ${cx + 10 * s} ${cy - 10 * s} l ${-20 * s} ${20 * s}`} fill="none" stroke={CLAY} strokeWidth={5 * s} strokeLinecap="round" transform={`translate(${cx} ${cy}) scale(${backOut(p, 2.4)}) translate(${-cx} ${-cy})`} />
+      )}
+    </g>
+  );
+};
+
+/** A word in a rounded chip (the "done" bubble, the tool), drawn in HTML so the type is crisp. */
+const Pill: React.FC<{ x: number; y: number; size: number; text: string; color?: string; glow?: number; mono?: boolean; scale?: number; opacity?: number; onRef?: never }> = ({ x, y, size, text, color = SAGE, glow = 0, mono, scale = 1, opacity = 1 }) => (
+  <div
+    style={{
+      position: "absolute",
+      left: x,
+      top: y,
+      transform: `translate(-50%, -50%) scale(${scale})`,
+      opacity,
+      padding: `${size * 0.32}px ${size * 0.62}px`,
+      borderRadius: size * 0.55,
+      background: "#0E1A12",
+      border: `${Math.max(2, size * 0.055)}px solid ${color}`,
+      boxShadow: `0 0 ${size * (0.5 + 1.1 * glow)}px ${color === CLAY ? `rgba(${REEL.clay}, ${0.35 + 0.4 * glow})` : `rgba(${REEL.sage}, ${0.35 + 0.45 * glow})`}`,
+      fontFamily: mono ? MONO : FONT.sans,
+      fontWeight: mono ? 500 : 800,
+      fontSize: size,
+      letterSpacing: mono ? 0 : "-0.03em",
+      color: color === SAGE && !mono ? REEL.ink : color === CLAY ? CLAY : REEL.ink,
+      whiteSpace: "nowrap",
+    }}
+  >
+    {text}
+  </div>
+);
 
 /* -------------------------------------------------------------------------------------------- AgentGuard ---- */
 
 /**
- * AgentGuard (CHANGELOG.md@v2.0.0:183-190; C-200-7, C-200-20; the page's "Evidence before “done”." C-AG-5): Pebble's
- * "done" waits while AgentGuard checks the evidence: the tests, the files, what you asked for. One can't be confirmed,
- * so the word becomes "unverified" (the release's own word); Pebble fixes the cause, the check passes, and it reads
- * "verified" (the work view's Verified row).
+ * AgentGuard (CHANGELOG.md@v2.0.0:183-188; C-REEL-6): Pebble's "done" waits on the evidence. The tests pass; a check of
+ * the files fails (a cross); Pebble fixes the cause and the check passes; then, and only then, "verified". Never
+ * "unverified" turning into "verified" (S5). The connector starts at the chip's edge (S4).
  */
-export const AgentGuardExplainer: React.FC<{ x: number; y: number; w: number; h: number; dt: number; B: number; energy?: number }> = ({ x, y, w, h, dt, B, energy = 0 }) => {
-  const u = unit(w, h);
-  const cx = x + w / 2;
-  const cy = y + h * 0.48;
+export const AgentGuardExplainer: React.FC<ExplainerProps> = ({ x, y, w, h, dt, B, vertical, energy = 0 }) => {
+  const u = vertical ? Math.min(w / 600, h / 760) : Math.min(w / 860, h / 470);
+  const verified = dt >= 4 * B;
+  const word = verified ? "verified" : "“done”";
+  const chipSize = 78 * u;
+  const chip = vertical ? { x: x + w / 2, y: y + 120 * u } : { x: x + 220 * u, y: y + h / 2 };
+  // the chip's half width, about: the word's em width plus its padding (the connector starts at its edge)
+  const half = (word.length * 0.55 + 1.24) * chipSize * 0.5;
   const rows = [
-    { label: "the tests", at: 1.45 * B, ok: true },
-    { label: "the files", at: 1.75 * B, ok: true },
-    { label: "what you asked for", at: 2.1 * B, ok: false, fixed: 4 * B },
+    { label: "the tests", at: 1.5 * B, fail: false },
+    { label: "the files", at: 2.5 * B, fail: true, fixed: 4 * B },
   ];
-  const state = dt < 3 * B ? "done" : dt < 4 * B ? "unverified" : "verified";
-  const stateColor = state === "unverified" ? CLAY : SAGE;
-  const word = state === "done" ? "“done”" : state;
-  const bubbleIn = expoOut(c01(dt / 10));
-  const scan = c01((dt - 1.3 * B) / (1.1 * B)); // the check's beam moving down the evidence
-  const rowX = cx + 120 * u;
-  const rowY = (i: number) => cy - 120 * u + i * 110 * u;
-  const flip = pulse(dt, 3 * B, 8) + pulse(dt, 4 * B, 10);
+  const rowAt = (i: number) => (vertical ? { x: x + w / 2 - 150 * u, y: y + 330 * u + i * 150 * u } : { x: x + 540 * u, y: y + h / 2 - 85 * u + i * 170 * u });
+  const flip = pulse(dt, 4 * B, 10);
+  const lineP = c01((dt - B) / 8);
+  const r = 34 * u;
   return (
     <div style={{ position: "absolute", inset: 0 }}>
-      {/* Pebble's word, held until the evidence is in */}
-      <div
-        style={{
-          position: "absolute",
-          left: cx - 300 * u,
-          top: cy,
-          transform: `translate(-50%, -50%) scale(${(0.8 + 0.2 * bubbleIn) * (1 + 0.08 * flip)})`,
-          opacity: bubbleIn,
-          padding: `${22 * u}px ${36 * u}px`,
-          borderRadius: 28 * u,
-          background: "#0E1A12",
-          border: `${3 * u}px solid ${stateColor}`,
-          boxShadow: `0 0 ${(20 + 40 * flip + 20 * energy) * u}px ${state === "unverified" ? `rgba(${REEL.clay}, 0.5)` : `rgba(${REEL.sage}, 0.55)`}`,
-          fontFamily: FONT.sans,
-          fontWeight: 800,
-          fontSize: 70 * u,
-          letterSpacing: "-0.03em",
-          color: state === "done" ? REEL.ink : stateColor,
-          whiteSpace: "nowrap",
-        }}
-      >
-        {word}
-      </div>
-      <Label text="AgentGuard checks" x={rowX - 150 * u} y={cy - 210 * u} size={40 * u} dt={dt - 1.2 * B} align="left" color={SAGE} />
       <svg style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }} width={1} height={1}>
-        {/* the line from the word to the evidence */}
-        <line x1={cx - 180 * u} y1={cy} x2={cx - 180 * u + 120 * u * c01((dt - B) / 10)} y2={cy} stroke={SAGE} strokeWidth={3 * u} strokeOpacity={0.7} />
-        {/* the beam */}
-        {scan > 0 && scan < 1 && <rect x={rowX - 160 * u} y={rowY(0) - 50 * u + scan * 330 * u} width={460 * u} height={6 * u} rx={3 * u} fill={`rgba(${REEL.sageCore}, 0.8)`} style={{ filter: `drop-shadow(0 0 ${12 * u}px rgba(${REEL.sageCore}, 0.9))` }} />}
-        {rows.map((r, i) => {
-          if (dt < 1.2 * B + i * 4) return null;
-          const p = expoOut(c01((dt - 1.2 * B - i * 4) / 9));
-          const ry = rowY(i);
-          const marked = dt >= r.at;
-          const ok = r.ok || (r.fixed !== undefined && dt >= r.fixed);
-          const color = !marked ? `rgba(${REEL.sage}, 0.5)` : ok ? SAGE : CLAY;
-          const m = backOut(c01((dt - (ok && r.fixed !== undefined && dt >= r.fixed ? r.fixed : r.at)) / 8), 2.4);
-          return (
-            <g key={i} opacity={p}>
-              <circle cx={rowX - 120 * u} cy={ry} r={26 * u} fill="#0E1A12" stroke={color} strokeWidth={3 * u} />
-              {marked && ok && <g transform={`translate(${rowX - 120 * u} ${ry}) scale(${m}) translate(${-(rowX - 120 * u)} ${-ry})`}><Check x={rowX - 120 * u} y={ry} s={u * 1.2} /></g>}
-              {marked && !ok && (
-                <text x={rowX - 120 * u} y={ry + 13 * u} textAnchor="middle" fontFamily={FONT.sans} fontWeight={800} fontSize={36 * u} fill={CLAY} transform={`translate(${rowX - 120 * u} ${ry}) scale(${m}) translate(${-(rowX - 120 * u)} ${-ry})`}>
-                  ?
-                </text>
-              )}
-            </g>
-          );
+        {vertical ? (
+          <line x1={chip.x} y1={chip.y + chipSize * 0.75} x2={chip.x} y2={chip.y + chipSize * 0.75 + (rowAt(0).y - r - chip.y - chipSize * 0.75 - 14 * u) * lineP} stroke={SAGE} strokeWidth={3.5 * u} strokeOpacity={0.75} />
+        ) : (
+          <line x1={chip.x + half + 10 * u} y1={chip.y} x2={chip.x + half + 10 * u + (rowAt(0).x - r - chip.x - half - 34 * u) * lineP} y2={chip.y} stroke={SAGE} strokeWidth={3.5 * u} strokeOpacity={0.75} />
+        )}
+        {rows.map((row, i) => {
+          if (dt < B + i * 6) return null;
+          const p = rowAt(i);
+          const state = dt < row.at ? "empty" : row.fail && dt < (row.fixed ?? 0) ? (dt >= (row.fixed ?? 0) - 0.5 * B ? "fixing" : "fail") : "ok";
+          const since = row.fail && row.fixed !== undefined && dt >= row.fixed ? dt - row.fixed : state === "fixing" ? (dt - ((row.fixed ?? 0) - 0.5 * B)) / (0.5 * B) : dt - row.at;
+          return <Mark key={i} cx={p.x} cy={p.y} r={r} state={state} p={state === "fixing" ? c01(since) : c01(since / 8)} />;
         })}
       </svg>
-      {rows.map((r, i) => (
-        <Label key={i} text={r.label} x={rowX - 70 * u} y={rowY(i) - 22 * u} size={42 * u} dt={dt - 1.2 * B - i * 4} align="left" color={REEL.ink} />
+      {rows.map((row, i) => (
+        <Tag key={i} text={row.label} x={rowAt(i).x + r + 22 * u} y={rowAt(i).y} size={56 * u} dt={dt - B - i * 6} align="left" />
       ))}
+      <Pill x={chip.x} y={chip.y} size={chipSize} text={word} glow={0.4 * flip + 0.2 * energy} scale={(0.85 + 0.15 * expoOut(dt / 8)) * (1 + 0.1 * flip)} opacity={c01((dt + 1) / 4)} />
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------------------------------ Pebble's Workshop ---- */
+
+/**
+ * The Workshop (CHANGELOG.md@v2.0.0:141-148; C-REEL-7): the tool Pebble made, then the blind check (tests written from
+ * its description alone) disagreeing, as it did in RSW-01; the real card follows (FullReel draws it on beat 3).
+ */
+export const WorkshopExplainer2: React.FC<ExplainerProps & { stepBack?: number }> = ({ x, y, w, h, dt, B, vertical, energy = 0, stepBack = 0 }) => {
+  const u = vertical ? Math.min(w / 600, h / 620) : Math.min(w / 700, h / 470);
+  const cx = x + w / 2;
+  const toolY = vertical ? y + 110 * u : y + h * 0.3;
+  const marksY = vertical ? y + 380 * u : y + h * 0.66;
+  const ok = [true, false, true, false, false];
+  const toolIn = expoOut(c01(dt / 8));
+  const typed = "kiln_ramp_time".slice(0, Math.round(c01(dt / 12) * 14));
+  const glow = 0.3 + 0.3 * energy + 0.5 * pulse(dt, B);
+  return (
+    <div style={{ position: "absolute", inset: 0, opacity: 1 - 0.65 * stepBack, transform: `translateY(${-stepBack * 40 * u}px) scale(${1 - 0.12 * stepBack})`, transformOrigin: `${cx}px ${y}px` }}>
+      <Pill x={cx} y={toolY} size={52 * u} text={`ƒ ${typed}`} mono glow={glow} scale={0.8 + 0.2 * toolIn} opacity={toolIn} />
+      <Tag text="a small tool" x={cx} y={toolY - 92 * u} size={46 * u} dt={dt - 2} />
+      <svg style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }} width={1} height={1}>
+        {ok.map((good, i) => {
+          const at = B + i * (B / 4); // the marks land on sixteenths from beat 1
+          if (dt < at) return null;
+          return <Mark key={i} cx={cx + (i - 2) * 92 * u} cy={marksY} r={30 * u} state={good ? "ok" : "fail"} p={c01((dt - at) / 8)} />;
+        })}
+      </svg>
+      <Tag text="a blind check" x={cx} y={marksY + 92 * u} size={46 * u} dt={dt - B} />
     </div>
   );
 };
@@ -133,192 +174,140 @@ export const AgentGuardExplainer: React.FC<{ x: number; y: number; w: number; h:
 /* ------------------------------------------------------------------------------------------ Visual answers ---- */
 
 /**
- * Visual answers and the work view (CHANGELOG.md@v2.0.0:225-233, :313; C-200-12, C-200-14): a reply's table sorts by
- * any column and becomes a chart; a flowchart draws itself; the work view draws each run's steps as cards. Data shown as
- * bars, never figures.
+ * Visual answers (CHANGELOG.md@v2.0.0:230-234; C-REEL-9): one idea, a reply's table becoming a chart. Bars, never figures.
  */
-export const VisualExplainer: React.FC<{ x: number; y: number; w: number; h: number; dt: number; B: number; energy?: number }> = ({ x, y, w, h, dt, B }) => {
-  const u = unit(w, h);
-  const left = x + w * 0.04;
-  const top = y + h * 0.1;
-  const values = [0.55, 0.9, 0.35, 0.72];
-  const order = [1, 3, 0, 2]; // sorted, largest first
-  const sortP = inOut(c01((dt - 0.6 * B) / 14));
-  const chartP = inOut(c01((dt - 1.6 * B) / 16));
-  const tw = 420 * u;
-  const rowH = 62 * u;
-  // the table, then the chart (the value bars rotate up into columns)
-  const table = values.map((v, i) => {
-    const rank = order.indexOf(i);
-    const yRow = top + 70 * u + (i + (rank - i) * sortP) * rowH;
-    const barW = v * 190 * u;
-    // chart pose: a column at x by rank, growing up from the base line
-    const colX = left + 40 * u + rank * 95 * u;
-    const base = top + 70 * u + 4 * rowH;
-    const colH = v * 230 * u;
-    const bx = (left + 200 * u) * (1 - chartP) + colX * chartP;
-    const by = (yRow + 18 * u) * (1 - chartP) + (base - colH) * chartP;
-    const bw = barW * (1 - chartP) + 60 * u * chartP;
-    const bh = 22 * u * (1 - chartP) + colH * chartP;
-    return (
-      <g key={i}>
-        <rect x={left} y={yRow} width={tw} height={rowH - 6 * u} rx={10 * u} fill={`rgba(${REEL.sage}, ${0.08 * (1 - chartP)})`} />
-        <rect x={left + 24 * u} y={yRow + 21 * u} width={120 * u} height={14 * u} rx={7 * u} fill={`rgba(232, 238, 230, ${0.35 * (1 - chartP)})`} />
-        <rect x={bx} y={by} width={bw} height={bh} rx={8 * u} fill={i === 1 ? SAGE : `rgba(${REEL.sage}, 0.75)`} />
-      </g>
-    );
-  });
-  const tableIn = expoOut(c01(dt / 10));
-  // the flowchart: three nodes and their arrows drawing themselves
-  const fx = x + w * 0.62;
-  const fy = y + h * 0.12;
-  const nodes = [
-    { x: fx, y: fy, at: 2.6 * B },
-    { x: fx + 240 * u, y: fy, at: 2.9 * B },
-    { x: fx + 120 * u, y: fy + 140 * u, at: 3.2 * B },
-  ];
-  // the work view: each run's steps as cards
-  const steps = ["files read", "commands", "tests", "your review"];
-  const sx = x + w * 0.55;
-  const sy = y + h * 0.58;
+export const VisualExplainer: React.FC<ExplainerProps> = ({ x, y, w, h, dt, B, vertical }) => {
+  const u = vertical ? Math.min(w / 600, h / 700) : Math.min(w / 680, h / 520);
+  const values = [0.55, 0.92, 0.36, 0.74];
+  const order = [1, 3, 0, 2];
+  const sortP = inOut(c01((dt - 0.5 * B) / 10)); // sorted on the first eighth after the downbeat
+  const chartP = inOut(c01((dt - 2 * B) / 12)); // a chart on beat 2
+  const tw = (vertical ? 520 : 600) * u;
+  const left = x + (w - tw) / 2;
+  const top = y + (vertical ? 120 : 70) * u;
+  const rowH = 78 * u;
+  const base = top + 70 * u + 4 * rowH + 10 * u;
+  const tableIn = expoOut(c01(dt / 8));
   return (
-    <div style={{ position: "absolute", inset: 0 }}>
+    <div style={{ position: "absolute", inset: 0, opacity: tableIn }}>
       <svg style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }} width={1} height={1}>
-        <g opacity={tableIn}>
-          <rect x={left} y={top} width={tw} height={56 * u} rx={12 * u} fill={`rgba(${REEL.sage}, ${0.22 * (1 - chartP)})`} stroke={SAGE} strokeOpacity={0.6 * (1 - chartP)} strokeWidth={2 * u} />
-          {/* the column being sorted: its header lights */}
-          <rect x={left + 190 * u} y={top + 10 * u} width={150 * u} height={36 * u} rx={10 * u} fill={`rgba(${REEL.sageCore}, ${(0.5 * pulse(dt, 0.6 * B, 12) + 0.15) * (1 - chartP)})`} />
-          {table}
-          <line x1={left + 20 * u} y1={top + 70 * u + 4 * rowH + 2 * u} x2={left + 430 * u} y2={top + 70 * u + 4 * rowH + 2 * u} stroke={SAGE} strokeWidth={2.5 * u} strokeOpacity={chartP} />
-        </g>
-        {nodes.slice(1).map((n, i) => {
-          const a = nodes[i];
-          const p = c01((dt - n.at + 4) / 8);
-          return <line key={i} x1={a.x} y1={a.y} x2={a.x + (n.x - a.x) * p} y2={a.y + (n.y - a.y) * p} stroke={SAGE} strokeWidth={3 * u} strokeLinecap="round" />;
+        <rect x={left} y={top} width={tw} height={58 * u} rx={14 * u} fill={`rgba(${REEL.sage}, ${0.22 * (1 - chartP)})`} stroke={SAGE} strokeOpacity={0.6 * (1 - chartP)} strokeWidth={2.5 * u} />
+        <rect x={left + tw * 0.45} y={top + 10 * u} width={tw * 0.4} height={38 * u} rx={10 * u} fill={`rgba(${REEL.sageCore}, ${(0.45 * pulse(dt, 0.5 * B, 12) + 0.12) * (1 - chartP)})`} />
+        {values.map((v, i) => {
+          const rank = order.indexOf(i);
+          const yRow = top + 70 * u + (i + (rank - i) * sortP) * rowH;
+          const colW = (tw - 80 * u) / 4;
+          const colX = left + 40 * u + rank * colW + colW * 0.18;
+          const colH = v * (vertical ? 330 : 300) * u;
+          const bx = (left + tw * 0.45) * (1 - chartP) + colX * chartP;
+          const by = (yRow + 24 * u) * (1 - chartP) + (base - colH) * chartP;
+          const bw = v * tw * 0.42 * (1 - chartP) + colW * 0.64 * chartP;
+          const bh = 26 * u * (1 - chartP) + colH * chartP;
+          return (
+            <g key={i}>
+              <rect x={left} y={yRow} width={tw} height={rowH - 8 * u} rx={12 * u} fill={`rgba(${REEL.sage}, ${0.08 * (1 - chartP)})`} />
+              <rect x={left + 26 * u} y={yRow + 28 * u} width={tw * 0.26} height={16 * u} rx={8 * u} fill={`rgba(232, 238, 230, ${0.4 * (1 - chartP)})`} />
+              <rect x={bx} y={by} width={bw} height={bh} rx={10 * u} fill={i === 1 ? SAGE : `rgba(${REEL.sage}, 0.78)`} />
+            </g>
+          );
         })}
-        {nodes.map((n, i) => {
-          const p = backOut(c01((dt - n.at) / 9), 2);
-          return p > 0 ? <rect key={i} x={n.x - 70 * u * p} y={n.y - 30 * u * p} width={140 * u * p} height={60 * u * p} rx={16 * u} fill="#0E1A12" stroke={SAGE} strokeWidth={3 * u} style={{ filter: `drop-shadow(0 0 ${10 * u}px rgba(${REEL.sage}, 0.5))` }} /> : null;
-        })}
+        <line x1={left + 20 * u} y1={base + 4 * u} x2={left + tw - 20 * u} y2={base + 4 * u} stroke={SAGE} strokeWidth={3 * u} strokeOpacity={chartP} />
       </svg>
-      {steps.map((t, i) => {
-        const at = 4 * B + i * 5;
-        const p = expoOut(c01((dt - at) / 9));
-        return p > 0 ? (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: sx + i * 26 * u,
-              top: sy + i * 58 * u + (1 - p) * 30 * u,
-              opacity: p,
-              width: 330 * u,
-              padding: `${12 * u}px ${20 * u}px`,
-              borderRadius: 14 * u,
-              background: "#101C14",
-              border: `${2 * u}px solid rgba(${REEL.sage}, 0.7)`,
-              boxShadow: `0 ${10 * u}px ${24 * u}px rgba(${REEL.shadeRgb}, 0.7)`,
-              display: "flex",
-              alignItems: "center",
-              gap: 14 * u,
-              fontFamily: FONT.sans,
-              fontWeight: 600,
-              fontSize: 28 * u,
-              color: REEL.ink,
-            }}
-          >
-            <span style={{ width: 14 * u, height: 14 * u, borderRadius: 7 * u, background: SAGE, display: "inline-block" }} />
-            {t}
-          </div>
-        ) : null;
-      })}
-      <Label text="sorts by any column" x={left} y={top - 48 * u} size={40 * u} dt={dt - 0.6 * B} align="left" color={SAGE} />
-      <Label text="becomes a chart" x={left + tw} y={top + 70 * u + 4 * rowH + 18 * u} size={40 * u} dt={dt - 1.6 * B} align="right" />
-      <Label text="flowcharts, drawn natively" x={fx + 120 * u} y={fy + 190 * u} size={40 * u} dt={dt - 3.2 * B} />
-      <Label text="the work view" x={sx} y={sy - 50 * u} size={40 * u} dt={dt - 4 * B} align="left" color={SAGE} />
+      <Tag text="a table" x={left} y={top - 50 * u} size={46 * u} dt={dt - 3} align="left" color={REEL.inkSoft} />
+      <Tag text="becomes a chart" x={left + tw / 2} y={base + 70 * u} size={52 * u} dt={dt - 2 * B} />
     </div>
   );
 };
 
-/* ------------------------------------------------------------------------------------- Long tasks stay light ---- */
+/* ------------------------------------------------------------------------------------------------ Long tasks ---- */
 
 /**
- * Long tasks (README.md@v2.0.0:445: "a long task's older tool results are sealed in large chunks"): a context tape fed
- * by tool results; the older ones fold into sealed blocks, and the tape never grows. No name, no figures.
+ * Long tasks (README.md@v2.0.0:445; CHANGELOG.md@v1.4.0:16-17; C-REEL-14, C-REEL-21): older tool results fold into a
+ * sealed block, and one sealed block reopens to its full result: returned exactly. Never the name D55 keeps unnamed,
+ * and no saving, cost or speed claim.
  */
-export const LongTasksExplainer: React.FC<{ x: number; y: number; w: number; h: number; dt: number; B: number; energy?: number }> = ({ x, y, w, h, dt, B }) => {
-  const u = unit(w, h);
-  const tapeX = x + w * 0.04;
-  const tapeY = y + h * 0.42;
-  const tapeW = w * 0.92;
-  const tile = 62 * u;
-  const gap = 10 * u;
+export const LongTasksExplainer: React.FC<ExplainerProps> = ({ x, y, w, h, dt, B, vertical }) => {
+  const u = vertical ? Math.min(w / 600, h / 700) : Math.min(w / 760, h / 520);
+  const tile = 60 * u;
+  const gap = 12 * u;
   const step = tile + gap;
-  const blockW = 120 * u;
-  const rate = B / 4; // a tool result every sixteenth
-  const SEALS = [2 * B, 4 * B]; // on beats: the eight oldest open results fold into one sealed block
-  const arrived = dt < 0 ? 0 : Math.min(30, Math.floor(dt / rate) + 1);
-  const started = SEALS.filter((s) => dt >= s);
-  const fold = started.length ? inOut(c01((dt - started[started.length - 1]) / 10)) : 1;
-  const tapeIn = expoOut(c01(dt / 12));
+  const rowW = (vertical ? 7 : 10) * step;
+  const left = x + (w - rowW) / 2;
+  const tapeY = y + (vertical ? 220 : h * 0.42);
+  const rate = B / 4;
+  const sealAt = 1.5 * B;
+  const openAt = 3 * B;
+  const arrived = dt < 0 ? 0 : Math.min(vertical ? 7 : 10, Math.floor(dt / rate) + 1);
+  const fold = inOut(c01((dt - sealAt) / 10));
+  const open = inOut(c01((dt - openAt) / 12));
+  const blockW = 190 * u;
+  const n0 = vertical ? 4 : 6; // the older results that seal
   const els: React.ReactNode[] = [];
-  let cur = tapeX + 20 * u;
-  started.forEach((s, k) => {
-    const p = k === started.length - 1 ? fold : 1; // the newest fold animates from eight tiles' width to one block
-    const bw = blockW * p + (8 * step - gap) * (1 - p);
-    const flash = pulse(dt, s, 9);
+  let cur = left;
+  if (dt >= sealAt) {
+    const bw = blockW * fold + (n0 * step - gap) * (1 - fold);
     els.push(
       <div
-        key={`s${k}`}
+        key="seal"
         style={{
           position: "absolute",
           left: cur,
           top: tapeY - tile * 0.6,
           width: bw,
           height: tile * 1.2,
-          borderRadius: 12 * u,
-          background: "linear-gradient(180deg, #24402C, #14261A)",
-          border: `${2.5 * u}px solid ${SAGE}`,
-          boxShadow: `0 0 ${(10 + 30 * flash) * u}px rgba(${REEL.sage}, ${0.4 + 0.5 * flash})`,
+          borderRadius: 14 * u,
+          background: "linear-gradient(180deg, #2A4A32, #16281B)",
+          border: `${3 * u}px solid ${SAGE}`,
+          boxShadow: `0 0 ${(12 + 36 * pulse(dt, sealAt, 9) + 36 * pulse(dt, openAt, 9)) * u}px rgba(${REEL.sage}, 0.6)`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <div style={{ width: 20 * u, height: 20 * u, borderRadius: "50%", border: `${3 * u}px solid ${SAGE}`, opacity: p }} />
+        <div style={{ fontFamily: FONT.sans, fontWeight: 700, fontSize: 40 * u, color: REEL.ink, opacity: c01((dt - sealAt - 6) / 4), letterSpacing: "-0.01em" }}>sealed</div>
       </div>,
     );
     cur += bw + gap;
-  });
-  const openFrom = started.length * 8;
-  for (let idx = openFrom; idx < arrived; idx++) {
-    const p = expoOut(c01((dt - idx * rate) / 6));
-    els.push(
-      <div
-        key={`t${idx}`}
-        style={{
-          position: "absolute",
-          left: cur + (1 - p) * 120 * u,
-          top: tapeY - tile / 2,
-          width: tile,
-          height: tile,
-          borderRadius: 9 * u,
-          background: `rgba(${REEL.sage}, ${0.42 + 0.14 * ((idx * 7) % 3)})`,
-          border: `${2.5 * u}px solid ${SAGE}`,
-          opacity: p,
-        }}
-      />,
-    );
+  }
+  const from = dt >= sealAt ? n0 : 0;
+  for (let i = from; i < arrived; i++) {
+    const p = expoOut(c01((dt - i * rate) / 6));
+    els.push(<div key={i} style={{ position: "absolute", left: cur + (1 - p) * 100 * u, top: tapeY - tile / 2, width: tile, height: tile, borderRadius: 10 * u, background: `rgba(${REEL.sage}, ${0.42 + 0.14 * ((i * 7) % 3)})`, border: `${2.5 * u}px solid ${SAGE}`, opacity: p }} />);
     cur += step;
   }
+  // the sealed block reopens to its full result, below the tape
+  const card = { w: (vertical ? 520 : 600) * u, h: 190 * u };
+  const cardX = left + (vertical ? (rowW - card.w) / 2 : 0);
+  const cardY = tapeY + tile + 50 * u;
   return (
-    <div style={{ position: "absolute", inset: 0, opacity: tapeIn }}>
-      {/* the tape: its length never changes */}
-      <div style={{ position: "absolute", left: tapeX, top: tapeY - tile, width: tapeW, height: tile * 2, borderRadius: tile, border: `${2 * u}px solid rgba(${REEL.sage}, 0.45)`, background: `rgba(${REEL.sage}, 0.05)` }} />
+    <div style={{ position: "absolute", inset: 0, opacity: expoOut(c01(dt / 8)) }}>
       {els}
-      <Label text="a long task" x={tapeX} y={tapeY - tile - 64 * u} size={42 * u} dt={dt - 4} align="left" color={REEL.ink} />
-      <Label text="older tool results" x={tapeX + 20 * u} y={tapeY + tile + 26 * u} size={42 * u} dt={dt - 1.2 * B} align="left" />
-      <Label text="sealed in large chunks" x={tapeX + 20 * u} y={tapeY + tile + 80 * u} size={42 * u} dt={dt - 2 * B - 4} align="left" color={SAGE} />
+      {dt >= openAt && (
+        <div
+          style={{
+            position: "absolute",
+            left: cardX,
+            top: cardY,
+            width: card.w,
+            height: card.h * open,
+            overflow: "hidden",
+            borderRadius: 16 * u,
+            background: "#101C14",
+            border: `${3 * u}px solid ${SAGE}`,
+            boxShadow: `0 ${12 * u}px ${30 * u}px rgba(${REEL.shadeRgb}, 0.7)`,
+            padding: `${22 * u}px ${26 * u}px`,
+            boxSizing: "border-box",
+          }}
+        >
+          {[0.86, 0.72, 0.9, 0.6].map((wf, i) => (
+            <div key={i} style={{ height: 16 * u, width: `${wf * 100}%`, borderRadius: 8 * u, background: `rgba(232, 238, 230, ${0.5 - i * 0.07})`, marginBottom: 20 * u }} />
+          ))}
+        </div>
+      )}
+      {/* the link from the block to what it returned */}
+      {dt >= openAt && <div style={{ position: "absolute", left: left + blockW / 2 - 2 * u, top: tapeY + tile * 0.6, width: 4 * u, height: (cardY - tapeY - tile * 0.6) * open, background: SAGE, opacity: 0.8 }} />}
+      <Tag text="older tool results" x={left} y={tapeY - tile - 40 * u} size={46 * u} dt={dt - 0.5 * B} align="left" color={REEL.inkSoft} />
+      <Tag text="returned exactly" x={cardX + card.w / 2} y={cardY + card.h + 56 * u} size={52 * u} dt={dt - openAt - 4} />
     </div>
   );
 };
@@ -326,122 +315,50 @@ export const LongTasksExplainer: React.FC<{ x: number; y: number; w: number; h: 
 /* ------------------------------------------------------------------------------------------- Pebble Remote ---- */
 
 /**
- * Pebble Remote (CHANGELOG.md@v2.0.0:213-221): the iPhone and the Mac linked over Tailscale or your Wi-Fi; from the
- * phone you read conversations, send messages, see what Pebble is doing and approve with Face ID. Outlines only: no
- * drawn app screen.
+ * Pebble Remote (CHANGELOG.md@v2.0.0:213-218; pebble-remote README.md:3-4; C-REEL-11): the iPhone and the Mac linked
+ * over Tailscale or your Wi-Fi, and an approval with Face ID. Outlines only: no drawn app screen. Inside title-safe (S6).
  */
-export const RemoteExplainer: React.FC<{ x: number; y: number; w: number; h: number; dt: number; B: number; energy?: number }> = ({ x, y, w, h, dt, B, energy = 0 }) => {
-  const u = unit(w, h);
-  const phone = { x: x + w * 0.1, y: y + h * 0.5, w: 170 * u, h: 340 * u };
-  const mac = { x: x + w * 0.86, y: y + h * 0.5, w: 330 * u, h: 210 * u };
-  const inP = expoOut(c01(dt / 12));
-  const link = c01((dt - 0.6 * B) / 12);
-  const x1 = phone.x + phone.w / 2 + 16 * u;
-  const x2 = mac.x - mac.w / 2 - 16 * u;
-  const dots = Array.from({ length: 6 }, (_, i) => {
-    const p = ((dt / 30 + i / 6) % 1 + 1) % 1;
-    return { x: x1 + (x2 - x1) * p, a: link * Math.sin(p * Math.PI) };
+export const RemoteExplainer: React.FC<ExplainerProps> = ({ x, y, w, h, dt, B, vertical, energy = 0 }) => {
+  const u = vertical ? Math.min(w / 600, h / 690) : Math.min(w / 760, h / 520);
+  // 9:16: phone, its Face ID line, the link, the Mac, the link's line; 16:9: phone left, Mac right, the link between
+  const phone = vertical ? { x: x + w / 2, y: y + 125 * u, w: 125 * u, h: 240 * u } : { x: x + 140 * u, y: y + h * 0.44, w: 160 * u, h: 300 * u };
+  const mac = vertical ? { x: x + w / 2, y: y + 510 * u, w: 260 * u, h: 150 * u } : { x: x + w - 190 * u, y: y + h * 0.44, w: 280 * u, h: 170 * u };
+  const faceLabel = vertical ? { x: phone.x + 32 * u, y: phone.y + phone.h / 2 + 56 * u, align: "center" as const } : { x: phone.x - phone.w / 2 + 70 * u, y: phone.y + phone.h / 2 + 64 * u, align: "left" as const };
+  // (16:9: above the Mac: between the devices it overlapped their outlines)
+  const linkLabel = vertical ? { x: mac.x, y: mac.y + mac.h / 2 + 64 * u } : { x: mac.x, y: mac.y - mac.h / 2 - 54 * u };
+  const link = c01((dt - 0.5 * B) / 10);
+  const a = vertical ? { x: phone.x, y: faceLabel.y + 46 * u } : { x: phone.x + phone.w / 2 + 16 * u, y: phone.y };
+  const b = vertical ? { x: mac.x, y: mac.y - mac.h / 2 - 16 * u } : { x: mac.x - mac.w / 2 - 16 * u, y: mac.y };
+  const dots = Array.from({ length: 5 }, (_, i) => {
+    const p = ((dt / 28 + i / 5) % 1 + 1) % 1;
+    return { x: a.x + (b.x - a.x) * p, y: a.y + (b.y - a.y) * p, o: link * Math.sin(p * Math.PI) };
   });
-  const chips = ["read conversations", "send messages", "see what Pebble is doing", "approve with Face ID"];
-  const glow = 0.35 + 0.3 * energy + 0.5 * pulse(dt, 0.6 * B + 12, 10);
+  const faceAt = 1.5 * B;
+  const fp = backOut(c01((dt - faceAt) / 9), 2);
+  const glow = 0.35 + 0.3 * energy + 0.6 * pulse(dt, faceAt, 10);
+  // the Face ID glyph sits beside its line, outside the phone (never a drawn screen)
+  const textW = 20 * 0.56 * 46 * u;
+  const fid = vertical ? { x: faceLabel.x - textW / 2 - 40 * u, y: faceLabel.y } : { x: faceLabel.x - 40 * u, y: faceLabel.y };
   return (
-    <div style={{ position: "absolute", inset: 0, opacity: inP }}>
+    <div style={{ position: "absolute", inset: 0, opacity: expoOut(c01(dt / 8)) }}>
       <svg style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }} width={1} height={1}>
-        {/* the phone */}
-        <rect x={phone.x - phone.w / 2} y={phone.y - phone.h / 2} width={phone.w} height={phone.h} rx={34 * u} fill="#0B140E" stroke={SAGE} strokeWidth={3.5 * u} style={{ filter: `drop-shadow(0 0 ${14 * u}px rgba(${REEL.sage}, ${glow}))` }} />
-        <rect x={phone.x - 30 * u} y={phone.y - phone.h / 2 + 14 * u} width={60 * u} height={14 * u} rx={7 * u} fill={`rgba(${REEL.sage}, 0.6)`} />
-        {/* the Mac */}
-        <rect x={mac.x - mac.w / 2} y={mac.y - mac.h / 2} width={mac.w} height={mac.h} rx={16 * u} fill="#0B140E" stroke={SAGE} strokeWidth={3.5 * u} style={{ filter: `drop-shadow(0 0 ${14 * u}px rgba(${REEL.sage}, ${glow}))` }} />
-        <path d={`M ${mac.x - mac.w * 0.62} ${mac.y + mac.h / 2 + 12 * u} L ${mac.x + mac.w * 0.62} ${mac.y + mac.h / 2 + 12 * u}`} stroke={SAGE} strokeWidth={6 * u} strokeLinecap="round" />
-        {/* the link */}
-        <line x1={x1} y1={phone.y} x2={x1 + (x2 - x1) * link} y2={phone.y} stroke={SAGE} strokeWidth={3 * u} strokeDasharray={`${10 * u} ${10 * u}`} />
+        <rect x={phone.x - phone.w / 2} y={phone.y - phone.h / 2} width={phone.w} height={phone.h} rx={30 * u} fill="#0B140E" stroke={SAGE} strokeWidth={4 * u} style={{ filter: `drop-shadow(0 0 ${14 * u}px rgba(${REEL.sage}, ${glow}))` }} />
+        <rect x={phone.x - 26 * u} y={phone.y - phone.h / 2 + 14 * u} width={52 * u} height={12 * u} rx={6 * u} fill={`rgba(${REEL.sage}, 0.6)`} />
+        <rect x={mac.x - mac.w / 2} y={mac.y - mac.h / 2} width={mac.w} height={mac.h} rx={16 * u} fill="#0B140E" stroke={SAGE} strokeWidth={4 * u} style={{ filter: `drop-shadow(0 0 ${14 * u}px rgba(${REEL.sage}, ${glow}))` }} />
+        <path d={`M ${mac.x - mac.w * 0.6} ${mac.y + mac.h / 2 + 12 * u} L ${mac.x + mac.w * 0.6} ${mac.y + mac.h / 2 + 12 * u}`} stroke={SAGE} strokeWidth={6 * u} strokeLinecap="round" />
+        <line x1={a.x} y1={a.y} x2={a.x + (b.x - a.x) * link} y2={a.y + (b.y - a.y) * link} stroke={SAGE} strokeWidth={3.5 * u} strokeDasharray={`${12 * u} ${10 * u}`} />
         {dots.map((d, i) => (
-          <circle key={i} cx={d.x} cy={phone.y} r={6 * u} fill={`rgba(${REEL.sageCore}, ${d.a})`} style={{ filter: `drop-shadow(0 0 ${6 * u}px rgba(${REEL.sageCore}, 0.9))` }} />
+          <circle key={i} cx={d.x} cy={d.y} r={7 * u} fill={`rgba(${REEL.sageCore}, ${d.o})`} />
         ))}
+        {fp > 0 && (
+          <g transform={`translate(${fid.x} ${fid.y}) scale(${fp * 0.8})`} stroke={SAGE} strokeWidth={4 * u} fill="none" strokeLinecap="round">
+            <path d={`M ${-30 * u} ${-12 * u} v ${-18 * u} h ${18 * u} M ${12 * u} ${-30 * u} h ${18 * u} v ${18 * u} M ${30 * u} ${12 * u} v ${18 * u} h ${-18 * u} M ${-12 * u} ${30 * u} h ${-18 * u} v ${-18 * u}`} />
+            <path d={`M ${-9 * u} ${-6 * u} v ${7 * u} M ${9 * u} ${-6 * u} v ${7 * u} M ${-9 * u} ${12 * u} q ${9 * u} ${7 * u} ${18 * u} 0`} />
+          </g>
+        )}
       </svg>
-      <Label text="iPhone" x={phone.x} y={phone.y + phone.h / 2 + 18 * u} size={36 * u} dt={dt - 2} />
-      <Label text="Mac" x={mac.x} y={mac.y + mac.h / 2 + 30 * u} size={36 * u} dt={dt - 2} />
-      <Label text="over Tailscale or your Wi-Fi" x={(x1 + x2) / 2} y={phone.y - 70 * u} size={40 * u} dt={dt - 0.6 * B - 6} color={SAGE} />
-      {chips.map((c, i) => (
-        <Chip key={c} x={(x1 + x2) / 2} y={phone.y + 64 * u + i * 62 * u} text={c} u={u} p={(dt - (1.6 + i * 0.75) * B) / 9} size={25} glow={pulse(dt, (1.6 + i * 0.75) * B, 9)} />
-      ))}
-    </div>
-  );
-};
-
-/* ------------------------------------------------------------------------------------------- type beats' motifs ---- */
-
-/** The permission dial (the modes' own names, C-200-8): a pill that moves between them on the beats. */
-export const PaceDial: React.FC<{ x: number; y: number; w: number; dt: number; B: number }> = ({ x, y, w, dt, B }) => {
-  const modes = ["Ask for approval", "Auto in project", "Full access"];
-  const u = w / 980;
-  const pos = dt < 1.5 * B ? 0 : dt < 3 * B ? 1 : 2;
-  const prev = dt < 1.5 * B ? 0 : dt < 3 * B ? 0 : 1;
-  const moveAt = pos === 0 ? 0 : pos === 1 ? 1.5 * B : 3 * B;
-  const m = inOut(c01((dt - moveAt) / 10));
-  const slot = (i: number) => x + w * (i + 0.5) / 3;
-  const px = slot(prev) + (slot(pos) - slot(prev)) * m;
-  const inP = expoOut(c01(dt / 10));
-  return (
-    <div style={{ position: "absolute", inset: 0, opacity: inP }}>
-      <div style={{ position: "absolute", left: x, top: y - 44 * u, width: w, height: 88 * u, borderRadius: 44 * u, border: `${2.5 * u}px solid rgba(${REEL.sage}, 0.6)`, background: "#0B140E" }} />
-      <div style={{ position: "absolute", left: px - w / 6 + 8 * u, top: y - 36 * u, width: w / 3 - 16 * u, height: 72 * u, borderRadius: 36 * u, background: `rgba(${REEL.sage}, 0.35)`, border: `${2.5 * u}px solid ${SAGE}`, boxShadow: `0 0 ${24 * u}px rgba(${REEL.sage}, 0.6)` }} />
-      {modes.map((t, i) => (
-        <div key={t} style={{ position: "absolute", left: slot(i), top: y, transform: "translate(-50%, -50%)", fontFamily: FONT.sans, fontWeight: 600, fontSize: 30 * u, color: i === pos ? REEL.ink : REEL.inkSoft, whiteSpace: "nowrap" }}>
-          {t}
-        </div>
-      ))}
-    </div>
-  );
-};
-
-/** Chips that land one per beat (the model's three ways in, after C-200-30). */
-export const ChipRow: React.FC<{ x: number; y: number; w: number; dt: number; B: number; items: readonly string[]; vertical?: boolean }> = ({ x, y, w, dt, B, items, vertical }) => {
-  const u = w / 980;
-  return (
-    <div style={{ position: "absolute", inset: 0 }}>
-      {items.map((t, i) => (
-        <Chip key={t} x={vertical ? x + w / 2 : x + (w * (i + 0.5)) / items.length} y={vertical ? y + i * 110 * u : y} text={t} u={u * 1.3} p={(dt - (0.5 + i * 0.5) * B) / 8} glow={pulse(dt, (0.5 + i * 0.5) * B, 9)} />
-      ))}
-    </div>
-  );
-};
-
-/** Memory you control: memory chips, and the one you choose to forget leaves (C-200-11: "Forget"). */
-export const MemoryChips: React.FC<{ x: number; y: number; w: number; dt: number; B: number }> = ({ x, y, w, dt, B }) => {
-  const u = w / 980;
-  const forgetAt = 1.6 * B;
-  return (
-    <div style={{ position: "absolute", inset: 0 }}>
-      {[0, 1, 2].map((i) => {
-        const p = expoOut(c01((dt - i * 4) / 9));
-        const gone = i === 1 ? inOut(c01((dt - forgetAt - 6) / 10)) : 0;
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: x + w * 0.1 + i * w * 0.28,
-              top: y - 40 * u + (1 - p) * 20 * u - gone * 40 * u,
-              width: w * 0.24,
-              height: 80 * u,
-              borderRadius: 18 * u,
-              background: "#0E1A12",
-              border: `${2.5 * u}px solid ${i === 1 && dt >= forgetAt ? CLAY : SAGE}`,
-              opacity: p * (1 - gone),
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              gap: 10 * u,
-              padding: `0 ${20 * u}px`,
-            }}
-          >
-            <div style={{ height: 10 * u, width: "80%", borderRadius: 5 * u, background: "rgba(232,238,230,0.4)" }} />
-            <div style={{ height: 10 * u, width: "55%", borderRadius: 5 * u, background: "rgba(232,238,230,0.25)" }} />
-          </div>
-        );
-      })}
-      <Chip x={x + w * 0.1 + w * 0.28 + w * 0.12} y={y + 90 * u} text="Forget" u={u * 1.2} p={(dt - forgetAt) / 7} color={CLAY} />
+      <Tag text="Wi-Fi or Tailscale" x={linkLabel.x} y={linkLabel.y} size={42 * u} dt={dt - 0.5 * B - 4} color={REEL.inkSoft} />
+      <Tag text="approve with Face ID" x={faceLabel.x} y={faceLabel.y} size={46 * u} dt={dt - faceAt} align={faceLabel.align} />
     </div>
   );
 };

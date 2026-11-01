@@ -10,6 +10,7 @@ import { usesNeverWord } from "../../../../src/content/neverWords";
 import { REEL_MAP } from "../maps/reelMap";
 import { CROPS, framePath, hasFrame, type CropId } from "../takes";
 import { buildFullPlan, END_CARD, STEALTH_HONEST, TEASE_LINES } from "./timeline";
+import { HERO_LABELS } from "./labels";
 
 const plan = buildFullPlan(REEL_MAP);
 const pub = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "public");
@@ -49,7 +50,14 @@ for (const s of plan.segments) {
     readable(s.id, s.line, s.to - s.from);
   }
   if (s.kind === "type") readable(s.id, s.line, s.to - s.from);
-  if (s.kind === "hero") readable(s.id, `${s.name} ${s.sub ?? ""}`, s.to - s.from);
+  if (s.kind === "hero") {
+    readable(s.id, `${s.name} ${s.sub ?? ""}`, s.to - s.from);
+    // every explainer label held 0.4 s a word from its beat to the hero's end; at most about six label words (REVIEW B2)
+    const labels = HERO_LABELS[s.id] ?? [];
+    for (const l of labels) readable(`${s.id} label`, l.text, s.to - s.from - Math.round(l.at * plan.B));
+    const lw = labels.reduce((n, l) => n + words(l.text), 0);
+    if (labels.length > 3 || lw > 7) problems.push(`${s.id}: ${labels.length} labels, ${lw} label words (at most 3 and about 6)`);
+  }
   if (s.kind === "rival") {
     const a: number[] = [];
     for (let f = 0; f < s.ask.to - s.ask.from; f++) a.push(Math.round(s.ask.src.at(f)));
@@ -62,7 +70,9 @@ for (const s of plan.segments) {
 }
 if (prev !== plan.length) problems.push(`the last segment ends on ${prev}, the reel on ${plan.length}`);
 
-const onBeat = (f: number) => Math.min(...map.beats.map((b) => Math.abs(b - f))) <= 1.01;
+// cuts land on a beat, or on an eighth (Vanguard's grid: "cuts can land on every beat or every half beat")
+const eighths = map.beats.flatMap((b, i) => (i + 1 < map.beats.length && map.beats[i + 1] - b < 40 ? [b, (b + map.beats[i + 1]) / 2] : [b]));
+const onBeat = (f: number) => Math.min(...eighths.map((b) => Math.abs(b - f))) <= 1.01;
 for (const c of plan.cuts) {
   const s = plan.segments.find((x) => x.from === c);
   if (s && s.kind === "breath") continue; // the breath runs from 6 frames before the drop
@@ -80,6 +90,11 @@ if (tease && tease.kind === "tease") readable("tease", TEASE_LINES.join(" "), te
 const printed = [
   ...plan.segments.flatMap((s) => (s.kind === "flash" || s.kind === "type" ? [s.line] : s.kind === "hero" ? [s.name, s.sub ?? ""] : [])),
   ...TEASE_LINES,
+  ...Object.values(HERO_LABELS).flatMap((ls) => ls.map((l) => l.text)),
+  "Show me a clip of your rival.",
+  "Ask for approval",
+  "Auto in project",
+  "Full access",
   END_CARD.tagline,
   END_CARD.honestSmall,
   ...END_CARD.credits,
