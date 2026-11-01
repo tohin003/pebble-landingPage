@@ -4,16 +4,17 @@
 // 3.2 s after it lands), then "When the check disagrees, / it asks you." from 4.2 s to 7.0 s (2.6 s after it lands).
 // Under it, one carried line of evidence:
 //   1. RSW-01 (Pebble 2.0, the demo account, dark theme): the kiln request, already sent (1×, 1 s);
-//   2. the thinking, cut to 0.65 s: a hard cut on the beat to the steps (the edit skips the wait; every frame real), and
-//      "Running a script: Create, test, keep and use a kiln_ramp_time tool for…" lands (1×);
+//   2. a hard cut on the beat to the steps, "Running a script: Create, test, keep and use a kiln_ramp_time tool for…"
+//      already there (the edit skips the thinking; every frame real; REVIEW-3 N-4), held 0.3 s;
 //   3. the window narrows onto the word kiln_ramp_time and becomes the tool's card (no grey bars, no pill);
 //   4. the diagram fills the space under the headline (plain marks and Inter type at 40 px or more, never a Pebble
 //      screen): Sandbox, its own tests ✓✓✓ → Blind check, tests written from its description alone ✓✓✗✗✗, 2 of 5 →
 //      the pebble asks (Pebble's own `question` pose), "Asks you.";
 //   5. the diagram leaves before anything else arrives (nothing crosses "2 of 5"), and RSW-01's real Keep card rises:
-//      "Keep this tool in Pebble's Toolbox? · kiln_ramp_time … Pebble asks because the independent check disagreed
-//      (2 of 5 tests passed)."; the camera pushes onto that bullet and a clay underline marks "(2 of 5 tests passed).".
-// The scene ends on the whole card settled at 60 % of the frame's width on the stone (by 7.2 s, for the master's zoom
+//      its bullet "Pebble asks because the independent check disagreed (2 of 5 tests passed)." and "View code ·
+//      Discard · Keep", re-wrapped to 2 lines from three crops of the take's own frame (about 55 px in 16:9, REVIEW-3
+//      N-2; about 43 px in 4:5); a clay underline marks "(2 of 5 tests passed).".
+// The scene ends on that card settled at 60 % of the frame's width on the stone (by 7.2 s, for the master's zoom
 // punch into S06), its words gone by 7.18 s.
 //
 // Framings stay inside Pebble's window (RSW-01's ROIs, measured on its frames): the menu bar (the recording pill, the
@@ -27,7 +28,7 @@ import { PebbleActor, cues, look, pose } from "../../components/PebbleActor";
 import { ScreenZoom } from "../../components/ScreenZoom";
 import { Sfx } from "../../components/Sfx";
 import { Stage } from "../../components/Stage";
-import type { Box, ZoomKey } from "../../camera";
+import type { Box } from "../../camera";
 import { pick, useLayout, type Layout, type Rect } from "../../layout";
 import { timeMap, type TimeMap } from "../../timeMap";
 import { C, EASE, TYPE } from "../../tokens";
@@ -43,9 +44,13 @@ const SIZE = { w: 2940, h: 1912 };
 /** Beats, seconds at the nominal length (local beats every 0.5 s; downbeats at 0, 2, 4, 6). */
 const B = {
   title: 0.2, // after the whip lands (0.13)
-  cut: 1.0, // the thinking (0.65 s, was 1.6): a hard cut on the beat to the steps, the wait skipped (source 71.35)
-  script: 1.35, // "Running a script: …" lands (source 71.70)
-  fold: 1.65, // → 2.05, the window narrows onto kiln_ramp_time and becomes the tool's card
+  // REVIEW-3 N-4: no thinking state. The cut on the beat lands on the take's frame where "Running a script: …" has just
+  // appeared (source 71.70; "Recalled 1 memory" / "Waiting for the model" are skipped), the window holds it 0.3 s and
+  // narrows onto kiln_ramp_time from 1.3 (was: a cut to source 71.35, 0.35 s of "Waiting", the line at 1.35, the fold
+  // at 1.65)
+  cut: 1.0,
+  script: 1.0,
+  fold: 1.3, // → 1.7, the window narrows onto kiln_ramp_time and becomes the tool's card (on the stone until 2.05)
   sandbox: 2.05,
   ticks: [2.3, 2.4, 2.5] as const,
   ownTests: 2.45,
@@ -58,20 +63,20 @@ const B = {
   line: 4.2, // lands 4.4: held 2.6 s (0.5 s + 0.3 s a word)
   diagramOut: 4.65, // gone by 4.85
   keepIn: 4.9,
-  keepPush: 5.95,
   underline: 6.2,
   settle: 6.85, // → 7.2: the card settles centred at 60 % of the frame's width on the stone (the master's zoom punch)
   out: 7.0, // gone by 7.18, two frames before the push into S06 (7.27)
 } as const;
 const FOLD = 0.4;
+/** RSW-01's first frame with "Running a script: Create, test, keep and use a kiln_ramp_time tool for…" (71.683). */
+const SCRIPT_SRC = 71.7;
 const SETTLE = 0.35;
 /** Type exits: 0.18 s, accelerating (REVIEW-1 M2). */
 const EXIT = 0.18;
 
 export const S05_MARKS = [
   { name: "title", s: B.title },
-  { name: "thinking-cut", s: B.cut },
-  { name: "script-line", s: B.script },
+  { name: "cut to the script line", s: B.cut },
   { name: "fold-to-tool", s: B.fold },
   { name: "sandbox", s: B.sandbox },
   { name: "blind-check", s: B.blind },
@@ -106,24 +111,10 @@ const WORD_INK = { x0: 1193, x1: 1369, y0: 918, y1: 955 };
 const RSW_BG = "#141A18";
 /** The Keep card's ground as the render decodes it (sampled from a still). */
 const CARD_BG = "#1B211B";
-/** The Keep card (714–2009 × 677–1048, from 89.433) and its bullet's strip (the bullet 796–1819 × 898–924, the buttons). */
-const KEEP_CARD = box(700, 664, 1324, 398);
 /**
- * 16:9: the whole bullet with the buttons and the card's foot. 4:5 (1040 px wide): the bullet's last words,
- * "independent check disagreed (2 of 5 tests passed)." with the card's ground under them. The left edge sits in the
- * 11 px gap between "the" (ends 1147) and "independent" (starts 1158), so its feather is kept to 7 source px; the Keep
- * button (ends 1157, one row lower) falls inside that feather.
- */
-const KEEP_STRIP: Record<Layout["id"], Box> = { "16x9": box(712, 878, 1148, 176), "4x5": box(1150, 866, 696, 150) };
-/**
- * 16:9 (REVIEW-2 M-1): the strip's top edge is 6 source px lower than in draft 3, mid-gap between "hold_min)" (ink
- * 837–862) and the bullet (899–924), so the bullet keeps its padding; and while the camera narrows onto the strip, the card's upper part
- * (its title and description, inside its border) fades into the card's ground, so the moving crop never cuts a line.
- */
-const KEEP_UPPER = { x0: 718, x1: 2004, y0: 682, y1: 880 };
-/**
- * 4:5 (REVIEW-2 M-1): the card's bullet and buttons, re-wrapped from the take's own pixels so they read in a 4:5 frame
- * (the window's real layout, one line of 1023 source px, is 22-px type at 92 % of 1080). Three crops of the same frame,
+ * Both aspects (REVIEW-2 M-1 for 4:5, REVIEW-3 N-2 for 16:9): the Keep card's bullet and buttons (the card 714–2009 ×
+ * 677–1048 from 89.433; the bullet 796–1819 × 898–924), re-wrapped from the take's own pixels so they read on a phone
+ * (the window's real layout, one line of 1023 source px, is 22-px type at 92 % of 1080, about 40 px across 16:9). Three crops of the same frame,
  * stacked: A the bullet and "Pebble asks because the independent" (the edge at 1322 is in the 10-px gap before
  * "check"); B "check disagreed (2 of 5 tests passed)." set one line lower (the UI's own line pitch, 34 px, measured on
  * the description's wrap) and hung under "Pebble" (830); C "View code · Discard · Keep", a line lower too. The top
@@ -139,8 +130,6 @@ const STACK_ROWS: { src: Box; v: { x: number; y: number } }[] = [
 ];
 /** "(2 of 5 tests passed)." in row B of the stacked card */
 const TWO_OF_FIVE_V = { x0: 1550 + HANG, x1: 1820 + HANG, y: 935 + PITCH };
-/** "(2 of 5 tests passed)." in the bullet (1550–1819), for the drawn underline (an annotation). */
-const TWO_OF_FIVE = { x0: 1550, x1: 1820, y: 935 };
 
 const diagram = (L: Layout) => {
   const P = L.px;
@@ -405,8 +394,8 @@ export const S05Workshop: React.FC<SceneProps> = ({ durationInFrames }) => {
   const cut = T(B.cut);
   const holdAt = T(B.fold) + FOLD + 0.05;
   const time: TimeMap = {
-    at: (x: number) => (x < cut ? 61.75 + x : 71.35 + (Math.min(x, holdAt) - cut)),
-    inv: (src: number) => (src < 61.75 + cut ? src - 61.75 : cut + (src - 71.35)),
+    at: (x: number) => (x < cut ? 61.75 + x : SCRIPT_SRC + (Math.min(x, holdAt) - cut)),
+    inv: (src: number) => (src < 61.75 + cut ? src - 61.75 : cut + (src - SCRIPT_SRC)),
     speed: (x: number) => (x < holdAt ? 1 : 0),
     knots: [],
   };
@@ -453,67 +442,28 @@ export const S05Workshop: React.FC<SceneProps> = ({ durationInFrames }) => {
     );
   };
 
-  // the Keep card rises whole, then the window narrows onto its bullet while the camera pushes in
-  const card0: Rect = pick(L, {
-    "16x9": { x: L.px(160), y: L.px(460), w: L.px(1600), h: (L.px(1600) * KEEP_CARD.h) / KEEP_CARD.w },
-    "4x5": { x: L.px(20), y: L.px(668), w: L.px(1040), h: (L.px(1040) * KEEP_CARD.h) / KEEP_CARD.w },
-  });
-  const stripBox = KEEP_STRIP[L.id];
-  const stripW = pick(L, { "16x9": L.content.w, "4x5": L.px(1040) });
-  const stripH = (stripW * stripBox.h) / stripBox.w;
-  const strip: Rect = pick(L, {
-    "16x9": { x: (L.W - stripW) / 2, y: L.px(570), w: stripW, h: stripH },
-    "4x5": { x: (L.W - stripW) / 2, y: L.px(830) - stripH / 2, w: stripW, h: stripH },
-  });
-  const keepP = EASE.camera(clamp01((t - (T(B.keepPush) - 0.6)) / 0.6));
-  // the last beat: back to the whole card, centred at 60 % of the frame's width with the stone round it (FIXES-1's
-  // S05 → S06 zoom punch must not start on a dark frame)
+  // The Keep card (REVIEW-2 M-1 for 4:5; REVIEW-3 N-2 for 16:9): in both aspects, the bullet and the buttons as three
+  // crops of the take's own frame, stacked (STACK_ROWS), so the sentence wraps to 2 lines that read at phone size. It
+  // rises whole, drifts 1.2 %/s, the clay underline marks "(2 of 5 tests passed).", and it settles to 60 % of the
+  // frame's width on the stone for the master's punch into S06 (it must not start on a dark frame).
   const settleP = EASE.camera(clamp01((t - T(B.settle)) / SETTLE));
-  const endW = L.W * 0.6;
-  const endH = (endW * KEEP_CARD.h) / KEEP_CARD.w;
-  const endRect: Rect = { x: (L.W - endW) / 2, y: (L.H - endH) / 2, w: endW, h: endH };
-  const card = mixRegion(mixRegion(card0, strip, keepP), endRect, settleP);
-  const keepKeys: ZoomKey[] = [{ t: 0, box: mixRegion(mixRegion(KEEP_CARD, stripBox, keepP), KEEP_CARD, settleP) }];
   // the card's rise, drawn here so the window (and its video) stays mounted from frame 0 (FloatingWindow's own rise
   // unmounts it before `at`)
   const keepPin = EASE.enter(clamp01((t - T(B.keepIn)) / 0.75));
   const keepOn = t >= T(B.keepIn) ? Math.min(1, keepPin * 1.6) : 0;
-
   const underline = ramp(t, T(B.underline), 0.45, EASE.enter);
-  // 16:9: the card's upper part fades out over the push's first 40 %, and back in over the settle's last 30 % (when the
-  // widening crop is already above it)
-  const upper = L.portrait ? 0 : clamp01(keepP / 0.4) * (1 - clamp01((settleP - 0.7) / 0.3));
 
-  // 4:5: the stacked card at 92 % of the frame's width (40-px margins), centred under the headline; it rises, drifts
-  // 1.2 %/s, and settles to 60 % of the width for the master's punch
-  const stackW = L.W * 0.92;
+  // 4:5: 92 % of the frame's width (40-px margins, the sentence at about 43 px), centred under the headline. 16:9:
+  // 1.25× that scale (1240 px wide, the sentence at about 55 px: 1.35× draft 4's single line of about 40 px), centred
+  // in the space under the headline.
+  const stackW = pick(L, { "16x9": L.px(1240), "4x5": L.W * 0.92 });
   const stackK = stackW / STACK.w;
-  const stackRect: Rect = { x: (L.W - stackW) / 2, y: L.px(840) - (STACK.h * stackK) / 2, w: stackW, h: STACK.h * stackK };
+  const stackCy = pick(L, { "16x9": L.px(706), "4x5": L.px(840) });
+  const stackRect: Rect = { x: (L.W - stackW) / 2, y: stackCy - (STACK.h * stackK) / 2, w: stackW, h: STACK.h * stackK };
   const stackEndW = L.W * 0.6;
   const stackEnd: Rect = { x: (L.W - stackEndW) / 2, y: (L.H - (stackEndW * STACK.h) / STACK.w) / 2, w: stackEndW, h: (stackEndW * STACK.h) / STACK.w };
   const stackCard = mixRegion(stackRect, stackEnd, settleP);
   const stackDrift = 1 + 0.012 * Math.max(0, Math.min(t, T(B.settle)) - T(B.keepIn) - 0.75);
-  const keepOverlay = (toView: (p: { x: number; y: number }) => { x: number; y: number }, k: number) => {
-    const a = toView({ x: TWO_OF_FIVE.x0, y: TWO_OF_FIVE.y });
-    const b = toView({ x: TWO_OF_FIVE.x1, y: TWO_OF_FIVE.y });
-    // 4:5 only: the Keep button's last 7 px (1150–1157, a row below the bullet) under the crop's left edge, covered in
-    // the card's own ground once the push has narrowed onto the bullet
-    const c0 = toView({ x: 1120, y: 948 });
-    const c1 = toView({ x: 1162, y: 1026 });
-    const u0 = toView({ x: KEEP_UPPER.x0, y: KEEP_UPPER.y0 });
-    const u1 = toView({ x: KEEP_UPPER.x1, y: KEEP_UPPER.y1 });
-    return (
-      <>
-        {L.portrait && keepP > 0.5 && settleP < 0.25 ? (
-          <div style={{ position: "absolute", left: c0.x, top: c0.y, width: c1.x - c0.x, height: c1.y - c0.y, background: CARD_BG, opacity: 1 - settleP * 4 }} />
-        ) : null}
-        {upper > 0.001 ? <div style={{ position: "absolute", left: u0.x, top: u0.y, width: u1.x - u0.x, height: u1.y - u0.y, background: CARD_BG, opacity: upper }} /> : null}
-        {underline > 0 ? <div style={{ position: "absolute", left: a.x, top: a.y, width: (b.x - a.x) * underline, height: Math.max(2, 3 * k), borderRadius: 2, background: C.clay, opacity: 0.95 }} /> : null}
-      </>
-    );
-  };
-  // the strip's hold drifts (1.2 %/s on the window, never on the type: 0.8 %/s read as a freeze at 30 fps)
-  const keepDrift = 1 + 0.012 * Math.max(0, Math.min(t, T(B.settle)) - T(B.keepPush)) + 0.006 * Math.max(0, t - T(B.settle) - SETTLE);
 
   const head: Rect = pick(L, {
     "16x9": { x: L.content.x, y: L.px(96), w: L.content.w, h: L.px(250) },
@@ -536,38 +486,20 @@ export const S05Workshop: React.FC<SceneProps> = ({ durationInFrames }) => {
 
           <Diagram t={t} T={T} L={L} cardOn={cardOn} />
 
-          {L.portrait ? (
-            <FloatingWindow
-              rect={stackCard}
-              enter="none"
-              tilt={{ rx: 10, ry: 0 }}
-              flattenAt={T(B.keepIn) + 0.15}
-              flattenDur={0.45}
-              radius={20}
-              background={CARD_BG}
-              offset={{ x: 0, y: (1 - keepPin) * 90 * L.u }}
-              scale={lerp(0.97, 1, keepPin) * stackDrift}
-              style={{ opacity: keepOn, filter: keepPin < 0.999 && keepOn > 0 ? `blur(${((1 - keepPin) * 14 * L.u).toFixed(2)}px)` : undefined }}
-            >
-              <StackedCard rect={stackCard} time={keepTime} underline={underline} />
-            </FloatingWindow>
-          ) : null}
-          {L.portrait ? null : (
           <FloatingWindow
-            rect={card}
+            rect={stackCard}
             enter="none"
             tilt={{ rx: 10, ry: 0 }}
             flattenAt={T(B.keepIn) + 0.15}
             flattenDur={0.45}
             radius={20}
-            background="#1C231C"
+            background={CARD_BG}
             offset={{ x: 0, y: (1 - keepPin) * 90 * L.u }}
-            scale={lerp(0.97, 1, keepPin) * keepDrift}
+            scale={lerp(0.97, 1, keepPin) * stackDrift}
             style={{ opacity: keepOn, filter: keepPin < 0.999 && keepOn > 0 ? `blur(${((1 - keepPin) * 14 * L.u).toFixed(2)}px)` : undefined }}
           >
-            <ScreenZoom src={SRC} srcSize={SIZE} time={keepTime} keys={keepKeys} drift={0} motionBlur={false} edgeFade={8} overlay={keepOverlay} />
+            <StackedCard rect={stackCard} time={keepTime} underline={underline} />
           </FloatingWindow>
-          )}
 
           <TypeExit at={T(B.titleOut)} t={t} u={L.u}>
             <Headline
