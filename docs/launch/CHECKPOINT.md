@@ -1,0 +1,63 @@
+# Launch 2.0: checkpoint (1 Nov 2026, ~16:10 IST)
+
+The director session (claude-w, adminoffice@) hit 94 % of its 5-hour usage window. This file is how to resume.
+Read in order: this file → `docs/launch/TREATMENT.md` (with rulings v1.1) → `docs/launch/EDIT_PLAN.md` → the
+handoffs named below. Memory: `~/.claude-work/projects/-Users-xyx-Projects-pebble-landingPage/memory/`.
+
+## Owner decisions so far
+
+- Story "Small pebble. Real work." (underdog hook vs Claude Code and Codex, paid off by the published benchmarks).
+- No voiceover; "Context warping." is the on-screen title of sealed context; deliver ~90–100 s in 16:9 and a 4:5
+  re-layout; post the 4:5 natively on LinkedIn (research advice), 16:9 for the site and YouTube.
+- Cleanup of the previous session's media approved and done (`.work/cleanup-2026-11-01-launch.md`).
+- Delegate workers to **claude-p** (tohin@, `~/.claude-personal`), background sessions in auto mode; launch command in
+  memory `claude-p-delegation.md`. The owner accepted claude-p's workspace trust for this repo.
+- **Pending: the music pick (A, B or C) by ear.** Director's pick: **A, "Your Breath"** (Mixkit, 120 BPM, 100 s,
+  drop 8.051 s). Files: `video/public/launch/audio/music/launch-music-{A-your-breath,B-masking-the-masters,
+  C-techno-fest-vibes}.{mp3,wav,beatmap.json}`; write-up `.work/launch/music/MUSIC.md`. B needs a manual Mixkit
+  download by the owner. No credit line required (optional courtesy line).
+
+## Who is doing what
+
+| Worker | Where it runs | State | Output |
+|---|---|---|---|
+| Site audit | claude-w subagent | **done** | `.work/launch/site/SITE_AUDIT.md` (live site = origin/main 4314c08, already shows the 2.0 benchmarks; plan for /media/v3 loops, 4:5 phone film, rule conflicts X1–X15) |
+| Skills research | claude-w subagent | **done** | `.work/launch/research/SKILLS_REPORT.md`; project skill `.claude/skills/launch-film-craft` (HyperFrames = reference only) |
+| Music + SFX | claude-w subagent | **done** | edits A/B/C + beat maps; 25-file SFX kit in `video/public/launch/audio/sfx/` (`kit.json`) |
+| Footage map | claude-w subagent | running/may stall at the usage limit | `video/src/launch/data/takes.ts`, `.work/launch/assets/TAKES.md`, sheets; takes copied to `video/public/launch/takes/` |
+| iPhone Remote | claude-w subagent | running (one xcodebuild failed, exit 65, at 14:52) | `.work/launch/remote/` (clone + REMOTE.md), target `video/public/launch/remote/`, `data/remote.ts` |
+| UI capture (2.0.1 harness) | claude-w subagent | running | frozen release `.work/launch/frozen-2.0.1`; `capture/launch/` (commits e70ee4c, 13aa323, e474f69); target `video/public/launch/ui/`, `data/ui.ts`, `.work/launch/ui/UI_CAPTURE.md` |
+| Motion system | claude-w subagent | finishing (style frames r3 approved) | `video/src/launch/**` components, `.work/launch/style/r3/`; handoff `.work/handoffs/launch-foundation.md` when done |
+| Scenes A: S00, S01, S11 | **claude-p** `pebble-scenes-a` (13a2ff2f) | running | `video/src/launch/scenes/a/`, report `.work/handoffs/launch-scenes-a.md` |
+| Scenes B: S02, S03, S09 | **claude-p** `pebble-scenes-b` (91d4973d) | running | `scenes/b/`, `.work/handoffs/launch-scenes-b.md` |
+| Scenes D: S06, S07, S10 | **claude-p** `pebble-scenes-d` (a0703efc) | running | `scenes/d/`, `.work/handoffs/launch-scenes-d.md` |
+| Scenes C: S04, S05 | **claude-p** `pebble-scenes-c` | launched at checkpoint (see below) | `scenes/c/`, `.work/handoffs/launch-scenes-c.md` |
+
+claude-w subagents stop when this window runs out; their files stay on disk. Check each output above; re-run only what
+is missing. claude-p sessions keep running (another account). Status:
+`CLAUDE_CONFIG_DIR=~/.claude-personal <claude.exe> agents --json`; resume one with notes:
+`… --resume <id> --bg "<notes>"`. They can't SendMessage across accounts: read their handoff files.
+
+## Next steps, in order
+
+1. Get the owner's music pick; copy its beat map to a committed path (e.g. `video/src/launch/data/music.ts`).
+2. Launch the remaining claude-p sessions when memory allows (≤ 4 at once, 8 GB Mac): **group E** (S08 Remote; needs
+   `data/remote.ts`, else a Device scene with the app's real screenshots if any) and **the site** (implement
+   SITE_AUDIT.md's film-independent steps: 2.0.1 release facts from the GitHub release and SHA256SUMS, /llms.txt and
+   #infrastructure, /media/v3 + /ui/v2 plumbing in next.config.ts and src/lib/media.ts, the loop slots and a #remote
+   section, CLAIMS rows; all checks). Briefs: copy `.work/launch/briefs/_common.md` + a group file.
+3. Review each scene group from its handoff (stills + preview contact sheets); send notes with `--resume`.
+4. Build the master: `video/src/launch/Master.tsx` (16:9 and 4:5) placing the scenes on the music, the world-change
+   seams (TREATMENT rulings), the SFX map (EDIT_PLAN), music at −14 LUFS master. Timing for music A:
+   S00 0–8.051 · S01 8.051–12.051 · S02 12.051–20.051 · S03 20.051–32.051 (burst lifts at the 24.051 phrase) ·
+   S04 32.051–40.051 · S05 40.051–48.051 (phrase) · S06 48.051–56.051 · S07 56.051–63.051 (title on the 56.051
+   phrase) · S08 63.051–72.051 · S09 72.051–79.5 (the breath; near-silence ~80.7) · S10 79.5–93.055 ("So. How did it
+   do?" in the silence, charts slam on the 81.051 lift) · S11 93.055–100 ("Small pebble." / "Real work." on the
+   drum-out hits 93.055 and 93.303; lockup on the F pad 95.055; rest on the D pad 97.055).
+5. Render the 16:9 master through `scripts/heavy.sh` (60 fps, `--concurrency=1`, ~25 min), scan it (blank/half-painted
+   frames, the flash scan `video/src/film2/qa/flash-rgb-scan.ts`, title-safe), then a fresh critic agent reviews
+   contact sheets only (craft skill rule 13). Fix, re-render; then 4:5.
+6. Deliver: `out/` masters, LinkedIn 4:5 + 16:9 at −14 LUFS, a web copy at 30 fps −16 LUFS, the SRT of on-screen
+   text, posters (frame 0), the post text with the benchmark method, CLAIMS rows for the film's lines.
+7. Landing page: per SITE_AUDIT.md, loops cut from the locked film's scenes into /media/v3, the film + phone cut,
+   tests, `next build` via heavy.sh, copy lint. Never deploy: the owner pushes main.
