@@ -13,7 +13,10 @@
 //     The one exception (OVERRIDES §11, §16, §18): the Benchmarks section names the products Pebble was measured
 //     against, so "Claude Code" and, since golden set 2.0 (the "2.0.0 published" post, STATUS 2026-10-31 14:53),
 //     "Codex" (and no other name) pass inside <section id="benchmarks">, in llms.txt's "## Benchmark" block and in
-//     src/content/benchmarks.ts. Every other rule still applies there.
+//     src/content/benchmarks.ts. Since the director's X1 for the 2.0 launch (1 Nov 2026), they pass on the film's
+//     page too (/film, the transcript of the film that names both), and in the film's captions and chapters
+//     (src/content/filmCaptions.ts, chapters.ts). Names as plain text only. Every other rule, "beats" included, still
+//     applies there.
 //   - Stealth Lockdown's never-words (OVERRIDES §21): "undetectable", "invisible", and exams, interviews, proctoring,
 //     monitoring, cheating, bypassing or evading, except inside the honest line itself; and "Context Warping", the name
 //     of 1.3.0's prompt-caching change, which waits for its benchmark (OVERRIDES §25).
@@ -264,6 +267,8 @@ function strip(text) {
 
 /** The one place a visitor may read the name of the product Pebble was measured against (see the header). */
 const NAMED = /\b(Claude Code|Codex)\b/g;
+/** src/content files in the named scope: the benchmark's, and the film's captions and chapters (the director's X1). */
+const NAMED_FILES = new Set(["benchmarks.ts", "filmCaptions.ts", "chapters.ts"]);
 
 /**
  * [the Benchmarks section's HTML and the benchmark strip's under the hero (<aside id="benchmark-strip">: golden set 2.0's
@@ -326,9 +331,11 @@ let items = 0;
 for (const file of pages) {
   const page = file === "index.html" ? "/" : `/${file.replace(/\.html$/, "")}`;
   const [named, rest] = splitNamed(readFileSync(path.join(APP, file), "utf8"));
+  // the film's page names the products the film names (the director's X1): the whole page is in the named scope
+  const filmPage = page === "/film";
   for (const item of extract(rest, page)) {
     items++;
-    lint(item);
+    lint(filmPage ? { ...item, named: true } : item);
   }
   for (const item of extract(named, page)) {
     items++;
@@ -361,7 +368,7 @@ if (args.includes("--src")) {
         const s = (m[1] ?? m[2] ?? "").replace(/\\(["'`\\])/g, "$1");
         if (s.length < 3 || !/[a-z]{2}/i.test(s) || /^[\w./:#@-]+$/.test(s)) continue; // keys, paths, URLs
         items++;
-        lint({ text: s.replace(/`[^`]*`/g, "CODE"), verbatim: false, where: `src/content/${file}:${i + 1}`, named: file === "benchmarks.ts" });
+        lint({ text: s.replace(/`[^`]*`/g, "CODE"), verbatim: false, where: `src/content/${file}:${i + 1}`, named: NAMED_FILES.has(file) });
       }
     }
   }

@@ -18,6 +18,13 @@ This covers everything under `public/media/` and the interface stills under `pub
   film's first frame; the loops' are in `media/v1`.
 - `media/v1/wallpaper-*`: the riverbed wallpaper.
 - `ui/v1/`: stills of Pebble's real interface, in both themes and two widths.
+- `media/v3/` (when published) the Pebble 2.0 launch: `film-1080` and `film-720`, each as `.hevc.mp4` and `.h264.mp4`,
+  the launch film with its soundtrack; `film-phone`, its 4:5 cut for phones (1080 × 1350), which replaces the 1:1 cut;
+  its three text tracks; `film.poster` and `film-phone.poster`; and the 2.0 feature loops (`loop-desk`, `loop-mac-apps`,
+  `loop-mac-actions`, `loop-mac-web`, `loop-guard`, `loop-workshop`, `loop-memory`, `loop-long-tasks`, `loop-remote`,
+  `loop-stealth`), silent, each with its poster and an optional 4:5 cut (`-phone`). `ui/v2/`: stills of Pebble 2.0.x's
+  interface. Files in `media/v1`, `media/v2` and `ui/v1` are served as immutable and never overwritten; a fix to a
+  published `v3` file goes to `v4`.
 
 The social films for X and LinkedIn, and a narrated version of the film whose narrator is an AI voice (Sarvam AI's
 Bulbul), are made from the same sources and are not in this repository.
@@ -25,16 +32,23 @@ Bulbul), are made from the same sources and are not in this repository.
 ## What is in them
 
 - **Pebble's real interface.** The product interface shown is Pebble's own (Apache-2.0,
-  https://github.com/tohin003/Pebble), captured from the app's code, never redrawn. Everything it shows is fictional
-  sample data: Maya, a Python project called `invoice-kit`, a Lisbon trip budget and a datetime quiz.
+  https://github.com/tohin003/Pebble), never redrawn. The 1.x media capture it from the app's code; everything they
+  show is fictional sample data: Maya, a Python project called `invoice-kit`, a Lisbon trip budget and a datetime quiz.
+  The 2.0 launch's clips are recordings of the real app (takes of the 2.0.0 build and a harness of the published 2.0.1
+  release) and of Pebble Remote built from its published source, with their own fictional sample data; each is
+  captioned "Shown with sample data." with the version it was recorded from. The long-tasks loop is a diagram, captioned
+  as one.
 - **The pebble.** Pebble's character engine: bloub by Jérémy Perret (MIT).
 - **The type.** Fraunces, Inter and Geist Mono, under the SIL Open Font License 1.1.
 - **The riverbed wallpaper.** Original, made for this site.
 - **The music.** The launch trailer's score, an original score composed for the film and synthesised entirely in code
   by this repository's own engine (`tools/audio/synth`; the score is `tools/audio/scores/trailer_b.py`). It uses no
-  samples, no downloads and no third-party music.
+  samples, no downloads and no third-party music. The Pebble 2.0 launch film (`media/v3`) uses "Your Breath" by
+  Eugenio Mininni (Mixkit), under the Mixkit Stock Music Free License, which requires no credit; `CREDITS.md` and
+  `/credits` name it as a courtesy.
 - **The sound effects.** Synthesised for the film and released under CC0 1.0, plus recorded foley from Kenney's
-  "Impact Sounds" and "Interface Sounds" (www.kenney.nl, CC0 1.0).
+  "Impact Sounds" and "Interface Sounds" (www.kenney.nl, CC0 1.0). The launch film's effects come from the same two
+  Kenney packs and sounds designed in code for this project (CC0 1.0).
 - **Audio** is only in the film files. The loops are silent, and no audio file is distributed on its own.
 
 ## Where the sources and tools are
