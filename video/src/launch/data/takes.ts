@@ -20,6 +20,9 @@
 //   cubic-bezier(0.16, 1, 0.3, 1), or a pull of 0.7 s, landing before the action (TREATMENT rulings v1.1); a key
 //   with `cut: true` is a hard cut to that framing at `s` instead (used where a move would cross a hazard).
 // - Hazards list what must be cropped, blurred or avoided (TREATMENT §5); `hazardsIn()` checks a box at a time.
+// - The camera (camera.ts fitRegion) grows a box to the view's aspect. Every ROI used by a beat is checked clean when
+//   fitted to 16:9 full frame, and through its `tall` variant to the feature window (1.40 on 16:9, 1.22 on 4:5).
+//   `zoomKeys(id, beat, viewAspect)` picks the right one.
 
 export interface Box {
   x: number;
@@ -42,6 +45,12 @@ export interface TakeRoi extends Box {
   valid?: readonly [number, number];
   /** hazards (matched against their `what`) that fall inside this box during `valid`: blur them */
   masks?: readonly string[];
+  /**
+   * The framing for views taller than 1.6:1 (the feature window: 1072×768 on 16:9, 1000×820 on 4:5), checked clean at
+   * 1.40 and 1.22 once the camera grows it to the view (camera.ts fitRegion). `null`: no clean framing that tall exists
+   * (float an isolate crop instead). Absent: the box itself stays clean at those aspects.
+   */
+  tall?: Box | null;
 }
 
 export type HazardKind =
@@ -288,7 +297,7 @@ const RS4_07: Take = {
     { name: "useCalculatorCard", ...box(1350, 480, 690, 388), note: "'Use Calculator': 'Lets Pebble see and use this one window…', 'Pebble says: To press the keys 4 8 × 1 2 . 5 = …' (4.5–21.3)", valid: [0, 150] },
     { name: "allowCard", ...box(1350, 640, 690, 388), note: "the card's end: 'Only this window. Pebble stops at sign-ins, codes and checks…', Don't allow, Allow (22.4–39.633)", valid: [0, 150] },
     { name: "isolate-allowButton", ...box(1833, 937, 152, 63), note: "Allow (22.4–39.633)", valid: [0, 150] },
-    { name: "calculatorWide", ...box(372, 280, 1476, 830), note: "Calculator (from 43.55), the companion beside it with its 'On it' pill, the conversation behind", valid: [9.633, 150] },
+    { name: "calculatorWide", ...box(372, 280, 1476, 830), note: "Calculator (from 43.55), the companion beside it with its 'On it' pill, the conversation behind", valid: [9.633, 150], tall: box(300, 228, 1335, 751) },
     { name: "calculatorTop", ...box(500, 330, 1160, 653), note: "the whole display ('48×12.5' over '600'), four key rows, the companion and its 'On it' pill (from 43.55)", valid: [9.633, 150] },
     { name: "display", ...box(406, 330, 788, 443), note: "the display ('48×12.5' over '600', right-aligned at x ≈ 1008, y ≈ 395–520) and the top two key rows (from 43.55)", valid: [9.633, 150] },
     { name: "isolate-calculator", ...box(572, 290, 457, 810), note: "the Calculator window alone, corner radius ≈ 52 px (from 43.55); keys: 4 (638, 818), 8 (746, 710), × (962, 710), 1 (638, 926), 2 (746, 926), . (855, 1033), 5 (746, 818), = (962, 1033)", valid: [9.633, 150] },
@@ -378,8 +387,8 @@ const RS5C_04: Take = {
     { name: "doIt", ...box(1350, 300, 690, 388), note: "'Pebble asks Calendar through its own scripting…', Don't allow, Do it, the step 'Add \"Glaze order\"…' (32.7–48.55)", valid: [0, 101.183] },
     { name: "isolate-doItButton", ...box(1843, 450, 142, 61), note: "Do it (32.7–48.55)", valid: [0, 101.183] },
     { name: "calendarReported", ...box(430, 265, 920, 518), note: "'Calendar reported adding \"Glaze order\" from 2026-11…', 'Thinking', the steps and the 'Action completed' toast (866–1182 × 696–777)", valid: [52.25, 54.517] },
-    { name: "calendarMonth", ...box(395, 190, 1653, 930), note: "the Calendar window from 'October 2026' down to the Monday 2 row with 'Glaze order 09:00' (from 101.183)", valid: [101.183, 109.85], masks: ["personal calendar events"] },
-    { name: "calendarLowerLeft", ...box(390, 760, 693, 390), note: "the last weeks' left cells; 'Glaze order 09:00' in Monday 2's cell, 402–690 × 1016–1150 (from 101.183)", valid: [0, 109.85] },
+    { name: "calendarMonth", ...box(395, 190, 1653, 930), note: "the Calendar window from 'October 2026' down to the Monday 2 row with 'Glaze order 09:00' (from 101.183)", valid: [101.183, 109.85], masks: ["personal calendar events"], tall: box(402, 58, 1330, 1090) },
+    { name: "calendarLowerLeft", ...box(390, 760, 693, 390), note: "the last weeks' left cells; 'Glaze order 09:00' in Monday 2's cell, 402–690 × 1016–1150 (from 101.183)", valid: [0, 109.85], tall: box(390, 640, 616, 506) },
     { name: "isolate-glazeCell", ...box(392, 1012, 312, 148), note: "Monday 2's cell: 'Glaze order 09:00' (from 101.183)", valid: [0, 109.85] },
   ],
   hazards: [
@@ -442,7 +451,7 @@ const RS5F_03: Take = {
   rois: [
     { name: "finderCard", ...box(1350, 440, 690, 388), note: "'Open the folder /Users/studio/Documents/Open day in Finder.' and the card's body (16.233–27.5)", valid: [0, 107.234] },
     { name: "doIt", ...box(1350, 300, 690, 388), note: "'Pebble asks Finder through its own scripting…', Don't allow, Do it (27.7–43.967)", valid: [0, 107.234] },
-    { name: "finderFiles", ...box(395, 60, 1340, 754), note: "the 'Open day' window's title, toolbar and its seven items, right of the iCloud sidebar (from 44.95)", valid: [44.95, 107.234] },
+    { name: "finderFiles", ...box(395, 60, 1340, 754), note: "the 'Open day' window's title, toolbar and its seven items, right of the iCloud sidebar (from 44.95); tall: five of them (price-list.pdf out), above the 'Done · 15K in' row", valid: [44.95, 107.234], tall: box(455, 100, 990, 811) },
     { name: "isolate-finder", ...box(404, 112, 1150, 560), note: "the reel's crop: files area and title bar (from 44.95)", valid: [44.95, 107.234] },
   ],
   hazards: [
@@ -536,9 +545,10 @@ const RS9B_02: Take = {
     { name: "videoPlays", s: 116.5, note: "to the end; real people on screen" },
   ],
   rois: [
-    { name: "browserCard", ...box(1285, 466, 705, 397), note: "'Use youtube.com — Pebble uses these sites in its own tab in your browser in this conversation, for up to 15 minutes. Sending, buying or deleting still asks you.' Details, Deny, Allow; the empty input below. Starts just under the prompt's URL line (y ≈ 448–458). Before 46.683 everything sits 32 px lower: use y + 32", valid: [46.7, 48.575] },
+    { name: "browserCard", ...box(1285, 466, 705, 397), note: "'Use youtube.com — Pebble uses these sites in its own tab in your browser in this conversation, for up to 15 minutes. Sending, buying or deleting still asks you.' Details, Deny, Allow; the empty input below. Starts just under the prompt's URL line (y ≈ 448–458). Before 46.683 everything sits 32 px lower: use y + 32. No clean taller framing (the URL line above, the stale rival card below): float isolate-browserCard in the feature window", valid: [46.7, 48.575], tall: null },
+    { name: "isolate-browserCard", ...box(1290, 468, 684, 250), note: "the card alone: 'Use youtube.com', its sentence, Details, Deny, Allow (after the shift)", valid: [46.7, 48.575] },
     { name: "isolate-allowButton", ...box(1835, 622, 120, 78), note: "Allow (after the shift; 32 px lower before 46.683)", valid: [46.7, 48.575] },
-    { name: "chromeWide", ...box(24, 210, 2000, 1122), note: "Chrome below the address bar: the default-browser infobar, the page in Pebble's green frame, the black player, the pill", valid: [54.767, 55.05], masks: ["advertiser label"] },
+    { name: "chromeWide", ...box(24, 210, 2000, 1122), note: "Chrome below the address bar: the default-browser infobar, the page in Pebble's green frame, the black player, the pill", valid: [54.767, 55.05], masks: ["advertiser label"], tall: box(24, 202, 1379, 1130) },
     { name: "pill", ...box(1345, 910, 703, 395), note: "'● Pebble is working in this tab · Stop' (1507–2014 × 1225–1298) on the empty sidebar, right of the player", valid: [54.767, 55.9] },
     { name: "isolate-pill", ...box(1495, 1215, 530, 95), note: "the pill alone", valid: [54.767, 55.9] },
     { name: "isolate-tabGroup", ...box(180, 50, 1220, 95), note: "tab strip: 'Open day – Clay & Current', the green 'Pebble' group, 'YouTube'", valid: [54.767, 55.15] },
@@ -629,7 +639,7 @@ const RS13_03: Take = {
     { name: "desktopWide", ...box(0, 70, 2940, 1654), note: "everything between the menu bar and the Dock: the workspace, then the desktop", valid: [0, 19.75], masks: ["desktop calendar widget", "the pebble-takes Finder window"] },
     { name: "vanishComposer", ...box(1600, 1133, 1060, 596), note: "the composer's right half ('…something… Type / for commands', send), the iCloud storage note's end and the footer 'Pebble can make mistakes. Check the evidence.'; bare wallpaper from 7.233. Below the pebble-takes Finder window (ends y 1131) and above the Dock", valid: [0, 19.75] },
     { name: "isolate-vanishBand", ...box(316, 1133, 2624, 596), note: "the whole clean band under the Finder window: composer, footer, Settings; bare wallpaper from 7.233 (aspect 4.4)", valid: [0, 19.75] },
-    { name: "vanishDock", ...box(1500, 1133, 1385, 779), note: "the composer's right part and the footer, the Dock's right end (System Settings, Terminal, Pebble's icon 2140–2230 × 1775–1870, Trash): the workspace leaves at 7.233, Pebble's icon shrinks 7.4–7.6, the Dock closes up at 7.633. Below the pebble-takes Finder window; the Settings badge is inside", valid: [0, 19.75], masks: ["System Settings red badge"] },
+    { name: "vanishDock", ...box(1500, 1133, 1385, 779), note: "the composer's right part and the footer, the Dock's right end (System Settings, Terminal, Pebble's icon 2140–2230 × 1775–1870, Trash): the workspace leaves at 7.233, Pebble's icon shrinks 7.4–7.6, the Dock closes up at 7.633. Below the pebble-takes Finder window; the Settings badge is inside", valid: [0, 19.75], masks: ["System Settings red badge"], tall: box(1935, 1133, 950, 779) },
     { name: "dockRight", ...box(2046, 1500, 730, 411), note: "the Dock's right end: Terminal, Pebble's icon (2140–2230 × 1775–1870), Trash; right of the Settings badge before and after the Dock re-centres", valid: [0, 19.75] },
     { name: "menuIconNoPill", ...box(2262, 0, 384, 216), note: "Pebble's menu-bar icon (2286–2316 × 10–50) between the recording pill (ends 2259) and the clock (starts 2652); 5× source, soft", valid: [0, 19.75] },
   ],
@@ -695,7 +705,7 @@ const RSW_01: Take = {
     { name: "isolate-keepAsk", ...box(705, 715, 1130, 320), note: "question, description, bullet and buttons (89.433–96.583)", valid: [0, 495.584] },
     { name: "isolate-keepButtons", ...box(880, 940, 300, 90), note: "Discard, Keep (89.433–96.583)", valid: [0, 495.584] },
     { name: "answer", ...box(700, 680, 1300, 731), note: "the whole answer, including 'it passed my 3 tests' at y ≈ 1240–1330 (from 96.65)", valid: [0, 495.584], masks: ["it passed my 3 tests"] },
-    { name: "isolate-answerHeadline", ...box(700, 690, 1000, 300), note: "'Friday's bisque firing will take about 10 hours 10 minutes (610 minutes).' and the three bullets (from 96.65)", valid: [0, 495.584] },
+    { name: "isolate-answerHeadline", ...box(700, 690, 1000, 300), note: "'Friday's bisque firing will take about 10 hours 10 minutes (610 minutes).' and the three bullets (from 96.65)", valid: [0, 495.584], tall: box(700, 412, 1000, 820) },
   ],
   hazards: [
     { kind: "recording-pill", s0: 10.5, s1: 495.584, box: RT_MENU.pill, what: "recording pill (seen 11–495 s, at times absent)", fix: "crop" },
@@ -761,8 +771,8 @@ const RS11_02: Take = {
     { name: "pointerMoves2", s: 4.0, note: "f240–250, small; otherwise still" },
   ],
   rois: [
-    { name: "pebbleFolderFiles", ...box(930, 340, 1513, 851), note: "the 'Pebble' window's toolbar and its eight items, right of the sidebar", valid: [0, 9.467] },
-    { name: "memoryFolder", ...box(930, 560, 760, 428), note: "the Memory folder (1001–1120 × 690–794) and README.md, the first row's labels above", valid: [0, 9.467] },
+    { name: "pebbleFolderFiles", ...box(930, 340, 1513, 851), note: "the 'Pebble' window's toolbar and its eight items, right of the sidebar", valid: [0, 9.467], tall: box(1010, 347, 1033, 847) },
+    { name: "memoryFolder", ...box(932, 560, 760, 427), note: "the Memory folder (1001–1120 × 690–794) and README.md, the first row's labels above", valid: [0, 9.467] },
     { name: "isolate-pebbleFolder", ...box(611, 328, 1832, 867), note: "the whole Finder window, sidebar included", valid: [0, 9.467], masks: ["Finder sidebar", "title bar of the pebble-takes"] },
   ],
   hazards: [
@@ -830,12 +840,16 @@ export function beatOf(name: string): { take: Take; beat: Beat } {
 
 /**
  * A beat's zoom path as camera keys for components/ScreenZoom with keyTime="source" (camera.ts `ZoomKey`): t in source
- * seconds, the ROI's box, and dur 0 on a cut (camera.ts cuts when a move has no duration).
+ * seconds, the ROI's box (its `tall` variant when the view is taller than 1.6:1), and dur 0 on a cut (camera.ts cuts
+ * when a move has no duration). Throws where no clean framing exists for the view, so a hazard never shows silently.
  */
-export function zoomKeys(id: TakeId, b: Beat): { t: number; box: Box; dur?: number }[] {
+export function zoomKeys(id: TakeId, b: Beat, viewAspect = 16 / 9): { t: number; box: Box; dur?: number }[] {
+  const tallView = viewAspect < 1.6;
   return b.zoomPath.map((k) => {
     const r = roiOf(id, k.roi);
-    return { t: k.s, box: { x: r.x, y: r.y, w: r.w, h: r.h }, ...(k.cut ? { dur: 0 } : {}) };
+    if (tallView && r.tall === null) throw new Error(`takes: ${id} ${k.roi} has no clean framing at ${viewAspect.toFixed(2)}:1 (${b.beat}); float its isolate crop`);
+    const src = tallView && r.tall ? r.tall : r;
+    return { t: k.s, box: { x: src.x, y: src.y, w: src.w, h: src.h }, ...(k.cut ? { dur: 0 } : {}) };
   });
 }
 
