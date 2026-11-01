@@ -109,7 +109,6 @@ export const UI_CLIPS = {
       "heldSentence": {
         "t": 0.02,
         "box": { "x": 765, "y": 1550, "w": 1620, "h": 75 },
-        "text": { "x": 765, "y": 1550, "w": 1620, "h": 75 },
         "what": "\"Pebble's change isn't verified yet. · 2 file(s) changed and no tests were run, …\"",
       },
       "verdictBefore": {
@@ -121,14 +120,12 @@ export const UI_CLIPS = {
       "notice": {
         "t": 0.02,
         "box": { "x": 765, "y": 1150, "w": 1520, "h": 123 },
-        "text": { "x": 808, "y": 1150, "w": 1478, "h": 123 },
         "what": "the reply's quote, \"Verification remains incomplete: …\"",
       },
       "runTheTests": { "t": 1.4, "box": { "x": 765, "y": 1645, "w": 244, "h": 83 }, "what": "the Run the tests button" },
       "testsCard": {
         "t": 1.85,
         "box": { "x": 2543, "y": 528, "w": 1018, "h": 828 },
-        "text": { "x": 2580, "y": 560, "w": 943, "h": 1318 },
         "what": "the Run isolated tests card (needs review)",
       },
       "runTestsButton": {
@@ -141,15 +138,9 @@ export const UI_CLIPS = {
       "testsCardRunning": {
         "t": 4.15,
         "box": { "x": 2543, "y": 1375, "w": 1018, "h": 738 },
-        "text": { "x": 2580, "y": 1408, "w": 943, "h": 1318 },
         "what": "the card in Earlier actions, Running",
       },
-      "testsCardDone": {
-        "t": 5.6,
-        "box": { "x": 2543, "y": 1377, "w": 1018, "h": 1326 },
-        "text": { "x": 2580, "y": 1410, "w": 943, "h": 1318 },
-        "what": "the card, Done",
-      },
+      "testsCardDone": { "t": 5.6, "box": { "x": 2543, "y": 1377, "w": 1018, "h": 1326 }, "what": "the card, Done" },
       "testsOutput": {
         "t": 6.45,
         "box": { "x": 2580, "y": 1904, "w": 943, "h": 147 },
@@ -159,7 +150,6 @@ export const UI_CLIPS = {
       "testsCardResult": {
         "t": 6.45,
         "box": { "x": 2543, "y": 788, "w": 1018, "h": 1326 },
-        "text": { "x": 2580, "y": 820, "w": 943, "h": 1318 },
         "what": "the card with its Result (passed 42) and output",
       },
       "verdictAfter": {
@@ -173,12 +163,7 @@ export const UI_CLIPS = {
         "box": { "x": 748, "y": 689, "w": 1638, "h": 121 },
         "what": "the receipt and the verdict together",
       },
-      "replyAfter": {
-        "t": 8.7,
-        "box": { "x": 660, "y": 689, "w": 1725, "h": 917 },
-        "text": { "x": 658, "y": 689, "w": 1728, "h": 917 },
-        "what": "the whole final reply",
-      },
+      "replyAfter": { "t": 8.7, "box": { "x": 660, "y": 689, "w": 1725, "h": 917 }, "what": "the whole final reply" },
       "testsWorkCard": {
         "t": 9.8,
         "box": { "x": 2543, "y": 266, "w": 1018, "h": 178 },
@@ -234,28 +219,12 @@ export const UI_CLIPS = {
       "layers": {
         "t": 0.02,
         "box": { "x": 1380, "y": 425, "w": 1345, "h": 278 },
-        "text": { "x": 1380, "y": 425, "w": 1345, "h": 278 },
         "what": "the six layer buttons with counts",
       },
-      "records": {
-        "t": 0.02,
-        "box": { "x": 1380, "y": 1148, "w": 1345, "h": 864 },
-        "text": { "x": 1380, "y": 1148, "w": 1345, "h": 864 },
-        "what": "the records of Your preferences",
-      },
-      "panel": {
-        "t": 0.02,
-        "box": { "x": 800, "y": 113, "w": 2000, "h": 2025 },
-        "text": { "x": 865, "y": 178, "w": 1870, "h": 3941 },
-        "what": "the Settings dialog",
-      },
+      "records": { "t": 0.02, "box": { "x": 1380, "y": 1148, "w": 1345, "h": 864 }, "what": "the records of Your preferences" },
+      "panel": { "t": 0.02, "box": { "x": 800, "y": 113, "w": 2000, "h": 2025 }, "what": "the Settings dialog" },
       "factsLayer": { "t": 1.3, "box": { "x": 1380, "y": 523, "w": 665, "h": 83 }, "what": "the Facts & knowledge button" },
-      "factsRecords": {
-        "t": 1.6,
-        "box": { "x": 1380, "y": 1148, "w": 1345, "h": 624 },
-        "text": { "x": 1380, "y": 1148, "w": 1345, "h": 624 },
-        "what": "the records of Facts & knowledge",
-      },
+      "factsRecords": { "t": 1.6, "box": { "x": 1380, "y": 1148, "w": 1345, "h": 624 }, "what": "the records of Facts & knowledge" },
       "trash": {
         "t": 2.7,
         "box": { "x": 2650, "y": 1381, "w": 75, "h": 75 },
@@ -272,7 +241,6 @@ export const UI_CLIPS = {
       "factsAfter": {
         "t": 4.4,
         "box": { "x": 1380, "y": 1148, "w": 1345, "h": 416 },
-        "text": { "x": 1380, "y": 1148, "w": 1345, "h": 416 },
         "what": "Facts & knowledge after Forget (two records)",
       },
       "factsTab": {
@@ -322,15 +290,9 @@ export const UI_CLIPS = {
       "draft": {
         "t": 3.45,
         "box": { "x": 1210, "y": 1001, "w": 1725, "h": 933 },
-        "text": { "x": 1210, "y": 1001, "w": 1725, "h": 933 },
         "what": "the live draft (the table forming), just before it is replaced",
       },
-      "table": {
-        "t": 4.32,
-        "box": { "x": 1315, "y": 639, "w": 1620, "h": 791 },
-        "text": { "x": 1315, "y": 639, "w": 1620, "h": 791 },
-        "what": "the native table",
-      },
+      "table": { "t": 4.32, "box": { "x": 1315, "y": 639, "w": 1620, "h": 791 }, "what": "the native table" },
       "toggle": {
         "t": 4.32,
         "box": { "x": 1315, "y": 639, "w": 1620, "h": 73 },
@@ -338,18 +300,8 @@ export const UI_CLIPS = {
         "what": "Table | Chart",
       },
       "chart": { "t": 5.6, "box": { "x": 1459, "y": 639, "w": 133, "h": 73 }, "what": "the Chart button" },
-      "chartFigure": {
-        "t": 5.9,
-        "box": { "x": 1315, "y": 731, "w": 1620, "h": 709 },
-        "text": { "x": 1315, "y": 731, "w": 1620, "h": 709 },
-        "what": "the chart",
-      },
-      "replyAfter": {
-        "t": 5.9,
-        "box": { "x": 1210, "y": 460, "w": 1725, "h": 1156 },
-        "text": { "x": 1208, "y": 460, "w": 1728, "h": 1156 },
-        "what": "the reply with its chart",
-      },
+      "chartFigure": { "t": 5.9, "box": { "x": 1315, "y": 731, "w": 1620, "h": 709 }, "what": "the chart" },
+      "replyAfter": { "t": 5.9, "box": { "x": 1210, "y": 460, "w": 1725, "h": 1156 }, "what": "the reply with its chart" },
     },
     "pointer": [
       { "t": 0, "x": 2950, "y": 400, "click": false },
@@ -372,7 +324,7 @@ export const UI_STILLS = {
       "dark": "launch/ui/stills/dark/launch-held-row@3x.png",
       "light": "launch/ui/stills/light/launch-held-row@3x.png",
     },
-    "size": { "w": 2064, "h": 1359 },
+    "size": { "w": 2085, "h": 1446 },
     "scale": 3,
     "what": "Crop: the verdict line, the notice and \"Pebble's change isn't verified yet.\" with its three buttons",
   },
@@ -390,7 +342,7 @@ export const UI_STILLS = {
       "dark": "launch/ui/stills/dark/launch-work-view-cards@3x.png",
       "light": "launch/ui/stills/light/launch-work-view-cards@3x.png",
     },
-    "size": { "w": 2061, "h": 1971 },
+    "size": { "w": 2013, "h": 1971 },
     "scale": 3,
     "what": "Crop: the work view alone",
   },
@@ -408,7 +360,7 @@ export const UI_STILLS = {
       "dark": "launch/ui/stills/dark/launch-work-view-end-cards@3x.png",
       "light": "launch/ui/stills/light/launch-work-view-end-cards@3x.png",
     },
-    "size": { "w": 2061, "h": 1971 },
+    "size": { "w": 2013, "h": 1971 },
     "scale": 3,
     "what": "Crop: those cards",
   },
