@@ -1,6 +1,7 @@
 // The launch film's compositions (docs/launch/TREATMENT.md), registered from video/src/Root.tsx. Every one is laid out
 // for 16:9 (1920×1080) and 4:5 (1080×1350) from launch/layout.ts; ids carry the aspect.
 import { Composition, Folder } from "remotion";
+import { MasterCompositions } from "./master";
 import { ScenePreviews } from "./scenes/Previews";
 import { CHECK_SCENES, CHECK_SEG_S, ComponentCheck } from "./style/ComponentCheck";
 import { MOTION_TEST_S, MotionTest } from "./style/MotionTest";
@@ -49,5 +50,6 @@ export const LaunchCompositions: React.FC = () => (
       />
     ))}
     <ScenePreviews />
+    <MasterCompositions />
   </Folder>
 );
