@@ -24,5 +24,18 @@ export const MasterCompositions: React.FC = () => (
         defaultProps={{ music: MUSIC_PICK, sfx: true, sfxDb: 0, musicDb: 0 } satisfies MasterProps}
       />
     ))}
+    {SIZES.map((sz) => (
+      // the drafts' 30 fps twins (Remotion's --fps keeps the frame count, so a 30 fps draft needs its own composition)
+      <Composition
+        key={`${sz.id}-draft30`}
+        id={`LaunchFilm-${sz.id}-draft30`}
+        component={Master}
+        durationInFrames={Math.round(Math.min(FILM_S, MUSIC[MUSIC_PICK].durationS) * 30)}
+        fps={30}
+        width={sz.width}
+        height={sz.height}
+        defaultProps={{ music: MUSIC_PICK, sfx: true, sfxDb: 0, musicDb: 0 } satisfies MasterProps}
+      />
+    ))}
   </Folder>
 );

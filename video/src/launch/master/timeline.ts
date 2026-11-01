@@ -62,10 +62,6 @@ const s03Card = (W: number, H: number): Rect => {
   const h = w / 1.6;
   return { x: (W - w) / 2, y: (H - h) / 2, w, h };
 };
-/** A centred block (S06's last capture → S07's first block). */
-const centreBlock = (W: number, H: number): Rect =>
-  W > H ? { x: W * 0.3, y: H * 0.25, w: W * 0.4, h: H * 0.5 } : { x: W * 0.12, y: H * 0.3, w: W * 0.76, h: H * 0.4 };
-
 export const SEAMS: readonly Seam[] = [
   { from: "S00-ColdOpen", kind: "cut", pre: 0, post: 0, whoosh: null, why: "the drop: a hard cut on 8.051 (S00 darkens its last 3 frames; night to night)" },
   { from: "S01-Title", kind: "cut", pre: 0, post: 0, whoosh: null, why: "match cut: S01 ends on a full sage fill, S02 opens on a sage-dominant crop of the pebble" },
@@ -83,12 +79,12 @@ export const SEAMS: readonly Seam[] = [
   { from: "S05-Workshop", kind: "whip", pre: 0.15, post: 0.15, direction: "left", whoosh: "short", why: "daylight to daylight on the 48.051 downbeat" },
   {
     from: "S06-Memory",
-    kind: "scaleThrough",
-    pre: 0.25,
-    post: 0.25,
-    rect: centreBlock,
-    whoosh: "medium",
-    why: "daylight to daylight: the memory block becomes the context column",
+    kind: "softWipe",
+    pre: 0.1,
+    post: 0.3,
+    direction: "left",
+    whoosh: "short",
+    why: "daylight to daylight: a soft wipe, mostly over S07's live frames (its first frame is a bare ground, so a scale-through read as a blank card over the Memory capture)",
   },
   { from: "S07-ContextWarping", kind: "softWipe", pre: 0.25, post: 0.25, direction: "down", whoosh: null, why: "daylight to night: the light drains from the top (a wipe, never a cut); no whoosh: S08's phone rises on its own 0.45 s later" },
   { from: "S08-Remote", kind: "softWipe", pre: 0.25, post: 0.25, direction: "left", whoosh: null, why: "night to desktop on the breath: no whoosh, the music thins" },

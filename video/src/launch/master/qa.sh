@@ -2,8 +2,8 @@
 # The checks on a render of the film (a draft or a master):
 #   video/src/launch/master/qa.sh <file.mp4> [--out <dir>]
 # Writes into <dir> (default .work/launch/master/qa/<file's name>/):
-#   sheet-NN.jpg       contact sheets, a frame every 0.25 s (80 tiles a sheet: 20 s), each tile stamped with its time
-#   seam-NN-<id>.jpg   a dense window round each seam (every frame at 30 fps, ±0.4 s; master/timeline.ts)
+#   sheet-NN.jpg       contact sheets, a frame every 0.25 s (80 tiles a sheet: 20 s, row-major)
+#   seam-NN-<id>.jpg   a dense window round each seam (every frame at 30 fps, ±0.4 s, row-major; the cut is tile 13)
 #   frames.txt         the blank and half-painted frame scan (black frames; one-frame luma outliers in either half)
 #   flash.json         the flash scan (video/src/film2/qa/flash-rgb-scan.ts)
 #   loudness.txt       EBU R128: integrated, LRA, true peak
@@ -21,11 +21,11 @@ FPS="$("$FP" -v error -select_streams v:0 -show_entries stream=r_frame_rate -of 
 W="$("$FP" -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "$FILE")"
 H="$("$FP" -v error -select_streams v:0 -show_entries stream=height -of csv=p=0 "$FILE")"
 TW=240; TH=$(( TW * H / W / 2 * 2 ))
-STAMP="drawtext=fontfile=/System/Library/Fonts/Menlo.ttc:text='%{pts\\:hms}':x=4:y=4:fontsize=13:fontcolor=white:box=1:boxcolor=black@0.6"
+# (this FFmpeg has no drawtext: tiles are unstamped; sheet NN covers (NN−1)×20 s to NN×20 s, row-major, 0.25 s a tile)
 
 # 1. contact sheets: every 0.25 s, 10 × 8 tiles
 "$HEAVY" "qa-sheets-$NAME" "$FF" -hide_banner -loglevel error -y -i "$FILE" \
-  -vf "fps=4,scale=$TW:$TH,$STAMP,tile=10x8:padding=2:margin=2" -q:v 3 "$OUT/sheet-%02d.jpg"
+  -vf "fps=4,scale=$TW:$TH,tile=10x8:padding=2:margin=2" -q:v 3 "$OUT/sheet-%02d.jpg"
 
 # 2. the seams, densely
 bun "$HERE/check.ts" --json "$OUT/plan.json" >/dev/null 2>&1 || true
@@ -38,7 +38,7 @@ PY
 while read -r i at id; do
   from=$(python3 -c "print(max(0, $at - 0.4))")
   "$HEAVY" "qa-seam-$NAME-$i" "$FF" -hide_banner -loglevel error -y -ss "$from" -t 0.8 -i "$FILE" \
-    -vf "fps=30,scale=$TW:$TH,setpts=PTS+$from/TB,$STAMP,tile=8x3:padding=2:margin=2" -frames:v 1 -q:v 3 \
+    -vf "fps=30,scale=$TW:$TH,tile=8x3:padding=2:margin=2" -frames:v 1 -q:v 3 \
     "$OUT/seam-$(printf %02d "$i")-$id.jpg"
 done < "$OUT/seams.txt"
 

@@ -14,7 +14,7 @@ while [ $# -gt 0 ]; do
 done
 OUT="$DRAFT_DIR/draft-$ASPECT.mp4"
 cd "$REPO/video"
-"$HEAVY" "master-draft-$ASPECT" /usr/sbin/taskpolicy -c utility npx remotion render src/index.ts "$COMP" "$OUT" \
-  --scale=0.5 --fps=30 --concurrency=1 --codec=h264 --crf=20 --pixel-format=yuv420p --color-space=bt709 \
+"$HEAVY" "master-draft-$ASPECT" /usr/sbin/taskpolicy -c utility npx remotion render src/index.ts "$COMP-draft30" "$OUT" \
+  --scale=0.5 --concurrency=1 --codec=h264 --crf=20 --pixel-format=yuv420p --color-space=bt709 \
   --audio-codec=aac --audio-bitrate=192k "${CHROME_FLAGS[@]}" ${EXTRA[@]+"${EXTRA[@]}"}
 echo "draft.sh: $OUT"
