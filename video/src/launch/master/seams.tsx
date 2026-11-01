@@ -5,7 +5,8 @@
 // carried (moved, scaled) or uncovered behind a moving edge.
 import { useId, type ReactNode } from "react";
 import { AbsoluteFill, useVideoConfig } from "remotion";
-import { SoftWipeLayer, WhipLayer } from "../components";
+import { BODY } from "../../../../shared/pebble";
+import { SoftWipeLayer, WhipLayer, pebblePath } from "../components";
 import type { Rect } from "../layout";
 import { EASE } from "../tokens";
 import { rectFor, type Seam } from "./timeline";
@@ -79,62 +80,34 @@ export const ZoomThroughLayer: React.FC<{ seam: Seam; progress: number; role: Ro
   );
 };
 
-/* ---------- push: one camera move across the same ground ---------- */
-
-/** Both pictures travel one frame's width (or height) together on the camera ease, with a light directional blur. */
-export const PushLayer: React.FC<{ seam: Seam; progress: number; role: Role; children: ReactNode }> = ({ seam, progress, role, children }) => {
-  const { width: W, height: H } = useVideoConfig();
-  const dir = seam.direction ?? "left";
-  const horizontal = dir === "left" || dir === "right";
-  const sign = dir === "left" || dir === "up" ? -1 : 1;
-  const dist = horizontal ? W : H;
-  const p = clamp01(progress);
-  const e = EASE.camera(p);
-  const off = role === "out" ? sign * e * dist : sign * (e - 1) * dist;
-  // the camera ease's speed, normalised to 1 at its middle
-  const d = 0.004;
-  const v = (EASE.camera(clamp01(p + d)) - EASE.camera(clamp01(p - d))) / (2 * d) / ((EASE.camera(0.5 + d) - EASE.camera(0.5 - d)) / (2 * d));
-  const b = 16 * (H / 1080) * clamp01(v);
-  const { filter, svg } = useBlur(horizontal ? b : 0, horizontal ? 0 : b);
-  return (
-    <AbsoluteFill style={{ transform: horizontal ? `translateX(${off.toFixed(2)}px)` : `translateY(${off.toFixed(2)}px)`, filter }}>
-      {svg}
-      {children}
-    </AbsoluteFill>
-  );
-};
-
 /* ---------- the pebble opens the next ground ---------- */
 
-/** The galet's body: about 1.13 times as wide as it is tall (PebbleActor: 0.59 × 0.52 of its size). */
-const BODY_ASPECT = 0.59 / 0.52;
-
 /**
- * The incoming scene is uncovered inside a soft-edged ellipse of the pebble's proportions, centred on the pebble's body,
- * that grows from just round the body (so the pebble, which both scenes draw at the same place, never changes size or
- * place) until it clears the frame's farthest corner. The outgoing scene dims a little as the new ground opens.
+ * The incoming scene is uncovered inside Pebble's own outline (the galet, TREATMENT's "the pebble as match shape"),
+ * centred on the pebble's body, which both scenes draw at the same place: it grows from inside the body, so the
+ * pebble's own colours change only where the wipe has passed (FIXES-1), past the body and out until it clears the
+ * frame's farthest corner, evenly in log space. A hard edge: a wipe, never a glow. The outgoing scene dims a little as
+ * the new ground opens.
  */
 export const PebbleOpenLayer: React.FC<{ seam: Seam; progress: number; role: Role; children: ReactNode }> = ({ seam, progress, role, children }) => {
   const { width: W, height: H } = useVideoConfig();
   const pb = seam.pebble!;
   const p = clamp01(progress);
   if (role === "out") {
-    const dim = 1 - 0.22 * EASE.camera(p);
+    const dim = 1 - 0.2 * EASE.camera(p);
     return <AbsoluteFill style={{ filter: dim < 0.999 ? `brightness(${dim.toFixed(3)})` : undefined }}>{children}</AbsoluteFill>;
   }
+  if (p >= 1) return <AbsoluteFill>{children}</AbsoluteFill>;
   const x = pb.x * W;
   const y = pb.y * H;
-  const ry0 = (pb.h * H) / 2;
-  const feather = 0.14;
-  // solid from (1 − feather) r: start with the body's half-height (+6 %) solid
-  const start = (ry0 * 1.06) / (1 - feather);
-  const far = Math.max(...[[0, 0], [W, 0], [0, H], [W, H]].map(([cx, cy]) => Math.hypot((cx - x) / BODY_ASPECT, cy - y)));
-  const end = far / (1 - feather) + 2;
-  const e = EASE.camera(p);
-  const ry = Math.exp(Math.log(start) + (Math.log(end) - Math.log(start)) * e);
-  const rx = ry * BODY_ASPECT;
-  const mask = p >= 1 ? undefined : `radial-gradient(${rx.toFixed(1)}px ${ry.toFixed(1)}px at ${x.toFixed(1)}px ${y.toFixed(1)}px, #000 ${((1 - feather) * 100).toFixed(1)}%, rgba(0,0,0,0) 100%)`;
-  return <AbsoluteFill style={{ WebkitMaskImage: mask, maskImage: mask }}>{children}</AbsoluteFill>;
+  const bodyW = ((pb.h * H) / BODY.height) * BODY.width;
+  const start = bodyW * 0.45;
+  // the galet's inscribed radius is about 0.44 of its width: past the farthest corner, with a margin
+  const far = Math.max(Math.hypot(x, y), Math.hypot(W - x, y), Math.hypot(x, H - y), Math.hypot(W - x, H - y));
+  const end = (far / 0.44) * 1.04;
+  const e = EASE.move(p);
+  const w = Math.exp(Math.log(start) + (Math.log(end) - Math.log(start)) * e);
+  return <AbsoluteFill style={{ clipPath: pebblePath(x, y, w) }}>{children}</AbsoluteFill>;
 };
 
 /* ---------- the dispatcher ---------- */
@@ -159,12 +132,6 @@ export const SeamLayer: React.FC<{ seam: Seam; role: Role; progress: number; chi
         <ZoomThroughLayer seam={seam} progress={progress} role={role}>
           {children}
         </ZoomThroughLayer>
-      );
-    case "push":
-      return (
-        <PushLayer seam={seam} progress={progress} role={role}>
-          {children}
-        </PushLayer>
       );
     case "pebbleWipe":
       return (

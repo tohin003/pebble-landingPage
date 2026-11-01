@@ -7,6 +7,8 @@
 // outgoing one holds its last frame. So every scene starts exactly on its music mark and keeps its own beats; the
 // transition only borrows frozen frames. No seam dissolves one world into another, and none leaves type over type.
 import type { Rect } from "../layout";
+import { S03_LAST_WINDOW } from "../scenes/b/S03UsesYourMac";
+import { S10_PEBBLE_OUT } from "../scenes/d/S10Benchmarks";
 
 export type World = "night" | "desktop" | "daylight";
 
@@ -37,7 +39,7 @@ export const TIMELINE: readonly Slot[] = [
   { id: "S07-ContextWarping", in: 54.551, out: 61.551, worldIn: "daylight", worldOut: "daylight", note: "" },
   { id: "S08-Remote", in: 61.551, out: 70.051, worldIn: "night", worldOut: "night", note: "" },
   { id: "S09-Stealth", in: 70.051, out: 79.551, worldIn: "desktop", worldOut: "night", note: "the breath: the groove thins 72.05, stops 73.07" },
-  { id: "S10-Benchmarks", in: 79.551, out: 93.055, worldIn: "daylight", worldOut: "daylight", note: "the stop 80.35–81.0; the first chart and the impact on 81.051" },
+  { id: "S10-Benchmarks", in: 79.551, out: 93.055, worldIn: "night", worldOut: "daylight", note: "opens on S09's dusk; the stop 80.35–81.0; the first chart and the impact on 81.051" },
   { id: "S11-Outro", in: 93.055, out: 100.0, worldIn: "night", worldOut: "night", note: "the thesis on the drum hits; the lockup about 2.75 s in" },
 ];
 
@@ -48,12 +50,10 @@ export const TIMELINE: readonly Slot[] = [
  * - whip: both pictures travel together with a directional blur (0.2–0.3 s);
  * - zoomThrough: the outgoing scene's last window scales up through the frame, the incoming scene's first window comes
  *   out of the frame and settles, so the new ground comes in behind it (the content swaps at full scale, under blur);
- * - push: both pictures travel together like one camera move across the same ground (slower than a whip, little blur;
- *   not used: two stages side by side show both vignettes as a dark band where they meet);
  * - softWipe: the new world sweeps in behind a moving edge (narrow: a wipe, never a dissolve);
  * - pebbleWipe: the new ground opens out of the pebble, which the scenes draw at the same place on both sides.
  */
-export type SeamKind = "cut" | "in-scene" | "whip" | "zoomThrough" | "push" | "softWipe" | "pebbleWipe";
+export type SeamKind = "cut" | "in-scene" | "whip" | "zoomThrough" | "softWipe" | "pebbleWipe";
 export type Direction = "left" | "right" | "up" | "down";
 
 /** A rect as fractions of the frame (x, w of the width; y, h of the height), so one value serves 16:9 and 4:5. */
@@ -94,20 +94,16 @@ export const toPx = (r: FracRect, W: number, H: number): Rect => ({ x: r.x * W, 
 export const rectFor = (rs: AspectRects, W: number, H: number): Rect => toPx(W >= H ? rs["16x9"] : rs["4x5"], W, H);
 
 /**
- * S03's last window and S04's first window (their builders' frames; see the seam notes in FIX1-M.md). Both are centred
- * on the frame's middle unless the scenes say otherwise; the zoom-through only needs them roughly right, since the
- * window fills the frame at the swap.
+ * The zoom-through's windows: S03's last window (its builder's export: the RS4-07 card the scene ends on) and S04's
+ * first (FIX1-C's values, which S04 draws its frame 0 to: on 4:5 the window fills the frame's lower half).
  */
-const S03_LAST: AspectRects = {
-  "16x9": { x: 0.2, y: 0.1667, w: 0.6, h: 0.6667 },
-  "4x5": { x: 0.2, y: 0.35, w: 0.6, h: 0.3 },
+const S03_LAST: AspectRects = S03_LAST_WINDOW;
+const S04_FIRST: AspectRects = {
+  "16x9": { x: 0.1458, y: 0.2944, w: 0.7083, h: 0.6044 },
+  "4x5": { x: 0.037, y: 0.2963, w: 0.9259, h: 0.5926 },
 };
 /** The whole frame: a zoom-through on it is a camera punch through the ground itself. */
 const FULL: AspectRects = { "16x9": { x: 0, y: 0, w: 1, h: 1 }, "4x5": { x: 0, y: 0, w: 1, h: 1 } };
-const S04_FIRST: AspectRects = {
-  "16x9": { x: 0.1458, y: 0.2944, w: 0.7083, h: 0.6044 },
-  "4x5": { x: 0.037, y: 0.2963, w: 0.9259, h: 0.463 },
-};
 
 export const SEAMS: readonly Seam[] = [
   { from: "S00-ColdOpen", kind: "cut", pre: 0, post: 0, whoosh: null, why: "the drop: a hard cut on 8.051 with the lockup on the drop frame (night to night)" },
@@ -171,21 +167,20 @@ export const SEAMS: readonly Seam[] = [
   { from: "S08-Remote", kind: "cut", pre: 0, post: 0, whoosh: null, why: "a hard cut on the 70.051 bar: night to the desktop's palette" },
   {
     from: "S09-Stealth",
-    kind: "pebbleWipe",
+    kind: "in-scene",
     pre: 0,
-    post: 0.6,
-    pebble: { x: 0.5, y: 0.5, h: 0.12 },
+    post: 0,
     whoosh: null,
-    why: "dusk to daylight, carried by the pebble: the Veil pebble sheds the Veil as daylight opens out of it (S10 draws the pebble at the same place)",
+    why: "dusk to daylight, carried by the pebble in S10 itself: S10 opens on S09's last frame (the Veil pebble at the frame's centre, 12 % of its height) and the daylight opens out of the pebble's outline as it sheds the Veil",
   },
   {
     from: "S10-Benchmarks",
     kind: "pebbleWipe",
-    pre: 0.6,
+    pre: 0.5,
     post: 0,
-    pebble: { x: 0.5, y: 0.56, h: 0.11 },
+    pebble: S10_PEBBLE_OUT,
     whoosh: null,
-    why: "daylight to night, the pebble the anchor: night opens out of it before the drum hit, so S11's first line lands clean on 93.055",
+    why: "daylight to night, the pebble the anchor: night opens out of the pebble's outline (its colours change only where the wipe has passed) and has filled the frame by the drum hit at 93.055, where S11's thesis lands",
   },
 ];
 
@@ -200,7 +195,7 @@ export const isCarried = (s: Seam) => s.kind !== "cut" && s.kind !== "in-scene";
 export const fr = (sec: number, fps = FILM_FPS) => Math.round(sec * fps);
 
 /** The longest a carried seam may take, by kind (s). */
-const MAX_LEN: Partial<Record<SeamKind, number>> = { whip: 0.3, push: 0.6, zoomThrough: 0.7, softWipe: 0.8, pebbleWipe: 0.8 };
+const MAX_LEN: Partial<Record<SeamKind, number>> = { whip: 0.3, zoomThrough: 0.7, softWipe: 0.8, pebbleWipe: 0.8 };
 
 /** Checks the plan's invariants; returns the problems (empty = fine). Run by master/check.ts. */
 export const checkTimeline = (beats: readonly number[] = []): string[] => {
