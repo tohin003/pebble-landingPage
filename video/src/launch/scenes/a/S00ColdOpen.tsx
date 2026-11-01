@@ -2,40 +2,52 @@
 //
 // Frame 0 is the film's thumbnail and the muted autoplay start: the pebble awake, small, centre-low, and
 // "This is Pebble." already landed. Then "It's small." with a tiny hop; "It just went up against" and the rivals'
-// names as huge mute-grey monoliths, the pebble at their feet looking up; "Same model. Same tasks." in Geist Mono,
-// sage, under it. The pebble turns to camera and blinks; the last 3 frames darken about 40 % (a dip before the drop).
-// Plain text names only: no rival logos, marks or screenshots.
+// names as huge mute-grey monoliths, the pebble at their feet looking up (the premise is complete by 2.7 s); "Same
+// model. Same tasks." in Geist Mono, sage, under it (landed by 4.0 s). The rest is the pebble's, in its own poses: it
+// reads the terms, sizes the giants up (one eye narrowed), turns to us, settles into a sure squint and gathers itself
+// for the drop while the light closes in on it. The last 3 frames darken about 40 % (a dip before the drop); S01 takes
+// off from this exact spot on the drop frame. Plain text names only: no rival logos, marks or screenshots.
 import { AbsoluteFill } from "remotion";
 import { FontGate } from "../../components/FontGate";
 import { fitSize, Headline } from "../../components/Headline";
-import { PebbleActor, blinksIn, cues, look, lookBack, pose } from "../../components/PebbleActor";
+import { PebbleActor, cues, look, lookBack, pose } from "../../components/PebbleActor";
 import { Stage } from "../../components/Stage";
 import { pick, useLayout, type Layout } from "../../layout";
 import { prog, punchAt, tween } from "../../timing";
 import { C, EASE, TYPE, rgba } from "../../tokens";
 import type { SceneProps } from "../types";
-import { BODY_H, INTER, baselineFromTop, lineBox, stagePebble, useClock, type SfxSuggestion } from "./common";
+import { BODY_H, INTER, baselineFromTop, lineBox, onBlink, stagePebble, useClock, type SfxSuggestion } from "./common";
+import { ExitWrap } from "./fx";
 
 export const S00_NOMINAL = 8.05;
-/** the first cut was choreographed for 7.5 s; the music's 8.05 s stretches every beat by the same factor */
-const STRETCH = 8.05 / 7.5;
 
-/** Beats, seconds at the nominal length (they scale with the scene's length; `darken` stays the last 3 frames). */
-const B0 = {
-  thisExit: 1.05,
-  small: 1.2,
-  hop: 1.5,
-  smallLand: 1.8,
-  smallExit: 2.3,
-  against: 2.4,
-  claude: 2.95,
-  codex: 3.45,
-  againstExit: 4.55,
-  sameModel: 4.8,
-  sameTasks: 5.3,
-  toCamera: 6.2,
+/**
+ * Beats, seconds at the nominal length (music A: a beat every 0.5 s from 0.05; the drop is S01's frame 0 at 8.051).
+ * REVIEW-1 S10: "This is Pebble." 0–1.0, "It's small." 1.0–1.8, the rivals landed by 2.7, the terms landed by 4.0;
+ * then the tension holds on the pebble until the drop. Every line leaves in 0.17 s and is gone 2 frames before the
+ * next line in its place starts (M2).
+ */
+export const S00_BEATS = {
+  thisExit: 0.8,
+  small: 1.05,
+  hop: 1.27,
+  smallLand: 1.55,
+  smallExit: 1.75,
+  against: 1.9,
+  claude: 2.3,
+  codex: 2.55,
+  againstExit: 3.45,
+  sameModel: 3.55,
+  sameTasks: 3.8,
+  read: 3.66,
+  sizeUp: 4.3,
+  toCamera: 5.55,
+  bounce1: 6.05,
+  bounce2: 6.55,
+  sure: 6.55,
+  crouch: 7.3,
 } as const;
-const B = Object.fromEntries(Object.entries(B0).map(([k, v]) => [k, Math.round(v * STRETCH * 1000) / 1000])) as Record<keyof typeof B0, number>;
+const B = S00_BEATS;
 
 export const S00_MARKS = [
   { name: "small", s: B.small },
@@ -45,15 +57,19 @@ export const S00_MARKS = [
   { name: "and-codex", s: B.codex },
   { name: "same-model", s: B.sameModel },
   { name: "same-tasks", s: B.sameTasks },
+  { name: "size-up", s: B.sizeUp },
   { name: "to-camera", s: B.toCamera },
-  { name: "darken", s: S00_NOMINAL - 3 / 60 },
+  { name: "bounce", s: B.bounce1 },
+  { name: "sure", s: B.sure },
+  { name: "crouch", s: B.crouch },
+  { name: "darken", s: S00_NOMINAL - 3 / 30 },
 ] as const;
 
 export const S00_SFX: SfxSuggestion[] = [
-  { scene: "S00", s: B.smallLand, kind: "pop (soft)", note: "the hop's landing squash" },
+  { scene: "S00", s: B.smallLand, kind: "pop (soft)", note: "the tiny hop's landing squash" },
   { scene: "S00", s: B.claude, kind: "soft thud (low)", note: "\"Claude Code\" slams" },
   { scene: "S00", s: B.codex, kind: "soft thud (low), second take", note: "\"and Codex.\" slams" },
-  { scene: "S00", s: B.sameModel, kind: "riser start", note: "rises to the drop at S01 0.0" },
+  { scene: "S00", s: B.sameModel, kind: "riser start", note: "rises to the drop at S01 0.0; the crouch from 7.3 rides its last bar" },
 ];
 
 const MONO_WEIGHT = 800;
@@ -73,7 +89,7 @@ const rivalLines = (L: Layout): { text: string; slam: 0 | 1 }[] =>
         { text: RIVAL_2, slam: 1 },
       ];
 
-/** Where everything stands on this layout. */
+/** Where everything stands on this layout. S01 takes off from `peb` (the pebble's foot and size). */
 export const coldOpenGeo = (L: Layout) => {
   const peb = { ...stagePebble(L), ...(L.portrait ? { y: L.px(950) } : {}) };
   const pebbleTop = peb.y - peb.size * BODY_H;
@@ -101,6 +117,28 @@ export const coldOpenGeo = (L: Layout) => {
     mono: { size: monoSize, top: peb.y + L.px(pick(L, { "16x9": 46, "4x5": 50 })) },
   };
 };
+
+/**
+ * The pebble's cue list (local seconds through `T`, an actor with lead 1). S01 replays it, shifted, so the engine runs
+ * on across the drop: the face, the blinks and the bob on S01's frame 0 are the ones S00 left.
+ */
+export const s00ActorCues = (T: (s: number) => number) =>
+  cues(
+    pose(0, "idle"),
+    // up at each name as it slams
+    look(T(B.claude) + 0.08, -0.05, -0.8),
+    look(T(B.codex) + 0.08, 0.08, -1),
+    // it reads the terms under it
+    look(T(B.read), 0, 0.65),
+    // and sizes the giants up: one eye narrowed (Pebble's "testing" face), in the engine's blink at 4.22
+    pose(onBlink(T(B.sizeUp)), "testing"),
+    look(onBlink(T(B.sizeUp)) + 0.05, -0.1, -0.9),
+    // to us, attentive
+    pose(T(B.toCamera), "hover"),
+    lookBack(T(B.toCamera)),
+    // a sure squint ("writing": Pebble's proud face), held through the crouch and the take-off
+    pose(T(B.sure), "writing"),
+  );
 
 /** A rival's name as a monolith: it slams in (a 0-frame set, then 7 % of scale and a little blur settle in 0.14 s). */
 const Monolith: React.FC<{ text: string; size: number; baseline: number; at: number; t: number; dim: number }> = ({ text, size, baseline, at, t, dim }) => {
@@ -137,11 +175,11 @@ const Monolith: React.FC<{ text: string; size: number; baseline: number; at: num
   );
 };
 
-/** "Same model. Same tasks.": one centred mono line whose halves arrive on two beats (a short fade-rise each). */
+/** "Same model. Same tasks.": one centred mono line whose halves arrive on two beats (a 0.2 s fade-rise each). */
 const SameLine: React.FC<{ t: number; a: number; b: number; size: number; top: number }> = ({ t, a, b, size, top }) => {
   const L = useLayout();
   const part = (at: number, text: string) => {
-    const p = prog(t, at, 0.3, EASE.enter);
+    const p = prog(t, at, 0.2, EASE.enter);
     return (
       <span style={{ display: "inline-block", opacity: p, transform: `translateY(${((1 - p) * 0.35 * size).toFixed(2)}px)` }}>{text}</span>
     );
@@ -176,56 +214,72 @@ export const S00ColdOpen: React.FC<SceneProps> = ({ durationInFrames }) => {
   const g = coldOpenGeo(L);
   const { peb } = g;
 
-  // the turn to camera hides in one of the engine's own blinks
-  const blink = blinksIn(T(B.toCamera) - 0.1, D - 0.15)[0];
-  const toCam = blink !== undefined ? blink - 0.22 : T(B.toCamera);
-  const actorCues = cues(
-    pose(0, "idle"),
-    look(T(B.claude) + 0.08, -0.05, -0.8),
-    look(T(B.codex) + 0.08, 0.08, -1),
-    look(T(B.sameModel) + 0.1, 0, 0.6),
-    lookBack(toCam),
-  );
-  const hops = [{ at: T(B.hop), to: { x: peb.x, y: peb.y }, duration: T(B.smallLand) - T(B.hop), height: peb.size * BODY_H * 0.42 }];
+  // the tiny hop on "It's small."; two small bounces on its toes, landing on the 6.05 and 6.55 beats (it squares up;
+  // low enough to keep ≥ 10 px under "and Codex.");
+  // then the take-off itself at the scene's end: S00 shows only its anticipation squash (the last 0.15 s), S01 draws
+  // the flight from its frame 0
+  const bodyPx = peb.size * BODY_H;
+  const BOUNCE = 0.22;
+  const hops = [
+    { at: T(B.hop), to: { x: peb.x, y: peb.y }, duration: T(B.smallLand) - T(B.hop), height: bodyPx * 0.42 },
+    { at: T(B.bounce1) - BOUNCE, to: { x: peb.x, y: peb.y }, duration: BOUNCE, height: bodyPx * 0.16 },
+    { at: T(B.bounce2) - BOUNCE, to: { x: peb.x, y: peb.y }, duration: BOUNCE, height: bodyPx * 0.16 },
+    { at: D, to: { x: peb.x, y: peb.y - L.px(100) }, duration: 0.45 },
+  ];
   const slams = [T(B.claude), T(B.codex)];
   const punch = punchAt(slams, t, 0.03, 0.02, 0.16);
-  const monoDim = tween(t, [T(B.sameModel) - 0.1, T(B.sameModel) + 0.4], [1, 0.62], EASE.camera);
+  // the giants dim when the terms arrive, then sink further while the light closes in on the pebble
+  const monoDim = tween(t, [T(B.sameModel) - 0.1, T(B.sameModel) + 0.4, T(B.toCamera), D - 0.2], [1, 0.62, 0.62, 0.48], EASE.camera);
+  const close = tween(t, [T(B.sizeUp), D - 0.1], [0, 1], EASE.camera);
+  // the wind-up: the pebble gathers itself (a slow squash about its foot) before the anticipation of the leap
+  const crouch = tween(t, [T(B.crouch), D - 0.15], [0, 1], EASE.camera);
+  const csy = 1 - 0.07 * crouch;
   const dip = frame >= frames - 3;
 
   return (
     <FontGate>
       <AbsoluteFill>
-        <Stage keyLight={{ x: 0.5, y: 0.3, r: 0.8 }} energy={1 + 0.25 * (punch - 1) / 0.03}>
+        <Stage
+          keyLight={{ x: 0.5, y: 0.3 + 0.2 * close, r: 0.8 - 0.14 * close }}
+          energy={(1 + 0.25 * (punch - 1) / 0.03) * (1 - 0.08 * close)}
+          pool={{ x: peb.x, y: peb.y, w: peb.size * 2.4, strength: 0.35 * close }}
+        >
           <AbsoluteFill style={{ transform: `scale(${punch.toFixed(5)})`, transformOrigin: `50% ${((peb.y / L.H) * 100).toFixed(1)}%` }}>
-            <Headline text="This is Pebble." at={-1} exitAt={T(B.thisExit)} size={L.type.display} align="center" valign="top" fit box={g.title} leading={1} />
-            <Headline
-              text="It's small."
-              at={T(B.small)}
-              exitAt={T(B.smallExit)}
-              entrance="blur"
-              size={L.type.display}
-              align="center"
-              valign="top"
-              box={g.title}
-              leading={1}
-            />
-            <Headline
-              text="It just went up against"
-              variant="support"
-              at={T(B.against)}
-              exitAt={T(B.againstExit)}
-              exit="fade"
-              size={g.intro.size}
-              color={C.stone1}
-              align="center"
-              valign="top"
-              box={g.intro.box}
-              leading={1}
-            />
+            <ExitWrap at={T(B.thisExit)} t={t} rise={L.px(14)}>
+              <Headline text="This is Pebble." at={-1} size={L.type.display} align="center" valign="top" fit box={g.title} leading={1} />
+            </ExitWrap>
+            <ExitWrap at={T(B.smallExit)} t={t} rise={L.px(14)}>
+              <Headline text="It's small." at={T(B.small)} entrance="blur" size={L.type.display} align="center" valign="top" box={g.title} leading={1} />
+            </ExitWrap>
+            <ExitWrap at={T(B.againstExit)} t={t}>
+              <Headline
+                text="It just went up against"
+                variant="support"
+                at={T(B.against)}
+                entrance="blur"
+                size={g.intro.size}
+                color={C.stone1}
+                align="center"
+                valign="top"
+                box={g.intro.box}
+                leading={1}
+              />
+            </ExitWrap>
             {g.lines.map((l) => (
               <Monolith key={l.text} text={l.text} size={l.size} baseline={l.base} at={slams[l.slam]} t={t} dim={monoDim} />
             ))}
-            <PebbleActor x={peb.x} y={peb.y} size={peb.size} cues={actorCues} hops={hops} pulses={slams.map((x) => x + 0.02)} pool glow={0.35} />
+            <div style={{ position: "absolute", inset: 0, transform: `scale(${(1 / csy).toFixed(5)}, ${csy.toFixed(5)})`, transformOrigin: `${peb.x.toFixed(2)}px ${peb.y.toFixed(2)}px` }}>
+              <PebbleActor
+                x={peb.x}
+                y={peb.y}
+                size={peb.size}
+                cues={s00ActorCues(T)}
+                hops={hops}
+                pulses={slams.map((x) => x + 0.02)}
+                pool
+                glow={0.35 + 0.3 * close}
+              />
+            </div>
             <SameLine t={t} a={T(B.sameModel)} b={T(B.sameTasks)} size={g.mono.size} top={g.mono.top} />
           </AbsoluteFill>
         </Stage>

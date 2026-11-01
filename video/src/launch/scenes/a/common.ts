@@ -1,9 +1,20 @@
 // Scene group A (the bookends: S00 cold open, S01 title, S11 outro): helpers shared by the three scenes. Owned by the
 // group's worker; nothing here is part of the motion system.
 import { useCurrentFrame, useVideoConfig } from "remotion";
+import { snapToBlink } from "../../../../../shared/pebble";
 import { textWidth } from "../../components/Headline";
 import type { Layout, Rect } from "../../layout";
 import { TYPE } from "../../tokens";
+
+/** The nearest blink's shut point to local second `at` (actor `lead` s ahead), so a face change hides in a blink. */
+export const onBlink = (at: number, lead = 1, after = 0.4, before = 0.25): number => snapToBlink(at + lead, after, before) - lead;
+
+/**
+ * The pebble S10 hands over (FIXES-1 "The pebble handoffs"): happy, its body centred at (0.5 W, 0.56 H), the body
+ * 11 % of the frame's height, dark-theme colours on night. S10 is 13.5 s long and its actor runs the engine 1 s ahead,
+ * so S11's actor continues the engine from 14.5 s: the happy bob, the sparkles and the blinks carry on across the cut.
+ */
+export const S10_HANDOFF = { cx: 0.5, cy: 0.56, bodyOfH: 0.11, engineAt: 13.5 + 1 } as const;
 
 /* Inter's vertical metrics (Inter 4.0: ascender 1984, descender −494, cap height 1490 of 2048 units). */
 export const INTER = { asc: 1984 / 2048, desc: 494 / 2048, cap: 1490 / 2048 };
