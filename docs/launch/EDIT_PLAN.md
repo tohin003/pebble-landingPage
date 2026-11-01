@@ -94,7 +94,7 @@ place their beats relative to it. Each scene also registers a preview compositio
 
 - 0.0 Title: "Context warping."
 - 1.0 Diagram: a long task's context as a column of tool-result blocks growing upward; past a budget line the older
-  blocks warp (a lens-like squeeze) into thin sealed stubs; the newest stay full. Text: "Long tasks stay light."
+  blocks warp (a lens-like squeeze) into thin sealed stubs; the newest stay full. Text: "Long tasks keep a smaller window."
 - 3.5 One stub opens back to its full block, unchanged. Text: "Older results sealed. Any one returned exactly."
 
 ## S08 Pebble Remote (7 s)
