@@ -50,7 +50,7 @@ export function formatMegabytes(bytes: number): string {
 }
 
 /**
- * The facts under a download button, each its own item: ["v2.0.0", "73 MB", "Apple silicon", "macOS 12 or later"].
+ * The facts under a download button, each its own item: ["v2.0.1", "73 MB", "Apple silicon", "macOS 12 or later"].
  * Render them as a list with hairline separators (ReleaseFacts), never joined into a middle-dot string (OVERRIDES §16,
  * §21; PHILOSOPHY "What we never do"). [C-REL-5]
  */
@@ -1109,8 +1109,19 @@ export const stealth = {
   description: "Keeps Pebble out of screen shares and recordings, and keeps the companion with you over the app you're in.",
   /** The release's "What's new" line (App.vue@v1.1.0:1410), its first clause only: the FAQ's and llms.txt's. [C-STL-3] */
   summary: "Stealth Lockdown keeps Pebble out of screen shares and recordings.",
-  /** Where to turn it on and the two shortcuts, from the release's "What's new" (App.vue@v1.1.0:1413, :1412). [C-STL-4] */
-  turnOn: "Turn it on in Settings → Privacy and focus, from the menu-bar icon, or with ⌃⌥⌘S.",
+  /**
+   * Where to turn it on and the shortcut, from the release's "What's new" (App.vue@v1.1.0:1413, :1412), with the tab's
+   * name as 2.0.1's README and guide give it (README.md@v2.0.1:147-148, word for word; CHANGELOG.md@v2.0.1:23-24).
+   * [C-STL-4] [C-201-1]
+   */
+  turnOn: "Turn it on in Settings → Privacy & Stealth, from the menu-bar icon, or with ⌃⌥⌘S.",
+  /**
+   * Pebble 2.0.1's fix, in its notes' words (CHANGELOG.md@v2.0.1:14-15, "Its screen-capture protection is stronger, and
+   * while it holds Pebble out of view the menu-bar icon's tooltip says why."). The honest line goes with it: it is in
+   * the section's lead, word for word. [C-201-3]
+   */
+  hardened:
+    "Since 2.0.1, its screen-capture protection is stronger, and while it holds Pebble out of view, the menu-bar icon's tooltip says why.",
   hideAll: "⌃⌥⌘H hides every Pebble window at once; press it again, or use the menu-bar icon, to bring Pebble back.", // 2.0.0: README.md@v2.0.0:151 [C-200-16]
   /**
    * Both halves, word for word from the card's list under the switch, Pebble 2.0.0's (App.vue@v2.0.0:3569-3570). The

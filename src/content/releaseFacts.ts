@@ -1,12 +1,12 @@
 // src/content/releaseFacts.ts
 //
 // The single source of the release facts the page states: the version, its tag and date, the zip's size and its
-// SHA-256 line, the test and service-check counts, and whether the benchmark may be shown. Pebble 2.0.0: taken from the
-// release session's "2.0.0 published" post (PEBBLE_SESSIONS_STATUS.md, 2026-10-31 14:53 IST) and the lead's check of
-// 14:55, every value read from GitHub by the page lane at 15:05 IST: the API's `releases/tags/v2.0.0` (not a draft or a
-// prerelease; the tag is commit 673f8f23a325), the release's own SHA256SUMS, and the README at the tag
-// (`README.md@v2.0.0:382`, `:383`, `:496`). The record of each value is .work/page-2.0/releaseFacts-2.0.0.md. The rows
-// are C-REL-1..6, C-INF-2, C-INF-3 and C-OSS-2 in docs/CLAIMS.md.
+// SHA-256 line, the test and service-check counts, and whether the benchmark may be shown. Pebble 2.0.1: every value
+// read from GitHub by the launch site worker on 1 November 2026 (and the same as the lead's record of 07:42 IST,
+// .work/page-2.0/releaseFacts-2.0.1.md): the API's `releases/tags/v2.0.1` (published_at 2026-11-01T02:08:23Z, not a
+// draft or a prerelease; `releases/latest` is v2.0.1), the release's own SHA256SUMS (the API's asset digest agrees),
+// and the README at the tag (`README.md@v2.0.1:16`, `:98`, `:382`, `:383`, `:496`). The rows are C-REL-1..6, C-INF-2,
+// C-INF-3, C-OSS-2, C-SYS-11 and C-SYS-14 in docs/CLAIMS.md ("Release facts for 2.0.1").
 //
 // Everything that prints one of these facts reads it from here, never from a copy:
 // - copy.ts `release`, the known-good fallback of src/lib/release.ts, so: the hero's facts list, the calls to action
@@ -26,34 +26,34 @@
 // Not to be confused with releaseFacts() in src/lib/release.ts, which lists the facts under a Download.
 
 export const releaseFacts = {
-  /** "2.0.0" (STATUS 14:53, "2.0.0 published"; the API's tag_name v2.0.0), shown as separate facts. [C-REL-1] */
-  version: "2.0.0",
-  tag: "v2.0.0",
+  /** "2.0.1" (the API's tag_name v2.0.1, `releases/latest`), shown as separate facts. [C-REL-1] */
+  version: "2.0.1",
+  tag: "v2.0.1",
   /**
-   * The release's publication date, in UTC as the GitHub API gives it: published_at 2026-10-31T09:21:13Z, which was
-   * 14:51 on 31 October in IST. [C-REL-3]
+   * The release's publication date, in UTC as the GitHub API gives it: published_at 2026-11-01T02:08:23Z, which was
+   * 07:38 on 1 November in IST. [C-REL-3]
    */
-  publishedOn: "2026-10-31",
+  publishedOn: "2026-11-01",
   assetName: "Pebble-macos-arm64.zip",
-  /** the zip's size in bytes (the GitHub API's asset size; the lead's 14:55 check agrees). Shown as "73 MB". [C-REL-2] */
-  sizeBytes: 73_275_438,
+  /** the zip's size in bytes (the GitHub API's asset size, 73,282,241). Shown as "73 MB". [C-REL-2] */
+  sizeBytes: 73_282_241,
   /**
-   * the zip's line in the release's own SHA256SUMS (github.com/tohin003/Pebble/releases/download/v2.0.0/SHA256SUMS; the
+   * the zip's line in the release's own SHA256SUMS (github.com/tohin003/Pebble/releases/download/v2.0.1/SHA256SUMS; the
    * GitHub API's digest of the asset agrees)
    */
-  sha256: "1567392cfa447afed5e5f28b1300b0eba509a05db6c493074cdc744bea5e712d", // [C-REL-6]
-  /** what `shasum -a 256 -c SHA256SUMS` prints for an intact download (README.md@v1.0.1:53-60; README.md@v2.0.0:496) */
+  sha256: "306f738c4da25290292ab225ed34761f6acc03b50dccd6be08a22a441445768c", // [C-REL-6]
+  /** what `shasum -a 256 -c SHA256SUMS` prints for an intact download (README.md@v1.0.1:53-60; README.md@v2.0.1:496) */
   checksumOk: "Pebble-macos-arm64.zip: OK", // [C-INST-11]
-  /** automated tests at this version, none skipped (README.md@v2.0.0:16, :98, :382). [C-INF-2] */
-  tests: 13_269,
-  /** service checks, in validator suites, each run on the source and the frozen app (README.md@v2.0.0:98, :383). [C-INF-3] */
-  serviceChecks: 2_112,
-  validatorSuites: 59,
+  /** automated tests at this version, none skipped (README.md@v2.0.1:16, :98, :382). [C-INF-2] */
+  tests: 13_442,
+  /** service checks, in validator suites, each run on the source and the frozen app (README.md@v2.0.1:98, :383). [C-INF-3] */
+  serviceChecks: 2_128,
+  validatorSuites: 60,
   /**
    * The Benchmarks section ("Measured, not claimed", after Built like infrastructure) renders only while this is true.
    * True since the "1.0.4 published" post, which made the benchmark public (OVERRIDES §11, §16; the wording and the
    * 21:29 correction in OVERRIDES §18; unchanged by later releases, §21 to §32). The "2.0.0 published" post (STATUS
-   * 14:53) made golden set 2.0's figures public too, as the README's tables give them. Set it to false to take
+   * 14:53) made golden set 2.0's figures public too, as the README's tables give them; 2.0.1 changes nothing the run measured (CHANGELOG.md@v2.0.1:9-10). Set it to false to take
    * the section, and every benchmark line in llms.txt, off the site without touching code.
    */
   benchmarksPublic: true,

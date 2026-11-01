@@ -171,7 +171,7 @@ describe("the lines that must stay visible are never folded", () => {
     const fold = /<details[^>]*>/.exec(html)?.[0] ?? "";
     expect(fold).not.toBe("");
     expect(fold).not.toContain("open");
-    expect(html.indexOf(stealth.turnOn)).toBeGreaterThan(html.indexOf("<details"));
+    expect(html.indexOf(stealth.turnOn.replace(/&/g, "&amp;"))).toBeGreaterThan(html.indexOf("<details"));
   });
 
   test("Benchmarks: the scoreboard, the chart, the headline and the not-run line sit outside every disclosure", async () => {

@@ -1,5 +1,5 @@
 // Section 15, the final call to action (DESIGN-LEXINGTON §6 row 15): on the grid like every section. The head is
-// "Get Pebble / 72 MB" in the rail and "Say hi to Pebble." / "Free and open source, for Macs with Apple silicon." in two
+// "Get Pebble / 73 MB" (the size from src/lib/release.ts) in the rail and "Say hi to Pebble." / "Free and open source, for Macs with Apple silicon." in two
 // tones (two approved strings), with the film chapter chip. Then, from column 4, the same call to action as the hero
 // (GetPebbleCluster: the Download with its honest line and facts, the download notice, the non-Mac line) and "Or install
 // in one line ›". The footer below shows the pebble asleep.

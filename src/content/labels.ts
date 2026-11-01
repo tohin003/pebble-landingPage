@@ -27,14 +27,15 @@ export const labels = {
   infrastructure: { name: "Engineering", fact: "Facts, not benchmarks" }, // infrastructure.note [C-SYS-9] (C-INF-6)
   benchmarks: { name: "Benchmarks", fact: "Measured, not claimed" }, // README.md@26d7b19:366; the lead's name [C-SYS-17]
   privacy: { name: "Privacy", fact: "No telemetry" }, // privacy.stays [C-SYS-10] (C-PRIV-5)
-  /** "Privacy and focus / New in 1.1.0": the Settings section that holds Stealth Lockdown (App.vue@v1.1.0:1413, :2798)
-   *  and the release whose "What's new" brought it (App.vue@v1.1.0:1409-1410). [C-SYS-18] */
-  stealth: { name: "Privacy and focus", fact: "New in 1.1.0" },
+  /** "Privacy & Stealth / Hardened in 2.0.1": the Settings tab that holds Stealth Lockdown (README.md@v2.0.1:147;
+   *  App.vue@v2.0.1:3547) and the release that hardened it (CHANGELOG.md@v2.0.1:14, "Stealth Lockdown, hardened."). Was
+   *  "Privacy and focus / New in 1.1.0". [C-SYS-18] [C-201-2] */
+  stealth: { name: "Privacy & Stealth", fact: "Hardened in 2.0.1" },
   limits: { name: "Limits", fact: "Stated plainly" }, // honestLimits.lead [C-SYS-12]
   openSource: { name: "Open source", fact: "Apache-2.0" }, // openSource.repoCard.licence [C-SYS-13] (C-OSS-1)
-  /** "Install / Version 1.0.1", from the release the page offers (src/lib/release.ts). [C-SYS-11] (C-REL-1) */
+  /** "Install / Version 2.0.1", from the release the page offers (src/lib/release.ts). [C-SYS-11] (C-REL-1) */
   install: (version: string): RailLabelText => ({ name: "Install", fact: `Version ${version}` }),
-  /** "Get Pebble / 72 MB", the zip's size from the same release. [C-SYS-14] (C-REL-2) */
+  /** "Get Pebble / 73 MB", the zip's size from the same release. [C-SYS-14] (C-REL-2) */
   getPebble: (sizeLabel: string): RailLabelText => ({ name: "Get Pebble", fact: sizeLabel }),
 } as const;
 

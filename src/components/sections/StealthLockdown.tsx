@@ -1,7 +1,7 @@
 // Section 11b, Stealth Lockdown (Pebble 1.1.0; OVERRIDES §21), right after Private by default: Privacy answers "where
 // does my data go?", this section "what do other people see on my screen?".
 //
-// The head through SectionHead: "Privacy and focus / New in 1.1.0" in the rail; the H2 is the setting's name with
+// The head through SectionHead: "Privacy & Stealth / Hardened in 2.0.1" in the rail; the H2 is the setting's name with
 // "Off by default." as its muted second line (two-tone, twoTone.ts); the lead is the setting's own description followed
 // at once by the honest line, in the same paragraph and at the same size (PHILOSOPHY principle 3: the limit sits beside
 // the promise; critic C11); then where to turn it on and the two shortcuts. Every word is Pebble 1.1.0's own (copy.ts
@@ -53,6 +53,7 @@ export function StealthLockdown() {
               <p>
                 {stealth.turnOn} {stealth.hideAll}
               </p>
+              <p>{stealth.hardened}</p>
               <dl className={styles.halves}>
                 {stealth.halves.map((half) => (
                   <div key={half.term} className={styles.half}>

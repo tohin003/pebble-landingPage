@@ -36,11 +36,11 @@ describe("the Stealth Lockdown section", () => {
     expect(checkTwoTone(stealth.h2, stealth.offByDefault)).toEqual({ ok: true });
     expect(html).toMatch(/<h2 id="stealth-title"[^>]*class="[^"]*two-tone[^"]*"><span>Stealth Lockdown\.<\/span> <span>Off by default\.<\/span><\/h2>/);
     expect(page).toContain(labels.stealth.name);
-    expect(page).toContain("New in");
+    expect(page).toContain("Hardened in 2.0.1");
   });
 
   test("states the setting's description, where to turn it on, both shortcuts and the Veil, in Pebble's words", () => {
-    for (const line of [stealth.description, stealth.turnOn, stealth.hideAll, stealth.veil, stealth.renderNote])
+    for (const line of [stealth.description, stealth.turnOn, stealth.hardened, stealth.hideAll, stealth.veil, stealth.renderNote])
       expect(page).toContain(line);
     expect(page).toContain("⌃⌥⌘S");
     expect(page).toContain("⌃⌥⌘H");

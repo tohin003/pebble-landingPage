@@ -20,7 +20,7 @@ export type ReleaseInfo = Readonly<{
   version: string; // "1.0.1"
   tag: string; // "v1.0.1"
   sizeBytes: number;
-  sizeLabel: string; // "72 MB"
+  sizeLabel: string; // "73 MB"
   publishedOn: string; // "2026-10-22"
   /** Always the `latest/download` URL, so it never points at an old build. */
   downloadUrl: string;
