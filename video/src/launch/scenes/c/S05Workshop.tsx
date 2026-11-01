@@ -1,16 +1,24 @@
-// S05 Pebble's Workshop (EDIT_PLAN "S05", TREATMENT §3 act 5). Daylight world.
+// S05 Pebble's Workshop (FIXES-1 WP-C; REVIEW-1 M2, M5, N1, N3 and the BANNED list). Daylight world.
 //
-// "It builds its own tools." beside the real take RSW-01 (Pebble 2.0, the demo account, dark theme): the kiln request
-// lands, the wait is compressed (every frame real) and the camera pushes onto "Running a script: Create, test, keep and
-// use a kiln_ramp_time tool…". The window folds away into a diagram (plain marks and type, never a Pebble screen): code
-// lines assemble into a small tool `kiln_ramp_time` → a sandbox → its own tests tick → a blind check (tests written from
-// its description alone) returns 2 of 5 → it asks you (the pebble, in Pebble's own `question` pose). Then RSW-01's real
-// Keep card rises in a card-shaped window: "Keep this tool in Pebble's Toolbox? · kiln_ramp_time … Pebble asks because
-// the independent check disagreed (2 of 5 tests passed)."; the camera pushes onto that line and "When the check
-// disagrees, it asks you." lands above it. The scene ends on that centred card, for S06's slabs to carry.
+// The headline band holds the story: "It builds small tools / for itself." from the whip's landing to 3.95 s (held
+// 3.2 s after it lands), then "When the check disagrees, / it asks you." from 4.2 s to 7.0 s (2.6 s after it lands).
+// Under it, one carried line of evidence:
+//   1. RSW-01 (Pebble 2.0, the demo account, dark theme): the kiln request, already sent (1×, 1 s);
+//   2. the thinking, cut to 0.65 s: a hard cut on the beat to the steps (the edit skips the wait; every frame real), and
+//      "Running a script: Create, test, keep and use a kiln_ramp_time tool for…" lands (1×);
+//   3. the window narrows onto the word kiln_ramp_time and becomes the tool's card (no grey bars, no pill);
+//   4. the diagram fills the space under the headline (plain marks and Inter type at 40 px or more, never a Pebble
+//      screen): Sandbox, its own tests ✓✓✓ → Blind check, tests written from its description alone ✓✓✗✗✗, 2 of 5 →
+//      the pebble asks (Pebble's own `question` pose), "Asks you.";
+//   5. the diagram leaves before anything else arrives (nothing crosses "2 of 5"), and RSW-01's real Keep card rises:
+//      "Keep this tool in Pebble's Toolbox? · kiln_ramp_time … Pebble asks because the independent check disagreed
+//      (2 of 5 tests passed)."; the camera pushes onto that bullet and a clay underline marks "(2 of 5 tests passed).".
+// The scene ends on the whole card settled at 60 % of the frame's width on the stone (by 7.2 s, for the master's zoom
+// punch into S06), its words gone by 7.18 s.
 //
-// Framings stay inside Pebble's window (RSW-01's ROIs): the menu bar (the recording pill, the clock) and the Dock are
-// never in frame; RSW-01 has no usage line.
+// Framings stay inside Pebble's window (RSW-01's ROIs, measured on its frames): the menu bar (the recording pill, the
+// clock) and the Dock are never in frame; RSW-01 has no usage line. Every crop edge falls in a gap between lines.
+import type { ReactNode } from "react";
 import { AbsoluteFill } from "remotion";
 import { FloatingWindow } from "../../components/FloatingWindow";
 import { FontGate } from "../../components/FontGate";
@@ -19,66 +27,60 @@ import { PebbleActor, cues, look, pose } from "../../components/PebbleActor";
 import { ScreenZoom } from "../../components/ScreenZoom";
 import { Sfx } from "../../components/Sfx";
 import { Stage } from "../../components/Stage";
-import type { ZoomKey } from "../../camera";
+import type { Box, ZoomKey } from "../../camera";
 import { pick, useLayout, type Layout, type Rect } from "../../layout";
-import { timeMap } from "../../timeMap";
-import { C, EASE, FAMILY } from "../../tokens";
+import { timeMap, type TimeMap } from "../../timeMap";
+import { C, EASE, TYPE } from "../../tokens";
 import { DAY } from "../../world";
 import type { SceneProps } from "../types";
-import { Check, Cross, box, clamp01, lerp, ramp, rectAt, sfxSrc, sfxStart, useClock, type SfxNote } from "./common";
+import { Check, Cross, box, clamp01, lerp, ramp, sfxSrc, sfxStart, useClock, type SfxNote } from "./common";
 
-export const S05_NOMINAL = 8;
+export const S05_NOMINAL = 7.5;
 
 const SRC = "launch/takes/RSW-01.mp4";
 const SIZE = { w: 2940, h: 1912 };
 
-/** RSW-01 framings (source px): data/takes.ts ROIs, tightened on UI boundaries. */
-/** the opening: the kiln request's bubble (836–2010 × 318–556 once sent, source 61.75) and the first steps under it */
-const REQUEST = box(816, 298, 1214, 278);
-const SCRIPT = box(610, 660, 950, 530);
-const SCRIPT_45 = box(650, 640, 840, 740); // status + steps: "Running a script: Create, test, keep and use a kiln_ramp_time tool for…"
-const KEEP_CARD = box(700, 664, 1324, 398); // the Keep card (714–2009 × 677–1048)
-/**
- * The push: the bullet "Pebble asks because … (2 of 5 tests passed)." whole (795–1822 × 895–925), the buttons and the
- * card's bottom edge, under the description's last line (838–862); the window narrows to it, so on 16:9 the bullet
- * renders at ≈ 1.45× (≈ 39 px type, ≈ 45 px from ascender to descender).
- */
-const KEEP_STRIP = box(712, 872, 1148, 182);
-/** The bullet's "(2 of 5 tests passed)." on the source, for the drawn underline (an annotation). */
-const TWO_OF_FIVE = { x0: 1555, x1: 1822, y: 935 };
-
-/** Beats, seconds at the nominal length. */
+/** Beats, seconds at the nominal length (local beats every 0.5 s; downbeats at 0, 2, 4, 6). */
 const B = {
-  windowIn: -0.6,
-  title: 0,
-  titleOut: 0.95,
-  grow: 1.15,
-  script: 1.85, // the clay line on screen (source 71.70)
-  fold: 2.75, // the window folds into the tool chip
-  bars: 2.85,
-  chip: 3.25,
-  sandbox: 3.45,
-  intoBox: 3.75,
-  ticks: [3.9, 4.0, 4.1] as const,
-  blind: 4.2,
-  marks: [4.42, 4.5, 4.58, 4.66, 4.74] as const,
-  twoOfFive: 4.85,
-  asks: 4.95,
-  out: 5.48,
-  keepIn: 5.5,
-  keepLand: 5.68, // the card lands in the take (source 89.433)
-  line: 5.68,
-  push: 6.4,
+  title: 0.2, // after the whip lands (0.13)
+  cut: 1.0, // the thinking (0.65 s, was 1.6): a hard cut on the beat to the steps, the wait skipped (source 71.35)
+  script: 1.35, // "Running a script: …" lands (source 71.70)
+  fold: 1.65, // → 2.05, the window narrows onto kiln_ramp_time and becomes the tool's card
+  sandbox: 2.05,
+  ticks: [2.3, 2.4, 2.5] as const,
+  ownTests: 2.45,
+  blind: 2.8,
+  caption: 2.9,
+  marks: [3.1, 3.18, 3.26, 3.34, 3.42] as const,
+  twoOfFive: 3.55,
+  asks: 3.8,
+  titleOut: 3.95, // gone by 4.13, two frames before the next line
+  line: 4.2, // lands 4.4: held 2.6 s (0.5 s + 0.3 s a word)
+  diagramOut: 4.65, // gone by 4.85
+  keepIn: 4.9,
+  keepPush: 5.95,
+  underline: 6.2,
+  settle: 6.85, // → 7.2: the card settles centred at 60 % of the frame's width on the stone (the master's zoom punch)
+  out: 7.0, // gone by 7.18, two frames before the push into S06 (7.27)
 } as const;
+const FOLD = 0.4;
+const SETTLE = 0.35;
+/** Type exits: 0.18 s, accelerating (REVIEW-1 M2). */
+const EXIT = 0.18;
 
 export const S05_MARKS = [
   { name: "title", s: B.title },
+  { name: "thinking-cut", s: B.cut },
   { name: "script-line", s: B.script },
-  { name: "diagram", s: B.fold },
+  { name: "fold-to-tool", s: B.fold },
+  { name: "sandbox", s: B.sandbox },
+  { name: "blind-check", s: B.blind },
   { name: "two-of-five", s: B.twoOfFive },
   { name: "asks-you", s: B.asks },
-  { name: "keep-card", s: B.keepIn },
   { name: "when-the-check-disagrees", s: B.line },
+  { name: "keep-card", s: B.keepIn },
+  { name: "settle", s: B.settle },
+  { name: "type-out", s: B.out },
 ] as const;
 
 export const S05_SFX: SfxNote[] = [
@@ -90,107 +92,101 @@ export const S05_SFX: SfxNote[] = [
 ];
 
 /**
- * Diagram geometry, in the diagram's own px (per aspect). The diagram is drawn at this size and shown through a camera
- * at `scale` (1.6× on 16:9, 1.25× on 4:5) that travels along the flow, so its marks and words read big; the type sizes
- * here are divided by the scale so they land at the sizes asked for (box labels ≥ 32 px, the titles ≥ 48 px, "2 of 5"
- * ≥ 80 px on screen).
+ * RSW-01 framings (source px), measured at 61.8, 72.4 and 89.6 s. Each pair shares its window's aspect.
+ * REQUEST: the sent bubble (836–2010 × 318–556; on 4:5 also the status and steps under it, 640–2004 × 693–985).
+ * SCRIPT: "The model responded · 2 steps" (872–894) and "Running a script: Create, test, keep and use a kiln_ramp_time
+ * tool for…" (676–1471 × 925–947) with "▶ Details"; the step dots (640–651) and the timestamps (from 1926) stay outside.
+ * WORD: kiln_ramp_time in that line (1196–1366), at the tool card's aspect.
  */
+const REQUEST: Record<Layout["id"], Box> = { "16x9": box(806, 262, 1224, 412), "4x5": box(630, 240, 1400, 760) };
+const SCRIPT: Record<Layout["id"], Box> = { "16x9": box(662, 846, 823, 277), "4x5": box(662, 846, 823, 447) };
+const WORD: Record<Layout["id"], Box> = { "16x9": box(1166, 908, 230, 56), "4x5": box(1166, 909, 230, 54) };
+const WORD_INK = { x0: 1193, x1: 1369, y0: 918, y1: 955 };
+/** The conversation's ground in RSW-01 (sampled), for the fold's isolating fade. */
+const RSW_BG = "#141A18";
+/** The Keep card's ground as the render decodes it (sampled from a still). */
+const CARD_BG = "#1B211B";
+/** The Keep card (714–2009 × 677–1048, from 89.433) and its bullet's strip (the bullet 796–1819 × 898–924, the buttons). */
+const KEEP_CARD = box(700, 664, 1324, 398);
+/**
+ * 16:9: the whole bullet with the buttons and the card's foot. 4:5 (1040 px wide): the bullet's last words,
+ * "independent check disagreed (2 of 5 tests passed)." with the card's ground under them. The left edge sits in the
+ * 11 px gap between "the" (ends 1147) and "independent" (starts 1158), so its feather is kept to 7 source px; the Keep
+ * button (ends 1157, one row lower) falls inside that feather.
+ */
+const KEEP_STRIP: Record<Layout["id"], Box> = { "16x9": box(712, 872, 1148, 182), "4x5": box(1150, 866, 696, 150) };
+/** "(2 of 5 tests passed)." in the bullet (1550–1819), for the drawn underline (an annotation). */
+const TWO_OF_FIVE = { x0: 1550, x1: 1820, y: 935 };
+
 const diagram = (L: Layout) => {
   const P = L.px;
   if (!L.portrait) {
-    const S = 1.6;
-    const top = P(372);
-    const h = P(330);
     return {
       portrait: false,
-      S,
-      chipStart: { x: P(128), y: P(505), w: P(350), h: P(84) },
-      bars: { x: P(128), y: P(440), w: P(350) },
-      sandbox: { x: P(560), y: top, w: P(440), h },
-      chipIn: { x: P(605), y: top + P(46), w: P(350), h: P(84) },
-      ticks: { x: P(660), y: top + P(170), d: P(64), gap: P(88) },
-      ticksLabel: { x: P(560), y: top + P(254), w: P(440) },
-      blind: { x: P(1080), y: top, w: P(440), h },
-      blindLabel: { x: P(1080), y: top + P(30), w: P(440) },
-      marks: { x: P(1120), y: top + P(130), d: P(58), gap: P(74) },
-      two: { x: P(1080), y: top + P(206), w: P(440), h: P(100) },
-      twoSize: P(62),
-      pebble: { x: P(1690), y: top + P(250), size: P(190) },
-      labels: { y: top + h + P(30), h: P(50) },
+      sandbox: { x: P(128), y: P(400), w: P(560), h: P(540) },
+      sbTitle: { x: P(168), y: P(426), w: P(480), h: P(80) },
+      card: { x: P(168), y: P(524), w: P(480), h: P(116) },
+      nameSize: P(50),
+      ticks: { x: P(168), y: P(680), d: P(76), gap: P(104) },
+      ownTests: { x: P(168), y: P(784), w: P(480), h: P(64) },
       arrows: [
-        { x0: P(488), y0: top + h / 2, x1: P(548), y1: top + h / 2 },
-        { x0: P(1010), y0: top + h / 2, x1: P(1068), y1: top + h / 2 },
-        { x0: P(1530), y0: top + h / 2, x1: P(1588), y1: top + h / 2 },
+        { x0: P(700), y0: P(670), x1: P(772), y1: P(670) },
+        { x0: P(1416), y0: P(670), x1: P(1478), y1: P(670) },
       ],
-      labelSize: P(60 / S),
-      smallSize: P(34 / S),
-      cols: [
-        { x: P(560), w: P(440), text: "Sandbox" },
-        { x: P(1080), w: P(440), text: "Blind check" },
-        { x: P(1560), w: P(260), text: "Asks you." },
-      ],
-      // where the camera looks (diagram px) at each beat: the chip, the sandbox, the blind check, the last pair
-      focus: [
-        { at: B.chip, x: P(303), y: P(560) },
-        { at: B.intoBox + 0.1, x: P(800), y: P(575) },
-        { at: B.blind + 0.15, x: P(1180), y: P(585) },
-        { at: B.twoOfFive, x: P(1450), y: P(590) },
-      ],
+      blind: { x: P(784), y: P(400), w: P(620), h: P(540) },
+      blTitle: { x: P(824), y: P(426), w: P(560), h: P(80) },
+      caption: { x: P(824), y: P(522), w: P(560), h: P(120) },
+      marks: { x: P(824), y: P(666), d: P(76), gap: P(100) },
+      two: { x: P(824), y: P(770), w: P(540), h: P(136) },
+      twoSize: P(112),
+      twoAlign: "left" as const,
+      pebble: { x: P(1636), y: P(784), size: P(300) },
+      asks: { x: P(1486), y: P(808), w: P(300), h: P(84) },
+      asksAlign: "center" as const,
+      titleSize: P(64),
+      labelSize: P(46),
+      captionSize: P(44),
     };
   }
-  // 4:5: the same flow top to bottom, the camera travelling down it
-  const S = 1.25;
   return {
     portrait: true,
-    S,
-    chipStart: { x: P(365), y: P(150), w: P(350), h: P(84) },
-    bars: { x: P(365), y: P(110), w: P(350) },
-    sandbox: { x: P(152), y: P(300), w: P(776), h: P(250) },
-    chipIn: { x: P(192), y: P(400), w: P(350), h: P(84) },
-    ticks: { x: P(600), y: P(380), d: P(64), gap: P(92) },
-    ticksLabel: { x: P(600), y: P(462), w: P(320) },
-    blind: { x: P(152), y: P(620), w: P(776), h: P(300) },
-    blindLabel: { x: P(192), y: P(704), w: P(420) },
-    marks: { x: P(192), y: P(800), d: P(58), gap: P(76) },
-    two: { x: P(560), y: P(760), w: P(340), h: P(130) },
-    twoSize: P(80),
-    pebble: { x: P(380), y: P(1190), size: P(190) },
-    labels: { y: 0, h: P(50) },
+    sandbox: { x: P(64), y: P(412), w: P(952), h: P(232) },
+    sbTitle: { x: P(104), y: P(430), w: P(440), h: P(70) },
+    card: { x: P(104), y: P(512), w: P(430), h: P(96) },
+    nameSize: P(44),
+    ticks: { x: P(604), y: P(452), d: P(70), gap: P(92) },
+    ownTests: { x: P(604), y: P(538), w: P(380), h: P(60) },
     arrows: [
-      { x0: P(540), y0: P(244), x1: P(540), y1: P(292) },
-      { x0: P(540), y0: P(558), x1: P(540), y1: P(612) },
-      { x0: P(540), y0: P(928), x1: P(540), y1: P(990) },
+      { x0: P(540), y0: P(652), x1: P(540), y1: P(696) },
+      { x0: P(540), y0: P(1018), x1: P(540), y1: P(1058) },
     ],
-    labelSize: P(54 / S),
-    smallSize: P(32 / S),
-    cols: [
-      { x: P(192), w: P(500), y: P(322), text: "Sandbox" },
-      { x: P(192), w: P(560), y: P(642), text: "Blind check" },
-      { x: P(500), w: P(420), y: P(1084), text: "Asks you." },
-    ],
-    focus: [
-      { at: B.chip, x: P(540), y: P(560) },
-      { at: B.twoOfFive, x: P(540), y: P(722) },
-    ],
+    blind: { x: P(64), y: P(704), w: P(952), h: P(306) },
+    blTitle: { x: P(104), y: P(722), w: P(560), h: P(70) },
+    caption: { x: P(104), y: P(794), w: P(560), h: P(110) },
+    marks: { x: P(104), y: P(916), d: P(70), gap: P(88) },
+    two: { x: P(560), y: P(866), w: P(416), h: P(130) },
+    twoSize: P(104),
+    twoAlign: "right" as const,
+    pebble: { x: P(540), y: P(1250), size: P(196) },
+    asks: { x: P(652), y: P(1146), w: P(330), h: P(84) },
+    asksAlign: "left" as const,
+    titleSize: P(56),
+    labelSize: P(42),
+    captionSize: P(42),
   };
 };
-
-/** The diagram camera at `t`: diagram px → screen px is `p · S + o`. */
-const diagramCam = (L: Layout, t: number, T: (x: number) => number) => {
-  const g = diagram(L);
-  const f = g.focus;
-  let fx = f[0].x;
-  let fy = f[0].y;
-  for (let i = 1; i < f.length; i++) {
-    const a = T(f[i - 1].at);
-    const p = ramp(t, a, Math.max(0.2, T(f[i].at) - a), EASE.camera);
-    fx = lerp(fx, f[i].x, p);
-    fy = lerp(fy, f[i].y, p);
-  }
-  return { S: g.S, ox: L.W / 2 - fx * g.S, oy: L.H / 2 - fy * g.S };
-};
-
 type DG = ReturnType<typeof diagram>;
+
+/** The thinking window's rect and the tool card it becomes. */
+const mainRect = (L: Layout): Rect => pick(L, { "16x9": { x: L.px(128), y: L.px(410), w: L.px(1664), h: L.px(560) }, "4x5": { x: L.px(40), y: L.px(555), w: L.px(1000), h: L.px(543) } });
+
+/** Type that leaves in 0.18 s, accelerating, rising a little out of focus (REVIEW-1 M2). */
+const TypeExit: React.FC<{ at: number; t: number; u: number; dur?: number; children: ReactNode }> = ({ at, t, u, dur = EXIT, children }) => {
+  const p = EASE.exit(clamp01((t - at) / dur));
+  if (p >= 0.999) return null;
+  if (p <= 0) return <>{children}</>;
+  return <AbsoluteFill style={{ opacity: 1 - p, transform: `translateY(${(-p * 22 * u).toFixed(2)}px)`, filter: `blur(${(p * 5 * u).toFixed(2)}px)` }}>{children}</AbsoluteFill>;
+};
 
 const Arrow: React.FC<{ a: DG["arrows"][number]; p: number; color: string; w: number }> = ({ a, p, color, w }) => {
   if (p <= 0) return null;
@@ -208,61 +204,47 @@ const Arrow: React.FC<{ a: DG["arrows"][number]; p: number; color: string; w: nu
   );
 };
 
-const Chip: React.FC<{ r: Rect; text: number; textOpacity: number; opacity?: number }> = ({ r, text, textOpacity, opacity = 1 }) => (
-  <div
-    style={{
-      position: "absolute",
-      left: r.x,
-      top: r.y,
-      width: r.w,
-      height: r.h,
-      borderRadius: r.h * 0.26,
-      background: DAY.ink,
-      opacity,
-      boxShadow: `0 ${r.h * 0.12}px ${r.h * 0.4}px rgba(74, 62, 44, 0.22)`,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontFamily: FAMILY.mono,
-      fontWeight: 500,
-      fontSize: text,
-      color: C.stone0,
-      letterSpacing: "-0.01em",
-    }}
-  >
-    <span style={{ opacity: textOpacity }}>kiln_ramp_time</span>
-  </div>
-);
+/** The tool's card: a dark tile (never a pill) carrying its name in Inter, as Pebble's own UI sets it. */
+const ToolCard: React.FC<{ r: Rect; size: number; opacity: number; u: number }> = ({ r, size, opacity, u }) =>
+  opacity <= 0 ? null : (
+    <div
+      style={{
+        position: "absolute",
+        left: r.x,
+        top: r.y,
+        width: r.w,
+        height: r.h,
+        borderRadius: 20 * u,
+        background: DAY.ink,
+        opacity,
+        boxShadow: `0 ${10 * u}px ${30 * u}px rgba(74, 62, 44, 0.22), inset 0 0 0 ${Math.max(1, u)}px rgba(255,255,255,0.06)`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily: TYPE.headline.fontFamily,
+        fontWeight: 600,
+        fontVariationSettings: TYPE.headline.fontVariationSettings,
+        fontSize: size,
+        letterSpacing: "-0.015em",
+        color: C.stone0,
+      }}
+    >
+      kiln_ramp_time
+    </div>
+  );
 
-const Diagram: React.FC<{ t: number; T: (x: number) => number; L: Layout }> = ({ t, T, L }) => {
+const Diagram: React.FC<{ t: number; T: (x: number) => number; L: Layout; cardOn: number }> = ({ t, T, L, cardOn }) => {
   const g = diagram(L);
   const stroke = L.px(2.5);
-  const out = ramp(t, T(B.out), 0.3, EASE.exit);
-  if (t < T(B.bars) - 0.05 || out >= 1) return null;
-
-  // code lines fly together into the chip
-  const barW = [0.82, 0.58, 0.94, 0.46, 0.7];
-  const scatter = [
-    [-0.25, -1.4],
-    [0.35, -0.8],
-    [-0.1, 0.9],
-    [0.45, 1.6],
-    [-0.35, 2.2],
-  ];
-  const merge = ramp(t, T(B.chip) - 0.12, 0.3, EASE.camera);
-  const chipOn = ramp(t, T(B.chip), 0.18, EASE.enter);
-  const into = ramp(t, T(B.intoBox) - 0.3, 0.38, EASE.camera);
-  const chipR: Rect = {
-    x: lerp(g.chipStart.x, g.chipIn.x, into),
-    y: lerp(g.chipStart.y, g.chipIn.y, into),
-    w: g.chipStart.w,
-    h: g.chipStart.h,
-  };
-  const boxIn = (at: number) => ramp(t, T(at), 0.4, EASE.enter);
-  const sb = boxIn(B.sandbox);
-  const bl = boxIn(B.blind);
-  const twoIn = ramp(t, T(B.twoOfFive), 0.25, EASE.enter);
-  const cam = diagramCam(L, t, T);
+  const out = EASE.exit(clamp01((t - T(B.diagramOut)) / 0.2));
+  if (t < T(B.sandbox) - 0.1 || out >= 0.999) {
+    // before the fold lands, only the tool card (the window becomes it)
+    return t < T(B.sandbox) - 0.1 ? <ToolCard r={g.card} size={g.nameSize} opacity={cardOn} u={L.u} /> : null;
+  }
+  const sb = ramp(t, T(B.sandbox), 0.35, EASE.enter);
+  const bl = ramp(t, T(B.blind), 0.35, EASE.enter);
+  const twoIn = clamp01((t - T(B.twoOfFive)) / 0.18);
+  const twoE = EASE.enter(twoIn);
 
   const frame = (r: Rect, p: number, dashed: boolean) =>
     p <= 0 ? null : (
@@ -275,107 +257,33 @@ const Diagram: React.FC<{ t: number; T: (x: number) => number; L: Layout }> = ({
           height: r.h,
           borderRadius: L.px(28),
           border: `${stroke}px ${dashed ? "dashed" : "solid"} ${DAY.ink2}`,
-          background: dashed ? "rgba(255,255,255,0.0)" : "rgba(255,255,255,0.28)",
+          background: dashed ? "rgba(255,255,255,0.0)" : "rgba(255,255,255,0.3)",
           opacity: p,
-          transform: `scale(${0.96 + 0.04 * p})`,
+          transform: `scale(${0.97 + 0.03 * p})`,
         }}
       />
     );
-
-  const label = (c: DG["cols"][number], at: number, size: number) => (
-    <Headline
-      key={c.text}
-      text={c.text}
-      at={T(at)}
-      entrance="rise"
-      size={size}
-      variant="headline"
-      align={g.portrait ? "left" : "center"}
-      valign="top"
-      fit={false}
-      box={{ x: c.x, y: "y" in c && c.y !== undefined ? (c.y as number) : g.labels.y, w: c.w, h: size * 1.4 }}
-    />
+  const title = (text: string, b: Rect, at: number) => (
+    <Headline text={text} at={T(at)} entrance="rise" size={g.titleSize} align="left" valign="top" fit={false} box={b} />
+  );
+  const label = (text: string, b: Rect, at: number, size: number) => (
+    <Headline text={text} at={T(at)} entrance="blur" variant="support" weight={500} size={size} color={DAY.ink2} align="left" valign="top" fit={false} leading={1.2} box={b} />
   );
 
   return (
-    <AbsoluteFill
-      style={{ opacity: 1 - out, transformOrigin: "0 0", transform: `translate(${cam.ox}px, ${cam.oy - L.px(40) * out}px) scale(${cam.S})` }}
-    >
-      {/* the code lines */}
-      {barW.map((w, i) => {
-        const appear = ramp(t, T(B.bars) + i * 0.045, 0.22, EASE.enter);
-        if (appear <= 0 || merge >= 1) return null;
-        const bx = g.bars.x + g.bars.w * (1 - w) * 0.5 + scatter[i][0] * L.px(60) * (1 - merge);
-        const by = g.bars.y + i * L.px(26) + scatter[i][1] * L.px(26) * (1 - merge) + merge * (g.chipStart.y + g.chipStart.h / 2 - g.bars.y - i * L.px(26));
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: bx,
-              top: by,
-              width: g.bars.w * w * (1 - 0.3 * merge),
-              height: L.px(14),
-              borderRadius: L.px(7),
-              background: i % 2 ? C.sageDeep : DAY.ink2,
-              opacity: appear * (1 - merge) * 0.75,
-            }}
-          />
-        );
-      })}
-      {chipOn > 0 ? (
-        <div style={{ position: "absolute", inset: 0 }}>
-          <Chip r={{ ...chipR, x: chipR.x + (chipR.w * (1 - (0.85 + 0.15 * chipOn))) / 2, w: chipR.w * (0.85 + 0.15 * chipOn) }} text={L.px(34)} textOpacity={chipOn} opacity={chipOn} />
-        </div>
-      ) : null}
-
-      <div style={{ opacity: 1 - into }}>
-        <Arrow a={g.arrows[0]} p={ramp(t, T(B.sandbox) - 0.1, 0.25, EASE.enter)} color={DAY.ink2} w={stroke} />
-      </div>
+    <AbsoluteFill style={{ opacity: 1 - out, transform: out > 0 ? `translateY(${(-out * 30 * L.u).toFixed(2)}px)` : undefined }}>
       {frame(g.sandbox, sb, true)}
-      {label(g.cols[0], B.sandbox + 0.05, g.labelSize)}
+      {title("Sandbox", g.sbTitle, B.sandbox + 0.05)}
+      <ToolCard r={g.card} size={g.nameSize} opacity={cardOn} u={L.u} />
       {B.ticks.map((at, i) => (
         <Check key={i} x={g.ticks.x + i * g.ticks.gap} y={g.ticks.y} d={g.ticks.d} p={ramp(t, T(at), 0.32, EASE.enter)} color={DAY.sage} />
       ))}
-      <div
-        style={{
-          position: "absolute",
-          left: g.ticksLabel.x,
-          top: g.ticksLabel.y,
-          width: g.ticksLabel.w,
-          textAlign: g.portrait ? "left" : "center",
-          fontFamily: FAMILY.mono,
-          fontWeight: 500,
-          fontSize: g.smallSize,
-          color: DAY.small,
-          opacity: ramp(t, T(B.ticks[0]) + 0.1, 0.3),
-        }}
-      >
-        its own tests
-      </div>
+      {label("its own tests", g.ownTests, B.ownTests, g.labelSize)}
 
-      <Arrow a={g.arrows[1]} p={ramp(t, T(B.blind) - 0.1, 0.25, EASE.enter)} color={DAY.ink2} w={stroke} />
+      <Arrow a={g.arrows[0]} p={ramp(t, T(B.blind) - 0.12, 0.22, EASE.enter)} color={DAY.ink2} w={stroke} />
       {frame(g.blind, bl, false)}
-      {label(g.cols[1], B.blind + 0.05, g.labelSize)}
-      <div
-        style={{
-          position: "absolute",
-          left: g.portrait ? g.blindLabel.x : g.blind.x,
-          top: g.portrait ? g.blindLabel.y : g.blind.y + L.px(34),
-          width: g.portrait ? g.blindLabel.w : g.blind.w,
-          textAlign: g.portrait ? "left" : "center",
-          fontFamily: FAMILY.mono,
-          fontWeight: 500,
-          fontSize: g.smallSize,
-          lineHeight: 1.3,
-          color: DAY.small,
-          opacity: ramp(t, T(B.blind) + 0.12, 0.3),
-        }}
-      >
-        tests written from
-        <br />
-        its description alone
-      </div>
+      {title("Blind check", g.blTitle, B.blind + 0.05)}
+      {label("tests written from\nits description alone", g.caption, B.caption, g.captionSize)}
       {B.marks.map((at, i) =>
         i < 2 ? (
           <Check key={i} x={g.marks.x + i * g.marks.gap} y={g.marks.y} d={g.marks.d} p={ramp(t, T(at), 0.3, EASE.enter)} color={DAY.sage} />
@@ -383,161 +291,220 @@ const Diagram: React.FC<{ t: number; T: (x: number) => number; L: Layout }> = ({
           <Cross key={i} x={g.marks.x + i * g.marks.gap} y={g.marks.y} d={g.marks.d} p={ramp(t, T(at), 0.3, EASE.enter)} color={C.clay} />
         ),
       )}
-      <div
-        style={{
-          position: "absolute",
-          left: g.two.x,
-          top: g.two.y,
-          width: g.two.w,
-          height: g.two.h,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: g.portrait ? "flex-end" : "center",
-          fontFamily: FAMILY.sans,
-          fontWeight: 700,
-          fontSize: g.twoSize,
-          letterSpacing: "-0.03em",
-          color: "#B5562F",
-          opacity: twoIn,
-          transform: `translateY(${(1 - twoIn) * L.px(18)}px)`,
-          filter: twoIn < 1 ? `blur(${(1 - twoIn) * 6}px)` : undefined,
-        }}
-      >
-        2 of 5
-      </div>
+      {twoIn > 0 ? (
+        <div
+          style={{
+            position: "absolute",
+            left: g.two.x,
+            top: g.two.y,
+            width: g.two.w,
+            height: g.two.h,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: g.twoAlign === "right" ? "flex-end" : "flex-start",
+            fontFamily: TYPE.headline.fontFamily,
+            fontVariationSettings: TYPE.headline.fontVariationSettings,
+            fontWeight: 720,
+            fontSize: g.twoSize,
+            fontVariantNumeric: "tabular-nums",
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: "#B5562F",
+            opacity: Math.min(1, twoIn * 2.5),
+            transform: `scale(${(1.12 - 0.12 * twoE).toFixed(4)})`,
+            transformOrigin: g.twoAlign === "right" ? "100% 50%" : "0% 50%",
+            filter: twoE < 0.99 ? `blur(${((1 - twoE) * 6 * L.u).toFixed(2)}px)` : undefined,
+          }}
+        >
+          2 of 5
+        </div>
+      ) : null}
 
-      <Arrow a={g.arrows[2]} p={ramp(t, T(B.asks) - 0.1, 0.22, EASE.enter)} color={DAY.ink2} w={stroke} />
+      <Arrow a={g.arrows[1]} p={ramp(t, T(B.asks) - 0.12, 0.2, EASE.enter)} color={DAY.ink2} w={stroke} />
       <PebbleActor
         x={g.pebble.x}
         y={g.pebble.y}
         size={g.pebble.size}
         enter={{ at: T(B.asks), kind: "pop" }}
-        cues={cues(pose(0, "question"), look(T(B.asks) + 0.25, pick(L, { "16x9": -0.2, "4x5": 0.3 }), 0.1))}
+        cues={cues(pose(0, "question"), look(T(B.asks) + 0.25, pick(L, { "16x9": -0.25, "4x5": 0 }), pick(L, { "16x9": 0, "4x5": -0.4 })))}
       />
-      {label(g.cols[2], B.asks + 0.08, g.labelSize)}
+      <Headline text="Asks you." at={T(B.asks + 0.06)} entrance="rise" size={g.titleSize} align={g.asksAlign} valign="middle" fit={false} box={g.asks} />
     </AbsoluteFill>
   );
 };
+
+/** Between two regions in log scale (a constant perceived zoom speed), centres linear. */
+const mixRegion = (a: Box, b: Box, p: number): Box => {
+  const w = Math.exp(lerp(Math.log(a.w), Math.log(b.w), p));
+  const h = Math.exp(lerp(Math.log(a.h), Math.log(b.h), p));
+  const cx = lerp(a.x + a.w / 2, b.x + b.w / 2, p);
+  const cy = lerp(a.y + a.h / 2, b.y + b.h / 2, p);
+  return { x: cx - w / 2, y: cy - h / 2, w, h };
+};
+const pushAbout = (b: Box, k: number): Box => ({ x: b.x + (b.w * (1 - k)) / 2, y: b.y + (b.h * (1 - k)) / 2, w: b.w * k, h: b.h * k });
 
 export const S05Workshop: React.FC<SceneProps> = ({ durationInFrames }) => {
   const L = useLayout();
   const { t, T } = useClock(S05_NOMINAL, durationInFrames);
   const g = diagram(L);
 
-  // RSW-01, the request: 1× as the bubble lands, the thinking compressed, 1× into the clay line (every frame real)
-  const time = timeMap(
-    [
-      [0, 61.75],
-      [T(0.6), 62.0],
-      [T(B.script) - 0.1, 71.62],
-      [T(B.script) + 0.9, 72.62],
-    ],
-    { tail: 1 },
-  );
+  // RSW-01: the request at 1×, a cut that skips the wait, 1× through the script line and the fold; then the window is
+  // gone and its picture holds (no decoding while hidden). Every frame shown is the take's own.
+  const cut = T(B.cut);
+  const holdAt = T(B.fold) + FOLD + 0.05;
+  const time: TimeMap = {
+    at: (x: number) => (x < cut ? 61.75 + x : 71.35 + (Math.min(x, holdAt) - cut)),
+    inv: (src: number) => (src < 61.75 + cut ? src - 61.75 : cut + (src - 71.35)),
+    speed: (x: number) => (x < holdAt ? 1 : 0),
+    knots: [],
+  };
   const keepTime = timeMap(
     [
-      [T(B.keepIn), 89.25],
-      [T(B.keepIn) + 1, 90.25],
+      [T(B.keepIn), 89.45],
+      [T(B.keepIn) + 1, 90.45],
     ],
     { tail: 1, head: 0 },
   );
 
-  // the opening: the kiln request's bubble, already sent, the window shaped to it and as wide as the content allows
-  const openW = pick(L, { "16x9": L.content.w, "4x5": L.px(1040) });
-  const openH = (openW * REQUEST.h) / REQUEST.w;
-  const media: Rect = { x: (L.W - openW) / 2, y: pick(L, { "16x9": L.px(372), "4x5": L.px(470) }), w: openW, h: openH };
-  const big = L.window;
-  const c0 = diagramCam(L, T(B.chip), T);
-  const foldTo = { x: g.chipStart.x * c0.S + c0.ox, y: g.chipStart.y * c0.S + c0.oy, w: g.chipStart.w * c0.S, h: g.chipStart.h * c0.S };
-  const foldP = ramp(t, T(B.fold), 0.45, EASE.camera);
-  const rect = rectAt(
-    [
-      { t: 0, rect: media },
-      { t: T(B.grow), rect: media, dur: 0.01 },
-      { t: T(B.grow) + 0.6, rect: big, dur: 0.6 },
-      { t: T(B.fold), rect: big, dur: 0.01 },
-      { t: T(B.fold) + 0.45, rect: foldTo, dur: 0.45 },
-    ],
-    t,
-  );
-  const keys: ZoomKey[] = [
-    { t: 0, box: REQUEST },
-    { t: T(B.grow) + 0.1, box: REQUEST },
-    { t: T(B.script), box: pick(L, { "16x9": SCRIPT, "4x5": SCRIPT_45 }), dur: 0.65 },
-  ];
+  // the thinking window: the request, a cut to the steps, then it narrows onto kiln_ramp_time while the window shrinks
+  // to the tool's card; the card takes over as the picture fades
+  const foldP = EASE.camera(clamp01((t - T(B.fold)) / FOLD));
+  let region = t < cut ? pushAbout(REQUEST[L.id], Math.exp(-0.01 * t)) : pushAbout(SCRIPT[L.id], Math.exp(-0.01 * (t - cut)));
+  if (foldP > 0) region = mixRegion(region, WORD[L.id], foldP);
+  const rect = mixRegion(mainRect(L), g.card, foldP);
+  const pictureOn = 1 - ramp(t, T(B.fold) + FOLD - 0.1, 0.12, EASE.linear);
+  const cardOn = ramp(t, T(B.fold) + FOLD - 0.12, 0.12, EASE.linear);
+  const isolate = ramp(t, T(B.fold), FOLD * 0.7, EASE.camera);
 
-  // the Keep card rises whole, then the window narrows onto its bullet while the camera pushes in
-  const cardW0 = pick(L, { "16x9": L.px(1400), "4x5": L.px(1000) });
-  const card0: Rect = { x: (L.W - cardW0) / 2, y: pick(L, { "16x9": L.px(520), "4x5": L.px(830) }), w: cardW0, h: (cardW0 * KEEP_CARD.h) / KEEP_CARD.w };
-  const stripW = pick(L, { "16x9": L.content.w, "4x5": L.px(1040) });
-  const strip: Rect = { x: (L.W - stripW) / 2, y: pick(L, { "16x9": L.px(560), "4x5": L.px(860) }), w: stripW, h: (stripW * KEEP_STRIP.h) / KEEP_STRIP.w };
-  const card = rectAt(
-    [
-      { t: T(B.keepIn), rect: card0 },
-      { t: T(B.push), rect: strip, dur: 0.6 },
-    ],
-    t,
-  );
-  const keepKeys: ZoomKey[] = [
-    { t: T(B.keepIn), box: KEEP_CARD },
-    { t: T(B.push) - 0.6, box: KEEP_CARD },
-    { t: T(B.push), box: KEEP_STRIP, dur: 0.6 },
-  ];
-
-  // the steps run past the push's right edge: feather it into the window's own ground (never a sliced word)
-  const featherK = ramp(t, T(B.grow), 0.4);
-  const feather = () =>
-    featherK > 0.01 ? (
-      <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "16%", opacity: featherK, background: "linear-gradient(90deg, rgba(22,26,23,0) 0%, rgba(22,26,23,0.92) 55%, rgb(22,26,23) 100%)" }} />
-    ) : null;
-
-  const underline = ramp(t, T(B.push) + 0.15, 0.45, EASE.enter);
-  const keepOverlay = (toView: (p: { x: number; y: number }) => { x: number; y: number }, k: number) => {
-    if (underline <= 0) return null;
-    const a = toView({ x: TWO_OF_FIVE.x0, y: TWO_OF_FIVE.y });
-    const b = toView({ x: TWO_OF_FIVE.x1, y: TWO_OF_FIVE.y });
-    return <div style={{ position: "absolute", left: a.x, top: a.y, width: (b.x - a.x) * underline, height: Math.max(2, 3 * k), borderRadius: 2, background: C.clay, opacity: 0.95 }} />;
+  const mainOverlay = (toView: (p: { x: number; y: number }) => { x: number; y: number }) => {
+    if (isolate <= 0.001) return null;
+    // everything but the word fades into the conversation's ground as the window narrows (no half-words at its edges)
+    const a = toView({ x: WORD_INK.x0, y: WORD_INK.y0 });
+    const b = toView({ x: WORD_INK.x1, y: WORD_INK.y1 });
+    // a short feather: "a" ends 8 px before the word (1185) and "tool" starts 6 px after it (1375)
+    const f = Math.max(4, (b.y - a.y) * 0.2);
+    const h = `linear-gradient(90deg, #000 ${(a.x - f).toFixed(1)}px, transparent ${a.x.toFixed(1)}px, transparent ${b.x.toFixed(1)}px, #000 ${(b.x + f).toFixed(1)}px)`;
+    const v = `linear-gradient(180deg, #000 ${(a.y - f).toFixed(1)}px, transparent ${a.y.toFixed(1)}px, transparent ${b.y.toFixed(1)}px, #000 ${(b.y + f).toFixed(1)}px)`;
+    return (
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: RSW_BG,
+          opacity: isolate,
+          maskImage: `${h}, ${v}`,
+          WebkitMaskImage: `${h}, ${v}`,
+          maskComposite: "add",
+          WebkitMaskComposite: "source-over",
+        }}
+      />
+    );
   };
 
-  const lineText = pick(L, { "16x9": "When the check disagrees,\nit asks you.", "4x5": "When the check\ndisagrees,\nit asks you." });
+  // the Keep card rises whole, then the window narrows onto its bullet while the camera pushes in
+  const card0: Rect = pick(L, {
+    "16x9": { x: L.px(160), y: L.px(460), w: L.px(1600), h: (L.px(1600) * KEEP_CARD.h) / KEEP_CARD.w },
+    "4x5": { x: L.px(20), y: L.px(668), w: L.px(1040), h: (L.px(1040) * KEEP_CARD.h) / KEEP_CARD.w },
+  });
+  const stripBox = KEEP_STRIP[L.id];
+  const stripW = pick(L, { "16x9": L.content.w, "4x5": L.px(1040) });
+  const stripH = (stripW * stripBox.h) / stripBox.w;
+  const strip: Rect = pick(L, {
+    "16x9": { x: (L.W - stripW) / 2, y: L.px(570), w: stripW, h: stripH },
+    "4x5": { x: (L.W - stripW) / 2, y: L.px(830) - stripH / 2, w: stripW, h: stripH },
+  });
+  const keepP = EASE.camera(clamp01((t - (T(B.keepPush) - 0.6)) / 0.6));
+  // the last beat: back to the whole card, centred at 60 % of the frame's width with the stone round it (FIXES-1's
+  // S05 → S06 zoom punch must not start on a dark frame)
+  const settleP = EASE.camera(clamp01((t - T(B.settle)) / SETTLE));
+  const endW = L.W * 0.6;
+  const endH = (endW * KEEP_CARD.h) / KEEP_CARD.w;
+  const endRect: Rect = { x: (L.W - endW) / 2, y: (L.H - endH) / 2, w: endW, h: endH };
+  const card = mixRegion(mixRegion(card0, strip, keepP), endRect, settleP);
+  const keepKeys: ZoomKey[] = [{ t: 0, box: mixRegion(mixRegion(KEEP_CARD, stripBox, keepP), KEEP_CARD, settleP) }];
+  // the card's rise, drawn here so the window (and its video) stays mounted from frame 0 (FloatingWindow's own rise
+  // unmounts it before `at`)
+  const keepPin = EASE.enter(clamp01((t - T(B.keepIn)) / 0.75));
+  const keepOn = t >= T(B.keepIn) ? Math.min(1, keepPin * 1.6) : 0;
+
+  const underline = ramp(t, T(B.underline), 0.45, EASE.enter);
+  const keepOverlay = (toView: (p: { x: number; y: number }) => { x: number; y: number }, k: number) => {
+    const a = toView({ x: TWO_OF_FIVE.x0, y: TWO_OF_FIVE.y });
+    const b = toView({ x: TWO_OF_FIVE.x1, y: TWO_OF_FIVE.y });
+    // 4:5 only: the Keep button's last 7 px (1150–1157, a row below the bullet) under the crop's left edge, covered in
+    // the card's own ground once the push has narrowed onto the bullet
+    const c0 = toView({ x: 1120, y: 948 });
+    const c1 = toView({ x: 1162, y: 1026 });
+    return (
+      <>
+        {L.portrait && keepP > 0.5 && settleP < 0.25 ? (
+          <div style={{ position: "absolute", left: c0.x, top: c0.y, width: c1.x - c0.x, height: c1.y - c0.y, background: CARD_BG, opacity: 1 - settleP * 4 }} />
+        ) : null}
+        {underline > 0 ? <div style={{ position: "absolute", left: a.x, top: a.y, width: (b.x - a.x) * underline, height: Math.max(2, 3 * k), borderRadius: 2, background: C.clay, opacity: 0.95 }} /> : null}
+      </>
+    );
+  };
+  // the strip's hold drifts (0.8 %/s on the window, never on the type)
+  const keepDrift = 1 + 0.008 * Math.max(0, Math.min(t, T(B.settle)) - T(B.keepPush)) + 0.006 * Math.max(0, t - T(B.settle) - SETTLE);
+
+  const head: Rect = pick(L, {
+    "16x9": { x: L.content.x, y: L.px(96), w: L.content.w, h: L.px(250) },
+    "4x5": { x: L.content.x, y: L.px(104), w: L.content.w, h: L.px(250) },
+  });
   const lineBox: Rect = pick(L, {
-    "16x9": { x: L.content.x, y: L.px(230), w: L.content.w, h: L.px(270) },
-    "4x5": { x: L.content.x, y: L.px(370), w: L.content.w, h: L.px(420) },
+    "16x9": head,
+    "4x5": { x: L.content.x, y: L.px(104), w: L.content.w, h: L.px(300) },
   });
 
   return (
     <FontGate>
       <AbsoluteFill>
         <Stage world="daylight">
-          {t < T(B.fold) + 0.5 ? (
-            <FloatingWindow
-              rect={rect}
-              at={T(B.windowIn)}
-              flattenAt={0.15}
-              flattenDur={0.7}
-              style={{ opacity: 1 - foldP }}
-            >
-              <ScreenZoom src={SRC} srcSize={SIZE} time={time} keys={keys} drift={0.01} overlay={feather} />
-            </FloatingWindow>
-          ) : null}
-          <Headline
-            text={pick(L, { "16x9": "It builds small tools for itself.", "4x5": "It builds small\ntools for itself." })}
-            at={T(B.title)}
-            exitAt={T(B.titleOut)}
-            size={L.type.title}
-            align={L.portrait ? "left" : "center"}
-            valign="middle"
-            box={pick(L, { "16x9": { x: L.content.x, y: L.px(130), w: L.content.w, h: L.px(190) }, "4x5": { x: L.content.x, y: L.px(150), w: L.content.w, h: L.px(280) } })}
-          />
+          {/* both windows stay mounted for the whole scene (no mid-scene mount of a video); each holds its picture
+              while hidden */}
+          <FloatingWindow rect={rect} enter="none" radius={lerp(22, 20, foldP)} shadow={1} background={RSW_BG} style={{ opacity: pictureOn }}>
+            <ScreenZoom src={SRC} srcSize={SIZE} time={time} keys={[{ t: 0, box: region }]} drift={0} motionBlur={false} edgeFade={16} overlay={mainOverlay} />
+          </FloatingWindow>
 
-          <Diagram t={t} T={T} L={L} />
+          <Diagram t={t} T={T} L={L} cardOn={cardOn} />
 
-          {t >= T(B.keepIn) ? (
-            <FloatingWindow rect={card} at={T(B.keepIn)} enter="rise" tilt={{ rx: 10, ry: 0 }} flattenAt={T(B.keepIn) + 0.2} flattenDur={0.5} radius={20}>
-              <ScreenZoom src={SRC} srcSize={SIZE} time={keepTime} keys={keepKeys} drift={0.003} overlay={keepOverlay} />
-            </FloatingWindow>
-          ) : null}
-          <Headline text={lineText} at={T(B.line)} entrance="line" size={pick(L, { "16x9": L.type.title, "4x5": L.type.title })} align="center" valign="bottom" box={lineBox} />
+          <FloatingWindow
+            rect={card}
+            enter="none"
+            tilt={{ rx: 10, ry: 0 }}
+            flattenAt={T(B.keepIn) + 0.15}
+            flattenDur={0.45}
+            radius={20}
+            background="#1C231C"
+            offset={{ x: 0, y: (1 - keepPin) * 90 * L.u }}
+            scale={lerp(0.97, 1, keepPin) * keepDrift}
+            style={{ opacity: keepOn, filter: keepPin < 0.999 && keepOn > 0 ? `blur(${((1 - keepPin) * 14 * L.u).toFixed(2)}px)` : undefined }}
+          >
+            <ScreenZoom src={SRC} srcSize={SIZE} time={keepTime} keys={keepKeys} drift={0} motionBlur={false} edgeFade={8} overlay={keepOverlay} />
+          </FloatingWindow>
+
+          <TypeExit at={T(B.titleOut)} t={t} u={L.u}>
+            <Headline
+              text={"It builds small tools\nfor itself."}
+              at={T(B.title)}
+              entrance="blur"
+              size={pick(L, { "16x9": L.type.title, "4x5": L.type.title })}
+              align="left"
+              valign="top"
+              box={head}
+            />
+          </TypeExit>
+          <TypeExit at={T(B.out)} t={t} u={L.u}>
+            <Headline
+              text={pick(L, { "16x9": "When the check disagrees,\nit asks you.", "4x5": "When the check\ndisagrees,\nit asks you." })}
+              at={T(B.line)}
+              entrance="line"
+              size={pick(L, { "16x9": L.type.title, "4x5": L.px(92) })}
+              align="left"
+              valign="top"
+              box={lineBox}
+            />
+          </TypeExit>
         </Stage>
         {S05_SFX.map((c) => (
           <Sfx key={`${c.file}-${c.s}`} src={sfxSrc(c.file)} at={sfxStart(c.file, T(c.s))} db={c.db} />
