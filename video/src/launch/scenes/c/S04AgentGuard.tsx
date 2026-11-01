@@ -50,7 +50,8 @@ const B = {
   shrink: 3.6, // → 4.05, the window becomes the evidence card
   agTitle: 4.25,
   agSub: 4.45,
-  rows: [4.6, 4.8, 5.0] as const,
+  // REVIEW-2 S-5: one row a beat-and-a-half apart (film 35.80, 36.55, 37.30), not together, so the hold isn't dead
+  rows: [4.75, 5.5, 6.25] as const,
   out: 8.52, // every word gone by 8.70, two frames before the whip (8.87)
 } as const;
 const SHRINK = 0.45;
@@ -272,6 +273,7 @@ export const S04AgentGuard: React.FC<SceneProps> = ({ durationInFrames }) => {
   const shrinkP = EASE.camera(clamp01((t - T(B.shrink)) / SHRINK));
   const rect = mixRegion(g.R0, g.R3, shrinkP);
   // a 3 % punch on the cut to Verified, decaying (a hit, not a creep); the evidence card's hold drifts 0.8 %/s (UI only)
+  const rowPush = 1 + 0.006 * Math.max(0, t - T(B.rows[0]));
   const punch = (1 + 0.03 * hit(t, T(B.cut), 0.001, 0.22)) * (1 + 0.008 * Math.max(0, t - T(B.shrink) - SHRINK));
 
   // the camera: each state's framing with a slow push (0.8 %/s, UI only), then the glide onto the card
@@ -363,6 +365,8 @@ export const S04AgentGuard: React.FC<SceneProps> = ({ durationInFrames }) => {
           <TypeExit at={T(B.out)} t={t} u={L.u}>
             <Headline text="AgentGuard." at={T(B.agTitle)} entrance="letters" size={g.agSize} align="left" valign="top" box={g.ag} fit />
             <Headline text="Evidence before “done”." at={T(B.agSub)} entrance="ink" variant="support" size={L.type.sub} color={DAY.ink2} align="left" valign="top" box={g.sub} />
+            {/* REVIEW-2 S-5: the rows push 0.6 %/s from their left edge (never the title above them) */}
+            <AbsoluteFill style={{ transform: `scale(${rowPush.toFixed(5)})`, transformOrigin: `${L.content.x.toFixed(1)}px ${(g.rowTop + 1.5 * g.rowH).toFixed(1)}px` }}>
             {CHECKS.map((c, i) => (
               <CheckRow
                 key={c}
@@ -377,6 +381,7 @@ export const S04AgentGuard: React.FC<SceneProps> = ({ durationInFrames }) => {
                 size={g.rowSize}
               />
             ))}
+            </AbsoluteFill>
           </TypeExit>
         </Stage>
         {S04_SFX.map((c) => (
