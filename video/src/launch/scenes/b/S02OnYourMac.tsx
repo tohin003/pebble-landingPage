@@ -48,7 +48,9 @@ const WHIP_S = 0.14;
 /** RS11-02's companion pebble: body centre and width, source px */
 const PEBBLE = { x: 2750, y: 1621, w: 173 };
 /** the opening pebble's sharpness: take px shown at this many frame px (REVIEW-1 S4: 2× or less; 1.5 keeps the pull-back's sweep short) */
-const OPEN_MAG = 1.5;
+// The director (draft 3 prep): 1.2, not 1.5: a shorter sweep for the Dock's icons (the strictest flash binding failed by
+// one transition at 1.5; a longer pull-back made it worse). S01's three sage frames hide the scale at the match.
+const OPEN_MAG = 1.2;
 
 /* ---------- the takes' time maps and masks ---------- */
 
@@ -182,8 +184,16 @@ export const S02OnYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
   const now = poseA(t);
   const prev = poseA(t - SHUTTER);
   const shift = Math.hypot(now.p.x - prev.p.x, now.p.y - prev.p.y) + Math.abs(now.s / prev.s - 1) * Math.hypot(L.W, L.H);
-  const nA = t > 0 && t < PULL_S + 0.05 ? Math.max(1, Math.min(6, Math.ceil(shift / 3))) : 1;
-  const samplesA = Array.from({ length: nA }, (_, i) => (nA === 1 ? now : poseA(t - SHUTTER * (1 - i / (nA - 1)))));
+  // The director (draft 3 prep): one layer with a smooth blur scaled to the move's speed, not up to six stacked
+  // samples. The samples drew visible ghost copies (the Dock's icons in bands, REVIEW-1's BANNED "motion blur with
+  // visible sample copies") and those bands strobed under the strictest flash binding.
+  const blurA = t > 0 && t < PULL_S + 0.05 ? Math.min(18, shift / 2) : 0;
+  const samplesA = [now];
+  // The director (draft 3 prep): the Dock's saturated icons, sweeping during the pull-back, still failed the strictest
+  // flash binding (8 transitions a second against 6). The Dock band (RS11-02 y ≥ ~1715 of 1912) is veiled in the
+  // wallpaper's sage through the fast part of the move and fades in as it settles: a brief mask, no invented UI.
+  const DOCK_TOP_PCT = (1715 / 1912) * 100;
+  const dockHide = t < 0 ? 0 : 1 - Math.min(1, Math.max(0, (t - 0.8 * PULL_S) / (0.3 * PULL_S)));
   const capA = PULL_S * 0.82;
 
   /* shot C: the push onto the input once the quick chat is open */
@@ -206,10 +216,23 @@ export const S02OnYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
         <DesktopGround>
           <Sequence durationInFrames={f(M.b)} name="A · RS11-02 the Mac">
             {samplesA.map((q, i) => (
-              <AbsoluteFill key={i} style={{ opacity: i === 0 ? 1 : 1 / (i + 1) }}>
+              <AbsoluteFill key={i} style={{ filter: blurA > 0.3 ? `blur(${blurA.toFixed(2)}px)` : undefined }}>
                 <ZoomAbout s={q.s} from={pebFinal} to={q.p}>
                   <FloatingWindow rect={G.screen} enter="none" spill={0} shadow={i === 0 ? 0.55 : 0} background="#C9D7C0">
                     <MaskedZoom src={A.file} srcSize={SRC} time={A_TIME} srcDuration={A.durationS} drift={0} masks={A_MASKS} />
+                    {dockHide > 0.01 && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: 0,
+                          right: 0,
+                          top: `${DOCK_TOP_PCT.toFixed(2)}%`,
+                          bottom: 0,
+                          opacity: dockHide,
+                          background: "linear-gradient(to bottom, rgba(201,215,192,0) 0%, rgba(201,215,192,0.97) 35%)",
+                        }}
+                      />
+                    )}
                   </FloatingWindow>
                 </ZoomAbout>
               </AbsoluteFill>
