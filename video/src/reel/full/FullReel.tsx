@@ -246,7 +246,7 @@ const RevealScene: React.FC<{ seg: Extract<Segment, { kind: "reveal" }>; f: numb
   const D = seg.from;
   const tall = a !== "16x9";
   const size = a === "9x16" ? 700 : a === "1x1" ? 560 : 780;
-  const lockSize = tall ? fitSize("Pebble 2.0", S.w * 0.92, a === "1x1" ? 170 : 170) : 236;
+  const lockSize = tall ? fitSize("Pebble 2.0", S.w * 0.92, a === "1x1" ? 170 : 170) : 220;
   // 16:9: it lands where it stays, left of its name (a glide swept its bright body through the frame: round 1's scan)
   const footX = tall ? S.cx : W / 2 - W * 0.25;
   const footY = a === "9x16" ? 900 : a === "1x1" ? H * 0.58 : H * 0.5 + size * 0.3;
@@ -286,8 +286,8 @@ function bigCard(crop: CropId, a: Aspect, W: number, H: number, S: Safe) {
   const r = CROPS[crop].rect;
   const portrait = r.w / r.h < 1.2;
   const cap = crop === "calendar" ? 3.0 : 2.6;
-  if (a === "9x16") return { k: Math.min(S.w / r.w, 700 / r.h, cap), x: S.cx, y: 920, lineAt: { x: S.cx, y: S.y0, w: S.w, align: "center" as const, top: true } };
-  if (a === "1x1") return { k: Math.min((S.w * 0.95) / r.w, (H * 0.56) / r.h, cap), x: W / 2, y: H * 0.45, lineAt: { x: W / 2, y: H * 0.84, w: S.w * 0.84, align: "center" as const, top: false } };
+  if (a === "9x16") return { k: Math.min((S.w * 0.88) / r.w, 640 / r.h, cap), x: S.cx, y: 920, lineAt: { x: S.cx, y: S.y0, w: S.w, align: "center" as const, top: true } };
+  if (a === "1x1") return { k: Math.min((S.w * 0.86) / r.w, (H * 0.52) / r.h, cap), x: W / 2, y: H * 0.45, lineAt: { x: W / 2, y: H * 0.84, w: S.w * 0.84, align: "center" as const, top: false } };
   if (portrait) return { k: Math.min((W * 0.5) / r.w, (H * 0.84) / r.h, cap), x: W * 0.66, y: H * 0.5, lineAt: { x: S.x0 + W * 0.01, y: H * 0.5, w: W * 0.42, align: "left" as const, top: false } };
   return { k: Math.min((W * 0.8) / r.w, (H * 0.64) / r.h, cap), x: W * 0.5, y: H * 0.42, lineAt: { x: W * 0.5, y: H * 0.86, w: W * 0.8, align: "center" as const, top: false } };
 }
@@ -321,12 +321,15 @@ const FlashScene: React.FC<{ plan: FullPlan; seg: Flash; f: number; W: number; H
   const punch = beatPunch(plan, f);
   // a hard match cut inside "Every Space." (the same place, a different Space); otherwise each screen whips in
   const match = seg.id === "spaces" && si > 0;
+  // a two-line line under a card keeps its last line inside title-safe ("Your model, your choice." fell below it on 16:9)
+  const lines = seg.line.split("\n").length;
+  const lineY = g.lineAt.top ? g.lineAt.y : Math.min(g.lineAt.y, S.y1 - (lines * size) / 2 - size * 0.12);
   return (
     <AbsoluteFill>
       <Ground tint={seg.tint} focus={{ x: g.x / W, y: g.y / H }} energy={1.1 + 0.9 * punch} />
       <ScreenCard crop={shot.crop} src={src} f={f} from={match ? seg.from : shot.from} to={shot.to} i={index + si} a={a} W={W} H={H} S={S} punch={punch} still={match} />
       {/* the line: on the cut, held through the flash (N1), a short slam and no exit */}
-      <Word text={seg.line} dt={f - seg.from + 2} size={size} x={g.lineAt.x} y={g.lineAt.y} align={g.lineAt.align} valign={g.lineAt.top ? "top" : "center"} sweep={f - seg.from >= 8 && f - seg.from <= 30 ? (f - seg.from - 8) / 22 : undefined} />
+      <Word text={seg.line} dt={f - seg.from + 2} size={size} x={g.lineAt.x} y={lineY} align={g.lineAt.align} valign={g.lineAt.top ? "top" : "center"} sweep={f - seg.from >= 8 && f - seg.from <= 30 ? (f - seg.from - 8) / 22 : undefined} />
     </AbsoluteFill>
   );
 };
@@ -368,7 +371,7 @@ function heroLayout(a: Aspect, W: number, H: number, S: Safe, name: string, sub?
     const sz = Math.round(size * 0.42);
     const blockH = size * 1.05 * lines + (sub ? sz * 1.25 * subLines + size * 0.3 : 0);
     const top = H * 0.46 - blockH / 2;
-    return { size, subSize: sz, x: S.x0 + W * 0.005, nameTop: top, subTop: top + size * 1.08 * lines + size * 0.22, align: "left" as const, box: { x: W * 0.5, y: H * 0.1, w: W * 0.46, h: H * 0.76 } };
+    return { size, subSize: sz, x: S.x0 + W * 0.005, nameTop: top, subTop: top + size * 1.08 * lines + size * 0.22, align: "left" as const, box: { x: W * 0.52, y: H * 0.13, w: W * 0.4, h: H * 0.73 } };
   }
   const size = fitSize(name, S.w, a === "9x16" ? 150 : 120);
   const sz = Math.round(size * 0.44);
@@ -376,8 +379,10 @@ function heroLayout(a: Aspect, W: number, H: number, S: Safe, name: string, sub?
   const subTop = nameTop + size * 1.12 * lines + size * 0.12;
   const textBottom = sub ? subTop + sz * 1.22 * subLines : nameTop + size * 1.12 * lines;
   const boxTop = textBottom + (a === "9x16" ? 40 : 20);
-  const boxBottom = a === "9x16" ? 1360 : H * 0.92;
-  return { size, subSize: sz, x: S.cx, nameTop, subTop, align: "center" as const, box: { x: S.x0, y: boxTop, w: S.w, h: Math.max(200, boxBottom - boxTop) } };
+  const boxBottom = a === "9x16" ? 1360 : H * 0.8;
+  // (inset: on tall frames the step-up's lift and the beat punches (up to ×1.2) grow the box from its top edge, so it
+  // never rises into the name, and its foot stays inside the grid)
+  return { size, subSize: sz, x: S.cx, nameTop, subTop, align: "center" as const, box: { x: S.x0 + S.w * 0.08, y: boxTop, w: S.w * 0.84, h: Math.max(200, boxBottom - boxTop) } };
 }
 
 const HeroScene: React.FC<{ plan: FullPlan; seg: HeroSeg; f: number; W: number; H: number; a: Aspect; S: Safe; B: number }> = ({ plan, seg, f, W, H, a, S, B }) => {
@@ -403,7 +408,7 @@ const HeroScene: React.FC<{ plan: FullPlan; seg: HeroSeg; f: number; W: number; 
     const askAt = 3 * B;
     stepBack = inOut(c01((dt - askAt + 4) / 10));
     const pos = a === "9x16" ? { x: S.cx, y: box.y + box.h * 0.62 } : a === "1x1" ? { x: W / 2, y: box.y + box.h * 0.6 } : { x: bcx, y: box.y + box.h * 0.62 };
-    const k = (a === "16x9" ? box.w * 0.98 : S.w) / CROPS.keepAsk.rect.w;
+    const k = (a === "16x9" ? box.w * 1.12 : box.w) / CROPS.keepAsk.rect.w;
     if (dt >= askAt) real = <Card crop="keepAsk" src={5400 + Math.min(200, dt)} pose={{ x: pos.x, y: pos.y + (1 - expoOut((dt - askAt + 1) / 7)) * 60, k: k * (1 + 0.6 * punch), rotY: a === "16x9" ? -5 : 0, rotX: 2, opacity: c01((dt - askAt + 1) / 3) }} fadeRight glow={0.85} bright={1.12} sweep={dt - askAt >= 2 && dt - askAt <= 20 ? (dt - askAt - 2) / 18 : undefined} />;
   }
   if (seg.id === "stealth") {
@@ -413,14 +418,15 @@ const HeroScene: React.FC<{ plan: FullPlan; seg: HeroSeg; f: number; W: number; 
     const crop: CropId = phase === 0 ? "stealthPalette" : phase === 1 ? "stealthMenu" : "stealthDock";
     const t0 = phase * 2 * B;
     const src = phase === 0 ? Math.min(433, Math.round(300 + (132 * Math.min(dt, 2 * B - 2)) / (2 * B - 2))) : phase === 1 ? Math.min(1185, 426 + (dt - t0)) : Math.min(1185, 434 + (dt - t0));
-    const center = a === "16x9" ? { x: bcx, y: H * 0.42 } : a === "9x16" ? { x: S.cx, y: box.y + box.h * 0.35 } : { x: W / 2, y: box.y + box.h * 0.4 };
-    const width = a === "16x9" ? (phase === 1 ? W * 0.3 : W * 0.5) : phase === 1 ? S.w * 0.6 : S.w;
-    real = <ScreenCard crop={crop} src={src} f={f} from={seg.from + t0} to={seg.from + t0 + 2 * B} i={phase} a={a} W={W} H={H} S={S} punch={punch} at={center} scale={width / CROPS[crop].rect.w / bigCard(crop, a, W, H, S).k} />;
+    // (the scene's wrapper already punches on the beats: the card itself doesn't, or the slam doubled it past the frame)
+    const center = a === "16x9" ? { x: bcx, y: H * 0.42 } : a === "9x16" ? { x: S.cx, y: box.y + box.h * 0.35 } : { x: W / 2, y: box.y + box.h * 0.33 };
+    const width = a === "16x9" ? (phase === 1 ? W * 0.26 : W * 0.38) : phase === 1 ? S.w * 0.55 : S.w * 0.8;
+    real = <ScreenCard crop={crop} src={src} f={f} from={seg.from + t0} to={seg.from + t0 + 2 * B} i={phase} a={a} W={W} H={H} S={S} punch={0} at={center} scale={width / CROPS[crop].rect.w / bigCard(crop, a, W, H, S).k} />;
   }
   return (
     <AbsoluteFill>
       <Ground tint={seg.tint} focus={{ x: bcx / W, y: (box.y + box.h * 0.45) / H }} energy={energy} />
-      <div style={{ position: "absolute", inset: 0, transform: `scale(${lift * (1 + punch)})`, transformOrigin: `${bcx}px ${bcy}px` }}>
+      <div style={{ position: "absolute", inset: 0, transform: `scale(${lift * (1 + punch)})`, transformOrigin: `${bcx}px ${a === "16x9" ? bcy : box.y}px` }}>
         {seg.id === "agentguard" && <AgentGuardExplainer {...box} dt={dt} B={B} energy={e} vertical={vertical} />}
         {seg.id === "workshop" && <WorkshopExplainer2 {...box} dt={dt} B={B} energy={e} vertical={vertical} stepBack={stepBack} />}
         {seg.id === "visual" && <VisualExplainer {...box} dt={dt} B={B} energy={e} vertical={vertical} />}
@@ -478,8 +484,8 @@ const RivalScene: React.FC<{ seg: Rival; f: number; W: number; H: number; a: Asp
     // the ask, real (RS9A-01), the quick chat right (16:9) or below its echo (tall frames)
     const dt = f - seg.ask.from;
     const r = CROPS.rivalAsk.rect;
-    const k = a === "16x9" ? (H * 0.8) / r.h : a === "9x16" ? (S.w * 0.9) / r.w : (H * 0.58) / r.h;
-    const pos = a === "16x9" ? { x: W * 0.7, y: H * 0.5 } : a === "9x16" ? { x: S.cx, y: 1120 } : { x: W / 2, y: H * 0.66 };
+    const k = a === "16x9" ? (H * 0.74) / r.h : a === "9x16" ? (S.w * 0.84) / r.w : (H * 0.52) / r.h;
+    const pos = a === "16x9" ? { x: W * 0.66, y: H * 0.47 } : a === "9x16" ? { x: S.cx, y: 1020 } : { x: W / 2, y: H * 0.635 };
     return (
       <AbsoluteFill style={entrance("whipR", dt, W, H, a)}>
         <Ground tint="deep" focus={{ x: pos.x / W, y: pos.y / H }} energy={1.1 + 0.3 * hitEnv(dt, 1, 8)} />
@@ -492,7 +498,7 @@ const RivalScene: React.FC<{ seg: Rival; f: number; W: number; H: number; a: Asp
   const dt = f - seg.play.from;
   const src = Math.round(seg.play.src.at(dt));
   const pr = CROPS.rivalPlay.rect;
-  const kp = a === "16x9" ? (W * 0.56) / pr.w : (S.w * (a === "1x1" ? 0.8 : 1)) / pr.w;
+  const kp = a === "16x9" ? (W * 0.56) / pr.w : (S.w * (a === "1x1" ? 0.8 : 0.95)) / pr.w;
   const px = a === "16x9" ? W * 0.68 : S.cx;
   const py = a === "16x9" ? H * 0.52 : a === "9x16" ? 1060 : H * 0.62;
   const tr = CROPS.rivalTab.rect;
@@ -665,7 +671,9 @@ const Companion: React.FC<{ plan: FullPlan; f: number; W: number; H: number; a: 
   const from = reveal.to;
   const until = plan.slam + Math.round(plan.B);
   if (f < from || f >= until) return null;
-  const spot = companionSpot(a, W, H);
+  const home = companionSpot(a, W, H);
+  // (tall frames: the honest line's band takes the foot of the frame from the slam, so the companion stands on it)
+  const spot = f >= plan.slam && a === "9x16" ? { x: 820, y: 1266, size: 150 } : f >= plan.slam && a === "1x1" ? { x: W * 0.89, y: 852, size: 120 } : home;
   const downs = plan.map.downbeats.filter((d) => d >= from - 0.5 && d < silence.from - 0.5).map(Math.round);
   const beats = plan.map.beats.filter((b) => b >= from - 0.5 && b < silence.from - 0.5).map(Math.round);
   const quiet = f >= silence.from && f < plan.slam;
