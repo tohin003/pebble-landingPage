@@ -58,9 +58,10 @@ const HookScene: React.FC<{ seg: Extract<Segment, { kind: "hook" }>; f: number; 
   const punch = hitEnv(f - seg.send, 2, 8) + seg.accents.reduce((s, h) => s + 0.6 * hitEnv(f - h, 2, 9), 0);
   const beatGlow = seg.pulses.reduce((s, p) => s + 0.22 * hitEnv(f - p, 1, 7), 0);
   const lastAccent = Math.max(-999, ...seg.accents.filter((h) => h <= f));
-  const sweep = f < 40 ? f / 40 : f - lastAccent < 26 ? (f - lastAccent) / 26 : f >= seg.send && f < seg.send + 24 ? (f - seg.send) / 24 : undefined;
+  const sweep = f < 40 ? f / 40 : f - lastAccent < 26 ? (f - lastAccent) / 26 : undefined;
   pose = { ...pose, k: pose.k * (1 + 0.07 * punch) };
-  let trail;
+  const trail = undefined;
+  let diveBlur = 0;
   if (f >= seg.zoomFrom) {
     const u = c01((f - seg.zoomFrom) / Math.max(1, seg.to - seg.zoomFrom));
     const e = expoIn(u);
@@ -69,7 +70,9 @@ const HookScene: React.FC<{ seg: Extract<Segment, { kind: "hook" }>; f: number; 
     zoom = 1 + 15 * e;
     at = { x: centre.x + (eye.x - centre.x) * m, y: centre.y + (eye.y - centre.y) * m };
     const e2 = expoIn(c01(u + 1 / Math.max(1, seg.to - seg.zoomFrom)));
-    trail = { vx: 0, vy: 0, vlk: -Math.log((1 + 15 * e2) / (1 + 15 * e)), n: u > 0.25 ? 5 : 0, span: 1.2 };
+    // no ghost copies in the dive: each ghost's bright edge swept the frame as a separate flicker (flash scan, 1 Nov);
+    // a plain blur with the zoom's speed instead
+    diveBlur = Math.min(14, 60 * Math.log((1 + 15 * e2) / (1 + 15 * e)));
   }
   // the aura: breathing with Starfire's pad (a breath every 45 frames, on its beats), then on Vanguard's build's beats
   const drums = seg.accents[0] ?? seg.send;
@@ -92,7 +95,7 @@ const HookScene: React.FC<{ seg: Extract<Segment, { kind: "hook" }>; f: number; 
   const caretOn = !sent && Math.floor(f / 18) % 2 === 0;
   return (
     <AbsoluteFill>
-      <Ground tint="sage" focus={{ x: c01(pebbleAt.x / W), y: c01(pebbleAt.y / H) }} energy={0.4 + 0.75 * level + 0.4 * punch + 0.6 * leave} />
+      <Ground tint="sage" focus={{ x: c01(pebbleAt.x / W), y: c01(pebbleAt.y / H) }} energy={0.4 + 0.75 * Math.min(level, 1.1) + 0.4 * punch} />
       {leave < 1 && (
         <div
           style={{
@@ -127,6 +130,8 @@ const HookScene: React.FC<{ seg: Extract<Segment, { kind: "hook" }>; f: number; 
         pose={pose}
         inner={{ zoom, at }}
         trail={trail}
+        blurPx={diveBlur}
+        bright={f >= seg.zoomFrom ? 1 - 0.85 * inOut(c01((f - seg.zoomFrom) / Math.max(1, seg.to - seg.zoomFrom))) : 1}
         sweep={sweep}
         glow={0.7 + beatGlow}
         radiusPx={28}
@@ -167,12 +172,13 @@ const RevealScene: React.FC<{ seg: Extract<Segment, { kind: "reveal" }>; f: numb
   const D = seg.from;
   const tall = a !== "16x9";
   const size = a === "9x16" ? 820 : a === "1x1" ? 620 : 780;
-  const glide = tall ? 0 : inOut(c01((f - seg.w1 + 12) / 14));
+  // 16:9: it lands where it stays, left of its name (a glide swept its bright body through the frame: flash scan)
+  const glide = tall ? 0 : 1;
   const lockSize = tall ? fitSize("Pebble 2.0", W * 0.86, a === "1x1" ? 170 : 190) : 236;
   const footX = tall ? W / 2 : W / 2 - glide * W * 0.25;
   const footY = a === "9x16" ? H * 0.47 : a === "1x1" ? H * 0.56 : H * 0.5 + size * 0.3;
   const cy = footY - size * 0.3;
-  const energy = 1 + 0.9 * hitEnv(f - D, 1, 14) + 0.3 * hitEnv(f - seg.w1, 1, 10) + 0.3 * hitEnv(f - seg.w2, 1, 10);
+  const energy = 1 + 0.7 * hitEnv(f - D, 1, 20);
   return (
     <AbsoluteFill>
       <Ground tint="sage" focus={{ x: footX / W, y: cy / H }} energy={energy} />
@@ -190,7 +196,7 @@ const RevealScene: React.FC<{ seg: Extract<Segment, { kind: "reveal" }>; f: numb
         size={size}
         landAt={D}
         pulses={[seg.w1, seg.w2]}
-        aura={{ level: 0.55 + 0.45 * E(f) + 0.9 * Math.exp(-(f - D) / 18) + 0.3 * hitEnv(f - seg.w1, 1, 10) + 0.3 * hitEnv(f - seg.w2, 1, 10), burstAge: f - D, rays: 0.12 + 0.88 * Math.exp(-(f - D) / 30) }}
+        aura={{ level: 0.6 + 0.3 * E(f) + 0.8 * Math.exp(-(f - D) / 24), burstAge: f - D, rays: 0.12 + 0.7 * Math.exp(-(f - D) / 30) }}
       />
       <Lockup f={f} w1={seg.w1} w2={seg.w2} x={tall ? W / 2 : W * 0.4} y={a === "9x16" ? H * 0.68 : a === "1x1" ? H * 0.8 : cy} size={lockSize} align={tall ? "center" : "left"} />
     </AbsoluteFill>
@@ -233,7 +239,10 @@ const ScreenCard: React.FC<{ crop: CropId; src: number; f: number; from: number;
   const settle = expoOut(dt / 18);
   const pos = at ?? { x: g.x, y: g.y };
   const pose: CardPose = { x: pos.x + ox, y: pos.y + oy, k, rotY: (i % 2 ? 1 : -1) * 7 * (1 - 0.5 * settle), rotX: 3 * (1 - settle) + 1 };
-  return <Card crop={crop} src={src} pose={pose} trail={speed > 6 ? { vx, vy, n: 8, span: 1.6 } : undefined} blurPx={Math.min(10, speed / 14)} sweep={dt >= 3 && dt <= 23 ? (dt - 3) / 20 : undefined} fadeRight={crop === "keepCard"} glow={0.9} bright={1.12} />;
+  // light screens (the menu bar, the Dock, the poster) get no sweep and a slightly lower grade: a sweep over a bright card
+  // adds two luminance swings, and the Stealth beat's strips flickered past the photosensitivity limit (flash scan)
+  const light = crop === "stealthMenu" || crop === "stealthDock" || crop === "spaces" || crop === "finder";
+  return <Card crop={crop} src={src} pose={pose} trail={undefined /* ghost copies swept bright edges through the frame as flicker (flash scan): blur only */} blurPx={Math.min(10, speed / 14)} sweep={!light && dt >= 3 && dt <= 23 ? (dt - 3) / 20 : undefined} fadeRight={crop === "keepCard"} glow={light ? 0.4 : 0.9} bright={light ? 0.9 : 1.12} />;
 };
 
 const FlashScene: React.FC<{ seg: Flash; f: number; W: number; H: number; a: Aspect; index: number }> = ({ seg, f, W, H, a, index }) => {
@@ -414,12 +423,14 @@ const RushScene: React.FC<{ seg: Extract<Segment, { kind: "rush" }>; f: number; 
   return (
     <AbsoluteFill>
       <Ground tint={i % 2 ? "deep" : "sage"} focus={{ x: g.x / W, y: g.y / H }} energy={1.2 + 0.4 * hitEnv(f - from, 1, 6)} />
-      <ScreenCard crop={crop} src={RUSH_SRC[crop]} f={f} from={from} to={to} i={i} a={a} W={W} H={H} leaveTo={DIRS[(i + 1) % 4]} scale={0.92} />
+      {/* clean cuts on the beat, no sideways whip-out (its trails flickered past the photosensitivity limit) */}
+      <ScreenCard crop={crop} src={RUSH_SRC[crop]} f={f} from={from} to={to} i={i} a={a} W={W} H={H} scale={0.92} />
     </AbsoluteFill>
   );
 };
 
-const MERGE: readonly CropId[] = ["calculator", "calendar", "finder", "keepCard", "reply", "stealthPalette", "rivalAsk", "spaces"];
+// only the dark screens (a bright card arriving at the centre every eighth flickered: flash scan, 1 Nov)
+const MERGE: readonly CropId[] = ["finder", "keepCard", "reply", "stealthPalette", "rivalAsk", "calendar"];
 
 /** The merge's pebble: where it stands (the logo's pebble glides from here). */
 const mergeSpot = (a: Aspect, W: number, H: number) => {
@@ -437,8 +448,7 @@ const MergeScene: React.FC<{ seg: Extract<Segment, { kind: "merge" }>; f: number
   const ry = a === "9x16" ? H * 0.22 : a === "1x1" ? H * 0.32 : H * 0.36;
   const n = seg.pulls.length;
   const spin = ((f - seg.from) / 60) * 1.4;
-  const pull = 16;
-  const absorbed = seg.pulls.filter((p) => p <= f).length;
+  const pull = 22;
   const cards = seg.pulls.map((at, i) => {
     const crop = MERGE[i % MERGE.length];
     const u = (f - (at - pull)) / pull;
@@ -451,18 +461,18 @@ const MergeScene: React.FC<{ seg: Extract<Segment, { kind: "merge" }>; f: number
     const p0 = pos(u);
     const p1 = pos(u + 1 / pull);
     const k0 = Math.min((Math.min(W, H) * 0.34) / Math.max(CROPS[crop].rect.w, CROPS[crop].rect.h), 1.5);
-    const appear = c01(0.6 + (f - seg.from) / 6 - i * 0.03);
+    const appear = c01((f - seg.from) / 24 - i * 0.03); // the orbit fades in over a beat
     const behind = Math.sin((i / n) * Math.PI * 2 + spin) < 0 && p0.e < 0.5;
     return {
       behind,
-      el: <Card key={i} crop={crop} src={RUSH_SRC[crop] ?? CROPS[crop].allowed[0]} pose={{ x: p0.x, y: p0.y, k: k0 * (1 - 0.94 * p0.e) * (0.5 + 0.5 * appear), rotY: Math.cos((i / n) * Math.PI * 2 + spin) * 22, rotX: 8, opacity: appear }} trail={p0.e > 0.05 ? { vx: p1.x - p0.x, vy: p1.y - p0.y, vlk: Math.log((1 - 0.94 * p1.e) / (1 - 0.94 * p0.e)), n: 7, span: 1.6 } : undefined} blurPx={behind ? 3 : 0} glow={0.35} bright={1.08} />,
+      el: <Card key={i} crop={crop} src={RUSH_SRC[crop] ?? CROPS[crop].allowed[0]} pose={{ x: p0.x, y: p0.y, k: k0 * (1 - 0.94 * p0.e) * (0.5 + 0.5 * appear), rotY: Math.cos((i / n) * Math.PI * 2 + spin) * 22, rotX: 8, opacity: appear * (1 - 0.7 * p0.e) }} trail={p0.e > 0.05 ? { vx: p1.x - p0.x, vy: p1.y - p0.y, vlk: Math.log((1 - 0.94 * p1.e) / (1 - 0.94 * p0.e)), n: 7, span: 1.6 } : undefined} blurPx={behind ? 3 : 0} glow={0.35} bright={1.08} />,
     };
   });
   return (
     <AbsoluteFill>
-      <Ground tint="sage" focus={{ x: 0.5, y: cy / H }} energy={1.05 + 0.6 * (absorbed / Math.max(1, n)) + seg.pulls.reduce((s, p) => s + 0.15 * hitEnv(f - p, 1, 5), 0)} />
+      <Ground tint="sage" focus={{ x: 0.5, y: cy / H }} energy={1.05 + 0.6 * c01((f - seg.from) / (seg.to - seg.from))} />
       {cards.filter((c) => c && c.behind).map((c) => c!.el)}
-      <Hero cues={[{ at: seg.from / 60, pose: "viewing" }]} x={cx} y={footY} size={size} landAt={seg.from} enter="pop" pulses={seg.pulls} pulseGain={0.5} aura={{ level: 0.5 + 0.7 * (absorbed / Math.max(1, n)) + 0.25 * E(f), rays: 0.3 * (absorbed / Math.max(1, n)) }} />
+      <Hero cues={[{ at: seg.from / 60, pose: "viewing" }]} x={cx} y={footY} size={size} landAt={seg.from} enter="pop" pulses={seg.pulls} pulseGain={0.3} aura={{ level: 0.5 + 0.7 * c01((f - seg.from) / (seg.to - seg.from)) + 0.15 * E(f), rays: 0.25 * c01((f - seg.from) / (seg.to - seg.from)) }} />
       {cards.filter((c) => c && !c.behind).map((c) => c!.el)}
     </AbsoluteFill>
   );
@@ -606,12 +616,17 @@ export const FullReel: React.FC = () => {
   const lastPlaySrc = Math.round(rival.play.src.at(rival.play.to - rival.play.from - 1));
   const montageIndex = (s: Flash) => plan.segments.filter((x): x is Flash => x.kind === "flash").indexOf(s);
   // the camera kicks on the big hits: the drop, the slam, the logo
-  const kick = hitEnv(f - plan.drop, 1, 9) + 0.7 * hitEnv(f - plan.slam, 1, 8) + 0.6 * hitEnv(f - plan.logo, 1, 10);
-  const amp = Math.min(W, H) * 0.012 * kick;
-  const shake = `translate(${amp * Math.sin(f * 2.1)}px, ${amp * Math.cos(f * 2.9 + 1)}px) scale(${1 + 0.02 * kick})`;
+  // a slow shake on the drop and the logo; the slam gets a zoom punch only (a fast shake jittered big white type and
+  // flickered past the photosensitivity limit: flash scan, 1 Nov)
+  const kick = hitEnv(f - plan.drop, 1, 9) + 0.5 * hitEnv(f - plan.logo, 1, 10);
+  const amp = Math.min(W, H) * 0.008 * kick;
+  const punch = 0.03 * hitEnv(f - plan.slam, 1, 10);
+  const shake = `translate(${amp * Math.sin(f * 0.9)}px, ${amp * Math.cos(f * 1.3 + 1)}px) scale(${1 + 0.015 * kick + punch})`;
   // one white flash on the drop, one warm one on the logo
-  const flash = f >= plan.drop && f < plan.drop + 30 ? 0.85 * Math.exp(-(f - plan.drop) / 4.5) : 0;
-  const warmFlash = f >= plan.logo && f < plan.logo + 30 ? 0.45 * Math.exp(-(f - plan.logo) / 6) : 0;
+  // the drop's flash: one, softer and longer than a strobe (the scan counted the drop's sharp swings, 1 Nov)
+  const flash = 0; // the drop's burst is light enough: a white flash on top of the dive and the burst flickered (scan)
+  // the logo: a warm swell, not a flash (rises over 6 frames, falls over 30)
+  const warmFlash = f >= plan.logo && f < plan.logo + 60 ? 0.22 * Math.min(1, (f - plan.logo + 1) / 6) * Math.exp(-Math.max(0, f - plan.logo - 6) / 30) : 0;
   let scene: React.ReactNode = null;
   if (seg) {
     switch (seg.kind) {

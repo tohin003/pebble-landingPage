@@ -47,7 +47,7 @@ export const Hero: React.FC<{
   let sy = 1;
   if (enter === "fall") {
     const fall = expoOut(dt / 7);
-    s = 3.2 - 2.2 * fall;
+    s = 1.9 - 0.9 * fall;
     const land = dt >= 6 ? hitEnv(dt - 6, 1, 5) : 0;
     sx += 0.16 * land;
     sy -= 0.15 * land;

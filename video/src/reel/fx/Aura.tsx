@@ -64,7 +64,8 @@ export const Aura: React.FC<{ x: number; y: number; r: number; state: AuraState;
       />,
     );
   }
-  const rot = t * 9 + (age ?? 0) * 0.4;
+  // the rays drift, they don't spin: rays sweeping past a point read as flicker (the flash scan, 1 Nov)
+  const rot = t * 1.2;
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
       {/* the glow */}

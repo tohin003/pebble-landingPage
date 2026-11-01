@@ -200,12 +200,11 @@ export function buildFullPlan(map: BeatMap): FullPlan {
   };
 
   // part 1 (to the step-up)
-  flash("spaces", "Every Space.", "C-REEL-3", 2, "deep", [{ crop: "spaces", beats: 2, srcIn: 234 }]);
+  flash("spaces", "Every Space.", "C-REEL-3", 2, "deep", [{ crop: "spaces", beats: 2, srcIn: 266 }]);
   flash("apps", "Apps you allow.", "C-REEL-4", 3, "sage", [{ crop: "calculator", beats: 3, srcIn: 3200, event: { src: 3387, beat: 1 } }]);
-  flash("actions", "App actions.", "C-REEL-5", 2, "clay", [
-    { crop: "calendar", beats: 1, srcIn: 6150 },
-    { crop: "finder", beats: 1, srcIn: 2790 },
-  ]);
+  // one screen for both beats: three hard cuts inside a second (Calculator, Calendar, Finder, AgentGuard) flickered
+  // past the photosensitivity limit (flash scan, 1 Nov); Finder still appears in the rush and the merge
+  flash("actions", "App actions.", "C-REEL-5", 2, "clay", [{ crop: "calendar", beats: 2, srcIn: 6150 }]);
   hero("agentguard", "AgentGuard.", "Evidence before “done”.", "C-REEL-6", "deep");
   hero("workshop", "Pebble’s\nWorkshop.", "Tools it makes for itself.", "C-REEL-7", "sage");
   type("pace", "You set\nthe pace.", "C-REEL-8", stepUp - t > at(5) ? 6 : 5, "clay");
@@ -242,10 +241,12 @@ export function buildFullPlan(map: BeatMap): FullPlan {
   const rushFrom = t;
   const mergeFrom = beat(logo - at(3));
   const flashes: number[] = [];
-  for (let f = rushFrom; f < mergeFrom - 2; f += B / 2) flashes.push(Math.round(f));
+  // on the beats: then the merge's eighths carry the acceleration (eighth-note cuts here flickered past the limit)
+  for (let f = rushFrom; f < mergeFrom - 2; f += B) flashes.push(Math.round(f));
   segs.push({ kind: "rush", from: rushFrom, to: mergeFrom, flashes });
   const pulls: number[] = [];
-  for (let f = mergeFrom + B / 4; f < logo - 2; f += B / 4) pulls.push(Math.round(f));
+  // on the eighths (the sixteenths flickered the frame's centre past the photosensitivity limit, flash scan 1 Nov)
+  for (let f = mergeFrom + B / 2; f < logo - 2; f += B / 2) pulls.push(Math.round(f));
   segs.push({ kind: "merge", from: mergeFrom, to: logo, pulls });
   const teaseFrom = beat(teaseIn - at(2));
   segs.push({ kind: "logo", from: logo, to: teaseFrom, credits: beat(logo + at(4)) });

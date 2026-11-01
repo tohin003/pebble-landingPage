@@ -108,7 +108,7 @@ export const Card: React.FC<{
           style={{
             position: "absolute",
             inset: 0,
-            background: `linear-gradient(105deg, transparent ${sweep * 160 - 40}%, rgba(255, 255, 255, 0.20) ${sweep * 160 - 25}%, rgba(255, 255, 255, 0.0) ${sweep * 160 - 10}%)`,
+            background: `linear-gradient(105deg, transparent ${sweep * 160 - 40}%, rgba(255, 255, 255, 0.11) ${sweep * 160 - 25}%, rgba(255, 255, 255, 0.0) ${sweep * 160 - 10}%)`,
             mixBlendMode: "screen",
           }}
         />
