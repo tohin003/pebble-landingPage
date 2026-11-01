@@ -114,7 +114,31 @@ const KEEP_CARD = box(700, 664, 1324, 398);
  * 11 px gap between "the" (ends 1147) and "independent" (starts 1158), so its feather is kept to 7 source px; the Keep
  * button (ends 1157, one row lower) falls inside that feather.
  */
-const KEEP_STRIP: Record<Layout["id"], Box> = { "16x9": box(712, 872, 1148, 182), "4x5": box(1150, 866, 696, 150) };
+const KEEP_STRIP: Record<Layout["id"], Box> = { "16x9": box(712, 878, 1148, 176), "4x5": box(1150, 866, 696, 150) };
+/**
+ * 16:9 (REVIEW-2 M-1): the strip's top edge is 6 source px lower than in draft 3, mid-gap between "hold_min)" (ink
+ * 837–862) and the bullet (899–924), so the bullet keeps its padding; and while the camera narrows onto the strip, the card's upper part
+ * (its title and description, inside its border) fades into the card's ground, so the moving crop never cuts a line.
+ */
+const KEEP_UPPER = { x0: 718, x1: 2004, y0: 682, y1: 880 };
+/**
+ * 4:5 (REVIEW-2 M-1): the card's bullet and buttons, re-wrapped from the take's own pixels so they read in a 4:5 frame
+ * (the window's real layout, one line of 1023 source px, is 22-px type at 92 % of 1080). Three crops of the same frame,
+ * stacked: A the bullet and "Pebble asks because the independent" (the edge at 1322 is in the 10-px gap before
+ * "check"); B "check disagreed (2 of 5 tests passed)." set one line lower (the UI's own line pitch, 34 px, measured on
+ * the description's wrap) and hung under "Pebble" (830); C "View code · Discard · Keep", a line lower too. The top
+ * edge lies in the gap between "hold_min)" and the bullet. `v` is the crop's place in the stacked card (source px).
+ */
+const PITCH = 34;
+const HANG = 830 - 1327; // "check" (1327) under "Pebble" (830)
+const STACK = { x: 720, y: 870, w: 631, h: 208 };
+const STACK_ROWS: { src: Box; v: { x: number; y: number } }[] = [
+  { src: box(720, 870, 602, 57), v: { x: 720, y: 870 } },
+  { src: box(1322, 893, 508, 52), v: { x: 1322 + HANG, y: 893 + PITCH } },
+  { src: box(720, 945, 631, 99), v: { x: 720, y: 945 + PITCH } },
+];
+/** "(2 of 5 tests passed)." in row B of the stacked card */
+const TWO_OF_FIVE_V = { x0: 1550 + HANG, x1: 1820 + HANG, y: 935 + PITCH };
 /** "(2 of 5 tests passed)." in the bullet (1550–1819), for the drawn underline (an annotation). */
 const TWO_OF_FIVE = { x0: 1550, x1: 1820, y: 935 };
 
@@ -333,6 +357,34 @@ const Diagram: React.FC<{ t: number; T: (x: number) => number; L: Layout; cardOn
   );
 };
 
+/** 4:5: the Keep card's bullet and buttons, three crops of one real frame stacked (STACK_ROWS), and the underline. */
+const StackedCard: React.FC<{ rect: Rect; time: TimeMap; underline: number }> = ({ rect, time, underline }) => {
+  const k = rect.w / STACK.w;
+  return (
+    <AbsoluteFill>
+      {STACK_ROWS.map((r, i) => (
+        <div key={i} style={{ position: "absolute", left: (r.v.x - STACK.x) * k, top: (r.v.y - STACK.y) * k, width: r.src.w * k, height: r.src.h * k, overflow: "hidden" }}>
+          <ScreenZoom src={SRC} srcSize={SIZE} time={time} keys={[{ t: 0, box: r.src }]} width={r.src.w * k} height={r.src.h * k} drift={0} motionBlur={false} edgeFade={false} />
+        </div>
+      ))}
+      {underline > 0 ? (
+        <div
+          style={{
+            position: "absolute",
+            left: (TWO_OF_FIVE_V.x0 - STACK.x) * k,
+            top: (TWO_OF_FIVE_V.y - STACK.y) * k,
+            width: (TWO_OF_FIVE_V.x1 - TWO_OF_FIVE_V.x0) * k * underline,
+            height: Math.max(2, 3 * k),
+            borderRadius: 2,
+            background: C.clay,
+            opacity: 0.95,
+          }}
+        />
+      ) : null}
+    </AbsoluteFill>
+  );
+};
+
 /** Between two regions in log scale (a constant perceived zoom speed), centres linear. */
 const mixRegion = (a: Box, b: Box, p: number): Box => {
   const w = Math.exp(lerp(Math.log(a.w), Math.log(b.w), p));
@@ -428,6 +480,19 @@ export const S05Workshop: React.FC<SceneProps> = ({ durationInFrames }) => {
   const keepOn = t >= T(B.keepIn) ? Math.min(1, keepPin * 1.6) : 0;
 
   const underline = ramp(t, T(B.underline), 0.45, EASE.enter);
+  // 16:9: the card's upper part fades out over the push's first 40 %, and back in over the settle's last 30 % (when the
+  // widening crop is already above it)
+  const upper = L.portrait ? 0 : clamp01(keepP / 0.4) * (1 - clamp01((settleP - 0.7) / 0.3));
+
+  // 4:5: the stacked card at 92 % of the frame's width (40-px margins), centred under the headline; it rises, drifts
+  // 0.6 %/s, and settles to 60 % of the width for the master's punch
+  const stackW = L.W * 0.92;
+  const stackK = stackW / STACK.w;
+  const stackRect: Rect = { x: (L.W - stackW) / 2, y: L.px(840) - (STACK.h * stackK) / 2, w: stackW, h: STACK.h * stackK };
+  const stackEndW = L.W * 0.6;
+  const stackEnd: Rect = { x: (L.W - stackEndW) / 2, y: (L.H - (stackEndW * STACK.h) / STACK.w) / 2, w: stackEndW, h: (stackEndW * STACK.h) / STACK.w };
+  const stackCard = mixRegion(stackRect, stackEnd, settleP);
+  const stackDrift = 1 + 0.006 * Math.max(0, Math.min(t, T(B.settle)) - T(B.keepIn) - 0.75);
   const keepOverlay = (toView: (p: { x: number; y: number }) => { x: number; y: number }, k: number) => {
     const a = toView({ x: TWO_OF_FIVE.x0, y: TWO_OF_FIVE.y });
     const b = toView({ x: TWO_OF_FIVE.x1, y: TWO_OF_FIVE.y });
@@ -435,11 +500,14 @@ export const S05Workshop: React.FC<SceneProps> = ({ durationInFrames }) => {
     // the card's own ground once the push has narrowed onto the bullet
     const c0 = toView({ x: 1120, y: 948 });
     const c1 = toView({ x: 1162, y: 1026 });
+    const u0 = toView({ x: KEEP_UPPER.x0, y: KEEP_UPPER.y0 });
+    const u1 = toView({ x: KEEP_UPPER.x1, y: KEEP_UPPER.y1 });
     return (
       <>
         {L.portrait && keepP > 0.5 && settleP < 0.25 ? (
           <div style={{ position: "absolute", left: c0.x, top: c0.y, width: c1.x - c0.x, height: c1.y - c0.y, background: CARD_BG, opacity: 1 - settleP * 4 }} />
         ) : null}
+        {upper > 0.001 ? <div style={{ position: "absolute", left: u0.x, top: u0.y, width: u1.x - u0.x, height: u1.y - u0.y, background: CARD_BG, opacity: upper }} /> : null}
         {underline > 0 ? <div style={{ position: "absolute", left: a.x, top: a.y, width: (b.x - a.x) * underline, height: Math.max(2, 3 * k), borderRadius: 2, background: C.clay, opacity: 0.95 }} /> : null}
       </>
     );
@@ -468,6 +536,23 @@ export const S05Workshop: React.FC<SceneProps> = ({ durationInFrames }) => {
 
           <Diagram t={t} T={T} L={L} cardOn={cardOn} />
 
+          {L.portrait ? (
+            <FloatingWindow
+              rect={stackCard}
+              enter="none"
+              tilt={{ rx: 10, ry: 0 }}
+              flattenAt={T(B.keepIn) + 0.15}
+              flattenDur={0.45}
+              radius={20}
+              background={CARD_BG}
+              offset={{ x: 0, y: (1 - keepPin) * 90 * L.u }}
+              scale={lerp(0.97, 1, keepPin) * stackDrift}
+              style={{ opacity: keepOn, filter: keepPin < 0.999 && keepOn > 0 ? `blur(${((1 - keepPin) * 14 * L.u).toFixed(2)}px)` : undefined }}
+            >
+              <StackedCard rect={stackCard} time={keepTime} underline={underline} />
+            </FloatingWindow>
+          ) : null}
+          {L.portrait ? null : (
           <FloatingWindow
             rect={card}
             enter="none"
@@ -482,6 +567,7 @@ export const S05Workshop: React.FC<SceneProps> = ({ durationInFrames }) => {
           >
             <ScreenZoom src={SRC} srcSize={SIZE} time={keepTime} keys={keepKeys} drift={0} motionBlur={false} edgeFade={8} overlay={keepOverlay} />
           </FloatingWindow>
+          )}
 
           <TypeExit at={T(B.titleOut)} t={t} u={L.u}>
             <Headline
