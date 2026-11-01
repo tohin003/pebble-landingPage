@@ -78,3 +78,5 @@ is missing. claude-p sessions keep running (another account). Status:
 - Still on claude-w: the iPhone worker (resumed). Not resumed: the motion-system worker (its handoff exists).
 - Next: group E (S08 Remote) once `data/remote.ts` lands; the site session (brief to write from SITE_AUDIT.md);
   review every revision; the music pick (A assumed in all timings).
+
+- **Music locked (owner, 1 Nov ~20:25): A, "Your Breath" by Eugenio Mininni (Mixkit).** B and C are dropped.
