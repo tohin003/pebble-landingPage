@@ -7,11 +7,13 @@
 // 2.50  Semantic (facts and knowledge) turns sage; at 2.75 the real Settings › Memory capture (Pebble 2.0.1's own
 //       frontend at its published tag, sample data) grows out of that row into a wide window on that layer's three
 //       records. 3.00: "All visible."
-// 3.60  The pointer presses the trash of "Wheel taster: 10.00" (the record the take forgets: an outdated price); Keep and
-//       Forget appear. 3.65 to 4.25 the camera pushes about 2× onto that record and its Forget, and holds there 1.5 s.
+// 3.375 The pointer presses the trash of "Wheel taster: 10.00" (the record the take forgets: an outdated price); Keep
+//       and Forget appear. 16:9: 3.65 to 4.25 the camera pushes about 2× onto that record and its Forget, and holds.
+//       4:5 (REVIEW-3 S-4): 3.4 to 4.0 it pushes 1.56× onto the record's words (about 47 px), holds, and 4.45 to 4.9
+//       pans right with the pointer onto Keep / Forget (the words and the buttons don't fit one framing at that size).
 // 5.00  The pointer presses Forget, on the beat: the record is gone (in one frame, as the app does it: the take has no
-//       collapse) and "Forget anything." lands on that frame. 5.75 to 6.45 the camera pulls back onto the two records
-//       left; held to the cut.
+//       collapse) and "Forget anything." is set, whole, on that frame. 5.75 to 6.45 (4:5: 5.55 to 6.25) the camera pulls
+//       back onto the two records left; held to the cut.
 // The camera moves are the capture's own framing keys (no scroll, no motion-blur samples on text: REVIEW-1 S8). No
 // cursor is in the capture: the drawn pointer follows the person's recorded path (data/ui.ts), as S04's does.
 import { AbsoluteFill, Sequence, useVideoConfig } from "remotion";
@@ -57,10 +59,18 @@ export const S06_BEATS = {
   capture: 2.75,
   /** "All visible." */
   visible: 3.0,
-  /** the pointer presses the record's trash: Keep and Forget */
-  trash: 3.6,
+  /** the pointer presses the record's trash: Keep and Forget (a dotted eighth after "All visible.") */
+  trash: 3.375,
   /** the camera arrives on the record and its Forget (the push starts 0.6 s before) */
   pushed: 4.25,
+  /** 4:5 only (REVIEW-3 S-4): the push lands on the record's words at 1.45× (from 3.4), holds, then pans with the
+   *  pointer onto Keep / Forget (4.45 to 4.9), so the words read at 44 px and the press is seen as large */
+  pushedText45: 4.0,
+  panFrom45: 4.45,
+  panned45: 4.9,
+  /** 4:5: back on the two records left (from 5.55), 0.2 s sooner than 16:9: the buttons' framing after the record goes
+   *  holds cut lines of the next record */
+  pulled45: 6.25,
   /** the pointer presses Forget: the record is gone, "Forget anything." */
   forget: 5.0,
   /** the camera is back on the layer's two records (the pull starts 0.7 s before) */
@@ -98,6 +108,15 @@ const FRAMES = {
   "16x9": { all: cbox(530, 452, 580, 258), record: cbox(545, 532, 410, 140), after: cbox(530, 452, 580, 258) },
   "4x5": { all: cbox(532, 450, 576, 314), record: cbox(545, 538, 410, 238), after: cbox(532, 450, 576, 314) },
 } as const;
+/**
+ * 4:5 (REVIEW-3 S-4): 1.56× the RECORD framing (262 × 152 CSS px, against 410 wide). Its top and bottom edges lie in
+ * the gaps round the record (the kiln-log line above ends at CSS y 524, the next record's header starts at 676; the
+ * 24-px soft edge is 6 CSS px). The record's words (CSS x 552 to 802) and its Keep / Forget (825 to 945) are 393 CSS
+ * px end to end, too wide for one framing at that scale, so the camera reads the words first (TEXT: the header,
+ * "Wheel taster: 10.00" and its file, Keep outside the right edge), then pans right with the pointer onto the buttons
+ * (BUTTONS: Forget's right edge 10 CSS px, 40 frame px, inside the window's edge, clear of the soft edge).
+ */
+const FRAMES45_PUSH = { text: cbox(546, 523.8, 262, 152.4), buttons: cbox(693, 523.8, 262, 152.4) } as const;
 /** the person's pointer as recorded (clip px) */
 const POINTER = UI_CLIPS.memory.pointer;
 const pointerAt = (src: number) => {
@@ -125,7 +144,8 @@ export const S06_MARKS = [
   { name: "the capture grows out of it", s: S06_BEATS.capture },
   { name: "\"All visible.\"", s: S06_BEATS.visible },
   { name: "the pointer presses the trash: Keep / Forget", s: S06_BEATS.trash },
-  { name: "the push lands on the record and its Forget (about 2×)", s: S06_BEATS.pushed },
+  { name: "the push lands on the record and its Forget (about 2×; 4:5: on its words, 1.56×)", s: S06_BEATS.pushed },
+  { name: "4:5: the pan onto Keep / Forget lands", s: S06_BEATS.panned45 },
   { name: "Forget pressed: the record is gone; \"Forget anything.\"", s: S06_BEATS.forget },
   { name: "pulled back onto the two records left", s: S06_BEATS.pulled },
 ] as const;
@@ -195,11 +215,19 @@ export const S06Memory: React.FC<SceneProps> = ({ durationInFrames }) => {
   const capAt = a(S06_BEATS.capture);
   const t0 = t - capAt; // the capture's own clock
   const F = FRAMES[L.portrait ? "4x5" : "16x9"];
-  const keys = [
-    { t: 0, box: F.all },
-    { t: a(S06_BEATS.pushed) - capAt, box: F.record, dur: 0.6 },
-    { t: a(S06_BEATS.pulled) - capAt, box: F.after, dur: 0.7 },
-  ];
+  const keys = L.portrait
+    ? [
+        { t: 0, box: F.all },
+        { t: a(S06_BEATS.pushedText45) - capAt, box: FRAMES45_PUSH.text, dur: 0.6 },
+        { t: a(S06_BEATS.panFrom45) - capAt, box: FRAMES45_PUSH.text, dur: 0.01 },
+        { t: a(S06_BEATS.panned45) - capAt, box: FRAMES45_PUSH.buttons, dur: a(S06_BEATS.panned45) - a(S06_BEATS.panFrom45) },
+        { t: a(S06_BEATS.pulled45) - capAt, box: F.after, dur: 0.7 },
+      ]
+    : [
+        { t: 0, box: F.all },
+        { t: a(S06_BEATS.pushed) - capAt, box: F.record, dur: 0.6 },
+        { t: a(S06_BEATS.pulled) - capAt, box: F.after, dur: 0.7 },
+      ];
   // the pointer: on from the moment the window has settled; it presses (0.07 s to 0.87, released over 0.12 s) on the
   // trash and on Forget
   const pointerOn = clamp01((t - (capAt + GROW - 0.1)) / 0.15);
@@ -235,7 +263,9 @@ export const S06Memory: React.FC<SceneProps> = ({ durationInFrames }) => {
           <Headline text={g.headlineText} at={a(S06_BEATS.headline) - 0.2} exitAt={capAt} exit="fade" size={g.headlineSize} align="left" valign="bottom" box={g.headline} fit />
           <Table g={g} a={a} />
           <Headline text={g.line1Text} at={a(S06_BEATS.visible)} entrance="blur" size={g.lineSize} align="left" valign={g.line1Valign} box={g.line1} fit={false} />
-          <Headline text={g.line2Text} at={forgetAt - 0.04} entrance="rise" size={g.lineSize} align="left" valign="top" box={g.line2} fit={false} />
+          {/* REVIEW-3 S-4: set, whole and sharp, on the frame the record goes (the take's own frame, clip 4.0 s = this
+              scene's 5.0), nothing of it before: a hit, not a rise */}
+          <Headline text={g.line2Text} at={forgetAt - 0.01} entrance="line" dur={0.009} size={g.lineSize} align="left" valign="top" box={g.line2} fit={false} />
           <Sequence from={Math.round(capAt * fps)} layout="none" name="Settings › Memory (v2.0.1 capture)">
             <div style={{ position: "absolute", inset: 0, opacity: winOpacity }}>
               <FloatingWindow rect={media} enter="none" offset={offset} scale={winScale} tilt={{ rx: 5, ry: -7 }} flattenAt={0} flattenDur={GROW + 0.1} shadow={1.1} background={PANEL.hex}>
