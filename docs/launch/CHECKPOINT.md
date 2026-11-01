@@ -80,3 +80,15 @@ is missing. claude-p sessions keep running (another account). Status:
   review every revision; the music pick (A assumed in all timings).
 
 - **Music locked (owner, 1 Nov ~20:25): A, "Your Breath" by Eugenio Mininni (Mixkit).** B and C are dropped.
+
+## Update, 1 Nov ~21:50 IST: the verification loop, round 1 (docs/launch/VERIFICATION_LOOP.md)
+
+- All work is on claude-w now (the owner took claude-p back). Draft 2 (`.work/launch/master/draft2-16x9.mp4`) was
+  reviewed by a fresh critic: `.work/launch/critic/REVIEW-1.md`, verdict "fix then ship" (M1–M5, S1–S12, N1–N5,
+  a BANNED list). The director's plan, decisions and NEW timeline: `.work/launch/critic/FIXES-1.md`.
+- Six claude-w fix workers run in parallel (packages WP-A bookends, WP-B real takes incl. the Stealth rework, WP-C
+  AgentGuard/Workshop, WP-D Memory/Context warping/Benchmarks, WP-E Remote, WP-M master/seams/audio/QA gates); each
+  reports to `.work/launch/critic/FIX1-<package>.md`. WP-M renders drafts 3 (16:9 and 4:5) when the others land.
+- Next: a NEW critic reviews draft 3 (round 2: verify every REVIEW-1 item FIXED/PARTLY/STILL, then regressions and
+  new issues) → fix → repeat until "ship"; then the full-resolution masters (`master/final.sh`, 30 fps) and a last
+  verification round; then delivery and the site's phase 2 (the film and loops into /media/v3).
