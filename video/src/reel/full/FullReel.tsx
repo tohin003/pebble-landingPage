@@ -399,7 +399,8 @@ const SilenceScene: React.FC<{ seg: Extract<Segment, { kind: "silence" }>; f: nu
   return (
     <AbsoluteFill>
       <Ground tint="deep" focus={{ x: 0.5, y: 0.45 }} energy={0.55} />
-      <Card crop="rivalTitle" src={lastPlaySrc} pose={{ x: W / 2, y: H * (a === "9x16" ? 0.4 : 0.42), k }} glow={0.2} radiusPx={14} />
+      {/* still, not frozen: a push of 2 % over the silence (a frozen frame is a fault in delivery) */}
+      <Card crop="rivalTitle" src={lastPlaySrc} pose={{ x: W / 2, y: H * (a === "9x16" ? 0.4 : 0.42), k: k * (1 + 0.02 * c01((f - seg.from) / (seg.to - seg.from))) }} glow={0.2} radiusPx={14} />
       {show && (
         <div style={{ position: "absolute", left: 0, right: 0, top: H * (a === "9x16" ? 0.56 : 0.66), textAlign: "center", fontFamily: FONT.sans, fontWeight: 600, fontSize: Math.round(Math.min(W, H) * 0.06), color: REEL.ink, letterSpacing: "-0.01em" }}>
           Anyway.
@@ -460,7 +461,8 @@ const MergeScene: React.FC<{ seg: Extract<Segment, { kind: "merge" }>; f: number
     };
     const p0 = pos(u);
     const p1 = pos(u + 1 / pull);
-    const k0 = Math.min((Math.min(W, H) * 0.34) / Math.max(CROPS[crop].rect.w, CROPS[crop].rect.h), 1.5);
+    // smaller on the square frame (larger cards at its centre flickered there: flash scan, 1 Nov)
+    const k0 = Math.min((Math.min(W, H) * (a === "1x1" ? 0.24 : 0.34)) / Math.max(CROPS[crop].rect.w, CROPS[crop].rect.h), 1.5);
     const appear = c01((f - seg.from) / 24 - i * 0.03); // the orbit fades in over a beat
     const behind = Math.sin((i / n) * Math.PI * 2 + spin) < 0 && p0.e < 0.5;
     return {
