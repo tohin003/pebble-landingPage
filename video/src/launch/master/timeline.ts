@@ -23,7 +23,9 @@ export interface Slot {
   note: string;
 }
 
-export const FILM_S = 100.0;
+/** FIXES-3 (REVIEW-3 N-6): the film ends at 99.4 s, where music A ends (silent from 99.36), so a looping upload never
+ * starts from 0.6 s of digital silence. */
+export const FILM_S = 99.4;
 /** The owner's ruling (1 Nov 2026): the delivered films are 30 fps (about half the render time of 60 on this Mac). */
 export const FILM_FPS = 30;
 
@@ -44,7 +46,7 @@ export const TIMELINE: readonly Slot[] = [
   { id: "S08-Remote", in: 61.551, out: 70.051, worldIn: "night", worldOut: "night", note: "" },
   { id: "S09-Stealth", in: 70.051, out: 79.101, worldIn: "desktop", worldOut: "night", note: "the breath: the groove thins 72.05, stops 73.07; the honest line about 71.4 to S09's last 2 frames" },
   { id: "S10-Benchmarks", in: 79.101, out: 93.055, worldIn: "night", worldOut: "daylight", note: "opens on S09's dusk; the question whole from about 79.25; the stop 80.35–81.0; the first chart and the impact on 81.051 (S10's 1.95 s)" },
-  { id: "S11-Outro", in: 93.055, out: 100.0, worldIn: "night", worldOut: "night", note: "the thesis on the drum hits; the lockup about 2.75 s in" },
+  { id: "S11-Outro", in: 93.055, out: 99.4, worldIn: "night", worldOut: "night", note: "the thesis on the drum hits; the lockup about 2.75 s in; the resting pebble's slow blink at about 97.57; ends with the music (FIXES-3 N-6)" },
 ];
 
 /**

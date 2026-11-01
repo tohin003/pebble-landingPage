@@ -8,7 +8,9 @@
 // (flight.tsx), and "Pebble 2.0" arrives on the 3.0 beat as it lands (16:9; 3.05 on 4:5); then "Free and open source,
 // / for Macs with Apple silicon." (two centred lines, REVIEW-1 S12) and "github.com/tohin003/Pebble" (Geist Mono),
 // held to the end (3.5 s). The pebble rests (sleepy) on the final chord at 4.0, the small end lines arrive, the light
-// dims; nothing new in the last 1.5 s.
+// dims; nothing new in the last 1.5 s. The film ends with the music at 6.345 s (FIXES-3 N-6, 99.4 on the master); the
+// resting pebble gives one slow blink at 4.511 (film 97.57): the engine's own blink there, played at a fifth of its
+// speed (the engine's clock slowed through it, so its frames are its own), so the end card is never dead still.
 import { AbsoluteFill } from "remotion";
 import { FontGate } from "../../components/FontGate";
 import { Headline, Label } from "../../components/Headline";
@@ -23,7 +25,7 @@ import { BODY_H, S10_HANDOFF, TITLE_TEXT, lineBox, lockupGeo, useClock, type Sfx
 import { FlightPebble, lockupFlight, type Flight } from "./flight";
 import { ExitWrap, HitSet } from "./fx";
 
-export const S11_NOMINAL = 6.95;
+export const S11_NOMINAL = 6.345;
 /**
  * "Small pebble." lands on frame 1 (a 0-ms set just after the 0.0 hit), never on frame 0: the master's night wipe
  * opens out of the pebble's outline before 93.055 and would reveal anything on S11's first frame early (the director,
@@ -53,7 +55,24 @@ const B = {
   github: 3.42,
   rest: 4.0,
   endLines: 4.15,
+  /** the engine's own blink nearest film 97.5 (engine time 19.011 at lead 14.5), slowed: see SLOW_BLINK */
+  slowBlink: 4.511,
 } as const;
+
+/**
+ * The slow blink (REVIEW-3 N-6): through the engine's blink at B.slowBlink (0.18 s in the engine) its clock runs at a
+ * fifth of the film's, so the blink takes 0.9 s (the lids visibly move from about 4.75 to 5.13: film 97.8 to 98.2, about four times a normal blink). Only the engine's clock changes
+ * (the actor's `lead`); its cues keep film time, and every frame is one the engine draws itself.
+ */
+const SLOW_BLINK = { at: B.slowBlink, engineDur: 0.19, rate: 1 / 5 } as const;
+/** The actor's lead at film-local time `t` (s), in an unscaled clock (k = 1 on the master). */
+const leadAt = (t: number, base: number) => {
+  const { at, engineDur, rate } = SLOW_BLINK;
+  const realDur = engineDur / rate;
+  if (t <= at) return base;
+  if (t >= at + realDur) return base - (realDur - engineDur);
+  return base - (t - at) * (1 - rate);
+};
 
 export const S11_MARKS = [
   { name: "small-pebble", s: B.small },
@@ -63,6 +82,7 @@ export const S11_MARKS = [
   { name: "lockup-land", s: B.land },
   { name: "github", s: B.github },
   { name: "rest", s: B.rest },
+  { name: "slow-blink", s: B.slowBlink },
   { name: "calm-hold", s: S11_NOMINAL - 1.5 },
 ] as const;
 
@@ -158,7 +178,7 @@ export const S11Outro: React.FC<S11Props> = ({ durationInFrames, musicCredit = "
               style={{ fontFamily: TYPE.mono.fontFamily }}
             />
           ))}
-          <FlightPebble flight={leap} t={t} cues={actorCues} lead={S10_HANDOFF.engineAt} glow={0.45} pool={0.8 * (1 - hopP)} />
+          <FlightPebble flight={leap} t={t} cues={actorCues} lead={leadAt(t / T(1), S10_HANDOFF.engineAt)} glow={0.45} pool={0.8 * (1 - hopP)} />
         </Stage>
       </AbsoluteFill>
     </FontGate>

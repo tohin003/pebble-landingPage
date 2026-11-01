@@ -1,5 +1,5 @@
 // The launch film's master compositions (docs/launch/TREATMENT.md §1): LaunchFilm-16x9 (1920×1080) and LaunchFilm-4x5
-// (1080×1350), 60 fps, the music's length. Registered from launch/Root.tsx. Scripts: master/{draft,final,deliver,qa}.sh.
+// (1080×1350), 30 fps, FILM_S long (99.4 s: where the music ends, FIXES-3 N-6). Registered from launch/Root.tsx. Scripts: master/{draft,final,deliver,qa}.sh.
 import { Composition, Folder } from "remotion";
 import { MUSIC, MUSIC_PICK } from "../data/music";
 import { Master, type MasterProps } from "./Master";
