@@ -80,6 +80,21 @@ export const ZoomThroughLayer: React.FC<{ seam: Seam; progress: number; role: Ro
   );
 };
 
+/* ---------- the dip cut ---------- */
+
+/**
+ * A hard cut whose outgoing picture dips about 40 % darker over its last frames (the seam's `pre`), so the cut reads as
+ * meant; the incoming scene is hidden until the cut and is its own first frame from then on. No movement, no blur, no
+ * layer of its own: nothing can draw an edge (REVIEW-2 M-3).
+ */
+export const DipCutLayer: React.FC<{ progress: number; role: Role; children: ReactNode }> = ({ progress, role, children }) => {
+  if (role === "in") return <AbsoluteFill style={{ opacity: progress < 1 - 1e-6 ? 0 : 1 }}>{children}</AbsoluteFill>;
+  // the seam's window is 4 frames, so its first (progress 0) is undimmed like every frame before it; the last 3 dip to
+  // 75 %, 60 % and 60 % of their brightness (at 30 fps: progress 0.25, 0.5, 0.75)
+  const d = progress <= 1e-6 ? 1 : 1 - 0.4 * Math.min(1, 0.625 + (progress - 0.25) * 1.5);
+  return <AbsoluteFill style={{ filter: d < 0.999 ? `brightness(${d.toFixed(3)})` : undefined }}>{children}</AbsoluteFill>;
+};
+
 /* ---------- the pebble opens the next ground ---------- */
 
 /**
@@ -101,7 +116,9 @@ export const PebbleOpenLayer: React.FC<{ seam: Seam; progress: number; role: Rol
   const x = pb.x * W;
   const y = pb.y * H;
   const bodyW = ((pb.h * H) / BODY.height) * BODY.width;
-  const start = bodyW * 0.45;
+  // the blob starts wider than the body, so the pebble's colour changes on the wipe's first frame with the new ground
+  // already round it, never before (REVIEW-2 N-4)
+  const start = bodyW * 1.3;
   // the galet's inscribed radius is about 0.44 of its width: past the farthest corner, with a margin
   const far = Math.max(Math.hypot(x, y), Math.hypot(W - x, y), Math.hypot(x, H - y), Math.hypot(W - x, H - y));
   const end = (far / 0.44) * 1.04;
@@ -126,6 +143,12 @@ export const SeamLayer: React.FC<{ seam: Seam; role: Role; progress: number; chi
         <SoftWipeLayer progress={progress} role={role} direction={seam.direction} feather={seam.feather}>
           {children}
         </SoftWipeLayer>
+      );
+    case "dipCut":
+      return (
+        <DipCutLayer progress={progress} role={role}>
+          {children}
+        </DipCutLayer>
       );
     case "zoomThrough":
       return (

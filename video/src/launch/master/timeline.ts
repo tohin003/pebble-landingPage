@@ -27,7 +27,11 @@ export const FILM_S = 100.0;
 /** The owner's ruling (1 Nov 2026): the delivered films are 30 fps (about half the render time of 60 on this Mac). */
 export const FILM_FPS = 30;
 
-/** FIXES-1's timeline (the director, 1 Nov ~21:45): music A unchanged, every seam on a beat. */
+/**
+ * FIXES-1's timeline (the director, 1 Nov ~21:45), with FIXES-2's change (2 Nov ~01:45, REVIEW-2 S-3): S09 ends 0.45 s
+ * earlier and S10 starts there, at 79.101, so "So. How did it do?" reads about 1.8 s before the payoff. Music A
+ * unchanged; every seam on a beat except that one (the director's ruling: S10 carries it itself, out of the pebble).
+ */
 export const TIMELINE: readonly Slot[] = [
   { id: "S00-ColdOpen", in: 0, out: 8.051, worldIn: "night", worldOut: "night", note: "the premise by 2.7 s; the drop at 8.051" },
   { id: "S01-Title", in: 8.051, out: 13.551, worldIn: "night", worldOut: "night", note: "the lockup on the drop frame; the tagline held 3.8 s" },
@@ -38,14 +42,16 @@ export const TIMELINE: readonly Slot[] = [
   { id: "S06-Memory", in: 47.551, out: 54.551, worldIn: "daylight", worldOut: "daylight", note: "" },
   { id: "S07-ContextWarping", in: 54.551, out: 61.551, worldIn: "daylight", worldOut: "daylight", note: "" },
   { id: "S08-Remote", in: 61.551, out: 70.051, worldIn: "night", worldOut: "night", note: "" },
-  { id: "S09-Stealth", in: 70.051, out: 79.551, worldIn: "desktop", worldOut: "night", note: "the breath: the groove thins 72.05, stops 73.07" },
-  { id: "S10-Benchmarks", in: 79.551, out: 93.055, worldIn: "night", worldOut: "daylight", note: "opens on S09's dusk; the stop 80.35–81.0; the first chart and the impact on 81.051" },
+  { id: "S09-Stealth", in: 70.051, out: 79.101, worldIn: "desktop", worldOut: "night", note: "the breath: the groove thins 72.05, stops 73.07; the honest line about 71.4 to S09's last 2 frames" },
+  { id: "S10-Benchmarks", in: 79.101, out: 93.055, worldIn: "night", worldOut: "daylight", note: "opens on S09's dusk; the question whole from about 79.25; the stop 80.35–81.0; the first chart and the impact on 81.051 (S10's 1.95 s)" },
   { id: "S11-Outro", in: 93.055, out: 100.0, worldIn: "night", worldOut: "night", note: "the thesis on the drum hits; the lockup about 2.75 s in" },
 ];
 
 /**
  * How a seam is carried:
  * - cut: a hard cut on the beat (the frames either side are the scenes' own);
+ * - dipCut: a hard cut on the beat whose outgoing frames dip about 40 % darker over its last 3 frames (`pre`: 4), so it
+ *   reads as meant (the craft's dip cut; REVIEW-2 M-3: no whip, no blur samples, no layer edge);
  * - in-scene: the scenes carry it themselves (S02's whip out, S03's whip in): a cut on the master;
  * - whip: both pictures travel together with a directional blur (0.2–0.3 s);
  * - zoomThrough: the outgoing scene's last window scales up through the frame, the incoming scene's first window comes
@@ -53,7 +59,7 @@ export const TIMELINE: readonly Slot[] = [
  * - softWipe: the new world sweeps in behind a moving edge (narrow: a wipe, never a dissolve);
  * - pebbleWipe: the new ground opens out of the pebble, which the scenes draw at the same place on both sides.
  */
-export type SeamKind = "cut" | "in-scene" | "whip" | "zoomThrough" | "softWipe" | "pebbleWipe";
+export type SeamKind = "cut" | "dipCut" | "in-scene" | "whip" | "zoomThrough" | "softWipe" | "pebbleWipe";
 export type Direction = "left" | "right" | "up" | "down";
 
 /** A rect as fractions of the frame (x, w of the width; y, h of the height), so one value serves 16:9 and 4:5. */
@@ -85,6 +91,8 @@ export interface Seam {
   pebble?: { x: number; y: number; h: number };
   /** the whoosh that carries it (null: none) */
   whoosh: "short" | "medium" | null;
+  /** a seam deliberately off the beat grid: why (the beat check skips it) */
+  offBeat?: string;
   why: string;
 }
 
@@ -113,7 +121,7 @@ export const SEAMS: readonly Seam[] = [
     pre: 0,
     post: 0,
     whoosh: null,
-    why: "a match cut on the beat: S01's push into the pebble ends in at most 3 frames of flat sage, S02 opens on the real pebble, sharp",
+    why: "a plain match cut on 13.551 (REVIEW-2 S-8, no sage flash): S01's push ends with its pebble's body at the frame's centre, about 208 px wide, as S02's frame 0 shows its take pebble; the world changes under a pebble that doesn't move",
   },
   {
     from: "S02-OnYourMac",
@@ -135,12 +143,12 @@ export const SEAMS: readonly Seam[] = [
   },
   {
     from: "S04-AgentGuard",
-    kind: "whip",
-    pre: 0.13,
-    post: 0.13,
-    direction: "up",
-    whoosh: "short",
-    why: "daylight to daylight on the 40.051 phrase: a whip up (S04's type has left 2 frames before it)",
+    kind: "dipCut",
+    // 4 frames at 30 fps: the first is the scene's own, the last 3 dip
+    pre: 0.133,
+    post: 0,
+    whoosh: null,
+    why: "daylight to daylight on the 40.051 phrase: a hard cut, S04's last 3 frames dipped about 40 % (REVIEW-2 M-3: the whip drew blur samples and a stone layer's edge); the music's phrase hit carries it",
   },
   {
     from: "S05-Workshop",
@@ -171,7 +179,8 @@ export const SEAMS: readonly Seam[] = [
     pre: 0,
     post: 0,
     whoosh: null,
-    why: "dusk to daylight, carried by the pebble in S10 itself: S10 opens on S09's last frame (the Veil pebble at the frame's centre, 12 % of its height) and the daylight opens out of the pebble's outline as it sheds the Veil",
+    offBeat: "FIXES-2 (S-3): 0.45 s earlier than the 79.551 beat, taken from the Veil-only stretch, so the question reads about 1.8 s; S10 opens on S09's last frame and the cut is invisible",
+    why: "dusk to daylight, carried in S10 itself: S10 opens on S09's last frame (the Veil pebble at the frame's centre, 12 % of its height); at once the daylight opens in a pebble-shaped blob centred on the question's line, and the pebble sheds the Veil inside it",
   },
   {
     from: "S10-Benchmarks",
@@ -195,7 +204,9 @@ export const isCarried = (s: Seam) => s.kind !== "cut" && s.kind !== "in-scene";
 export const fr = (sec: number, fps = FILM_FPS) => Math.round(sec * fps);
 
 /** The longest a carried seam may take, by kind (s). */
-const MAX_LEN: Partial<Record<SeamKind, number>> = { whip: 0.3, zoomThrough: 0.7, softWipe: 0.8, pebbleWipe: 0.8 };
+const MAX_LEN: Partial<Record<SeamKind, number>> = { whip: 0.3, zoomThrough: 0.7, softWipe: 0.8, pebbleWipe: 0.8, dipCut: 0.15 };
+/** the shortest, by kind (default 0.2 s) */
+const MIN_LEN: Partial<Record<SeamKind, number>> = { dipCut: 0.08 };
 
 /** Checks the plan's invariants; returns the problems (empty = fine). Run by master/check.ts. */
 export const checkTimeline = (beats: readonly number[] = []): string[] => {
@@ -214,11 +225,12 @@ export const checkTimeline = (beats: readonly number[] = []): string[] => {
         out.push(`${s.id} → ${next.id}: night to daylight needs a wipe or a carried object, not a ${seam.kind}`);
       const len = seam.pre + seam.post;
       const max = MAX_LEN[seam.kind];
-      if (isCarried(seam) && (len < 0.2 - 1e-9 || (max !== undefined && len > max + 1e-9))) out.push(`${s.id}: a ${seam.kind} of ${len.toFixed(2)} s`);
+      if (isCarried(seam) && (len < (MIN_LEN[seam.kind] ?? 0.2) - 1e-9 || (max !== undefined && len > max + 1e-9))) out.push(`${s.id}: a ${seam.kind} of ${len.toFixed(2)} s`);
+      if (seam.kind === "dipCut" && seam.post !== 0) out.push(`${s.id}: a dip cut darkens the outgoing frames only (post must be 0)`);
       if (seam.pre > s.out - s.in || seam.post > next.out - next.in) out.push(`${s.id}: the seam is longer than a scene`);
       if (seam.kind === "zoomThrough" && (!seam.outRect || !seam.inRect)) out.push(`${s.id}: a zoom-through without its windows`);
       if (seam.kind === "pebbleWipe" && !seam.pebble) out.push(`${s.id}: a pebble wipe without the pebble`);
-      if (beats.length && !beats.some((b) => Math.abs(b - s.out) < 0.01)) out.push(`${s.id} → ${next.id}: the seam at ${s.out} is not on a beat`);
+      if (beats.length && !seam.offBeat && !beats.some((b) => Math.abs(b - s.out) < 0.01)) out.push(`${s.id} → ${next.id}: the seam at ${s.out} is not on a beat`);
     }
   });
   if (Math.abs(TIMELINE[TIMELINE.length - 1].out - FILM_S) > 1e-9) out.push("the last scene doesn't end at the film's end");
