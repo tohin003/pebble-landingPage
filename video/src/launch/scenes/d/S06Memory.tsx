@@ -94,11 +94,13 @@ export const S06_MARKS = [
   { name: "Forget: the record is gone; \"Forget anything.\"", s: S06_BEATS.forget },
 ] as const;
 
+/**
+ * The master editor (SFX density, 22 effects in the film's 30 to 60 s against 8 to 15 per 30 s): two soft ticks for the
+ * whole list (its first layer and its last) and one click on Forget; nothing else.
+ */
 export const s06Sfx = (k = 1): SfxCue[] => [
-  // a soft tick as each row lands
-  ...S06_BEATS.rows.map((s) => peakAt(SFX.tick, s * k, -21)),
-  peakAt(SFX.whoosh, (S06_BEATS.capture + GROW * 0.5) * k, -18),
-  peakAt(SFX.click, S06_BEATS.trash * k, -15),
+  peakAt(SFX.tick, S06_BEATS.rows[0] * k, -21),
+  peakAt(SFX.tick, S06_BEATS.rows[S06_BEATS.rows.length - 1] * k, -21),
   peakAt(SFX.click2, S06_BEATS.forget * k, -13),
 ];
 
