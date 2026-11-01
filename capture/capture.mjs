@@ -9,11 +9,12 @@
 //          [--version=1.5.0]    the release the harness serves, as the backend's VERSION (fixtures.js state())
 //          [--hide=SELECTORS]   make these elements invisible (opacity 0: still laid out), e.g. --hide=.app-shell .pet-avatar
 //          [--measure=S1|S2]    report the CSS-px boxes of these selectors' first matches after each scene (`measured`)
+//          [--scenes=FILE]      add the scenes a module exports (capture/launch/scenes.mjs, the 2.0 launch film's)
 // Filters match scene names by substring (or exactly with --exact). Ends with a SUMMARY line and exits 1 if any run had
 // an unhandled IPC call, an error banner or a console error. The per-run JSON report goes to capture/logs/.
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import puppeteer from "puppeteer-core";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -610,6 +611,9 @@ for (const name of ["main-challenge", "settings-memory", "settings-memory-forgot
   if (!SCENES.some((x) => x.name === name + "-wide")) SCENES.push({ ...scene, name: name + "-wide", viewport: WIDE });
 }
 
+// --scenes=<module>: more scenes from another file (capture/launch/scenes.mjs), whose default export takes these helpers
+// and returns scene entries; filters then match them like the scenes above.
+if (opt("scenes", "")) SCENES.push(...(await import(pathToFileURL(path.resolve(opt("scenes", ""))).href)).default({ click, settle, emit, live, fixture, scrollEnd, region, first, blur, pause, row, WIDE, MAIN }));
 await fetch(new URL("__pebble/invalidate", BASE)).catch(() => {}); // pick up edited fixtures (serve.mjs)
 const browser = await puppeteer.launch({
   executablePath: CHROME,

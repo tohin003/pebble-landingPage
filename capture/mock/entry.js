@@ -2,12 +2,13 @@
 // It installs Tauri v2's official IPC mocks (@tauri-apps/api/mocks: mockWindows + mockIPC) and answers every
 // `invoke("rpc", {method, params})` from the demo fixtures in ./fixtures.js, so App.vue / Pet.vue render real states.
 //
-// URL parameters:  ?scene=<name>  &theme=light|dark  [&pet]  [&drawer=320..520]  [&stealth]
+// URL parameters:  ?scene=<name>  &theme=light|dark  [&pet]  [&drawer=320..520]  [&stealth]  [&world=launch]
 //   (`pet` is Pebble's own companion switch; `stealth` starts with Stealth Lockdown on, as after a restart, 1.1.0)
 // Debug/automation handle: window.__pebble = { world, calls, unhandled, emit(event, data) }
 import "./vclock.js"; // first: with ?vclock it replaces the page clock before any Pebble module reads it
 import { mockIPC, mockWindows } from "pebble-tauri-mocks";
 import { buildWorld } from "./fixtures.js";
+import { buildLaunchWorld } from "./launch-world.js"; // ?world=launch: the 2.0 launch film's world, for Pebble 2.0.1
 
 const params = new URLSearchParams(location.search);
 const surface = params.has("pet") ? "pet" : "main";
@@ -19,7 +20,7 @@ const theme = params.get("theme") === "dark" ? "dark" : "light";
 window.isTauri = true;
 
 // `version`: the release the harness serves, as the backend's VERSION in state() (record.mjs main-live-film-150: 1.5.0).
-const world = buildWorld({ scene, theme, surface, drawer: Number(params.get("drawer")) || null, stealth: params.has("stealth"),
+const world = (params.get("world") === "launch" ? buildLaunchWorld : buildWorld)({ scene, theme, surface, drawer: Number(params.get("drawer")) || null, stealth: params.has("stealth"),
   version: /^\d+\.\d+\.\d+$/.test(params.get("version") || "") ? params.get("version") : null });
 
 // Deterministic per-scene browser storage (drawer state, the pet's remembered conversation, quiz drafts).

@@ -10,13 +10,14 @@
 //                              --hide=.pet-avatar records the companion without its pebble, which the films draw
 //                              themselves (FILM_SPEC §17 R1; lane G2b)
 //          [--text-every=10] [--text-at=F1,F2]  with a timeline's probes on: also save the visible text on these frames
+//          [--timelines=FILE]  add the timelines a module exports (capture/launch/timelines.mjs, the 2.0 launch film's)
 // Timelines: pet-live-error (alias pet-live), pet-live-150, main-live-film, main-live-film-150, main-challenge-live,
 // pet-gaze, pet-veil. Output: numbered PNGs 00001.png... plus timeline.json (for pet-gaze also the cursor position of every frame,
 // for compositing; for a timeline with a schedule its `meta`) and, with probes, probes.json. Encode later, e.g.
 // ffmpeg -framerate 30 -i %05d.png -c:v prores_ks -pix_fmt yuva444p10le out.mov
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import puppeteer from "puppeteer-core";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -948,6 +949,9 @@ const TIMELINES = {
   },
 };
 
+// --timelines=<module>: more timelines from another file (capture/launch/timelines.mjs), whose default export takes these
+// helpers and returns {name: spec}.
+if (opt("timelines", "")) Object.assign(TIMELINES, (await import(pathToFileURL(path.resolve(opt("timelines", ""))).href)).default({ emit, live, fixture, row, streamWords, scrollPanel, scrollToEnd, typeChars, FPS, SCALE, THEME }));
 const spec = TIMELINES[NAME];
 if (!spec) throw new Error("Unknown timeline " + NAME + "; known: " + Object.keys(TIMELINES).join(", "));
 fs.rmSync(OUT, { recursive: true, force: true });
