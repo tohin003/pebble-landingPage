@@ -133,6 +133,32 @@ film grain at 4–6 %; a gentle vignette. Gradients are allowed when they read a
 Calculator presses, a pop when the pebble appears, a low hit on the title, a riser into the benchmarks, ticks on the
 count-ups, a soft shimmer on "Verified". Mixed 6–12 dB under the music; master −14 LUFS integrated, −1 dBTP.
 
+### Director's rulings v1.1 (after the craft research; `.claude/skills/launch-film-craft` holds the numbers)
+
+- **Three worlds, never one dark canvas.** *Night* (the ink stage: the cold open, the title, act cards, Remote,
+  Stealth's dusk, the outro); *Desktop* (the real Mac recordings, full-bleed or floating over a soft blur of
+  themselves: acts 2, 3, 9); *Daylight* (warm stone `#ECE8DF` with ink type `#141A16`, sage `#506E54` for
+  Pebble, mute `#9A9F98` for rivals: acts 4–7, where the real windows and captures float on it beside the
+  explainers, and the benchmark payoff). The arc reads night →
+  desktop → daylight (the evidence) → night (rest). Never cut between night and daylight: a world change is carried
+  by an object (a card, the pebble, a headline scaling through) or a wipe, so no frame jumps from dark to light.
+- **Frame 0 is the thumbnail.** It is a finished composition: the pebble awake at centre and "This is Pebble." already
+  landed. The premise ("…Claude Code and Codex.") is on screen by about 3 s.
+- **Tilt** only while a window is revealed; flat before anything is read or acted on.
+- **Entrances vary:** the masked rise is the default; also per-word blur (6 px → 0, 0.13 s, 0.067 s steps),
+  grey-to-ink, and per-letter for the name "Pebble 2.0". A landed title is dead still: no creeping scale on type.
+  Drift (0.4–1.5 %/s) is for UI and the ground only.
+- **Holds:** story-critical lines get 0.5 s + 0.3 s a word after their entrance (last line of a scene ≥ 2 s);
+  secondary labels at least 0.8 s per 3 words. Must-read text ≥ 56 px in 16:9, ≥ 40 px in 4:5.
+- **Seams:** hard cuts on the downbeat inside the bursts (act 3's montage); elsewhere the seam is carried by something
+  on screen. 3–5 transition kinds in the film, at most a third of seams hard cuts, no crossfades between worlds.
+- **Zooms:** push 0.6 s (`cubic-bezier(0.16, 1, 0.3, 1)`) to ~2×, one action per push, hold ~2.4 s, pull back 0.7 s;
+  the camera arrives before the pointer.
+- **Sound sync:** an effect's peak lands on the visual contact frame or 1 frame after, never more than 2 frames early.
+  Mix by band against a music-only render; always also render a music-only version.
+- **Review:** a fresh critic agent judges each full render from contact sheets alone (never the builder).
+- **Length:** the owner chose ~90 s; a 30–45 s cut-down can be offered later from the same scenes.
+
 ## 5. Honesty rules (these still bind)
 
 - Pebble's interface is only ever shown from **real** sources: the 10 real takes, the capture harness (Pebble's own

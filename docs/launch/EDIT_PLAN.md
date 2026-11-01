@@ -27,15 +27,16 @@ place their beats relative to it. Each scene also registers a preview compositio
 
 ## S00 Cold open (8 s): "the challenger"
 
-- 0.0 Near-black stage, a faint sage light at centre. The pebble, **small** (≈ 120 px tall at 1080p), sits at centre
-  low, `sleepy`. 0.5 it wakes (`idle`, a blink). SFX: soft pop.
-- 0.8 "This is Pebble." rises above it (Inter 650, ≈ 120 px). Slow push-in, 1.5 %/s.
-- 2.4 Swap to "It's small." The pebble does a tiny hop and squash (comic beat, on the beat).
-- 4.0 "It just went up against" (stone-1, ≈ 64 px), then on the next two beats "Claude Code" and "and Codex." in huge
+- 0.0 (frame 0 = the thumbnail, a finished composition) Night stage, a soft sage light behind the pebble. The pebble,
+  **small** (≈ 120 px tall at 1080p), awake at centre low, and "This is Pebble." already landed above it (Inter 650,
+  ≈ 120 px). 0.3 it blinks. Ground drift only; the title stays still.
+- 1.2 Swap to "It's small." (per-word blur entrance). The pebble does a tiny hop and squash (comic beat, on the beat).
+  SFX: soft pop on the landing.
+- 2.4 "It just went up against" (stone-1, ≈ 64 px), then on the next two beats "Claude Code" and "and Codex." in huge
   heavy type (mute grey, 220–260 px, filling the width like monoliths). The pebble, tiny at their feet, looks up at
-  them (gaze toward the words).
-- 6.4 Cut: "Same model. Same tasks." (Geist Mono 500, sage, ≈ 56 px). The riser starts.
-- 7.6 The pebble turns to camera and blinks. 4 frames of black before the drop.
+  them (gaze toward the words). Premise on screen by ~3 s.
+- 4.8 "Same model. Same tasks." (Geist Mono 500, sage, ≈ 56 px). The riser starts.
+- until the drop: the pebble turns to camera and blinks; the stage darkens ~40 % for 3 frames before the drop.
 
 ## S01 Title (4 s): the drop
 
@@ -147,4 +148,17 @@ place their beats relative to it. Each scene also registers a preview compositio
 | Count-ups | ticks (one per 3 frames, rate-limited) |
 | End | soft swell |
 
-SFX lead the picture by 1 frame; music ducks 2–3 dB under the honest line and the footnote moments only if they need it.
+An effect's peak lands on the visual contact frame or 1 frame after (never more than 2 frames early); a whoosh's swell
+starts early so its peak meets the cut. Music ducks 2–3 dB under the honest line and the footnote only if needed.
+
+## Worlds by scene (TREATMENT rulings v1.1)
+
+| Scene | World | Seam into the next scene |
+|---|---|---|
+| S00, S01 | Night | S01 → S02: scale-through the pebble's body into the desktop |
+| S02, S03 | Desktop | S03 → S04: the last window shrinks to a card that carries into Daylight |
+| S04–S07 | Daylight (real UI captures float on it) | objects carry each seam (a card, a slab, a block) |
+| S08 | Night | the iPhone carries out of Daylight as the light drains (a wipe, not a cut) |
+| S09 | Desktop → Night (dusk) | the Veil pebble carries into S10 |
+| S10 | Night → Daylight (the evidence) | light rises behind the first chart |
+| S11 | Night | the pebble rests |
