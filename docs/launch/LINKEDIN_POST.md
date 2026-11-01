@@ -52,7 +52,8 @@ keep the numbers, the method sentence and Stealth Lockdown's honest line exactly
 
 > Pebble 2.0, the launch film. Shown with sample data. Edited for time. Pebble's interface is real: recordings of
 > Pebble 2.0 on a Mac, Pebble 2.0.1's own interface running with sample data, and the Pebble Remote app (open source)
-> in the iOS Simulator against a stand-in Mac. Benchmark: golden set 2.0's held-out split, 255 runs per product, one
+> in the iOS Simulator against a stand-in Mac. Personal and production details in the recordings are masked;
+> Pebble's own windows are never altered. Benchmark: golden set 2.0's held-out split, 255 runs per product, one
 > model for both products in each comparison; full results in the 2.0.0 release notes. Pebble isn't affiliated with
 > Anthropic or OpenAI; Claude Code and Codex are their products. Music: "Your Breath" by Eugenio Mininni (Mixkit).
 > Pebble's character engine: bloub by Jérémy Perret (MIT).
