@@ -73,7 +73,10 @@ sequences and masters once they have been used.
 - **No filled ink buttons.** Download and Copy use the sage accent; everything else is a text link or an outline.
   `src/components/ui/ui.test.ts` fails on an ink fill.
 - **Comparisons.** None, except two approved lines, word for word: "An agent shouldn't grade its own work." and the
-  benchmark headline "Pebble matches Claude Code on the same model, within the margin." The film shows no number that
+  benchmark headline "Pebble matches Claude Code on the same model, within the margin." And, by the owner's brief of
+  1 Nov 2026 for the 2.0 launch: Pebble 2.0.0's published benchmark against Claude Code and Codex, its numbers
+  exactly as in the v2.0.0 release notes, with the method beside them (same model for both products, golden set 2.0's
+  held-out split, 255 runs each), never "beats" for an overall result (`docs/launch/TREATMENT.md` §3). The film shows no number that
   isn't published. A feature appears only after the Pebble release that ships it is published, and with no savings or
   speed numbers until a benchmark measures them. The one exception is the person's D157: one planned feature shown as
   coming and not yet built, in the film's post-credit scene and the footer's hint (PHILOSOPHY's "Unreleased features",
@@ -87,6 +90,9 @@ sequences and masters once they have been used.
   limit.
 
 ## Never (from `docs/PHILOSOPHY.md`)
+
+The 2.0 launch film (`docs/launch/`, `video/src/launch/`) follows its own treatment: where its look differs from this
+list (light, gradients), the treatment holds for that film and its loops only.
 
 - Decorative gradients, glass, neon, glow or purple. A released feature's own accent is the only exception, and only
   inside its own section.
