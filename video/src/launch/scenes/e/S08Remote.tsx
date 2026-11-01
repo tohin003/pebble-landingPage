@@ -4,7 +4,7 @@
 // highlight ring on the Reviews badge.
 //
 // Seconds from the scene's start, at the nominal 8.5 s (was 9.0: the 0.5 s came out of the final hold, 'approved' stays
-// at 7.0 s; of the beats before it only three moved: the opener 0.1 s earlier (so it holds 1.7 s), the first push 0.1 s
+// at 7.0 s (2 Nov, REVIEW-2 S-7: 'approved' is now 5.8 s, see below); of the beats before it only three moved: the opener 0.1 s earlier (so it holds 1.7 s), the first push 0.1 s
 // earlier (the move to the conversation now starts before its cut) and the small line 0.5 s earlier (it holds 1.65 s):
 //
 // 0.0   Night; "Pebble, in your pocket." lands while the phone rises (whoosh), tilted, and flattens. Far behind it, a
@@ -16,11 +16,14 @@
 // 2.6   "Pebble Remote for iPhone."
 // 3.0   Inside the move, the phone cuts to the conversation (remote-approval 16.75 s →): Pebble's diagnosis and the
 //       edit card "Change slots.py · Apply Edit".
-// 4.75  Apply Edit is pressed (27.05 s; click), the wait ramps through, the system Face ID prompt shows (29.15 s) as the
-//       camera arrives on it; "Approve with Face ID." (5.25).
+// 4.3   The camera pushes onto the card's buttons (lands 4.9).
+// 4.75  Apply Edit is pressed (27.05 s; click), held 0.6 s at 1× (the button greys, its spinner turns); "Approve with
+//       Face ID." (5.25).
+// 5.35  A cut over the wait to the system Face ID prompt (29.20 s), held 0.45 s (REVIEW-2 S-7: the Simulator's sheet has
+//       no glyph, so it never holds longer than 0.5 s).
+// 5.8   Approved: a cut over the app's own re-layout (→ 33.65 s, the camera holding the card in place; shimmer), the
+//       camera settles on the edit card, now "Done · Undo This Edit"; the take runs to 35.20 s (7.35), then holds.
 // 5.9   "Open source. Build it with Xcode." (two lines at 64 px in 16:9, one line at 48 px in 4:5).
-// 7.0   Approved: the prompt goes (a cut over the app's own re-layout, 32.70 → 33.65 s, the camera holding the card in
-//       place; shimmer), the camera settles on the edit card, now "Done · Undo This Edit".
 // 8.1   Both lines exit (0.22 s, accelerating): gone by 8.32 s, five frames (30 fps) before the last frame (8.467 s);
 //       the master hard-cuts into Stealth on the bar at 8.5 s with nothing of this scene's type left on screen.
 //
@@ -59,14 +62,14 @@ export const S08_BEATS = {
   text2: 2.6,
   cutToCard: 3.0, // remote-approval 16.75 s
   jumpToApply: 4.5, // remote-approval 26.80 s
-  applyEdit: 4.75, // 27.05 s
-  pushFace: 4.95,
+  pushFace: 4.3, // the push onto the card's Apply Edit lands by 4.9 (REVIEW-2 S-7: the press is the pushed shot)
+  applyEdit: 4.75, // 27.05 s; the pushed press holds 0.6 s (the button greys, its spinner turns: 27.05 → 27.65)
   text3: 5.25,
-  faceId: 5.45, // 29.15 s
-  smallLine: 5.9, // 6.4 at 9.0 s: two lines at 64 px, and the type now leaves at 8.1 s
-  approved: 7.0, // 32.70 → 33.65 s
+  faceId: 5.35, // a cut over the wait to the system Face ID prompt (29.20 s), held 0.45 s (REVIEW-2 S-7: 0.5 s at most)
+  approved: 5.8, // a cut to the settled transcript, "Done · Undo This Edit" (33.65 s; was 7.0)
+  smallLine: 5.9, // two lines at 64 px, and the type leaves at 8.1 s
+  doneRuns: 7.35, // the take runs 1.55 s after "Done" (33.65 → 35.20, the layout unchanged), then holds; camera drift
   textOut: 8.1, // both lines start to exit; gone 0.22 s later (8.32 s), five frames before the last
-  holdFrom: 8.35, // 35.0 s, then a held frame and camera drift
 } as const;
 const B = S08_BEATS;
 
@@ -130,12 +133,12 @@ const applyTime = (kk: number): TimeMap =>
     [
       [B.jumpToApply * kk, 26.8],
       [B.applyEdit * kk, 27.05],
-      [B.faceId * kk, 29.15],
-      [(B.approved - 0.05) * kk, 32.7],
     ],
-    { head: 1, tail: 0 },
+    { head: 1, tail: 1 / kk },
   );
-const doneTime = (kk: number): TimeMap => timeMap([[B.approved * kk, 33.65], [B.holdFrom * kk, 35.0]], { head: 1, tail: 0 });
+/** the system's Face ID prompt, fully shown from 29.15 s (the Simulator draws no glyph): 0.45 s of it, at 1× */
+const faceTime = (kk: number): TimeMap => timeMap([[B.faceId * kk, 29.2], [B.approved * kk, 29.2 + (B.approved - B.faceId)]], { head: 1, tail: 0 });
+const doneTime = (kk: number): TimeMap => timeMap([[B.approved * kk, 33.65], [B.doneRuns * kk, 35.2]], { head: 1, tail: 0 });
 
 /* ---------- the windows: which rows of the app's screen show (REVIEW-1 N1) ---------- */
 
@@ -220,7 +223,9 @@ const shots = (L: Layout): Record<"full" | "top" | "card" | "face" | "done", Sho
       // card, face: the window (rows 538–1546) centred on the frame; the face push is 7 % (the phone's width and the
       // type beside it allow no more: with the drift the gap to "Approve with" is 64 px at the end of that shot)
       card: wide(0.72, 1050),
-      face: wide(0.77, 1050),
+      // (REVIEW-2 S-7) the push also moves down onto the card's buttons, Apply Edit in the frame's lower middle; the
+      // window's rows 538–1546 stay inside the frame
+      face: wide(0.77, 1130),
       done: wide(0.74, 1050 + CARD_SHIFT),
     },
     "4x5": {
@@ -363,12 +368,15 @@ const Screen: React.FC<{ kk: number; zoom: number }> = ({ kk, zoom }) => {
     screen = <ScreenZoom {...common} src={TAB.file} time={tabTime(kk)} srcDuration={TAB.durationS} overlay={badgeRing(kk)} />;
   } else if (tc < B.jumpToApply) {
     screen = <ScreenZoom {...common} src={APPROVAL.file} time={cardTime(kk)} srcDuration={APPROVAL.durationS} />;
-  } else if (tc < B.approved) {
-    // the wait ramps through to the system's Face ID prompt, then holds the prompt's last frame (32.70) until the cut
+  } else if (tc < B.faceId) {
+    // the press, pushed: Apply Edit greys and its spinner turns (27.05 → 27.65, real time)
     screen = <ScreenZoom {...common} src={APPROVAL.file} time={applyTime(kk)} srcDuration={APPROVAL.durationS} />;
+  } else if (tc < B.approved) {
+    // a cut over the wait to the system's Face ID prompt, 0.45 s (REVIEW-2 S-7: the glyphless sheet never holds)
+    screen = <ScreenZoom {...common} src={APPROVAL.file} time={faceTime(kk)} srcDuration={APPROVAL.durationS} />;
   } else {
-    // approved: a cut from the prompt's last held frame (32.70) to the settled transcript (33.65), over the app's own
-    // fade and re-layout, so no frame from the middle of the re-layout shows (the camera keeps the card in place)
+    // approved: a cut from the prompt to the settled transcript (33.65), over the app's own fade and re-layout, so no
+    // frame from the middle of the re-layout shows (the camera keeps the card in place)
     phase = "done";
     screen = <ScreenZoom {...common} src={APPROVAL.file} time={doneTime(kk)} srcDuration={APPROVAL.durationS} />;
   }
