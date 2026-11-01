@@ -26,6 +26,7 @@ import { FilmTeaser } from "./teaser/FilmTeaser";
 import { Film2Compositions } from "./film2/Root";
 // the Pebble 2.0 launch reel (src/reel), its compositions carry a Reel prefix
 import { ReelCompositions } from "./reel/Root";
+import { LaunchCompositions } from "./launch/Root";
 
 // Compositions (MASTER_PLAN §5.4, OVERRIDES §4 and §14). The film is aspect-aware: LaunchFilm (16:9), LaunchFilmSquare
 // (1:1) and LaunchFilmVertical (9:16, X and LinkedIn on phones) render the same timeline (film/timeline.ts, 2,304 frames
@@ -77,6 +78,7 @@ export const RemotionRoot: React.FC = () => {
       </Folder>
       <Film2Compositions />
       <ReelCompositions />
+      <LaunchCompositions />
     </>
   );
 };
