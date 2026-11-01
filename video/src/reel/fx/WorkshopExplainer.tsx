@@ -102,7 +102,7 @@ export const WorkshopExplainer: React.FC<{ x: number; y: number; w: number; h: n
   const settle = 1 - 0.18 * inOut(c01((dt - st.ask + 4) / 12));
   const lift = -h * 0.12 * inOut(c01((dt - st.ask + 4) / 12));
   const glow = 0.35 + 0.25 * energy + 0.6 * pulse(st.sandbox) + 0.4 * pulse(st.inputs) + 0.4 * pulse(st.blind);
-  const lbl = 34 * u;
+  const lbl = 40 * u;
 
   return (
     <div style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "100%", transform: `translate(0px, ${lift}px) scale(${settle})`, transformOrigin: `${cx}px ${y}px` }}>

@@ -22,7 +22,9 @@ export const Word: React.FC<{
   /** exit direction for the push-out, px a frame */
   exitV?: { x: number; y: number };
   style?: CSSProperties;
-}> = ({ text, dt, left = 999, size, x, y, align = "left", color = REEL.ink, sweep, exitV, style }) => {
+  /** "top": `y` is the block's top edge (tall frames hang names from a margin); default its centre */
+  valign?: "center" | "top";
+}> = ({ text, dt, left = 999, size, x, y, align = "left", color = REEL.ink, sweep, exitV, style, valign = "center" }) => {
   if (dt < 0 || left <= 0) return null;
   const out = left < 4 ? 4 - left : 0;
   const tx = (exitV?.x ?? 0) * out * out;
@@ -68,7 +70,7 @@ export const Word: React.FC<{
         position: "absolute",
         left: x,
         top: y,
-        transform: `translate(${anchorX}%, -50%) translate(${tx}px, ${ty}px)`,
+        transform: `translate(${anchorX}%, ${valign === "top" ? 0 : -50}%) translate(${tx}px, ${ty}px)`,
         whiteSpace: "pre",
         fontSize: size,
         lineHeight: 1.0,

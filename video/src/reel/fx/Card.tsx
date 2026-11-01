@@ -64,7 +64,12 @@ export const Card: React.FC<{
   const copies = Array.from({ length: n + 1 }, (_, i) => i); // 0 is the card itself
   const ghostBlur = trail ? (Math.hypot(trail.vx, trail.vy) * span) / Math.max(1, n) * 0.8 : 0;
   const z = inner?.zoom ?? 1;
-  const at = inner?.at ?? { x: r.x + r.w / 2, y: r.y + r.h / 2 };
+  // the inner camera never looks outside the crop (the crop is the privacy boundary): `at` is clamped so the zoomed
+  // window stays inside it
+  const at0 = inner?.at ?? { x: r.x + r.w / 2, y: r.y + r.h / 2 };
+  const hw = r.w / (2 * z);
+  const hh = r.h / (2 * z);
+  const at = { x: Math.min(r.x + r.w - hw, Math.max(r.x + hw, at0.x)), y: Math.min(r.y + r.h - hh, Math.max(r.y + hh, at0.y)) };
   // the picture inside the card: scaled by k·zoom about `at`, which sits at the card's centre when zoomed
   const pk = pose.k * z;
   // `at` (source device px) sits at the card's centre; the caller moves it from the crop's centre to its target

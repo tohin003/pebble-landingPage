@@ -54,7 +54,7 @@ const HookScene: React.FC<{ seg: Extract<Segment, { kind: "hook" }>; f: number; 
   let at = centre;
   // the suck-back (accents[1]) holds its breath: a slow push toward the pebble until the send
   const hold = inOut(c01((f - (seg.accents[1] ?? seg.send)) / Math.max(1, seg.send - (seg.accents[1] ?? seg.send))));
-  let pose: CardPose = { x: ip.x - (input.x - centre.x) * kz, y: ip.y - (input.y - centre.y) * kz, k: kz * (1 + 0.06 * hold), rotY: tall ? 0 : -9 + 4 * pull, rotX: tall ? 6 - 3 * pull : 3 };
+  let pose: CardPose = { x: ip.x - (input.x - centre.x) * kz, y: ip.y - (input.y - centre.y) * kz, k: kz * (1 + 0.22 * hold), rotY: tall ? 0 : -9 + 4 * pull, rotX: tall ? 6 - 3 * pull : 3 };
   const punch = hitEnv(f - seg.send, 2, 8) + seg.accents.reduce((s, h) => s + 0.6 * hitEnv(f - h, 2, 9), 0);
   const beatGlow = seg.pulses.reduce((s, p) => s + 0.22 * hitEnv(f - p, 1, 7), 0);
   const lastAccent = Math.max(-999, ...seg.accents.filter((h) => h <= f));
@@ -84,7 +84,7 @@ const HookScene: React.FC<{ seg: Extract<Segment, { kind: "hook" }>; f: number; 
   // the echo: the question as typed, huge
   const typed = typedAt(src);
   const lines = typed.length <= 8 ? [typed] : [typed.slice(0, 9).trimEnd(), typed.slice(9)];
-  const settled = tall ? fitSize("you do now?", W * 0.86, 170) : fitSize("you do now?", W * 0.5, 200);
+  const settled = a === "1x1" ? fitSize("you do now?", W * 0.66, 116) : tall ? fitSize("you do now?", W * 0.86, 170) : fitSize("you do now?", W * 0.4, 200);
   const size = settled * (1 + 0.55 * (1 - c01((typed.length - 4) / 4)));
   // the echo leaves IN PLACE (a blur and a fade over 10 frames), never sliding past the frame's edge half-read
   const leave = f >= seg.zoomFrom ? c01((f - seg.zoomFrom) / 10) : 0;
@@ -98,9 +98,9 @@ const HookScene: React.FC<{ seg: Extract<Segment, { kind: "hook" }>; f: number; 
           style={{
             position: "absolute",
             left: tall ? W / 2 : W * 0.065,
-            top: a === "9x16" ? H * 0.2 : a === "1x1" ? H * 0.17 : H * 0.5,
-            transform: `translate(${tall ? "-50%" : "0"}, -50%) scale(${1 + 0.04 * punch - 0.06 * leave})`,
-            transformOrigin: tall ? "50% 50%" : "0% 50%",
+            top: a === "9x16" ? H * 0.08 : a === "1x1" ? H * 0.05 : H * 0.5,
+            transform: `translate(${tall ? "-50%" : "0"}, ${tall ? "0" : "-50%"}) scale(${1 + 0.04 * punch - 0.06 * leave})`,
+            transformOrigin: tall ? "50% 0%" : "0% 50%",
             ...INTER_HEAVY,
             fontSize: size,
             lineHeight: 1.0,
@@ -279,7 +279,7 @@ const TypeScene: React.FC<{ seg: TypeBeat; f: number; W: number; H: number; a: A
 function heroBox(a: Aspect, W: number, H: number) {
   if (a === "9x16") return { name: { x: W / 2, y: H * 0.13, w: W * 0.84, align: "center" as const }, box: { x: W * 0.05, y: H * 0.25, w: W * 0.9, h: H * 0.4 } };
   if (a === "1x1") return { name: { x: W / 2, y: H * 0.11, w: W * 0.86, align: "center" as const }, box: { x: W * 0.05, y: H * 0.24, w: W * 0.9, h: H * 0.6 } };
-  return { name: { x: W * 0.055, y: H * 0.36, w: W * 0.34, align: "left" as const }, box: { x: W * 0.41, y: H * 0.08, w: W * 0.56, h: H * 0.64 } };
+  return { name: { x: W * 0.05, y: H * 0.36, w: W * 0.3, align: "left" as const }, box: { x: W * 0.35, y: H * 0.06, w: W * 0.63, h: H * 0.76 } };
 }
 
 const HeroScene: React.FC<{ seg: HeroSeg; f: number; W: number; H: number; a: Aspect; B: number }> = ({ seg, f, W, H, a, B }) => {
@@ -288,8 +288,21 @@ const HeroScene: React.FC<{ seg: HeroSeg; f: number; W: number; H: number; a: As
   const twoLine = seg.name.includes("\n");
   const size = fitSize(seg.name, L.name.w, a === "16x9" ? 128 : a === "9x16" ? 112 : 100);
   const subSize = Math.round(size * 0.5);
-  const nameY = L.name.y - (a === "16x9" ? 0 : twoLine ? 0 : 0);
-  const subY = nameY + size * (twoLine ? 1.12 : 0.62) + subSize * 0.9;
+  // tall frames: the name hangs from a top margin (a two-line name centred at a fixed y clipped on 1:1)
+  const nameLines = twoLine ? 2 : 1;
+  const tallTop = H * (a === "9x16" ? 0.07 : 0.05);
+  const nameY = a === "16x9" ? L.name.y : tallTop;
+  const subLines = seg.sub ? seg.sub.split("\n").length : 1;
+  // 16:9: centred on the column; tall frames: everything measured down from the top margin (line boxes ≈ 1.2 em)
+  const subY = a === "16x9" ? nameY + size * (twoLine ? 1.12 : 0.62) + subSize * (0.9 + 0.5 * (subLines - 1)) : tallTop + size * 1.2 * nameLines + subSize * 0.3;
+  // tall frames: the explainer starts below the name and its second line
+  const textBottom = seg.sub ? subY + subSize * 1.2 * subLines : tallTop + size * 1.2 * nameLines;
+  if (a !== "16x9") {
+    const y0 = Math.max(L.box.y, textBottom + H * 0.035);
+    const yEnd = a === "1x1" ? H * 0.84 : H * 0.66;
+    L.box.y = y0;
+    L.box.h = Math.max(H * 0.2, yEnd - y0);
+  }
   const e = E(f);
   const box = L.box;
   const energy = 1.05 + 0.3 * e + 0.35 * Math.max(0, ...[0, 1, 2, 3, 4, 5].map((i) => hitEnv(dt - i * B, 1, 10)));
@@ -327,8 +340,8 @@ const HeroScene: React.FC<{ seg: HeroSeg; f: number; W: number; H: number; a: As
       {seg.id === "longtasks" && <LongTasksExplainer {...box} dt={dt} B={B} energy={e} />}
       {seg.id === "remote" && <RemoteExplainer {...box} dt={dt} B={B} energy={e} />}
       {real}
-      <Word text={seg.name} dt={dt} left={seg.to - f} size={size} x={L.name.x} y={nameY} align={L.name.align} sweep={dt >= 10 && dt <= 36 ? (dt - 10) / 26 : undefined} />
-      {seg.sub && <Word text={seg.sub} dt={dt - 8} left={seg.to - f} size={subSize} x={L.name.x} y={subY} align={L.name.align} color={REEL.inkSoft} style={{ fontWeight: 600, letterSpacing: "-0.02em", textShadow: "none" }} />}
+      <Word text={seg.name} dt={dt} left={seg.to - f} size={size} x={L.name.x} y={nameY} align={L.name.align} valign={a === "16x9" ? "center" : "top"} sweep={dt >= 10 && dt <= 36 ? (dt - 10) / 26 : undefined} />
+      {seg.sub && <Word text={seg.sub} dt={dt - 8} left={seg.to - f} size={subSize} x={L.name.x} y={subY} align={L.name.align} valign={a === "16x9" ? "center" : "top"} color={REEL.inkSoft} style={{ fontWeight: 600, letterSpacing: "-0.02em", textShadow: "none" }} />}
     </AbsoluteFill>
   );
 };
@@ -343,12 +356,11 @@ const RivalScene: React.FC<{ seg: Rival; f: number; W: number; H: number; a: Asp
     const src = Math.round(seg.ask.src.at(dt));
     const r = CROPS.rivalAsk.rect;
     const k = tall ? (W * 0.92) / r.w : (H * 0.86) / r.h;
-    const input = { x: 1640, y: 790 };
-    const zoom = 1.35 - 0.2 * inOut(c01(dt / (seg.ask.to - seg.ask.from)));
+    // the whole panel and a gentle push (never an off-centre zoom: it would show what lies outside the crop)
     return (
       <AbsoluteFill>
         <Ground tint="deep" focus={{ x: 0.5, y: 0.5 }} energy={1 + 0.3 * hitEnv(dt, 1, 8)} />
-        <Card crop="rivalAsk" src={src} pose={{ x: W / 2, y: H * (a === "9x16" ? 0.45 : 0.5), k: k * (1 + 0.05 * hitEnv(dt, 1, 6)), rotX: 2 }} inner={{ zoom, at: { x: r.x + r.w / 2 + (input.x - r.x - r.w / 2) * 0.5, y: r.y + r.h / 2 + (input.y - r.y - r.h / 2) * 0.5 } }} glow={0.8} bright={1.1} />
+        <Card crop="rivalAsk" src={src} pose={{ x: W / 2, y: H * (a === "9x16" ? 0.45 : 0.5), k: k * (1 + 0.05 * hitEnv(dt, 1, 6) + 0.04 * (dt / (seg.ask.to - seg.ask.from))), rotX: 2 }} glow={0.8} bright={1.1} />
       </AbsoluteFill>
     );
   }
@@ -490,11 +502,11 @@ const EndScene: React.FC<{ plan: FullPlan; f: number; W: number; H: number; a: A
         y={footY}
         size={size}
         landAt={logo}
-        enter={{ from: mergeSpot(a, W, H), frames: 16 }}
+        enter={{ from: mergeSpot(a, W, H), frames: 9 }}
         pulses={[logo]}
         aura={{ level, burstAge: sinceLogo, rays: teaseOn ? 0.05 : 0.15 + 0.6 * Math.exp(-sinceLogo / 40), warmth: teaseOn ? 0.2 : 0.55 }}
       />
-      <Lockup f={f} w1={logo} w2={logo + 6} x={lock.x} y={lock.y} size={lockSize} align={tall ? "center" : "left"} dim={dimLock} />
+      <Lockup f={f} w1={logo + 6} w2={logo + 14} x={lock.x} y={lock.y} size={lockSize} align={tall ? "center" : "left"} dim={dimLock} />
       {/* the tagline, then the tease in its place */}
       {!teaseOn && <Word text={END_CARD.tagline} dt={f - logo - 10} size={lineSize * 1.15} x={lock.x} y={tagY} align={tall ? "center" : "left"} color={REEL.inkSoft} style={{ fontWeight: 600, letterSpacing: "-0.015em", textShadow: "none" }} />}
       {teaseOn &&
@@ -514,7 +526,7 @@ const HonestLine: React.FC<{ plan: FullPlan; f: number; W: number; H: number; a:
   const end = f >= plan.logo ? inOut(c01((f - plan.logo) / 20)) : 0; // on the end card it rises into its place
   const size = Math.round(Math.min(W, H) * (a === "16x9" ? 0.03 : 0.032));
   const yBand = a === "9x16" ? H * 0.69 : a === "1x1" ? H * 0.88 : H * 0.885;
-  const yEnd = a === "9x16" ? H * 0.655 : a === "1x1" ? H * 0.72 : H * 0.72;
+  const yEnd = yBand;
   const y = yBand + (yEnd - yBand) * end;
   return (
     <div style={{ position: "absolute", left: 0, right: 0, top: y, transform: "translateY(-50%)", display: "flex", justifyContent: "center", opacity: p }}>
@@ -530,7 +542,7 @@ const Credits: React.FC<{ plan: FullPlan; f: number; W: number; H: number; a: As
   // the silent tail's billing block (4 s, the lead's rulings 3–4): at the honest line's size, never smaller than the
   // reel's other small print; ink on the dark ground (AA)
   if (f < plan.scoreEnd) return null;
-  const p = expoOut(c01((f - plan.scoreEnd) / 12));
+  const p = expoOut(c01((f - plan.scoreEnd - 14) / 12)); // after the tease has faded
   const size = Math.round(Math.min(W, H) * (a === "16x9" ? 0.03 : 0.032));
   const top = a === "9x16" ? H * 0.53 : a === "1x1" ? H * 0.6 : H * 0.62;
   return (

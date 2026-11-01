@@ -88,7 +88,7 @@ export const AgentGuardExplainer: React.FC<{ x: number; y: number; w: number; h:
           boxShadow: `0 0 ${(20 + 40 * flip + 20 * energy) * u}px ${state === "unverified" ? `rgba(${REEL.clay}, 0.5)` : `rgba(${REEL.sage}, 0.55)`}`,
           fontFamily: FONT.sans,
           fontWeight: 800,
-          fontSize: 54 * u,
+          fontSize: 70 * u,
           letterSpacing: "-0.03em",
           color: state === "done" ? REEL.ink : stateColor,
           whiteSpace: "nowrap",
@@ -96,7 +96,7 @@ export const AgentGuardExplainer: React.FC<{ x: number; y: number; w: number; h:
       >
         {word}
       </div>
-      <Label text="AgentGuard checks" x={rowX - 150 * u} y={cy - 210 * u} size={32 * u} dt={dt - 1.2 * B} align="left" color={SAGE} />
+      <Label text="AgentGuard checks" x={rowX - 150 * u} y={cy - 210 * u} size={40 * u} dt={dt - 1.2 * B} align="left" color={SAGE} />
       <svg style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }} width={1} height={1}>
         {/* the line from the word to the evidence */}
         <line x1={cx - 180 * u} y1={cy} x2={cx - 180 * u + 120 * u * c01((dt - B) / 10)} y2={cy} stroke={SAGE} strokeWidth={3 * u} strokeOpacity={0.7} />
@@ -124,7 +124,7 @@ export const AgentGuardExplainer: React.FC<{ x: number; y: number; w: number; h:
         })}
       </svg>
       {rows.map((r, i) => (
-        <Label key={i} text={r.label} x={rowX - 70 * u} y={rowY(i) - 22 * u} size={34 * u} dt={dt - 1.2 * B - i * 4} align="left" color={REEL.ink} />
+        <Label key={i} text={r.label} x={rowX - 70 * u} y={rowY(i) - 22 * u} size={42 * u} dt={dt - 1.2 * B - i * 4} align="left" color={REEL.ink} />
       ))}
     </div>
   );
@@ -232,10 +232,10 @@ export const VisualExplainer: React.FC<{ x: number; y: number; w: number; h: num
           </div>
         ) : null;
       })}
-      <Label text="sorts by any column" x={left} y={top - 48 * u} size={32 * u} dt={dt - 0.6 * B} align="left" color={SAGE} />
-      <Label text="becomes a chart" x={left + tw} y={top + 70 * u + 4 * rowH + 18 * u} size={32 * u} dt={dt - 1.6 * B} align="right" />
-      <Label text="flowcharts, drawn natively" x={fx + 120 * u} y={fy + 190 * u} size={32 * u} dt={dt - 3.2 * B} />
-      <Label text="the work view" x={sx} y={sy - 50 * u} size={32 * u} dt={dt - 4 * B} align="left" color={SAGE} />
+      <Label text="sorts by any column" x={left} y={top - 48 * u} size={40 * u} dt={dt - 0.6 * B} align="left" color={SAGE} />
+      <Label text="becomes a chart" x={left + tw} y={top + 70 * u + 4 * rowH + 18 * u} size={40 * u} dt={dt - 1.6 * B} align="right" />
+      <Label text="flowcharts, drawn natively" x={fx + 120 * u} y={fy + 190 * u} size={40 * u} dt={dt - 3.2 * B} />
+      <Label text="the work view" x={sx} y={sy - 50 * u} size={40 * u} dt={dt - 4 * B} align="left" color={SAGE} />
     </div>
   );
 };
@@ -251,10 +251,10 @@ export const LongTasksExplainer: React.FC<{ x: number; y: number; w: number; h: 
   const tapeX = x + w * 0.04;
   const tapeY = y + h * 0.42;
   const tapeW = w * 0.92;
-  const tile = 44 * u;
+  const tile = 62 * u;
   const gap = 10 * u;
   const step = tile + gap;
-  const blockW = 92 * u;
+  const blockW = 120 * u;
   const rate = B / 4; // a tool result every sixteenth
   const SEALS = [2 * B, 4 * B]; // on beats: the eight oldest open results fold into one sealed block
   const arrived = dt < 0 ? 0 : Math.min(30, Math.floor(dt / rate) + 1);
@@ -303,8 +303,8 @@ export const LongTasksExplainer: React.FC<{ x: number; y: number; w: number; h: 
           width: tile,
           height: tile,
           borderRadius: 9 * u,
-          background: `rgba(${REEL.sage}, ${0.18 + 0.12 * ((idx * 7) % 3)})`,
-          border: `${2 * u}px solid rgba(${REEL.sage}, 0.8)`,
+          background: `rgba(${REEL.sage}, ${0.42 + 0.14 * ((idx * 7) % 3)})`,
+          border: `${2.5 * u}px solid ${SAGE}`,
           opacity: p,
         }}
       />,
@@ -316,9 +316,9 @@ export const LongTasksExplainer: React.FC<{ x: number; y: number; w: number; h: 
       {/* the tape: its length never changes */}
       <div style={{ position: "absolute", left: tapeX, top: tapeY - tile, width: tapeW, height: tile * 2, borderRadius: tile, border: `${2 * u}px solid rgba(${REEL.sage}, 0.45)`, background: `rgba(${REEL.sage}, 0.05)` }} />
       {els}
-      <Label text="a long task" x={tapeX} y={tapeY - tile - 64 * u} size={34 * u} dt={dt - 4} align="left" color={REEL.ink} />
-      <Label text="older tool results" x={tapeX + 20 * u} y={tapeY + tile + 26 * u} size={34 * u} dt={dt - 1.2 * B} align="left" />
-      <Label text="sealed in large chunks" x={tapeX + 20 * u} y={tapeY + tile + 80 * u} size={34 * u} dt={dt - 2 * B - 4} align="left" color={SAGE} />
+      <Label text="a long task" x={tapeX} y={tapeY - tile - 64 * u} size={42 * u} dt={dt - 4} align="left" color={REEL.ink} />
+      <Label text="older tool results" x={tapeX + 20 * u} y={tapeY + tile + 26 * u} size={42 * u} dt={dt - 1.2 * B} align="left" />
+      <Label text="sealed in large chunks" x={tapeX + 20 * u} y={tapeY + tile + 80 * u} size={42 * u} dt={dt - 2 * B - 4} align="left" color={SAGE} />
     </div>
   );
 };
@@ -359,9 +359,9 @@ export const RemoteExplainer: React.FC<{ x: number; y: number; w: number; h: num
           <circle key={i} cx={d.x} cy={phone.y} r={6 * u} fill={`rgba(${REEL.sageCore}, ${d.a})`} style={{ filter: `drop-shadow(0 0 ${6 * u}px rgba(${REEL.sageCore}, 0.9))` }} />
         ))}
       </svg>
-      <Label text="iPhone" x={phone.x} y={phone.y + phone.h / 2 + 18 * u} size={30 * u} dt={dt - 2} />
-      <Label text="Mac" x={mac.x} y={mac.y + mac.h / 2 + 30 * u} size={30 * u} dt={dt - 2} />
-      <Label text="over Tailscale or your Wi-Fi" x={(x1 + x2) / 2} y={phone.y - 70 * u} size={32 * u} dt={dt - 0.6 * B - 6} color={SAGE} />
+      <Label text="iPhone" x={phone.x} y={phone.y + phone.h / 2 + 18 * u} size={36 * u} dt={dt - 2} />
+      <Label text="Mac" x={mac.x} y={mac.y + mac.h / 2 + 30 * u} size={36 * u} dt={dt - 2} />
+      <Label text="over Tailscale or your Wi-Fi" x={(x1 + x2) / 2} y={phone.y - 70 * u} size={40 * u} dt={dt - 0.6 * B - 6} color={SAGE} />
       {chips.map((c, i) => (
         <Chip key={c} x={(x1 + x2) / 2} y={phone.y + 64 * u + i * 62 * u} text={c} u={u} p={(dt - (1.6 + i * 0.75) * B) / 9} size={25} glow={pulse(dt, (1.6 + i * 0.75) * B, 9)} />
       ))}

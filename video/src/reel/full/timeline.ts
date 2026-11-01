@@ -211,13 +211,13 @@ export function buildFullPlan(map: BeatMap): FullPlan {
   type("pace", "You set\nthe pace.", "C-REEL-8", stepUp - t > at(5) ? 6 : 5, "clay");
   if (t !== stepUp) t = beat(stepUp); // the step-up lands on the next hero, to the frame
   // part 2 (the step-up: bigger, faster)
-  hero("visual", "Visual answers.", "Drawn from data only.", "C-REEL-9", "deep");
+  hero("visual", "Visual\nanswers.", "Drawn from data only.", "C-REEL-9", "deep");
   type("memory", "Memory you\ncontrol.", "C-REEL-10", 3, "sage");
   // the README's own words (README.md@v2.0.0:445: "a long task's older tool results are sealed in large chunks"),
   // shortened; "stay light" was dropped (no source says it, and it leans toward a cost claim). Never the name D55 keeps
   // unnamed. C-REEL-14.
-  hero("longtasks", "Long tasks.", "Older tool results, sealed.", "C-REEL-14", "clay");
-  hero("remote", "Pebble Remote.", "Open source. Build it yourself.", "C-REEL-11, C-REEL-12", "deep");
+  hero("longtasks", "Long\ntasks.", "Older tool results,\nsealed.", "C-REEL-14", "clay");
+  hero("remote", "Pebble\nRemote.", "Open source.\nBuild it yourself.", "C-REEL-11, C-REEL-12", "deep");
   type("model", "Your model,\nyour choice.", "C-REEL-13", 4, "sage");
   type("telemetry", "No telemetry.", "C-REEL-15", 2, "clay");
 
