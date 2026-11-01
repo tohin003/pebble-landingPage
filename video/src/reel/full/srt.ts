@@ -22,7 +22,7 @@ const tease = plan.segments.find((s) => s.kind === "tease");
 if (logo && logo.kind === "logo" && tease && tease.kind === "tease") {
   cues.push({ from: logo.from, to: tease.from, text: `Pebble 2.0\n${END_CARD.tagline}` });
   TEASE_LINES.forEach((t, i) => cues.push({ from: tease.lines[i], to: plan.scoreEnd, text: t }));
-  cues.push({ from: logo.credits, to: plan.length, text: [END_CARD.honestSmall, ...END_CARD.credits].join("\n") });
+  cues.push({ from: plan.scoreEnd, to: plan.length, text: [END_CARD.honestSmall, ...END_CARD.musicFull, ...END_CARD.credits.slice(1)].join("\n") });
 }
 cues.sort((a, b) => a.from - b.from);
 const ts = (f: number) => {

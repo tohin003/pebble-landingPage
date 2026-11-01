@@ -112,13 +112,18 @@ export const END_CARD = {
   // strings): the name is the lockup, the rest one plain line. Open for the lead's ruling.
   tagline: "Free and open source, for Mac.",
   honestSmall: "Shown with sample data. Edited for time.",
+  // the tail's billing block (PRO_CHECKLIST's exception, the lead's ruling 3): the music condensed to one line (titles,
+  // artist, "edited", licence, link); the full three lines stay in every description and the SRT
   credits: [
-    // the music's three CC BY lines, as the music lane's README gives them
+    "‘Starfire’, ‘Vanguard’ and ‘Born Of The Sky’ by Scott Buckley (edited), released under CC BY 4.0. scottbuckley.com.au",
+    "Claude Code launch video: Anthropic, on YouTube. Claude and Claude Code are trademarks of Anthropic.",
+    "Pebble's character engine: bloub by Jérémy Perret (MIT)",
+  ],
+  /** the music's three CC BY lines in full (the music lane's README), for the SRT and every description */
+  musicFull: [
     "‘Vanguard’ by Scott Buckley (edited) – released under CC-BY 4.0. www.scottbuckley.com.au",
     "‘Starfire’ by Scott Buckley (edited) – released under CC-BY 4.0. www.scottbuckley.com.au",
     "‘Born Of The Sky’ by Scott Buckley (edited) – released under CC-BY 4.0. www.scottbuckley.com.au",
-    "Claude Code launch video: Anthropic, on YouTube. Claude and Claude Code are trademarks of Anthropic.",
-    "Pebble's character engine: bloub by Jérémy Perret (MIT)",
   ],
 } as const;
 

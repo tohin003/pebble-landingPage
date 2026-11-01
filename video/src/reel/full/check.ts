@@ -69,13 +69,9 @@ for (const c of plan.cuts) {
   if (!onBeat(c)) problems.push(`cut or hit at ${c} (${(c / 60).toFixed(3)} s) is off the beat`);
 }
 readable("honest line", STEALTH_HONEST, plan.honest.to - plan.honest.from);
-// the credits: on the end card from logo.credits through the silent tail. Reported, not failed: ~80 words of small print
-// can't reach 0.4 s a word inside a ~54 s reel (they also go in every description)
-const logoSeg = plan.segments.find((s) => s.kind === "logo");
-if (logoSeg && logoSeg.kind === "logo") {
-  const words = [END_CARD.honestSmall, ...END_CARD.credits].join(" ").split(/\s+/).length;
-  console.log(`note: the credits are on screen ${((plan.length - logoSeg.credits) / 60).toFixed(1)} s for ${words} words (${(words * 0.4).toFixed(1)} s at 0.4 s a word)`);
-}
+// the credits: the tail's billing block, exempt from the 0.4 s floor (PRO_CHECKLIST, Type → Legibility) on the
+// condition that it holds at least 2 s
+if (plan.length - plan.scoreEnd < 120) problems.push(`the credits tail is ${((plan.length - plan.scoreEnd) / 60).toFixed(1)} s: the billing block needs at least 2 s`);
 const tease = plan.segments.find((s) => s.kind === "tease");
 if (tease && tease.kind === "tease") readable("tease", TEASE_LINES.join(" "), tease.to - tease.lines[0]);
 

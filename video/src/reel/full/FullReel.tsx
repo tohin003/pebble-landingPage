@@ -499,7 +499,7 @@ const EndScene: React.FC<{ plan: FullPlan; f: number; W: number; H: number; a: A
       {!teaseOn && <Word text={END_CARD.tagline} dt={f - logo - 10} size={lineSize * 1.15} x={lock.x} y={tagY} align={tall ? "center" : "left"} color={REEL.inkSoft} style={{ fontWeight: 600, letterSpacing: "-0.015em", textShadow: "none" }} />}
       {teaseOn &&
         TEASE_LINES.map((t, i) => (
-          <Word key={t} text={t} dt={f - tease.lines[i]} size={lineSize * 1.15} x={lock.x} y={tagY + i * lineSize * (tall ? 1.3 : 1.45)} align={tall ? "center" : "left"} color={i === 2 ? REEL.inkSoft : REEL.ink} style={{ fontWeight: i === 0 ? 700 : 600, letterSpacing: "-0.015em", textShadow: "none", opacity: 1 - 0.75 * tail }} />
+          <Word key={t} text={t} dt={f - tease.lines[i]} size={lineSize * 1.15} x={lock.x} y={tagY + i * lineSize * (tall ? 1.3 : 1.45)} align={tall ? "center" : "left"} color={i === 2 ? REEL.inkSoft : REEL.ink} style={{ fontWeight: i === 0 ? 700 : 600, letterSpacing: "-0.015em", textShadow: "none", opacity: 1 - tail }} />
         ))}
     </AbsoluteFill>
   );
@@ -527,15 +527,12 @@ const HonestLine: React.FC<{ plan: FullPlan; f: number; W: number; H: number; a:
 
 /** The end card's small print: sample data and editing, the music's credit, the RS-9 line, the engine's credit. */
 const Credits: React.FC<{ plan: FullPlan; f: number; W: number; H: number; a: Aspect }> = ({ plan, f, W, H, a }) => {
-  const logo = plan.segments.find((s) => s.kind === "logo") as Extract<Segment, { kind: "logo" }>;
-  if (f < logo.credits) return null;
-  const p = expoOut(c01((f - logo.credits) / 14));
-  // in the silent tail (the lead's ruling 4) the credits rise into the honest line's place and grow to read easily
-  const tail = inOut(c01((f - plan.scoreEnd - 4) / 20));
-  const size = Math.round(Math.min(W, H) * (a === "16x9" ? 0.017 : 0.019) * (1 + 0.3 * tail));
-  const top0 = a === "9x16" ? H * 0.715 : a === "1x1" ? H * 0.815 : H * 0.81;
-  const top1 = a === "9x16" ? H * 0.62 : a === "1x1" ? H * 0.7 : H * 0.71; // clear of the dimmed tease lines
-  const top = top0 + (top1 - top0) * tail;
+  // the silent tail's billing block (4 s, the lead's rulings 3–4): at the honest line's size, never smaller than the
+  // reel's other small print; ink on the dark ground (AA)
+  if (f < plan.scoreEnd) return null;
+  const p = expoOut(c01((f - plan.scoreEnd) / 12));
+  const size = Math.round(Math.min(W, H) * (a === "16x9" ? 0.03 : 0.032));
+  const top = a === "9x16" ? H * 0.53 : a === "1x1" ? H * 0.6 : H * 0.62;
   return (
     <div style={{ position: "absolute", left: W * 0.06, right: W * 0.06, top, opacity: p, fontFamily: FONT.sans, fontWeight: 500, fontSize: size, lineHeight: 1.45, color: REEL.inkSoft, textAlign: "center" }}>
       <div style={{ color: REEL.ink, fontWeight: 600 }}>{END_CARD.honestSmall}</div>
