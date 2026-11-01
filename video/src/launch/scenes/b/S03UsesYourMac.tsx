@@ -1,18 +1,24 @@
-// S03 "Uses your Mac" (EDIT_PLAN S03, Desktop world, the burst), 12 s nominal.
+// S03 "Uses your Mac" (Desktop world, the burst), 11 s nominal (FIXES-1: 20.051–31.051 on the master; its bars fall
+// every 2.0 s from the start).
 //
-// 0.0   Act card "Now it can use your Mac." over a soft blur of the desktop (the in half of S02's whip lands on it).
-// 1.5   RS4-07 (hard cut on the beat): the window card "Use Calculator" and its Allow; a jump to Calculator brought
-//       forward, the wait ramped ×20; the eight real key presses (×2.2); "=" → 600 with a punch-in. "Your apps."
-// 5.5   RS5C-04 (hard cut): the app-action card and its "Do it"; a jump to Calendar with "Glaze order 09:00" on
-//       Monday 2; a push onto the event (the personal iCloud events are blurred in place). "Your calendar."
-// 8.5   RS9B-02 (hard cut): the "Use youtube.com" approval card and its Allow; a jump to the pill "Pebble is working
-//       in this tab · Stop" (the page, its tab and its video stay out of frame: the owner removed the rival beat).
-//       "Your browser." then the limit "Only the windows and sites you allow."
-// last 0.5 s  The window shrinks to S04's opening card (centred, 60 % of the width, 1.6:1) while a soft wipe carries
-//       the ground from the desktop into Daylight.
+// 0.0   "Now it can use your Mac.": the answer to S02's question, landing out of the whip (blurred, from the right, on
+//       the first frame) on the Mac's own wallpaper; it reads 2.4 s (M5: 0.5 s + 0.3 s a word = 2.3 s).
+// 2.5   RS4-07 (cut on the beat): the Calculator window at about 1×, a push to 2× onto its display and keypad as the
+//       eight real presses land (×4), then "600" with a punch-in. "Your apps." The steps panel (with its
+//       "Preparing to open Calculator") is never in frame.
+// 4.0   RS5C-04 (cut on the bar): Calendar's month at about 1×, a 0.55 s push to 2.4× onto Monday 2: "Glaze order
+//       09:00". The owner's own events (the 23 and 24 Oct cells) are frosted in place. "Your calendar."
+// 6.0   RS9B-02 (cut on the bar): Chrome itself at 1.0×: its tab strip with Pebble's own green tab group and the
+//       "Google Chrome" bar, the page frosted under the pill "Pebble is working in this tab · Stop" (the video page,
+//       its address and its tab title never show: the owner removed the rival video). "Your browser."
+// 8.0   RS4-07 (cut on the bar): the window card's own limit, "Only this window. Pebble stops at sign-ins, codes and
+//       checks…", the pointer comes to Allow; "The app windows / and websites / you allow." (from 7.75, ≥ 2.6 s). The
+//       scene ends on Allow, before the card collapses; this last window is the one the master scales up through the
+//       frame (master/timeline.ts zoomThrough; its rect is S03_LAST_WINDOW below).
 //
-// Every frame inside a window is a real frame of a take (time maps choose frames; nothing is drawn on Pebble's UI
-// except blurs over hazards). Shot boundaries scale with the scene's length; inside a shot the slack is in the hold.
+// Every window holds a different shape (never a montage swapping content inside one fixed window), on the wallpaper
+// ground (never a dark blur). Every frame inside a window is a real frame of a take (time maps choose frames; nothing
+// is drawn on Pebble's UI except masks over hazards).
 import { AbsoluteFill, Sequence } from "remotion";
 import type { Box } from "../../camera";
 import { FloatingWindow } from "../../components/FloatingWindow";
@@ -20,20 +26,21 @@ import { FontGate } from "../../components/FontGate";
 import { Headline } from "../../components/Headline";
 import { ScreenZoom } from "../../components/ScreenZoom";
 import { Sfx } from "../../components/Sfx";
-import { Stage } from "../../components/Stage";
-import { SoftWipeLayer } from "../../components/transitions";
-import { eventS, roiOf, TAKES } from "../../data/takes";
+import { eventS, TAKES } from "../../data/takes";
 import { useLayout, type Layout, type Rect } from "../../layout";
-import { fromRamps } from "../../timeMap";
+import { fromRamps, timeMap } from "../../timeMap";
 import { punchAt } from "../../timing";
+import { EASE } from "../../tokens";
 import type { SceneProps } from "../types";
-import { blurOverlay, EdgeWhip, frameOf, lerp, lerpRect, ramp, seamCard, sfxAt, sfxSrc, useSceneTime, type SfxNote } from "./kit";
+import { DesktopGround, EdgeWhip, INK, MaskedZoom, R, sfxAt, sfxSrc, useSceneTime, type Mask, type SfxNote } from "./kit";
 
-export const S03_NOMINAL = 12;
+export const S03_NOMINAL = 11;
 
-/** shot starts at nominal length (scaled by the retime factor) */
-const AT = { apps: 1.5, calendar: 5.5, browser: 8.5 } as const;
-const SHRINK_S = 0.5;
+/** shot starts at nominal length (scaled by the retime factor): the first cut is on the beat after the act card */
+const AT = { apps: 2.5, calendar: 4.0, browser: 6.0, limit: 8.0 } as const;
+/** the limit line enters this long before the last cut (it reads 2.6 s and has gone before the master's zoom-through) */
+const LIMIT_LEAD = 0.25;
+const LIMIT_EXIT = 0.43; // before the end
 const WHIP_IN_S = 0.14;
 
 /* ---------- RS4-07: your apps ---------- */
@@ -42,75 +49,103 @@ const CALC = TAKES["RS4-07"];
 const CALC_SIZE = { w: CALC.width, h: CALC.height };
 const KEYS = ["key4", "key8", "keyTimes", "key1", "key2", "keyPoint", "key5", "equals600"].map((n) => eventS("RS4-07", n));
 const EQUALS = eventS("RS4-07", "equals600");
-const ALLOW_CALC = eventS("RS4-07", "allowPressed");
-const CALC_FORWARD = eventS("RS4-07", "calculatorForward");
 const calcTime = fromRamps(
   [
-    { s0: 38.75, s1: 39.72, speed: 1 }, // the pointer settles on Allow, pressed at 39.633
-    { s0: CALC_FORWARD, s1: 52.68, speed: 20 }, // jump: Calculator forward, display 0, the companion's "On it" counting
-    { s0: 52.68, s1: 56.45, speed: 2.2 }, // the eight presses, ≈ 4.7 a second on screen
-    { s0: 56.45, s1: 56.8, speed: 1 }, // "600"
+    { s0: 52.4, s1: 52.68, speed: 1 }, // Calculator forward, display 0, the pointer resting on the Dock (out of frame)
+    { s0: 52.68, s1: 56.45, speed: 5 }, // the eight presses, about 10 a second on screen
+    { s0: 56.45, s1: 57.2, speed: 1 }, // "600"
   ],
-  { ramp: 0.1, tail: 1 },
+  { ramp: 0.06, tail: 1 },
 );
-/** the card's end: "Only this window. Pebble stops at sign-ins, codes and checks…", Don't allow, Allow */
-const CALC_CARD = roiOf("RS4-07", "allowCard");
-/** the whole display, four key rows, the companion pebble working beside it (≈ 1.8×) */
-const CALC_TOP = roiOf("RS4-07", "calculatorTop");
-/**
- * "48×12.5" over "600", the AC and 7 8 9 rows: the bottom edge falls in the gap between the 7 8 9 and 4 5 6 rows
- * (y ≈ 764), so the crop never slices a key; the Calculator window's sides are inside it.
- */
-export const CALC_DISPLAY = (aspect: number): Box => {
-  const h = 464;
-  const w = h * aspect;
-  return { x: 801 - w / 2, y: 300, w, h };
-};
+/** the Calculator window with the conversation round it; never the steps panel (x ≥ 1300) or the Dock tooltip */
+const CALC_WIN = (portrait: boolean): Box => (portrait ? { x: 436, y: 285, w: 731, h: 806 } : { x: 405, y: 278, w: 790, h: 816 });
+/** the display ("48×12.5" over "600") and the keypad's top rows, 2× */
+const CALC_KEYS = (portrait: boolean): Box => (portrait ? { x: 610, y: 310, w: 430, h: 474 } : { x: 600, y: 322, w: 445, h: 460 });
 
 /* ---------- RS5C-04: your calendar ---------- */
 
 const CAL = TAKES["RS5C-04"];
 const CAL_SIZE = { w: CAL.width, h: CAL.height };
-const DO_IT = eventS("RS5C-04", "doItPressed");
-const CAL_ARRIVES = 101.19;
-const calTime = fromRamps(
-  [
-    { s0: 47.95, s1: 48.62, speed: 1 }, // the pointer on Do it, pressed at 48.55
-    { s0: CAL_ARRIVES, s1: 103.1, speed: 1 }, // jump: Calendar forward with "Glaze order 09:00" on Monday 2
-  ],
-  { ramp: 0.1, tail: 1 },
-);
-const CAL_DOIT = roiOf("RS5C-04", "doIt");
-/** the month (its taller framing): October 2026 down to Monday 2's row */
-const CAL_MONTH = (tall: boolean): Box => {
-  const r = roiOf("RS5C-04", "calendarMonth");
-  return tall && r.tall ? r.tall : r;
-};
-/**
- * Monday 2's cell from the Calendar window's left edge (x 395, so no Pebble sidebar text is sliced), the Dock
- * tooltip "Calendar" whole (an accepted hazard), above the Dock's dated Calendar icon (y ≥ 1190) (≈ 2.1×)
- */
-const CAL_EVENT: Box = { x: 395, y: 826, w: 510, h: 364 };
-const CAL_EVENT_TALL: Box = { x: 395, y: 772, w: 510, h: 418 };
-/** the person's own iCloud events in the month view: blurred in place */
+const CAL_ARRIVES = eventS("RS5C-04", "calendarWindow");
+const calTime = fromRamps([{ s0: CAL_ARRIVES + 0.01, s1: CAL_ARRIVES + 3, speed: 1 }], { tail: 1 });
+/** Calendar's whole window (October 2026): no menu bar, no Pebble sidebar, no Dock */
+const CAL_WIN: Box = { x: 395, y: 66, w: 1653, h: 1084 };
+/** Monday 2's cell, "Glaze order 09:00", from the window's left edge (2.2×) */
+const CAL_CELL: Box = { x: 395, y: 658, w: 752, h: 493 };
+/** the person's own iCloud events in the 23 and 24 Oct cells (takes.ts 'identity'), frosted with room round them */
 const PERSONAL = CAL.hazards.find((h) => h.kind === "identity")!;
+const CAL_MASKS: Mask[] = [
+  { box: { x: PERSONAL.box.x - 16, y: PERSONAL.box.y - 8, w: PERSONAL.box.w + 16, h: PERSONAL.box.h + 16 }, s0: PERSONAL.s0, s1: PERSONAL.s1, px: 44, backing: "#272727" },
+];
 
 /* ---------- RS9B-02: your browser ---------- */
 
 const WEB = TAKES["RS9B-02"];
 const WEB_SIZE = { w: WEB.width, h: WEB.height };
-const PILL_LAST_CLEAN = 55.867; // f3352: suggestions load round the pill from f3354
-const webTime = fromRamps(
-  [
-    { s0: 47.6, s1: 48.567, speed: 1 }, // the card and its Allow (the last frame with the card is f2914)
-    { s0: 54.767, s1: PILL_LAST_CLEAN, speed: 0.6 }, // jump: Chrome in place, the pill (only the empty sidebar round it)
-  ],
-  { ramp: 0.1, tail: 0 },
-);
-/** "Use youtube.com … Details, Deny, Allow": clean only at 16:9 or wider (the URL line above, a stale card below) */
-const WEB_CARD = roiOf("RS9B-02", "browserCard");
-/** "● Pebble is working in this tab · Stop" on the empty sidebar; right of the player (x ≥ 1344), so no advert shows */
-const WEB_PILL: Box = { x: 1488, y: 1017, w: 560, h: 315 };
+const CHROME_IN = eventS("RS9B-02", "chromeInPlace");
+const webTime = fromRamps([{ s0: CHROME_IN, s1: CHROME_IN + 3, speed: 1 }], { tail: 1 });
+/** "● Pebble is working in this tab · Stop" (1505–2015 × 1224–1300) */
+const PILL: Box = { x: 1505, y: 1224, w: 510, h: 76 };
+/** Chrome whole (its tab strip with the green Pebble group, the frosted page, the pill), then the pill read big (≈ 1.8×) */
+const CHROME: Box = { x: 0, y: 0, w: 2048, h: 1332 };
+const PILL_ZOOM: Box = { x: 1440, y: 937, w: 608, h: 395 };
+/** the page under the green frame, frosted round the pill (the player, its advert, the suggestions, the titles) */
+const PAGE = { x: 0, y: 338, w: 2048, h: 994 };
+const WEB_MASKS: Mask[] = [
+  { box: { x: 855, y: 58, w: 500, h: 86 }, s0: 0, s1: 999, px: 64, backing: "#0f0f0f" }, // the video's tab: its title (the rival's, from 55.15)
+  { box: { x: 296, y: 152, w: 560, h: 56 }, s0: 0, s1: 999, px: 64, backing: "#0f0f0f" }, // the address bar's URL
+  { box: { x: 1990, y: 10, w: 58, h: 40 }, s0: 0, s1: 999, kind: "fill", fill: "#000" }, // the recording dot
+  // the page under the green frame (the player, its advert, the suggestions, the titles), frosted round Pebble's pill
+  { box: PAGE, s0: 0, s1: 999, px: 64, backing: "#0f0f0f", holes: [{ box: PILL, r: 38 }] },
+];
+
+/* ---------- RS4-07 again: the limit ---------- */
+
+const ALLOW = eventS("RS4-07", "allowPressed"); // 39.633: the card collapses on this frame
+/** the card's end on screen, real time, up to the last frame before Allow collapses it; then that frame held */
+const limitTime = (len: number) =>
+  timeMap(
+    [
+      [0, ALLOW - 1 / 60 - len],
+      [len, ALLOW - 1 / 60],
+    ],
+    { tail: 0, head: 1 },
+  );
+/** "…Only this window. Pebble stops at sign-ins, codes and checks and hands them to you…", Don't allow, Allow */
+const LIMIT_CARD: Box = { x: 1360, y: 700, w: 640, h: 360 };
+
+/* ---------- layout ---------- */
+
+/**
+ * 16:9: the type in the left column, a window of the shot's own shape on the right. 4:5: the type above, the window
+ * under it. Every shot's window has a different rect.
+ */
+const frame03 = (L: Layout) =>
+  L.portrait
+    ? {
+        text: R(L, 64, 110, 952, 290),
+        apps: R(L, 150, 440, 780, 860),
+        calendar: R(L, 40, 470, 1000, 656),
+        browser: R(L, 30, 480, 1020, 663),
+        limit: R(L, 40, 520, 1000, 563),
+        labelSize: L.type.headline,
+        limitSize: L.px(84),
+      }
+    : {
+        text: R(L, 128, 150, 600, 780),
+        apps: R(L, 900, 96, 860, 888),
+        calendar: R(L, 744, 172, 1112, 729),
+        browser: R(L, 760, 148, 1124, 731),
+        limit: R(L, 812, 230, 1048, 590),
+        labelSize: L.type.title,
+        limitSize: L.px(78),
+      };
+
+/** S03's last window, as fractions of the frame: the master's zoom-through scales it up through the frame. */
+export const S03_LAST_WINDOW = {
+  "16x9": { x: 812 / 1920, y: 230 / 1080, w: 1048 / 1920, h: 590 / 1080 },
+  "4x5": { x: 40 / 1080, y: 520 / 1350, w: 1000 / 1080, h: 563 / 1350 },
+} as const;
 
 /** the scene's moments in its own seconds, for marks and SFX */
 export const s03Moments = (lenS: number) => {
@@ -118,153 +153,133 @@ export const s03Moments = (lenS: number) => {
   const apps = AT.apps * k;
   const calendar = AT.calendar * k;
   const browser = AT.browser * k;
+  const limit = AT.limit * k;
+  const limitLen = lenS - limit;
   return {
     k,
     apps,
     calendar,
     browser,
-    shrink: lenS - SHRINK_S,
-    allowCalc: apps + calcTime.inv(ALLOW_CALC),
-    calcForward: apps + calcTime.inv(CALC_FORWARD),
+    limit,
     keys: KEYS.map((s) => apps + calcTime.inv(s)),
     equals: apps + calcTime.inv(EQUALS),
-    doIt: calendar + calTime.inv(DO_IT),
-    calendarForward: calendar + calTime.inv(CAL_ARRIVES),
-    webAllow: browser + webTime.inv(48.567) + 1 / 60,
-    pill: browser + webTime.inv(54.767),
-    limit: browser + webTime.inv(54.767) + 0.45,
+    calendarPush: calendar + 0.3,
+    limitLine: limit - LIMIT_LEAD,
+    allow: limit + limitLen,
+    limitLen,
   };
-};
-
-/** the window for each shot: the feature window, or a 16:9 one where a take has no clean taller framing */
-const wideRect = (L: Layout): Rect => {
-  const m = frameOf(L).media;
-  const h = m.w / (16 / 9);
-  return { x: m.x, y: m.y + (m.h - h) / 2, w: m.w, h };
 };
 
 export const S03_SFX = (lenS: number): SfxNote[] => {
   const M = s03Moments(lenS);
   const taps = ["keyA", "keyB", "keyC"] as const;
   return [
-    { name: "click", s: M.allowCalc, db: -15, what: "Allow (Use Calculator)" },
-    ...M.keys.slice(0, 7).map((s, i): SfxNote => ({ name: taps[i % 3], s, db: -13, what: `Calculator key ${i + 1} of 8` })),
+    ...M.keys.slice(0, 7).map((s, i): SfxNote => ({ name: taps[i % 3], s, db: -14, what: `Calculator key ${i + 1} of 8` })),
     { name: "keyA", s: M.equals, db: -12, what: "Calculator = (600)" },
-    { name: "shimmer", s: M.equals, db: -17, what: "600" },
-    { name: "clickB", s: M.doIt, db: -15, what: "Do it (Calendar)" },
-    { name: "click", s: M.webAllow, db: -15, what: "Allow (youtube.com card)" },
+    { name: "shimmer", s: M.equals, db: -18, what: "600" },
   ];
 };
 
 export const S03UsesYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
   const L = useLayout();
-  const F = frameOf(L);
-  const { t, lenS, f } = useSceneTime(S03_NOMINAL, durationInFrames);
+  const G = frame03(L);
+  const { t, lenS, f, fps } = useSceneTime(S03_NOMINAL, durationInFrames);
   const M = s03Moments(lenS);
-  const aspect = F.media.w / F.media.h;
-  const tall = aspect < 1.6;
+  const pre = Math.round(fps);
   const tvalign = L.portrait ? "bottom" : "middle";
-  const size = L.type.headline;
+  const align = L.portrait ? "center" : "left";
 
-  /* act card */
-  const actEnd = f(M.apps);
-
-  /* apps */
+  /* apps: about 1×, then 2× onto the display and keys as the presses land */
   const ta = t - M.apps;
   const aEq = calcTime.inv(EQUALS);
   const keysApps = [
-    { t: 0, box: CALC_CARD },
-    { t: calcTime.inv(CALC_FORWARD), box: CALC_TOP, dur: 0 },
-    // "600" lands with a 5 % punch-in on this framing; at nominal there are only ≈ 0.85 s left in the shot, too
-    // little for a push to land and hold (CALC_DISPLAY is the push if the director lengthens the shot)
+    { t: 0, box: CALC_WIN(L.portrait) },
+    { t: 0.08, box: CALC_WIN(L.portrait) },
+    { t: 0.53, box: CALC_KEYS(L.portrait), dur: 0.45, ease: EASE.camera },
   ];
 
-  /* calendar */
-  const tc = t - M.calendar;
-  const cArr = calTime.inv(CAL_ARRIVES);
+  /* calendar: about 1×, a hold, then a push of 0.55 s onto Monday 2 */
   const keysCal = [
-    { t: 0, box: CAL_DOIT },
-    { t: cArr, box: CAL_MONTH(tall), dur: 0 },
-    { t: cArr + 0.3, box: CAL_MONTH(tall) },
-    { t: cArr + 0.95, box: tall ? CAL_EVENT_TALL : CAL_EVENT, dur: 0.65 },
+    { t: 0, box: CAL_WIN },
+    { t: M.calendarPush - M.calendar, box: CAL_WIN },
+    // 0.8 s on the camera ease (in-out) with up to 48 blur samples: no frame jumps, no visible samples (REVIEW-1 S8)
+    { t: M.calendarPush - M.calendar + 0.8, box: CAL_CELL, dur: 0.8, ease: EASE.camera },
   ];
-  const calBlur = blurOverlay([{ box: PERSONAL.box, s0: PERSONAL.s0, s1: PERSONAL.s1, px: 22 }], calTime);
 
-  /* browser, then the shrink into S04's card */
-  const tw = t - M.browser;
-  const wPill = webTime.inv(54.767);
-  const keysWeb = [
-    { t: 0, box: WEB_CARD },
-    { t: wPill, box: WEB_PILL, dur: 0 },
-  ];
-  const pS = ramp(t, M.shrink, SHRINK_S);
-  const webRect = lerpRect(wideRect(L), seamCard(L), pS);
-  const limitAt = M.limit - M.browser;
-  const textOut = M.shrink - M.browser - 0.05;
-
+  /* the limit: the card, real time into Allow */
+  const limitMap = limitTime(M.limitLen);
+  const label = (text: string, exitAt?: number) => (
+    <Headline text={text} at={0.04} exitAt={exitAt} exit="rise" entrance="blur" size={G.labelSize} align={align} valign={tvalign} box={G.text} color={INK} />
+  );
+  const lines = L.portrait ? (s: string) => s.replace("\n", " ") : (s: string) => s;
   const sfx = S03_SFX(lenS);
 
   return (
     <FontGate>
-      {/* the act card over a soft blur of the desktop (RS4-07's own workspace, just before its Allow) */}
-      <Sequence durationInFrames={actEnd} name="act · Now it can use your Mac.">
-        <EdgeWhip role="in" start={0} dur={WHIP_IN_S}>
-          <Stage world="desktop" desktop={{ src: CALC.file, srcSize: CALC_SIZE, srcStart: 37.6, box: roiOf("RS4-07", "workspace"), blur: 40, dim: 0.62 }}>
+      <EdgeWhip role="in" start={0} dur={WHIP_IN_S}>
+        <DesktopGround>
+          {/* the act card: the answer, out of the whip */}
+          <Sequence durationInFrames={f(M.apps)} name="act · Now it can use your Mac.">
+            <Headline text={"Now it can\nuse your Mac."} at={-0.08} entrance="line" size={L.type.hero} align="center" valign="middle" box={L.content} color={INK} />
+          </Sequence>
+
+          <Sequence from={f(M.apps)} durationInFrames={f(M.calendar) - f(M.apps)} premountFor={pre} name="apps · RS4-07 Calculator">
+            <FloatingWindow rect={G.apps} enter="none" spill={0} shadow={0.55} scale={punchAt([aEq], ta, 0.04, 0.03, 0.3)}>
+              <ScreenZoom src={CALC.file} srcSize={CALC_SIZE} time={calcTime} srcDuration={CALC.durationS} keys={keysApps} drift={0.012} motionBlur={32} />
+            </FloatingWindow>
+            {label(lines("Your\napps."))}
+          </Sequence>
+
+          <Sequence from={f(M.calendar)} durationInFrames={f(M.browser) - f(M.calendar)} premountFor={pre} name="calendar · RS5C-04 Glaze order">
+            <FloatingWindow rect={G.calendar} enter="none" spill={0} shadow={0.55}>
+              <MaskedZoom src={CAL.file} srcSize={CAL_SIZE} time={calTime} srcDuration={CAL.durationS} keys={keysCal} drift={0.01} motionBlur={48} masks={CAL_MASKS} />
+            </FloatingWindow>
+            {label(lines("Your\ncalendar."))}
+          </Sequence>
+
+          <Sequence from={f(M.browser)} durationInFrames={f(M.limit) - f(M.browser)} premountFor={pre} name="browser · RS9B-02 Chrome and the pill">
+            <FloatingWindow rect={G.browser} enter="none" spill={0} shadow={0.55}>
+              <MaskedZoom
+                src={WEB.file}
+                srcSize={WEB_SIZE}
+                time={webTime}
+                srcDuration={WEB.durationS}
+                keys={[
+                  { t: 0, box: CHROME },
+                  { t: 0.75, box: CHROME },
+                  { t: 1.35, box: PILL_ZOOM, dur: 0.6, ease: EASE.camera },
+                ]}
+                drift={0.012}
+                motionBlur={32}
+                masks={WEB_MASKS}
+              />
+            </FloatingWindow>
+            {label(lines("Your\nbrowser."), M.limitLine - M.browser - 0.29)}
+          </Sequence>
+
+          <Sequence from={f(M.limit)} premountFor={pre} name="limit · RS4-07 the window card">
+            <FloatingWindow rect={G.limit} enter="none" spill={0} shadow={0.55}>
+              <ScreenZoom src={CALC.file} srcSize={CALC_SIZE} time={limitMap} srcDuration={CALC.durationS} keys={[{ t: 0, box: LIMIT_CARD }]} drift={0.012} />
+            </FloatingWindow>
+          </Sequence>
+
+          {/* the limit line bridges the last cut: it lands on the browser shot and has gone before the zoom-through */}
+          <Sequence from={f(M.limitLine)} name="limit line">
             <Headline
-              text={L.portrait ? "Now it can\nuse your Mac." : "Now it can\nuse your Mac."}
-              at={0.06}
+              text={L.portrait ? "The app windows\nand websites you allow." : "The app windows\nand websites\nyou allow."}
+              at={0}
+              exitAt={lenS - LIMIT_EXIT - M.limitLine}
+              exit="rise"
               entrance="line"
-              size={L.type.hero}
-              align="center"
-              valign="middle"
-              box={L.content}
+              size={G.limitSize}
+              align={align}
+              valign={tvalign}
+              box={G.text}
+              color={INK}
             />
-          </Stage>
-        </EdgeWhip>
-      </Sequence>
-
-      <Sequence from={actEnd} durationInFrames={f(M.calendar) - actEnd} name="apps · RS4-07 Calculator">
-        <Stage world="desktop" desktop={{ src: CALC.file, srcSize: CALC_SIZE, time: calcTime, box: roiOf("RS4-07", "workspace"), dim: 0.62 }}>
-          <FloatingWindow rect={F.media} enter="none" spill={0.5} scale={punchAt([aEq], ta, 0.05, 0.03, 0.3)}>
-            <ScreenZoom src={CALC.file} srcSize={CALC_SIZE} time={calcTime} srcDuration={CALC.durationS} keys={keysApps} drift={0.012} />
-          </FloatingWindow>
-          <Headline text="Your apps." at={0.06} entrance="line" size={size} align="left" valign={tvalign} box={F.text} />
-        </Stage>
-      </Sequence>
-
-      <Sequence from={f(M.calendar)} durationInFrames={f(M.browser) - f(M.calendar)} name="calendar · RS5C-04 Glaze order">
-        <Stage world="desktop" desktop={{ src: CAL.file, srcSize: CAL_SIZE, time: calTime, box: roiOf("RS5C-04", "calendarMonth"), dim: 0.62 }}>
-          <FloatingWindow rect={F.media} enter="none" spill={0.5} scale={punchAt([cArr], tc, 0.03)}>
-            <ScreenZoom src={CAL.file} srcSize={CAL_SIZE} time={calTime} srcDuration={CAL.durationS} keys={keysCal} drift={0.012} overlay={calBlur} />
-          </FloatingWindow>
-          <Headline text="Your calendar." at={0.06} entrance="blur" size={size} align="left" valign={tvalign} box={F.text} />
-        </Stage>
-      </Sequence>
-
-      <Sequence from={f(M.browser)} name="browser · RS9B-02 approval and pill">
-        <Stage world="desktop" desktop={{ src: WEB.file, srcSize: WEB_SIZE, time: webTime, box: WEB_CARD, dim: 0.66, blur: 40 }}>
-          {/* the shrink: the ground turns to Daylight under the card (a soft wipe, never a cut between worlds) */}
-          {pS > 0 && (
-            <SoftWipeLayer progress={pS} role="in" direction="down" feather={0.5}>
-              <Stage world="daylight" drift={false} />
-            </SoftWipeLayer>
-          )}
-          <FloatingWindow rect={webRect} enter="none" spill={0.5 * (1 - pS)} scale={punchAt([wPill], tw, 0.03)} shadow={lerp(1, 1.1, pS)}>
-            <ScreenZoom src={WEB.file} srcSize={WEB_SIZE} time={webTime} srcDuration={WEB.durationS} keys={keysWeb} drift={0.012} />
-          </FloatingWindow>
-          <Headline text="Your browser." at={0.06} exitAt={limitAt - 0.12} exit="fade" entrance="ink" size={size} align="left" valign={tvalign} box={F.text} />
-          <Headline
-            text={L.portrait ? "The app windows and\nwebsites you allow." : "The app windows\nand websites\nyou allow."}
-            at={limitAt}
-            exitAt={textOut}
-            exit="fade"
-            size={L.portrait ? L.type.title * 0.72 : L.type.title * 0.78}
-            align="left"
-            valign={tvalign}
-            box={F.text}
-          />
-        </Stage>
-      </Sequence>
+          </Sequence>
+        </DesktopGround>
+      </EdgeWhip>
 
       <AbsoluteFill>
         {sfx.map((c) => (
@@ -274,3 +289,6 @@ export const S03UsesYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
     </FontGate>
   );
 };
+
+/** The window rect S03 ends on, px (for checks). */
+export const s03LastRect = (L: Layout): Rect => frame03(L).limit;

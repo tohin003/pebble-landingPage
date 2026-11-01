@@ -1,9 +1,13 @@
 // Scene group b: the real-take scenes (S02 Lives on your Mac, S03 Uses your Mac, S09 Stealth Lockdown). Owned by its
-// worker; scenes/Previews.tsx registers them for 16:9 and 4:5. Handoff: .work/handoffs/launch-scenes-b.md.
+// worker; scenes/Previews.tsx registers them for 16:9 and 4:5. Handoffs: .work/handoffs/launch-scenes-b.md and
+// .work/launch/critic/FIX1-B.md (REVIEW-1's fixes).
 import type { SceneDef } from "../types";
 import { S02_NOMINAL, S02OnYourMac, s02Moments } from "./S02OnYourMac";
 import { S03_NOMINAL, S03UsesYourMac, s03Moments } from "./S03UsesYourMac";
 import { S09_NOMINAL, S09Stealth, s09Moments } from "./S09Stealth";
+
+export { S03_LAST_WINDOW } from "./S03UsesYourMac";
+export { VEIL_HANDOFF } from "./kit";
 
 const marks = (list: Record<string, number>) => Object.entries(list).map(([name, s]) => ({ name, s: +s.toFixed(3) }));
 
@@ -18,12 +22,17 @@ export const GROUP_B: SceneDef[] = [
     component: S02OnYourMac,
     nominalS: S02_NOMINAL,
     marks: marks({
+      "the Mac, the pebble sharp (S01's sage cuts here)": 0,
+      "cut to the Spaces (beat)": m02.b,
       "spaces-swipe": m02.swipe,
-      "cut-to-ask (downbeat)": m02.cut,
+      "pebble-settled": m02.settled,
+      "cut to click, ask (downbeat)": m02.c,
       click: m02.click,
       "panel-opens": m02.panel,
       "typing-starts": m02.typing,
+      "question whole": m02.asked,
       return: m02.ret,
+      sending: m02.sending,
       "whip-out": m02.whip,
     }),
   },
@@ -33,18 +42,14 @@ export const GROUP_B: SceneDef[] = [
     nominalS: S03_NOMINAL,
     marks: marks({
       "act-card": 0,
-      "cut-apps (downbeat)": m03.apps,
-      "allow-calculator": m03.allowCalc,
-      "calculator-forward": m03.calcForward,
+      "cut-apps (beat)": m03.apps,
       ...Object.fromEntries(m03.keys.map((s, i) => [`key ${KEY_NAMES[i]}`, s])),
-      "cut-calendar (downbeat)": m03.calendar,
-      "do-it": m03.doIt,
-      "calendar-event": m03.calendarForward,
-      "cut-browser (downbeat)": m03.browser,
-      "allow-site": m03.webAllow,
-      "working-pill": m03.pill,
-      "limit-line": m03.limit,
-      "shrink-to-card": m03.shrink,
+      "cut-calendar (bar)": m03.calendar,
+      "calendar push": m03.calendarPush,
+      "cut-browser (bar)": m03.browser,
+      "limit-line": m03.limitLine,
+      "cut-limit (bar)": m03.limit,
+      "on Allow (the end)": m03.allow,
     }),
   },
   {
@@ -52,15 +57,18 @@ export const GROUP_B: SceneDef[] = [
     component: S09Stealth,
     nominalS: S09_NOMINAL,
     marks: marks({
-      "presenting (the breath)": 0,
+      "presenting (the palette)": 0,
       "palette-opens": m09.palette,
       "row-lit": m09.rowLit,
+      "the recording, the type (with it)": m09.strip,
       return: m09.ret,
-      "windows-leave": m09.leave,
-      "dusk-wipe": m09.wipe,
+      "windows-leave (the music's stop)": m09.leave,
+      "dock icon gone": m09.dockGone,
+      "the recording leaves": m09.stripOut,
+      "the pebble": m09.pebble,
       "veil-on": m09.veilOn,
-      "stealth-title": m09.title,
-      "honest-line": m09.honest,
+      "glide to the hand-off": m09.glide,
+      "type out": m09.typeOut,
     }),
   },
 ];

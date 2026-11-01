@@ -1,14 +1,18 @@
-// S09 "Stealth Lockdown" (EDIT_PLAN S09, Desktop, then the dusk Night), 8 s nominal.
+// S09 "Stealth Lockdown" (the dusk night, this scene only), 9.5 s nominal (FIXES-1: 70.051–79.551 on the master: the
+// music's groove thins at 72.05 and stops at 73.07, the breakdown hit at 73.41).
 //
-// 0.0   "Presenting?" (quiet, smaller) above RS13-03 in a flat window: the workspace, then ⌘K (4.4 source).
-//       The palette; "stealth" typed (×1.5); a push onto the lit row "Turn Stealth Lockdown on / Hidden from screen
-//       capture and screen sharing"; a cut to the whole workspace; Return (7.2) and the workspace leaves the recording
-//       in one frame (7.233, real: the take was recorded with screencapture). Hold ≈ 0.55 s on the desktop without it
-//       (the desktop calendar widget and the take's Finder window blurred).
-// ≈3.3  Dusk falls: a soft wipe from the top into the dusk Night (the Veil's world, this scene only).
-//       The pebble appears where S10 needs it and puts on the Veil (Pebble's own Veil code, a render, never called a
-//       recording). "Stealth Lockdown." and the honest line, word for word, above it to the end (≥ 3.5 s at nominal).
-// The scene ends on the Veil pebble centred, at S10's opening position and size (scenes/d S10 `night`).
+// 0.0   "Presenting?" over the ⌘K palette (RS13-03): "stealth" typed, the lit row "Turn Stealth Lockdown on / Hidden
+//       from screen capture and screen sharing". No first-run screen at all: the window is cropped to the palette.
+// 1.8   The real recording (RS13-03 was made with screencapture, so Pebble's windows really leave it), flat and locked
+//       off: the bottom of the screen, Pebble's window with its composer over the Dock. 1.2 s with the window in it,
+//       then it leaves the recording in one frame (3.0, on the music's stop) and Pebble's Dock icon shrinks away; 1.5 s
+//       without it. The take's Finder window and the widgets at the left edge are above this band: never in frame.
+//       "Stealth Lockdown." and the honest line, word for word, enter WITH the recording and sit under it (3 lines at
+//       60 px on 16:9; 4 lines at 44 px on 4:5), and stay through the Veil: 1.8 → 9.42 (7.6 s).
+// 4.5   The recording leaves; the pebble (Pebble's own body) comes in above the honest line and puts on the Veil
+//       (Pebble's own Veil code: a render, never called a recording).
+// 8.65  The type leaves at 9.2; the Veil pebble settles at S10's hand-off: its body centred at (0.5 W, 0.5 H), 12 % of
+//       the frame's height (kit VEIL_HANDOFF), still from 9.25 to the last frame.
 import { Sequence } from "remotion";
 import type { Box } from "../../camera";
 import { FloatingWindow } from "../../components/FloatingWindow";
@@ -18,16 +22,14 @@ import { cues, look, lookBack, pose, VeilPebble } from "../../components/PebbleA
 import { ScreenZoom } from "../../components/ScreenZoom";
 import { Sfx } from "../../components/Sfx";
 import { Stage } from "../../components/Stage";
-import { SoftWipeLayer } from "../../components/transitions";
-import { eventS, roiOf, TAKES } from "../../data/takes";
-import { useLayout, type Layout, type Rect } from "../../layout";
+import { eventS, TAKES } from "../../data/takes";
+import { useLayout, type Layout } from "../../layout";
 import { fromRamps } from "../../timeMap";
-import { punchAt } from "../../timing";
-import { C } from "../../tokens";
+import { C, EASE } from "../../tokens";
 import type { SceneProps } from "../types";
-import { blurOverlay, lerp, ramp, sfxAt, sfxSrc, useSceneTime, type SfxNote } from "./kit";
+import { lerp, MaskedZoom, pebbleAt, R, ramp, sfxAt, sfxSrc, useSceneTime, VEIL_HANDOFF, type Mask, type SfxNote } from "./kit";
 
-export const S09_NOMINAL = 8;
+export const S09_NOMINAL = 9.5;
 
 /** Stealth Lockdown's honest line, word for word (TREATMENT §3, CLAUDE.md). Never shorten or split it. */
 export const HONEST_LINE =
@@ -39,165 +41,169 @@ const PALETTE_OPENS = eventS("RS13-03", "paletteOpens");
 const ROW_LIT = eventS("RS13-03", "typeA");
 const RETURN = eventS("RS13-03", "returnKey");
 const LEAVE = eventS("RS13-03", "windowsLeave");
+const DOCK_GONE = eventS("RS13-03", "dockIconGone");
+const DOCK_CLOSED = eventS("RS13-03", "dockClosed");
 
-/** the take, anchored at the scene's start; `lead` seconds of the still workspace before ⌘K (shrinks on a retime) */
-const takeTime = (lead: number) =>
-  fromRamps(
-    [
-      { s0: 4.3 - lead, s1: 4.3, speed: 1 }, // the first-run workspace, still
-      { s0: 4.3, s1: 5.3, speed: 2.5 }, // the palette opens (4.4)
-      { s0: 5.3, s1: 6.5, speed: 1.5 }, // "stealth" typed; the row lights at 5.8
-      { s0: 6.5, s1: 7.38, speed: 1 }, // hold on the lit row; Return 7.2; the windows leave 7.233 (never below 1×)
-      { s0: 7.38, s1: 9.5, speed: 1 }, // the desktop without Pebble
-    ],
-    { ramp: 0.1, tail: 1 },
-  );
+/** the beats, scene seconds at nominal */
+/** the pebble comes in only once the recording has gone (it must never read as inside the capture) */
+const AT = { strip: 1.8, stripOut: 4.45, pebble: 4.85, veil: 5.25, glide: 8.65, glideS: 0.6, typeOut: 9.2 } as const;
+/** the recording's lead before the vanish (FIXES-1: about 1.2 s with Pebble's window in it) and its tail (about 1.5 s) */
+const LEAD = 1.2;
 
 /**
- * After the vanish: the band under the take's Finder window (it ends at y 1131, its shadow a little lower) and above the Dock (from y 1735): the
- * composer's place, bare wallpaper from 7.233. The hold on "the empty desktop".
+ * The palette: opened at 4.4, "stealth" typed 5.2–6.433, the row lit from 5.8. Never below 1× (a screencapture conform).
+ * Its last 0.37 s (6.033–6.4) are the same source moments as the recording's first 0.37 s, seen in the two framings
+ * (the band below the palette doesn't change in them).
  */
-const BAND = (portrait: boolean): Box => (portrait ? { x: 1700, y: 1145, w: 680, h: 585 } : { x: 1420, y: 1140, w: 1050, h: 590 });
+const palTime = fromRamps(
+  [
+    { s0: 4.3, s1: 5.0, speed: 1.75 },
+    { s0: 5.0, s1: 6.4, speed: 1 },
+  ],
+  { ramp: 0.08, tail: 1 },
+);
+/** the recording: real time, locked off, from LEAD before the vanish */
+const stripTime = fromRamps([{ s0: LEAVE - LEAD, s1: LEAVE + 2.6, speed: 1 }], { tail: 1 });
 
-/** the whole workspace window (the strongest read of "leaves the recording"); below the menu bar, above the Dock */
-const WIDE = (portrait: boolean): Box => (portrait ? { x: 1100, y: 120, w: 1840, h: 1508 } : { x: 316, y: 112, w: 2624, h: 1476 });
+/** the palette alone (input, rows, its note): no first-run card (it starts at y 758) */
+const PAL = (portrait: boolean): Box => (portrait ? { x: 1160, y: 312, w: 900, h: 312 } : { x: 1150, y: 305, w: 1140, h: 415 });
+/**
+ * The bottom of the screen: Pebble's composer and footer over the Dock, under the take's Finder window (it ends at
+ * y 1131) and the first-run card (it ends at y 1255), with the widgets far above: the strip the window leaves. 16:9
+ * keeps the whole Dock; 4:5 its right half (Settings, Terminal, Pebble's icon, the Trash).
+ */
+const STRIP = (portrait: boolean): Box => (portrait ? { x: 1450, y: 1262, w: 1440, h: 650 } : { x: 120, y: 1262, w: 2700, h: 650 });
+const STRIP_MASKS: Mask[] = [
+  { box: { x: 1360, y: 1572, w: 300, h: 48 }, s0: 0, s1: LEAVE, px: 18, backing: "#1b1f1c" }, // the composer's "Connect a model…" (first-run)
+  { box: { x: 1620, y: 1664, w: 336, h: 42 }, s0: 0, s1: LEAVE, px: 18, backing: "#141715" }, // the footer's "Connect a model in Settings"
+  { box: { x: 1178, y: 1755, w: 176, h: 120 }, s0: 0, s1: DOCK_CLOSED, px: 22 }, // the Dock's dated Calendar icon
+  { box: { x: 1226, y: 1755, w: 176, h: 120 }, s0: DOCK_CLOSED, s1: 99, px: 22 }, // … after the Dock closes up (≈ 50 px right)
+  { box: { x: 1938, y: 1746, w: 58, h: 62 }, s0: 0, s1: DOCK_CLOSED, px: 22 }, // the System Settings badge
+  { box: { x: 1986, y: 1746, w: 58, h: 62 }, s0: DOCK_CLOSED, s1: 99, px: 22 }, // … after the Dock closes up
+];
 
-const blurs = (map: ReturnType<typeof takeTime>) =>
-  blurOverlay(
-    [
-      { box: T.hazards.find((h) => h.what.startsWith("desktop calendar widget"))!.box, s0: 0, s1: 99, px: 20 },
-      { box: T.hazards.find((h) => h.what.startsWith("the pebble-takes Finder"))!.box, s0: LEAVE, s1: 99, px: 30 },
-    ],
-    map,
-  );
-
-const frame = (L: Layout) =>
+/** the layout: reference px (1920 × 1080, 1080 × 1350) */
+const frame09 = (L: Layout) =>
   L.portrait
     ? {
-        ask: { x: L.content.x, y: L.px(150), w: L.content.w, h: L.px(150) } as Rect,
-        win: { x: L.px(40), y: L.px(340), w: L.px(1000), h: L.px(860) } as Rect,
-        title: { x: L.content.x, y: L.px(230), w: L.content.w, h: L.px(130) } as Rect,
-        line: { x: L.content.x, y: L.px(400), w: L.content.w, h: L.px(360) } as Rect,
-        pebble: { x: L.centre.x, y: L.px(930), size: L.px(210) },
-        titleSize: L.type.title,
+        ask: R(L, 64, 180, 952, 160),
+        pal: R(L, 40, 380, 1000, 347),
+        strip: R(L, 40, 150, 1000, 451),
+        title: R(L, 64, 790, 952, 90),
+        line: R(L, 64, 902, 952, 260),
+        askSize: L.px(104),
+        titleSize: L.px(76),
         lineSize: L.px(44),
+        up: { x: 0.5, y: 0.3, h: 0.18 },
       }
     : {
-        ask: { x: L.content.x, y: L.px(40), w: L.content.w, h: L.px(150) } as Rect,
-        win: { x: L.px(272), y: L.px(200), w: L.px(1376), h: L.px(774) } as Rect,
-        title: { x: L.content.x, y: L.px(120), w: L.content.w, h: L.px(150) } as Rect,
-        line: { x: L.px(250), y: L.px(300), w: L.px(1420), h: L.px(260) } as Rect,
-        pebble: { x: L.centre.x, y: L.px(790), size: L.px(190) },
-        titleSize: L.type.title,
-        lineSize: L.px(56),
+        ask: R(L, 128, 150, 1664, 150),
+        pal: R(L, 210, 330, 1500, 546),
+        strip: R(L, 128, 72, 1664, 401),
+        title: R(L, 128, 640, 1664, 96),
+        line: R(L, 150, 758, 1620, 240),
+        askSize: L.px(120),
+        titleSize: L.px(88),
+        lineSize: L.px(60),
+        up: { x: 0.5, y: 0.31, h: 0.2 },
       };
 
 export const s09Moments = (lenS: number) => {
   const k = lenS / S09_NOMINAL;
-  // The director (1 Nov, draft 1): the take's workspace is in its first-run "Welcome to Pebble / Connect a model"
-  // state, which reads oddly right before Stealth Lockdown. Hold it for a beat only; the palette covers it once open.
-  const lead = 0.15 * Math.min(1.2, k);
-  const m = takeTime(lead);
-  const leave = m.inv(LEAVE);
-  const wipe = leave + 0.55 * Math.min(1.2, k);
+  const strip = AT.strip * k;
   return {
     k,
-    lead,
-    palette: m.inv(PALETTE_OPENS),
-    rowLit: m.inv(ROW_LIT),
-    ret: m.inv(RETURN),
-    leave,
-    wipe,
-    pebble: wipe + 0.3,
-    veilOn: wipe + 0.75,
-    title: wipe + 0.6,
-    honest: wipe + 0.95,
+    palette: palTime.inv(PALETTE_OPENS),
+    rowLit: palTime.inv(ROW_LIT),
+    strip,
+    ret: strip + stripTime.inv(RETURN),
+    leave: strip + stripTime.inv(LEAVE),
+    dockGone: strip + stripTime.inv(DOCK_GONE),
+    stripOut: AT.stripOut * k,
+    pebble: AT.pebble * k,
+    veilOn: AT.veil * k,
+    glide: lenS - (S09_NOMINAL - AT.glide),
+    typeOut: lenS - (S09_NOMINAL - AT.typeOut),
   };
 };
 
 export const S09_SFX = (lenS: number): SfxNote[] => {
   const M = s09Moments(lenS);
   return [
-    { name: "click", s: M.ret, db: -16, what: "Return (Turn Stealth Lockdown on)" },
-    { name: "whooshB", s: M.leave, db: -20, what: "the workspace leaves the recording (soft)" },
-    { name: "pop", s: M.pebble + 0.08, db: -20, what: "the pebble appears (dusk)" },
+    { name: "click", s: M.ret, db: -17, what: "Return (Turn Stealth Lockdown on)" },
+    { name: "whooshB", s: M.leave, db: -22, what: "Pebble's window leaves the recording (soft, on the music's stop)" },
+    { name: "pop", s: M.pebble + 0.06, db: -20, what: "the pebble comes in" },
     { name: "shimmer", s: M.veilOn + 0.35, db: -19, what: "the Veil settles on the pebble" },
   ];
 };
 
 export const S09Stealth: React.FC<SceneProps> = ({ durationInFrames }) => {
   const L = useLayout();
-  const G = frame(L);
-  const { t, lenS, f } = useSceneTime(S09_NOMINAL, durationInFrames);
+  const G = frame09(L);
+  const { t, lenS, f, fps } = useSceneTime(S09_NOMINAL, durationInFrames);
   const M = s09Moments(lenS);
-  const map = takeTime(M.lead);
-  const pal = roiOf("RS13-03", "palette");
-  // the input ("stealth") and the lit row, ≈ 1.8×: the row's own words read at the window's size
-  const rowH = 428;
-  const rowAspect = G.win.w / G.win.h;
-  const row: Box = L.portrait ? { x: 1170, y: 280, w: 760, h: 760 / rowAspect } : { x: 1550 - (rowH * rowAspect) / 2, y: 300, w: rowH * rowAspect, h: rowH };
-  const keys = [
-    { t: 0, box: pal },
-    { t: Math.max(0.2, M.rowLit - 0.45), box: pal },
-    { t: M.rowLit + 0.15, box: row, dur: 0.6 },
-    // cut wide once "stealth" is typed and the row is lit, 0.35 s before Return: the whole workspace leaves in one frame
-    { t: M.ret - 0.35, box: WIDE(L.portrait), dur: 0 },
-    // then down to the bare wallpaper where the composer was, away from the (blurred) Finder window
-    { t: M.leave + 0.2, box: WIDE(L.portrait) },
-    { t: M.leave + 0.75, box: BAND(L.portrait), dur: 0.55 },
-  ];
-  const pW = ramp(t, M.wipe, 0.75);
-  const recede = ramp(t, M.wipe - 0.1, 0.9);
+  const pre = Math.round(fps);
+
+  /* the pebble: comes in above the type, then glides to S10's hand-off and holds there */
+  const pg = ramp(t, M.glide, AT.glideS, EASE.camera);
+  const place = { x: lerp(G.up.x, VEIL_HANDOFF.x, pg), y: lerp(G.up.y, VEIL_HANDOFF.y, pg), h: lerp(G.up.h, VEIL_HANDOFF.h, pg) };
+  const pin = ramp(t, M.pebble, 0.22, EASE.enter);
+  const P = pebbleAt({ ...place, h: place.h * lerp(0.9, 1, pin) }, L.W, L.H);
   const sfx = S09_SFX(lenS);
 
   return (
     <FontGate>
-      <Sequence durationInFrames={f(M.wipe + 0.8)} name="RS13-03 · Stealth Lockdown on">
-        <Stage world="desktop" desktop={{ src: T.file, srcSize: SIZE, time: map, box: WIDE(false), dim: 0.66 }}>
-          <FloatingWindow
-            rect={G.win}
-            enter="none"
-            spill={0.45}
-            scale={punchAt([M.leave], t, 0.025, 0.03, 0.25) * lerp(1, 0.94, recede)}
-            background="#1A211D"
-          >
-            <ScreenZoom src={T.file} srcSize={SIZE} time={map} srcDuration={T.durationS} keys={keys} drift={0.01} overlay={blurs(map)} />
+      <Stage world="night" tint="dusk" keyLight={{ x: 0.5, y: lerp(G.up.y, VEIL_HANDOFF.y, pg), r: 0.6 }}>
+        {/* the palette, cropped to itself */}
+        <Sequence durationInFrames={f(M.strip)} name="RS13-03 · the palette">
+          <FloatingWindow rect={G.pal} enter="none" spill={0} background="#151A17">
+            <ScreenZoom src={T.file} srcSize={SIZE} time={palTime} srcDuration={T.durationS} keys={[{ t: 0, box: PAL(L.portrait) }]} drift={0.01} />
           </FloatingWindow>
-          <Headline text="Presenting?" at={0.1} exitAt={M.leave - 0.05} exit="fade" entrance="ink" variant="support" size={L.portrait ? L.px(58) : L.px(72)} align="center" valign="middle" box={G.ask} />
-        </Stage>
-      </Sequence>
+          <Headline text="Presenting?" at={0.06} exitAt={M.strip - 0.3} exit="fade" entrance="ink" size={G.askSize} align="center" valign="middle" box={G.ask} />
+        </Sequence>
 
-      {/* dusk falls over the empty desktop: the change of world is a soft wipe, never a cut */}
-      <Sequence from={f(M.wipe)} name="dusk · the Veil">
-        <SoftWipeLayer progress={pW} role="in" direction="down" feather={0.55}>
-          <Stage world="night" tint="dusk" keyLight={{ x: 0.5, y: L.portrait ? 0.66 : 0.7, r: 0.6 }}>
-            <VeilPebble
-              x={G.pebble.x}
-              y={G.pebble.y}
-              size={G.pebble.size * lerp(1.45, 1, ramp(t, M.veilOn + 0.9, Math.max(0.8, lenS - M.veilOn - 1.4)))}
-              initial={false}
-              veil={[{ at: M.veilOn - M.wipe, on: true }]}
-              cues={cues(pose(0, "idle"), look(M.title - M.wipe + 0.1, 0, -0.6), lookBack(M.honest - M.wipe + 1.4))}
-              glow={Math.min(1, Math.max(0, (t - M.veilOn) / 0.8))}
-              opacity={Math.min(1, Math.max(0, (t - M.pebble) / 0.18))}
-            />
-            <Headline text="Stealth Lockdown." at={M.title - M.wipe} entrance="rise" size={G.titleSize} align="center" valign="bottom" box={G.title} color={C.stone0} />
-            <Headline
-              text={HONEST_LINE}
-              at={M.honest - M.wipe}
-              entrance="line"
-              variant="support"
-              wrap
-              balance
-              size={G.lineSize}
-              align="center"
-              valign="top"
-              box={G.line}
-              color={C.stone1}
-            />
-          </Stage>
-        </SoftWipeLayer>
-      </Sequence>
+        {/* the recording, locked off: the window leaves it */}
+        <Sequence from={f(M.strip)} durationInFrames={f(M.stripOut + 0.35) - f(M.strip)} premountFor={pre} name="RS13-03 · the recording">
+          <FloatingWindow rect={G.strip} enter="none" spill={0} exitAt={M.stripOut - M.strip} background="#151A17">
+            <MaskedZoom src={T.file} srcSize={SIZE} time={stripTime} srcDuration={T.durationS} keys={[{ t: 0, box: STRIP(L.portrait) }]} drift={0} motionBlur={false} masks={STRIP_MASKS} />
+          </FloatingWindow>
+        </Sequence>
+
+        {/* the title and the honest line: with the recording, under it, through the Veil */}
+        <Sequence from={f(M.strip)} name="Stealth Lockdown + the honest line">
+          <Headline text="Stealth Lockdown." at={0} exitAt={M.typeOut - M.strip} exit="rise" entrance="line" size={G.titleSize} align="center" valign="middle" box={G.title} color={C.stone0} />
+          <Headline
+            text={HONEST_LINE}
+            at={0.08}
+            exitAt={M.typeOut - M.strip}
+            exit="rise"
+            entrance="line"
+            variant="support"
+            wrap
+            balance
+            size={G.lineSize}
+            align="center"
+            valign="top"
+            box={G.line}
+            color={C.stone1}
+          />
+        </Sequence>
+
+        {/* the Veil pebble (Pebble's own Veil code), then S10's hand-off */}
+        <Sequence from={f(M.pebble)} premountFor={pre} name="the Veil">
+          <VeilPebble
+            x={P.x}
+            y={P.y}
+            size={P.size}
+            initial={false}
+            veil={[{ at: M.veilOn - M.pebble, on: true }]}
+            cues={cues(pose(0, "idle"), look(0.9, 0, 0.55), lookBack(M.glide - M.pebble - 0.4))}
+            // S10 draws its Veil pebble without the glow (scenes/d VeilShed): it fades as the pebble glides to the hand-off
+            glow={Math.min(1, Math.max(0, (t - M.veilOn) / 0.8)) * (1 - pg)}
+            opacity={pin}
+          />
+        </Sequence>
+      </Stage>
 
       {sfx.map((c) => (
         <Sfx key={`${c.name}-${c.s.toFixed(3)}`} src={sfxSrc(c.name)} at={sfxAt(c.name, c.s)} db={c.db} />
