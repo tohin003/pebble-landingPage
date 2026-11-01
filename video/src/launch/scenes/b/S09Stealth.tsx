@@ -117,7 +117,8 @@ export const s09Moments = (lenS: number) => {
   return {
     k,
     palette: palTime.inv(PALETTE_OPENS),
-    rowLit: palTime.inv(ROW_LIT),
+    // the row lights just after the cut, in the recording (the palette shot ends on 5.783)
+    rowLit: palTime.inv(ROW_LIT) < strip ? palTime.inv(ROW_LIT) : strip + stripTime.inv(ROW_LIT),
     strip,
     ret: strip + stripTime.inv(RETURN),
     leave: strip + stripTime.inv(LEAVE),

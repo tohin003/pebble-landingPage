@@ -22,7 +22,7 @@ export const GROUP_B: SceneDef[] = [
     component: S02OnYourMac,
     nominalS: S02_NOMINAL,
     marks: marks({
-      "the Mac, the pebble sharp (S01's sage cuts here)": 0,
+      "the Mac, the pebble sharp (S01's push ends on it: S-8)": 0,
       "cut to the Spaces (beat; the caption bridges it)": m02.b,
       "spaces-swipe (⌃→)": m02.swipe,
       "the slide's first frame: On every Space.": m02.slide,
