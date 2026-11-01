@@ -2,10 +2,12 @@
 // REVIEW-1 M4, M5, S4, S6, S7, S9; FIXES-1 WP-D; REVIEW-2 S-3, S-5, N-2, N-3; FIXES-2 R2-D).
 //
 // 0.00  S09's last frame: the Veil pebble centred at (0.5 W, 0.5 H), its body 12 % of the frame's height, on the dusk
-//       night. At once the daylight opens in a pebble-shaped blob centred on the question's line (not on the pebble), so
-//       the question is never cut by the blob's edge: it is set, whole, on the frame the blob first holds all of it
-//       (about 0.15 s, 79.25 on the film), with a short blur-in. The pebble sheds the Veil (Pebble's own release,
-//       0.65 s) inside the blob; its colour changes only where the blob has passed. No bloom, no glow.
+//       night. On S10's first frame the daylight opens out of the pebble's own outline (its silhouette plus 4 px), and
+//       grows as its centre travels up to the question's line, the whole pebble always inside it (REVIEW-3 N-1), so the
+//       question is never cut by the blob's edge: it is set, whole, on the frame the blob first holds all of it (about
+//       0.15 s, 79.25 on the film), with a short blur-in. The pebble's colour (S09's dark theme to the daylight's light
+//       theme) changes in a radial wipe from its top over 8 frames; then it sheds the Veil (Pebble's own release, played
+//       at half speed: 1.3 s from 0.27, so the dusk edge crosses the body over about 7 frames). No bloom, no glow.
 // 0.15  "So. How did it do?" holds still through the music's stop (about 1.25 to 1.9 s: the master ducks the music):
 //       about 1.8 s readable.
 // 1.95  The payoff (81.051): picture and impact on the same frame. "Tasks done correctly." and the scaffold (method
@@ -121,9 +123,11 @@ export const S10_METRICS: readonly Metric[] = [
 
 /** Beats at the nominal length (seconds from the scene's start); multiplied by the retime factor. */
 export const S10_BEATS = {
-  /** the Veil's switch: Pebble's own release plays from here (0.65 s) */
-  veilOff: 0,
-  /** the daylight opens in a blob centred on the question's line, at once */
+  /** the Veil's switch: Pebble's own release plays from here, at half speed (1.3 s; REVIEW-3 N-1), once the theme's
+   *  colour wipe has crossed the body */
+  veilOff: 0.27,
+  /** the daylight opens out of the pebble's own outline (plus 4 px) on S10's first frame, and travels up to the
+   *  question's line as it grows (REVIEW-3 N-1) */
   wipe: 0,
   /** the blob holds the whole question: it is set (79.25 on the film) */
   question: 0.15,
@@ -140,7 +144,12 @@ export const S10_BEATS = {
 } as const;
 /** the blob: it holds the question at `question`, and has covered the frame at WIPE_DUR */
 const WIPE_DUR = 0.5;
-const RELEASE_END = 0.68;
+/** Pebble's release (0.65 s) at VEIL_RATE, from veilOff: the hand-over to <PebbleActor> after it */
+const VEIL_RATE = 0.5;
+const RELEASE_END = 0.27 + 0.68 / VEIL_RATE;
+/** the pebble's colour (S09's dark-theme Veil → the daylight's light-theme Veil): a radial wipe over 8 frames at 30 fps,
+ *  from the side the blob grows to (the body's top, towards the question), never a hard split */
+const THEME_WIPE = 0.27;
 const GROW = 0.75;
 const RETRACT = 0.3;
 /** the second panel starts half a beat after the first */
@@ -260,6 +269,7 @@ const geometry = (L: Layout): Geo => {
         [cx, py, cx, p(428)],
         [cx, p(652), cx, py + p(460)],
       ],
+      // 75 % of the frame's width (REVIEW-3 N-5)
       foot: { x: x0, y: p(832), w: p(1440), h: p(150) },
       footSize: p(30),
       chartH: 0.12,
@@ -372,6 +382,21 @@ const blobWidth = (dt: number, tQ: number, tEnd: number, wQ: number, cx: number,
   return Math.max(wQ, (lo + hi) / 2);
 };
 
+/**
+ * The blob from S10's first frame (REVIEW-3 N-1): born as the pebble's own silhouette plus 4 px (w0, centred on the
+ * body P), it grows to wQ by tQ while its centre travels to the question's line (Q), never faster than keeps the whole
+ * pebble inside it (for one convex shape, a copy of width b sits inside a copy of width w when their centres are within
+ * the shape of width w − b: about 0.44 (w − b) up or down); then blobWidth() takes it on from Q.
+ */
+const blobAt = (dt: number, tQ: number, tEnd: number, w0: number, bodyW: number, wQ: number, P: { x: number; y: number }, Q: { x: number; y: number }, W: number, H: number) => {
+  if (dt >= tQ) return { w: blobWidth(dt, tQ, tEnd, wQ, Q.x, Q.y, W, H), x: Q.x, y: Q.y };
+  const q = clamp01(dt / tQ);
+  const w = w0 + (wQ - w0) * (1 - Math.pow(1 - q, 1.6));
+  const dist = Math.hypot(Q.x - P.x, Q.y - P.y);
+  const s = dist < 1 ? 1 : Math.min(q, (0.85 * 0.44 * (w - bodyW)) / dist);
+  return { w, x: P.x + (Q.x - P.x) * s, y: P.y + (Q.y - P.y) * s };
+};
+
 /* ---------- time ---------- */
 
 /** a bar's grow: a long landing, but visibly arriving at the end of its 0.75 s (the number lands on that frame) */
@@ -443,7 +468,15 @@ export const S10Benchmarks: React.FC<SceneProps> = ({ durationInFrames }) => {
   // the blob: centred on the question's line; it holds the whole question at `question`, then covers the frame
   const qc = { x: G.question.x + G.question.w / 2, y: G.questionInk.y + G.questionInk.h / 2 };
   const wQ = containWidth(G.questionInk, qc.x, qc.y);
-  const wipeW = dayOn ? blobWidth(t - wipeAt, a(S10_BEATS.question) - wipeAt, a(WIPE_DUR), wQ, qc.x, qc.y, L.W, L.H) : 0;
+  const P = { x: start.x, y: start.cy };
+  const w0 = (start.bodyW * (start.bodyH + L.px(8))) / start.bodyH;
+  const blob = blobAt(t - wipeAt, a(S10_BEATS.question) - wipeAt, a(WIPE_DUR), w0, start.bodyW, wQ, P, qc, L.W, L.H);
+  // the pebble's colour: S09's dark-theme pebble stays drawn over the daylight, and a disc growing from the body's top
+  // (the blob's side) takes it away over THEME_WIPE, its edge soft over 3 px
+  const themeP = EASE.camera(clamp01((t - wipeAt) / a(THEME_WIPE)));
+  const tOrigin = { x: P.x, y: P.y - start.bodyH * 0.55 };
+  const tSoft = L.px(3);
+  const tR = (Math.hypot(start.bodyW / 2, start.bodyH * 1.1) + tSoft + L.px(6)) * themeP;
   const qAt = a(S10_BEATS.question);
 
   const sfx = PLACE_SFX ? <SfxTrack cues={s10Sfx(k)} /> : null;
@@ -455,19 +488,19 @@ export const S10Benchmarks: React.FC<SceneProps> = ({ durationInFrames }) => {
           // S09's dusk night, receding a little as the daylight opens
           <AbsoluteFill style={{ filter: dayOn && wipeP > 0 ? `brightness(${(1 - 0.3 * wipeP).toFixed(3)})` : undefined }}>
             <Stage world="night" tint="dusk" keyLight={{ x: 0.5, y: 0.5, r: 0.6 }}>
-              <VeilShed x={start.x} y={start.y} size={start.size} theme="dark" cues={pebbleCueList} veil={veil} />
+              <VeilShed x={start.x} y={start.y} size={start.size} theme="dark" cues={pebbleCueList} veil={veil} rate={VEIL_RATE} />
             </Stage>
           </AbsoluteFill>
         )}
         {dayOn && (
-          <AbsoluteFill style={nightOn ? { clipPath: pebblePath(qc.x, qc.y, wipeW) } : undefined}>
+          <AbsoluteFill style={nightOn ? { clipPath: pebblePath(blob.x, blob.y, blob.w) } : undefined}>
             <Stage world="daylight" keyLight={L.portrait ? { x: 0.4, y: 0.08, r: 0.95 } : { x: 0.32, y: 0.06, r: 0.95 }}>
               {t < impact && (
                 <Headline text={G.questionText} at={qAt - 0.02} entrance="blur" together dur={0.13} size={G.questionSize} align="center" valign="bottom" box={G.question} lineStagger={0} />
               )}
               <Chart G={G} a={a} />
               {t < a(RELEASE_END) ? (
-                <VeilShed x={start.x} y={start.y} size={start.size} theme="light" cues={pebbleCueList} veil={veil} shadow />
+                <VeilShed x={start.x} y={start.y} size={start.size} theme="light" cues={pebbleCueList} veil={veil} rate={VEIL_RATE} shadow />
               ) : (
                 <PebbleActor
                   x={footNow.x}
@@ -480,6 +513,16 @@ export const S10Benchmarks: React.FC<SceneProps> = ({ durationInFrames }) => {
                 />
               )}
             </Stage>
+          </AbsoluteFill>
+        )}
+        {dayOn && themeP < 1 && (
+          <AbsoluteFill
+            style={{
+              maskImage: `radial-gradient(circle at ${tOrigin.x.toFixed(1)}px ${tOrigin.y.toFixed(1)}px, transparent ${tR.toFixed(1)}px, #000 ${(tR + tSoft).toFixed(1)}px)`,
+              WebkitMaskImage: `radial-gradient(circle at ${tOrigin.x.toFixed(1)}px ${tOrigin.y.toFixed(1)}px, transparent ${tR.toFixed(1)}px, #000 ${(tR + tSoft).toFixed(1)}px)`,
+            }}
+          >
+            <VeilShed x={start.x} y={start.y} size={start.size} theme="dark" cues={pebbleCueList} veil={veil} rate={VEIL_RATE} />
           </AbsoluteFill>
         )}
         {sfx}
@@ -754,7 +797,9 @@ const Value: React.FC<{ value: number; decimals: number; unit?: string; prefix?:
 );
 
 /** The method's footnote, word for word: Inter, wrapped and balanced, "Pebble 1.9.29" kept on one line. */
-const Footnote: React.FC<{ G: Geo }> = ({ G }) => (
+const Footnote: React.FC<{ G: Geo }> = ({ G }) => {
+  const L = useLayout();
+  return (
   <div
     style={{
       position: "absolute",
@@ -768,9 +813,12 @@ const Footnote: React.FC<{ G: Geo }> = ({ G }) => (
       lineHeight: 1.36,
       letterSpacing: "-0.012em",
       color: DAY.small,
-      textWrap: "balance",
+      // 16:9 (REVIEW-3 N-5): the lines run the box's full 75 % of the frame (balanced, they stopped at about 65 %), 3 lines;
+      // 4:5 stays balanced
+      textWrap: L.portrait ? "balance" : "pretty",
     } as React.CSSProperties}
   >
     {S10_FOOTNOTE.replace("Pebble 1.9.29", "Pebble 1.9.29")}
   </div>
-);
+  );
+};

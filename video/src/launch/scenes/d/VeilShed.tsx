@@ -45,7 +45,13 @@ export const VeilShed: React.FC<{
   lead?: number;
   /** the contact shadow at rest (daylight) */
   shadow?: boolean;
-}> = ({ x, y, size, theme, cues: list, veil, initial = true, lead = 1, shadow = false }) => {
+  /**
+   * The Veil's own clock from its first switch on, as a playback rate (1: Pebble's own timing). S10 plays the release
+   * at 0.5 (REVIEW-3 N-1): the same frames of Pebble's own release, in slow motion, so its dusk edge crosses the body
+   * over about 7 frames at 30 fps instead of 2.
+   */
+  rate?: number;
+}> = ({ x, y, size, theme, cues: list, veil, initial = true, lead = 1, shadow = false, rate = 1 }) => {
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -54,9 +60,11 @@ export const VeilShed: React.FC<{
     list.map((c) => ({ ...c, at: c.at + lead })),
     te,
   );
+  const sw = veil.length > 0 ? veil[0].at + lead : Infinity;
+  const tv = te <= sw ? te : sw + (te - sw) * rate;
   const vf = veilAt(
-    veil.map((v) => ({ ...v, at: v.at + lead })),
-    te,
+    veil.map((v, i) => ({ ...v, at: i === 0 ? v.at + lead : sw + (v.at + lead - sw) * rate })),
+    tv,
     { initial },
   );
   const d = veilDraw(vf, size);
