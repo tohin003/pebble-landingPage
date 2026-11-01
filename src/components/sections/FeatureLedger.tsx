@@ -1,12 +1,14 @@
 // The feature ledger of the two Pebble 2.0.0 sections, Across your Mac and Pebble's Workshop. Each row is a feature in
 // ink with its limit right under it in muted ink, at the same size and in the same cell (PHILOSOPHY principle 3: the
-// limit sits beside the promise). Then one note under the ledger. Text only: until the captures lane has real 2.0.0
-// stills, nothing here pictures Pebble's interface.
+// limit sits beside the promise). Then one note under the ledger. A row may carry a clip after its limit (`media`, a
+// FeatureLoop: the Pebble 2.0 loops of SITE_AUDIT §4.2), which renders nothing until its file exists, so until then
+// the ledger is text only and nothing here pictures Pebble's interface.
 //
 // Detail on demand (.work/page-declutter/PLAN.md): the rows no longer show all at once.
 // - "tabs": parallel reaches of equal weight, one at a time (Tabs: tabs from 768 px, an accordion below).
 // - "rows": hairline disclosure rows, each closed on its term (Disclosure).
 // Either way a feature and its limit open together, and every row stays in the DOM.
+import type { ReactNode } from "react";
 import type { LedgerRow } from "@/content/copy";
 import { inline } from "@/lib/inline";
 import { Disclosure, DisclosureGroup } from "@/components/ui/Disclosure";
@@ -19,27 +21,30 @@ export type FeatureLedgerProps = Readonly<{
   mode?: "tabs" | "rows";
   /** the tablist's accessible name (tabs mode) */
   label?: string;
+  /** a clip per row id, after the row's limit (a FeatureLoop, which renders nothing until its file exists) */
+  media?: Readonly<Partial<Record<string, ReactNode>>>;
 }>;
 
-function Cell({ row }: Readonly<{ row: LedgerRow }>) {
+function Cell({ row, media }: Readonly<{ row: LedgerRow; media?: ReactNode }>) {
   return (
     <div className={styles.cell} data-row={row.id}>
       <p className={styles.text}>{inline(row.text)}</p>
       <p className={styles.limit}>{inline(row.limit)}</p>
+      {media ?? null}
     </div>
   );
 }
 
-export function FeatureLedger({ rows, note, mode = "rows", label = "" }: FeatureLedgerProps) {
+export function FeatureLedger({ rows, note, mode = "rows", label = "", media }: FeatureLedgerProps) {
   return (
     <>
       {mode === "tabs" ? (
-        <Tabs label={label} items={rows.map((row) => ({ id: row.id, label: row.term, content: <Cell row={row} /> }))} />
+        <Tabs label={label} items={rows.map((row) => ({ id: row.id, label: row.term, content: <Cell row={row} media={media?.[row.id]} /> }))} />
       ) : (
         <DisclosureGroup>
           {rows.map((row) => (
             <Disclosure key={row.id} summary={row.term}>
-              <Cell row={row} />
+              <Cell row={row} media={media?.[row.id]} />
             </Disclosure>
           ))}
         </DisclosureGroup>

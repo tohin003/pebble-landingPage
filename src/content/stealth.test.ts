@@ -110,6 +110,10 @@ describe("wherever the site names Stealth Lockdown, the honest line is there wor
     const allowed = new Set<string>([
       ...strings(stealth).map((s) => s.text), // the section's own words (StealthLockdown.test.tsx renders them)
       privacy.stealthLink.label, // a link to the section, whose honest line sits right under its switch
+      // the 2.0 clip's text alternative and button name: it plays only inside the section, with the honest line, word
+      // for word, in its caption (StealthLockdown.tsx, FeatureLoop `note`)
+      copy.media.launchLoops.stealth.label,
+      copy.media.launchLoops.stealth.name,
       ...faq.flatMap((item) => [item.question, ...item.answer, ...(item.links ?? []).map((link) => link.label)]),
     ]);
     const elsewhere = strings(copy)

@@ -100,6 +100,8 @@ export const links = {
   installScriptSource: "https://github.com/tohin003/Pebble/blob/main/install.sh",
   maintainer: "https://github.com/tohin003",
   landingRepo: "https://github.com/tohin003/pebble-landingPage",
+  remoteRepo: "https://github.com/tohin003/pebble-remote", // Pebble Remote's source (public since 31 Oct 2026)
+  remoteGuide: "https://github.com/tohin003/Pebble/blob/main/docs/PEBBLE_REMOTE.md",
   bloub: "https://github.com/jeremy-prt/bloub",
   apacheLicence: "https://www.apache.org/licenses/LICENSE-2.0",
   vercelPrivacy: "https://vercel.com/legal/privacy-policy",
@@ -115,6 +117,7 @@ export const sectionIds = {
   project: "project",
   mac: "mac", // Across your Mac (Pebble 2.0.0), after the project story
   workshop: "workshop", // Pebble's Workshop (Pebble 2.0.0), after Across your Mac
+  remote: "remote", // Pebble Remote (Pebble 2.0.0; its iPhone app's source published with 2.0.1), after the Workshop
   pace: "permissions",
   memory: "memory",
   views: "views",
@@ -567,6 +570,61 @@ export const workshop = {
   note: "A tool Pebble makes is a pure calculation, with no network, files or processes.",
 } as const;
 
+// ---------------------------------------------------------------------------------------------------------------
+// 5d. Pebble Remote (the Mac side since 2.0.0; the iPhone app's source published with 2.0.1)
+//
+// Worded only from Pebble's own published text (the director's X8): the 2.0.0 notes (CHANGELOG.md@v2.0.0:213-223), the
+// 2.0.1 notes (CHANGELOG.md@v2.0.1:17-18, :28-29), the guide at the tag (docs/PEBBLE_REMOTE.md@v2.0.1) and the app's own
+// README (github.com/tohin003/pebble-remote, README.md). The README at v2.0.1 doesn't mention Remote; the notes' older
+// "not published yet" lines (CHANGELOG.md@v2.0.0:218-219, :280-281) are history and never copied. Each row is the
+// feature, then its limit (PHILOSOPHY 3). CLAIMS: C-RMT-1 to C-RMT-12 ("Launch page, Pebble 2.0.1").
+// ---------------------------------------------------------------------------------------------------------------
+
+export const remote = {
+  h2: "Pebble Remote.",
+  /** The H2's muted second line (≤ 60 characters): the guide's own title, after its colon. [C-RMT-1] */
+  then: "Use Pebble on your Mac from your iPhone.",
+  /** pebble-remote README.md:3-4, word for word but for its link. [C-RMT-2] */
+  lead:
+    "Pebble Remote is an iPhone app that controls Pebble on your Mac: its chats, runs, approvals and settings. It talks to Pebble directly, over your Wi-Fi at home or over Tailscale when you are away.",
+  /** Its limit, right under the lead: source only (pebble-remote README.md:7-8; CHANGELOG.md@v2.0.0:217). [C-RMT-3] */
+  sourceOnly: "It is offered only as source code: the app is not on the App Store, so you build it with Xcode and install it on your own iPhone.",
+  rows: [
+    {
+      id: "off",
+      term: "Off by default",
+      text: "Turn it on in Settings › iPhone. While it is off, Pebble opens no network port at all.", // [C-RMT-4]
+      limit: "Pebble listens on Tailscale's own interface, and on your Wi-Fi only if you allow it.", // [C-RMT-5]
+    },
+    {
+      id: "pairing",
+      term: "Pairing",
+      text: "A phone pairs once, at home, with six digits you confirm on the Mac. The connection is TLS 1.3, pinned to your Mac's own key.", // [C-RMT-6]
+      limit: "A pairing code works once, for 5 minutes. Remove cuts a phone off at once.", // [C-RMT-7]
+    },
+    {
+      id: "face-id",
+      term: "Face ID",
+      text: "From the phone you can read conversations, send messages, see what Pebble is doing and approve with Face ID what the Mac would ask you.", // [C-RMT-8]
+      limit: "A setting that widens what Pebble may do needs Face ID. Signing in, credentials, installing code and pairing stay on the Mac.", // [C-RMT-9]
+    },
+    {
+      id: "mac",
+      term: "The Mac shows it",
+      text: "While a phone is connected, a dot appears in the menu bar, and each action shows in What your iPhone did.", // [C-RMT-10]
+      limit: "No server of Pebble's sits in between. Away from home, Tailscale's relays may carry the encrypted traffic when the two devices can't connect directly.", // [C-RMT-11]
+    },
+  ] satisfies readonly LedgerRow[],
+  /** Under the ledger: what it needs, and the app's own limits (pebble-remote README.md:12-14, :145, :151). [C-RMT-12] */
+  note:
+    "Pebble Remote needs Pebble 2.0 or later, an iPhone with Face ID or Touch ID set up, and a Mac with Xcode to build it. With a free Apple ID, the app must be installed again every 7 days. It has had internal reviews only.",
+  links: [
+    { label: "Pebble Remote's source", href: links.remoteRepo, external: true },
+    { label: "The setup guide", href: links.remoteGuide, external: true },
+  ] satisfies readonly Link[],
+  tabsLabel: "How Pebble Remote works",
+} as const;
+
 /**
  * AgentGuard, the headline difference: section 3, right after the film (OVERRIDES §7 and §9, DESIGN §5 row 3), and the
  * full-width verdict of the project story's step 04. Framed as reliability, never as security (OVERRIDES §7).
@@ -930,6 +988,15 @@ export const orchestration = {
     "If Pebble quits mid-task, it marks what was interrupted and asks before anything resumes. Rewind files puts back what a task changed, unless the files changed since.", // [C-ORC-5]
   ],
   limit: "Scheduled tasks run only while Pebble is open. Their results show in Pebble; macOS notifications are off until you turn them on.", // [C-LIM-11] (OVERRIDES §12)
+  /**
+   * Long tasks (Pebble 1.4.0's sealed context; SITE_AUDIT §4.2, the director's X9: "keep a smaller window", no saving
+   * claimed), the feature and then its limit. CHANGELOG.md@v1.4.0:9-12, :16-17. [C-LT-1] [C-LT-2]
+   */
+  longTasks: {
+    title: "Long tasks keep a smaller window.",
+    text: "Once a task has read a lot, Pebble seals the results of its older tool calls into short stubs, and the newest stay word for word. Pebble can read any sealed result back exactly as it was.",
+    limit: "No saving in cost is claimed for it.",
+  },
 } as const;
 
 export const tour = {
@@ -1410,6 +1477,65 @@ export const media = {
         "Two views Pebble built: the “Spending by category” chart of a Lisbon trip budget, then a Python datetime quiz.", // L8 as rendered (lane v2-loops) [C-F2B-6]
     },
   },
+  /**
+   * The Pebble 2.0 loops in /media/v3 (media.ts LaunchLoopId; SITE_AUDIT §4.2). `label` says in words everything the
+   * clip shows (its text alternative); `source` is the caption's second sentence, what it was recorded from. Written
+   * from the audit's plan of each clip before the clips exist, so each CLAIMS row (C-LOOP2-*) is to be checked against
+   * the delivered file, and the words changed here, before the file is published. Nothing shows until the file exists.
+   */
+  launchLoops: {
+    desk: {
+      name: "desktop",
+      label:
+        "The pebble stays on screen as the desktop slides to another Space. A click on it opens the quick chat, where a question is typed and Pebble's reply appears.",
+      source: "Recorded from Pebble 2.0.0.",
+    },
+    "mac-apps": {
+      name: "app window",
+      label: "Pebble uses Calculator, an app window it was allowed to use: it presses the keys one by one, and the result appears.",
+      source: "Recorded from Pebble 2.0.0.",
+    },
+    "mac-actions": {
+      name: "app action",
+      label: "An app-action card asks to use Calendar. Do it is pressed, and the new event appears in Calendar.",
+      source: "Recorded from Pebble 2.0.0.",
+    },
+    "mac-web": {
+      name: "website",
+      label: "A card asks to use youtube.com in Pebble's own tab. Allow is pressed, and the tab shows “Pebble is working in this tab”, with Stop.",
+      source: "Recorded from Pebble 2.0.0.",
+    },
+    guard: {
+      name: "AgentGuard",
+      label: "A reply held with “Pebble's change isn't verified yet.” The tests run, and the result reads Verified, with the tests that passed on the current files.",
+      source: "Recorded from Pebble 2.0.1.",
+    },
+    workshop: {
+      name: "Workshop",
+      label: "Pebble makes a small tool for a request, a blind check tests it, and a card asks whether to keep it, with Discard and Keep.",
+      source: "Recorded from Pebble 2.0.0.",
+    },
+    memory: {
+      name: "memory",
+      label: "Pebble's Settings › Memory. The pointer chooses Forget on a memory, and the record disappears.",
+      source: "Recorded from Pebble 2.0.1.",
+    },
+    "long-tasks": {
+      name: "long tasks",
+      label: "Diagram. A long task's older tool results fold into short sealed stubs while the newest stay whole, then one stub opens to its full result, returned exactly.",
+      source: "A diagram, not Pebble's interface.",
+    },
+    remote: {
+      name: "Pebble Remote",
+      label: "Pebble Remote on an iPhone, connected to Pebble on a Mac: a conversation opens, and a message is sent from the phone.",
+      source: "Recorded from Pebble Remote, built from its published source.",
+    },
+    stealth: {
+      name: "Stealth Lockdown",
+      label: "Stealth Lockdown is turned on: the menu-bar icon changes shape, and Pebble's icon leaves the Dock.",
+      source: "Recorded from Pebble 2.0.0.",
+    },
+  } satisfies Readonly<Record<string, Readonly<{ name: string; label: string; source: string }>>>,
   loopControls: {
     pause: (name: string) => `Pause the ${name} clip`,
     play: (name: string) => `Play the ${name} clip`,

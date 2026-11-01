@@ -8,11 +8,13 @@
 //    1.04 times from 768 px; below 768 px the quiz Pebble built, cut to its question and answers (L8 has no 4:5 cut).
 // 2. What a view keeps and how it leaves the app, and its limit, as one ruled row of three columns at the same size
 //    (PHILOSOPHY 3: the limit beside the promise).
-// 3. #more: bigger tasks (the title on columns 4–6, the points on 7–12, the schedules' limit under them), then the rest
+// 3. #more: bigger tasks (the title on columns 4–6, the points on 7–12, the schedules' limit under them; then long
+//    tasks, which keep a smaller window, with their limit and, once it exists, the diagram loop), then the rest
 //    of the tour as a two-column ruled list across columns 4–12. Text only: no tiles, no icons.
 import { common, media, orchestration, sectionIds, tour, views } from "@/content/copy";
 import { labels } from "@/content/labels";
 import { LoopVideo } from "@/components/media/LoopVideo";
+import { FeatureLoop } from "@/components/media/FeatureLoop";
 import { MediaFrame } from "@/components/media/MediaFrame";
 import { UiCrop } from "@/components/media/UiCrop";
 import { SectionHead } from "@/components/ui/SectionHead";
@@ -94,6 +96,11 @@ export function ViewsAndTour() {
                   ))}
                 </ul>
                 <p className={styles.limit}>{orchestration.limit}</p>
+                {/* long tasks (Pebble 1.4.0's sealed context; the director's X9): the feature, then its limit */}
+                <h4 className={styles.subTitle}>{orchestration.longTasks.title}</h4>
+                <p className={styles.longTasks}>{orchestration.longTasks.text}</p>
+                <p className={styles.limit}>{orchestration.longTasks.limit}</p>
+                <FeatureLoop id="long-tasks" />
               </div>
             </div>
 

@@ -14,6 +14,7 @@ export const SECTIONS = {
   project: sectionIds.project,
   mac: sectionIds.mac, // Across your Mac (Pebble 2.0.0): work beyond a project, and the windows and sites you allow
   workshop: sectionIds.workshop, // Pebble's Workshop (Pebble 2.0.0): the tools Pebble makes, and Code Mode
+  remote: sectionIds.remote, // Pebble Remote (Pebble 2.0.0, its iPhone app's source since 2.0.1), before Your model
   models: sectionIds.models,
   pace: sectionIds.pace, // "permissions"
   memory: sectionIds.memory,

@@ -1,6 +1,7 @@
 // The home page: the sections of docs/DESIGN.md §5, in order, with Stealth Lockdown (Pebble 1.1.0, OVERRIDES §21)
 // right after Private by default, and Pebble 2.0.0's two sections (Across your Mac, Pebble's Workshop) right after the
-// project story, where the page's work moves from one project to the rest of the Mac. Each section lives in
+// project story, where the page's work moves from one project to the rest of the Mac, then Pebble Remote (2.0.0's Mac
+// side, its iPhone app's source published with 2.0.1), where it reaches the phone. Each section lives in
 // src/components/sections and fetches what it needs itself, so the section lanes fill the sections without editing
 // this file. Page-level overlays (the sticky call to action and
 // the film theatre) are mounted here once. Under the hero, while the benchmark is public, the benchmark strip points
@@ -25,6 +26,7 @@ import { OpenSourceFaq } from "@/components/sections/OpenSourceFaq";
 import { Pace } from "@/components/sections/Pace";
 import { Privacy } from "@/components/sections/Privacy";
 import { ProjectStory } from "@/components/sections/ProjectStory";
+import { Remote } from "@/components/sections/Remote";
 import { StealthLockdown } from "@/components/sections/StealthLockdown";
 import { ViewsAndTour } from "@/components/sections/ViewsAndTour";
 import { Workshop } from "@/components/sections/Workshop";
@@ -49,6 +51,7 @@ export default async function Home() {
       <ProjectStory />
       <AcrossYourMac />
       <Workshop />
+      <Remote />
       <Models />
       <Pace />
       <Memory />

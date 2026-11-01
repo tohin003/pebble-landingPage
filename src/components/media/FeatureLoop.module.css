@@ -1,0 +1,37 @@
+/* A Pebble 2.0 loop's slot (FeatureLoop.tsx): the loop's own frame on the riverbed (a diagram on the panel), then its
+   caption, as in Views and Memory. */
+.figure {
+  margin: 28px 0 0;
+  max-width: 952px;
+}
+
+/* Pebble Remote's 4:5 iPhone recording: a narrow frame, not a column-wide one */
+.figure[data-portrait] {
+  max-width: 400px;
+}
+
+/* a loop with a 4:5 cut takes that shape on phones, as LoopVideo's stage does (src/lib/media.ts LOOP_PHONE_FRAME) */
+@media (max-width: 560px) {
+  .figure[data-phone-cut] {
+    --feature-loop-aspect: 4 / 5;
+  }
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+}
+
+.caption {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+/* a line under the caption (Stealth Lockdown's honest line), on its own line, in ink */
+.note {
+  display: block;
+  margin-top: 6px;
+  color: var(--ink);
+}

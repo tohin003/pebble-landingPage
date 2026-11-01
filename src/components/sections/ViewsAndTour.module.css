@@ -207,6 +207,23 @@
 }
 
 .facts code,
+/* long tasks, under the schedules' limit: a small head, the feature in ink, then its own limit (.limit) at the same
+   size (PHILOSOPHY 3) */
+.subTitle {
+  margin-top: 32px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.longTasks {
+  margin-top: 8px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
 .points code,
 .tourItem code {
   color: var(--ink);

@@ -6,6 +6,7 @@
 // unannounced name (OVERRIDES §25).
 import { workshop } from "@/content/copy";
 import { labels } from "@/content/labels";
+import { FeatureLoop } from "@/components/media/FeatureLoop";
 import { SectionHead } from "@/components/ui/SectionHead";
 import { SECTIONS } from "@/lib/sections";
 import { FeatureLedger } from "./FeatureLedger";
@@ -23,6 +24,8 @@ export function Workshop() {
       <div className="wrap grid-12 sec-body">
         <div className="main">
           <FeatureLedger rows={workshop.rows} note={workshop.note} />
+          {/* the 2.0 clip, once it exists: a tool made, its blind check and the Keep card (SITE_AUDIT §4.2) */}
+          <FeatureLoop id="workshop" />
         </div>
       </div>
     </section>

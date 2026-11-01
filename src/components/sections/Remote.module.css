@@ -1,0 +1,10 @@
+/* Pebble Remote (Remote.tsx): the lead's limit in the lead's own size, muted (PHILOSOPHY 3: the limit beside the
+   promise), and the guide's link under the ledger's note. */
+.limit {
+  color: var(--ink-2);
+}
+
+.guide {
+  margin-top: 14px;
+  font-size: 15px;
+}

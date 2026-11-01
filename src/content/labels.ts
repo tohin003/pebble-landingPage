@@ -20,6 +20,9 @@ export const labels = {
   mac: { name: "Across your Mac", fact: "New in 2.0.0" },
   /** "Workshop / Tools it makes": workshop.then's subject, already on the page. [C-SYS-20] */
   workshop: { name: "Workshop", fact: "Tools it makes" },
+  /** "Pebble Remote / New in 2.0.0": the feature's name and the release that brought its Mac side (CHANGELOG.md@v2.0.0:213,
+   *  the heading "Pebble Remote" under 2.0.0's notes). [C-SYS-21] */
+  remote: { name: "Pebble Remote", fact: "New in 2.0.0" },
   models: { name: "Models", fact: "Three ways in" }, // models.cards: three ways [C-SYS-5] (C-MOD-2..7)
   pace: { name: "Permissions", fact: "Three modes" }, // pace.lead [C-SYS-6] (C-PACE-1)
   memory: { name: "Memory", fact: "Six labelled layers" }, // memory.layers [C-SYS-7] (C-MEM-7)

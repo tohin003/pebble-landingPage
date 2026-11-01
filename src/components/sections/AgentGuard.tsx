@@ -19,6 +19,7 @@
 // crops from 639 px down (UiCrop `phone`, `phoneUpTo`) and tighter ones still at 361 px and below (UiCrop `narrow`).
 // Every box keeps its lines whole and ends on a whole thought, never on a colon (critic C19). The crops wait until they
 // are near the screen (UiCrop `defer`, QA lane F3).
+import { FeatureLoop } from "@/components/media/FeatureLoop";
 import { agentGuard, common } from "@/content/copy";
 import { labels } from "@/content/labels";
 import { UiCrop, type CropBox, type UiCropProps } from "@/components/media/UiCrop";
@@ -181,6 +182,9 @@ export function AgentGuard() {
               }))}
             />
           </div>
+
+          {/* the 2.0 clip, once it exists: a held task, the tests, then Verified (media.ts launchLoopMedia("guard")) */}
+          <FeatureLoop id="guard" />
 
           <div className={styles.reliability}>
             <h3 className={styles.reliabilityTitle}>{agentGuard.reliability.title}</h3>

@@ -21,6 +21,7 @@
 // Everything else keeps the page's six roles; focus keeps the page's accent.
 import { stealth } from "@/content/copy";
 import { labels } from "@/content/labels";
+import { FeatureLoop } from "@/components/media/FeatureLoop";
 import { PebbleStatic } from "@/components/pebble/PebbleStatic";
 import { Horizon } from "@/components/ui/Horizon";
 import { Disclosure, DisclosureGroup } from "@/components/ui/Disclosure";
@@ -70,6 +71,11 @@ export function StealthLockdown() {
             still={<PebbleStatic stealth={false} className={styles.pebble} />}
             stillOn={<PebbleStatic stealth className={styles.pebble} />}
           />
+
+          {/* the 2.0 clip, once it exists: ⌘K turns it on, the menu-bar icon changes, the Dock icon leaves (RS13-03
+              crops; the director's X11: never a share or recording view). The honest line goes under it, word for
+              word. */}
+          <FeatureLoop id="stealth" note={stealth.honest} />
         </div>
       </div>
     </section>

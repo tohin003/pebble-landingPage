@@ -22,7 +22,7 @@ import { UiCrop } from "@/components/media/UiCrop";
 import { DataText } from "@/components/ui/Data";
 import { SectionHead } from "@/components/ui/SectionHead";
 import { inline } from "@/lib/inline";
-import { loopMedia } from "@/lib/media";
+import { launchLoopMedia, loopMedia } from "@/lib/media";
 import { SECTIONS } from "@/lib/sections";
 import styles from "./Memory.module.css";
 
@@ -40,7 +40,10 @@ const SHEET = { x: 384.5, y: 39.5, w: 431, h: 600 } as const;
 const FRAME_SIZES = "(max-width: 560px) calc(100vw - 32px), (max-width: 1023px) calc(100vw - 48px), (max-width: 1279px) calc((100vw - 64px) * 0.75), 624px";
 
 export function Memory() {
-  const l7 = loopMedia("memory");
+  // Pebble 2.0's Settings › Memory loop (/media/v3; SITE_AUDIT §4.2) once it is rendered, else L7 (Pebble 1.0.4)
+  const v3 = launchLoopMedia("memory");
+  const l7 = v3.available ? v3 : loopMedia("memory");
+  const words = v3.available ? media.launchLoops.memory : media.loops.memory;
   // L7 has no 4:5 cut, so phones keep the still (critic H2; HANDOFF-v2-loops)
   const still = !l7.available || l7.phoneSources.length === 0;
   return (
@@ -70,8 +73,8 @@ export function Memory() {
                 {l7.available ? (
                   <LoopVideo
                     loop={l7}
-                    label={media.loops.memory.label}
-                    name={media.loops.memory.name}
+                    label={words.label}
+                    name={words.name}
                     sizes={FRAME_SIZES}
                     className={`${styles.fill} ${still ? styles.wideOnly : ""}`}
                   />
@@ -89,7 +92,7 @@ export function Memory() {
                 ) : null}
               </MediaFrame>
               <figcaption className={styles.caption}>
-                {memory.settingsCaption} {common.sampleData}
+                {v3.available ? media.launchLoops.memory.source : memory.settingsCaption} {common.sampleData}
               </figcaption>
             </figure>
 

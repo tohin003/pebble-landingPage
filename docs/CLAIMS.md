@@ -1133,7 +1133,7 @@ C-REL-1 to C-REL-6, C-INF-2, C-INF-3, C-OSS-2, C-SYS-11 and C-SYS-14 above say "
 
 ### Left out on purpose
 
-- Pebble Remote (`CHANGELOG.md@v2.0.0:213-223`): `README.md@v2.0.0` doesn't feature it, and its iPhone app's source isn't
+- (Retired 1 Nov 2026 by the director's X8: Pebble Remote is on the page, C-RMT-1 to C-RMT-14.) Pebble Remote (`CHANGELOG.md@v2.0.0:213-223`): `README.md@v2.0.0` doesn't feature it, and its iPhone app's source isn't
   published, so it has no phone to pair with (`:280-281`). The lead's 14:59 note: on the page only if the README at the
   tag features it.
 - Seeing a window as a picture, and mouse and keyboard control: the tag still disagrees (C-MAC-4's note).
@@ -1233,3 +1233,65 @@ the Stealth Lockdown tab's name (`:147`). So the README rows cited at `@v2.0.0` 
 | C-201-1 | "Turn it on in Settings → Privacy & Stealth, from the menu-bar icon, or with ⌃⌥⌘S." (the section's disclosure, the FAQ and `llms.txt`) | `README.md@v2.0.1:147-148` (word for word); `CHANGELOG.md@v2.0.1:23-24` ("The guide names Stealth Lockdown's place in Settings, Privacy & Stealth"); `App.vue@v2.0.1:1564` (the tab `["privacy", "Privacy & Stealth"]`) | V. Replaces C-STL-4's "Privacy and focus" (1.1.0's section name, still the section's label inside the tab, `App.vue@v2.0.1:3547`) |
 | C-201-2 | Rail label "Privacy & Stealth / Hardened in 2.0.1" | `App.vue@v2.0.1:1564` (the tab's name); `CHANGELOG.md@v2.0.1:14` ("**Stealth Lockdown, hardened.**") | D. Replaces C-SYS-18's "Privacy and focus / New in 1.1.0" |
 | C-201-3 | "Since 2.0.1, its screen-capture protection is stronger, and while it holds Pebble out of view, the menu-bar icon's tooltip says why." (in the section's disclosure; the honest line is in the section's lead, word for word) | `CHANGELOG.md@v2.0.1:14-16` ("Its screen-capture protection is stronger, and while it holds Pebble out of view the menu-bar icon's tooltip says why. Hidden from screen capture and screen sharing, not from a camera, a capture card or a process list. Exams and interviews that forbid assistants still forbid it.") | Q. No measure of "stronger" is claimed beyond the notes' word |
+
+### Pebble Remote (`copy.ts` `remote`, `Remote.tsx`, the section `#remote`)
+
+On the page by the director's X8: Remote is in the published 2.0.0 and 2.0.1 notes, its guide is at the tag and its
+app's source is public. `README.md@v2.0.1` still doesn't mention it. This retires "Left out on purpose: Pebble Remote"
+under "Pebble 2.0.0 on the page". The 2.0.0 notes' lines "that code is not published yet" (`CHANGELOG.md@v2.0.0:217-218`,
+`:280-281`) are history: never copied (`Launch201.test.tsx` checks).
+
+| ID | Claim on the site | Source | Kind / notes |
+|---|---|---|---|
+| C-RMT-1 | H2 "Pebble Remote." and its second line "Use Pebble on your Mac from your iPhone." | `docs/PEBBLE_REMOTE.md@v2.0.1:1` ("Pebble Remote: use Pebble on your Mac from your iPhone"); `CHANGELOG.md@v2.0.0:213` | Q |
+| C-RMT-2 | Lead: "Pebble Remote is an iPhone app that controls Pebble on your Mac: its chats, runs, approvals and settings. It talks to Pebble directly, over your Wi-Fi at home or over Tailscale when you are away." | pebble-remote `README.md:3-4` (word for word, without its link) | V |
+| C-RMT-3 | Its limit, in the lead: "It is offered only as source code: the app is not on the App Store, so you build it with Xcode and install it on your own iPhone." | pebble-remote `README.md:7-8`, `:144`; `CHANGELOG.md@v2.0.0:217` ("It will be offered only as source code, which you build and install on your iPhone with Xcode"); `CHANGELOG.md@v2.0.1:28-29` (the source is published) | Q |
+| C-RMT-4 | Off by default: "Turn it on in Settings › iPhone. While it is off, Pebble opens no network port at all." | `docs/PEBBLE_REMOTE.md@v2.0.1:17-18`; `CHANGELOG.md@v2.0.0:216-217` | Q |
+| C-RMT-5 | Its limit: "Pebble listens on Tailscale's own interface, and on your Wi-Fi only if you allow it." | `CHANGELOG.md@v2.0.0:221` (word for word, without its pointer to the guide) | V |
+| C-RMT-6 | Pairing: "A phone pairs once, at home, with six digits you confirm on the Mac. The connection is TLS 1.3, pinned to your Mac's own key." | `CHANGELOG.md@v2.0.0:220`; `docs/PEBBLE_REMOTE.md@v2.0.1:32` ("Pair your iPhone (once, at home)"), `:97` ("TLS 1.3, pinned to your Mac's own key") | Q |
+| C-RMT-7 | Its limit: "A pairing code works once, for 5 minutes. Remove cuts a phone off at once." | `docs/PEBBLE_REMOTE.md@v2.0.1:35`, `:40` ("**Remove** cuts it off at once") | Q |
+| C-RMT-8 | Face ID: "From the phone you can read conversations, send messages, see what Pebble is doing and approve with Face ID what the Mac would ask you." | `CHANGELOG.md@v2.0.0:215-216` (word for word) | V |
+| C-RMT-9 | Its limit: "A setting that widens what Pebble may do needs Face ID. Signing in, credentials, installing code and pairing stay on the Mac." | `CHANGELOG.md@v2.0.0:222`; `docs/PEBBLE_REMOTE.md@v2.0.1:86-87` | Q |
+| C-RMT-10 | The Mac shows it: "While a phone is connected, a dot appears in the menu bar, and each action shows in What your iPhone did." | `docs/PEBBLE_REMOTE.md@v2.0.1:88-89` | Q |
+| C-RMT-11 | Its limit: "No server of Pebble's sits in between. Away from home, Tailscale's relays may carry the encrypted traffic when the two devices can't connect directly." | pebble-remote `README.md:98-99` ("No server of ours sits in between. Over Tailscale, Tailscale's relays may carry the encrypted traffic when the two devices can't connect directly."); `docs/PEBBLE_REMOTE.md@v2.0.1:4-5`, `:46-48` | Q |
+| C-RMT-12 | Note: "Pebble Remote needs Pebble 2.0 or later, an iPhone with Face ID or Touch ID set up, and a Mac with Xcode to build it. With a free Apple ID, the app must be installed again every 7 days. It has had internal reviews only." | pebble-remote `README.md:12-14`, `:145`, `:151` | Q |
+| C-RMT-13 | `llms.txt`: "Pebble Remote: an iPhone app that controls Pebble on the Mac (its chats, runs, approvals and settings), over Wi-Fi at home or over Tailscale away. It is off by default, a phone pairs once with six digits confirmed on the Mac, and approvals and any setting that widens what Pebble may do need Face ID. It is offered only as source code (https://github.com/tohin003/pebble-remote), built and installed with Xcode; it is not on the App Store." | C-RMT-2 to C-RMT-9; pebble-remote `README.md:13` ("Approvals are signed by a key that needs it") | Q |
+| C-RMT-14 | The links "Pebble Remote's source" (github.com/tohin003/pebble-remote) and "The setup guide" (`docs/PEBBLE_REMOTE.md` on Pebble's main branch) | the repositories (public; read 1 Nov 2026) | I |
+| C-SYS-21 | Rail label "Pebble Remote / New in 2.0.0" | `CHANGELOG.md@v2.0.0:213` (the heading "Pebble Remote" in 2.0.0's notes) | D |
+
+### Long tasks (`copy.ts` `orchestration.longTasks`, in `#more`)
+
+| ID | Claim on the site | Source | Kind / notes |
+|---|---|---|---|
+| C-LT-1 | "Long tasks keep a smaller window." "Once a task has read a lot, Pebble seals the results of its older tool calls into short stubs, and the newest stay word for word. Pebble can read any sealed result back exactly as it was." | `CHANGELOG.md@v1.4.0:9-10` ("Long tasks keep a smaller window. Above a 32K budget, once a task has read a lot, Pebble seals the results of its older tool calls …"), `:16-17` ("the newest stay word for word"; "ReadRunEvidence returns any sealed result exactly as it was"); `README.md@v2.0.1:445`; C-REEL-14, C-REEL-21 | Q. The director's X9: "keep a smaller window", never "light". The change's internal name stays off the site (the copy lint) |
+| C-LT-2 | Its limit: "No saving in cost is claimed for it." | `CHANGELOG.md@v1.4.0:11-12` ("no saving is claimed here") | Q |
+| C-LT-3 | `llms.txt`: "Long tasks keep a smaller window: once a task has read a lot, the results of its older tool calls are sealed into short stubs, and any sealed result can be read back exactly as it was. No saving in cost is claimed for it." | C-LT-1, C-LT-2 | Q |
+
+### Stealth Lockdown's clip
+
+| ID | Claim on the site | Source | Kind / notes |
+|---|---|---|---|
+| C-201-5 | The Stealth clip's caption carries the honest line, word for word, under "Shown with sample data." and its source (`FeatureLoop` `note`) | C-STL-7 | V |
+
+### The Pebble 2.0 loops (`copy.ts` `media.launchLoops`, `src/lib/media.ts` `LaunchLoopId`, `FeatureLoop.tsx`)
+
+Each loop's text alternative (`label`), button name (`name`) and caption (`common.sampleData` and `source`). Written on
+1 Nov 2026 from the audit's plan of each clip (SITE_AUDIT §4.2: the takes RS1-03, RS15-01, RS4-07, RS5C-04, RS9B-02,
+RSW-01 and RS13-03, recorded from the 2.0.0 build on 31 Oct; the harness scenes of the frozen 2.0.1; the long-tasks
+diagram; the Simulator recording of Pebble Remote) **before any clip exists**. Nothing renders until its file is in
+`public/media/v3` (`Launch201.test.tsx`). **Pending:** when a clip is delivered, its lane checks the label against
+every frame and the source line against the build it was recorded from, and changes the words in `copy.ts` and here
+before the file is published. Until then these rows are kind P (planned).
+
+| ID | Loop (section) | Claim | Source | Kind / notes |
+|---|---|---|---|---|
+| C-LOOP2-1 | `desk` (`#desktop`, in L1's place) | "The pebble stays on screen as the desktop slides to another Space. A click on it opens the quick chat, where a question is typed and Pebble's reply appears." "Recorded from Pebble 2.0.0." | RS1-03, RS15-01 (TAKES_REPORT); C-DESK-1, C-F2O-2 | P |
+| C-LOOP2-2 | `mac-apps` (`#mac`, App windows) | "Pebble uses Calculator, an app window it was allowed to use: it presses the keys one by one, and the result appears." "Recorded from Pebble 2.0.0." | RS4-07; C-MAC-4, C-F2O-5. The keys are Accessibility steps (X10): no mouse-and-keyboard claim | P |
+| C-LOOP2-3 | `mac-actions` (`#mac`, Apps and app actions) | "An app-action card asks to use Calendar. Do it is pressed, and the new event appears in Calendar." "Recorded from Pebble 2.0.0." | RS5C-04; C-MAC-8, C-REEL-5 (the card's "Do it") | P |
+| C-LOOP2-4 | `mac-web` (`#mac`, Websites) | "A card asks to use youtube.com in Pebble's own tab. Allow is pressed, and the tab shows “Pebble is working in this tab”, with Stop." "Recorded from Pebble 2.0.0." | RS9B-02, cropped to the card and the pill (C-REEL-23: no address bar, video, title or thumbnails) | P |
+| C-LOOP2-5 | `guard` (`#agentguard`, after the cards) | "A reply held with “Pebble's change isn't verified yet.” The tests run, and the result reads Verified, with the tests that passed on the current files." "Recorded from Pebble 2.0.1." | the harness scene (frozen 2.0.1); C-AG-2, C-AG-3 | P |
+| C-LOOP2-6 | `workshop` (`#workshop`, under the ledger) | "Pebble makes a small tool for a request, a blind check tests it, and a card asks whether to keep it, with Discard and Keep." "Recorded from Pebble 2.0.0." | RSW-01; C-WS-2, C-REEL-7 | P |
+| C-LOOP2-7 | `memory` (`#memory`, in L7's place) | "Pebble's Settings › Memory. The pointer chooses Forget on a memory, and the record disappears." "Recorded from Pebble 2.0.1." (replaces the caption "Settings › Memory, captured from Pebble 1.0.4." while it plays) | the harness scene (frozen 2.0.1); C-MEM-2 | P |
+| C-LOOP2-8 | `long-tasks` (`#more`, under long tasks) | "Diagram. A long task's older tool results fold into short sealed stubs while the newest stay whole, then one stub opens to its full result, returned exactly." Caption: "A diagram, not Pebble's interface." | C-LT-1, C-REEL-14, C-REEL-21; on the flat panel (DESIGN 3.8) | P |
+| C-LOOP2-9 | `remote` (`#remote`, 4:5) | "Pebble Remote on an iPhone, connected to Pebble on a Mac: a conversation opens, and a message is sent from the phone." "Recorded from Pebble Remote, built from its published source." | the Simulator recording, the app built from `tohin003/pebble-remote`; C-RMT-2, C-RMT-8 | P |
+| C-LOOP2-10 | `stealth` (`#stealth`, under the Veil example) | "Stealth Lockdown is turned on: the menu-bar icon changes shape, and Pebble's icon leaves the Dock." "Recorded from Pebble 2.0.0." Then the honest line (C-201-5) | RS13-03 crops (⌘K, the menu-bar icon, the Dock); `README.md@v2.0.1:150` ("Pebble leaves the Dock"), `:155-156` ("the menu-bar icon changes shape"); never a share or recording view (X11) | P |

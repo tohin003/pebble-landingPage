@@ -8,7 +8,8 @@
 //   and standing where the app draws its own; its eyes follow your pointer while it is the page's animated pebble.
 // - Loop L1 (the pointer arrives, a click opens the quick chat, a reply appears) plays in the same frame once it is
 //   rendered: 16:10 on wider screens and its 4:5 cut on phones (critic H2). Without a phone cut, phones keep the still
-//   corner, where the chat stays readable.
+//   corner, where the chat stays readable. Pebble 2.0's `desk` loop (/media/v3; SITE_AUDIT §4.2: a Space swipe, then
+//   a click and the quick chat) takes L1's place as soon as its video exists, with the same frame and rules.
 // - The caption's two notes about the pebble ("The pebble on this page uses the same animation engine as the app.",
 //   "Move your pointer, and its eyes follow.") describe the page's live pebble, so they show only where the still
 //   corner shows it. Over L1 the pebble is part of the video, and its eyes don't follow the visitor's pointer.
@@ -19,7 +20,7 @@ import { MediaFrame } from "@/components/media/MediaFrame";
 import { Picture } from "@/components/media/Picture";
 import { Pebble } from "@/components/pebble/Pebble";
 import { SectionHead } from "@/components/ui/SectionHead";
-import { loopMedia, mediaFile, type ImageSet } from "@/lib/media";
+import { launchLoopMedia, loopMedia, mediaFile, type ImageSet } from "@/lib/media";
 import { SECTIONS } from "@/lib/sections";
 import styles from "./OnYourDesktop.module.css";
 
@@ -41,7 +42,10 @@ function quickChat(theme: "light" | "dark"): ImageSet[] {
 }
 
 export function OnYourDesktop() {
-  const l1 = loopMedia("companion");
+  // Pebble 2.0's desk loop once it is rendered, else L1 (1.x), else the still corner below
+  const desk = launchLoopMedia("desk");
+  const l1 = desk.available ? desk : loopMedia("companion");
+  const words = desk.available ? media.launchLoops.desk : media.loops.companion;
   const light = quickChat("light");
   const dark = quickChat("dark");
 
@@ -59,8 +63,8 @@ export function OnYourDesktop() {
             {l1.available ? (
               <LoopVideo
                 loop={l1}
-                label={media.loops.companion.label}
-                name={media.loops.companion.name}
+                label={words.label}
+                name={words.name}
                 sizes={FRAME_SIZES}
                 phoneControl="start"
                 className={styles.loop}
@@ -77,7 +81,7 @@ export function OnYourDesktop() {
           <figcaption className={`grid-12 ${styles.captionRow}`}>
             <div className="main">
               <p className={styles.caption}>
-                {common.sampleData}{" "}
+                {common.sampleData} {desk.available ? `${media.launchLoops.desk.source} ` : null}
                 <span className={styles.pebbleNote}>
                   {hero.pebble.note} <span className={styles.live}>{hero.pebble.noteLive}</span>
                 </span>
