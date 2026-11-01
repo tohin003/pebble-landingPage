@@ -94,7 +94,7 @@ fi
 
 # the gates in one place
 {
-  echo "qa.sh $NAME ($W×$H, $FPS fps)"
+  echo "qa.sh ${NAME} (${W}×${H}, ${FPS} fps)"
   if grep -q "^frame " "$OUT/frames.txt"; then echo "frames: FAIL ($(grep -c '^frame ' "$OUT/frames.txt") blank or half-painted)"; else echo "frames: PASS"; fi
   echo "pops:   $(sed -n 's/^GATE: //p' "$OUT/pops.txt")"
   [ -f "$OUT/verify.txt" ] && sed 's/^/        /' "$OUT/verify.txt"
