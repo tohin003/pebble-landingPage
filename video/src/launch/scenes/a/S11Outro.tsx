@@ -100,7 +100,7 @@ export const S11Outro: React.FC<S11Props> = ({ durationInFrames, musicCredit = "
           />
           <Headline text={TITLE_TEXT} variant="title" size={g.fs} accentFace="same" at={T(B.lockup)} stagger={0.07} align={g.align} valign="top" fit={false} box={g.titleBox} />
           <Headline
-            text="Free and open source for Mac."
+            text="Free and open source, for Macs with Apple silicon."
             variant="support"
             size={freeSize}
             color={WORLDS.night.ink2}

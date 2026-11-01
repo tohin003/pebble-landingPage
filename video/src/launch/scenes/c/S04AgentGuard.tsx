@@ -74,7 +74,7 @@ const VERIFIED = AG.boxes.verifiedWorkCard.box; // "What your request requires �
 /** The same card framed on its own border (x 2548–3564, y 664–860 when the shrink lands) plus ~20 px of panel. */
 const VCARD = box(2526, 644, 1060, 236);
 
-const CHIPS = ["Tests the host ran, not the model’s word.", "Files you asked to keep, kept.", "Output compared byte for byte."] as const;
+const CHIPS = ["Tests the host ran, not the model’s word.", "Files you asked to keep, kept.", "Output matched to its file, byte for byte."] as const;
 
 const geo = (L: Layout) => {
   const W = L.W;

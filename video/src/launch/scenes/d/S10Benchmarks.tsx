@@ -26,7 +26,7 @@ import { PLACE_SFX, SFX, SmallPrint, countTicks, lerp, peakAt, useRetime, useT }
 export const S10_NOMINAL = 13.5;
 
 export const S10_FOOTNOTE =
-  "Golden set 2.0, held-out split: 85 tasks in 17 families, 3 phrasings each, 255 runs per product. One model for both products in each comparison. Pebble 1.9.29, the source of 2.0.0. Full results, including time and safety, in the 2.0.0 release notes.";
+  "Golden set 2.0, held-out split: 85 tasks in 17 families, 3 phrasings each, 255 runs per product. One model for both products in each comparison. Pebble 1.9.29, the source of 2.0.0. Costs at public list prices. Full results, including time, safety and where Pebble trails, in the 2.0.0 release notes.";
 
 interface Pair {
   note: string;

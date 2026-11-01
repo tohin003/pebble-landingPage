@@ -254,7 +254,7 @@ export const S03UsesYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
           </FloatingWindow>
           <Headline text="Your browser." at={0.06} exitAt={limitAt - 0.12} exit="fade" entrance="ink" size={size} align="left" valign={tvalign} box={F.text} />
           <Headline
-            text={L.portrait ? "Only the windows and\nsites you allow." : "Only the\nwindows and\nsites you allow."}
+            text={L.portrait ? "The app windows and\nwebsites you allow." : "The app windows\nand websites\nyou allow."}
             at={limitAt}
             exitAt={textOut}
             exit="fade"

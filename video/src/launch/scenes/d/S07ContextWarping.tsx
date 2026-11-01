@@ -25,10 +25,10 @@ export const S07_NOMINAL = 7;
 /** Oldest first: block 0 sits at the bottom of the column. Generic diagram labels, no real data. */
 const BLOCKS = [
   { label: "read invoice.py", lines: [0.92, 0.74, 0.58] },
-  { label: "ran the tests", lines: [0.8, 0.95, 0.42] },
+  { label: "read dates.py", lines: [0.8, 0.95, 0.42] },
   { label: "searched the web", lines: [0.88, 0.66, 0.78] },
   { label: "edited invoice.py", lines: [0.94, 0.62, 0.8] },
-  { label: "ran the tests again", lines: [0.76, 0.86, 0.36] },
+  { label: "ran the tests", lines: [0.76, 0.86, 0.36] },
   { label: "read the test log", lines: [0.9, 0.7, 0.6] },
 ] as const;
 /** how many of the oldest are sealed */

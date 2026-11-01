@@ -328,7 +328,7 @@ export const S08Remote: React.FC<SceneProps> = ({ durationInFrames }) => {
           </Device>
         </AbsoluteFill>
         <Headline
-          text={"Your Mac,\nin your pocket."}
+          text={"Pebble,\nin your pocket."}
           at={at(B.text1)}
           exitAt={at(B.text2 - 0.17)}
           box={text.head}

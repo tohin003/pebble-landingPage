@@ -521,7 +521,7 @@ export const S05Workshop: React.FC<SceneProps> = ({ durationInFrames }) => {
             </FloatingWindow>
           ) : null}
           <Headline
-            text={pick(L, { "16x9": "It builds its own tools.", "4x5": "It builds\nits own tools." })}
+            text={pick(L, { "16x9": "It builds small tools for itself.", "4x5": "It builds small\ntools for itself." })}
             at={T(B.title)}
             exitAt={T(B.titleOut)}
             size={L.type.title}
