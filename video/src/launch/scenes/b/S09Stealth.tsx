@@ -1,18 +1,19 @@
-// S09 "Stealth Lockdown" (the dusk night, this scene only), 9.5 s nominal (FIXES-1: 70.051–79.551 on the master: the
+// S09 "Stealth Lockdown" (the dusk night, this scene only), 9.05 s nominal (FIXES-2: 70.051–79.101 on the master: the
 // music's groove thins at 72.05 and stops at 73.07, the breakdown hit at 73.41).
 //
-// 0.0   "Presenting?" over the ⌘K palette (RS13-03): "stealth" typed, the lit row "Turn Stealth Lockdown on / Hidden
-//       from screen capture and screen sharing". No first-run screen at all: the window is cropped to the palette.
-// 1.8   The real recording (RS13-03 was made with screencapture, so Pebble's windows really leave it), flat and locked
-//       off: the bottom of the screen, Pebble's window with its composer over the Dock. 1.2 s with the window in it,
-//       then it leaves the recording in one frame (3.0, on the music's stop) and Pebble's Dock icon shrinks away; 1.5 s
-//       without it. The take's Finder window and the widgets at the left edge are above this band: never in frame.
+// 0.0   "Presenting?" over the ⌘K palette (RS13-03), open on the first frame (REVIEW-2 M-2: the empty field with Light,
+//       Dark and System theme; not one frame of the first-run screen), "stealth" typed. 1.35 s.
+// 1.35  The real recording (RS13-03 was made with screencapture, so Pebble's windows really leave it), flat and locked
+//       off, a 16:10 crop holding Pebble's whole window (REVIEW-2 S-4: 62 % of the frame's width on 16:9, 90 % on 4:5),
+//       the palette still on it with its lit row. 1.65 s with the window in it, then it leaves the recording in one
+//       frame (3.0, on the music's stop); 1.55 s of the desktop without it. Frosted: Pebble's iCloud notice and its
+//       first-run chips, the desktop's calendar widget, and the take's own Finder window once Pebble has gone.
 //       "Stealth Lockdown." and the honest line, word for word, enter WITH the recording and sit under it (3 lines at
-//       60 px on 16:9; 4 lines at 44 px on 4:5), and stay through the Veil: 1.8 → 9.42 (7.6 s).
-// 4.5   The recording leaves; the pebble (Pebble's own body) comes in above the honest line and puts on the Veil
+//       56 px on 16:9; 4 lines at 44 px on 4:5), and stay through the Veil: 1.35 → 8.98 (7.6 s).
+// 4.55  The recording leaves; the pebble (Pebble's own body) comes in above the honest line and puts on the Veil
 //       (Pebble's own Veil code: a render, never called a recording).
-// 8.65  The type leaves at 9.2; the Veil pebble settles at S10's hand-off: its body centred at (0.5 W, 0.5 H), 12 % of
-//       the frame's height (kit VEIL_HANDOFF), still from 9.25 to the last frame.
+// 8.2   The Veil pebble glides to S10's hand-off: its body centred at (0.5 W, 0.5 H), 12 % of the frame's height (kit
+//       VEIL_HANDOFF), still from 8.8 to the last frame; the type leaves in the last 2 frames.
 import { Sequence } from "remotion";
 import type { Box } from "../../camera";
 import { FloatingWindow } from "../../components/FloatingWindow";
@@ -29,7 +30,7 @@ import { C, EASE } from "../../tokens";
 import type { SceneProps } from "../types";
 import { lerp, MaskedZoom, pebbleAt, R, ramp, sfxAt, sfxSrc, useSceneTime, VEIL_HANDOFF, type Mask, type SfxNote } from "./kit";
 
-export const S09_NOMINAL = 9.5;
+export const S09_NOMINAL = 9.05;
 
 /** Stealth Lockdown's honest line, word for word (TREATMENT §3, CLAUDE.md). Never shorten or split it. */
 export const HONEST_LINE =
@@ -51,34 +52,31 @@ const DOCK_CLOSED = eventS("RS13-03", "dockClosed");
  * (at 30 fps), since S10 sheds the Veil (Stealth turning off) in its first 0.6 s. The recording leaves at 4.3 so the
  * locked-off empty desktop never holds dead still for more than 1 s.
  */
-const AT = { strip: 1.8, stripOut: 4.3, pebble: 4.7, veil: 5.1, glide: 8.65, glideS: 0.6, typeOut: S09_NOMINAL - 2 / 30 } as const;
-/** the recording's lead before the vanish (FIXES-1: about 1.2 s with Pebble's window in it) and its tail (about 1.5 s) */
-const LEAD = 1.2;
+const AT = { strip: 1.35, vanish: 3.0, stripOut: 4.55, pebble: 4.95, veil: 5.35, glide: 8.2, glideS: 0.6, typeOut: S09_NOMINAL - 2 / 30 } as const;
+/** the recording's lead before the vanish (FIXES-2: the recording at 1.35, the vanish still on the music's stop at 3.0) */
+const LEAD = AT.vanish - AT.strip;
 
 /**
- * The palette: opened at 4.4, "stealth" typed 5.2–6.433, the row lit from 5.8. Never below 1× (a screencapture conform).
- * Its last 0.37 s (6.033–6.4) are the same source moments as the recording's first 0.37 s, seen in the two framings
- * (the band below the palette doesn't change in them).
+ * The palette: opened at 4.4 (f264), "stealth" typed 5.2–6.433, the row lit from 5.8. Never below 1× (a screencapture
+ * conform). It starts on 4.433, two frames after it opened, so frame 0 is the palette (REVIEW-2 M-2), and plays real
+ * time; its last 0.2 s are the same source moments as the recording's first 0.2 s, in the two framings.
  */
-const palTime = fromRamps(
-  [
-    { s0: 4.3, s1: 5.0, speed: 1.75 },
-    { s0: 5.0, s1: 6.4, speed: 1 },
-  ],
-  { ramp: 0.08, tail: 1 },
-);
+const PAL_IN = 4.433;
+const palTime = fromRamps([{ s0: PAL_IN, s1: 6.4, speed: 1 }], { tail: 1 });
 /** the recording: real time, locked off, from LEAD before the vanish */
 const stripTime = fromRamps([{ s0: LEAVE - LEAD, s1: LEAVE + 2.6, speed: 1 }], { tail: 1 });
 
 /** the palette alone (input, rows, its note): no first-run card (it starts at y 758) */
-const PAL = (portrait: boolean): Box => (portrait ? { x: 1160, y: 312, w: 900, h: 312 } : { x: 1150, y: 305, w: 1140, h: 415 });
+const PAL = (portrait: boolean): Box => (portrait ? { x: 1150, y: 305, w: 1140, h: 396 } : { x: 1150, y: 305, w: 1140, h: 415 });
 /**
- * The bottom of the screen: Pebble's composer and footer over the Dock, under the take's Finder window (it ends at
- * y 1131) and the first-run card (it ends at y 1255), with the widgets far above: the strip the window leaves. 16:9
- * keeps the whole Dock; 4:5 its right half (Settings, Terminal, Pebble's icon, the Trash).
+ * REVIEW-2 S-4: a 16:10 crop (1.61) holding Pebble's whole window (310–2940 × 124–1730), under the menu bar (the clock,
+ * the recording pill) and above the Dock (from y ≈ 1735: its dated icon and badge stay out).
  */
-const STRIP = (portrait: boolean): Box => (portrait ? { x: 1450, y: 1262, w: 1440, h: 650 } : { x: 120, y: 1262, w: 2700, h: 650 });
+const STRIP = (_portrait: boolean): Box => ({ x: 296, y: 100, w: 2644, h: 1640 });
 const STRIP_MASKS: Mask[] = [
+  { box: { x: 1240, y: 1280, w: 1400, h: 120 }, s0: 0, s1: LEAVE, px: 22, backing: "#1b1f1c" }, // Pebble's iCloud notice ("Your Documents folder syncs with iCloud Drive…"): noise (REVIEW-2 S-4)
+  { box: { x: 270, y: 90, w: 110, h: 350 }, s0: 0, s1: 99, px: 24, backing: "#2a2f2b" }, // the desktop calendar widget's right edge (dates; behind the window until it leaves)
+  { box: { x: 530, y: 250, w: 1880, h: 895 }, s0: LEAVE, s1: 99, px: 30, backing: "#2b2d2c" }, // the take's own pebble-takes Finder window, once Pebble has gone
   { box: { x: 1360, y: 1572, w: 300, h: 48 }, s0: 0, s1: LEAVE, px: 18, backing: "#1b1f1c" }, // the composer's "Connect a model…" (first-run)
   { box: { x: 1620, y: 1664, w: 336, h: 42 }, s0: 0, s1: LEAVE, px: 18, backing: "#141715" }, // the footer's "Connect a model in Settings"
   { box: { x: 1178, y: 1755, w: 176, h: 120 }, s0: 0, s1: DOCK_CLOSED, px: 22 }, // the Dock's dated Calendar icon
@@ -93,24 +91,24 @@ const frame09 = (L: Layout) =>
     ? {
         ask: R(L, 64, 180, 952, 160),
         pal: R(L, 40, 380, 1000, 347),
-        strip: R(L, 40, 150, 1000, 451),
-        title: R(L, 64, 790, 952, 90),
-        line: R(L, 64, 902, 952, 260),
+        strip: R(L, 54, 96, 972, 604),
+        title: R(L, 64, 790, 952, 84),
+        line: R(L, 64, 894, 952, 300),
         askSize: L.px(104),
-        titleSize: L.px(76),
+        titleSize: L.px(68),
         lineSize: L.px(44),
-        up: { x: 0.5, y: 0.3, h: 0.18 },
+        up: { x: 0.5, y: 0.295, h: 0.17 },
       }
     : {
         ask: R(L, 128, 150, 1664, 150),
         pal: R(L, 210, 330, 1500, 546),
-        strip: R(L, 128, 72, 1664, 401),
-        title: R(L, 128, 640, 1664, 96),
-        line: R(L, 150, 758, 1620, 240),
+        strip: R(L, 362, 22, 1196, 742),
+        title: R(L, 128, 774, 1664, 84),
+        line: R(L, 150, 862, 1620, 210),
         askSize: L.px(120),
-        titleSize: L.px(88),
-        lineSize: L.px(60),
-        up: { x: 0.5, y: 0.31, h: 0.2 },
+        titleSize: L.px(68),
+        lineSize: L.px(56),
+        up: { x: 0.5, y: 0.36, h: 0.2 },
       };
 
 export const s09Moments = (lenS: number) => {

@@ -5,14 +5,18 @@
 // 0.0  RS11-02: the match from S01's sage. The screen starts scaled up about the real companion pebble, centred and
 //      sharp (take px at 1.8× at most: REVIEW-1 S4), and settles to the whole Mac at 1.0×: the menu bar (its right end,
 //      the clock, masked), Pebble's window, Pebble's own folder in Finder, the Dock. "It lives on your Mac." (≥ 2 s).
-// 3.0  RS1-03 (cut on the beat): a full-screen Space, the pebble in the same place; the Spaces swipe plays full width
-//      (⌃→, the slide, the pebble rides in with the new Space and settles in the same spot). "On every Space."
+// 2.5  RS1-03 (cut on the beat, REVIEW-2 S-6): a punch-in on the pebble (it keeps its frame spot; 0.45 → 1.2 take px)
+//      onto a full-screen Space's lower right, 80 % of the frame's width on 16:9 (96 % on 4:5); the pebble on the
+//      poster for 0.33 s; then the real Spaces swipe at half speed (1.07 s: the slide 4.0–4.533 of the take), blurred
+//      by its own step, the Space's edge crossing the whole picture; the pebble rides in with the new Space and settles
+//      in the same spot. "On every Space." lands on the swipe's first frame.
 // 4.5  RS15-01 (cut on the downbeat): close on the pebble; the pointer, the click, the quick chat opens; a push onto
 //      its input as "What can you do now?" is typed, held whole ≥ 1.0 s, sent (Return, "Sending"). "Click. Ask."
 //      The scene ends on the send with the out half of a whip; S03 opens with the in half and its answer.
 //
 // Every frame inside the screen is a real frame of a take (time maps choose frames; nothing is drawn on Pebble's UI
 // except masks over hazards).
+import { useId } from "react";
 import { AbsoluteFill, Sequence } from "remotion";
 import type { Box } from "../../camera";
 import { FloatingWindow } from "../../components/FloatingWindow";
@@ -38,9 +42,9 @@ const C = TAKES["RS15-01"];
  * shot starts, scene seconds at nominal (the master's beats fall on 13.551 + 0.5k: 2.0 a beat, 4.5 a downbeat); see
  * B_TIME for where the slide sits between them (the flash scan).
  */
-const AT = { b: 2.0, c: 4.5 } as const;
+const AT = { b: 2.5, c: 4.5 } as const;
 /** the first caption bridges the cut to the Spaces (it sits under the screen, never over a picture) */
-const CAPTION_A_EXIT = 2.9;
+const CAPTION_A_EXIT = 2.58;
 /** the opening pull-back from the pebble to the whole Mac */
 const PULL_S = 0.85;
 const WHIP_S = 0.14;
@@ -55,12 +59,25 @@ const OPEN_MAG = 1.2;
 /* ---------- the takes' time maps and masks ---------- */
 
 const A_TIME = realTime(0.6); // a still tour shot: the pointer barely moves
+// REVIEW-2 S-6: the swipe is the shot. In at 3.62 (the pebble asleep on the poster for 0.33 s; it hides at 3.95), then
+// the slide at half speed so it plays 1.07 s, then real time on Chrome's Space with the pebble back on its spot.
+const B_SLOW = { s0: 3.955, s1: 4.56, speed: 0.5 } as const;
+const B_TIME = fromRamps(
+  [
+    { s0: 3.62, s1: B_SLOW.s0, speed: 1 },
+    B_SLOW,
+    { s0: B_SLOW.s1, s1: 6.5, speed: 1 },
+  ],
+  { ramp: 0.04, tail: 1 },
+);
+/** the swipe's first frame on screen (the take's slideVisible, f240) */
+const B_SLIDE = eventS("RS1-03", "slideVisible");
 /**
- * The poster Space 1.07 s, ⌃→ at 3.967, the slide 4.0–4.3 (its fast part 3.1–3.3 in the scene), the pebble back on its
- * spot at 4.433. The slide's 20 fps steps flip big type light and dark about six times, so it sits more than 1 s from
- * both cuts: no second of the scene holds more than the flash scan's six.
+ * Shot B's crop (16:9, 1.2 frame px per take px on 16:9): the screen's lower right, the pebble on the same frame spot as
+ * at the end of shot A (≈ 1536, 753 at 1080p), so the cut is a punch-in on the pebble (0.45 → 1.2), not a jump cut.
+ * The Space's edge crosses the whole crop; the poster's dated kicker and Chrome's address bar stay outside it.
  */
-const B_TIME = realTime(2.9);
+const B_BOX: Box = { x: 1632, y: 997, w: 1280, h: 720 };
 const C_CLICK = eventS("RS15-01", "click");
 const C_PANEL = eventS("RS15-01", "panelOpens");
 const C_TYPE = eventS("RS15-01", "typeW");
@@ -101,6 +118,22 @@ const slideDx = (s: number) => {
   for (const [t, v] of SLIDE) if (s >= t - 1e-4) dx = v;
   return { dx, dy: 0 };
 };
+/** the slide's speed, source px per source second (SLIDE read as a smooth curve between its measured frames) */
+const slideSpeed = (s: number) => {
+  for (let i = 1; i < SLIDE.length; i++) {
+    const [t0, x0] = SLIDE[i - 1];
+    const [t1, x1] = SLIDE[i];
+    if (s >= t0 && s < t1) return Math.abs(x1 - x0) / (t1 - t0);
+  }
+  return 0;
+};
+/**
+ * The swipe's motion blur (REVIEW-2 S-6, the flash scan): the take's slide moves in coarse steps (about 20 a second),
+ * and at half speed each step walked the big "Open day" type across the frame (desk27 7 and css2560 8 transitions in a
+ * second against 6). One layer, blurred along the slide by the length of the take's own step (the slide's speed over
+ * a 20th of a second, as a shutter open for the whole step): no sample copies, nothing drawn.
+ */
+const slideBlurPx = (src: number, viewPerSrc: number) => Math.min(90, (slideSpeed(src) * viewPerSrc) / 20 / 2);
 /** the menu bar's own colour by the clock (RS11-02: #c9dabf on its left, #c2d4b6 under the clock) */
 const MENU_FILL = "linear-gradient(to right, rgba(201, 218, 191, 0) 0%, rgb(201, 218, 191) 10%, rgb(195, 213, 185) 100%)";
 
@@ -122,8 +155,8 @@ const B_MASKS: Mask[] = [
 /** the screen (the whole Mac at 1.0×, its own aspect) and the caption under it (16:9) or above it (4:5) */
 const frame02 = (L: Layout) =>
   L.portrait
-    ? { screen: R(L, 40, 540, 1000, 650), caption: R(L, 64, 170, 952, 330), cValign: "bottom" as const, cSize: L.type.headline, lines: true }
-    : { screen: R(L, 299, 24, 1322, 860), caption: R(L, 128, 894, 1664, 110), cValign: "middle" as const, cSize: L.px(104), lines: false };
+    ? { screen: R(L, 40, 540, 1000, 650), spaces: R(L, 20, 545, 1040, 585), caption: R(L, 64, 170, 952, 330), cValign: "bottom" as const, cSize: L.type.headline, lines: true }
+    : { screen: R(L, 299, 24, 1322, 860), spaces: R(L, 192, 14, 1536, 864), caption: R(L, 128, 894, 1664, 110), cValign: "middle" as const, cSize: L.px(104), lines: false };
 
 /** shot C: close on the pebble with room above it for the quick chat, then its input (the question at ≈ 50 px) */
 const C_CLOSE: Box = { x: 1563, y: 838, w: 1323, h: 860 };
@@ -140,6 +173,7 @@ export const s02Moments = (lenS: number) => {
     b,
     c,
     swipe: b + B_TIME.inv(eventS("RS1-03", "swipeKey")),
+    slide: b + B_TIME.inv(B_SLIDE),
     settled: b + B_TIME.inv(eventS("RS1-03", "pebbleSettled")),
     click: c + C_TIME.inv(C_CLICK),
     panel: c + C_TIME.inv(C_PANEL),
@@ -196,6 +230,11 @@ export const S02OnYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
   const dockHide = t < 0 ? 0 : 1 - Math.min(1, Math.max(0, (t - 0.8 * PULL_S) / (0.3 * PULL_S)));
   const capA = PULL_S * 0.82;
 
+  /* shot B: the swipe's blur, by the slide's speed at this frame's source time */
+  const tb = t - M.b;
+  const blurB = tb < 0 ? 0 : slideBlurPx(B_TIME.at(tb), G.spaces.w / B_BOX.w);
+  const blurId = `s02b${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+
   /* shot C: the push onto the input once the quick chat is open */
   const tc = (sec: number) => sec - M.c;
   const keysC = [
@@ -239,10 +278,17 @@ export const S02OnYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
             ))}
           </Sequence>
           <Sequence from={f(M.b)} durationInFrames={f(M.c) - f(M.b)} premountFor={pre} name="B · RS1-03 the Spaces swipe">
-            <FloatingWindow rect={G.screen} enter="none" spill={0} shadow={0.55} background="#000">
-              <MaskedZoom src={B.file} srcSize={SRC} time={B_TIME} srcDuration={B.durationS} drift={0} masks={B_MASKS} />
+            <FloatingWindow rect={G.spaces} enter="none" spill={0} shadow={0.55} background="#000">
+              <AbsoluteFill style={{ filter: blurB > 0.5 ? `url(#${blurId})` : undefined }}>
+                <svg width={0} height={0} style={{ position: "absolute" }}>
+                  <filter id={blurId} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
+                    <feGaussianBlur stdDeviation={`${blurB.toFixed(2)} 0`} edgeMode="duplicate" />
+                  </filter>
+                </svg>
+                <MaskedZoom src={B.file} srcSize={SRC} time={B_TIME} srcDuration={B.durationS} keys={[{ t: 0, box: B_BOX }]} drift={0} motionBlur={false} masks={B_MASKS} />
+              </AbsoluteFill>
             </FloatingWindow>
-            {caption(G.lines ? "On every\nSpace." : "On every Space.", CAPTION_A_EXIT * M.k + 0.29 - M.b, "blur")}
+            {caption(G.lines ? "On every\nSpace." : "On every Space.", M.slide - M.b - 1 / 60, "blur")}
           </Sequence>
           <Sequence durationInFrames={f(CAPTION_A_EXIT * M.k + 0.25)} name="caption A (bridges the cut to the Spaces)">
             <Headline

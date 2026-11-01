@@ -6,11 +6,13 @@
 // 2.5   RS4-07 (cut on the beat): the Calculator window at about 1×, a push to 2× onto its display and keypad as the
 //       eight real presses land (×4), then "600" with a punch-in. "Your apps." The steps panel (with its
 //       "Preparing to open Calculator") is never in frame.
-// 4.0   RS5C-04 (cut on the bar): Calendar's month at about 1×, a 0.55 s push to 2.4× onto Monday 2: "Glaze order
-//       09:00". The owner's own events (the 23 and 24 Oct cells) are frosted in place. "Your calendar."
-// 6.0   RS9B-02 (cut on the bar): Chrome itself at 1.0×: its tab strip with Pebble's own green tab group and the
-//       "Google Chrome" bar, the page frosted under the pill "Pebble is working in this tab · Stop" (the video page,
-//       its address and its tab title never show: the owner removed the rival video). "Your browser."
+// 4.0   RS5C-04 (cut on the bar): Calendar's month at about 1×, then a 0.7 s push (the window reshaping round it)
+//       onto Monday 2's cell, "Glaze order 09:00" centred at about 65 px, held 1.05 s (REVIEW-2 S-2). The owner's own
+//       events (the 23 and 24 Oct cells) are frosted in place. "Your calendar."
+// 6.0   RS9B-02 (cut on the bar): Chrome's tab strip and address bar, close, with Pebble's own green tab group (the
+//       video's tab title and the URL frosted; the "default browser" infobar below is never in frame), pushing in;
+//       7.0 (cut on the beat): the pill "Pebble is working in this tab · Stop", whole, on the frosted page (REVIEW-2
+//       S-2: no black window). "Your browser."
 // 8.0   RS4-07 (cut on the bar): the window card's own limit, "Only this window. Pebble stops at sign-ins, codes and
 //       checks…", the pointer comes to Allow; "The app windows / and websites / you allow." (from 7.75, ≥ 2.6 s). The
 //       scene ends on Allow, before the card collapses; this last window is the one the master scales up through the
@@ -32,7 +34,7 @@ import { fromRamps, timeMap } from "../../timeMap";
 import { punchAt } from "../../timing";
 import { EASE } from "../../tokens";
 import type { SceneProps } from "../types";
-import { DesktopGround, EdgeWhip, INK, MaskedZoom, R, sfxAt, sfxSrc, useSceneTime, type Mask, type SfxNote } from "./kit";
+import { DesktopGround, EdgeWhip, INK, lerp, lerpRect, MaskedZoom, R, ramp, sfxAt, sfxSrc, useSceneTime, type Mask, type SfxNote } from "./kit";
 
 export const S03_NOMINAL = 11;
 
@@ -70,8 +72,13 @@ const CAL_ARRIVES = eventS("RS5C-04", "calendarWindow");
 const calTime = fromRamps([{ s0: CAL_ARRIVES + 0.01, s1: CAL_ARRIVES + 3, speed: 1 }], { tail: 1 });
 /** Calendar's whole window (October 2026): no menu bar, no Pebble sidebar, no Dock */
 const CAL_WIN: Box = { x: 395, y: 66, w: 1653, h: 1084 };
-/** Monday 2's cell, "Glaze order 09:00", from the window's left edge (2.2×) */
-const CAL_CELL: Box = { x: 395, y: 658, w: 752, h: 493 };
+/**
+ * Monday 2's cell (REVIEW-2 S-2): its date and "Glaze order 09:00" (text 406–680 × 1085–1105), from the window's left
+ * edge to just left of the Dock's "Calendar" tooltip (x 722), above the window's bottom edge (1150)
+ */
+const CAL_CELL: Box = { x: 401, y: 1014, w: 318, h: 134 };
+/** the push's length and its start after the cut */
+const CAL_PUSH = { lead: 0.25, dur: 0.7 } as const;
 /** the person's own iCloud events in the 23 and 24 Oct cells (takes.ts 'identity'), frosted with room round them */
 const PERSONAL = CAL.hazards.find((h) => h.kind === "identity")!;
 const CAL_MASKS: Mask[] = [
@@ -83,26 +90,38 @@ const CAL_MASKS: Mask[] = [
 
 const WEB = TAKES["RS9B-02"];
 const WEB_SIZE = { w: WEB.width, h: WEB.height };
-const CHROME_IN = eventS("RS9B-02", "chromeInPlace");
+/** the second browser shot (the pill) starts this long after the first (a beat) */
+const PILL_CUT = 1.0;
 /**
  * Chrome in place to the pill's last clean frame (takes.ts: from f3354, 55.9 s, the video page's suggestions load round
  * and over the pill): a still page under the frost, so 0.56× only repeats frames; then that frame held.
  */
 const PILL_LAST_CLEAN = 55.867;
-const webTime = fromRamps([{ s0: CHROME_IN, s1: PILL_LAST_CLEAN, speed: 0.56 }], { tail: 0 });
+/** the tab strip re-lays out 52 px to the left between 54.85 and 54.9 (Chrome settling after its Space slid in): start after it */
+const TABS_SETTLED = 54.9;
+const webTime = fromRamps([{ s0: TABS_SETTLED, s1: PILL_LAST_CLEAN, speed: 0.56 }], { tail: 0 });
+/** the same clock for a shot that starts `off` seconds into the browser beat (its Sequence restarts local time) */
+const webTimeFrom = (off: number) => fromRamps([{ s0: Math.min(PILL_LAST_CLEAN - 0.05, TABS_SETTLED + off * 0.56), s1: PILL_LAST_CLEAN, speed: 0.56 }], { tail: 0 });
 /** "● Pebble is working in this tab · Stop" (1505–2015 × 1224–1300) */
 const PILL: Box = { x: 1505, y: 1224, w: 510, h: 76 };
-/** Chrome whole (its tab strip with the green Pebble group, the frosted page, the pill), then the pill read big (≈ 1.8×) */
-const CHROME: Box = { x: 0, y: 0, w: 2048, h: 1332 };
-const PILL_ZOOM: Box = { x: 1440, y: 937, w: 608, h: 395 };
+/**
+ * REVIEW-2 S-2: the tab strip and the address bar only (Chrome's "isn't your default browser" infobar starts at y 228,
+ * below): "Open day – Clay & Current", the green "Pebble" group chip, the group's tab (title frosted), the address bar
+ * (URL frosted). Wider at the cut, then a push. Both are in the window's own aspect (3.71, so the camera never widens
+ * them) and end at x 866, left of the group tab's YouTube icon (875–905); the tab's title (920–1015) is frosted anyway.
+ */
+const TABS_WIDE: Box = { x: 190, y: 46, w: 676, h: 182 };
+const TABS: Box = { x: 300, y: 62, w: 566, h: 152 };
+/** the pill whole (its rounded left end at 1505; "Stop" ends at about 2025 and the pill at the screen's edge) */
+const PILL_ZOOM: Box = { x: 1490, y: 1190, w: 558, h: 136 };
 /** the page under the green frame, frosted round the pill (the player, its advert, the suggestions, the titles) */
 const PAGE = { x: 0, y: 338, w: 2048, h: 994 };
 const WEB_MASKS: Mask[] = [
-  { box: { x: 855, y: 58, w: 500, h: 86 }, s0: 0, s1: 999, px: 64, backing: "#0f0f0f" }, // the video's tab: its title (the rival's, from 55.15)
-  { box: { x: 296, y: 152, w: 560, h: 56 }, s0: 0, s1: 999, px: 64, backing: "#0f0f0f" }, // the address bar's URL
+  { box: { x: 905, y: 58, w: 450, h: 86 }, s0: 0, s1: 999, px: 64, backing: "#0f0f0f" }, // the video's tab: its title (the rival's, from 55.15); the Pebble chip (785–890) stays sharp
+  { box: { x: 296, y: 150, w: 640, h: 60 }, s0: 0, s1: 999, px: 64, backing: "#0f0f0f" }, // the address bar's URL
   { box: { x: 1990, y: 10, w: 58, h: 40 }, s0: 0, s1: 999, kind: "fill", fill: "#000" }, // the recording dot
   // the page under the green frame (the player, its advert, the suggestions, the titles), frosted round Pebble's pill
-  { box: PAGE, s0: 0, s1: 999, px: 64, backing: "#0f0f0f", holes: [{ box: PILL, r: 38 }] },
+  { box: PAGE, s0: 0, s1: 999, px: 64, backing: "#0f0f0f", holes: [{ box: { ...PILL, w: 2048 - PILL.x }, r: 38 }] }, // the hole runs to the screen's edge: "Stop" whole
 ];
 
 /* ---------- RS4-07 again: the limit ---------- */
@@ -132,7 +151,9 @@ const frame03 = (L: Layout) =>
         text: R(L, 64, 110, 952, 290),
         apps: R(L, 150, 440, 780, 860),
         calendar: R(L, 40, 470, 1000, 656),
-        browser: R(L, 30, 480, 1020, 663),
+        calEvent: R(L, 76, 600, 928, 391),
+        tabs: R(L, 30, 520, 1020, 275),
+        pill: R(L, 30, 640, 1020, 249),
         limit: R(L, 40, 520, 1000, 563),
         labelSize: L.type.headline,
         limitSize: L.px(84),
@@ -141,7 +162,9 @@ const frame03 = (L: Layout) =>
         text: R(L, 128, 150, 600, 780),
         apps: R(L, 900, 96, 860, 888),
         calendar: R(L, 744, 172, 1112, 729),
-        browser: R(L, 760, 148, 1124, 731),
+        calEvent: R(L, 900, 372, 800, 337),
+        tabs: R(L, 760, 330, 1124, 303),
+        pill: R(L, 760, 452, 1124, 274),
         limit: R(L, 812, 230, 1048, 590),
         labelSize: L.type.title,
         limitSize: L.px(78),
@@ -169,7 +192,8 @@ export const s03Moments = (lenS: number) => {
     limit,
     keys: KEYS.map((s) => apps + calcTime.inv(s)),
     equals: apps + calcTime.inv(EQUALS),
-    calendarPush: calendar + 0.3,
+    calendarPush: calendar + CAL_PUSH.lead,
+    pill: browser + PILL_CUT * k,
     limitLine: limit - LIMIT_LEAD,
     allow: limit + limitLen,
     limitLen,
@@ -204,13 +228,15 @@ export const S03UsesYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
     { t: 0.53, box: CALC_KEYS(L.portrait), dur: 0.45, ease: EASE.camera },
   ];
 
-  /* calendar: about 1×, a hold, then a push of 0.55 s onto Monday 2 */
-  const keysCal = [
-    { t: 0, box: CAL_WIN },
-    { t: M.calendarPush - M.calendar, box: CAL_WIN },
-    // 0.8 s on the camera ease (in-out) with up to 48 blur samples: no frame jumps, no visible samples (REVIEW-1 S8)
-    { t: M.calendarPush - M.calendar + 0.8, box: CAL_CELL, dur: 0.8, ease: EASE.camera },
-  ];
+  // REVIEW-2 S-2: the push keeps the window's bottom-left corner (where the event is) pinned while the window reshapes
+  // round it, so the event is in view on every frame and the camera never crosses the month's empty cells. One box a
+  // frame, in the window's own aspect: scale in log space, the window's rect on the same ease.
+  const pc = ramp(t, M.calendarPush, CAL_PUSH.dur, EASE.camera);
+  const calRect = lerpRect(G.calendar, G.calEvent, pc);
+  const calMag = Math.exp(lerp(Math.log(G.calendar.w / CAL_WIN.w), Math.log(G.calEvent.w / CAL_CELL.w), pc));
+  const calLeft = lerp(CAL_WIN.x, CAL_CELL.x, pc);
+  const calBottom = lerp(CAL_WIN.y + CAL_WIN.h, CAL_CELL.y + CAL_CELL.h, pc);
+  const calBox: Box = { x: calLeft, y: calBottom - calRect.h / calMag, w: calRect.w / calMag, h: calRect.h / calMag };
 
   /* the limit: the card, real time into Allow */
   const limitMap = limitTime(M.limitLen);
@@ -237,30 +263,39 @@ export const S03UsesYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
           </Sequence>
 
           <Sequence from={f(M.calendar)} durationInFrames={f(M.browser) - f(M.calendar)} premountFor={pre} name="calendar · RS5C-04 Glaze order">
-            <FloatingWindow rect={G.calendar} enter="none" spill={0} shadow={0.55}>
-              <MaskedZoom src={CAL.file} srcSize={CAL_SIZE} time={calTime} srcDuration={CAL.durationS} keys={keysCal} drift={0.01} motionBlur={48} masks={CAL_MASKS} />
+            <FloatingWindow rect={calRect} enter="none" spill={0} shadow={0.55}>
+              <MaskedZoom src={CAL.file} srcSize={CAL_SIZE} time={calTime} srcDuration={CAL.durationS} keys={[{ t: 0, box: calBox }]} drift={0} motionBlur={false} masks={CAL_MASKS} />
             </FloatingWindow>
             {label(lines("Your\ncalendar."))}
           </Sequence>
 
-          <Sequence from={f(M.browser)} durationInFrames={f(M.limit) - f(M.browser)} premountFor={pre} name="browser · RS9B-02 Chrome and the pill">
-            <FloatingWindow rect={G.browser} enter="none" spill={0} shadow={0.55}>
+          <Sequence from={f(M.browser)} durationInFrames={f(M.pill) - f(M.browser)} premountFor={pre} name="browser · RS9B-02 the tab strip">
+            <FloatingWindow rect={G.tabs} enter="none" spill={0} shadow={0.55} background="#202124">
               <MaskedZoom
                 src={WEB.file}
                 srcSize={WEB_SIZE}
                 time={webTime}
                 srcDuration={WEB.durationS}
                 keys={[
-                  { t: 0, box: CHROME },
-                  { t: 0.75, box: CHROME },
-                  { t: 1.35, box: PILL_ZOOM, dur: 0.6, ease: EASE.camera },
+                  { t: 0, box: TABS_WIDE },
+                  { t: 0.06, box: TABS_WIDE },
+                  { t: 0.06 + 0.7, box: TABS, dur: 0.7, ease: EASE.camera },
                 ]}
                 drift={0.012}
-                // no camera blur samples here: through the pill's sharp hole they would show the page at other poses
                 motionBlur={false}
                 masks={WEB_MASKS}
               />
             </FloatingWindow>
+          </Sequence>
+
+          <Sequence from={f(M.pill)} durationInFrames={f(M.limit) - f(M.pill)} premountFor={pre} name="browser · RS9B-02 the pill">
+            <FloatingWindow rect={G.pill} enter="none" spill={0} shadow={0.55} background="#0f0f0f">
+              {/* no camera blur samples: through the pill's sharp hole they would show the page at other poses */}
+              <MaskedZoom src={WEB.file} srcSize={WEB_SIZE} time={webTimeFrom(M.pill - M.browser)} srcDuration={WEB.durationS} keys={[{ t: 0, box: PILL_ZOOM }]} drift={0.015} motionBlur={false} masks={WEB_MASKS} />
+            </FloatingWindow>
+          </Sequence>
+
+          <Sequence from={f(M.browser)} durationInFrames={f(M.limit) - f(M.browser)} name="browser · the label">
             {label(lines("Your\nbrowser."), M.limitLine - M.browser - 0.29)}
           </Sequence>
 
