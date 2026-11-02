@@ -1,0 +1,53 @@
+WEBVTT
+
+NOTE
+Pebble 2.0 launch film: text descriptions of what the film shows, read aloud by the audio-description toggle.
+Generated from chapters.ts chapter descriptions (one cue a chapter) by tools/captions/build.mjs.
+
+d-opening
+00:00:00.000 --> 00:00:08.067
+The small sage pebble on a dark green ground: “This is Pebble.” “It’s small.” Then “It just went up against Claude Code and Codex.”, the names in large grey type, and “Same model. Same tasks.”
+
+d-title
+00:00:08.067 --> 00:00:13.567
+The pebble rises over “Pebble 2.0” and the line “The desktop companion that does real work, and shows its evidence.”
+
+d-desktop
+00:00:13.567 --> 00:00:20.067
+The whole Mac, with Pebble’s window and the pebble: “It lives on your Mac.” The desktop slides to another Space and the pebble stays: “On every Space.” A click opens the quick chat, and “What can you do now?” is sent: “Click. Ask.”
+
+d-mac
+00:00:20.067 --> 00:00:31.067
+“Now it can use your Mac.” In Calculator, Pebble keys in 48 × 12.5 and gets 600: “Your apps.” Calendar shows its new event, Glaze order 09:00: “Your calendar.” Chrome shows Pebble’s pill, “Pebble is working in this tab”: “Your browser.” Then Pebble’s card asking to use one app window: “The app windows and websites you allow.”
+
+d-agentguard
+00:00:31.067 --> 00:00:40.067
+A held reply in Pebble: “Pebble's change isn't verified yet.” “Done means checked.” The pointer presses Run the tests, and the check reads “Verified · pytest 42 passed on current files”. Then “AgentGuard. Evidence before ‘done’.”, with three ticked lines: “Tests the host ran, not the model’s word.” “Files you asked to keep, kept.” “Output matched to its file, byte for byte.”
+
+d-workshop
+00:00:40.067 --> 00:00:47.567
+“It builds small tools for itself.” A script makes the tool kiln_ramp_time, drawn as a tile: its own tests pass in a sandbox, and a blind check, written from its description alone, passes 2 of 5. The pebble: “Asks you.” Pebble’s card asks whether to keep the tool: “When the check disagrees, it asks you.”
+
+d-memory
+00:00:47.567 --> 00:00:54.567
+“It remembers what matters.” A table of Pebble’s six kinds of memory: profile, semantic, procedural, episodic, temporal and working. Semantic opens into Settings › Memory: “All visible.” The pointer chooses Forget on one record, and it goes: “Forget anything.”
+
+d-long-tasks
+00:00:54.567 --> 00:01:01.567
+A drawn diagram: “Long tasks keep a smaller window.” Six tool results stack past a dashed line marked “context budget”. The three oldest are sealed into short stubs, and the column falls back under the line. “Older results sealed. Any one returned exactly.” One stub opens again, unchanged.
+
+d-remote
+00:01:01.567 --> 00:01:10.067
+The Pebble Remote app on an iPhone screen, in the iOS Simulator: “Pebble, in your pocket.” “Pebble Remote for iPhone.” An edit to slots.py waits for review; Apply Edit is tapped, the Face ID prompt passes, and the edit is done. “Approve with Face ID.” “Open source. Build it with Xcode.”
+
+d-presenting
+00:01:10.067 --> 00:01:19.100
+Pebble’s ⌘K palette: “Presenting?” The word “stealth” is typed and Turn Stealth Lockdown on is chosen. A screen recording follows, and Pebble’s window leaves it as the setting turns on. “Stealth Lockdown.” “Hidden from screen capture and screen sharing, not from a camera, a capture card or a process list. Exams and interviews that forbid assistants still forbid it.” Then the pebble, drawn by Pebble’s own code, wears the Veil in dusk blue.
+
+d-benchmarks
+00:01:19.100 --> 00:01:33.067
+“So. How did it do?” Three charts follow. “Tasks done correctly.”: Pebble 92.2 % against Claude Code’s 83.5 %, both on claude-opus-5-5, and 95.3 % against Codex’s 90.6 %, both on gpt-6.1-sol. “Said ‘done’ when it wasn’t.”, where lower is the aim: 6.3 % against 13.7 %, and 3.9 % against 7.1 %. “Cost per task.”, lower again: $0.091 against $0.117, and $0.042 against $0.050. Under the charts, the method: golden set 2.0’s held-out split, 255 runs per product, one model for both products in each comparison.
+
+d-get
+00:01:33.067 --> 00:01:39.400
+Back on the dark ground: “Small pebble.” “Real work.” Then “Pebble 2.0”, “Free and open source, for Macs with Apple silicon.” and github.com/tohin003/Pebble. In small type: “Shown with sample data.” and “Pebble's character engine: bloub by Jérémy Perret (MIT)”.

@@ -6,63 +6,57 @@ Third-party material inside them keeps its own licence, listed below.
 
 This covers everything under `public/media/` and the interface stills under `public/ui/`:
 
-- `media/v2/film-1080` and `film-720`, each as `.hevc.mp4` and `.h264.mp4`: the launch film, a 76.8 s trailer, with
-  its soundtrack.
-- `media/v2/film-square`, as `.hevc.mp4` and `.h264.mp4`: the same film in its own 1:1 framing, played on phones, with
-  the same soundtrack.
-- `media/v2/film.en.vtt`, `film.chapters.vtt` and `film.descriptions.en.vtt`: the film's captions (its sound
-  descriptions and on-screen lines), its chapters, and the descriptions the player's audio-description toggle reads.
-- `media/v1/loop-companion`, `loop-models`, `loop-isolated-tests`, `loop-memory` and `loop-views`: silent feature
-  loops, with 4:5 cuts for phones of the companion and isolated-tests loops (`-phone`).
-- `*.poster.avif` and `*.poster.webp`: each video's first frame. The film's, `media/v2/film.poster`, is the 16:9
-  film's first frame; the loops' are in `media/v1`.
+- `media/v3/`, the Pebble 2.0 launch (since 2 November 2026):
+  - `film-1080.hevc.mp4` and `film-720.h264.mp4`: the Pebble 2.0 launch film, 99.4 s, with its soundtrack (the plan's
+    two 16:9 files; `tools/encode/README.md` says why these two);
+  - `film-phone.hevc.mp4` and `.h264.mp4`: the same film in its own 4:5 layout (1080 × 1350), played on phones;
+  - `film.en.vtt`, `film.chapters.vtt` and `film.descriptions.en.vtt`: the film's captions (its on-screen type; the
+    film has no voice), its chapters, and the descriptions the player's audio-description toggle reads;
+  - `film.poster` and `film-phone.poster` (`.avif`, `.webp`): each film's first frame;
+  - the 2.0 feature loops (`loop-<id>`, with `-phone` 4:5 cuts), silent, each cut from the film's own frames, with its
+    poster: `tools/encode/launch-loops.json` lists them.
+- `media/v1/loop-companion`, `loop-models`, `loop-isolated-tests`, `loop-memory` and `loop-views`: the 1.x silent
+  feature loops, with 4:5 cuts for phones of the companion and isolated-tests loops (`-phone`), and their posters.
 - `media/v1/wallpaper-*`: the riverbed wallpaper.
-- `ui/v1/`: stills of Pebble's real interface, in both themes and two widths.
-- `media/v3/` (when published) the Pebble 2.0 launch: `film-1080` and `film-720`, each as `.hevc.mp4` and `.h264.mp4`,
-  the launch film with its soundtrack; `film-phone`, its 4:5 cut for phones (1080 × 1350), which replaces the 1:1 cut;
-  its three text tracks; `film.poster` and `film-phone.poster`; and the 2.0 feature loops (`loop-desk`, `loop-mac-apps`,
-  `loop-mac-actions`, `loop-mac-web`, `loop-guard`, `loop-workshop`, `loop-memory`, `loop-long-tasks`, `loop-remote`,
-  `loop-stealth`), silent, each with its poster and an optional 4:5 cut (`-phone`). `ui/v2/`: stills of Pebble 2.0.x's
-  interface. Files in `media/v1`, `media/v2` and `ui/v1` are served as immutable and never overwritten; a fix to a
-  published `v3` file goes to `v4`.
+- `ui/v1/`: stills of Pebble's real interface, in both themes and two widths; `ui/v2/` (when published): Pebble 2.0.x's.
+- Retired: `media/v2/`, the 1.x launch trailer (a 76.8 s trailer, its 1:1 cut, tracks and poster), replaced by the
+  Pebble 2.0 launch film at the owner's ask on 2 November 2026. Its files are in git history.
 
-The social films for X and LinkedIn, and a narrated version of the film whose narrator is an AI voice (Sarvam AI's
-Bulbul), are made from the same sources and are not in this repository.
+Files in `media/v1`, `media/v3` and `ui/v1` are served as immutable and never overwritten; a fix to a published `v3`
+file goes to `v4`. The film's social copies (LinkedIn, YouTube) are made from the same masters by the film's own
+delivery script (`video/src/launch/master/deliver.sh`) and are not in this repository.
 
 ## What is in them
 
 - **Pebble's real interface.** The product interface shown is Pebble's own (Apache-2.0,
-  https://github.com/tohin003/Pebble), never redrawn. The 1.x media capture it from the app's code; everything they
-  show is fictional sample data: Maya, a Python project called `invoice-kit`, a Lisbon trip budget and a datetime quiz.
-  The 2.0 launch's clips are recordings of the real app (takes of the 2.0.0 build and a harness of the published 2.0.1
-  release) and of Pebble Remote built from its published source, with their own fictional sample data; each is
-  captioned "Shown with sample data." with the version it was recorded from. The long-tasks loop is a diagram, captioned
-  as one.
-- **The pebble.** Pebble's character engine: bloub by Jérémy Perret (MIT).
+  https://github.com/tohin003/Pebble), never redrawn. The Pebble 2.0 launch film and its loops show recordings of
+  Pebble 2.0 on a Mac, Pebble 2.0.1's own interface running with sample data, and the Pebble Remote app (open source)
+  in the iOS Simulator against a stand-in Mac, all with fictional sample data (a pottery studio's open day, its kiln
+  and its bookings). Personal and production details in the recordings are masked; Pebble's own windows are never
+  altered. Each loop is captioned "Shown with sample data." with where its pictures come from; the long-tasks loop is
+  a diagram, captioned as one. The 1.x loops capture the app's code with the earlier sample data (Maya, a Python
+  project called `invoice-kit`, a Lisbon trip budget and a datetime quiz).
+- **The pebble.** Pebble's character engine: bloub by Jérémy Perret (MIT), in the film, its loops and the 1.x loops.
 - **The type.** Fraunces, Inter and Geist Mono, under the SIL Open Font License 1.1.
 - **The riverbed wallpaper.** Original, made for this site.
-- **The music.** The launch trailer's score, an original score composed for the film and synthesised entirely in code
-  by this repository's own engine (`tools/audio/synth`; the score is `tools/audio/scores/trailer_b.py`). It uses no
-  samples, no downloads and no third-party music. The Pebble 2.0 launch film (`media/v3`) uses "Your Breath" by
-  Eugenio Mininni (Mixkit), under the Mixkit Stock Music Free License, which requires no credit; `CREDITS.md` and
-  `/credits` name it as a courtesy.
-- **The sound effects.** Synthesised for the film and released under CC0 1.0, plus recorded foley from Kenney's
-  "Impact Sounds" and "Interface Sounds" (www.kenney.nl, CC0 1.0). The launch film's effects come from the same two
-  Kenney packs and sounds designed in code for this project (CC0 1.0).
+- **The music.** The Pebble 2.0 launch film uses "Your Breath" by Eugenio Mininni (Mixkit), under the Mixkit Stock
+  Music Free License, which requires no credit; `CREDITS.md` and `/credits` name it as a courtesy. (The retired
+  trailer's score was synthesised in code by this repository's engine, `tools/audio/synth`.)
+- **The sound effects.** Kenney's "Impact Sounds" and "Interface Sounds" (www.kenney.nl, CC0 1.0) and sounds designed
+  in code for this project (CC0 1.0).
 - **Audio** is only in the film files. The loops are silent, and no audio file is distributed on its own.
 
 ## Where the sources and tools are
 
 In this repository, https://github.com/tohin003/pebble-landingPage:
 
-- `capture/`: the harness that captures Pebble's real interface, with the fictional sample data in
-  `capture/mock/fixtures.js`.
-- `video/`: the Remotion project for the films, the loops, the posters and the social card.
-- `tools/audio/`: the score, the sampler, the sound effects and the mix. `tools/audio/sample_kit.json` and
-  `tools/audio/sha256-sources.txt` pin every sample and sound pack to its source and SHA-256.
-- `tools/assets/`: the stills and the wallpaper. `tools/encode/`: the web and social encodes and their checks.
-  `tools/captions/`: the text tracks.
-- `docs/media-provenance.json`: the source, hash and licence of every audio input, and how the music was chosen.
-- `docs/BUILDING.md`: how to rebuild all of it.
+- `video/src/launch/`: the Remotion project for the Pebble 2.0 launch film (its scenes, master, captions and
+  delivery); `video/` holds the earlier films, the 1.x loops, the posters and the social card.
+- `capture/`: the harnesses that capture Pebble's real interface, with their fictional sample data.
+- `tools/encode/`: the site's encodes and their checks (`launch-site.sh` makes every site file of the film).
+  `tools/captions/`: the text tracks. `tools/assets/`: the stills and the wallpaper. `tools/audio/`: the earlier
+  films' score, sound effects and mix.
+- `docs/media-provenance.json`: the source, hash and licence of the audio inputs.
+- `docs/BUILDING.md`: how to rebuild the earlier media.
 
 If the film's music, or any third-party material in the media, changes, update this file and `CREDITS.md` together.

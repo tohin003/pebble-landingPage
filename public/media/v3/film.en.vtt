@@ -1,0 +1,201 @@
+WEBVTT
+
+NOTE
+Pebble 2.0 launch film: captions of its on-screen type (the film has no voice).
+Copied by tools/captions/build.mjs from video/out/launch/pebble-2.0-launch.vtt, which video/src/launch/master/captions.ts writes; edit the cue list there, not this file.
+
+c01
+00:00:00.000 --> 00:00:01.200
+This is Pebble.
+
+c02
+00:00:01.200 --> 00:00:02.400
+It’s small.
+
+c03
+00:00:02.567 --> 00:00:03.867
+It just went up against
+Claude Code and Codex.
+
+c04
+00:00:03.867 --> 00:00:08.067
+Same model. Same tasks.
+
+c05
+00:00:08.467 --> 00:00:09.667
+Pebble 2.0
+
+c06
+00:00:09.667 --> 00:00:13.133
+The desktop companion that does real work,
+and shows its evidence.
+
+c07
+00:00:14.333 --> 00:00:16.467
+It lives on your Mac.
+
+c08
+00:00:16.800 --> 00:00:18.067
+On every Space.
+
+c09
+00:00:18.467 --> 00:00:19.967
+Click. Ask.
+
+c10
+00:00:20.200 --> 00:00:22.567
+Now it can use your Mac.
+
+c11
+00:00:22.800 --> 00:00:24.067
+Your apps.
+
+c12
+00:00:24.300 --> 00:00:26.067
+Your calendar.
+
+c13
+00:00:26.300 --> 00:00:27.733
+Your browser.
+
+c14
+00:00:27.900 --> 00:00:30.867
+The app windows and websites you allow.
+
+c15
+00:00:31.867 --> 00:00:34.667
+Done means checked.
+
+c16
+00:00:35.933 --> 00:00:37.433
+AgentGuard. Evidence before “done”.
+Tests the host ran, not the model’s word.
+
+c17
+00:00:37.433 --> 00:00:39.767
+Files you asked to keep, kept.
+Output matched to its file, byte for byte.
+
+c18
+00:00:40.733 --> 00:00:44.200
+It builds small tools for itself.
+
+c19
+00:00:44.333 --> 00:00:47.233
+When the check disagrees, it asks you.
+
+c20
+00:00:47.767 --> 00:00:50.533
+It remembers what matters.
+
+c21
+00:00:50.700 --> 00:00:52.567
+All visible.
+
+c22
+00:00:52.567 --> 00:00:54.567
+Forget anything.
+
+c23
+00:00:54.567 --> 00:00:55.833
+Context warping.
+
+c24
+00:00:55.833 --> 00:00:58.500
+Long tasks keep a smaller window.
+
+c25
+00:00:58.667 --> 00:01:01.300
+Older results sealed.
+Any one returned exactly.
+
+c26
+00:01:01.900 --> 00:01:04.067
+Pebble, in your pocket.
+
+c27
+00:01:04.500 --> 00:01:06.733
+Pebble Remote for iPhone.
+
+c28
+00:01:07.233 --> 00:01:08.433
+Approve with Face ID.
+
+c29
+00:01:08.433 --> 00:01:09.867
+Open source. Build it with Xcode.
+
+c30
+00:01:10.200 --> 00:01:11.400
+Presenting?
+
+c31
+00:01:11.433 --> 00:01:12.633
+Stealth Lockdown.
+
+c32
+00:01:12.633 --> 00:01:15.867
+Hidden from screen capture and screen
+sharing, not from a camera, a capture card
+
+c33
+00:01:15.867 --> 00:01:19.067
+or a process list. Exams and interviews
+that forbid assistants still forbid it.
+
+c34
+00:01:19.267 --> 00:01:21.067
+So. How did it do?
+
+c35
+00:01:21.067 --> 00:01:22.267
+Tasks done correctly.
+
+c36
+00:01:22.267 --> 00:01:23.467
+Pebble 92.2 %. Claude Code 83.5 %.
+
+c37
+00:01:23.467 --> 00:01:24.667
+Pebble 95.3 %. Codex 90.6 %.
+
+c38
+00:01:24.933 --> 00:01:26.133
+Said “done” when it wasn’t.
+Lower is better.
+
+c39
+00:01:26.133 --> 00:01:27.333
+Pebble 6.3 %. Claude Code 13.7 %.
+
+c40
+00:01:27.333 --> 00:01:28.533
+Pebble 3.9 %. Codex 7.1 %.
+
+c41
+00:01:28.533 --> 00:01:29.733
+Cost per task.
+Lower is better.
+
+c42
+00:01:29.733 --> 00:01:30.933
+Pebble $0.091. Claude Code $0.117.
+
+c43
+00:01:30.933 --> 00:01:32.167
+Pebble $0.042. Codex $0.050.
+
+c44
+00:01:33.300 --> 00:01:35.967
+Small pebble.
+Real work.
+
+c45
+00:01:36.433 --> 00:01:37.900
+Pebble 2.0
+Free and open source,
+
+c46
+00:01:37.900 --> 00:01:39.400
+for Macs with Apple silicon.
+github.com/tohin003/Pebble
