@@ -1,7 +1,9 @@
 # Pebble 2.0: the LinkedIn post kit (draft for the owner)
 
-Every claim below is the published one (the v2.0.0 and v2.0.1 release notes, README@v2.0.1). Edit the voice freely;
-keep the numbers, the method sentence and Stealth Lockdown's honest line exactly as they are.
+Every claim below is the published one (the v2.0.0 and v2.0.1 release notes, README@v2.0.1). Each still holds for
+Pebble 2.0.3, published on 2 Nov: its notes change only Stealth Lockdown and keep 2.0.0's model routes, tools and
+AgentGuard (CHANGELOG.md@v2.0.3:9-10). Edit the voice freely; keep the numbers, the method sentence and Stealth
+Lockdown's honest line exactly as they are.
 
 ## What to upload
 
