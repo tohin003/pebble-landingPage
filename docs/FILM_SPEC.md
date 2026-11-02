@@ -1,5 +1,12 @@
 # FILM_SPEC — the Pebble launch film, its teaser and the feature loops
 
+> **Retired from the site on 2 Nov 2026.** The page's film is now the Pebble 2.0 launch film, which replaced this 1.x
+> trailer at the owner's ask: its spec is `docs/launch/TREATMENT.md`, its timeline `video/src/launch/master/timeline.ts`,
+> its captions `video/src/launch/master/captions.ts`, and its chapters on the page `src/content/chapters.ts`. The
+> trailer's files are in git history (`public/media/v2/`); this file, `docs/film-captions.json` and
+> `docs/film-cuts/x30.json` stay as its record, and its own code (`video/src/film/`, `tools/audio/`) still reads them.
+> Nothing below binds the page any more.
+
 Lane E, 2026-10-23. **This file is the source of truth for the films** (gate G1). Lane G builds from it, and
 `video/src/film/timeline.ts` is re-derived from it. Every frame number below comes from `tools/audio/beatmap.json`.
 Captions live in `docs/film-captions.json`. Chapter timings live in `src/content/chapters.ts`.

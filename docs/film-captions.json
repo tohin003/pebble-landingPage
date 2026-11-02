@@ -1,5 +1,6 @@
 {
   "schema": "pebble-film-captions/1",
+  "retired": "Retired from the site on 2 Nov 2026: the Pebble 2.0 launch film replaced the 1.x trailer at the owner's ask. The site's captions now come from the film's own source (video/src/launch/master/captions.ts, through tools/captions/build.mjs) and its chapters from src/content/chapters.ts; tools/captions and tools/encode no longer read this file. It stays as the trailer's record, and the trailer's own code (video/src/film/timeline.ts, tools/audio) still reads it.",
   "about": "The launch film's captions: sound descriptions plus the on-screen kinetic lines, word for word, and the time-coded audio descriptions. The single source for public/media/v2/film.en.vtt (website), film.descriptions.en.vtt and the social SRTs. The trailer (OVERRIDES 38-41; docs/FILM_SPEC.md section 24): the frames follow tools/audio/beatmap.json (100 BPM, 18 frames per beat, 72 per bar, 30 fps; the drop on f648). The three compositions (LaunchFilm 1920x1080, LaunchFilmSquare 1080x1080 and LaunchFilmVertical 1080x1920) use the same timeline, so one track serves all three.",
   "film": "LaunchFilm, LaunchFilmSquare and LaunchFilmVertical",
   "language": "en-GB",
