@@ -139,3 +139,7 @@ is missing. claude-p sessions keep running (another account). Status:
     loop.
   - Then the Desktop hand-off (`~/Desktop/Pebble 2.0 film/launch-film-2026-11-02/`) and site phase 2
     (`.work/launch/briefs/site2.md`).
+- 15:52: every round-4 fix landed (`.work/launch/critic/FIXES-4.md`, "How the packages landed").
+  - The director's ruling on S-1: nothing of Pebble's is ever painted out of a picture, not even to mimic macOS. The
+    swipe is REVIEW-4's whip, from RS1-03's own poster Space into Chrome's Space (8a2d28a).
+  - Captions: cff1d78. The final pipeline runs now; then round 5.
