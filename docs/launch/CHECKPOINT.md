@@ -238,3 +238,60 @@ is missing. claude-p sessions keep running (another account). Status:
   check. A 16:9 MUST would mean redoing only the 16:9-derived encodes.
 - Pebble 2.0.3 on the page: 5c0aaaa (the worker) and ca77e52 (the director's plainer Benchmarks line). The post kit
   notes that its claims still hold for 2.0.3 (fd24103).
+
+## Update, 3 Nov ~01:00 IST: done; the page waits on the owner's review and deploy
+
+- The 16:9: the critic said **ship** at ~22:45 with no MUST (`VERIFICATION_LOOP.md`, "The result").
+  - Its LinkedIn file is the N-8 encode (e0ff991): capped at 30 Mbit/s, Level 4.1, 19.6 Mbit/s on average.
+  - `handoff.sh 16x9` put it on the Desktop beside the 4:5.
+- The Desktop folder (`~/Desktop/Pebble 2.0 film/launch-film-2026-11-02/`) is the whole delivery: both LinkedIn files,
+  the thumbnails (PNG and JPG), the SRT, `LINKEDIN_POST.md` and `README.txt`.
+- `check.ts` now exits 0 on a plan that passes (0e427d5). `noFontFetch.ts` ignores the scenes' font fetch, which fails
+  outside a browser.
+- Site phase B, by the site worker. Commits d53a077, 487c246, 6ab6697, 2c31b51, dfc88e5, 1016657 and aee2e3e; its
+  handoff's section "Phase B: done" has the details.
+  - **The film set in `/media/v3`:** 1080 HEVC, 720 H.264, and the 4:5 phone cut in HEVC and H.264. It takes
+    46.69 MB of the 50 MB cap. `hqdn3d=0:0:4:4` and aq-mode 3 keep the dark ground from blocking. The posters are
+    frame 0.
+  - **The clips:** eight cut from the film, 14 with the 4:5 cuts (19.27 MB), each checked frame by frame. The 1.x
+    `loop-companion` and `loop-memory` are retired.
+  - **The rest:** the chapters, the transcript and the extended description; the documents and
+    `media-provenance.json`.
+- The director's check, 00:05–00:50:
+  - All 12 light checks pass on the committed tree:
+    - typecheck;
+    - 232 site tests and 82 engine tests;
+    - video tsc and `check.ts`;
+    - both caption checks;
+    - the 1.x loops and `export-cues`;
+    - `verify.mjs`, the loop plan and the copy lint.
+  - I looked at every screenshot tile at 1440 and at 390.
+  - `du -sh public`: 72M.
+- The director's decisions:
+  - **The 4:5 H.264 fallback stays at CRF 25.** At 1:1, S08's night and S09's dusk show a faint mottle where the master
+    has grain. CRF 24 would cost 2.8 MB for one step.
+  - **Memory's caption** now leads with "Shown with sample data.", like every other clip (8c015b7).
+  - **`music.ts`:** edit A no longer flags the owner's download (9665fe7).
+  - **The play button** stays above the poster's line (1016657). It is one value in `Film.module.css`.
+- Cleanup, as the owner asked on 2 Nov. All four groups were deleted, the film's sources included.
+  - Three runs by the cleanup agent (`.work/cleanup/MANIFEST.md`) and the director's last pass freed about 16.9 GiB.
+    The data volume went from 14.07 GiB free to 37 GiB free.
+  - **What is left:**
+    - the Desktop delivery;
+    - the git tree;
+    - `video/out/launch/pebble-2.0-launch.srt` and `.vtt` (`build.mjs --check` reads the VTT);
+    - the text records in `.work/`: the handoffs, the reviews, and the QA folders' `gates.txt` and reports.
+  - **The film can't be re-rendered, and its site files and clips can't be re-encoded.** The takes, the music, the
+    capture assets and the masters are gone. The Desktop's LinkedIn files (CRF 16) are the best copies left, and a
+    re-cut would have to start from them. `loops.mjs --dry-run` still passes, but a real cut or `launch-site.sh`
+    needs the masters.
+  - After the cleanup, the 11 checks that don't need a build pass. The copy lint runs at the next `next build`
+    (`.next` is deleted).
+- Left for the owner:
+  1. Review the page locally with `npm run build && npm start`.
+  2. Merge `launch-2.0` into `main`, then push and deploy through Vercel. Agents don't push or deploy.
+  3. Post the 4:5 on LinkedIn from the Desktop folder, with `LINKEDIN_POST.md`. Listen to it once first, at 0:08,
+     0:17, 0:18 and 1:21.
+- Another session's uncommitted files are still modified in the tree: `tools/audio/score2/*`,
+  `video/src/film2/setpieces/ringBlock.ts` and `video/src/film2/tests/fix-round3.test.ts`. They are not the launch's,
+  and they stay as they are.
