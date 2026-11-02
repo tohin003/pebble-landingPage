@@ -39,7 +39,7 @@ export function ViewsAndTour() {
   const l8 = loopMedia("views");
   return (
     <section id={SECTIONS.views} className="sec" aria-labelledby="views-title">
-      <SectionHead id="views-title" label={labels.views} title={views.h2} lead={views.lead} chip={views.chapterId} />
+      <SectionHead id="views-title" label={labels.views} title={views.h2} lead={views.lead} />
 
       <div className="wrap grid-12 sec-body">
         <div className="main">

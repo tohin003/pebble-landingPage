@@ -14,8 +14,8 @@
 //     against, so "Claude Code" and, since golden set 2.0 (the "2.0.0 published" post, STATUS 2026-10-31 14:53),
 //     "Codex" (and no other name) pass inside <section id="benchmarks">, in llms.txt's "## Benchmark" block and in
 //     src/content/benchmarks.ts. Since the director's X1 for the 2.0 launch (1 Nov 2026), they pass on the film's
-//     page too (/film, the transcript of the film that names both), and in the film's captions and chapters
-//     (src/content/filmCaptions.ts, chapters.ts). Names as plain text only. Every other rule, "beats" included, still
+//     page too (/film, the transcript of the film that names both), and in the film's chapters (src/content/chapters.ts:
+//     its transcript lines and descriptions). Names as plain text only. Every other rule, "beats" included, still
 //     applies there.
 //   - Stealth Lockdown's never-words (OVERRIDES §21): "undetectable", "invisible", and exams, interviews, proctoring,
 //     monitoring, cheating, bypassing or evading, except inside the honest line itself; and "Context Warping", the name
@@ -170,6 +170,9 @@ const ALLOW = new Set([
   "Protection comes from elsewhere: the permission mode you pick, approvals that happen only in Pebble’s main window, and macOS’s sandbox, which limits commands and tests but is not a promise against every attack.",
   // Stealth Lockdown's honest line (OVERRIDES §21; also an ALLOW_PASSAGES entry, for when it sits inside a longer text)
   ...ALLOW_PASSAGES,
+  // the Pebble 2.0 launch film's reading aid under S10's charts, quoted on its own line in the /film transcript
+  // (src/content/chapters.ts `benchmarks`); a note on how to read the bars, not a claim about Pebble (C-FILM2-38)
+  "Lower is better.",
 ]);
 // Proper names and fixed terms that contain a flagged word
 const ALLOW_PATTERNS = [
@@ -268,7 +271,7 @@ function strip(text) {
 /** The one place a visitor may read the name of the product Pebble was measured against (see the header). */
 const NAMED = /\b(Claude Code|Codex)\b/g;
 /** src/content files in the named scope: the benchmark's, and the film's captions and chapters (the director's X1). */
-const NAMED_FILES = new Set(["benchmarks.ts", "filmCaptions.ts", "chapters.ts"]);
+const NAMED_FILES = new Set(["benchmarks.ts", "chapters.ts"]);
 
 /**
  * [the Benchmarks section's HTML and the benchmark strip's under the hero (<aside id="benchmark-strip">: golden set 2.0's

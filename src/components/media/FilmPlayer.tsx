@@ -5,8 +5,8 @@
 //   film-events.ts (FilmTrigger, ChapterChip): the click's handler dispatches the event, and this component sets the
 //   source, opens the dialog and calls video.play() synchronously, inside the same user activation (M5).
 // - The source is chosen at click time: on phones (FILM_PHONE_QUERY, max-width 560px) the phone cut first, whose
-//   interface text stays readable at phone width (OVERRIDES §46 P2-9): the launch film's 4:5 cut in a portrait screen
-//   with its own poster, or the 1.x trailer's 1:1 cut in a square one (film.phoneFrame); otherwise 1080p when
+//   interface text stays readable at phone width (OVERRIDES §46 P2-9): the film's 4:5 cut in a portrait screen with
+//   its own poster (film.phoneFrame); otherwise 1080p when
 //   screen.width × devicePixelRatio ≥ 1700, else 720p (C6, C9); HEVC first when the browser can play it, then H.264.
 //   A browser can say it plays HEVC and then fail to decode the file: when the chosen source errors, the next one it
 //   can play (the H.264 file first, then the 16:9 films) takes over, from where the film was, and only when none is
@@ -31,7 +31,7 @@ import styles from "./FilmPlayer.module.css";
 /** A chapter with a start time; `time` is its label, for example "0:24" (chapters.ts formatTimecode). */
 export type TimedChapter = Readonly<{ id: string; title: string; startSeconds: number; time: string }>;
 
-/** Every source this browser says it can play, best first (filmSources.ts): on phones the 1:1 film, then the wanted
+/** Every source this browser says it can play, best first (filmSources.ts): on phones the 4:5 film, then the wanted
  *  16:9 quality, then the other; HEVC before H.264 in each. */
 function playableSources(film: FilmMedia, video: HTMLVideoElement): VideoSource[] {
   return filmSourceOrder(film, {
@@ -43,13 +43,12 @@ function playableSources(film: FilmMedia, video: HTMLVideoElement): VideoSource[
 
 type PhoneAspect = "square" | "portrait";
 
-/** The phone cut's screen: square for a 1:1 frame, portrait for a taller one (the launch film's 4:5). */
+/** The phone cut's screen: portrait for a taller frame (the film's 4:5), square for a 1:1 one. */
 function phoneAspect(film: FilmMedia): PhoneAspect {
   return film.phoneFrame.height > film.phoneFrame.width ? "portrait" : "square";
 }
 
-/** The poster over the screen: the 16:9 one over the 16:9 film, the phone cut's own over the phone cut (none for the
- *  trailer's square cut, which has no poster of its shape). */
+/** The poster over the screen: the 16:9 one over the 16:9 film, the phone cut's own over the phone cut. */
 function posterFor(film: FilmMedia, aspect: PhoneAspect | undefined): string | undefined {
   const set = aspect ? film.phonePoster : film.poster;
   return set?.webp.available ? set.webp.src : undefined;
@@ -64,7 +63,7 @@ export function FilmPlayer({ film, chapters }: { film: FilmMedia; chapters: read
   const fallbacks = useRef<VideoSource[]>([]);
   const describer = useRef<Describer | null>(null);
   const [failed, setFailed] = useState(false);
-  /** the screen's shape: the phone cut's ("square" 1:1, "portrait" 4:5) while it plays, else the 16:9 default */
+  /** the screen's shape: the phone cut's ("portrait" 4:5) while it plays, else the 16:9 default */
   const [aspect, setAspect] = useState<PhoneAspect | undefined>(undefined);
   const [canSpeak, setCanSpeak] = useState(false);
   const [describe, setDescribe] = useState(false);

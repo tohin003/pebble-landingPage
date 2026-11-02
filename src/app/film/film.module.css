@@ -116,20 +116,17 @@
   color: var(--ink);
 }
 
-.lines,
-.sounds {
+.lines {
   display: grid;
   gap: 4px;
 }
 
-.lines li,
-.sounds li {
+.lines li {
   position: relative;
   padding-left: 18px;
 }
 
-.lines li::before,
-.sounds li::before {
+.lines li::before {
   content: "";
   position: absolute;
   left: 0;
@@ -140,15 +137,16 @@
   background: var(--line);
 }
 
-.sounds li {
-  color: var(--ink-2);
-}
-
+/* the film's notes under the transcript (chapters.ts filmNotes): one paragraph each, the first set off from the list */
 .sample {
   margin-top: 24px;
   font-size: 14px;
   line-height: 1.5;
   color: var(--ink-2);
+}
+
+.sample + .sample {
+  margin-top: 8px;
 }
 
 @media (max-width: 1023px) {

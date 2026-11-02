@@ -36,7 +36,8 @@ const TILE_SIZES = "(max-width: 560px) calc(100vw - 32px), 515px";
 
 const NO_SCRIPT = "[data-story-panel]{display:grid!important;margin-top:56px}";
 
-function StepText({ index, chapter, children }: { index: number; chapter: string; children?: ReactNode }) {
+/** `chapter`: the film chapter whose chip the step shows (step 04 only: chapters.ts `agentguard`). */
+function StepText({ index, chapter, children }: { index: number; chapter?: string; children?: ReactNode }) {
   const step = project.steps[index]!;
   return (
     <div className={styles.words}>
@@ -44,7 +45,7 @@ function StepText({ index, chapter, children }: { index: number; chapter: string
       <p className={styles.body}>{step.body}</p>
       <p className={styles.limit}>{step.limit}</p>
       {children}
-      <ChapterChip chapterId={chapter} className={styles.chip} />
+      {chapter ? <ChapterChip chapterId={chapter} className={styles.chip} /> : null}
     </div>
   );
 }
@@ -65,7 +66,7 @@ export function ProjectStory() {
   const panels = [
     // 01 Edits
     <>
-      <StepText index={0} chapter={project.chapterIds.steps01to03} />
+      <StepText index={0} />
       <div className={`${styles.picture} ${styles.flat}`}>
         <ApprovalCardDemo className={styles.demo} />
       </div>
@@ -73,7 +74,7 @@ export function ProjectStory() {
 
     // 02 Tests
     <>
-      <StepText index={1} chapter={project.chapterIds.steps01to03} />
+      <StepText index={1} />
       <figure className={`${styles.picture} ${styles.tileFigure}`}>
         <MediaFrame variant="riverbed" aspect="var(--tile-aspect)" sizes={TILE_SIZES}>
           {l4.available ? (
@@ -103,7 +104,7 @@ export function ProjectStory() {
 
     // 03 Commands and Git
     <>
-      <StepText index={2} chapter={project.chapterIds.steps01to03} />
+      <StepText index={2} />
       <figure className={`${styles.picture} ${styles.flat}`}>
         <figcaption className={styles.quoteIntro}>{project.commandCard.intro}</figcaption>
         <blockquote className={styles.quoteText}>
@@ -114,7 +115,7 @@ export function ProjectStory() {
 
     // 04 AgentGuard
     <>
-      <StepText index={3} chapter={project.chapterIds.step04}>
+      <StepText index={3} chapter={project.chapterId}>
         <p className={styles.more}>
           <TextLink href={`#${SECTIONS.agentGuard}`}>{project.verdict.link}</TextLink>
         </p>

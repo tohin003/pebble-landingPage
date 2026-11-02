@@ -39,7 +39,7 @@ export function Pace() {
   const [then, lead] = firstSentence(pace.lead);
   return (
     <section id={SECTIONS.pace} className="sec" aria-labelledby="pace-title">
-      <SectionHead id="pace-title" label={labels.pace} title={pace.h2} then={then} lead={lead} chip={pace.chapterId} />
+      <SectionHead id="pace-title" label={labels.pace} title={pace.h2} then={then} lead={lead} />
 
       <div className="wrap grid-12 sec-body">
         <div className="main">

@@ -51,7 +51,6 @@ export function Privacy() {
         then={THEN}
         lead={LEAD}
         action={<TextLink href={privacy.stealthLink.href}>{privacy.stealthLink.label}</TextLink>}
-        chip="open-source"
       />
 
       <div className="wrap grid-12 sec-body">

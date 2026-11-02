@@ -30,7 +30,7 @@ export const seo = {
   pages: {
     film: {
       title: "Film transcript",
-      description: "The Pebble launch film, described part by part, with every line of on-screen text.",
+      description: "The Pebble 2.0 launch film, described part by part, with the lines it shows on screen.", // [C-FILM3-3]
     },
     credits: {
       title: "Credits",

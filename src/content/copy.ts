@@ -324,14 +324,20 @@ export const downloadNotice = {
 
 export const film = {
   h2: "Watch Pebble at work.",
+  /**
+   * The Pebble 2.0 launch film (2 Nov 2026: it replaces the 1.x trailer). It names no other product and no setting
+   * whose limit would have to follow: the film's own words, with the benchmark's method beside its numbers, are on
+   * /film. [C-FILM3-1]
+   */
   lead:
-    "A short trailer with music and no voiceover: three questions, Pebble's own answers, a quick tour, and one bug fix carried through to a tested change.", // [C-FILM-2]
+    "The Pebble 2.0 launch film, with music and no voiceover: what Pebble 2.0 does, from your desktop to your iPhone, and how it did on its benchmark.",
   play: "Play the film",
   playNote: "Plays with sound.",
   chaptersHeading: "Chapters",
   transcriptLink: "Read the transcript",
   sampleData: common.sampleData,
-  posterAlt: "The Pebble film. A close-up of the pebble, its eyes looking out from the upper right of a dark frame.", // [C-ALT-1] the poster is the film's frame 0 (OVERRIDES §46, §47 R2-3)
+  /** The poster is the 16:9 film's frame 0, a finished composition (video/src/launch/scenes/a/S00ColdOpen.tsx). [C-FILM3-2] */
+  posterAlt: "The Pebble 2.0 launch film. On a dark green ground, the line “This is Pebble.” above the small sage pebble.",
 } as const;
 
 export const filmDialog = {
@@ -408,7 +414,6 @@ export const models = {
   /** Lane F2a: the text alternative of the Settings › Models crop (shown until loop L2 exists). [C-F2A-2] */
   mediaAlt:
     "Pebble's Settings, on the Models tab: a GGUF model file on this Mac, the buttons Add a model file and Connect provider, and Continue with ChatGPT.",
-  chapterId: "model",
   /** The tablist's accessible name: the three ways show one at a time (.work/page-declutter/PLAN.md). Not a claim. */
   tabsLabel: "Three ways to connect a model",
 } as const;
@@ -457,7 +462,8 @@ export const project = {
       limit: "Changed code without covering tests is not held. AgentGuard checks evidence; it is not a security layer.", // [C-PROJ-9] [C-PROJ-10]
     },
   ],
-  chapterIds: { steps01to03: "project", step04: "tested" },
+  /** Step 04 (the tests, then Verified) is the film's AgentGuard scene (chapters.ts `agentguard`); steps 01 to 03 have none. */
+  chapterId: "agentguard",
   /** Lane F2a: the rail's step names (comp 3), the tabs of the story. Labels, not claims. */
   rail: {
     label: "How a coding task goes",
@@ -853,7 +859,6 @@ export const pace = {
   ],
   /** Lane F2a: introduces explainers.permissionDial.everyMode, quoted (DESIGN §5 row 7). [C-F2A-8] */
   attribution: "In Pebble's Settings, under the three modes:",
-  chapterId: "pace",
 } as const;
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -919,7 +924,6 @@ export const views = {
     "Replies draw their own visuals too: a table sorts by any column and can become a chart, and diagrams are drawn natively. Ask for a visual and Pebble can answer with a chart, a diagram, a comparison or a timeline, drawn from data only.", // [C-200-12] CHANGELOG.md@v2.0.0:230-234
   ],
   limit: "A view can show and collect things, but it can never approve, run or change anything.", // [C-VIEW-4]
-  chapterId: "views",
 } as const;
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -1334,7 +1338,6 @@ export const openSource = {
     { label: "Code of conduct", href: links.codeOfConduct, external: true },
     { label: "What's new", href: links.changelog, external: true },
   ] satisfies readonly Link[],
-  chapterId: "open-source",
 } as const;
 
 export const faqSection = {
@@ -1568,14 +1571,12 @@ export const globalError = {
 export const filmPage = {
   title: "Film transcript",
   h1: "The Pebble film",
-  lead:
-    "A short trailer with music and no voiceover. This page describes it part by part, with every line of on-screen text.", // [C-FILM-2]
+  /** The film's notes under the transcript (chapters.ts `filmNotes`) say how it was made. [C-FILM3-3] */
+  lead: "The Pebble 2.0 launch film, with music and no voiceover. This page describes it part by part, with the lines it shows on screen.",
   play: "Play the film",
-  sampleData: common.sampleData,
   transcriptHeading: "Transcript",
   onScreenLabel: "On screen",
   descriptionLabel: "What you see",
-  soundLabel: "Sound",
   durationLabel: (duration: string) => `Length: ${duration}`,
   backHome: "Back to the home page",
 } as const;

@@ -47,7 +47,6 @@ export async function OpenSourceFaq() {
         title={openSource.h2}
         then={THEN}
         lead={LEAD}
-        chip={openSource.chapterId}
       />
 
       <div className="wrap grid-12 sec-body">

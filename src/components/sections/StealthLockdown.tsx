@@ -43,6 +43,7 @@ export function StealthLockdown() {
             {stealth.description} {stealth.honest}
           </>
         }
+        chip="presenting"
       />
 
       <div className="wrap grid-12 sec-body">

@@ -36,7 +36,7 @@ export function Models() {
   const still = !l2.available || l2.phoneSources.length === 0;
   return (
     <section id={SECTIONS.models} className="sec" aria-labelledby="models-title">
-      <SectionHead id="models-title" label={labels.models} title={models.h2} lead={models.lead} chip={models.chapterId} />
+      <SectionHead id="models-title" label={labels.models} title={models.h2} lead={models.lead} />
 
       <div className="wrap grid-12 sec-body">
         <div className="main">

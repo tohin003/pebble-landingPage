@@ -3,7 +3,7 @@
 // answers (the phone media query, the screen's device pixels, video.canPlayType).
 import type { FilmMedia, FilmQuality, VideoSource } from "./media";
 
-/** When the theatre plays the phone cut (4:5 for the launch film, 1:1 for the 1.x trailer): the page's phone breakpoint (the play button's own, FilmTrigger.module.css). */
+/** When the theatre plays the film's 4:5 phone cut: the page's phone breakpoint (the play button's own, FilmTrigger.module.css). */
 export const FILM_PHONE_QUERY = "(max-width: 560px)";
 /** 1080p from a screen this many device pixels wide (screen.width × devicePixelRatio), else 720p (critics C6, C9). */
 export const HD_PIXELS = 1700;

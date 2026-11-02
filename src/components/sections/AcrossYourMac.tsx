@@ -15,7 +15,7 @@ import { FeatureLedger } from "./FeatureLedger";
 export function AcrossYourMac() {
   return (
     <section id={SECTIONS.mac} className="sec" aria-labelledby="mac-title">
-      <SectionHead id="mac-title" label={labels.mac} title={acrossMac.h2} lead={acrossMac.lead} />
+      <SectionHead id="mac-title" label={labels.mac} title={acrossMac.h2} lead={acrossMac.lead} chip="mac" />
       <div className="wrap grid-12 sec-body">
         <div className="main">
           <FeatureLedger

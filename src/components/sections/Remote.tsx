@@ -30,6 +30,7 @@ export function Remote() {
           </>
         }
         action={<TextLink href={source.href}>{source.label}</TextLink>}
+        chip="remote"
       />
       <div className="wrap grid-12 sec-body">
         <div className="main">

@@ -468,11 +468,12 @@ describe("describeFilm", () => {
     // nothing was cut off: every line of every description ended by itself
     expect(f.spoken.map((s) => s.text)).toEqual(cues.flatMap((c) => sentencesOf(c.text)));
     expect(f.spoken.every((s) => (s.to ?? -1) > 0)).toBe(true);
-    // a wait at the end of each cue whose words outlast it (7 of 9 at 2.5 words a second), each on its last frame
+    // a wait at the end of each cue whose words outlast it, each on its last frame: all 12 chapters of the Pebble 2.0
+    // launch film at 2.5 words a second (a dense film of 99.4 s; its descriptions read the film's lines too)
     const long = cues.filter((c) => (words(c.text) / 2.5) * 1000 + 40 * sentencesOf(c.text).length > (c.endTime - c.startTime) * 1000);
     const waits = f.log.filter((l) => l.startsWith("describer pause")).map((l) => Number(l.split("@")[1]));
     expect(waits.length).toBe(long.length);
-    expect(long.length).toBe(7);
+    expect(long.length).toBe(12);
     long.forEach((c, i) => {
       expect(waits[i]!).toBeGreaterThanOrEqual(c.endTime - HOLD_LEAD - 0.011);
       expect(waits[i]!).toBeLessThan(c.endTime);

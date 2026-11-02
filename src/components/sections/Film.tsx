@@ -1,15 +1,16 @@
 // Section 2, the film (DESIGN-LEXINGTON §6 Film, comp lex-A): a figure first, so the poster peeks above the fold at
 // 1440 × 900 (critic H7), then its caption on the grid. The frame spans the container (columns 1–12, 16 : 9); under it
 // the caption: first "Shown with sample data." at column 4, in the caption style the desktop and Models pictures use
-// (the film shows the fictional invoice-kit world; claims audit CL-1, critic C03); then the rail holds
-// the label ("The film / 1:16, with sound.", the length as data) and the main column holds the H2 (one tone), the lead,
+// (the film shows a fictional sample world: a pottery studio's open day, its kiln and bookings; claims audit CL-1,
+// critic C03); then the rail holds the label ("The film / 1:39, with sound.", the length as data) and the main column
+// holds the H2 (one tone), the lead,
 // "Read the transcript ›" and the chapters as a ruled index of three columns (two on tablets, one on phones): a stone,
 // the start time as data, the title.
 //
-// - Poster: the film's own frame 0 (the trailer's cold open: the pebble's eyes in the right third of a dark frame,
-//   OVERRIDES §46) when rendered; until then a real-UI still in a window on the riverbed, with the static pebble on the
-//   desktop. The first film's teaser T0 is retired (§46): the poster is the whole picture, on phones too, and the film
-//   itself plays only in the theatre (phones get its 1:1 cut there).
+// - Poster: the Pebble 2.0 launch film's own frame 0 (the cold open: "This is Pebble." over the small pebble on a dark
+//   green ground) when encoded; until then a real-UI still in a window on the riverbed, with the static pebble on the
+//   desktop. The poster is the whole picture, on phones too, and the film itself plays only in the theatre (phones get
+//   its 4:5 cut there). The 1.x trailer it replaced is retired (2 Nov 2026).
 // - The play button is the galet on the page's ground with an ink play mark: playing the film is not one of the
 //   accent's three jobs, and no control casts a shadow (DESIGN-LEXINGTON §3.5).
 // - Everything that plays (the button, the chapters) waits for html[data-film="ready"], so nothing is a dead control;
@@ -44,7 +45,7 @@ export function Film() {
     seconds: c.startSeconds ?? 0,
     time: formatTimecode(c.startSeconds ?? 0),
   }));
-  // "The film / 1:16, with sound." (the length is data); "The film / Plays with sound." while the length is unknown
+  // "The film / 1:39, with sound." (the length is data); "The film / Plays with sound." while the length is unknown
   const label = duration !== null && FILM_DURATION_SECONDS !== null ? labels.filmLength(duration) : labels.film;
 
   return (

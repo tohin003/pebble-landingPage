@@ -37,10 +37,10 @@ const securityHeaders = [
 ];
 
 // Media and UI stills live under versioned folders (public/media/v1, public/ui/v1; critic M2), so they can be cached
-// for a year: a re-render goes to a new folder, never over an old one. The energetic recut's film is the first such
-// re-render: its videos and text tracks are in public/media/v2 (OVERRIDES §35 decision 8; src/lib/media.ts FILM_MEDIA).
-// The Pebble 2.0 launch's film and loops go to public/media/v3 and its stills to public/ui/v2 (src/lib/media.ts
-// LAUNCH_MEDIA, UI_LAUNCH; SITE_AUDIT §4.4). A fix to a published v3 file goes to v4: add the folder here, in both lists.
+// for a year: a re-render goes to a new folder, never over an old one. public/media/v2 held the 1.x trailer, retired on
+// 2 Nov 2026 (its files are in git history; its header stays, harmless, for returning visitors' requests). The Pebble
+// 2.0 launch's film and loops are in public/media/v3 and its stills in public/ui/v2 (src/lib/media.ts LAUNCH_MEDIA,
+// UI_LAUNCH; SITE_AUDIT §4.4). A fix to a published v3 file goes to v4: add the folder here, in both lists.
 const immutable = [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }];
 
 /**
@@ -61,7 +61,6 @@ function listMediaFiles(): string[] {
     }
   };
   walk(path.join(root, "public", "media", "v1"), "/media/v1");
-  walk(path.join(root, "public", "media", "v2"), "/media/v2");
   walk(path.join(root, "public", "media", "v3"), "/media/v3");
   walk(path.join(root, "public", "ui", "v1"), "/ui/v1");
   walk(path.join(root, "public", "ui", "v2"), "/ui/v2");

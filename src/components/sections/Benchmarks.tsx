@@ -213,6 +213,7 @@ export async function Benchmarks({ open = releaseFacts.benchmarksPublic, offered
         then={g.then}
         lead={<Figures text={g.lead} counts={COUNTS} />}
         action={<TextLink href={benchmarkLinks.releaseNotes200}>{g.notesLink}</TextLink>}
+        chip="benchmarks"
       />
 
       {/* golden set 2.0, the latest run: the moment (scoreboard, the difference drawn, led and trailed), then the ledger */}

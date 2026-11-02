@@ -1,15 +1,17 @@
 // /film: the film as text, chapter by chapter (MASTER_PLAN §7.2 "Routes"; critic H4: a text alternative to a film
 // whose information is visual and whose track is music only).
 //
-// For each chapter: its start time, "What you see" (chapters.ts `description`, reconciled with the cut by the claims
-// review from FILM_SPEC §18), "On screen" (every line of on-screen text, chapters.ts `onScreen`) and "Sound" (the
-// sound descriptions of the captions, filmCaptions.ts, which mirrors lane E's docs/film-captions.json). The length is
-// computed from chapters.ts, never written by hand. The play button appears only once the film exists.
+// The Pebble 2.0 launch film (it replaced the 1.x trailer on 2 Nov 2026). For each chapter: its start time, "What you
+// see" (chapters.ts `description`, the same words the audio description reads) and "On screen" (the film's lines,
+// chapters.ts `onScreen`). The film has no voice and its captions carry only its on-screen type, so there is no sound
+// part. Under the transcript, the film's notes (chapters.ts `filmNotes`): sample data, how its pictures were made, the
+// benchmark's method beside the comparisons above, and the music. The length is computed from chapters.ts, never
+// written by hand. The play button appears only once the film exists. The whole page is in the copy lint's named
+// scope (the transcript of a film that names the products it was measured against).
 import type { Metadata } from "next";
 import Link from "next/link";
-import { chapters, filmDurationLabel, formatTimecode, timedChapters } from "@/content/chapters";
+import { chapters, filmDurationLabel, filmNotes, formatTimecode, timedChapters } from "@/content/chapters";
 import { filmPage, film as filmCopy } from "@/content/copy";
-import { chapterSounds } from "@/content/filmCaptions";
 import { openGraphFor, seo, twitterCard } from "@/content/seo";
 import { FilmPlayer, type TimedChapter } from "@/components/media/FilmPlayer";
 import { FilmTrigger } from "@/components/media/FilmTrigger";
@@ -54,7 +56,6 @@ export default function FilmPage() {
       <h2 className={styles.transcriptTitle}>{filmPage.transcriptHeading}</h2>
       <ol className={styles.chapters}>
         {chapters.map((chapter) => {
-          const sounds = chapterSounds(chapter.id);
           const at = typeof chapter.startSeconds === "number" ? formatTimecode(chapter.startSeconds) : null;
           return (
             <li key={chapter.id} className={styles.chapter}>
@@ -82,20 +83,9 @@ export default function FilmPage() {
                       <dt>{filmPage.onScreenLabel}</dt>
                       <dd>
                         <ul className={styles.lines}>
-                          {chapter.onScreen.map((line) => (
-                            <li key={line}>{line}</li>
-                          ))}
-                        </ul>
-                      </dd>
-                    </div>
-                  ) : null}
-                  {sounds.length ? (
-                    <div>
-                      <dt>{filmPage.soundLabel}</dt>
-                      <dd>
-                        <ul className={styles.sounds}>
-                          {sounds.map((sound) => (
-                            <li key={sound}>{sound}</li>
+                          {/* a line may come twice, as S10's "Lower is better." does */}
+                          {chapter.onScreen.map((line, i) => (
+                            <li key={`${i}-${line}`}>{line}</li>
                           ))}
                         </ul>
                       </dd>
@@ -107,7 +97,11 @@ export default function FilmPage() {
           );
         })}
       </ol>
-      <p className={styles.sample}>{filmPage.sampleData}</p>
+      {filmNotes.map((note) => (
+        <p key={note} className={styles.sample}>
+          {note}
+        </p>
+      ))}
       <p className={articleStyles.back}>
         <Link href="/" prefetch={false}>
           {filmPage.backHome}

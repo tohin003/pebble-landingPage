@@ -2,21 +2,21 @@
 // the file exists (MASTER_PLAN §5.3, §5.5; critic H3, H5, C6). Use it from server components and pass the entries to
 // client components as props.
 //
-// `available` is decided at build time: next.config.ts lists the files under public/media/v1, v2 and v3 and
-// public/ui/v1 and v2 when the build starts and inlines the list as process.env.PEBBLE_MEDIA_FILES. (An `fs` check here
-// would run again inside Vercel's functions on each hourly revalidation, where public/ isn't on disk, and would hide
-// every video.) Media that isn't rendered yet degrades to its poster or a still, never to a broken player. Paths are
-// versioned, because /media/v1, /media/v2 and /ui/v1 are cached as immutable for a year: a re-render goes to a new
+// `available` is decided at build time: next.config.ts lists the files under public/media/v1 and v3 and public/ui/v1
+// and v2 when the build starts and inlines the list as process.env.PEBBLE_MEDIA_FILES. (An `fs` check here would run
+// again inside Vercel's functions on each hourly revalidation, where public/ isn't on disk, and would hide every
+// video.) Media that isn't rendered yet degrades to its poster or a still, never to a broken player. Paths are
+// versioned, because /media/v1, /media/v3 and /ui/v1 are cached as immutable for a year: a re-render goes to a new
 // folder, never over an old one.
 // - /media/v1 (MEDIA): the 1.x loops and the wallpaper.
-// - /media/v2 (FILM_MEDIA): the 1.x launch trailer, its 1:1 cut for phones, its text tracks and its poster (the 16:9
-//   film's own frame 0). The first film's poster and its teaser T0 are retired (OVERRIDES §46).
+// - /media/v2: retired (2 Nov 2026). It held the 1.x launch trailer, its 1:1 cut, tracks and poster; the Pebble 2.0
+//   launch film replaced it at the owner's ask, and git history keeps the files. Nothing reads from it.
 // - /media/v3 (LAUNCH_MEDIA): the Pebble 2.0 launch (.work/launch/site/SITE_AUDIT.md §4; the director's X7, X15): the
-//   film at 1080 and 720, its 4:5 cut `film-phone` (1080 × 1350, replacing the 1:1 cut for phones), its tracks and two
-//   posters, and the 2.0 loops (LaunchLoopId), each with its poster and an optional 4:5 phone cut. The page plays the
-//   launch film as soon as one of its 16:9 files exists (filmMedia), and a 2.0 loop as soon as its file or poster
-//   exists (launchLoopMedia; the sections fall back to what they showed before). Publish a v3 file only when it is
-//   final: a fix goes to v4.
+//   film (film-1080 and film-720, 16:9), its 4:5 cut `film-phone` (1080 × 1350) for phones, its three text tracks and
+//   two posters, and the 2.0 loops (LaunchLoopId), each with its poster and an optional 4:5 phone cut. The page plays
+//   the film once one of its 16:9 files exists (filmMedia), and a 2.0 loop once its file or poster exists
+//   (launchLoopMedia; the sections fall back to what they showed before). Publish a v3 file only when it is final: a
+//   fix goes to v4.
 // - /ui/v1 (UI) and /ui/v2 (UI_LAUNCH): real-UI stills, 1.x and 2.0.x.
 
 export type MediaFile = Readonly<{ src: string; available: boolean }>;
@@ -110,51 +110,47 @@ const LOOP_FRAMES: Readonly<Record<LoopId, Readonly<{ width: number; height: num
 export const LOOP_PHONE_FRAME = { width: 1080, height: 1350 } as const;
 
 /**
- * Each 2.0 loop's frame in /media/v3: 16:10 where the section already has a 16:10 frame (the takes are 1.54:1), and
- * Pebble Remote's iPhone recording at 4:5 (SITE_AUDIT §4.2). Their phone cuts are LOOP_PHONE_FRAME. tools/encode/
- * verify.mjs reads this table by name.
+ * Each 2.0 loop's frame in /media/v3. The loops are cut from the launch film's own masters (tools/encode/
+ * launch-loops.json): 16:9 at 1600 × 900 from the 16:9 master (a 16:10 crop would cut the film's type at its margins),
+ * Pebble Remote at 4:5 from the 4:5 master, and long tasks as a 3:2 crop of the 16:9 diagram, clear of the scene's
+ * title (the owner's ruling of 2 Nov 2026 keeps that name off the page). Their phone cuts are LOOP_PHONE_FRAME, the 4:5
+ * master's same frames. tools/encode/verify.mjs reads this table by name.
  */
 const LAUNCH_LOOP_FRAMES: Readonly<Record<LaunchLoopId, Readonly<{ width: number; height: number }>>> = {
-  desk: { width: 1600, height: 1000 },
-  "mac-apps": { width: 1600, height: 1000 },
-  "mac-actions": { width: 1600, height: 1000 },
-  "mac-web": { width: 1600, height: 1000 },
-  guard: { width: 1600, height: 1000 },
-  workshop: { width: 1600, height: 1000 },
-  memory: { width: 1600, height: 1000 },
-  "long-tasks": { width: 1600, height: 1000 },
+  desk: { width: 1600, height: 900 },
+  "mac-apps": { width: 1600, height: 900 },
+  "mac-actions": { width: 1600, height: 900 },
+  "mac-web": { width: 1600, height: 900 },
+  guard: { width: 1600, height: 900 },
+  workshop: { width: 1600, height: 900 },
+  memory: { width: 1600, height: 900 },
+  "long-tasks": { width: 1200, height: 800 },
   remote: { width: 1080, height: 1350 },
-  stealth: { width: 1600, height: 1000 },
+  stealth: { width: 1600, height: 900 },
 };
 
 export type FilmQuality = "720" | "1080";
 
-/** The 1.x trailer's 1:1 film for phones (OVERRIDES §46 P2-9): at phone width the 16:9 film's interface text is about
- *  5 px, and the square film keeps it at 11 px or more. Its timing is the 16:9 film's, frame for frame, so the text
- *  tracks are shared. The theatre picks it below FILM_PHONE_QUERY (src/lib/filmSources.ts). */
-export const FILM_SQUARE_FRAME = { width: 1080, height: 1080 } as const;
-
-/** The launch film's 4:5 cut for phones, `film-phone` (SITE_AUDIT §4.1; the director's X7: it replaces the 1:1 cut).
- *  Like the square, its timing is the 16:9 film's, frame for frame, so the text tracks are shared. */
+/** The film's 4:5 cut for phones, `film-phone` (SITE_AUDIT §4.1; the director's X7): the 4:5 master's own layout, at
+ *  phone width the interface text and the type stay readable where the 16:9 film's would be about 5 px. Its timing is
+ *  the 16:9 film's, frame for frame, so the text tracks are shared. The theatre picks it below FILM_PHONE_QUERY
+ *  (src/lib/filmSources.ts). */
 export const FILM_PHONE_FRAME = { width: 1080, height: 1350 } as const;
 
 export type FilmMedia = Readonly<{
   /** per quality, HEVC first, then H.264; only the available ones */
   sources: Readonly<Record<FilmQuality, readonly VideoSource[]>>;
-  /** the phone cut (filmSources.ts FILM_PHONE_QUERY), HEVC first, then H.264; only the available ones: the launch
-   *  film's 4:5 `film-phone`, or the trailer's 1:1 `film-square` */
+  /** the 4:5 phone cut (filmSources.ts FILM_PHONE_QUERY), HEVC first, then H.264; only the available ones */
   phoneSources: readonly VideoSource[];
-  /** the phone cut's frame: FILM_PHONE_FRAME (4:5) for the launch film, FILM_SQUARE_FRAME for the trailer */
+  /** the phone cut's frame, FILM_PHONE_FRAME */
   phoneFrame: Readonly<{ width: number; height: number }>;
-  /** the phone cut's own poster (the launch film's; the trailer's square cut has none, so its theatre shows no poster) */
+  /** the phone cut's own poster (the 4:5 film's frame 0) */
   phonePoster?: ImageSet;
-  /** which film this is: the 2.0 launch film in /media/v3, or the 1.x trailer in /media/v2 until the launch film exists */
-  set: "launch" | "trailer";
   captions: MediaFile;
   chapters: MediaFile;
   /** text descriptions for the audio-description toggle (critic H4a) */
   descriptions: MediaFile;
-  /** the 16:9 film's poster, 1920 × 1080 (the trailer's: its frame 0, the pebble's eyes in the right third) */
+  /** the 16:9 film's poster, 1920 × 1080: its frame 0, a finished composition ("This is Pebble." over the pebble) */
   poster: ImageSet;
   available: boolean;
 }>;
@@ -167,17 +163,10 @@ export const VIDEO_TYPES: Readonly<Record<VideoCodec, string>> = {
 
 const MEDIA = "/media/v1";
 /**
- * The film's own files (OVERRIDES §34, §35 decision 8, §46): film-1080 and film-720 (HEVC and H.264), the 1:1
- * film-square for phones (H.264, and HEVC when the budget allows), the three text tracks and film.poster (AVIF and
- * WebP, 1920 × 1080). The loops and the wallpaper didn't change, so they stay in MEDIA. tools/encode/verify.mjs reads
- * this name.
- */
-const FILM_MEDIA = "/media/v2";
-/**
- * The Pebble 2.0 launch (SITE_AUDIT §4.4; the director's X15): film-1080 and film-720 (HEVC and H.264), the 4:5
- * film-phone (HEVC and H.264), the three text tracks (tools/captions/build.mjs --out-dir public/media/v3),
- * film.poster (1920 × 1080) and film-phone.poster (1080 × 1350), and the loops (LaunchLoopId) with their posters and
- * 4:5 cuts. tools/encode/verify.mjs reads this name.
+ * The Pebble 2.0 launch (SITE_AUDIT §4.4; the director's X15): the film, film-1080 and film-720 (whichever of HEVC and
+ * H.264 tools/encode/README.md's budget plan encodes), the 4:5 film-phone (HEVC and H.264), the three text tracks
+ * (tools/captions/build.mjs), film.poster (1920 × 1080) and film-phone.poster (1080 × 1350), and the loops
+ * (LaunchLoopId) with their posters and 4:5 cuts. tools/encode/verify.mjs reads this name.
  */
 const LAUNCH_MEDIA = "/media/v3";
 const UI = "/ui/v1";
@@ -186,7 +175,7 @@ const UI_LAUNCH = "/ui/v2";
 
 let known: ReadonlySet<string> | null = null;
 
-/** The files that exist under public/media/v1 to v3 and public/ui/v1 and v2, as listed by next.config.ts at build time. */
+/** The files that exist under public/media/v1 and v3 and public/ui/v1 and v2, as listed by next.config.ts at build time. */
 function knownFiles(): ReadonlySet<string> {
   if (!known) {
     let list: unknown = [];
@@ -246,37 +235,22 @@ export function loopShowable(loop: LoopMedia): boolean {
 }
 
 /**
- * The film the theatre plays: the 2.0 launch film from /media/v3 as soon as one of its 16:9 files exists, with its 4:5
- * cut for phones; until then the 1.x trailer from /media/v2, with its 1:1 cut, exactly as before. The launch film's
- * chapters and captions come with it: when its files land, src/content/chapters.ts and docs/film-captions.json must
- * already describe it (their tests and tools/captions/build.mjs --check compare them with the tracks).
+ * The film the theatre plays: the Pebble 2.0 launch film from /media/v3, with its 4:5 cut for phones. It is available
+ * once one of its 16:9 files exists; until then the film section shows its still and no player, chip or trigger
+ * appears. Its chapters (src/content/chapters.ts) and its tracks (tools/captions/build.mjs, which checks them) describe
+ * this film.
  */
 export function filmMedia(): FilmMedia {
-  const launch = { "720": videoSources(`${LAUNCH_MEDIA}/film-720`), "1080": videoSources(`${LAUNCH_MEDIA}/film-1080`) };
-  if (launch["720"].length > 0 || launch["1080"].length > 0) {
-    return {
-      sources: launch,
-      phoneSources: videoSources(`${LAUNCH_MEDIA}/film-phone`),
-      phoneFrame: FILM_PHONE_FRAME,
-      phonePoster: imageSet(`${LAUNCH_MEDIA}/film-phone.poster`, 1080, 1350),
-      set: "launch",
-      captions: mediaFile(`${LAUNCH_MEDIA}/film.en.vtt`),
-      chapters: mediaFile(`${LAUNCH_MEDIA}/film.chapters.vtt`),
-      descriptions: mediaFile(`${LAUNCH_MEDIA}/film.descriptions.en.vtt`),
-      poster: imageSet(`${LAUNCH_MEDIA}/film.poster`, 1920, 1080),
-      available: true,
-    };
-  }
-  const sources = { "720": videoSources(`${FILM_MEDIA}/film-720`), "1080": videoSources(`${FILM_MEDIA}/film-1080`) };
+  const sources = { "720": videoSources(`${LAUNCH_MEDIA}/film-720`), "1080": videoSources(`${LAUNCH_MEDIA}/film-1080`) };
   return {
     sources,
-    phoneSources: videoSources(`${FILM_MEDIA}/film-square`),
-    phoneFrame: FILM_SQUARE_FRAME,
-    set: "trailer",
-    captions: mediaFile(`${FILM_MEDIA}/film.en.vtt`),
-    chapters: mediaFile(`${FILM_MEDIA}/film.chapters.vtt`),
-    descriptions: mediaFile(`${FILM_MEDIA}/film.descriptions.en.vtt`),
-    poster: imageSet(`${FILM_MEDIA}/film.poster`, 1920, 1080),
+    phoneSources: videoSources(`${LAUNCH_MEDIA}/film-phone`),
+    phoneFrame: FILM_PHONE_FRAME,
+    phonePoster: imageSet(`${LAUNCH_MEDIA}/film-phone.poster`, 1080, 1350), // FILM_PHONE_FRAME; verify.mjs reads the digits
+    captions: mediaFile(`${LAUNCH_MEDIA}/film.en.vtt`),
+    chapters: mediaFile(`${LAUNCH_MEDIA}/film.chapters.vtt`),
+    descriptions: mediaFile(`${LAUNCH_MEDIA}/film.descriptions.en.vtt`),
+    poster: imageSet(`${LAUNCH_MEDIA}/film.poster`, 1920, 1080),
     available: sources["720"].length > 0 || sources["1080"].length > 0,
   };
 }

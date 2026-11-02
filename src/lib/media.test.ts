@@ -1,7 +1,6 @@
-// The film's own files: the 1.x trailer's in /media/v2 (its videos, the 1:1 cut for phones, its text tracks and its
-// poster, the 16:9 film's frame 0; OVERRIDES §35 decision 8, §46), and the Pebble 2.0 launch film's in /media/v3 (its
-// videos, the 4:5 `film-phone` cut, its tracks and two posters; SITE_AUDIT §4.4, the director's X7 and X15), which the
-// page plays as soon as one of its 16:9 files exists. The 1.x loops stay in /media/v1; the 2.0 loops are in /media/v3,
+// The film's own files: the Pebble 2.0 launch film's, in /media/v3 (its videos, the 4:5 `film-phone` cut, its three
+// tracks and two posters; SITE_AUDIT §4.4, the director's X7 and X15). It replaced the 1.x trailer on 2 Nov 2026: the
+// trailer's /media/v2 is retired and nothing reads it. The 1.x loops stay in /media/v1; the 2.0 loops are in /media/v3,
 // under their own ids. The first film's poster and its teaser T0 are retired. media.ts caches the build's file list
 // (PEBBLE_MEDIA_FILES) on first use, so each case runs media.ts in its own Bun process with its own list.
 // Run: bun test ./src/lib
@@ -24,7 +23,6 @@ type Manifest = {
     poster: { avif: File; webp: File; width: number; height: number; available: boolean };
     phoneFrame: { width: number; height: number };
     phonePoster?: { avif: File; webp: File; width: number; height: number; available: boolean };
-    set: "launch" | "trailer";
     available: boolean;
   };
   hasTeaser: boolean;
@@ -43,8 +41,24 @@ console.log(JSON.stringify({ film: m.filmMedia(), hasTeaser: "teaserMedia" in m,
   return JSON.parse(run.stdout.toString()) as Manifest;
 }
 
-/** What the re-delivery lane puts in public/media/v2 (the square film's HEVC twin only if the 45 MB budget allows). */
-const V2_FILM = [
+const at = (folder: string, names: readonly string[]) => names.map((f) => `/media/${folder}/${f}`);
+
+/** The film's files as tools/encode/README.md's budget plan encodes them (no 1080p H.264, no 720p HEVC: critic C6). */
+const V3_FILM = [
+  "film-1080.hevc.mp4",
+  "film-720.h264.mp4",
+  "film-phone.hevc.mp4",
+  "film-phone.h264.mp4",
+  "film.en.vtt",
+  "film.chapters.vtt",
+  "film.descriptions.en.vtt",
+  "film.poster.avif",
+  "film.poster.webp",
+  "film-phone.poster.avif",
+  "film-phone.poster.webp",
+];
+/** The retired 1.x trailer's files, as they were in /media/v2. A build that still lists them must not serve them. */
+const V2_TRAILER = [
   "film-1080.hevc.mp4",
   "film-1080.h264.mp4",
   "film-720.hevc.mp4",
@@ -57,102 +71,15 @@ const V2_FILM = [
   "film.poster.avif",
   "film.poster.webp",
 ];
-const V1_REST = ["loop-memory.hevc.mp4", "loop-memory.h264.mp4", "loop-memory.poster.avif"];
-/** The retired files: the first film's poster and T0. A build that still lists them must not serve them. */
+/** The first film's poster and T0, retired before the trailer. */
 const V1_RETIRED = ["film.poster.avif", "film.poster.webp", "teaser-720.hevc.mp4", "teaser-720.h264.mp4", "teaser.poster.avif", "teaser.poster.webp"];
+const V1_REST = ["loop-memory.hevc.mp4", "loop-memory.h264.mp4", "loop-memory.poster.avif"];
 
-describe("the media manifest's versioned folders", () => {
-  test("the film's videos and text tracks come from /media/v2, HEVC first", () => {
-    const { film } = manifest([...V2_FILM.map((f) => `/media/v2/${f}`), ...V1_REST.map((f) => `/media/v1/${f}`)]);
-    expect(film.sources["1080"].map((s) => s.src)).toEqual(["/media/v2/film-1080.hevc.mp4", "/media/v2/film-1080.h264.mp4"]);
-    expect(film.sources["720"].map((s) => s.src)).toEqual(["/media/v2/film-720.hevc.mp4", "/media/v2/film-720.h264.mp4"]);
-    for (const track of [film.captions, film.chapters, film.descriptions]) {
-      expect(track.src.startsWith("/media/v2/")).toBe(true);
-      expect(track.available).toBe(true);
-    }
-    expect(film.available).toBe(true);
-  });
-
-  test("the poster is the trailer's own, from /media/v2, 1920 × 1080", () => {
-    const { film } = manifest([...V2_FILM.map((f) => `/media/v2/${f}`), ...V1_RETIRED.map((f) => `/media/v1/${f}`)]);
-    expect(film.poster.avif.src).toBe("/media/v2/film.poster.avif");
-    expect(film.poster.webp.src).toBe("/media/v2/film.poster.webp");
-    expect([film.poster.width, film.poster.height]).toEqual([1920, 1080]);
-    expect(film.poster.available).toBe(true);
-  });
-
-  test("the first film's poster and the teaser T0 are retired: nothing reads them", () => {
-    const { film, hasTeaser } = manifest([...V1_RETIRED.map((f) => `/media/v1/${f}`), "/media/v2/film-720.h264.mp4"]);
-    expect(hasTeaser).toBe(false);
-    expect(film.poster.available).toBe(false);
-    expect(film.poster.webp.src.startsWith("/media/v1/")).toBe(false);
-  });
-
-  test("the 1:1 film for phones comes from /media/v2, HEVC first, and only when it exists", () => {
-    const both = manifest(V2_FILM.map((f) => `/media/v2/${f}`)).film;
-    expect(both.phoneSources.map((s) => s.src)).toEqual(["/media/v2/film-square.hevc.mp4", "/media/v2/film-square.h264.mp4"]);
-    expect(both.phoneSources.map((s) => s.type)).toEqual(['video/mp4; codecs="hvc1.1.6.L120.90"', 'video/mp4; codecs="avc1.640028"']);
-    const h264 = manifest(V2_FILM.filter((f) => f !== "film-square.hevc.mp4").map((f) => `/media/v2/${f}`)).film;
-    expect(h264.phoneSources.map((s) => s.src)).toEqual(["/media/v2/film-square.h264.mp4"]);
-    const none = manifest(V2_FILM.filter((f) => !f.startsWith("film-square")).map((f) => `/media/v2/${f}`)).film;
-    expect(none.phoneSources).toEqual([]);
-    expect(none.available).toBe(true);
-  });
-
-  test("the loops stay in /media/v1", () => {
-    const { loop } = manifest([...V2_FILM.map((f) => `/media/v2/${f}`), ...V1_REST.map((f) => `/media/v1/${f}`)]);
-    expect(loop.sources.map((s) => s.src)).toEqual(["/media/v1/loop-memory.hevc.mp4", "/media/v1/loop-memory.h264.mp4"]);
-    expect(loop.poster.avif.src).toBe("/media/v1/loop-memory.poster.avif");
-  });
-
-  test("a film file left in /media/v1 is never served as the film", () => {
-    const { film } = manifest([...V2_FILM.map((f) => `/media/v1/${f}`), ...V1_REST.map((f) => `/media/v1/${f}`)]);
-    expect(film.sources["1080"]).toEqual([]);
-    expect(film.sources["720"]).toEqual([]);
-    expect(film.phoneSources).toEqual([]);
-    expect(film.captions.available).toBe(false);
-    expect(film.poster.available).toBe(false);
-    expect(film.available).toBe(false);
-  });
-});
-
-/** What the launch lane puts in public/media/v3 for the film (SITE_AUDIT §4.4, §4.5). */
-const V3_FILM = [
-  "film-1080.hevc.mp4",
-  "film-1080.h264.mp4",
-  "film-720.hevc.mp4",
-  "film-720.h264.mp4",
-  "film-phone.hevc.mp4",
-  "film-phone.h264.mp4",
-  "film.en.vtt",
-  "film.chapters.vtt",
-  "film.descriptions.en.vtt",
-  "film.poster.avif",
-  "film.poster.webp",
-  "film-phone.poster.avif",
-  "film-phone.poster.webp",
-];
-const at = (folder: string, names: readonly string[]) => names.map((f) => `/media/${folder}/${f}`);
-
-describe("the Pebble 2.0 launch film in /media/v3", () => {
-  test("until a 16:9 launch file exists, the page plays the 1.x trailer exactly as before", () => {
-    // tracks, posters and the phone cut alone don't switch the film: its 16:9 files decide
-    const early = at("v3", V3_FILM.filter((f) => !/^film-(1080|720)\./.test(f)));
-    const { film } = manifest([...at("v2", V2_FILM), ...early]);
-    expect(film.set).toBe("trailer");
-    expect(film.sources["1080"].map((s) => s.src)).toEqual(["/media/v2/film-1080.hevc.mp4", "/media/v2/film-1080.h264.mp4"]);
-    expect(film.phoneSources.map((s) => s.src)).toEqual(["/media/v2/film-square.hevc.mp4", "/media/v2/film-square.h264.mp4"]);
-    expect(film.phoneFrame).toEqual({ width: 1080, height: 1080 });
-    expect(film.phonePoster).toBeUndefined();
-    expect(film.captions.src).toBe("/media/v2/film.en.vtt");
-    expect(film.poster.avif.src).toBe("/media/v2/film.poster.avif");
-  });
-
-  test("with its files, the launch film comes whole from /media/v3: videos, tracks and the 16:9 poster", () => {
-    const { film } = manifest([...at("v2", V2_FILM), ...at("v3", V3_FILM)]);
-    expect(film.set).toBe("launch");
-    expect(film.sources["1080"].map((s) => s.src)).toEqual(["/media/v3/film-1080.hevc.mp4", "/media/v3/film-1080.h264.mp4"]);
-    expect(film.sources["720"].map((s) => s.src)).toEqual(["/media/v3/film-720.hevc.mp4", "/media/v3/film-720.h264.mp4"]);
+describe("the film is the Pebble 2.0 launch film, from /media/v3", () => {
+  test("its videos, tracks and 16:9 poster come from /media/v3, HEVC first in each quality", () => {
+    const { film } = manifest(at("v3", V3_FILM));
+    expect(film.sources["1080"].map((s) => s.src)).toEqual(["/media/v3/film-1080.hevc.mp4"]);
+    expect(film.sources["720"].map((s) => s.src)).toEqual(["/media/v3/film-720.h264.mp4"]);
     for (const track of [film.captions, film.chapters, film.descriptions]) {
       expect(track.src.startsWith("/media/v3/")).toBe(true);
       expect(track.available).toBe(true);
@@ -160,17 +87,52 @@ describe("the Pebble 2.0 launch film in /media/v3", () => {
     expect(film.poster.webp.src).toBe("/media/v3/film.poster.webp");
     expect([film.poster.width, film.poster.height]).toEqual([1920, 1080]);
     expect(film.available).toBe(true);
+    // a fuller set is read too, HEVC before H.264
+    const full = manifest(at("v3", [...V3_FILM, "film-1080.h264.mp4", "film-720.hevc.mp4"])).film;
+    expect(full.sources["1080"].map((s) => s.codec)).toEqual(["hevc", "h264"]);
+    expect(full.sources["720"].map((s) => s.codec)).toEqual(["hevc", "h264"]);
   });
 
-  test("phones get the 4:5 film-phone (1080 × 1350) with its own poster, never the trailer's square", () => {
-    const { film } = manifest([...at("v2", V2_FILM), ...at("v3", V3_FILM)]);
+  test("phones get the 4:5 film-phone (1080 × 1350) with its own poster", () => {
+    const { film } = manifest(at("v3", V3_FILM));
     expect(film.phoneSources.map((s) => s.src)).toEqual(["/media/v3/film-phone.hevc.mp4", "/media/v3/film-phone.h264.mp4"]);
+    expect(film.phoneSources.map((s) => s.type)).toEqual(['video/mp4; codecs="hvc1.1.6.L120.90"', 'video/mp4; codecs="avc1.640028"']);
     expect(film.phoneFrame).toEqual({ width: 1080, height: 1350 });
     expect(film.phonePoster?.webp.src).toBe("/media/v3/film-phone.poster.webp");
     expect([film.phonePoster?.width, film.phonePoster?.height]).toEqual([1080, 1350]);
-    const noPhone = manifest([...at("v2", V2_FILM), ...at("v3", V3_FILM.filter((f) => !f.startsWith("film-phone")))]).film;
-    expect(noPhone.set).toBe("launch");
+    const noPhone = manifest(at("v3", V3_FILM.filter((f) => !f.startsWith("film-phone")))).film;
     expect(noPhone.phoneSources).toEqual([]); // the phone plays the 16:9 film then (filmSourceOrder)
+    expect(noPhone.available).toBe(true);
+  });
+
+  test("tracks, posters and the phone cut alone don't make a film: a 16:9 file does", () => {
+    const { film } = manifest(at("v3", V3_FILM.filter((f) => !/^film-(1080|720)\./.test(f))));
+    expect(film.available).toBe(false);
+    expect(film.captions.available).toBe(true);
+  });
+
+  test("the retired trailer is never served: nothing reads /media/v2, nor the first film's files in /media/v1", () => {
+    const { film, hasTeaser } = manifest([...at("v2", V2_TRAILER), ...at("v1", V1_RETIRED), ...at("v1", V1_REST)]);
+    expect(film.available).toBe(false);
+    expect(film.sources["1080"]).toEqual([]);
+    expect(film.sources["720"]).toEqual([]);
+    expect(film.phoneSources).toEqual([]);
+    expect(film.captions.available).toBe(false);
+    expect(film.poster.available).toBe(false);
+    expect(hasTeaser).toBe(false);
+    for (const src of [film.captions.src, film.poster.webp.src, film.phonePoster?.webp.src ?? ""]) expect(src.startsWith("/media/v3/")).toBe(true);
+  });
+
+  test("a film file left in /media/v1 is never served as the film", () => {
+    const { film } = manifest(at("v1", V3_FILM));
+    expect(film.available).toBe(false);
+    expect(film.captions.available).toBe(false);
+  });
+
+  test("the 1.x loops stay in /media/v1", () => {
+    const { loop } = manifest([...at("v3", V3_FILM), ...at("v1", V1_REST)]);
+    expect(loop.sources.map((s) => s.src)).toEqual(["/media/v1/loop-memory.hevc.mp4", "/media/v1/loop-memory.h264.mp4"]);
+    expect(loop.poster.avif.src).toBe("/media/v1/loop-memory.poster.avif");
   });
 });
 
@@ -178,7 +140,7 @@ describe("the Pebble 2.0 loops in /media/v3", () => {
   const ids = ["desk", "mac-apps", "mac-actions", "mac-web", "guard", "workshop", "memory", "long-tasks", "remote", "stealth"];
 
   test("the director's ten ids, each read from /media/v3 only, never from a 1.x file of the same name", () => {
-    const { launchLoops, loop } = manifest(at("v1", ["loop-memory.hevc.mp4", "loop-memory.h264.mp4", "loop-memory.poster.avif"]));
+    const { launchLoops, loop } = manifest(at("v1", V1_REST));
     expect(Object.keys(launchLoops)).toEqual(ids);
     expect(launchLoops.memory!.available).toBe(false);
     expect(launchLoops.memory!.showable).toBe(false);
@@ -190,11 +152,12 @@ describe("the Pebble 2.0 loops in /media/v3", () => {
     }
   });
 
-  test("frames: 16:10 at 1600 × 1000, Pebble Remote's iPhone recording at 4:5", () => {
+  test("frames: the film's own 16:9 at 1600 × 900, Pebble Remote at 4:5, long tasks as a 3:2 crop", () => {
     const { launchLoops } = manifest([]);
+    const want: Record<string, [number, number]> = { remote: [1080, 1350], "long-tasks": [1200, 800] };
     for (const id of ids) {
       const l = launchLoops[id]!;
-      expect([l.width, l.height]).toEqual(id === "remote" ? [1080, 1350] : [1600, 1000]);
+      expect({ id, frame: [l.width, l.height] }).toEqual({ id, frame: want[id] ?? [1600, 900] });
     }
   });
 
@@ -225,48 +188,48 @@ describe("the order the theatre tries the film's files in (filmSources.ts)", () 
     available: true,
   });
   const file = { src: "", available: true };
+  // the budget plan's set (tools/encode/README.md): 1080p HEVC, 720p H.264 and the 4:5 cut in both codecs
   const film: FilmMedia = {
     sources: {
-      "1080": [source("/v2/film-1080.hevc.mp4", "hevc"), source("/v2/film-1080.h264.mp4", "h264")],
-      "720": [source("/v2/film-720.hevc.mp4", "hevc"), source("/v2/film-720.h264.mp4", "h264")],
+      "1080": [source("/v3/film-1080.hevc.mp4", "hevc")],
+      "720": [source("/v3/film-720.h264.mp4", "h264")],
     },
-    phoneSources: [source("/v2/film-square.hevc.mp4", "hevc"), source("/v2/film-square.h264.mp4", "h264")],
+    phoneSources: [source("/v3/film-phone.hevc.mp4", "hevc"), source("/v3/film-phone.h264.mp4", "h264")],
     captions: file,
     chapters: file,
     descriptions: file,
     poster: { avif: file, webp: file, width: 1920, height: 1080, available: true },
-    phoneFrame: { width: 1080, height: 1080 },
-    set: "trailer",
+    phoneFrame: { width: 1080, height: 1350 },
+    phonePoster: { avif: file, webp: file, width: 1080, height: 1350, available: true },
     available: true,
   };
   const all = () => true;
   const noHevc = (type: string) => !type.includes("hvc1");
   const srcs = (list: VideoSource[]) => list.map((s) => s.src);
 
-  test("phones get the 1:1 film first, then the 16:9 files as fallbacks", () => {
+  test("phones get the 4:5 film first, then the 16:9 files as fallbacks", () => {
     expect(srcs(filmSourceOrder(film, { phone: true, hd: false, canPlay: all }))).toEqual([
-      "/v2/film-square.hevc.mp4",
-      "/v2/film-square.h264.mp4",
-      "/v2/film-720.hevc.mp4",
-      "/v2/film-720.h264.mp4",
-      "/v2/film-1080.hevc.mp4",
-      "/v2/film-1080.h264.mp4",
+      "/v3/film-phone.hevc.mp4",
+      "/v3/film-phone.h264.mp4",
+      "/v3/film-720.h264.mp4",
+      "/v3/film-1080.hevc.mp4",
     ]);
-    expect(srcs(filmSourceOrder(film, { phone: true, hd: false, canPlay: noHevc }))).toEqual(["/v2/film-square.h264.mp4", "/v2/film-720.h264.mp4", "/v2/film-1080.h264.mp4"]);
+    expect(srcs(filmSourceOrder(film, { phone: true, hd: false, canPlay: noHevc }))).toEqual(["/v3/film-phone.h264.mp4", "/v3/film-720.h264.mp4"]);
   });
 
-  test("wider screens never get the 1:1 film; HD screens get 1080p first", () => {
+  test("wider screens never get the 4:5 film; HD screens get 1080p HEVC first, and 720p H.264 without HEVC", () => {
     const hd = srcs(filmSourceOrder(film, { phone: false, hd: true, canPlay: all }));
-    expect(hd[0]).toBe("/v2/film-1080.hevc.mp4");
-    expect(hd.some((s) => s.includes("square"))).toBe(false);
-    expect(srcs(filmSourceOrder(film, { phone: false, hd: false, canPlay: noHevc }))).toEqual(["/v2/film-720.h264.mp4", "/v2/film-1080.h264.mp4"]);
+    expect(hd).toEqual(["/v3/film-1080.hevc.mp4", "/v3/film-720.h264.mp4"]);
+    expect(hd.some((s) => s.includes("phone"))).toBe(false);
+    expect(srcs(filmSourceOrder(film, { phone: false, hd: true, canPlay: noHevc }))).toEqual(["/v3/film-720.h264.mp4"]);
+    expect(srcs(filmSourceOrder(film, { phone: false, hd: false, canPlay: all }))).toEqual(["/v3/film-720.h264.mp4", "/v3/film-1080.hevc.mp4"]);
   });
 
-  test("a phone without the 1:1 film plays the 16:9 one", () => {
-    expect(srcs(filmSourceOrder({ ...film, phoneSources: [] }, { phone: true, hd: false, canPlay: all }))[0]).toBe("/v2/film-720.hevc.mp4");
+  test("a phone without the 4:5 film plays the 16:9 one", () => {
+    expect(srcs(filmSourceOrder({ ...film, phoneSources: [] }, { phone: true, hd: false, canPlay: all }))[0]).toBe("/v3/film-720.h264.mp4");
   });
 
-  test("the square screen follows the source, and the breakpoint is the page's", () => {
+  test("the portrait screen follows the source, and the breakpoint is the page's", () => {
     expect(isPhoneSource(film, film.phoneSources[1]!)).toBe(true);
     expect(isPhoneSource(film, film.sources["720"][0]!)).toBe(false);
     expect(isPhoneSource(film, null)).toBe(false);

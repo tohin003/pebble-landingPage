@@ -1,7 +1,8 @@
 // Extended audio description for the film theatre (critic H4a; prep-encode issue 2; FILM_SPEC §18).
 //
-// film.descriptions.en.vtt has one cue a chapter, and 7 of its 9 descriptions need more speech time than their chapter
-// lasts (tools/captions/build.mjs --check warns). So the film waits for the voice (WCAG 1.2.7):
+// film.descriptions.en.vtt has one cue a chapter (src/content/chapters.ts), and each of the Pebble 2.0 launch film's 12
+// descriptions needs more speech time than its chapter lasts (tools/captions/build.mjs --check warns). So the film
+// waits for the voice (WCAG 1.2.7):
 // - each cue is read aloud when the film reaches it, sentence by sentence;
 // - when the voice is still reading as the film reaches the cue's end, the film pauses on the chapter's last frame
 //   (HOLD_LEAD before the cut) and plays on as soon as the voice is done;

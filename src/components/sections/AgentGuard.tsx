@@ -136,7 +136,7 @@ export function AgentGuard() {
         title={agentGuard.heading}
         then={agentGuard.intent}
         lead={agentGuard.layer[0]}
-        chip="tested"
+        chip="agentguard"
       >
         {/* what it checks and where that check stops, together and one tap away (.work/page-declutter/PLAN.md) */}
         <DisclosureGroup className={styles.scopeFold}>

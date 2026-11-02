@@ -1,152 +1,227 @@
 // src/content/chapters.ts
 //
-// The launch film's chapters (MASTER_PLAN §5.1), used by the chapter list, the "Watch this in the film" chips
-// (D11), film.chapters.vtt and the /film transcript.
+// The film's chapters: the Pebble 2.0 launch film (docs/launch/TREATMENT.md; video/src/launch/master/timeline.ts), one
+// chapter a scene, S00 to S11. Used by the film section's chapter index, the theatre's chapter list, the "Watch this in
+// the film" chips (D11), film.chapters.vtt, film.descriptions.en.vtt (one cue a chapter, from `description`) and the
+// /film transcript. The 1.x trailer's chapters are retired with the trailer (2 Nov 2026, the owner's ask: "put the
+// final film into the landing page replacing the older one"); git history keeps them.
 //
-// Status: the trailer (OVERRIDES §38–§41; docs/FILM_SPEC.md §24): the same nine ids at the blueprint's new starts, in
-// time order (desktop 0, views 33.6, model 36.0, memory 38.4, pace 40.8, project 43.2, tested 48.0, open-source 60.0,
-// get 67.2 s). On-screen lines are the trailer's, word for word; the film no longer shows "It reads your project",
-// "Review, apply, undo" or "Even one on your Mac". `sounds` stays empty: docs/film-captions.json is the single caption
-// source. A chapter with `startSeconds: null` must not get a chip.
-//
-// Deliberate changes from MASTER_PLAN §5.1 (see docs/CLAIMS.md, "Rewritten or removed"):
-// - Tension beat: three neutral questions a careful person asks of any AI helper (OVERRIDES §2). The statements in
-//   the plan's first draft must never be used.
-// - Chapter "model" is "Your model", not "Any model": Pebble works with the ways in listed in Settings › Models, not
-//   with every model there is. Its on-screen line follows the page ("Your model, your choice").
+// - Starts are the master's frames at 30 fps (`at`): each scene's first frame on the master, fr(slot.in) in
+//   timeline.ts. FILM_DURATION_SECONDS is the master's length, FILM_S 99.4 s (2,982 frames).
+// - `onScreen` and `description` are the page's own text (docs/CLAIMS.md "The launch film on the page"). `onScreen`
+//   lists the film's lines in order, word for word as the film sets them (the scenes' strings, the C-FILM2 rows);
+//   S10's charts are written out a line a comparison. One line is left out by the owner's ruling of 2 Nov 2026
+//   (docs/launch/CHECKPOINT.md): the long-task scene's title. The film keeps it, and so does its caption track
+//   (public/media/v3/film.en.vtt, from video/src/launch/master/captions.ts); the page's own words never name it.
+// - Descriptions are read aloud by the theatre's audio-description toggle, sentence by sentence (audioDescription.ts:
+//   at most 32 words a sentence), and shown on /film as "What you see". They quote the film's lines and describe the
+//   pictures from the master's frames; Pebble's interface text is quoted as the interface shows it.
+// - No imports: tools/captions/cues.mjs imports this file with Node's type stripping. The honest line and the bloub
+//   credit are therefore literals here; film.test.ts checks them against copy.ts and credits.ts.
+// - Text the copy lint would otherwise stop: the rival products' names (this file is in its named scope, as /film is)
+//   and S10's "Lower is better." (an exact-match allowance, C-FILM2-38).
 
 export type Chapter = Readonly<{
-  /** Stable id, used in URLs (#t=…) and by copy.ts `chapterId` fields. */
+  /** Stable id, used by the chips (copy.ts `chapterId` fields and the sections' `chip` props) and the chapter track. */
   id: string;
   title: string;
-  /** Seconds from the start of the film. TODO(Lane E). */
+  /** Seconds from the start of the film: the scene's first frame on the master. null: no chip and no cue. */
   startSeconds: number | null;
-  /** The plan's bars at 100 BPM, for Lane E's reference only. Not shown. */
-  bars: string;
-  /** Page sections that show a chip for this chapter (ids from copy.ts `sectionIds`). */
+  /** The master's scene, for reference (video/src/launch/master/timeline.ts); not shown. */
+  scene: string;
+  /** Page sections (their anchors) that show a chip for this chapter. */
   sectionIds: readonly string[];
-  /** Every line of on-screen text, in order. */
+  /** The film's lines in this chapter, in order (see the header for the one left out). */
   onScreen: readonly string[];
-  /** Audio description: what you see, for the /film transcript. */
+  /** What you see, for the audio description and the /film transcript. */
   description: string;
-  /** Sound descriptions for the captions, e.g. "[Soft music begins]". TODO(Lane C and E). */
-  sounds: readonly string[];
 }>;
 
-/** The film's length in seconds. TODO(Lane E): from the final render (the plan's grid is 76.8 s). */
-export const FILM_DURATION_SECONDS: number | null = 76.8; // Lane E: 2,304 frames at 30 fps (docs/FILM_SPEC.md §1)
+/** The master's frame rate (FILM_FPS in video/src/launch/master/timeline.ts). */
+export const FILM_FPS = 30;
+
+/** The film's length in seconds: the master's FILM_S, 2,982 frames at 30 fps. */
+export const FILM_DURATION_SECONDS: number | null = 99.4;
+
+/** A master frame's time in seconds, to the millisecond (frame / 30). */
+const at = (frame: number): number => Math.round((frame / FILM_FPS) * 1000) / 1000;
+
+/** Stealth Lockdown's honest line, word for word (copy.ts `stealth.honest`; film.test.ts checks). */
+const HONEST_LINE =
+  "Hidden from screen capture and screen sharing, not from a camera, a capture card or a process list. Exams and interviews that forbid assistants still forbid it.";
+
+/** The bloub credit, word for word (credits.ts `bloubCredit`; film.test.ts checks). */
+const BLOUB_CREDIT = "Pebble's character engine: bloub by Jérémy Perret (MIT)";
 
 export const chapters: readonly Chapter[] = [
   {
+    id: "opening",
+    title: "This is Pebble",
+    startSeconds: at(0),
+    scene: "S00",
+    sectionIds: [],
+    onScreen: ["This is Pebble.", "It’s small.", "It just went up against Claude Code and Codex.", "Same model. Same tasks."], // [C-FILM2-01] [C-FILM2-02]
+    description:
+      "The small sage pebble on a dark green ground: “This is Pebble.” “It’s small.” Then “It just went up against Claude Code and Codex.”, the names in large grey type, and “Same model. Same tasks.”",
+  },
+  {
+    id: "title",
+    title: "Pebble 2.0",
+    startSeconds: at(242),
+    scene: "S01",
+    sectionIds: [],
+    onScreen: ["Pebble 2.0", "The desktop companion that does real work, and shows its evidence."], // [C-FILM2-03] [C-FILM2-04]
+    description:
+      "The pebble rises over “Pebble 2.0” and the line “The desktop companion that does real work, and shows its evidence.”",
+  },
+  {
     id: "desktop",
-    title: "On your desktop",
-    startSeconds: 0, // frame 0
-    bars: "1–14 (the look, the three questions and their glimpses, the turn, the drop, the quick chat, the whole window)",
+    title: "On your Mac",
+    startSeconds: at(407),
+    scene: "S02",
     sectionIds: ["desktop"],
+    onScreen: ["It lives on your Mac.", "On every Space.", "Click. Ask."], // [C-FILM2-05] [C-FILM2-06] [C-FILM2-07]
+    description:
+      "The whole Mac, with Pebble’s window and the pebble: “It lives on your Mac.” The desktop slides to another Space and the pebble stays: “On every Space.” A click opens the quick chat, and “What can you do now?” is sent: “Click. Ask.”",
+  },
+  {
+    id: "mac",
+    title: "Uses your Mac",
+    startSeconds: at(602),
+    scene: "S03",
+    sectionIds: ["mac"],
     onScreen: [
-      "What did it change?",
-      "Can I undo it?",
-      "Did it run the tests?",
-      "An agent shouldn't grade its own work",
-      "A small companion for your Mac",
-    ], // [C-CH-1] [C-CH-16] [C-CH-2]
+      "Now it can use your Mac.",
+      "Your apps.",
+      "Your calendar.",
+      "Your browser.",
+      "The app windows and websites you allow.",
+    ], // [C-FILM2-08] to [C-FILM2-12]
     description:
-      "On a dark desktop, a close-up of the pebble: its eyes follow the pointer, then look at you. Three questions appear one at a time on a dark background, each followed by a glimpse of Pebble's window. First an edit to invoice_kit/dates.py waits for review, and the pointer applies it. Then the applied card shows Undo this edit. Then the task is held: “Pebble's change isn't verified yet.” Then the line “An agent shouldn't grade its own work”. The background turns sage, and the pebble peeks up, leaps and hangs in silence. It lands as the full stop of the word “pebble.”, and the screen turns light. The pebble hops down onto a Mac desktop. In the quick chat, the question “What does ‘day is out of range for month’ mean?” is sent. Pebble answers: “Python is being asked for a date that doesn't exist, like 31 February.” Then the whole Pebble window: “Good to see you.”",
-    sounds: [],
+      "“Now it can use your Mac.” In Calculator, Pebble keys in 48 × 12.5 and gets 600: “Your apps.” Calendar shows its new event, Glaze order 09:00: “Your calendar.” Chrome shows Pebble’s pill, “Pebble is working in this tab”: “Your browser.” Then Pebble’s card asking to use one app window: “The app windows and websites you allow.”",
   },
   {
-    id: "views",
-    title: "Views",
-    startSeconds: 33.6, // frame 1008
-    bars: "15",
-    sectionIds: ["views"],
-    onScreen: ["Views, not just text"], // [C-CH-11]
-    description: "A “Lisbon trip budget” dashboard. The camera moves in on its spending chart.",
-    sounds: [],
+    id: "agentguard",
+    title: "AgentGuard",
+    startSeconds: at(932),
+    scene: "S04",
+    sectionIds: ["agentguard", "project"],
+    onScreen: [
+      "Done means checked.",
+      "AgentGuard.",
+      "Evidence before “done”.",
+      "Tests the host ran, not the model’s word.",
+      "Files you asked to keep, kept.",
+      "Output matched to its file, byte for byte.",
+    ], // [C-FILM2-13] to [C-FILM2-17]
+    description:
+      "A held reply in Pebble: “Pebble's change isn't verified yet.” “Done means checked.” The pointer presses Run the tests, and the check reads “Verified · pytest 42 passed on current files”. Then “AgentGuard. Evidence before ‘done’.”, with three ticked lines: “Tests the host ran, not the model’s word.” “Files you asked to keep, kept.” “Output matched to its file, byte for byte.”",
   },
   {
-    id: "model",
-    title: "Your model",
-    startSeconds: 36, // frame 1080
-    bars: "16",
-    sectionIds: ["models"],
-    onScreen: ["Your model, your choice"], // [C-CH-7]
+    id: "workshop",
+    title: "Pebble’s Workshop",
+    startSeconds: at(1202),
+    scene: "S05",
+    sectionIds: ["workshop"],
+    onScreen: ["It builds small tools for itself.", "When the check disagrees, it asks you."], // [C-FILM2-18] [C-FILM2-20]
     description:
-      "Settings › Models: the model on this Mac, and the ways to add one come forward one at a time: Add a model file, Connect provider and Continue with ChatGPT.",
-    sounds: [],
+      "“It builds small tools for itself.” A script makes the tool kiln_ramp_time, drawn as a tile: its own tests pass in a sandbox, and a blind check, written from its description alone, passes 2 of 5. The pebble: “Asks you.” Pebble’s card asks whether to keep the tool: “When the check disagrees, it asks you.”",
   },
   {
     id: "memory",
     title: "Memory",
-    startSeconds: 38.4, // frame 1152
-    bars: "17",
+    startSeconds: at(1427),
+    scene: "S06",
     sectionIds: ["memory"],
-    onScreen: ["Memory you can read and forget"], // [C-CH-10]
+    onScreen: ["It remembers what matters.", "All visible.", "Forget anything."], // [C-FILM2-21] [C-FILM2-23]
     description:
-      "Settings › Memory shows the saved records. The pointer clicks the bin next to “Uses metric units and 24-hour times.”, and the record disappears.",
-    sounds: [],
+      "“It remembers what matters.” A table of Pebble’s six kinds of memory: profile, semantic, procedural, episodic, temporal and working. Semantic opens into Settings › Memory: “All visible.” The pointer chooses Forget on one record, and it goes: “Forget anything.”",
   },
   {
-    id: "pace",
-    title: "You set the pace",
-    startSeconds: 40.8, // frame 1224
-    bars: "18",
-    sectionIds: ["permissions"],
-    onScreen: ["You set what it may do"], // [C-CH-9]
+    id: "long-tasks",
+    title: "Long tasks",
+    startSeconds: at(1637),
+    scene: "S07",
+    sectionIds: ["more"],
+    onScreen: ["Long tasks keep a smaller window.", "Older results sealed. Any one returned exactly."], // [C-FILM2-25] [C-FILM2-26]
     description:
-      "Settings › Permissions, with each mode's own words. The pointer chooses Auto in project instead of Ask for approval, and its card comes forward.",
-    sounds: [],
+      "A drawn diagram: “Long tasks keep a smaller window.” Six tool results stack past a dashed line marked “context budget”. The three oldest are sealed into short stubs, and the column falls back under the line. “Older results sealed. Any one returned exactly.” One stub opens again, unchanged.",
   },
   {
-    id: "project",
-    title: "Works in your project",
-    startSeconds: 43.2, // frame 1296
-    bars: "19–20",
-    sectionIds: ["project"],
-    onScreen: ["Your tests stay yours"], // [C-CH-18]
+    id: "remote",
+    title: "Pebble Remote",
+    startSeconds: at(1847),
+    scene: "S08",
+    sectionIds: ["remote"],
+    onScreen: ["Pebble, in your pocket.", "Pebble Remote for iPhone.", "Approve with Face ID.", "Open source. Build it with Xcode."], // [C-FILM2-28] to [C-FILM2-31]
     description:
-      "A card for tests/test_dates.py: “Pebble wants to change a test file, and your request didn't ask for test changes. Tests are your evidence that the code works, so this change waits for you.” Then, in another task, a step turns red and the pointer opens its details: “AgentGuard — evidence check” and “5 file(s) changed that the task does not reach”.",
-    sounds: [],
+      "The Pebble Remote app on an iPhone screen, in the iOS Simulator: “Pebble, in your pocket.” “Pebble Remote for iPhone.” An edit to slots.py waits for review; Apply Edit is tapped, the Face ID prompt passes, and the edit is done. “Approve with Face ID.” “Open source. Build it with Xcode.”",
   },
   {
-    id: "tested",
-    title: "Evidence before done", // was "Done means tested": withdrawn after Pebble 1.0.3's Corrections (AgentGuard holds only covered code)
-    startSeconds: 48, // frame 1440
-    bars: "21–25",
-    sectionIds: ["project"],
-    onScreen: ["AgentGuard checks the evidence", "Tests run in an isolated copy", "Evidence before done"], // [C-CH-17] [C-CH-5] [C-AG-5]
+    id: "presenting",
+    title: "Presenting",
+    startSeconds: at(2102),
+    scene: "S09",
+    sectionIds: ["stealth"],
+    onScreen: ["Presenting?", "Stealth Lockdown.", HONEST_LINE], // [C-FILM2-32] [C-FILM2-33]
     description:
-      "The held task again: “Pebble's change isn't verified yet.”, with Run the tests, Ask Pebble to finish and Accept as unverified. In the conversation it reads “Blocked”, and the pointer clicks Run the tests. A “Run isolated tests” card reads “Runs the project's tests in a temporary copy. Your project files don't change.” The pointer clicks Run tests; the card reads Running, then Done, with 42 passed. The steps show “Verified · pytest 42 passed on current files”, which comes forward as the other steps fade back. Pebble's final reply says the tests ran in an isolated copy and both edits are verified, and the pebble celebrates.",
-    sounds: [],
+      `Pebble’s ⌘K palette: “Presenting?” The word “stealth” is typed and Turn Stealth Lockdown on is chosen. A screen recording follows, and Pebble’s window leaves it as the setting turns on. “Stealth Lockdown.” “${HONEST_LINE}” Then the pebble, drawn by Pebble’s own code, wears the Veil in dusk blue.`,
   },
   {
-    id: "open-source",
-    title: "Open source",
-    startSeconds: 60, // frame 1800
-    bars: "26–28",
-    sectionIds: ["privacy", "open-source"],
-    onScreen: ["Free and open source", "Apache-2.0", "No telemetry", "Your keys stay in your Keychain"], // [C-CH-12..14]
-    description: "Lines appear one at a time on a sage background.",
-    sounds: [],
+    id: "benchmarks",
+    title: "Benchmarks",
+    startSeconds: at(2373),
+    scene: "S10",
+    sectionIds: ["benchmarks"],
+    onScreen: [
+      "So. How did it do?",
+      "Tasks done correctly.",
+      "vs Claude Code, both on claude-opus-5-5: Pebble 235 of 255, 92.2 %. Claude Code 213 of 255, 83.5 %.",
+      "vs Codex, both on gpt-6.1-sol: Pebble 243 of 255, 95.3 %. Codex 231 of 255, 90.6 %.",
+      "Said “done” when it wasn’t.",
+      "Lower is better.",
+      "vs Claude Code, both on claude-opus-5-5: Pebble 6.3 %. Claude Code 13.7 %.",
+      "vs Codex, both on gpt-6.1-sol: Pebble 3.9 %. Codex 7.1 %.",
+      "Cost per task.",
+      "Lower is better.",
+      "vs Claude Code, both on claude-opus-5-5: Pebble $0.091. Claude Code $0.117.",
+      "vs Codex, both on gpt-6.1-sol: Pebble $0.042. Codex $0.050.",
+      "Golden set 2.0, held-out split: 85 tasks in 17 families, 3 phrasings each, 255 runs per product. One model for both products in each comparison. Pebble 1.9.29, the source of 2.0.0. Costs at public list prices. Full results, including time, safety and where Pebble trails, in the 2.0.0 release notes.",
+    ], // [C-FILM2-34] to [C-FILM2-39]
+    description:
+      "“So. How did it do?” Three charts follow. “Tasks done correctly.”: Pebble 92.2 % against Claude Code’s 83.5 %, both on claude-opus-5-5, and 95.3 % against Codex’s 90.6 %, both on gpt-6.1-sol. “Said ‘done’ when it wasn’t.”, where lower is the aim: 6.3 % against 13.7 %, and 3.9 % against 7.1 %. “Cost per task.”, lower again: $0.091 against $0.117, and $0.042 against $0.050. Under the charts, the method: golden set 2.0’s held-out split, 255 runs per product, one model for both products in each comparison.",
   },
   {
     id: "get",
     title: "Get Pebble",
-    startSeconds: 67.2, // frame 2016
-    bars: "29–32",
+    startSeconds: at(2792),
+    scene: "S11",
     sectionIds: ["install", "get-pebble"],
     onScreen: [
-      "A little help, right here.",
-      "Free for Macs with Apple silicon", // [C-CH-15]
-      "Not notarized", // [C-CH-19] (the limit beside the promise, OVERRIDES §39; C-LIM-2)
+      "Small pebble.",
+      "Real work.",
+      "Pebble 2.0",
+      "Free and open source, for Macs with Apple silicon.",
       "github.com/tohin003/Pebble",
-      "Shown with sample data",
-      "Pebble's character engine: bloub by Jérémy Perret (MIT)", // OVERRIDES §2, verbatim (FILM_SPEC T22)
-    ],
+      "Shown with sample data.",
+      BLOUB_CREDIT,
+    ], // [C-FILM2-40] to [C-FILM2-43]
     description:
-      "The pebble lands as the full stop of the “pebble.” wordmark, above the price, its limit and the GitHub address.",
-    sounds: [],
+      `Back on the dark ground: “Small pebble.” “Real work.” Then “Pebble 2.0”, “Free and open source, for Macs with Apple silicon.” and github.com/tohin003/Pebble. In small type: “Shown with sample data.” and “${BLOUB_CREDIT}”.`,
   },
+];
+
+/**
+ * The film's notes, under the /film transcript: the approved wording of the film's description
+ * (docs/launch/LINKEDIN_POST.md, "The video's description"), with the benchmark's method beside the comparisons the
+ * film shows and the music's courtesy line. [C-FILM3-5] to [C-FILM3-9]
+ */
+export const filmNotes: readonly string[] = [
+  "Shown with sample data. Edited for time.",
+  "Pebble’s interface is real: recordings of Pebble 2.0 on a Mac, Pebble 2.0.1’s own interface running with sample data, and the Pebble Remote app (open source) in the iOS Simulator against a stand-in Mac. Personal and production details in the recordings are masked; Pebble’s own windows are never altered.",
+  "Benchmark: golden set 2.0’s held-out split, 255 runs per product, one model for both products in each comparison; full results in the 2.0.0 release notes.",
+  "Pebble isn’t affiliated with Anthropic or OpenAI; Claude Code and Codex are their products.",
+  "Music: “Your Breath” by Eugenio Mininni (Mixkit).",
 ];
 
 /** "1:17" from seconds (rounded down to the whole second). */
@@ -157,7 +232,7 @@ export function formatTimecode(seconds: number): string {
   return `${minutes}:${String(rest).padStart(2, "0")}`;
 }
 
-/** The film's length as "1:17", or null until Lane E sets it. */
+/** The film's length as "1:39", or null while it is unknown. */
 export function filmDurationLabel(): string | null {
   return FILM_DURATION_SECONDS === null ? null : formatTimecode(FILM_DURATION_SECONDS);
 }

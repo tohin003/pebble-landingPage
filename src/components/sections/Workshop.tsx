@@ -20,6 +20,7 @@ export function Workshop() {
         title={workshop.h2}
         then={workshop.then}
         lead={workshop.lead}
+        chip="workshop"
       />
       <div className="wrap grid-12 sec-body">
         <div className="main">
