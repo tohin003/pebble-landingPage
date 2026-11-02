@@ -10,7 +10,7 @@
 //       onto Monday 2's cell, "Glaze order 09:00" centred at about 65 px, held 1.05 s (REVIEW-2 S-2). The owner's own
 //       events (the 23 and 24 Oct cells) are frosted in place. "Your calendar."
 // 6.0   RS9B-02 (cut on the bar): Chrome's tab strip and address bar, close, with Pebble's own green tab group (the
-//       video's tab title and the URL frosted; the "default browser" infobar below is never in frame), pushing in;
+//       URL frosted; the video's tab and the "default browser" infobar below are never in frame), pushing in;
 //       7.0 (cut on the beat): the pill "Pebble is working in this tab · Stop", whole, on the frosted page (REVIEW-2
 //       S-2: no black window). "Your browser."
 // 8.0   RS4-07 (cut on the bar): the window card's own limit, "Only this window. Pebble stops at sign-ins, codes and
@@ -106,12 +106,14 @@ const webTimeFrom = (off: number) => fromRamps([{ s0: Math.min(PILL_LAST_CLEAN -
 const PILL: Box = { x: 1505, y: 1224, w: 510, h: 76 };
 /**
  * REVIEW-2 S-2: the tab strip and the address bar only (Chrome's "isn't your default browser" infobar starts at y 228,
- * below): "Open day – Clay & Current", the green "Pebble" group chip, the group's tab (title frosted), the address bar
- * (URL frosted). Wider at the cut, then a push. Both are in the window's own aspect (3.71, so the camera never widens
- * them) and end at x 866, left of the group tab's YouTube icon (875–905); the tab's title (920–1015) is frosted anyway.
+ * below): "Open day – Clay & Current", the green "Pebble" group chip and its line, the address bar (URL frosted).
+ * Wider at the cut, then a push. Both are in the window's own aspect (3.71, so the camera never widens them) and end at
+ * x 847 (REVIEW-3 N-3): the group's green line runs straight under the chip (736–838) to about 847, then curls up into
+ * the group tab's outline (848–876), so the card's edge meets the straight line and never cuts the curl; the group
+ * tab's YouTube icon (875–905) and its frosted title (from 905) stay out.
  */
-const TABS_WIDE: Box = { x: 190, y: 46, w: 676, h: 182 };
-const TABS: Box = { x: 300, y: 62, w: 566, h: 152 };
+const TABS_WIDE: Box = { x: 190, y: 49, w: 657, h: 177 };
+const TABS: Box = { x: 300, y: 64, w: 547, h: 147 };
 /** the pill whole (its rounded left end at 1505; "Stop" ends at about 2025 and the pill at the screen's edge) */
 const PILL_ZOOM: Box = { x: 1490, y: 1190, w: 558, h: 136 };
 /** the page under the green frame, frosted round the pill (the player, its advert, the suggestions, the titles) */
@@ -163,7 +165,7 @@ const frame03 = (L: Layout) =>
         apps: R(L, 900, 96, 860, 888),
         calendar: R(L, 744, 172, 1112, 729),
         calEvent: R(L, 900, 372, 800, 337),
-        tabs: R(L, 760, 330, 1124, 303),
+        tabs: R(L, 760, 336, 1080, 291), // REVIEW-3 N-3: an 80-px right margin (the same centre line, the same 3.71)
         pill: R(L, 760, 452, 1124, 274),
         limit: R(L, 812, 230, 1048, 590),
         labelSize: L.type.title,
