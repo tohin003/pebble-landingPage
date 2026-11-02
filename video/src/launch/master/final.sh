@@ -2,6 +2,8 @@
 # The full-resolution 30 fps master (one browser tab; the owner's ruling, 1 Nov), and its mix as a 48 kHz WAV for delivery:
 #   video/src/launch/master/final.sh 16x9|4x5            -> video/out/launch/LaunchFilm-<aspect>-master.mp4 (+ .wav)
 #   video/src/launch/master/final.sh 16x9|4x5 --wav-only   -> only the mix's WAV, for a master already rendered
+#   video/src/launch/master/final.sh 16x9|4x5 --picture-only -> only the picture, keeping the mix's WAV (a fix that
+#        changes no sound)
 #   video/src/launch/master/final.sh 16x9|4x5 --music-only
 #        -> LaunchFilm-<aspect>-musiconly.mp4 (+ .wav): the master's picture with the bare music under it (no SFX at
 #           all, scene-placed ones included). Needs the master first.
@@ -30,6 +32,16 @@ if [ "${1:-}" = "--wav-only" ]; then
   "$HEAVY" "master-final-wav-$ASPECT" /usr/sbin/taskpolicy -c utility npx remotion render src/index.ts "$COMP" "${MASTER%.mp4}.wav" \
     --codec=wav --concurrency=1 --timeout=60000 "${CHROME_FLAGS[@]}"
   echo "final.sh: ${MASTER%.mp4}.wav"
+  exit 0
+fi
+if [ "${1:-}" = "--picture-only" ]; then
+  # the picture alone, for a fix that leaves the mix as it is (REVIEW-5 MUST-1, S09's masks): the master's WAV is kept
+  [ -f "${MASTER%.mp4}.wav" ] || { echo "final.sh: no mix to keep (${MASTER%.mp4}.wav): render the master in full" >&2; exit 66; }
+  cd "$REPO/video"
+  "$HEAVY" "master-final-$ASPECT" /usr/sbin/taskpolicy -c utility npx remotion render src/index.ts "$COMP" "$MASTER" \
+    --concurrency=1 --codec=h264 --crf=12 --pixel-format=yuv420p --color-space=bt709 \
+    --audio-codec=aac --audio-bitrate=320k --timeout=60000 "${CHROME_FLAGS[@]}"
+  echo "final.sh: $MASTER (its mix kept: ${MASTER%.mp4}.wav)"
   exit 0
 fi
 cd "$REPO/video"

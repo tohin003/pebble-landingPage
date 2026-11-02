@@ -15,7 +15,8 @@
 //       about 0.35×.
 //       0.8 s of the desktop without it (REVIEW-3 M-1): the take's Finder window and the widgets behind are cut out and
 //       filled from the wallpaper round them (a normalised blur: wallpaper texture, no window, no edge).
-//       Frosted: Pebble's iCloud notice and its first-run chips, the Dock's date and badge.
+//       Frosted: the desktop calendar's dates beside the window, the Dock's date and badge. Nothing inside Pebble's
+//       window (REVIEW-5 MUST-1): it shows exactly as recorded, first-run lines and iCloud notice included.
 //       "Stealth Lockdown." and the honest line, word for word, enter WITH the recording and sit under it (3 lines at
 //       56 px on 16:9; 4 lines at 44 px on 4:5), and stay through the Veil: 1.3 → 8.98 (7.68 s).
 // 3.8   The recording leaves; the pebble (Pebble's own body) comes in above the honest line and puts on the Veil
@@ -192,12 +193,13 @@ const AFTER_HOLES: Box[] = [
   { x: 230, y: 420, w: 360, h: 410 }, // the Photos widget ("…appear here when they… processing")
   { x: 480, y: 215, w: 1990, h: 1000 }, // the take's own pebble-takes Finder window, with its shadow
 ];
+// REVIEW-5 MUST-1: nothing inside Pebble's window is masked. Its left edge is the take's x 311 (its dark outline; the
+// light border 312–313, the body from 314), so the calendar's mask stops at 310. It ran to 380 and frosted the red
+// close button and the left halves of the logo and of "+ New conversation". The frosts over Pebble's iCloud notice and
+// the first-run "Connect a model" lines are gone: none of them is private (TREATMENT §5).
 const STRIP_MASKS: Mask[] = [
-  { box: { x: 1240, y: 1280, w: 1400, h: 120 }, s0: 0, s1: LEAVE, px: 22, backing: "#1b1f1c" }, // Pebble's iCloud notice ("Your Documents folder syncs with iCloud Drive…"): noise (REVIEW-2 S-4)
-  { box: { x: 270, y: 90, w: 110, h: 350 }, s0: 0, s1: LEAVE, px: 24, backing: "#2a2f2b" }, // the desktop calendar widget's right edge (dates; behind the window until it leaves)
+  { box: { x: 270, y: 90, w: 40, h: 350 }, s0: 0, s1: LEAVE, px: 24, backing: "#2a2f2b" }, // the desktop calendar widget's right edge (dates; behind the window until it leaves), up to the window's outline
   ...AFTER_HOLES.map((box): Mask => ({ box, s0: LEAVE, s1: 99, kind: "wallpaper", px: 420 })),
-  { box: { x: 1360, y: 1572, w: 300, h: 48 }, s0: 0, s1: LEAVE, px: 18, backing: "#1b1f1c" }, // the composer's "Connect a model…" (first-run)
-  { box: { x: 1620, y: 1664, w: 336, h: 42 }, s0: 0, s1: LEAVE, px: 18, backing: "#141715" }, // the footer's "Connect a model in Settings"
   { box: { x: 1178, y: 1755, w: 176, h: 120 }, s0: 0, s1: DOCK_CLOSED, px: 22 }, // the Dock's dated Calendar icon
   { box: { x: 1226, y: 1755, w: 176, h: 120 }, s0: DOCK_CLOSED, s1: 99, px: 22 }, // … after the Dock closes up (≈ 50 px right)
   { box: { x: 1938, y: 1746, w: 58, h: 62 }, s0: 0, s1: DOCK_CLOSED, px: 22 }, // the System Settings badge
