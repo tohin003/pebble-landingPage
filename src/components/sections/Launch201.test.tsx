@@ -210,10 +210,10 @@ describe("the 2.0 loop slots, once their files exist", () => {
     const desk = renderWith(["/media/v3/loop-desk.hevc.mp4", "/media/v3/loop-desk.h264.mp4"], `return h(OnYourDesktop);`);
     expect(desk).toContain(`aria-label="${attr(media.launchLoops.desk.label)}"`);
     expect(desk).not.toContain(attr(media.loops.companion.label));
-    expect(text(desk)).toContain(media.launchLoops.desk.source);
+    expect(text(desk)).toContain(`${common.sampleData} ${media.launchLoops.desk.source}`);
     const mem = renderWith(["/media/v3/loop-memory.h264.mp4", "/media/v1/loop-memory.h264.mp4"], `return h(Memory);`);
     expect(mem).toContain(`aria-label="${attr(media.launchLoops.memory.label)}"`);
-    expect(text(mem)).toContain(media.launchLoops.memory.source);
+    expect(text(mem)).toContain(`${common.sampleData} ${media.launchLoops.memory.source}`); // the sample-data line first, as under every clip
     expect(mem).not.toContain("/media/v1/loop-memory");
     // without the v3 file, the 1.x loop stays, with its 1.0.4 caption
     const old = renderWith(["/media/v1/loop-memory.h264.mp4"], `return h(Memory);`);

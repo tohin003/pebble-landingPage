@@ -100,7 +100,7 @@ export function Memory() {
                 ) : null}
               </MediaFrame>
               <figcaption className={styles.caption}>
-                {v3.available ? media.launchLoops.memory.source : memory.settingsCaption} {common.sampleData}
+                {common.sampleData} {v3.available ? media.launchLoops.memory.source : memory.settingsCaption}
               </figcaption>
             </figure>
 
