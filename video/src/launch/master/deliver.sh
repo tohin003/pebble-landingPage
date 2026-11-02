@@ -6,7 +6,7 @@
 #   LaunchFilm-<aspect>-linkedin.mp4   −14 LUFS, ≤ −1 dBTP, 30 fps
 #   LaunchFilm-<aspect>-web.mp4        −16 LUFS, ≤ −1 dBTP, 30 fps (the site's copy)
 # 30 fps throughout: the master's own rate (the owner's ruling, 1 Nov); a 60 fps copy would only repeat frames.
-# All H.264 High, CRF 16 capped at 20 Mbit/s (REVIEW-5 N-4: one second had reached 32.5), yuv420p, BT.709,
+# All H.264 High, CRF 16 capped at 20 Mbit/s for the 4:5 and 30 for the 16:9 (REVIEW-5 N-4, N-8), yuv420p, BT.709,
 # +faststart, AAC-LC 256 kbit/s 48 kHz stereo. Heavy steps via heavy.sh.
 #
 # The audio (REVIEW-4 M-1). The mix peaks at about 0 dBTP, so a −1 dBTP loudnorm can't stay linear on it and would
@@ -66,13 +66,21 @@ if abs(i - t) > 0.5 or tp > -1.0:
 ' "$target" "$(basename "$f")" <<<"$summary"
 }
 
+# The rate cap (REVIEW-5 N-4, N-8). The 4:5: 20 Mbit/s. The 16:9 has 1.42× its pixels: 30 Mbit/s, so S03's grain isn't
+# held to 20–24 against the master's 40–58; and Level 4.1, which keeps x264 to 4 reference frames at 1080p (it had picked
+# 5 and signalled Level 5.0).
+case "$ASPECT" in
+  16x9) RATE=(-maxrate 30M -bufsize 60M -level 4.1) ;;
+  *) RATE=(-maxrate 20M -bufsize 40M) ;;
+esac
+
 encode() { # $1 = target LUFS, $2 = fps, $3 = out name
   local target="$1" fps="$2" out="$OUT_DIR/LaunchFilm-$ASPECT$SUFFIX-$3.mp4" af log
   af="$(measure "$target"),aresample=48000"
   log="$LOGS/LaunchFilm-$ASPECT$SUFFIX-$3.pass2.log"
   "$HEAVY" "deliver-$3-$ASPECT" /usr/sbin/taskpolicy -c utility "$FF" -hide_banner -nostats -loglevel info -y \
     -i "$SRC" -i "$LIMITED" -map 0:v:0 -map 1:a:0 \
-    -vf "fps=$fps,format=yuv420p" -c:v libx264 -profile:v high -preset slow -crf 16 -maxrate 20M -bufsize 40M -pix_fmt yuv420p \
+    -vf "fps=$fps,format=yuv420p" -c:v libx264 -profile:v high -preset slow -crf 16 "${RATE[@]}" -pix_fmt yuv420p \
     -color_primaries bt709 -color_trc bt709 -colorspace bt709 -r "$fps" \
     -af "$af" -c:a aac -b:a 256k -ar 48000 -ac 2 -movflags +faststart "$out" 2> "$log"
   grep -q "Normalization Type: *Linear" "$log" || { echo "deliver.sh: loudnorm wasn't linear for $out (see $log)" >&2; return 71; }
