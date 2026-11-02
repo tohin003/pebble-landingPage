@@ -18,7 +18,7 @@ Don't reuse its edit, its look or its rule-by-rule caution.
 | **Post kit** | LinkedIn post text, description with the credits, thumbnail/poster stills, SRT of on-screen text | the post |
 
 **The owner's decisions (1 Nov 2026):** no voiceover: kinetic type, music and SFX tell the story (it must read
-muted); the sealed-context feature is titled "Context warping." on screen, with Pebble's own explanation under it;
+muted); the sealed-context feature is titled "Context warping." on screen, with Pebble's own explanation under it (confirmed on 2 Nov with Pebble's D55 in view: the name stays in the film and the post, with no numbers or savings; D55 still keeps it out of the site's own text);
 deliver the ~90 s film in 16:9 and a 4:5 re-layout (1080×1350, not a crop). Every scene is laid out for both.
 
 ## 2. The story: "Small pebble. Real work."
