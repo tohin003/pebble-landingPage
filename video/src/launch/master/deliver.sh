@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Loudness-normalised delivery encodes of a master:
-#   video/src/launch/master/deliver.sh 16x9|4x5 [--music-only]        (LIMIT_DB=<dBFS> overrides the limiter, −4.0)
+#   video/src/launch/master/deliver.sh 16x9|4x5 [--music-only]        (LIMIT_DB=<dBFS> overrides the limiter, −4.0;
+#                                                                      ONLY=linkedin|web delivers just that file)
 # From video/out/launch/LaunchFilm-<aspect>-master.mp4 (+ its .wav mix if present) it writes, beside it:
 #   LaunchFilm-<aspect>-linkedin.mp4   −14 LUFS, ≤ −1 dBTP, 30 fps
 #   LaunchFilm-<aspect>-web.mp4        −16 LUFS, ≤ −1 dBTP, 30 fps (the site's copy)
@@ -78,6 +79,12 @@ encode() { # $1 = target LUFS, $2 = fps, $3 = out name
   echo "deliver.sh: $out"
 }
 
-encode -14 30 linkedin
-encode -16 30 web
+# ONLY=web (or ONLY=linkedin) encodes just that one: for a run a HOLD stopped after the other was delivered
+for k in ${ONLY:-linkedin web}; do
+  case "$k" in
+    linkedin) encode -14 30 linkedin ;;
+    web) encode -16 30 web ;;
+    *) echo "deliver.sh: ONLY=$k? (linkedin or web)" >&2; exit 64 ;;
+  esac
+done
 rm -f "$LIMITED"
