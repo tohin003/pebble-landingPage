@@ -115,9 +115,10 @@ on 2 Nov 2026 with the trailer retired; the encoded sizes are phase B's:
 
 Each file starts at its CRF. Over its budget, the CRF rises (first the step that a bitrate fall of about 14 % per CRF
 step predicts, then +1) until the file fits, never by more than `FILM_MAX_RAISE` (film, default 4) or 6 (loops). The
-resolution never drops. The first CRF that fits wins; failing that, the lowest CRF under the hard limit, with a
-warning; failing that, the command fails and the last try is kept in `.work/tmp/encode-rejected/`. `--exact` keeps the
-starting CRF.
+resolution never drops. The first CRF that fits wins, after a step back down while one lower still fits (an estimated
+jump can overshoot: a 4:5 H.264 clip fell faster than 14 % a step and lost its seam at CRF 29); failing that, the
+lowest CRF under the hard limit, with a warning; failing that, the command fails and the last try is kept in
+`.work/tmp/encode-rejected/`. `--exact` keeps the starting CRF.
 
 | Output | Encode | Budget (raise CRF to fit) | Hard limit |
 |---|---|---|---|
@@ -127,7 +128,7 @@ starting CRF.
 | `film-phone.h264.mp4` | x264 slow CRF 21 from the 4:5 master, High, AAC 160k | 12.5 MB | 14 MB |
 | `film-1080.h264.mp4`, `film-720.hevc.mp4` | not in the plan (`--only`): CRF 21 / 28 | 18 / 6 MB | 30 / 12 MB |
 | `loop-<id>[-phone].hevc.mp4` | x265 slow CRF 27, `-an` | 0.6 MB for the launch loops (`LOOP_HEVC_BUDGET`; 0.9 by default) | the same |
-| `loop-<id>[-phone].h264.mp4` | x264 slow CRF 23, High, `-an` | 0.9 MB for the launch loops (`LOOP_H264_BUDGET`; 1.2) | 1.2 (`LOOP_H264_HARD`; 1.5) |
+| `loop-<id>[-phone].h264.mp4` | x264 slow CRF 23, High, `qcomp=0.7:ipratio=1.0` (`LOOP_X264`: the quality even over the cycle, so the seam holds), `-an` | 0.9 MB for the launch loops (`LOOP_H264_BUDGET`; 1.2) | 1.2 (`LOOP_H264_HARD`; 1.5) |
 | `<name>.poster.avif` / `.webp` | sharp AVIF q50 effort 6 / WebP q76 effort 6; quality down by 2 to fit (AVIF to q30, WebP to q50). A simple picture (under a quarter of its budget at the start quality: flat fields, soft gradients) gets the highest quality up to AVIF q80 / WebP q90 that stays under that quarter, because the start quality bands there | 60 KB / 90 KB | |
 | social (`encode.sh social`) | x264 slow CRF 18, High, VBV 20 Mb/s (inside level 4.0), AAC-LC 192k 48 kHz stereo | X: 512 MB, 3 to 140 s | |
 

@@ -31,8 +31,8 @@
 #   and high-tier=0.
 # - Budgets: a file starts at its CRF. Over its budget, the CRF rises (an estimated step, then +1) until it fits, never
 #   past the start + FILM_MAX_RAISE (film, default 4) or + 6 (loops); the resolution never drops. The first CRF that
-#   fits wins; failing that, the lowest CRF under the hard limit; failing that, the command fails and the file is kept
-#   in .work/tmp/encode-rejected/ for a look. tools/encode/README.md "The launch film's budget" has the plan:
+#   fits wins, after stepping back down while one lower still fits (a jump can overshoot); failing that, the lowest
+#   CRF under the hard limit; failing that, the command fails and the file is kept in .work/tmp/encode-rejected/. tools/encode/README.md "The launch film's budget" has the plan:
 #     film-1080.hevc CRF 27 <= 14 MB (hard 16)        film-720.h264 CRF 22 <= 11 MB (hard 12)     the plan's two 16:9
 #     film-phone.hevc CRF 27 <= 11 MB (hard 12)       film-phone.h264 CRF 21 <= 12.5 MB (hard 14) files and the 4:5 cut
 #     film-1080.h264 CRF 21 <= 18 MB, film-720.hevc CRF 28 <= 6 MB: C6's shares, encoded only when --only names them
@@ -97,6 +97,12 @@ ENC_AQ="${ENC_AQ:-3}"
 # ZONES is what ffenc applies; cmd_film and cmd_phone set it to FILM_ZONE.
 FILM_ZONE="${FILM_ZONE-0,29,b=2.5}"
 ZONES=""
+# The H.264 loops' rate control: qcomp 0.7 and ipratio 1.0 spread the quality evenly over the cycle. With x264's
+# defaults (0.6, 1.4) the loop's first frame, an I-frame that MB-tree favours on a still shot, came out sharper than its
+# last, and the 4:5 desk clip's seam read 40.3 dB against its 40.6 threshold (phase B). X264P is what ffenc applies;
+# cmd_loop sets it to LOOP_X264. Empty for x264's defaults.
+LOOP_X264="${LOOP_X264-qcomp=0.7:ipratio=1.0}"
+X264P=""
 # The web mix (D10: -16 LUFS, at most -1.5 dBTP after AAC; deliver.sh's limiter and linear loudnorm).
 MIX_LUFS="${MIX_LUFS:--16}"
 MIX_TP="${MIX_TP:--2.0}"
@@ -230,6 +236,7 @@ ffenc() {
       -x265-params "log-level=warning:colorprim=bt709:transfer=bt709:colormatrix=bt709:aq-mode=$ENC_AQ${ZONES:+:zones=$ZONES}${extra:+:$extra}"
   else
     set -- "$@" -c:v libx264 -preset slow -crf "$crf" -profile:v high -level:v 4.0 -pix_fmt yuv420p -aq-mode "$ENC_AQ"
+    if [ -n "$X264P" ]; then set -- "$@" -x264-params "$X264P"; fi
   fi
   set -- "$@" -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv
   if [ -n "$wav" ]; then set -- "$@" -c:a aac -b:a 160k -ar 48000; fi
@@ -269,7 +276,7 @@ next_crf() {
 # Sets FIT_CRF, FIT_SIZE, FIT_NOTE. Returns 0 when <final> is written, 1 when nothing fits under <hard>.
 fit() {
   local label="$1" codec="$2" crf0="$3" target="$4" hard="$5" maxr="$6" fixed="$7" final="$8" in="$9" vf="${10}" wav="${11}" frames="${12}"
-  local crf="$crf0" tmp size fb="" fb_crf="" fb_size="" last=""
+  local crf="$crf0" tmp size fb="" fb_crf="" fb_size="" last="" over="" back bsize
   FIT_CRF="" FIT_SIZE="" FIT_NOTE=""
   if [ "$BUDGET_SCALE" != 1 ]; then
     target="$(awk -v b="$target" -v s="$BUDGET_SCALE" 'BEGIN { printf "%d", b * s }')"
@@ -283,6 +290,22 @@ fit() {
     size="$(fsize "$tmp")"
     note "$label: CRF $crf gives $(human "$size") (budget $(human "$target"), hard limit $(human "$hard"))"
     if [ "$size" -le "$target" ]; then
+      # A jump of more than one step can overshoot (0.86 a step is an average; a 4:5 H.264 clip fell faster and lost
+      # its seam at CRF 29): step back down while it still fits, so the file keeps the lowest CRF under its budget.
+      while [ "$EXACT" != 1 ] && [ -n "$over" ] && [ $((crf - 1)) -gt "$over" ]; do
+        back="$WORK/$(basename "$final" .mp4).crf$((crf - 1)).mp4"
+        note "$label: CRF $crf fits; trying CRF $((crf - 1)), in case the step from CRF $over overshot"
+        enc_checked "$codec" "$((crf - 1))" "$in" "$back" "$vf" "$wav" "$frames" || die "$label: the encode at CRF $((crf - 1)) failed"
+        bsize="$(fsize "$back")"
+        note "$label: CRF $((crf - 1)) gives $(human "$bsize") (budget $(human "$target"))"
+        if [ "$bsize" -le "$target" ]; then
+          rm -f "$tmp"
+          tmp="$back" size="$bsize" crf=$((crf - 1))
+        else
+          rm -f "$back"
+          break
+        fi
+      done
       [ -z "$fb" ] || rm -f "$fb"
       [ -z "$last" ] || rm -f "$last"
       mv -f "$tmp" "$final"
@@ -291,7 +314,7 @@ fit() {
       return 0
     fi
     [ -z "$last" ] || [ "$last" = "$fb" ] || rm -f "$last"
-    last="$tmp"
+    last="$tmp" over="$crf"
     if [ "$size" -le "$hard" ] && [ -z "$fb" ]; then fb="$tmp" fb_crf="$crf" fb_size="$size"; fi
     if [ "$EXACT" = 1 ] || [ $((crf - crf0)) -ge "$maxr" ]; then break; fi
     crf="$(next_crf "$crf" "$size" "$target" "$fixed" "$crf0" "$maxr")"
@@ -574,6 +597,7 @@ cmd_loop() {
   [ -z "$phone" ] || master "$phone" "the phone master"
   enter_heavy "encode-loop-$id"
   mkdir -p "$OUT"
+  X264P="$LOOP_X264"
   for name in "loop-$id" ${phone:+"loop-$id-phone"}; do
     src="$master"
     [ "$name" = "loop-$id" ] || src="$phone"

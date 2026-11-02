@@ -15,8 +15,9 @@ This covers everything under `public/media/` and the interface stills under `pub
   - `film.poster` and `film-phone.poster` (`.avif`, `.webp`): each film's first frame;
   - the 2.0 feature loops (`loop-<id>`, with `-phone` 4:5 cuts), silent, each cut from the film's own frames, with its
     poster: `tools/encode/launch-loops.json` lists them.
-- `media/v1/loop-companion`, `loop-models`, `loop-isolated-tests`, `loop-memory` and `loop-views`: the 1.x silent
-  feature loops, with 4:5 cuts for phones of the companion and isolated-tests loops (`-phone`), and their posters.
+- `media/v1/loop-models`, `loop-isolated-tests` and `loop-views`: the 1.x silent feature loops, with a 4:5 cut for
+  phones of the isolated-tests loop (`-phone`), and their posters. `loop-companion` and `loop-memory` retired on 2
+  November 2026, when the 2.0 clips `desk` and `memory` took their places; their files are in git history.
 - `media/v1/wallpaper-*`: the riverbed wallpaper.
 - `ui/v1/`: stills of Pebble's real interface, in both themes and two widths; `ui/v2/` (when published): Pebble 2.0.x's.
 - Retired: `media/v2/`, the 1.x launch trailer (a 76.8 s trailer, its 1:1 cut, tracks and poster), replaced by the
@@ -57,6 +58,6 @@ In this repository, https://github.com/tohin003/pebble-landingPage:
   `tools/captions/`: the text tracks. `tools/assets/`: the stills and the wallpaper. `tools/audio/`: the earlier
   films' score, sound effects and mix.
 - `docs/media-provenance.json`: the source, hash and licence of the audio inputs.
-- `docs/BUILDING.md`: how to rebuild the earlier media.
+- `docs/BUILDING.md`: how to rebuild everything, the launch film's site files included.
 
 If the film's music, or any third-party material in the media, changes, update this file and `CREDITS.md` together.
