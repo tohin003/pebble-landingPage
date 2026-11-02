@@ -118,3 +118,24 @@ is missing. claude-p sessions keep running (another account). Status:
   (claude-w subagent; briefs `.work/launch/briefs/critic-r4.md` + `critic-r4-known.md`) → `REVIEW-4.md`.
 - Open with the owner: D55 (Pebble's decision keeps the name "Context Warping" off public material until its
   benchmark). The owner chose the name on screen in this session; the alternative is the mechanism without the name.
+
+## Update, 2 Nov ~14:10 IST: round 4 fixes; masters next, round 5 on the delivered files
+
+- Round 4's critic: `.work/launch/critic/REVIEW-4.md`, "fix then ship". The plan: `.work/launch/critic/FIXES-4.md`
+  (N-3 declined there, with the reason).
+- The owner keeps "Context warping." on screen and in the post, with D55 in view (2eaeee2); no numbers attached.
+- Done:
+  - M-1 (delivery limits at −4 dBFS, loudnorm linear, checks each file after AAC) and S-4 (the music one frame
+    late: its beat grid was about 27 ms behind the file's transients) by the director, 46f653f.
+  - P-OPEN-MEM: N-1 cf6e26f (the verb holds with the names to 8.05) and S-2 0b3d7f4 (4:5 Memory pull-back from
+    52.6). Report: `.work/launch/critic/FIX4-P-OPEN-MEM.md`.
+  - The post kit's thumbnail is now the 4.1-s frame, which shows the whole premise (619a4f8).
+- Running (claude-w subagents): P-SWIPE (S02's Spaces swipe as a readable slide; S03's top band) and P-STEALTH (S09's
+  push without "Connect a model", plus the 4:5 palette ≥ 40 px). Also the captions (`master/captions.ts` writes the
+  SRT and VTT; brief `.work/launch/briefs/captions.md`).
+- Next:
+  - `final-pipeline.sh`, both aspects: masters, QA, delivery, thumbnails at 4.1 s.
+  - Round 5's critic (`.work/launch/briefs/critic-r5.md`) on the masters and the delivered files. Its "ship" ends the
+    loop.
+  - Then the Desktop hand-off (`~/Desktop/Pebble 2.0 film/launch-film-2026-11-02/`) and site phase 2
+    (`.work/launch/briefs/site2.md`).
