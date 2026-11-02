@@ -50,10 +50,12 @@ const WALL_TIME = timeMap(
   { tail: 0, head: 0 },
 );
 /**
- * Clean wallpaper only: under the take's Finder window (it ends at y 1131) and above the Dock (from y 1735), right of
- * the pointer (x 1580) and of the widgets; on 4:5, right of the Finder window (x > 2397).
+ * Clean wallpaper only: under the take's Finder window and its shadow and above the Dock (from y 1736), right of the
+ * pointer (x 1580) and of the widgets; on 4:5, right of the Finder window (x > 2397). REVIEW-4 N-2: the window ends at
+ * y 1140 and its shadow darkens the wallpaper under it to about y 1245 (luma 90 → 200, from x 2460 leftwards), which
+ * the 16:9 box's top once took in (a dark band along the frame's top edge in S02 and S03), so that box starts at 1255.
  */
-const wallBox = (L: Layout): Box => (L.portrait ? { x: 2420, y: 1080, w: 520, h: 650 } : { x: 1700, y: 1145, w: 1040, h: 585 });
+const wallBox = (L: Layout): Box => (L.portrait ? { x: 2420, y: 1080, w: 520, h: 650 } : { x: 1802, y: 1255, w: 836, h: 470 });
 
 /**
  * The Desktop world (REVIEW-1 BANNED: "windows on a dark blur, which make the desktop world read as night"): the
