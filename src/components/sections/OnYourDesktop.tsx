@@ -22,6 +22,7 @@ import { Pebble } from "@/components/pebble/Pebble";
 import { SectionHead } from "@/components/ui/SectionHead";
 import { launchLoopMedia, loopMedia, mediaFile, type ImageSet } from "@/lib/media";
 import { SECTIONS } from "@/lib/sections";
+import type { CSSProperties } from "react";
 import styles from "./OnYourDesktop.module.css";
 
 /** The frame spans the container: min(1280 px, the viewport less the side padding of 16 / 24 / 32 px). */
@@ -58,6 +59,9 @@ export function OnYourDesktop() {
           className={`full ${styles.vignette}`}
           data-loop={l1.available ? "" : undefined}
           data-phone-loop={l1.available && l1.phoneSources.length > 0 ? "" : undefined}
+          // the 2.0 desk loop is the film's 16:9 (src/lib/media.ts LAUNCH_LOOP_FRAMES): wider screens take its shape
+          data-launch-loop={desk.available ? "" : undefined}
+          style={desk.available ? ({ "--desk-loop-aspect": `${desk.width} / ${desk.height}` } as CSSProperties) : undefined}
         >
           <MediaFrame variant="riverbed" aspect="var(--desk-aspect)" sizes={FRAME_SIZES}>
             {l1.available ? (

@@ -270,4 +270,9 @@
   .phoneOnly {
     display: none;
   }
+
+  /* Pebble 2.0's memory loop, cut from the film, is 16:9: the frame takes its shape (phones keep 4:5) */
+  .media[data-launch-loop] .frame {
+    --memory-aspect: var(--memory-loop-aspect, 16 / 10);
+  }
 }

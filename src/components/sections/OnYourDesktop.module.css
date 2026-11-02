@@ -8,6 +8,14 @@
   margin: 0;
 }
 
+/* Pebble 2.0's desk loop, cut from the film, is 16:9: on wider screens the frame takes its shape, so no strip of the
+   riverbed shows under it (phones keep the 4:5 rule below). */
+@media (min-width: 561px) {
+  .vignette[data-launch-loop] {
+    --desk-aspect: var(--desk-loop-aspect, 16 / 10);
+  }
+}
+
 .loop {
   position: absolute;
   inset: 0;

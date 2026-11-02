@@ -24,6 +24,7 @@ import { SectionHead } from "@/components/ui/SectionHead";
 import { inline } from "@/lib/inline";
 import { launchLoopMedia, loopMedia } from "@/lib/media";
 import { SECTIONS } from "@/lib/sections";
+import type { CSSProperties } from "react";
 import styles from "./Memory.module.css";
 
 /** Where the forget card's "All memories in Settings" leads: the Settings picture in this section. */
@@ -68,7 +69,14 @@ export function Memory() {
 
           {/* 2. where you see it: the real Settings sheet, beside the recall rule */}
           <div className={styles.showcase}>
-            <figure id={SETTINGS_ID} className={styles.media} tabIndex={-1}>
+            <figure
+              id={SETTINGS_ID}
+              className={styles.media}
+              tabIndex={-1}
+              // the 2.0 memory loop is the film's 16:9 (LAUNCH_LOOP_FRAMES): wider screens take its shape
+              data-launch-loop={v3.available ? "" : undefined}
+              style={v3.available ? ({ "--memory-loop-aspect": `${v3.width} / ${v3.height}` } as CSSProperties) : undefined}
+            >
               <MediaFrame variant="riverbed" aspect="var(--memory-aspect)" sizes={FRAME_SIZES} className={styles.frame}>
                 {l7.available ? (
                   <LoopVideo
