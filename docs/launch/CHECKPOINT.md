@@ -176,3 +176,12 @@ is missing. claude-p sessions keep running (another account). Status:
   - The film's caption track keeps "Context warping." (the film's words). The page's own text, its chapters and its
     descriptions keep the name out.
   - The page goes live only when the owner merges to main and deploys. Agents never push or deploy.
+- ~18:50: round 5, phase A (`.work/launch/critic/REVIEW-5.md`) gave a provisional "ship" for the 4:5, with no MUST.
+  - The director's decisions are in `.work/launch/critic/FIXES-5.md`. Round 5's polish went into both masters (8d2fbe0).
+  - On LinkedIn the film is posted without the SRT. The captions are fixed for YouTube and the site (3273b38).
+  - The 4:5 re-renders when the hold lifts. Scratchpad scripts `d5/post-hold-A.sh` and `d5/post-hold-B.sh` run in
+    this order:
+    1. A: tsc, then the 4:5's master, qa, LinkedIn file and thumbnails, then the critic's 330 frames, M3 and M4;
+    2. the critic resumes for phase B on the 4:5;
+    3. B: the 16:9, then the 4:5's web file and the critic's 16:9 frames.
+  - The frame lists are in `.work/launch/critic/r5/phaseB-*.times`.
