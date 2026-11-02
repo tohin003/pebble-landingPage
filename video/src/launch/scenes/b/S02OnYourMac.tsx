@@ -5,12 +5,12 @@
 // 0.0  RS11-02: the match from S01's sage. The screen starts scaled up about the real companion pebble, centred and
 //      sharp (take px at 1.8× at most: REVIEW-1 S4), and settles to the whole Mac at 1.0×: the menu bar (its right end,
 //      the clock, masked), Pebble's window, Pebble's own folder in Finder, the Dock. "It lives on your Mac." (≥ 2 s).
-// 2.9  RS1-03, cut on the swipe's first frame (REVIEW-3 S-5): one framing from the pull-back to the swipe, the whole
-//      screen in the same window at the same scale (the same slow drift about the pebble's spot), so the swipe itself
-//      carries the move to the next Space; no punch-in, no jump cut. The real Spaces swipe at half speed (1.12 s: the
-//      slide 4.0–4.56 of the take), blurred by its own step, the Space's edge crossing the whole screen; the pebble
-//      rides in with Chrome's Space and settles on its spot, the same spot as on the desktop. "On every Space." lands
-//      on the swipe's first frame.
+// 2.9  The Spaces swipe (REVIEW-4 S-1), on its first frame: one framing from the pull-back to the end of the shot, the
+//      whole screen in the same window at the same scale (the same slow drift about the pebble's spot). Finder's Space
+//      (shot A's own frame) leaves to the left, the black gap between two Spaces crosses, and Chrome's Space (RS1-03)
+//      arrives, on RS1-03's own measured slide played at 0.6×, with a motion blur of the move's own length (a 180°
+//      shutter, 55 px at most). The pebble does what it does in the take: it hides as the swipe starts and rides in
+//      with the new Space to the same spot. "On every Space." lands on the swipe's first frame.
 // 4.5  RS15-01 (cut on the downbeat): close on the pebble; the pointer, the click, the quick chat opens; a push onto
 //      its input as "What can you do now?" is typed, held whole ≥ 1.0 s, sent (Return, "Sending"). "Click. Ask."
 //      The scene ends on the send with the out half of a whip; S03 opens with the in half and its answer.
@@ -27,7 +27,7 @@ import { ScreenZoom } from "../../components/ScreenZoom";
 import { Sfx } from "../../components/Sfx";
 import { eventS, TAKES } from "../../data/takes";
 import { useLayout, type Layout } from "../../layout";
-import { fromRamps, realTime } from "../../timeMap";
+import { fromRamps, realTime, type TimeMap } from "../../timeMap";
 import { EASE } from "../../tokens";
 import type { SceneProps } from "../types";
 import { DesktopGround, EdgeWhip, INK, lerp, MaskedZoom, R, ramp, sfxAt, sfxSrc, useSceneTime, ZoomAbout, type Mask, type SfxNote } from "./kit";
@@ -60,20 +60,82 @@ const OPEN_MAG = 1.2;
 /* ---------- the takes' time maps and masks ---------- */
 
 const A_TIME = realTime(0.6); // a still tour shot: the pointer barely moves
-/** the swipe's first frame on screen (the take's slideVisible, f240) */
-const B_SLIDE = eventS("RS1-03", "slideVisible");
-// REVIEW-3 S-5: the swipe is the cut. In on the slide's first frame, at half speed so it plays 1.12 s, then real time
-// on Chrome's Space with the pebble back on its spot.
-const B_SLOW = { s0: B_SLIDE, s1: 4.56, speed: 0.5 } as const;
-const B_TIME = fromRamps(
-  [
-    B_SLOW,
-    { s0: B_SLOW.s1, s1: 6.5, speed: 1 },
-  ],
-  { ramp: 0.04, tail: 1 },
-);
 /** shot B: the whole screen, as shot A shows the Mac (the file path and the dated kicker are masked) */
 const B_BOX: Box = { x: 0, y: 0, w: 2940, h: 1912 };
+
+/*
+ * The swipe (REVIEW-4 S-1). RS1-03 was recorded from the full-screen poster's Space, and its slide updates about 20
+ * times a second, so its own frames can't show Finder's Space leaving and judder when slowed. The slide is composed
+ * of real frames moved along the take's own measured curve: shot A's frame of the desktop leaves, and Chrome's Space
+ * arrives as RS1-03 shows it the moment the slide ends (f266–f271 are one picture), then the take runs on. Nothing is
+ * drawn but the black gap macOS leaves between two Spaces.
+ */
+/** the pebble on its spot, the page 4 px from home, the stray pointer still a crosshair (f266–f271: one picture) */
+const B_HOLD = 4.45;
+/**
+ * RS1-03's slide, measured off the black gap between its Spaces in each frame (f239–f266): Chrome's Space comes in
+ * from the right on an exponential settle from 3.986 s, time constant 0.096 s (rms 30 take px against the 14 measured
+ * positions), and rests 4 px from home at f266 (4.433), as the take does (it snaps home on f272). macOS leaves a
+ * 125-px black gap between two Spaces (the take's dark run is that gap plus the poster's own 53-px black bar).
+ */
+const SLIDE = { s0: 3.986, tc: 0.096, end: eventS("RS1-03", "pebbleSettled"), rest: 4, gap: 125 } as const;
+const SLIDE_FROM = SRC.w + SLIDE.gap; // Chrome's Space's left edge before the slide: the gap just off the screen
+const SLIDE_NORM = 1 - Math.exp(-(SLIDE.end - SLIDE.s0) / SLIDE.tc);
+/** Chrome's Space's left edge on the screen at take second `s`, take px (the leaving Space ends a gap to its left) */
+const spaceEdge = (s: number) => {
+  const p = s <= SLIDE.s0 ? 0 : s >= SLIDE.end ? 1 : (1 - Math.exp(-(s - SLIDE.s0) / SLIDE.tc)) / SLIDE_NORM;
+  return SLIDE_FROM - (SLIDE_FROM - SLIDE.rest) * p;
+};
+/**
+ * The swipe's clock: the take's second at output second `u` after the swipe's first frame. The slide plays at 0.6×;
+ * the speed eases in over 0.2 s from 0.05 s before that frame, so the move and its blur build over three frames
+ * (never a cut from a sharp frame into a smear), and after the take's last step (4.533: the page home, the pointer an
+ * arrow) it eases into real time.
+ */
+const SWIPE = { speed: 0.6, rampIn: 0.2, lead: 0.05, slowTo: 4.533, rampOut: 0.15 } as const;
+const smoothInt = (x: number) => x * x * x - (x * x * x * x) / 2; // ∫ smoothstep from 0 (1/2 at 1)
+const swipeAt = (u: number): number => {
+  const { speed: v, rampIn: r1, lead, slowTo, rampOut: r2 } = SWIPE;
+  const tau = u + lead;
+  if (tau <= 0) return SLIDE.s0;
+  if (tau < r1) return SLIDE.s0 + v * r1 * smoothInt(tau / r1);
+  const t2 = r1 / 2 + (slowTo - SLIDE.s0) / v;
+  if (tau < t2) return SLIDE.s0 + v * (tau - r1 / 2);
+  if (tau < t2 + r2) return slowTo + v * (tau - t2) + (1 - v) * r2 * smoothInt((tau - t2) / r2);
+  return slowTo + v * r2 + ((1 - v) * r2) / 2 + (tau - t2 - r2);
+};
+const swipeInv = (s: number): number => {
+  let lo = -SWIPE.lead;
+  let hi = 10;
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (swipeAt(mid) < s) lo = mid;
+    else hi = mid;
+  }
+  return hi;
+};
+/** a time map from a function of output seconds (the swipe's layers; ScreenZoom reads only `at`) */
+const mapOf = (at: (t: number) => number): TimeMap => ({
+  at,
+  inv: (src) => {
+    let lo = 0;
+    let hi = 10;
+    for (let i = 0; i < 60; i++) {
+      const mid = (lo + hi) / 2;
+      if (at(mid) < src) lo = mid;
+      else hi = mid;
+    }
+    return hi;
+  },
+  speed: (t) => (at(t + 0.005) - at(t - 0.005)) / 0.01,
+  knots: [],
+});
+/** the blur's longest length, frame px at 1080 (REVIEW-4 S-1: half the move per output frame, never more than 55 px) */
+const SWIPE_BLUR_MAX = 55;
+/** the Gaussian's sigma for a blur of that length: the sigma of a box blur that long (1/√12 of it) */
+const SIGMA_PER_LENGTH = 1 / Math.sqrt(12);
+/** the leaving desktop's pebble hides as the swipe starts, as Pebble does in RS1-03 (f237): Pebble's window ground under it */
+const PEBBLE_HIDES: Mask = { box: { x: 2652, y: 1532, w: 202, h: 184 }, s0: 0, s1: 99, kind: "fill", fill: "rgb(18, 24, 22)" };
 const C_CLICK = eventS("RS15-01", "click");
 const C_PANEL = eventS("RS15-01", "panelOpens");
 const C_TYPE = eventS("RS15-01", "typeW");
@@ -91,8 +153,8 @@ const C_TIME = fromRamps(
   { ramp: 0.05, tail: 1 },
 );
 
-/** RS1-03: where Chrome's Space is during the slide (its left edge, measured per frame off the take's black gap) */
-const SLIDE: readonly (readonly [number, number])[] = [
+/** RS1-03: where Chrome's Space is in each frame of the slide (its left edge, measured off the take's black gap) */
+const SLIDE_STEPS: readonly (readonly [number, number])[] = [
   [3.99, 2940],
   [4.0, 2682],
   [4.05, 1532],
@@ -109,33 +171,11 @@ const SLIDE: readonly (readonly [number, number])[] = [
   [4.433, 4],
   [4.533, 0],
 ];
+/** the page's offset in the take's own frame at take second `s` (its masks follow it) */
 const slideDx = (s: number) => {
-  let dx = SLIDE[0][1];
-  for (const [t, v] of SLIDE) if (s >= t - 1e-4) dx = v;
+  let dx = SLIDE_STEPS[0][1];
+  for (const [t, v] of SLIDE_STEPS) if (s >= t - 1e-4) dx = v;
   return { dx, dy: 0 };
-};
-/** the slide's speed, source px per source second (SLIDE read as a smooth curve between its measured frames) */
-const slideSpeed = (s: number) => {
-  for (let i = 1; i < SLIDE.length; i++) {
-    const [t0, x0] = SLIDE[i - 1];
-    const [t1, x1] = SLIDE[i];
-    if (s >= t0 && s < t1) return Math.abs(x1 - x0) / (t1 - t0);
-  }
-  return 0;
-};
-/**
- * The swipe's motion blur (REVIEW-2 S-6, the flash scan): the take's slide moves in coarse steps (about 20 a second),
- * and at half speed each step walked the big "Open day" type across the frame (desk27 7 and css2560 8 transitions in a
- * second against 6). One layer, blurred along the slide by the length of the take's own step (the slide's speed over
- * a 20th of a second, as a shutter open for the whole step): no sample copies, nothing drawn.
- */
-// REVIEW-3 S-5: at the whole screen's scale the page's big "Open day" type settles in those coarse steps inside the
-// picture (the flash scan's css2560: 7 against 6), so the blur also covers the distance still to travel: the settling
-// type stays soft until it is within a few px of rest, and it sharpens with the slide, never in a jump.
-const slideBlurPx = (src: number, viewPerSrc: number, cap: number) => {
-  const step = (slideSpeed(src) * viewPerSrc) / 20 / 2;
-  const left = src >= SLIDE[0][0] ? slideDx(src).dx * viewPerSrc * 0.6 : 0;
-  return Math.min(cap, Math.max(step, left));
 };
 /** the menu bar's own colour by the clock (RS11-02: #c9dabf on its left, #c2d4b6 under the clock) */
 const MENU_FILL = "linear-gradient(to right, rgba(201, 218, 191, 0) 0%, rgb(201, 218, 191) 10%, rgb(195, 213, 185) 100%)";
@@ -175,9 +215,11 @@ export const s02Moments = (lenS: number) => {
     k,
     b,
     c,
-    swipe: b + B_TIME.inv(eventS("RS1-03", "swipeKey")),
-    slide: b + B_TIME.inv(B_SLIDE),
-    settled: b + B_TIME.inv(eventS("RS1-03", "pebbleSettled")),
+    swipe: b,
+    /** the swipe's first frame: the first move, and "On every Space." */
+    slide: b,
+    /** the new Space home, the pebble on its spot */
+    settled: b + swipeInv(SLIDE.end),
     click: c + C_TIME.inv(C_CLICK),
     panel: c + C_TIME.inv(C_PANEL),
     typing: c + C_TIME.inv(C_TYPE),
@@ -233,11 +275,26 @@ export const S02OnYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
   const dockHide = t < 0 ? 0 : 1 - Math.min(1, Math.max(0, (t - 0.8 * PULL_S) / (0.3 * PULL_S)));
   const capA = PULL_S * 0.82;
 
-  /* shot B: the swipe's blur, by the slide's speed at this frame's source time */
-  const tb = t - M.b;
-  const blurB = tb < 0 ? 0 : slideBlurPx(B_TIME.at(tb), G.screen.w / B_BOX.w, L.px(180)); // the cap as the half-scale previews have it (90 px there), at any scale
-  const poseB = poseA(t); // the same framing and drift as shot A, carried across the cut
+  /* shot B: the swipe, composed (REVIEW-4 S-1) */
+  const poseB = poseA(t); // the same framing and drift as shot A, carried across the swipe
   const blurId = `s02b${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const mB = G.screen.w / SRC.w; // window px per take px
+  const u = t - M.b; // output seconds since the swipe's first frame
+  const sB = swipeAt(u);
+  const edge = spaceEdge(sB);
+  // the blur: the move over the last half frame at 30 fps (a 180° shutter, as delivered), in frame px, capped
+  const blurLen = u < -SWIPE.lead ? 0 : Math.min(L.px(SWIPE_BLUR_MAX), Math.abs(spaceEdge(swipeAt(u - 1 / 60)) - edge) * mB * poseB.s);
+  const blurB = (blurLen * SIGMA_PER_LENGTH) / poseB.s; // the filter sits inside the drift's scale
+  const sliding = sB < SLIDE.end;
+  const deskX = (edge - SLIDE.gap - SRC.w) * mB; // the leaving desktop, its right edge a gap left of Chrome's Space
+  const deskOn = edge - SLIDE.gap > -40; // until it is wholly out of the window (with the blur's tail)
+  const pageX = sliding ? (edge - SLIDE.rest) * mB : 0;
+  const tB0 = f(M.b) / fps; // the swipe Sequence's start, scene seconds (its children count from 0 there)
+  const deskTime = realTime(A_TIME.at(tB0));
+  const pageTime = mapOf((lt) => {
+    const s = swipeAt(lt + tB0 - M.b);
+    return s < SLIDE.end ? B_HOLD : s;
+  });
 
   /* shot C: the push onto the input once the quick chat is open */
   const tc = (sec: number) => sec - M.c;
@@ -281,16 +338,24 @@ export const S02OnYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
               </AbsoluteFill>
             ))}
           </Sequence>
-          <Sequence from={f(M.b)} durationInFrames={f(M.c) - f(M.b)} premountFor={pre} name="B · RS1-03 the Spaces swipe">
+          <Sequence from={f(M.b)} durationInFrames={f(M.c) - f(M.b)} premountFor={pre} name="B · the Spaces swipe (RS11-02 leaves, RS1-03 arrives)">
             <ZoomAbout s={poseB.s} from={pebFinal} to={poseB.p}>
+              {/* black under the pictures: the gap between the two Spaces */}
               <FloatingWindow rect={G.screen} enter="none" spill={0} shadow={0.55} background="#000">
-                <AbsoluteFill style={{ filter: blurB > 0.5 ? `url(#${blurId})` : undefined }}>
+                <AbsoluteFill style={{ filter: blurB > 0.3 ? `url(#${blurId})` : undefined }}>
                   <svg width={0} height={0} style={{ position: "absolute" }}>
                     <filter id={blurId} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
                       <feGaussianBlur stdDeviation={`${blurB.toFixed(2)} 0`} edgeMode="duplicate" />
                     </filter>
                   </svg>
-                  <MaskedZoom src={B.file} srcSize={SRC} time={B_TIME} srcDuration={B.durationS} keys={[{ t: 0, box: B_BOX }]} drift={0} motionBlur={false} edgeFade={false} masks={B_MASKS} />
+                  {deskOn && (
+                    <AbsoluteFill style={{ transform: `translateX(${deskX.toFixed(2)}px)` }}>
+                      <MaskedZoom src={A.file} srcSize={SRC} time={deskTime} srcDuration={A.durationS} drift={0} masks={[...A_MASKS, PEBBLE_HIDES]} />
+                    </AbsoluteFill>
+                  )}
+                  <AbsoluteFill style={{ transform: pageX !== 0 ? `translateX(${pageX.toFixed(2)}px)` : undefined }}>
+                    <MaskedZoom src={B.file} srcSize={SRC} time={pageTime} srcDuration={B.durationS} keys={[{ t: 0, box: B_BOX }]} drift={0} motionBlur={false} edgeFade={false} masks={B_MASKS} />
+                  </AbsoluteFill>
                 </AbsoluteFill>
               </FloatingWindow>
             </ZoomAbout>
