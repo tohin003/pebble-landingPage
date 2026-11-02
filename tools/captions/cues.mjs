@@ -1,19 +1,19 @@
 // tools/captions/cues.mjs: the caption rules, readers and writers shared by tools/captions/build.mjs and
 // tools/encode/verify.mjs (no dependencies).
 //
-// - Time: seconds = frame / fps; WebVTT and SRT times are milliseconds rounded from the frame
-//   (docs/film-captions.json "vtt_time" / "srt_time").
-// - Rules: lane E's validator (.work/laneE/validate-film-spec.ts) is the reference. A word is a token with a letter or a
-//   digit; a caption is shown for at least 1.2 s, has one or two lines and no exclamation mark; cues are in time order
-//   and never overlap. On top: at most 42 characters a line and at most 3.5 words a second (the encode lane's gate;
-//   the caption file's own convention is 3, reported as a warning above it).
-// - Cuts: a cut file lists the film's source frame ranges in the order they play (see readCut). mapCuesToCut moves
-//   the film's cues onto the cut's timeline; cutInputs gives encode.sh the frame-exact input seeks.
-// - The narrated twin: readNarration reads docs/film-narration.json, and narratedCaptions marks each narrator's line
-//   in the film's captions ("Narrator: ..."), for the twin's SRT.
-//
-// CLI (for encode.sh): node tools/captions/cues.mjs cut-inputs <cut.json> <source_frames> [fps]
-//   prints the cut's frame count, then one "<seek seconds> <frames>" line per range.
+// - Time: WebVTT and SRT times are milliseconds; the film's cues sit on its 30 fps frames (seconds = frame / 30).
+// - Rules: a word is a token with a letter or a digit; a caption is shown for at least 1.2 s, has one or two lines of
+//   at most 42 characters and no exclamation mark, and reads at most 3.5 words a second (above 3 is a warning); cues are
+//   in time order and never overlap.
+// - The film's own pace (FILM_OWN_PACE): the Pebble 2.0 launch film has no voice, and its captions carry its on-screen
+//   type for exactly as long as the type is readable. Some of that type reads faster than 3.5 words a second, so for
+//   this film a faster cue is a warning, up to FILM_OWN_PACE's ceiling, not an error.
+// - The film's sources (filmSpec, filmTracks): its captions are the film's own (video/src/launch/master/captions.ts,
+//   whose `--write` writes video/out/launch/pebble-2.0-launch.vtt); its length, chapters and descriptions are
+//   src/content/chapters.ts's.
+// The 1.x trailer's sources (docs/film-captions.json, the narrated twin's docs/film-narration.json and the x30 cut
+// docs/film-cuts/x30.json) were retired from the site with the trailer on 2 Nov 2026; git history keeps the tools'
+// support for them.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -26,6 +26,20 @@ export const RULES = Object.freeze({
   maxLineChars: 42,
   /** a speaking rate for the description estimate (150 words a minute; the player does not pause the film) */
   speechWordsPerSecond: 2.5,
+});
+
+/**
+ * The launch film's documented exception to the reading rate (the director's note for site phase 2;
+ * .work/handoffs/2026-11-02-launch-captions.md). Its captions transcribe its own type, and some of that type is on
+ * screen for less time than 3.5 words a second would need: the premise in S00, AgentGuard's rows in S04, S08's small
+ * line, Stealth Lockdown's honest line in S09 (split over cues at word boundaries, inside its time on screen), S10's
+ * cards and S11's end card. video/src/launch/master/captions.ts marks each such cue `fast`, with its reason, and its
+ * --check fails an unmarked one. Here a cue above RULES.maxWordsPerSecond is a warning up to this ceiling, and an
+ * error above it (the fastest, S00's premise and S04's rows, read about 7 to 8 words a second).
+ */
+export const FILM_OWN_PACE = Object.freeze({
+  maxWordsPerSecond: 10,
+  why: "the film's own pace: its type is on screen this long (video/src/launch/master/captions.ts marks the cue `fast`)",
 });
 
 export const countWords = (text) => text.trim().split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
@@ -116,9 +130,10 @@ export function parseSrt(text) {
 
 /**
  * Checks a cue list. kind: "captions" (the full rule set), "descriptions" (order, no overlap, a speech-time warning) or
- * "chapters" (order, no overlap, contiguous from 0 to the end). Returns {errors, warnings}, each a list of strings.
+ * "chapters" (order, no overlap, contiguous from 0 to the end). With `ownPace` (FILM_OWN_PACE), a caption that reads
+ * faster than the rules allow is a warning up to its ceiling. Returns {errors, warnings}, each a list of strings.
  */
-export function validateCues(cues, { kind = "captions", durationMs = null, rules = RULES } = {}) {
+export function validateCues(cues, { kind = "captions", durationMs = null, rules = RULES, ownPace = null } = {}) {
   const errors = [];
   const warnings = [];
   let prev = null;
@@ -145,8 +160,11 @@ export function validateCues(cues, { kind = "captions", durationMs = null, rules
       }
       if (text.includes("!")) errors.push(`${name}: an exclamation mark`);
       if (seconds < rules.minSeconds - 1e-9) errors.push(`${name}: shown ${seconds.toFixed(2)} s (at least ${rules.minSeconds} s)`);
-      if (rate > rules.maxWordsPerSecond + 1e-9) errors.push(`${name}: ${words} words in ${seconds.toFixed(2)} s = ${rate.toFixed(2)} words/s (at most ${rules.maxWordsPerSecond})`);
-      else if (rate > rules.sourceWordsPerSecond + 1e-9) warnings.push(`${name}: ${rate.toFixed(2)} words/s, above the caption file's own ${rules.sourceWordsPerSecond}`);
+      const fast = `${name}: ${words} words in ${seconds.toFixed(2)} s = ${rate.toFixed(2)} words/s`;
+      if (rate > rules.maxWordsPerSecond + 1e-9) {
+        if (ownPace && rate <= ownPace.maxWordsPerSecond + 1e-9) warnings.push(`${fast}, above ${rules.maxWordsPerSecond}: ${ownPace.why}`);
+        else errors.push(`${fast} (at most ${ownPace ? ownPace.maxWordsPerSecond : rules.maxWordsPerSecond})`);
+      } else if (rate > rules.sourceWordsPerSecond + 1e-9) warnings.push(`${name}: ${rate.toFixed(2)} words/s, above the caption file's own ${rules.sourceWordsPerSecond}`);
     }
     if (kind === "descriptions") {
       const seconds = (cue.endMs - cue.startMs) / 1000;
@@ -167,13 +185,15 @@ export function sameCues(a, b, { ids = true } = {}) {
   return a.every((x, i) => x.startMs === b[i].startMs && x.endMs === b[i].endMs && x.lines.join("\n") === b[i].lines.join("\n") && (!ids || x.id === b[i].id));
 }
 
-// ---- film sources -----------------------------------------------------------------------------------------------
+// ---- the film's sources ------------------------------------------------------------------------------------------
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const REPO = path.resolve(HERE, "../..");
-export const DEFAULT_CAPTIONS = path.join(REPO, "docs/film-captions.json");
+/** The film's captions as its own source writes them: `bun video/src/launch/master/captions.ts --write` (gitignored). */
+export const DEFAULT_FILM_VTT = path.join(REPO, "video/out/launch/pebble-2.0-launch.vtt");
 export const DEFAULT_CHAPTERS = path.join(REPO, "src/content/chapters.ts");
-export const DEFAULT_NARRATION = path.join(REPO, "docs/film-narration.json");
+/** The command that writes DEFAULT_FILM_VTT, for messages. */
+export const FILM_VTT_COMMAND = "bun video/src/launch/master/captions.ts --write";
 
 /** Imports chapters.ts with Node's built-in type stripping, without its "typeless package.json" warning. */
 async function importChapters(file) {
@@ -193,35 +213,22 @@ async function importChapters(file) {
 }
 
 /**
- * The film's three tracks, built from docs/film-captions.json and src/content/chapters.ts:
- * {fps, totalFrames, durationMs, captions, chapters, descriptions, descriptionsFrom, problems}. Cues carry ms times;
- * caption cues also carry their source frames (start, end) and chapter. `problems` lists source-level errors (a
- * caption outside its chapter, a length mismatch between the two files).
+ * The film's length, chapters and descriptions, from src/content/chapters.ts (no film file needed):
+ * {fps, totalFrames, durationMs, chapters, descriptions, descriptionsFrom, problems}. Cues carry ms times. The
+ * descriptions are one cue a chapter, each chapter's `description` (read aloud by the theatre's audio-description
+ * toggle).
  */
-export async function filmTracks({ captionsPath = DEFAULT_CAPTIONS, chaptersPath = DEFAULT_CHAPTERS } = {}) {
-  const json = JSON.parse(fs.readFileSync(captionsPath, "utf8"));
+export async function filmSpec({ chaptersPath = DEFAULT_CHAPTERS } = {}) {
   const mod = await importChapters(chaptersPath);
-  const fps = Number(json.fps);
-  const totalFrames = Number(json.total_frames);
-  const problems = [];
-  if (!(fps > 0) || !Number.isInteger(totalFrames) || totalFrames <= 0) throw new Error(`${path.basename(captionsPath)}: fps and total_frames must be set`);
+  const fps = Number(mod.FILM_FPS);
+  const seconds = Number(mod.FILM_DURATION_SECONDS);
+  if (!(fps > 0) || !(seconds > 0)) throw new Error(`${path.basename(chaptersPath)}: FILM_FPS and FILM_DURATION_SECONDS must be set`);
+  const totalFrames = Math.round(seconds * fps);
   const durationMs = frameToMs(totalFrames, fps);
-  if (typeof mod.FILM_DURATION_SECONDS === "number" && Math.abs(mod.FILM_DURATION_SECONDS * fps - totalFrames) > 0.5) {
-    problems.push(`chapters.ts FILM_DURATION_SECONDS ${mod.FILM_DURATION_SECONDS} s is not total_frames ${totalFrames} / ${fps} fps`);
-  }
-  const captions = (json.cues ?? []).map((c) => ({
-    id: c.id,
-    start: c.start,
-    end: c.end,
-    startMs: frameToMs(c.start, fps),
-    endMs: frameToMs(c.end, fps),
-    lines: [...c.lines],
-    chapter: c.chapter,
-  }));
-  for (const c of captions) {
-    if (!Number.isInteger(c.start) || !Number.isInteger(c.end)) problems.push(`caption ${c.id}: start and end must be whole frames`);
-  }
+  const problems = [];
+  if (Math.abs(seconds * fps - totalFrames) > 1e-6) problems.push(`chapters.ts FILM_DURATION_SECONDS ${seconds} s is not a whole number of frames at ${fps} fps`);
   const timed = typeof mod.timedChapters === "function" ? mod.timedChapters() : (mod.chapters ?? []).filter((c) => typeof c.startSeconds === "number");
+  if (timed.length !== (mod.chapters ?? []).length) problems.push("a chapter in chapters.ts has no startSeconds, so it is left out of the chapter track");
   const chapters = timed.map((c, i) => ({
     id: c.id,
     startMs: Math.round(c.startSeconds * 1000),
@@ -229,201 +236,31 @@ export async function filmTracks({ captionsPath = DEFAULT_CAPTIONS, chaptersPath
     lines: [c.title],
     description: c.description,
   }));
-  if (timed.length !== (mod.chapters ?? []).length) problems.push("a chapter in chapters.ts has no startSeconds, so it is left out of the chapter track");
-  const ids = new Set(chapters.map((c) => c.id));
+  for (const c of chapters) {
+    const frame = (c.startMs / 1000) * fps;
+    if (Math.abs(frame - Math.round(frame)) > 0.05) problems.push(`chapter ${c.id}: starts at ${c.startMs} ms, between two frames at ${fps} fps`);
+  }
+  const descriptionsFrom = `${path.basename(chaptersPath)} chapter descriptions (one cue a chapter)`;
+  const descriptions = chapters.filter((c) => c.description).map((c) => ({ id: `d-${c.id}`, startMs: c.startMs, endMs: c.endMs, lines: [c.description.replace(/\s+/g, " ").trim()] }));
+  return { fps, totalFrames, durationMs, chapters: chapters.map(({ description, ...c }) => c), descriptions, descriptionsFrom, problems };
+}
+
+/**
+ * The film's three tracks: filmSpec, plus its captions from the film's own VTT (DEFAULT_FILM_VTT, written by
+ * FILM_VTT_COMMAND): {...filmSpec, captions, captionsFrom, problems}. Throws when the VTT is missing or unreadable.
+ * `problems` adds source-level errors: a cue off the film's frames, or the film's VTT out of the film.
+ */
+export async function filmTracks({ filmVttPath = DEFAULT_FILM_VTT, chaptersPath = DEFAULT_CHAPTERS } = {}) {
+  const spec = await filmSpec({ chaptersPath });
+  if (!fs.existsSync(filmVttPath)) throw new Error(`no film captions at ${path.relative(REPO, filmVttPath)}: run \`${FILM_VTT_COMMAND}\` first`);
+  const parsed = parseVtt(fs.readFileSync(filmVttPath, "utf8"));
+  const problems = [...spec.problems, ...parsed.errors.map((e) => `${path.basename(filmVttPath)}: ${e}`)];
+  const captions = parsed.cues.map((c, i) => ({ ...c, id: c.id || `c${String(i + 1).padStart(2, "0")}` }));
   for (const c of captions) {
-    const chapter = chapters.find((ch) => ch.id === c.chapter);
-    if (!ids.has(c.chapter)) problems.push(`caption ${c.id}: unknown chapter "${c.chapter}"`);
-    else if (c.startMs < chapter.startMs || c.startMs >= chapter.endMs) problems.push(`caption ${c.id}: starts outside its chapter "${c.chapter}"`);
-  }
-  let descriptions;
-  let descriptionsFrom;
-  if (Array.isArray(json.descriptions) && json.descriptions.length) {
-    descriptionsFrom = `${path.basename(captionsPath)} "descriptions"`;
-    descriptions = json.descriptions.map((d, i) => ({
-      id: d.id ?? `d${String(i + 1).padStart(2, "0")}`,
-      startMs: frameToMs(d.start, fps),
-      endMs: frameToMs(d.end, fps),
-      lines: [Array.isArray(d.lines) ? d.lines.join(" ") : String(d.text ?? "")],
-    }));
-  } else {
-    // FILM_SPEC §18: each chapter's `description` in chapters.ts is the audio description of what the chapter shows.
-    descriptionsFrom = `${path.basename(chaptersPath)} chapter descriptions (one cue a chapter, FILM_SPEC §18)`;
-    descriptions = chapters.filter((c) => c.description).map((c) => ({ id: `d-${c.id}`, startMs: c.startMs, endMs: c.endMs, lines: [c.description.replace(/\s+/g, " ").trim()] }));
-  }
-  return { fps, totalFrames, durationMs, captions, chapters: chapters.map(({ description, ...c }) => c), descriptions, descriptionsFrom, problems };
-}
-
-// ---- the narrated twin ------------------------------------------------------------------------------------------
-
-/** How the narrated twin's captions mark a spoken line (sentence case, like the rest of the captions). */
-export const NARRATOR_LABEL = "Narrator: ";
-
-/**
- * Reads docs/film-narration.json (written by tools/audio/narration.py build --doc): the narrated twin's voice cues as
- * [{id, start, end, text}], in film frames, end exclusive. The film's fps and length must match the captions'.
- */
-export function readNarration(raw, { fps, totalFrames }) {
-  const where = "film-narration.json";
-  if (Number(raw?.fps) !== fps) throw new Error(`${where}: fps ${raw?.fps}, the film runs at ${fps}`);
-  if (Number(raw?.total_frames) !== totalFrames) throw new Error(`${where}: total_frames ${raw?.total_frames}, the film has ${totalFrames}`);
-  if (!Array.isArray(raw?.cues) || !raw.cues.length) throw new Error(`${where}: "cues" lists no narrator's line`);
-  return raw.cues.map((c, i) => {
-    const id = c?.id ?? `n${i + 1}`;
-    if (!Number.isInteger(c?.start) || !Number.isInteger(c?.end) || c.end <= c.start) throw new Error(`${where}: cue ${id} needs whole frames with start < end`);
-    if (typeof c.text !== "string" || !c.text.trim()) throw new Error(`${where}: cue ${id} has no text`);
-    return { id, start: c.start, end: c.end, text: c.text.trim() };
-  });
-}
-
-/** The words of a line, for matching a spoken line with its on-screen twin: lower case, punctuation dropped. */
-const wordsOf = (text) =>
-  text
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}'’]+/gu, " ")
-    .trim();
-
-/**
- * The narrated twin's captions: the film's caption cues with each narrator's line marked as speech. A line is
- * captioned in the cue on screen when the voice starts, and the voice must end inside that cue (narration.py places
- * every line inside its card). The cue's on-screen line with the same words becomes "Narrator: <the spoken text>"; a
- * spoken line with no on-screen twin is added as the cue's last line. Every other cue, time and line is the film's.
- * Returns {cues, notes, errors}; validate the cues with validateCues before writing them.
- */
-export function narratedCaptions(captions, narration) {
-  const cues = captions.map((c) => ({ ...c, lines: [...c.lines] }));
-  const notes = [];
-  const errors = [];
-  for (const n of narration) {
-    const cue = cues.find((c) => c.start <= n.start && n.start < c.end);
-    if (!cue) {
-      errors.push(`narration ${n.id} starts on f${n.start}, where no caption is shown`);
-      continue;
+    for (const ms of [c.startMs, c.endMs]) {
+      const frame = (ms / 1000) * spec.fps;
+      if (Math.abs(frame - Math.round(frame)) > 0.05) problems.push(`caption ${c.id}: ${formatTime(ms, ".")} is between two frames at ${spec.fps} fps`);
     }
-    if (n.end > cue.end) errors.push(`narration ${n.id} runs to f${n.end}, past the end of caption ${cue.id} (f${cue.end})`);
-    const line = `${NARRATOR_LABEL}${n.text}`;
-    const at = cue.lines.findIndex((l) => wordsOf(l) === wordsOf(n.text));
-    if (at >= 0) {
-      cue.lines[at] = line;
-      notes.push(`${n.id} (f${n.start}-${n.end}) in ${cue.id}: "${line}", the on-screen line it speaks`);
-    } else if (cue.lines.length < RULES.maxLines) {
-      cue.lines.push(line);
-      notes.push(`${n.id} (f${n.start}-${n.end}) in ${cue.id}: "${line}", added`);
-    } else errors.push(`narration ${n.id}: caption ${cue.id} has no line with its words and no room for another`);
   }
-  return { cues, notes, errors };
-}
-
-// ---- cuts -------------------------------------------------------------------------------------------------------
-
-/**
- * Reads a cut file:
- *   {
- *     "name": "x-30s",                         optional, for messages
- *     "fps": 30,                               optional; must equal the film's
- *     "ranges": [[0, 144], [504, 648]],        source frames, [first, end) (end exclusive), in playing order;
- *                                              {"from": 0, "to": 144} works too
- *     "include": ["c01", "c08"],               optional: only these caption ids (default: every cue a range reaches)
- *     "exclude": ["c09"],                      optional: never these
- *     "add": [{"id": "x1", "start": 0, "end": 36, "lines": ["[Gentle music begins]"]}]
- *                                              optional: cues of the cut's own (its timeline, frames)
- *   }
- * Returns {name, fps, ranges, frames, include, exclude, add}.
- */
-export function readCut(raw, { totalFrames, fps }) {
-  const where = raw?.name ? `cut "${raw.name}"` : "cut";
-  if (raw?.fps !== undefined && Number(raw.fps) !== fps) throw new Error(`${where}: fps ${raw.fps}, the film runs at ${fps}`);
-  if (!Array.isArray(raw?.ranges) || !raw.ranges.length) throw new Error(`${where}: "ranges" must list at least one [first, end) frame range`);
-  const ranges = raw.ranges.map((r, i) => {
-    const [from, to] = Array.isArray(r) ? r : [r?.from, r?.to];
-    if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to <= from) throw new Error(`${where}: range ${i + 1} must be two whole frames with first < end, got ${JSON.stringify(r)}`);
-    if (Number.isInteger(totalFrames) && to > totalFrames) throw new Error(`${where}: range ${i + 1} ends at frame ${to}, after the film's ${totalFrames} frames`);
-    return [from, to];
-  });
-  const add = (raw.add ?? []).map((c, i) => {
-    if (!Number.isInteger(c.start) || !Number.isInteger(c.end) || !Array.isArray(c.lines)) throw new Error(`${where}: added cue ${i + 1} needs whole-frame start/end and lines`);
-    return { id: c.id ?? `x${i + 1}`, start: c.start, end: c.end, lines: [...c.lines], added: true };
-  });
-  return {
-    name: raw.name ?? "cut",
-    fps,
-    ranges,
-    frames: ranges.reduce((n, [a, b]) => n + (b - a), 0),
-    include: Array.isArray(raw.include) ? new Set(raw.include) : null,
-    exclude: new Set(raw.exclude ?? []),
-    add,
-  };
-}
-
-/**
- * Moves frame-timed cues ({id, start, end, lines}) onto the cut's timeline. A cue that runs across two consecutive
- * ranges stays one cue; a cue shown twice gets "<id>.2"; a clipped cue is reported. Returns {cues, notes}; cues carry
- * frames (start, end) and ms.
- */
-export function mapCuesToCut(cues, cut) {
-  const pieces = [];
-  let offset = 0;
-  for (const [from, to] of cut.ranges) {
-    for (const cue of cues) {
-      if (cut.include && !cut.include.has(cue.id)) continue;
-      if (cut.exclude.has(cue.id)) continue;
-      const a = Math.max(cue.start, from);
-      const b = Math.min(cue.end, to);
-      if (b <= a) continue;
-      pieces.push({ id: cue.id, start: offset + (a - from), end: offset + (b - from), lines: cue.lines, shown: b - a, length: cue.end - cue.start });
-    }
-    offset += to - from;
-  }
-  pieces.sort((x, y) => x.start - y.start);
-  const merged = [];
-  for (const piece of pieces) {
-    const last = [...merged].reverse().find((m) => m.id === piece.id);
-    if (last && last.end === piece.start) {
-      last.end = piece.end;
-      last.shown += piece.shown;
-    } else merged.push({ ...piece });
-  }
-  const seen = new Map();
-  const notes = [];
-  for (const m of merged) {
-    const n = (seen.get(m.id) ?? 0) + 1;
-    seen.set(m.id, n);
-    if (n > 1) {
-      notes.push(`${m.id} is shown ${n} times in the cut; this copy is ${m.id}.${n}`);
-      m.id = `${m.id}.${n}`;
-    }
-    if (m.shown < m.length) notes.push(`${m.id} is clipped: ${(m.shown / cut.fps).toFixed(2)} s of its ${(m.length / cut.fps).toFixed(2)} s`);
-  }
-  for (const id of cut.include ?? []) if (!seen.has(id)) notes.push(`${id} is in "include" but no range reaches it`);
-  const all = [...merged, ...cut.add].sort((x, y) => x.start - y.start || x.end - y.end);
-  for (const c of all) if (c.end > cut.frames) notes.push(`${c.id} ends at frame ${c.end}, after the cut's ${cut.frames} frames`);
-  return {
-    cues: all.map((c) => ({ id: c.id, start: c.start, end: c.end, startMs: frameToMs(c.start, cut.fps), endMs: frameToMs(c.end, cut.fps), lines: c.lines })),
-    notes,
-  };
-}
-
-/**
- * Frame-exact input seeks for the cut: one entry per range, {seek, frames}. `seek` is the range's first frame time
- * rounded DOWN to the microsecond, so FFmpeg's accurate seek keeps exactly that frame and drops the one before it.
- */
-export function cutInputs(cut) {
-  return cut.ranges.map(([from, to]) => ({ seek: (Math.floor((from * 1e6) / cut.fps) / 1e6).toFixed(6), frames: to - from }));
-}
-
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
-if (isMain) {
-  const [command, file, frames, fps = "30"] = process.argv.slice(2);
-  if (command !== "cut-inputs" || !file || !frames) {
-    console.error("usage: node tools/captions/cues.mjs cut-inputs <cut.json> <source_frames> [fps]");
-    process.exit(2);
-  }
-  try {
-    const cut = readCut(JSON.parse(fs.readFileSync(file, "utf8")), { totalFrames: Number(frames), fps: Number(fps) });
-    console.log(cut.frames);
-    for (const input of cutInputs(cut)) console.log(`${input.seek} ${input.frames}`);
-  } catch (error) {
-    console.error(`cues.mjs: ${error.message}`);
-    process.exit(1);
-  }
+  return { ...spec, captions, captionsFrom: path.relative(REPO, filmVttPath), problems };
 }
