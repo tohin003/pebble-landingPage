@@ -105,3 +105,16 @@ is missing. claude-p sessions keep running (another account). Status:
 - Next: draft 4 + gates → a light round-3 check (dense strips of the changed windows + the gates) → if "ship": final
   masters (`master/final.sh`, 30 fps), `deliver.sh` (−14 / −16 LUFS, −1 dBTP), SRT, posters, the encode test, a last
   verification; then the site's phase 2.
+
+## Update, 2 Nov ~11:35 IST: verification loop round 3 done; draft 5 and round 4
+
+- Draft 4 passed every gate in both aspects (frames, pops, flash incl. css2560; the 5 Mbps encode test adds no
+  blocking). Round 3's critic: `.work/launch/critic/REVIEW-3.md`, "fix then ship; draft 4 is close". The plan:
+  `.work/launch/critic/FIXES-3.md`. Its fixes are committed: R3-A 1544e9c, ed3ec35 (the film ends at 99.4 s with a
+  slow blink); R3-CD 860ebe3, e17d76e, d9fa5fd; R3-B d809454; the post kit's masking line 94b03fe.
+- The Pebble side's 2.0.2 HOLD (03:07–11:26) paused every render; it also asked that claude-p stay quiet, so the
+  film's work stays on claude-w (`PEBBLE_SESSIONS_STATUS.md`). `deliver.sh` now writes 30 fps copies only (1354151).
+- Now: draft 5 (`.work/launch/master/draft5-{16x9,4x5}.mp4`, pipeline log `draft5-pipeline.log`) → round 4's critic
+  (claude-w subagent; briefs `.work/launch/briefs/critic-r4.md` + `critic-r4-known.md`) → `REVIEW-4.md`.
+- Open with the owner: D55 (Pebble's decision keeps the name "Context Warping" off public material until its
+  benchmark). The owner chose the name on screen in this session; the alternative is the mechanism without the name.
