@@ -21,3 +21,18 @@ so a real audience can also enjoy watching it."
 6. **Exit:** a critic's verdict is "ship" with no MUST left, and it calls the film launch-ready and tasteful. Then the
    full-resolution masters (16:9 and 4:5) get one last verification round before delivery. If a round finds nothing
    new but the director disagrees with a MUST, the owner decides.
+
+## The result (2 Nov 2026)
+
+The loop exited after round 5, the last round, on the full-resolution masters (`.work/launch/critic/REVIEW-5.md` and
+`FIXES-5.md`). Its critic said "ship" for both cuts.
+
+- **The 4:5**, at 22:01, after one MUST.
+  - MUST-1: in the Stealth recording, a desktop mask ran onto Pebble's window's edge, and three lines inside the
+    window were frosted. The description says Pebble's own windows are never altered.
+  - It was fixed in the film, not the sentence: nothing inside the window is masked (0f1b7fe).
+  - The critic's words: "launch-ready and tasteful for a muted phone viewer".
+- **The 16:9**, at about 22:45, with no MUST and no SHOULD.
+  - NICE N-8 applied: its delivery's rate cap is 30 Mbit/s at Level 4.1 (e0ff991).
+- **Left for the owner:** one listen on headphones before posting, at 0:08, 0:17, 0:18 and 1:21. No round judged the
+  sound by ear.
