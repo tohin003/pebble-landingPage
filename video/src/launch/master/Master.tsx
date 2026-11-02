@@ -75,13 +75,15 @@ const HoldAudio: React.FC<{ mute: boolean; children: ReactNode }> = ({ mute, chi
 /**
  * Holds each frame until every other delayRender() handle has cleared and three animation frames have passed with none
  * open, so the compositor has painted and rastered whatever the frame mounted or uncovered (a take's first frame, a
- * window under a new filter) before Remotion takes its screenshot. Rendering only.
+ * window under a new filter) before Remotion takes its screenshot. Rendering only. It waits up to 60 s: on the 8 GB
+ * Mac a take's image decode can fail and retry for longer than 23 s under memory pressure (the 16:9 final's first
+ * attempt, frame 792, 2 Nov), and a late frame is still a whole one.
  */
 const PaintSettle: React.FC = () => {
   const frame = useCurrentFrame();
   useLayoutEffect(() => {
     if (!getRemotionEnvironment().isRendering || typeof window === "undefined") return;
-    const handle = delayRender(`paint settle (frame ${frame})`, { timeoutInMilliseconds: 25000 });
+    const handle = delayRender(`paint settle (frame ${frame})`, { timeoutInMilliseconds: 60000 });
     const w = window as unknown as { remotion_delayRenderHandles?: number[] };
     let live = true;
     let quiet = 0;
