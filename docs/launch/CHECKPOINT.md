@@ -143,3 +143,27 @@ is missing. claude-p sessions keep running (another account). Status:
   - The director's ruling on S-1: nothing of Pebble's is ever painted out of a picture, not even to mimic macOS. The
     swipe is REVIEW-4's whip, from RS1-03's own poster Space into Chrome's Space (8a2d28a).
   - Captions: cff1d78. The final pipeline runs now; then round 5.
+
+## Update, 2 Nov ~17:40 IST: the 4:5 is final; a Pebble-side HOLD stops the rest; round 5 in two phases
+
+- The 4:5 master (`video/out/launch/LaunchFilm-4x5-master.mp4` and its `.wav` mix) passed `qa.sh --verify`: frames,
+  pops and flash. Its LinkedIn file encoded linear (pass 2: −13.9 LUFS, −2.0 dBTP before AAC).
+- The Pebble side's 17:32 HOLD (2.0.3's full proof, about three hours) stopped three things:
+  - the LinkedIn file's after-AAC check;
+  - the 4:5 web file and the thumbnails;
+  - the 16:9.
+- The 16:9's first attempt (15:52) failed at frame 792 on the 23-s paint-settle timeout. Both timeouts are 60 s now
+  (f12ed93). It hasn't run again.
+- A preview of the 4:5 LinkedIn file is on the owner's Desktop: `final-preview-4x5-2026-11-02/`, marked not signed
+  off.
+- Round 5's critic, phase A (`.work/launch/briefs/critic-r5-phaseA.md`): the 4:5 from its QA sheets and its mix, no
+  heavy jobs. It writes `REVIEW-5.md` with a provisional verdict and a "Phase B: what I need" frame list.
+- When the hold lifts, in this order:
+  1. The 4:5's last steps:
+     - the LinkedIn file's after-AAC ebur128 check (−14 ± 0.5 LUFS, ≤ −1 dBTP);
+     - `thumbnail-4x5.png` at 4.1 s and `frame0-4x5.png`;
+     - the critic's phase-B frames.
+  2. Resume the critic for phase B. If it says "ship", the 4:5 goes to the Desktop straight away.
+  3. The 16:9: `final.sh 16x9`, then `qa.sh --verify`, `deliver.sh 16x9` and its thumbnails.
+  4. The 4:5 web file: `ONLY=web deliver.sh 4x5` (1c336c5).
+  5. The critic's 16:9 check, then the 16:9 to the Desktop.
