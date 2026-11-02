@@ -185,3 +185,28 @@ is missing. claude-p sessions keep running (another account). Status:
     2. the critic resumes for phase B on the 4:5;
     3. B: the 16:9, then the 4:5's web file and the critic's 16:9 frames.
   - The frame lists are in `.work/launch/critic/r5/phaseB-*.times`.
+
+## Update, 2 Nov ~20:55 IST: after the hold; the 4:5 with the critic; the 16:9 rendering; Pebble 2.0.3 is out
+
+- The Pebble side lifted the hold at 20:00 and published Pebble 2.0.3 at 20:21. 2.0.2 was never released.
+- The 4:5 re-rendered with round 5's polish, 20:01–20:43, from HEAD (tsc clean).
+  - `qa.sh --verify`: frames, pops and flash all pass. The master measures −15.9 LUFS with a +0.1 dBFS peak.
+  - LinkedIn file: −14.0 LUFS and −1.9 dBTP after AAC, Linear. 13.35 Mb/s, under the 20M cap; 169 MB.
+  - Thumbnails at 4.1 s: PNG and JPG, plus frame 0.
+  - M3: SSIM 0.9943, PSNR 49.5 dB.
+  - M4: the gain is flat at +1.91 dB. The limiter acts in five 100-ms windows: 8.0, 8.1, 18.2, 81.0 and 81.1 s.
+  - The critic's 330 frames are in `r5/f45`. One FFmpeg select can't take 330 `eq()` terms, so `d5/extract-frames.sh`
+    now joins runs into `between()` and decodes 40 terms at a time.
+  - No Python on this Mac has numpy, so `d5/m4gain.py` is plain Python.
+- The critic is on phase B for the 4:5 (it adds to REVIEW-5.md). If it says "ship", `d5/handoff.sh 4x5` puts the files
+  on the owner's Desktop.
+- `d5/post-hold-B.sh` is running (from ~20:51):
+  1. the 16:9's master, qa, LinkedIn and web files, and thumbnails;
+  2. the critic's 16:9 frames;
+  3. the 4:5's web file.
+
+  The critic's 16:9 check comes next, then `handoff.sh 16x9`.
+- The site worker has a light job before phase B (`.work/launch/briefs/site2-2.0.3.md`): 2.0.3's release facts, CLAIMS,
+  the Benchmarks section's line about the offered release, and the Stealth lines in the release notes' own words (D225;
+  nothing about 2.0.2). Phase B starts once both masters are signed off.
+- `CLAUDE.md` now describes the launch film (f943f74, with the owner's OK).
