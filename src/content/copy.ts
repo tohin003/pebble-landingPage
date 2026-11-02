@@ -50,7 +50,7 @@ export function formatMegabytes(bytes: number): string {
 }
 
 /**
- * The facts under a download button, each its own item: ["v2.0.1", "73 MB", "Apple silicon", "macOS 12 or later"].
+ * The facts under a download button, each its own item: ["v2.0.3", "73 MB", "Apple silicon", "macOS 12 or later"].
  * Render them as a list with hairline separators (ReleaseFacts), never joined into a middle-dot string (OVERRIDES §16,
  * §21; PHILOSOPHY "What we never do"). [C-REL-5]
  */
@@ -1182,17 +1182,20 @@ export const stealth = {
   summary: "Stealth Lockdown keeps Pebble out of screen shares and recordings.",
   /**
    * Where to turn it on and the shortcut, from the release's "What's new" (App.vue@v1.1.0:1413, :1412), with the tab's
-   * name as 2.0.1's README and guide give it (README.md@v2.0.1:147-148, word for word; CHANGELOG.md@v2.0.1:23-24).
-   * [C-STL-4] [C-201-1]
+   * name as 2.0.1's README and guide give it (README.md@v2.0.1:147-148, word for word; CHANGELOG.md@v2.0.1:23-24; the
+   * same at README.md@v2.0.3:147-148). [C-STL-4] [C-201-1]
    */
   turnOn: "Turn it on in Settings → Privacy & Stealth, from the menu-bar icon, or with ⌃⌥⌘S.",
   /**
-   * Pebble 2.0.1's fix, in its notes' words (CHANGELOG.md@v2.0.1:14-15, "Its screen-capture protection is stronger, and
-   * while it holds Pebble out of view the menu-bar icon's tooltip says why."). The honest line goes with it: it is in
-   * the section's lead, word for word. [C-201-3]
+   * The offered release's Stealth Lockdown lines, Pebble 2.0.3's (the Pebble side's "20:21 Published" page facts), in
+   * its notes' own words: CHANGELOG.md@v2.0.3:14-16 (the heading "Stealth Lockdown keeps Pebble on your screen." and
+   * "the whole time Stealth Lockdown is on, and your typing stays with Pebble"), :16-17 (menus, pop-ups and tooltips),
+   * :19-21 (the click, "The app you are in stays in front") and :22, the limit, last (spelling and corrections). Nothing
+   * else about how Stealth works (D225). The honest line goes with them: it is in the section's lead and under the
+   * switch, word for word. It replaces 2.0.1's line, which 2.0.3 no longer bears out. [C-203-2] to [C-203-5]
    */
-  hardened:
-    "Since 2.0.1, its screen-capture protection is stronger, and while it holds Pebble out of view, the menu-bar icon's tooltip says why.",
+  update:
+    "Stealth Lockdown keeps Pebble on your screen the whole time it is on, and your typing stays with Pebble. Menus, pop-ups and tooltips that open while it is on are left out of screen capture too. A click in Pebble no longer makes it the active app while Stealth Lockdown is on: the app you are in stays in front. While it is on, Pebble's text boxes do not check spelling or suggest corrections.",
   hideAll: "⌃⌥⌘H hides every Pebble window at once; press it again, or use the menu-bar icon, to bring Pebble back.", // 2.0.0: README.md@v2.0.0:151 [C-200-16]
   /**
    * Both halves, word for word from the card's list under the switch, Pebble 2.0.0's (App.vue@v2.0.0:3569-3570). The

@@ -96,10 +96,13 @@ describe("the gate (C13): only through comingNextShown, and nothing else changes
     expect(at150).toBe(closed);
     const at200 = renderToStaticMarkup(<Footer nextShown={comingNextShown("2.0.0")} />);
     expect(at200).toBe(open);
-    // 2.0.1, the release the page states now, is in 2.0.0's line: the hint stays (C-NEXT-1, C-NEXT-2 (2.0.1))
+    // 2.0.1 and 2.0.3, the release the page states now, are in 2.0.0's line: the hint stays (C-NEXT-1, C-NEXT-2
+    // (2.0.1), (2.0.3))
     const at201 = renderToStaticMarkup(<Footer nextShown={comingNextShown("2.0.1")} />);
     expect(at201).toBe(open);
-    expect(releaseFacts.version).toBe("2.0.1");
+    const at203 = renderToStaticMarkup(<Footer nextShown={comingNextShown("2.0.3")} />);
+    expect(at203).toBe(open);
+    expect(releaseFacts.version).toBe("2.0.3");
     expect(comingNextShown()).toBe(true);
   });
 

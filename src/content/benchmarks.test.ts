@@ -233,10 +233,13 @@ const NOTES = [
   // CHANGELOG.md@v2.0.0:64-65
   "- **Safety.** Neither product had an unsafe outcome in the two safety families (risky actions and planted instructions).",
   "  One research task on `claude-opus-5-5` was graded unsafe for Pebble; Claude Code had none.",
-  // CHANGELOG.md@v2.0.1:7, :9-10
+  // CHANGELOG.md@v2.0.1:7, :9-10 (the same lines are CHANGELOG.md@v2.0.3:31, :33-34)
   "## [2.0.1]",
   "A patch release for Stealth Lockdown, with two packaging and guide fixes. Nothing else changes from 2.0.0: the same",
   "model routes, tools and AgentGuard, and the same data.",
+  // CHANGELOG.md@v2.0.3:7, :9 (copied from the tag on 2 Nov 2026; line 9 holds every word the section cites)
+  "## [2.0.3]",
+  "A patch release for Stealth Lockdown. Nothing else changes from 2.0.1: the same model routes, tools and AgentGuard,",
 ].join("\n");
 
 // ---- golden set 2.0 (Pebble 2.0.0): the latest run, public with the "2.0.0 published" post (STATUS 2026-10-31 14:53) ----
@@ -287,8 +290,8 @@ describe("golden set 2.0", () => {
 
   test("no figure that isn't in the README's Benchmarks section or the notes' lines it cites", () => {
     // README's lines, then the release notes' lines the section adds (copied from the tags on 1 Nov 2026): the rival
-    // CLIs' versions and the safety families (CHANGELOG.md@v2.0.0:27-28, :64-65), and what 2.0.1 changes
-    // (CHANGELOG.md@v2.0.1:9-10, with its heading). [C-GS-17] [C-GS-18] [C-GS-19]
+    // CLIs' versions and the safety families (CHANGELOG.md@v2.0.0:27-28, :64-65), and what 2.0.1 and 2.0.3 change
+    // (CHANGELOG.md@v2.0.1:9-10 and CHANGELOG.md@v2.0.3:9, with their headings). [C-GS-17] [C-GS-18] [C-GS-19]
     const flat = `${README} ${NOTES}`.replace(/\n/g, " ");
     // the "Earlier" heading names the 1.0.2 run (README.md@v2.0.0:426, after the vendored lines); everything else counts
     const latest = JSON.stringify({ ...golden, earlier: null }) + goldenLlmsLines().join("\n");
@@ -302,7 +305,7 @@ describe("golden set 2.0", () => {
     expect(words).toContain("Cost per task was measured at public list prices.");
   });
 
-  test("the rival CLIs' versions, the safety line and 2.0.1's line are the notes' words (the director's X1 to X3)", () => {
+  test("the rival CLIs' versions, the safety line and the offered release's line are the notes' words (the director's X1 to X3)", () => {
     const flat = NOTES.replace(/\*\*/g, "").replace(/`/g, "").replace(/\n\s*/g, " ");
     const models = golden.method.items.find((item) => item.term === "Models")?.text ?? "";
     expect(models).toContain("Claude Code 2.1.310");
@@ -313,9 +316,15 @@ describe("golden set 2.0", () => {
       "Safety: neither product had an unsafe outcome in the two safety families, risky actions and planted instructions. One research task on claude-opus-5-5 was graded unsafe for Pebble; Claude Code had none.",
     );
     expect(flat).toContain("One research task on claude-opus-5-5 was graded unsafe for Pebble; Claude Code had none.");
-    const release = golden.method.items.find((item) => item.term === "Pebble 2.0.1")?.text ?? "";
-    expect(release).toBe("Pebble 2.0.1 changes only Stealth Lockdown, packaging and the guide. Its model routes, tools and AgentGuard are 2.0.0's.");
+    // the release the page offers (releaseFacts.ts), 2.0.3: what it changes from 2.0.1, and 2.0.1 from 2.0.0
+    const release = golden.method.items.find((item) => item.term === `Pebble ${releaseFacts.version}`)?.text ?? "";
+    expect(releaseFacts.version).toBe("2.0.3");
+    expect(release).toBe(
+      "Pebble 2.0.3 changes only Stealth Lockdown from 2.0.1, which changed only Stealth Lockdown, packaging and the guide from 2.0.0. Its model routes, tools and AgentGuard are 2.0.0's.",
+    );
+    expect(flat).toContain("A patch release for Stealth Lockdown. Nothing else changes from 2.0.1: the same model routes, tools and AgentGuard");
     expect(flat).toContain("A patch release for Stealth Lockdown, with two packaging and guide fixes. Nothing else changes from 2.0.0");
+    expect(golden.patchLlms).toBe("Pebble 2.0.3, the latest release, keeps 2.0.0's model routes, tools and AgentGuard.");
     // in llms.txt's block too
     const lines = goldenLlmsLines().join("\n");
     for (const line of [golden.safety, golden.patchLlms, models]) expect(lines).toContain(line);

@@ -234,11 +234,13 @@ export const golden = {
         text: "Pebble ran as 1.9.29, the build whose source 2.0.0 is, apart from its version number and notes.", // README.md@v2.0.0:395-396
       },
       {
-        // the release the page offers: 2.0.1 changes nothing this run measured (CHANGELOG.md@v2.0.1:9-10: "A patch
-        // release for Stealth Lockdown, with two packaging and guide fixes. Nothing else changes from 2.0.0: the same
-        // model routes, tools and AgentGuard, and the same data.") [C-GS-19]
-        term: "Pebble 2.0.1",
-        text: "Pebble 2.0.1 changes only Stealth Lockdown, packaging and the guide. Its model routes, tools and AgentGuard are 2.0.0's.",
+        // the release the page offers, 2.0.3, changes nothing this run measured. Its notes: "A patch release for Stealth
+        // Lockdown. Nothing else changes from 2.0.1: the same model routes, tools and AgentGuard, and the same data."
+        // (CHANGELOG.md@v2.0.3:9-10); and 2.0.1's: "A patch release for Stealth Lockdown, with two packaging and guide
+        // fixes. Nothing else changes from 2.0.0: the same model routes, tools and AgentGuard, and the same data."
+        // (CHANGELOG.md@v2.0.3:33-34, the same as @v2.0.1:9-10). So its routes, tools and AgentGuard are 2.0.0's. [C-GS-19]
+        term: "Pebble 2.0.3",
+        text: "Pebble 2.0.3 changes only Stealth Lockdown from 2.0.1, which changed only Stealth Lockdown, packaging and the guide from 2.0.0. Its model routes, tools and AgentGuard are 2.0.0's.",
       },
       {
         term: "Cost and time",
@@ -283,8 +285,8 @@ export const golden = {
     gates: "The plan's five measured gates were met against both.",
   },
 
-  /** llms.txt's form of the "Pebble 2.0.1" item, without naming the setting (CHANGELOG.md@v2.0.1:9-10). [C-GS-19] */
-  patchLlms: "Pebble 2.0.1, the latest release, keeps 2.0.0's model routes, tools and AgentGuard.",
+  /** llms.txt's form of the "Pebble 2.0.3" item, without naming the setting (CHANGELOG.md@v2.0.3:9-10, :33-34). [C-GS-19] */
+  patchLlms: "Pebble 2.0.3, the latest release, keeps 2.0.0's model routes, tools and AgentGuard.",
 
   /**
    * The safety families, a loss stated beside the wins (the director's X3; PHILOSOPHY 6, "losses included"), in the
@@ -647,7 +649,7 @@ export function goldenLlmsLines(): readonly string[] {
     `Where Pebble led, ${led} ${golden.sides.trailed}`,
     golden.safety,
     // llms.txt names Stealth Lockdown on one line only, the one that carries its honest line (stealth.test.ts), so its
-    // benchmark block says what 2.0.1 keeps instead (CHANGELOG.md@v2.0.1:9-10) [C-GS-19]
+    // benchmark block says what the offered release, 2.0.3, keeps instead (CHANGELOG.md@v2.0.3:9-10, :33-34) [C-GS-19]
     golden.patchLlms,
     golden.limits.items[0],
     `${costTime} ${golden.reported[1] ?? ""}`,

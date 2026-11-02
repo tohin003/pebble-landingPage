@@ -1218,6 +1218,9 @@ the Stealth Lockdown tab's name (`:147`). So the README rows cited at `@v2.0.0` 
 
 ### Release facts for 2.0.1 (`src/content/releaseFacts.ts`)
 
+(2 Nov 2026) Superseded by "Release facts for 2.0.3" (`## Pebble 2.0.3 on the page`, at the end of this register):
+the page states the release it offers, 2.0.3.
+
 | ID | Claim on the site | Source | Kind / notes |
 |---|---|---|---|
 | C-REL-1 (2.0.1) | Pebble 2.0.1 (version, `v2.0.1`) | the API's `releases/tags/v2.0.1` (`tag_name` v2.0.1, `draft` false, `prerelease` false); `releases/latest` is v2.0.1 | Q. `src/lib/release.ts` reads the latest at build time |
@@ -1236,9 +1239,9 @@ the Stealth Lockdown tab's name (`:147`). So the README rows cited at `@v2.0.0` 
 
 | ID | Claim on the site | Source | Kind / notes |
 |---|---|---|---|
-| C-201-1 | "Turn it on in Settings → Privacy & Stealth, from the menu-bar icon, or with ⌃⌥⌘S." (the section's disclosure, the FAQ and `llms.txt`) | `README.md@v2.0.1:147-148` (word for word); `CHANGELOG.md@v2.0.1:23-24` ("The guide names Stealth Lockdown's place in Settings, Privacy & Stealth"); `App.vue@v2.0.1:1564` (the tab `["privacy", "Privacy & Stealth"]`) | V. Replaces C-STL-4's "Privacy and focus" (1.1.0's section name, still the section's label inside the tab, `App.vue@v2.0.1:3547`) |
-| C-201-2 | Rail label "Privacy & Stealth / Hardened in 2.0.1" | `App.vue@v2.0.1:1564` (the tab's name); `CHANGELOG.md@v2.0.1:14` ("**Stealth Lockdown, hardened.**") | D. Replaces C-SYS-18's "Privacy and focus / New in 1.1.0" |
-| C-201-3 | "Since 2.0.1, its screen-capture protection is stronger, and while it holds Pebble out of view, the menu-bar icon's tooltip says why." (in the section's disclosure; the honest line is in the section's lead, word for word) | `CHANGELOG.md@v2.0.1:14-16` ("Its screen-capture protection is stronger, and while it holds Pebble out of view the menu-bar icon's tooltip says why. Hidden from screen capture and screen sharing, not from a camera, a capture card or a process list. Exams and interviews that forbid assistants still forbid it.") | Q. No measure of "stronger" is claimed beyond the notes' word |
+| C-201-1 | "Turn it on in Settings → Privacy & Stealth, from the menu-bar icon, or with ⌃⌥⌘S." (the section's disclosure, the FAQ and `llms.txt`) | `README.md@v2.0.1:147-148` (word for word); `CHANGELOG.md@v2.0.1:23-24` ("The guide names Stealth Lockdown's place in Settings, Privacy & Stealth"); `App.vue@v2.0.1:1564` (the tab `["privacy", "Privacy & Stealth"]`) | V. Replaces C-STL-4's "Privacy and focus" (1.1.0's section name, still the section's label inside the tab, `App.vue@v2.0.1:3547`) (2.0.3) The same words at `README.md@v2.0.3:147-148` |
+| C-201-2 | Rail label "Privacy & Stealth / Hardened in 2.0.1" | `App.vue@v2.0.1:1564` (the tab's name); `CHANGELOG.md@v2.0.1:14` ("**Stealth Lockdown, hardened.**") | D. Replaces C-SYS-18's "Privacy and focus / New in 1.1.0" (2 Nov 2026) **Retired** with 2.0.3: the rail reads "Updated in 2.0.3" (C-203-1) |
+| C-201-3 | "Since 2.0.1, its screen-capture protection is stronger, and while it holds Pebble out of view, the menu-bar icon's tooltip says why." (in the section's disclosure; the honest line is in the section's lead, word for word) | `CHANGELOG.md@v2.0.1:14-16` ("Its screen-capture protection is stronger, and while it holds Pebble out of view the menu-bar icon's tooltip says why. Hidden from screen capture and screen sharing, not from a camera, a capture card or a process list. Exams and interviews that forbid assistants still forbid it.") | Q. No measure of "stronger" is claimed beyond the notes' word (2 Nov 2026) **Retired** with 2.0.3: the line described 2.0.1's Stealth Lockdown; the page now states 2.0.3's, in its notes' words (C-203-2 to C-203-5) |
 
 ### Pebble Remote (`copy.ts` `remote`, `Remote.tsx`, the section `#remote`)
 
@@ -1324,7 +1327,7 @@ of the section and of llms.txt's block in them or in the vendored README lines.
 |---|---|---|---|
 | C-GS-17 | How it was measured, Models: "claude-opus-5-5 for both Pebble and Claude Code 2.1.310, and gpt-6.1-sol for both Pebble and Codex 0.163.0." (also in llms.txt's block) | `CHANGELOG.md@v2.0.0:27-28` ("`claude-opus-5-5` with Claude Code 2.1.310, and `gpt-6.1-sol` with Codex 0.163.0"); `README.md@v2.0.1:398`, `:405` | Q |
 | C-GS-18 | "Safety: neither product had an unsafe outcome in the two safety families, risky actions and planted instructions. One research task on claude-opus-5-5 was graded unsafe for Pebble; Claude Code had none." (visible under Where Pebble trailed, never folded; also in llms.txt's block) | `CHANGELOG.md@v2.0.0:64-65` (word for word but for the parenthesis, set as a list after a comma) | V |
-| C-GS-19 | How it was measured, Pebble 2.0.1: "Pebble 2.0.1 changes only Stealth Lockdown, packaging and the guide. Its model routes, tools and AgentGuard are 2.0.0's." (also in llms.txt's block) | `CHANGELOG.md@v2.0.1:9-10` ("A patch release for Stealth Lockdown, with two packaging and guide fixes. Nothing else changes from 2.0.0: the same model routes, tools and AgentGuard, and the same data."), `:14-24` (the five fixes: three of Stealth Lockdown, one of packaging, one of the guide) | Q. llms.txt says instead "Pebble 2.0.1, the latest release, keeps 2.0.0's model routes, tools and AgentGuard.", since its one line naming Stealth Lockdown is the one with the honest line (`stealth.test.ts`). On the page the item names the setting only as what changed; the honest line is in the Stealth section |
+| C-GS-19 | How it was measured, Pebble 2.0.1: "Pebble 2.0.1 changes only Stealth Lockdown, packaging and the guide. Its model routes, tools and AgentGuard are 2.0.0's." (also in llms.txt's block) | `CHANGELOG.md@v2.0.1:9-10` ("A patch release for Stealth Lockdown, with two packaging and guide fixes. Nothing else changes from 2.0.0: the same model routes, tools and AgentGuard, and the same data."), `:14-24` (the five fixes: three of Stealth Lockdown, one of packaging, one of the guide) | Q. llms.txt says instead "Pebble 2.0.1, the latest release, keeps 2.0.0's model routes, tools and AgentGuard.", since its one line naming Stealth Lockdown is the one with the honest line (`stealth.test.ts`). On the page the item names the setting only as what changed; the honest line is in the Stealth section (2 Nov 2026) The item and the llms.txt line now name 2.0.3, the release the page offers: C-GS-19 (2.0.3) |
 | C-GS-8 (2.0.1) | Under the tables: "Cost per task was measured at public list prices." and, unchanged, "Time is reported, not claimed: Pebble's median time per task is a little lower, and its 95th percentile higher." llms.txt's line now leads with the method's cost-and-time sentences | `CHANGELOG.md@v2.0.0:68-69` ("Costs are at public list prices"); `README.md@v2.0.0:392` ("lower cost per task"); C-GS-4 | Q. Never "cheaper" or "saves" (`benchmarks.test.ts`, the copy lint) |
 
 ### Credits for the launch film (`credits.ts`, `CREDITS.md`; the director's X12)
@@ -1459,3 +1462,46 @@ as in the film's section above; `docs/launch/LINKEDIN_POST.md`'s "The video's de
 | C-FILM3-10 | The transcript (`chapters.ts`): each chapter's "On screen", the film's own lines (C-FILM2-01 to C-FILM2-43; S10's charts written out a comparison a line, with the method's footnote, C-FILM2-39), and its "What you see", which the theatre's audio description reads aloud (`public/media/v3/film.descriptions.en.vtt`) | The scenes' strings; for what the pictures show, the 4:5 master's QA sheets (`.work/launch/master/qa/LaunchFilm-4x5-master/sheet-0*.jpg`, 2 Nov) and the scenes' code; Pebble's interface text as the takes and the harness show it | Q, D. `film.test.ts` checks that the transcript carries every word of every caption, chapter by chapter, but the long-task title's. "Lower is better." is allowed by exact match (the allow-list); the descriptions say "lower is the aim". Phase B checks the descriptions against the 16:9 master's frames |
 | C-FILM3-11 | The caption track, `public/media/v3/film.en.vtt`, is the film's own captions, copied from `video/out/launch/pebble-2.0-launch.vtt` (`video/src/launch/master/captions.ts`); it keeps the long-task scene's title, the film's words | The owner's ruling of 2 Nov 2026 (`docs/launch/CHECKPOINT.md`: "The film's caption track keeps "Context warping." (the film's words). The page's own text, its chapters and its descriptions keep the name out"); C-FILM2-24 | I. The copy lint reads the built pages and `src/content`, not the tracks, so the track needs no lint exception; `facts.test.ts` still bans the name in `src/content` |
 | C-FILM3-12 | Retired with the trailer: `public/media/v2/` (the 76.8 s trailer, its 1:1 cut, its tracks and its poster), C-FILM-2, C-ALT-1, C-CH-1 to C-CH-19, and the trailer's score and effects on /credits | The owner's ask (2 Nov, about 17:50); `docs/launch/CHECKPOINT.md`; `.work/launch/briefs/site2-phaseA.md` | Retired. Git history keeps the files; `CREDITS.md` keeps the trailer's credits as a record |
+
+## Pebble 2.0.3 on the page (site worker, 2026-11-02)
+
+The Pebble side's "20:21 Published" post (`PEBBLE_SESSIONS_STATUS.md`, 2 Nov): Pebble 2.0.3 is out (latest; tag v2.0.3,
+`main` 5ef13ab). Every source below was read from GitHub on 2 November 2026 at about 21:00 IST: the API's
+`releases/latest` and `releases/tags/v2.0.3`, the release's own `SHA256SUMS` and `RELEASE_NOTES.md`, `README.md@v2.0.3`,
+`CHANGELOG.md@v2.0.3`, `src/App.vue@v2.0.3` and `src/stealthVeil.ts@v2.0.3`. `README.md@v2.0.3` differs from `@v2.0.1`
+in its counts only (`:16`, `:98`, `:382-383`), so the README rows cited at `@v2.0.1` above hold at `@v2.0.3`, line for
+line. Stealth Lockdown's lines follow the post's page facts, in the notes' own words, and nothing else about how it
+works (Pebble's D225); its honest line stays word for word.
+
+### Release facts for 2.0.3 (`src/content/releaseFacts.ts`)
+
+| ID | Claim on the site | Source | Kind / notes |
+|---|---|---|---|
+| C-REL-1 (2.0.3) | Pebble 2.0.3 (version, `v2.0.3`) | the API's `releases/tags/v2.0.3` (`tag_name` v2.0.3, `draft` false, `prerelease` false); `releases/latest` is v2.0.3 | Q. `src/lib/release.ts` reads the latest at build time |
+| C-REL-2 (2.0.3) | "73 MB" (73,288,105 bytes) | the API's asset `Pebble-macos-arm64.zip`, `size` 73288105 | Q. Decimal MB, rounded |
+| C-REL-3 (2.0.3) | Released 2 November 2026 | the API's `published_at` 2026-11-02T14:50:23Z (20:20 IST) | Q. `publishedOn` is the UTC date |
+| C-REL-5 (2.0.3) | The facts under a Download: "v2.0.3", "73 MB", "Apple silicon", "macOS 12 or later" | C-REL-1, C-REL-2 (2.0.3); `README.md@v2.0.3:35` | Q |
+| C-REL-6 (2.0.3) | `88bb2e7dfd6f55fdefbf9c83b7afe67eaffa817e2b2a237ca1a5f197d2f76fe9  Pebble-macos-arm64.zip` | the release's own `SHA256SUMS` (89 bytes; downloaded 2 Nov); the API's asset digest `sha256:88bb2e7d…6fe9` and the notes' last line (`RELEASE_NOTES.md`) agree | V (verbatim) |
+| C-INF-2 (2.0.3) | "13,758 automated tests at v2.0.3, none skipped. They never call a model or the network." | `README.md@v2.0.3:382` (also `:16`, `:98`) | Q |
+| C-INF-3 (2.0.3) | "2,160 service checks across 62 validator suites, each run against the source and the frozen, signed app." | `README.md@v2.0.3:383` (also `:98`) | Q |
+| C-OSS-2 (2.0.3) | "Before release, Pebble 2.0.3 passed 13,758 automated tests and 2,160 service checks. The tests never call a model or the network." | C-INF-2, C-INF-3 (2.0.3); `README.md@v2.0.3:98` | Q (not rendered) |
+| C-SYS-11, C-SYS-14 (2.0.3) | "Install / Version 2.0.3"; "Get Pebble / 73 MB" | C-REL-1, C-REL-2 (2.0.3) | I |
+| C-203-6 | `llms.txt`: "Pebble 2.0.3 came out on 2 November 2026." and the link "[Release 2.0.3]"; the benchmark block's "This run measured Pebble 1.0.2, not 2.0.3, the latest release." | C-REL-1, C-REL-3 (2.0.3); C-200-22 | Q. Read from `releaseFacts.ts` |
+| C-NEXT-1, C-NEXT-2 (2.0.3) | The footer's hint stays on: 2.0.3 is in 2.0.0's line (`next.ts` `sameLine`) | `src/content/next.ts`; `src/components/shell/Footer.test.tsx` | I |
+
+### Stealth Lockdown in 2.0.3 (`copy.ts` `stealth.update`, `labels.ts`)
+
+| ID | Claim on the site | Source | Kind / notes |
+|---|---|---|---|
+| C-203-1 | Rail label "Privacy & Stealth / Updated in 2.0.3" | `App.vue@v2.0.3:1573` (the tab's name); `CHANGELOG.md@v2.0.3:9` ("A patch release for Stealth Lockdown.") | D. Replaces C-201-2 |
+| C-203-2 | "Stealth Lockdown keeps Pebble on your screen the whole time it is on, and your typing stays with Pebble." (in the section's disclosure; the honest line is in the section's lead and under the switch, word for word) | `CHANGELOG.md@v2.0.3:14` (the heading "**Stealth Lockdown keeps Pebble on your screen.**"), `:15-16` ("Pebble now stays in view the whole time Stealth Lockdown is on, and your typing stays with Pebble."); the post's page facts, in the same words | Q. Its limit is the honest line, which the same notes repeat (`:17-18`) |
+| C-203-3 | "Menus, pop-ups and tooltips that open while it is on are left out of screen capture too." | `CHANGELOG.md@v2.0.3:16-17` | V. Limit: the honest line |
+| C-203-4 | "A click in Pebble no longer makes it the active app while Stealth Lockdown is on: the app you are in stays in front." | `CHANGELOG.md@v2.0.3:19` ("**A click in Pebble no longer makes it the active app while Stealth Lockdown is on,**"), `:20-21` ("The app you are in stays in front with its menu bar") | Q. Its limit follows, C-203-5 |
+| C-203-5 | "While it is on, Pebble's text boxes do not check spelling or suggest corrections." | `CHANGELOG.md@v2.0.3:22` ("**While Stealth Lockdown is on, Pebble's text boxes do not check spelling or suggest corrections.**") | Q. The limit, last; with Stealth Lockdown off, spelling and corrections work as before (`:24`) |
+| — | Kept, true at 2.0.3: the setting's description and both halves (`App.vue@v2.0.3:3570`, `:3580-3581`, the same words as 2.0.0's), the state lines (`src/stealthVeil.ts@v2.0.3:15-16`, unchanged from 2.0.1), where to turn it on and the shortcuts (`README.md@v2.0.3:147-148`, `:151`), the honest line (`CHANGELOG.md@v2.0.3:17-18`; `README.md@v2.0.3:158-159`) | | |
+
+### Benchmarks for 2.0.3 (`benchmarks.ts` `golden`)
+
+| ID | Claim on the site | Source | Kind / notes |
+|---|---|---|---|
+| C-GS-19 (2.0.3) | How it was measured, Pebble 2.0.3: "Pebble 2.0.3 changes only Stealth Lockdown from 2.0.1, which changed only Stealth Lockdown, packaging and the guide from 2.0.0. Its model routes, tools and AgentGuard are 2.0.0's." llms.txt's block: "Pebble 2.0.3, the latest release, keeps 2.0.0's model routes, tools and AgentGuard." | `CHANGELOG.md@v2.0.3:9-10` ("A patch release for Stealth Lockdown. Nothing else changes from 2.0.1: the same model routes, tools and AgentGuard, and the same data."), `:33-34` (2.0.1's section: "A patch release for Stealth Lockdown, with two packaging and guide fixes. Nothing else changes from 2.0.0: the same model routes, tools and AgentGuard, and the same data.") | Q. `benchmarksPublic` stays true: neither patch changes anything the run measured (`releaseFacts.ts`). `benchmarks.test.ts` vendors `CHANGELOG.md@v2.0.3:7`, `:9` |
