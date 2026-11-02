@@ -1,112 +1,122 @@
 # tools/encode
 
-The page's and the social cuts' final encodes, and the checks that gate them (MASTER_PLAN §2.4, §5.5, §6.4; D10, D16;
-OVERRIDES §4, §8 and §14). Homebrew FFmpeg 9 through `$FF` and `$FP` from `scripts/env.sh`; Node 24; no new
-dependencies (posters use the sharp already in `tools/assets/node_modules`).
+The page's encodes of the Pebble 2.0 launch film, its 4:5 cut, the loops cut from it and the posters, and the checks
+that gate them (MASTER_PLAN §2.4, §5.5, §6.4; D10, D16; OVERRIDES §4 and §8; `.work/launch/briefs/site2.md`). Homebrew
+FFmpeg 9 through `$FF` and `$FP` from `scripts/env.sh`; Node 24; no new dependencies (posters use the sharp already in
+`tools/assets/node_modules`).
 
 | File | What it does |
 |---|---|
-| `encode.sh` | `film`, `square`, `social`, `loop`, `teaser` and `poster` commands. Each command runs as **one** `scripts/heavy.sh` job: run it directly and it queues itself through heavy.sh |
+| `launch-site.sh` | **The one command**: every site file of the film, from the director's masters, in order (`tracks mix film posters loops verify`, or any of them). Run it again whenever the film changes |
+| `encode.sh` | `mix`, `film`, `phone`, `still`, `loop`, `poster` and `social` commands. Each command runs as **one** `scripts/heavy.sh` job: run it directly and it queues itself through heavy.sh |
+| `loops.mjs` | The loops of `launch-loops.json`, cut from the masters: the loop masters, a review strip each, the posters and the encodes (one heavy job a loop). `--dry-run` checks the plan (light) |
+| `launch-loops.json` | The loop plan: for each slot (`src/lib/media.ts` `LaunchLoopId`) the scene, its master frames, the cycle, the poster frame, the cuts and draft labels |
 | `verify.mjs` | Checks every delivered file and prints a table (or `--json`); exit 1 on any failure. Its loudness and seam passes run as one heavy job too |
 | `mp4.mjs` | A small ISO-BMFF reader: faststart, the RFC 6381 codecs string from `hvcC`/`avcC`, the `colr` box, AVIF/WebP pixel sizes. `node tools/encode/mp4.mjs info\|codecs\|fits <file>` |
 | `poster.mjs` | A PNG still to `<base>.avif` + `<base>.webp` (called by `encode.sh poster`) |
-| `../captions/` | The text tracks: `film.en.vtt`, `film.chapters.vtt`, `film.descriptions.en.vtt` and the social `.srt` (see its README) |
+| `../captions/` | The text tracks: `film.en.vtt` (the film's own captions), `film.chapters.vtt`, `film.descriptions.en.vtt` (see its README) |
 
-## The media phase, in order
+The 1.x launch trailer was retired from the site on 2 Nov 2026, when the Pebble 2.0 launch film replaced it at the
+owner's ask: its `public/media/v2/` files, its 1:1 cut (`encode.sh square`), the first film's teaser (`encode.sh
+teaser`) and its 30 s cut for X (`encode.sh social --cut`, `docs/film-cuts/x30.json`) are in git history.
 
-Every command runs from the repo root after `source scripts/env.sh`. Masters are H.264 CRF 12 renders (ProRes would not
-fit this disk). Render them one at a time, and delete each master once its encodes have passed `verify.mjs`.
+## The film's files, in order
 
-```bash
-# 1. Masters (MASTER_PLAN §5.4), one heavy job each, all with the same flags (no audio: the mix is muxed later):
-#    one browser tab and PNG frames (OVERRIDES §20; docs/BUILDING.md §4), the Mac's own Chrome.
-cd video
-../scripts/heavy.sh master-film npx remotion render src/index.ts LaunchFilm out/masters/LaunchFilm.mp4 \
-  --codec=h264 --crf=12 --x264-preset=medium --pixel-format=yuv420p --color-space=bt709 --muted \
-  --concurrency=1 --image-format=png --browser-executable="$CHROME_PATH" --chrome-mode=chrome-for-testing
-../scripts/heavy.sh master-l3 npx remotion render src/index.ts LoopApproveUndo out/masters/loop-approve-undo.mp4 \
-  --codec=h264 --crf=12 --x264-preset=medium --pixel-format=yuv420p --color-space=bt709 --muted \
-  --concurrency=1 --image-format=png --browser-executable="$CHROME_PATH" --chrome-mode=chrome-for-testing
-#    The same for LaunchFilmSquare (out/masters/LaunchFilmSquare.mp4), LaunchFilmVertical (LaunchFilmVertical.mp4) and
-#    every Loop* / Loop*Phone composition in video/src/Root.tsx. Posters are stills of frame 0, rendered from the
-#    composition itself. The film's is LaunchFilm's own frame 0 at its own size, 1920 x 1080 (OVERRIDES §46 P1-1; the
-#    first film's poster, FilmPoster at --scale=2, and the teaser T0 are retired):
-../scripts/heavy.sh still-film npx remotion still src/index.ts LaunchFilm out/stills/film.poster.png --frame=0 \
-  --image-format=png --browser-executable="$CHROME_PATH" --chrome-mode=chrome-for-testing
-cd ..
-
-# 2. The website film: four files with the web soundtrack (-16 LUFS), each fitted to its budget, into public/media/v2
-#    (src/lib/media.ts FILM_MEDIA, since the energetic recut; --out-dir's default is public/media/v1).
-tools/encode/encode.sh film video/out/masters/LaunchFilm.mp4 .work/audio/render/soundtrack_web.wav --out-dir public/media/v2
-
-# 3. The loops (silent). A loop's 4:5 phone master is the optional third argument. (`encode.sh teaser` stays for the
-#    record; the page no longer shows the teaser T0, OVERRIDES §46 P1-1.)
-tools/encode/encode.sh loop approve-undo video/out/masters/loop-approve-undo.mp4 video/out/masters/loop-approve-undo-phone.mp4
-tools/encode/encode.sh loop models video/out/masters/loop-models.mp4
-
-# 4. Posters: sizes from src/lib/media.ts and video/src/stills/LoopPosters.tsx (the PNG must have the same aspect).
-#    The film's goes beside its videos, in public/media/v2.
-tools/encode/encode.sh poster video/out/stills/film.poster.png public/media/v2/film.poster 1920 1080
-tools/encode/encode.sh poster video/out/stills/loop-approve-undo.poster.png public/media/v1/loop-approve-undo.poster 1080 1080
-
-# 5. Text tracks for the page (beside the film in public/media/v2), and the full film's SRT for the social folder,
-#    with the narrated twin's (its captions with each spoken line marked "Narrator: ...", from docs/film-narration.json).
-node tools/captions/build.mjs --out-dir public/media/v2 --srt "$HOME/Desktop/Pebble launch film/Pebble-launch-film.srt" \
-  --narrated-srt "$HOME/Desktop/Pebble launch film/Pebble-launch-film-narrated.srt"
-
-# 6. Social masters (-14 LUFS; never committed): 16:9, 1:1 and 9:16, each from its own composition.
-D="$HOME/Desktop/Pebble launch film"
-tools/encode/encode.sh social video/out/masters/LaunchFilm.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1920x1080.mp4"
-tools/encode/encode.sh social video/out/masters/LaunchFilmSquare.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1080x1080.mp4"
-tools/encode/encode.sh social video/out/masters/LaunchFilmVertical.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1080x1920.mp4"
-#    The narrated twin (OVERRIDES §38; at least the 16:9): the same picture with the narrated social soundtrack.
-tools/encode/encode.sh social video/out/masters/LaunchFilm.mp4 .work/audio/render/soundtrack_social_narrated.wav "$D/Pebble-launch-film-narrated-1920x1080.mp4"
-
-# 7. The 1:1 film for phones (OVERRIDES §46 P2-9; src/lib/media.ts phoneSources), after step 6: film-square.h264.mp4
-#    is the 1:1 social film's video, copied, with the web soundtrack; film-square.hevc.mp4 is encoded from the 1:1
-#    master, and kept only while the film set stays within 45 MB. The text tracks are the 16:9 film's (same timing).
-tools/encode/encode.sh square video/out/masters/LaunchFilmSquare.mp4 .work/audio/render/soundtrack_web.wav \
-  "$D/Pebble-launch-film-1080x1080.mp4" --out-dir public/media/v2
-
-# 8. Everything at once: public/media (v1 and v2) plus the social folder.
-node tools/encode/verify.mjs "$D"
-```
-
-A ~30 s cut for X can be cut from a film master by frame ranges (see "Cut files" below). Its music must be its own edit
-at the cut's length: the film's soundtrack chopped at the same frames would jump.
+The masters are the director's: `video/out/launch/LaunchFilm-16x9-master.mp4` and `LaunchFilm-4x5-master.mp4`
+(H.264 CRF 12, 30 fps, 2,982 frames, from `video/src/launch/master/final.sh`), each with its mix beside it
+(`…-master.wav`). Every command runs from the repo root after `source scripts/env.sh`.
 
 ```bash
-tools/encode/encode.sh social video/out/masters/LaunchFilm.mp4 <soundtrack_social_cut.wav> "$D/Pebble-launch-film-30s-1920x1080.mp4" --cut <cut.json>
-node tools/captions/build.mjs --cut <cut.json> --srt "$D/Pebble-launch-film-30s.srt"
+tools/encode/launch-site.sh                      # all of it: the steps below, each heavy one queued through heavy.sh
+
+# or step by step:
+bun video/src/launch/master/captions.ts --write  # the film's captions (its own check first), video/out/launch/*.vtt
+node tools/captions/build.mjs                    # film.en.vtt, film.chapters.vtt, film.descriptions.en.vtt -> v3
+tools/encode/encode.sh mix video/out/launch/LaunchFilm-16x9-master.wav .work/launch/site/mix-16x9-web.wav
+tools/encode/encode.sh mix video/out/launch/LaunchFilm-4x5-master.wav .work/launch/site/mix-4x5-web.wav
+tools/encode/encode.sh film video/out/launch/LaunchFilm-16x9-master.mp4 .work/launch/site/mix-16x9-web.wav
+tools/encode/encode.sh phone video/out/launch/LaunchFilm-4x5-master.mp4 .work/launch/site/mix-4x5-web.wav
+tools/encode/encode.sh still video/out/launch/LaunchFilm-16x9-master.mp4 0 .work/launch/site/film.poster.png
+tools/encode/encode.sh poster .work/launch/site/film.poster.png public/media/v3/film.poster 1920 1080
+tools/encode/encode.sh still video/out/launch/LaunchFilm-4x5-master.mp4 0 .work/launch/site/film-phone.poster.png
+tools/encode/encode.sh poster .work/launch/site/film-phone.poster.png public/media/v3/film-phone.poster 1080 1350
+node tools/encode/loops.mjs                      # the loops, their posters and encodes
+node tools/encode/verify.mjs                     # every file in public/media, loudness and seams included
+tools/encode/launch-site.sh clean                # then: the intermediate mixes, stills and loop masters go
 ```
+
+- **The web mix** (`encode.sh mix`): the site plays the film at −16 LUFS (D10). The mix goes through the same chain as
+  the director's own web copy (`video/src/launch/master/deliver.sh`): a 4×-oversampled peak limiter at −4 dBFS
+  (`MIX_LIMIT_DB`), then two-pass loudnorm that must stay linear, one gain for the whole film; it stops otherwise. The
+  result is a 48 kHz 24-bit WAV, so the film's AAC is one generation. The director's `LaunchFilm-<aspect>-web.mp4` is
+  the same level in a file of its own (H.264 CRF 16, AAC 256k) and is not the page's.
+- **Posters**: each master's frame 0, a finished composition ("This is Pebble." over the small pebble), read as
+  BT.709 limited range (`encode.sh still`).
+- **The loops** (`loops.mjs`, `launch-loops.json`): cut from the masters, never a new render (the scenes' preview
+  compositions run at 60 fps, and the masters are the frames the critic signed off). Each cycle is the film's own
+  frames; its last `blend` frames (12, 0.4 s) dissolve into its first, and it starts on its poster frame, so the poster
+  is frame 0 and the seam is two neighbouring film frames (`verify.mjs` checks every loop's seam). The 16:9 cuts are
+  scaled to 1600 × 900; the 4:5 cuts are the 4:5 master's own frames, 1080 × 1350; long tasks is a 3:2 crop of the
+  16:9 diagram, clear of its scene's title. `--dry-run` checks the plan against `src/lib/media.ts`; each loop writes a
+  six-frame review strip to `.work/launch/site/loops/review/` for the eye.
+
+## The launch film's budget
+
+`public/` must stay within 90 MB and every file within 45 MB (D16); the film set within 45 MB (OVERRIDES §8). Decimal
+MB, measured on 2 Nov 2026 with the trailer retired:
+
+| Part | Files | Budget |
+|---|---|---|
+| Kept: `media/v1` (1.x loops, posters, wallpaper), `ui/v1` | 36 + 112 | 12.08 now; 8.74 once the v1 `companion` and `memory` loops retire (3.34), after `desk` and `memory` replace them |
+| The film, 16:9 | `film-1080.hevc` 13, `film-720.h264` 9.5 | 22.5 |
+| The film, 4:5 for phones | `film-phone.hevc` 8.5, `film-phone.h264` 11 | 19.5 |
+| **The film set** | 4 | **42 of 45** |
+| The film's posters and tracks | 4 + 3 | 0.3 |
+| The loops | 8 loops, 14 clips (7 at 16:9 or 3:2, 7 at 4:5): HEVC ≤ 0.6, H.264 ≤ 0.9 (hard 1.2) | ≤ 21 (hard 25.2) |
+| The loops' posters | 28 (AVIF ≤ 60 KB, WebP ≤ 90 KB) | ≤ 2.5, about 1.3 |
+| **`public/`** | | **about 78 at the budgets (74 after the two v1 loops go); at most about 82** |
+| Left | | about 8 to 16 MB, enough for `ui/v2`'s 2.0.x stills (at most 6) |
+
+- **Which film files**: the player tries, on a phone, the 4:5 cut (HEVC, then H.264) and then the 16:9 files; on a
+  screen at least 1,700 device pixels wide, 1080p then 720p, else 720p then 1080p; HEVC before H.264 in each; only what
+  the browser can play (`src/lib/filmSources.ts`). The plan encodes **1080p HEVC**, **720p H.264** and the **4:5 cut in
+  both**: Safari and Chrome on a Mac (most of the page's visitors) play the 1080p HEVC, every other desktop browser the
+  720p H.264, phones the 4:5 cut. It leaves out 1080p H.264 (critic C6's alternative: the H.264-only browsers get 720p,
+  upscaled) and 720p HEVC (a small screen with HEVC plays the 720p H.264). `encode.sh film --only 1080.h264,720.hevc`
+  still makes them, with C6's shares, if the set has room.
+- **Bitrates**: 99.4 s with AAC 160 kb/s (about 2 MB a file) leaves the video about 0.87 Mb/s at 1080p HEVC, 0.6 at
+  720p H.264, 0.52 at 4:5 HEVC and 0.72 at 4:5 H.264.
+- **The grain**: the masters carry the film's grain (at most 3 %, re-seeded 30 times a second, `video/src/launch/
+  components/Grain.tsx`); it costs the most bits at these rates, and an encoder that can't keep it smears it or makes it
+  pulse on the dark grounds (S00, S01, S08, S11). The drafts measured it: draft 5 at half size and CRF 20 is about 2.0
+  Mb/s of video. Phase B calibrates on a dark stretch and a light one before the full encodes: the planned budget with
+  and without `FILM_VF=hqdn3d=0:0:4:4` (a temporal-only denoise, which keeps the grain's texture in each frame), judged
+  by eye on 3×-contrast crops and by the director's blockiness measure (`bun video/src/launch/master/blockiness.ts
+  <file>`). The loops use the same choice (`launch-loops.json` `prefilter`).
+- **If a file misses its budget** at its CRF + `FILM_MAX_RAISE`, it takes the lowest CRF under its hard limit, and
+  the film set must still pass 45 MB. Raise `FILM_MAX_RAISE` (to 6) or the starting CRF (`FILM_HEVC_CRF`,
+  `FILM_H264_CRF`) before dropping a file.
 
 ## Settings and budgets
 
-Each file starts at its MASTER_PLAN §5.5 CRF. Over its budget, the CRF rises (first the step that a bitrate fall of
-about 14 % per CRF step predicts, then +1) until the file fits, never by more than 4 (film) or 6 (loops, teaser). The
-resolution never drops. The first CRF that fits wins; failing that, the lowest CRF under the hard limit, with a warning; failing
-that, the command fails and the last try is kept in `.work/tmp/encode-rejected/`. `--exact` keeps the starting CRF.
+Each file starts at its CRF. Over its budget, the CRF rises (first the step that a bitrate fall of about 14 % per CRF
+step predicts, then +1) until the file fits, never by more than `FILM_MAX_RAISE` (film, default 4) or 6 (loops). The
+resolution never drops. The first CRF that fits wins; failing that, the lowest CRF under the hard limit, with a
+warning; failing that, the command fails and the last try is kept in `.work/tmp/encode-rejected/`. `--exact` keeps the
+starting CRF.
 
 | Output | Encode | Budget (raise CRF to fit) | Hard limit |
 |---|---|---|---|
-| `film-1080.hevc.mp4` | x265 slow CRF 25, `hvc1`, AAC 160k 48 kHz | 12 MB | 20 MB |
-| `film-1080.h264.mp4` | x264 slow CRF 20, High, AAC 160k 48 kHz | 18 MB | 30 MB |
-| `film-720.hevc.mp4` | as 1080, `scale=1280:-2:flags=lanczos`, CRF 26 | 6 MB | 12 MB |
-| `film-720.h264.mp4` | as 1080, scaled, CRF 21 | 9 MB | 18 MB |
-| `film-square.h264.mp4` | the 1:1 social film's video copied (`-c:v copy`: x264 slow CRF 18, High 4.0, VBV 20 Mb/s), AAC 160k 48 kHz from the web soundtrack | 9 MB (a warning) | |
-| `film-square.hevc.mp4` | x265 slow CRF 25 from the 1:1 master, `hvc1`, AAC 160k 48 kHz; dropped if the film set would pass 45 MB | 6 MB | 12 MB |
-| `teaser-720.{hevc,h264}.mp4` | the film-720 CRFs (26 / 21), `-an`, scaled only if the master is bigger | 1.5 MB | 1.5 MB |
-| `loop-<id>[-phone].hevc.mp4` | x265 slow CRF 27, `-an` | 0.9 MB | 0.9 MB |
-| `loop-<id>[-phone].h264.mp4` | x264 slow CRF 23, High, `-an` | 1.2 MB | 1.5 MB |
+| `film-1080.hevc.mp4` | x265 slow CRF 25 (`FILM_HEVC_CRF`), `hvc1`, AAC 160k 48 kHz | 13 MB | 16 MB |
+| `film-720.h264.mp4` | x264 slow CRF 21 (`FILM_H264_CRF` + 1), High, `scale=1280:-2:flags=lanczos`, AAC 160k | 9.5 MB | 12 MB |
+| `film-phone.hevc.mp4` | x265 slow CRF 25 from the 4:5 master, `hvc1`, AAC 160k from its mix | 8.5 MB | 10 MB |
+| `film-phone.h264.mp4` | x264 slow CRF 20 from the 4:5 master, High, AAC 160k | 11 MB | 13 MB |
+| `film-1080.h264.mp4`, `film-720.hevc.mp4` | not in the plan (`--only`): CRF 20 / 26 | 18 / 6 MB | 30 / 12 MB |
+| `loop-<id>[-phone].hevc.mp4` | x265 slow CRF 27, `-an` | 0.6 MB for the launch loops (`LOOP_HEVC_BUDGET`; 0.9 by default) | the same |
+| `loop-<id>[-phone].h264.mp4` | x264 slow CRF 23, High, `-an` | 0.9 MB for the launch loops (`LOOP_H264_BUDGET`; 1.2) | 1.2 (`LOOP_H264_HARD`; 1.5) |
 | `<name>.poster.avif` / `.webp` | sharp AVIF q50 effort 6 / WebP q76 effort 6; quality down by 2 to fit (AVIF to q30, WebP to q50). A simple picture (under a quarter of its budget at the start quality: flat fields, soft gradients) gets the highest quality up to AVIF q80 / WebP q90 that stays under that quarter, because the start quality bands there | 60 KB / 90 KB | |
 | social (`encode.sh social`) | x264 slow CRF 18, High, VBV 20 Mb/s (inside level 4.0), AAC-LC 192k 48 kHz stereo | X: 512 MB, 3 to 140 s | |
 
-- **The film budgets** are critic C6's (12 / 18 / 6 / 9 MB = 45 MB), adopted by OVERRIDES §8 ("film set <= ~45 MB
-  total"), which overrides MASTER_PLAN §5.5's 20 / 30 / 12 / 18 MB (80 MB). §5.5's numbers are the hard limits. If the
-  1080p H.264 can't reach 18 MB within +4 CRF, C6's alternative is to drop it: `--only 1080.hevc,720.hevc,720.h264`
-  (the player then plays 720p H.264 where HEVC can't play). The 1:1 film for phones (OVERRIDES §46 P2-9) joins the
-  set with shares of 9 MB (H.264) and 6 MB (HEVC), and the whole set, its 1:1 cut included, stays within 45 MB: the
-  shares are warnings, the 45 MB a failure (`verify.mjs`). The trailer's set measured 33.88 MB with both 1:1 files.
 - **Every encode**: `yuv420p`, BT.709 primaries/transfer/matrix and limited range in the stream (x265 `colorprim`,
   `transfer`, `colormatrix`; x264 VUI) and in the MP4 `colr` box, `+faststart`, no global metadata (Remotion's
   "Made with Remotion" comment is dropped), the master's exact frame count (checked).
@@ -122,79 +132,55 @@ that, the command fails and the last try is kept in `.work/tmp/encode-rejected/`
   `<source type>` in `src/lib/media.ts` (`hvc1.1.6.L120.90`: Main, main tier, level 4.0 or lower, `hvc1` sample
   entry). If x265 ever signals more, the file is re-encoded with `level-idc=4.0:high-tier=0` (x265 then holds level
   4.0's VBV limits).
-- **Inputs are checked before a job queues**: 30 fps (D7), the film master at 1920x1080 with as many frames as
-  `docs/film-captions.json` times (a mismatch is a warning here and a failure in `verify.mjs`), a stereo PCM
-  soundtrack within one frame of the picture's length.
+- **Inputs are checked before a job queues**: 30 fps (D7), the film master at 1920x1080 and the 4:5 one at 1080x1350,
+  each with as many frames as the film has (`src/content/chapters.ts` `FILM_DURATION_SECONDS` at 30 fps: 2,982), a
+  stereo soundtrack within one frame of the picture's length.
 
 ## What `verify.mjs` checks
 
 ```bash
-node tools/encode/verify.mjs                                     # public/media/v1 and v2, plus public/ totals
-node tools/encode/verify.mjs "$HOME/Desktop/Pebble launch film"  # ... plus the social folder
+node tools/encode/verify.mjs                                     # public/media (v1, v3), plus public/ totals
+node tools/encode/verify.mjs video/out/launch                    # ... plus the director's delivered files
 node tools/encode/verify.mjs --no-public <files or folders>      # only these
 node tools/encode/verify.mjs --no-analysis                       # probe-only: no loudness or seam pass, no heavy job
 node tools/encode/verify.mjs --json                              # machine-readable, the same exit code
 ```
 
-- **Roles by name**: `film-{1080,720,square}.{hevc,h264}.mp4`, `teaser-720.*`, `loop-<id>[-phone].*`, `*.poster.{avif,webp}`,
+- **Roles by name**: `film-{1080,720,phone}.{hevc,h264}.mp4`, `loop-<id>[-phone].*`, `*.poster.{avif,webp}`,
   `film.en.vtt` / `film.chapters.vtt` / `film.descriptions.en.vtt`, other `.vtt` / `.srt`; any other `.mp4` is a social
   master.
 - **Video**: codec and profile; the codecs string against the page's (`mp4.mjs`); the peak bitrate over any second
   against the ceiling of the level the page declares (HEVC Main 4.0: 12 Mb/s; H.264 High 4.0: 25 Mb/s; social files:
   their own level), so the declared level is a promise kept, not just a label; `yuv420p`; BT.709 and limited range in
   the stream and the `colr` box; 30 fps; square pixels; frame count against duration; the film's frames against
-  `docs/film-captions.json`; the frame sizes (a loop must have the size `src/lib/media.ts` lays it out at, from its
-  `LOOP_FRAMES` / `LOOP_PHONE_FRAME` when present); `moov` before `mdat`.
+  `chapters.ts` (2,982); the frame sizes (a loop must have the size `src/lib/media.ts` lays it out at:
+  `LAUNCH_LOOP_FRAMES`, `LOOP_FRAMES`, `LOOP_PHONE_FRAME`); `moov` before `mdat`.
 - **Audio**: the film has one AAC-LC 48 kHz stereo track at about 160 kb/s that lasts as long as the picture; loops
-  and the teaser have none (D11); social masters have AAC-LC 48 kHz stereo at about 192 kb/s.
+  have none (D11); social masters have AAC-LC 48 kHz stereo at about 192 kb/s.
 - **Loudness** (`ebur128` with true peak, read at full precision from its metadata): the website film −16 LUFS ±1 and
   ≤ −1.5 dBTP (D10); social −14 LUFS ±1 and ≤ −1.0 dBTP (OVERRIDES §4). Outside ±0.5 LU (MASTER_PLAN §6.4's gate) is a
   warning.
 - **Sizes**: every file under `public/` ≤ 45 MB and `public/` ≤ 90 MB (D16); the film set ≤ 45 MB (OVERRIDES §8); a
-  film file over its C6 share is a warning; teaser, loop and poster budgets as above; social ≤ 512 MB and 3 to 140 s
-  (LinkedIn's minimum, X's 2 min 20 s).
-- **Seams** (loops and the teaser): the PSNR of the last frame against the first must be at least the median PSNR
-  between neighbouring frames minus 3 dB, the rule of the loops lane's `loopqa.py` and FILM_SPEC §16. On an encode it
-  is measured at 400 px wide (area scaling) and the median is capped at 45 dB: a still hold encodes as identical frames
-  (infinite PSNR) while the seam's two frames carry different coding noise, so an uncapped rule would fail every loop
-  with a still tail. A cursor left on screen or a camera that doesn't return still fails. Calibrated on a detailed
-  test loop (a frozen `testsrc2` frame) at HEVC CRF 27–33 and H.264 CRF 23–29: clean seams read 58.6–66.9 dB and a
-  24x36 px cursor left at the end 35.7 dB, against the 42 dB threshold.
-- **Text tracks**: WebVTT/SRT syntax and the caption rules (`tools/captions/cues.mjs`); `film.*.vtt` must equal what
-  `tools/captions/build.mjs` makes from today's sources (a stale track fails), and so must a full-film `.srt` and the
-  narrated twin's `*-narrated.srt` (built with `docs/film-narration.json`).
+  film file over its share (`LIMITS.film`, the plan above) is a warning; loop and poster budgets as above; social
+  ≤ 512 MB and 3 to 140 s (LinkedIn's minimum, X's 2 min 20 s).
+- **Seams** (loops): the PSNR of the last frame against the first must be at least the median PSNR between
+  neighbouring frames minus 3 dB, the rule of the loops lane's `loopqa.py`. On an encode it is measured at 400 px wide
+  (area scaling) and the median is capped at 45 dB: a still hold encodes as identical frames (infinite PSNR) while the
+  seam's two frames carry different coding noise, so an uncapped rule would fail every loop with a still tail.
+- **Text tracks**: WebVTT/SRT syntax and the caption rules (`tools/captions/cues.mjs`), with the film's own-pace
+  exception for captions (`FILM_OWN_PACE`: a fast cue is a warning); `film.*.vtt` must equal what
+  `tools/captions/build.mjs` makes from today's sources (a stale track fails), and so must a full-film `.srt`. Without
+  the film's own VTT (`video/out/launch/`, gitignored), the tracks are checked for syntax and rules only.
 - **Posters**: format, budget, an AVIF and a WebP twin, the aspect of their video and of the size `src/lib/media.ts`
   gives them (a different size with the same aspect is a warning: the page's srcset would describe it wrongly).
-- **Strays**: a file in a versioned media folder (`public/media/v1`, `v2`, …) that `src/lib/media.ts` would never
-  request from that folder is a warning: the film's videos and text tracks belong in its `FILM_MEDIA` (`v2`), the rest
-  in its `MEDIA` (`v1`).
-
-## Cut files
-
-`--cut <cut.json>` (for `encode.sh social` and `tools/captions/build.mjs`) lists the film's source frame ranges in the
-order they play, as `[first, end)` (end exclusive) at the film's 30 fps:
-
-```json
-{
-  "name": "x-30s",
-  "fps": 30,
-  "ranges": [[0, 144], [504, 648], [936, 1224], [2088, 2304]],
-  "exclude": ["c09"],
-  "add": [{ "id": "x1", "start": 0, "end": 36, "lines": ["[Gentle music begins]"] }]
-}
-```
-
-- `include` (optional): only these caption ids; `exclude` (optional): never these; `add` (optional): the cut's own
-  cues, in the cut's frames (for example the sound descriptions of its own music edit).
-- The video is assembled frame-exactly: one input per range, seeked to the range's first frame (its time rounded down
-  to the microsecond) and trimmed to the range's length, then concatenated. The soundtrack must last as long as the
-  cut, within one frame.
-- Captions move to the cut's timeline. A caption that runs across two consecutive ranges stays one cue, a clipped
-  caption is reported, and every cue must still pass the caption rules (≥ 1.2 s, ≤ 3.5 words/s) or nothing is written.
+- **Strays**: a file in a versioned media folder that `src/lib/media.ts` would never request from that folder is a
+  warning: the film and the 2.0 loops belong in its `LAUNCH_MEDIA` (`v3`), the 1.x loops and the wallpaper in its
+  `MEDIA` (`v1`), and nothing in the retired `v2`.
 
 ## Tests
 
 The tools were tested on tiny synthetic inputs (lavfi `testsrc2`, `smptehdbars` and pink noise, 2 to 3 s) through
 heavy.sh, with every output under `.work/tmp/` and none in `public/`. `ENCODE_BUDGET_SCALE=<factor>` (tests only)
 multiplies every budget in `encode.sh` and `poster.mjs`, so that small inputs exercise the CRF and quality steps;
-`verify.mjs` always applies the real budgets.
+`verify.mjs` always applies the real budgets. The launch commands (`mix`, `phone`, `still`, `loops.mjs`) were written
+during a hold, when nothing could run: phase B tests them on synthetic inputs first (`.work/handoffs/launch-site-2.md`).

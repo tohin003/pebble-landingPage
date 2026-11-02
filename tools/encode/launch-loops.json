@@ -1,0 +1,105 @@
+{
+  "schema": "pebble-launch-loops/1",
+  "about": "The Pebble 2.0 loops on the page (src/lib/media.ts LaunchLoopId), cut from the launch film's own masters by tools/encode/loops.mjs: the film's pixels at its own 30 fps, never a new render. Frames are master frames (video/src/launch/master/timeline.ts: fr(slot.in) .. fr(slot.out)); `within` is the part of the scene clear of its seams (a zoom-through's settle, a whip's blur, a wipe) and of type that is entering or leaving. A loop plays `frames` frames: the source frames first .. first + frames, where the last `blend` of them dissolve into the first `blend` (source first + frames .. first + frames + blend into first .. first + blend), so the cycle closes on the film's own frames. It starts on `poster`, a telling frame, so the poster is the loop's frame 0 and the seam (last frame to first) is two neighbouring film frames. Each cut renders one file: `main` is loop-<id> (LAUNCH_LOOP_FRAMES), `phone` is loop-<id>-phone (LOOP_PHONE_FRAME, 1080 x 1350, the 4:5 master's own layout). Posters and the blend are provisional until phase B looks at the frames; the labels are drafts for copy.ts media.launchLoops and CLAIMS C-LOOP2-*, to be checked against every frame of the delivered clip.",
+  "fps": 30,
+  "blend": 12,
+  "prefilter": "",
+  "budgets": { "hevc": 600000, "h264": 900000, "h264Hard": 1200000 },
+  "masters": {
+    "16x9": "video/out/launch/LaunchFilm-16x9-master.mp4",
+    "4x5": "video/out/launch/LaunchFilm-4x5-master.mp4"
+  },
+  "work": ".work/launch/site/loops",
+  "loops": [
+    {
+      "id": "desk",
+      "scene": "S02",
+      "within": [407, 599],
+      "first": 407,
+      "frames": 180,
+      "poster": 452,
+      "cuts": { "main": { "master": "16x9", "scale": "1600:900" }, "phone": { "master": "4x5" } },
+      "label": "The whole Mac with Pebble's window and the pebble, under “It lives on your Mac.” The desktop slides to another Space and the pebble stays: “On every Space.” A click opens the quick chat, and “What can you do now?” is sent: “Click. Ask.”",
+      "source": "Recorded from Pebble 2.0.0."
+    },
+    {
+      "id": "mac-apps",
+      "scene": "S03",
+      "within": [606, 926],
+      "first": 640,
+      "frames": 270,
+      "poster": 712,
+      "cuts": { "main": { "master": "16x9", "scale": "1600:900" }, "phone": { "master": "4x5" } },
+      "note": "S03's shots last 1.5 to 2 s each (Calculator 2.5-4.0, Calendar 4.0-6.0, Chrome 6.0-7.75, the window card 7.75-11.0), too short for a 6-10 s loop each: this one loop is the whole burst, for #mac as one clip (the director's ruling asked in .work/handoffs/launch-site-2.md; until then it fills the App windows tab's slot and the other two stay empty).",
+      "label": "“Now it can use your Mac.” In Calculator, Pebble keys in 48 × 12.5 and gets 600: “Your apps.” Calendar shows the new event Glaze order 09:00: “Your calendar.” Chrome shows Pebble's pill, “Pebble is working in this tab”: “Your browser.” Then Pebble's card asking to use one app window: “The app windows and websites you allow.”",
+      "source": "Recorded from Pebble 2.0.0."
+    },
+    {
+      "id": "guard",
+      "scene": "S04",
+      "within": [945, 1186],
+      "first": 945,
+      "frames": 228,
+      "poster": 1005,
+      "cuts": { "main": { "master": "16x9", "scale": "1600:900" }, "phone": { "master": "4x5" } },
+      "label": "A held reply: “Pebble's change isn't verified yet.” Under “Done means checked.”, Run the tests is pressed and the check reads “Verified · pytest 42 passed on current files”. Then “AgentGuard. Evidence before ‘done’.”, with three lines: “Tests the host ran, not the model’s word.” “Files you asked to keep, kept.” “Output matched to its file, byte for byte.”",
+      "source": "Pebble 2.0.1's own interface, run with sample data."
+    },
+    {
+      "id": "workshop",
+      "scene": "S05",
+      "within": [1205, 1415],
+      "first": 1205,
+      "frames": 198,
+      "poster": 1318,
+      "cuts": { "main": { "master": "16x9", "scale": "1600:900" }, "phone": { "master": "4x5" } },
+      "label": "“It builds small tools for itself.” A script makes the tool kiln_ramp_time. In a drawn diagram its own tests pass in a sandbox, a blind check passes 2 of 5, and the pebble asks. Pebble's card asks whether to keep the tool: “When the check disagrees, it asks you.”",
+      "source": "Recorded from Pebble 2.0.0, with a drawn diagram."
+    },
+    {
+      "id": "memory",
+      "scene": "S06",
+      "within": [1433, 1637],
+      "first": 1433,
+      "frames": 192,
+      "poster": 1555,
+      "cuts": { "main": { "master": "16x9", "scale": "1600:900" }, "phone": { "master": "4x5" } },
+      "label": "“It remembers what matters.” A table of Pebble's six kinds of memory, then Settings › Memory: “All visible.” The pointer chooses Forget on one record, and it goes: “Forget anything.”",
+      "source": "Pebble 2.0.1's own interface, run with sample data."
+    },
+    {
+      "id": "long-tasks",
+      "scene": "S07",
+      "within": [1637, 1830],
+      "first": 1637,
+      "frames": 181,
+      "poster": 1795,
+      "cuts": { "main": { "master": "16x9", "crop": "1200:800:700:270" } },
+      "note": "The scene's title stays at full size over the whole scene, and the page never shows that name (the owner's ruling, 2 Nov 2026): the clip is a 3:2 crop of the diagram alone (16:9 layout: title y 56-206, lines x 112-732, the column x 840-1780 over a budget line from x 796, the floor at y 1012). Check every frame of the crop: no glyph of the title or of the lines, and the camera's push keeps the column inside. If it can't, the loop is dropped (the slot shows nothing). No 4:5 cut: the 4:5 layout stacks the title over the diagram.",
+      "label": "Diagram. Six tool results stack up past a dashed line marked “context budget”. The three oldest are sealed into short stubs, the column falls back under the line, and one stub opens again, unchanged.",
+      "source": "A diagram, not Pebble's interface."
+    },
+    {
+      "id": "remote",
+      "scene": "S08",
+      "within": [1857, 2094],
+      "first": 1857,
+      "frames": 225,
+      "poster": 2030,
+      "cuts": { "main": { "master": "4x5" } },
+      "label": "Pebble Remote on an iPhone screen, in the iOS Simulator: “Pebble, in your pocket.” “Pebble Remote for iPhone.” An edit waits for review; Apply Edit is tapped, the Face ID prompt passes, and the edit is done. “Approve with Face ID.” “Open source. Build it with Xcode.”",
+      "source": "Pebble Remote in the iOS Simulator, built from its published source, against a stand-in Mac."
+    },
+    {
+      "id": "stealth",
+      "scene": "S09",
+      "within": [2104, 2340],
+      "first": 2104,
+      "frames": 224,
+      "poster": 2160,
+      "cuts": { "main": { "master": "16x9", "scale": "1600:900" }, "phone": { "master": "4x5" } },
+      "label": "Pebble's ⌘K palette under “Presenting?”: “stealth” is typed and Turn Stealth Lockdown on is chosen. In a screen recording, Pebble's window leaves it as the setting turns on, and then the pebble wears the Veil. On screen: “Stealth Lockdown.” and its honest line.",
+      "source": "Recorded from Pebble 2.0.0; the Veil is a render by Pebble's own code."
+    }
+  ]
+}

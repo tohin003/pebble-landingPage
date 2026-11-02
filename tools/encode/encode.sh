@@ -1,48 +1,54 @@
 #!/usr/bin/env bash
-# tools/encode/encode.sh: the web and social encodes of the film, teaser, loops and posters (MASTER_PLAN §5.5,
-# OVERRIDES §4, §8 and §14). Homebrew FFmpeg ($FF, $FP from scripts/env.sh); bash 3.2 compatible.
+# tools/encode/encode.sh: the site's encodes of the Pebble 2.0 launch film, its 4:5 cut, the loops and the posters
+# (MASTER_PLAN §5.5, OVERRIDES §4 and §8; .work/launch/briefs/site2.md). Homebrew FFmpeg ($FF, $FP from
+# scripts/env.sh); bash 3.2 compatible.
 #
-# Usage, from the repo root after `source scripts/env.sh`:
-#   tools/encode/encode.sh film   <master.mp4> <soundtrack_web.wav> [--only 1080.hevc,1080.h264,720.hevc,720.h264]
-#   tools/encode/encode.sh square <square_master.mp4> <soundtrack_web.wav> <square_social.mp4> [--only hevc,h264]
-#   tools/encode/encode.sh social <master.mp4> <soundtrack_social.wav> <out.mp4> [--cut <cut.json>] [--crf <n>]
+# Usage, from the repo root after `source scripts/env.sh` (tools/encode/launch-site.sh runs them all, in order):
+#   tools/encode/encode.sh mix    <master.wav|master.mp4> <out.wav>          the -16 LUFS web mix (D10), as deliver.sh
+#   tools/encode/encode.sh film   <master_16x9.mp4> <mix.wav> [--only 1080.hevc,720.h264,1080.h264,720.hevc]
+#   tools/encode/encode.sh phone  <master_4x5.mp4> <mix.wav> [--only hevc,h264]
+#   tools/encode/encode.sh still  <master.mp4> <frame> <out.png> [--crop W:H:X:Y] [--scale W:H]
 #   tools/encode/encode.sh loop   <id> <master.mp4> [<phone_master.mp4>]
-#   tools/encode/encode.sh teaser <master.mp4>
 #   tools/encode/encode.sh poster <png> <out-base> <width> <height>
-# Common options: --out-dir <dir> (film, square, loop, teaser; default public/media/v1, or $ENCODE_OUT), --exact (keep
-# the starting CRF even when a file misses its budget), --no-verify (skip the verify.mjs pass at the end).
+#   tools/encode/encode.sh social <master.mp4> <soundtrack_social.wav> <out.mp4> [--crf <n>]
+# Common options: --out-dir <dir> (film, phone, loop; default public/media/v3, src/lib/media.ts LAUNCH_MEDIA, or
+# $ENCODE_OUT), --exact (keep the starting CRF even when a file misses its budget), --no-verify (skip the verify.mjs
+# pass at the end).
 #
 # - One command = ONE scripts/heavy.sh job. Run directly, the script re-runs itself through heavy.sh (which waits for
-#   the lock and refuses when disk or memory is short); started by heavy.sh, it just runs.
-# - Inputs are checked before the job queues: 30 fps masters (D7), the film at 1920x1080, a 48 kHz stereo soundtrack
-#   whose length matches the picture within one frame.
-# - Masters are high-quality H.264 renders from Remotion (CRF about 12; ProRes doesn't fit this disk).
+#   the lock and refuses when disk or memory is short, or while .work/HOLD exists); started inside a heavy job, it runs.
+# - Inputs are checked before the job queues: 30 fps masters (D7), the film at 1920x1080 and its cut at 1080x1350, as
+#   many frames as the film has (src/content/chapters.ts FILM_DURATION_SECONDS at 30 fps: 2,982), a 48 kHz stereo
+#   soundtrack whose length matches the picture within one frame.
+# - The masters are the director's (video/out/launch/LaunchFilm-<16x9|4x5>-master.mp4: H.264 CRF 12 from Remotion,
+#   video/src/launch/master/final.sh) with their mixes (…-master.wav). `mix` brings a mix to the site's -16 LUFS the way
+#   deliver.sh makes the director's web copy: a 4x-oversampled peak limiter at MIX_LIMIT_DB (-4.0 dBFS), then a
+#   two-pass loudnorm that must stay linear (one gain for the whole film), into a 48 kHz 24-bit WAV. It refuses a
+#   result that isn't linear.
 # - Encodes run in .work/tmp/encode/ and each output is moved into place only when complete and checked: the same frame
 #   count as its master, and for HEVC a codecs string that fits the page's <source type> (src/lib/media.ts,
 #   hvc1.1.6.L120.90). If x265 ever signals a higher level or the high tier, the file is re-encoded with level-idc=4.0
 #   and high-tier=0.
-# - Budgets: a file starts at its MASTER_PLAN §5.5 CRF. Over its budget, the CRF rises (an estimated step, then +1)
-#   until it fits, never past the start + 4 (film) or + 6 (loops, teaser); the resolution never drops. The first CRF that
+# - Budgets: a file starts at its CRF. Over its budget, the CRF rises (an estimated step, then +1) until it fits, never
+#   past the start + FILM_MAX_RAISE (film, default 4) or + 6 (loops); the resolution never drops. The first CRF that
 #   fits wins; failing that, the lowest CRF under the hard limit; failing that, the command fails and the file is kept
-#   in .work/tmp/encode-rejected/ for a look.
-#     film-1080 HEVC CRF 25, H.264 CRF 20; film-720 CRF +1 (26, 21)       budget 12 / 18 / 6 / 9 MB (critic C6, adopted
-#                                                                          by OVERRIDES §8: the film set <= ~45 MB);
-#                                                                          hard limit = §5.5's 20 / 30 / 12 / 18 MB
+#   in .work/tmp/encode-rejected/ for a look. tools/encode/README.md "The launch film's budget" has the plan:
+#     film-1080.hevc CRF 25 <= 13 MB (hard 16)        film-720.h264 CRF 21 <= 9.5 MB (hard 12)    the plan's two 16:9
+#     film-phone.hevc CRF 25 <= 8.5 MB (hard 10)      film-phone.h264 CRF 20 <= 11 MB (hard 13)   files and the 4:5 cut
+#     film-1080.h264 CRF 20 <= 18 MB, film-720.hevc CRF 26 <= 6 MB: C6's shares, encoded only when --only names them
+#     (the film set, every film-*.mp4 in the folder, must stay within 45 MB: verify.mjs fails it above)
 #     loop HEVC CRF 27 <= 0.9 MB; loop H.264 CRF 23 <= 1.2 MB (hard 1.5)   (and the -phone 4:5 cuts the same)
-#       A loop may start lower with LOOP_HEVC_CRF and LOOP_H264_CRF; its budgets stay. L1 (loop companion) uses 22 / 19:
-#       its desktop is one smooth gradient, which blocked at 27 / 23 (critic C09), and it was far under budget.
-#     teaser-720 HEVC CRF 26, H.264 CRF 21 (the film-720 settings) <= 1.5 MB each
-#     posters: AVIF q50 effort 6 <= 60 KB, WebP q76 <= 90 KB, quality lowered stepwise to fit (tools/encode/poster.mjs);
-#              a simple picture (under 1/4 of its budget at q50 / q76) gets more quality, up to q80 / q90, within 1/4
+#     posters: AVIF q50 effort 6 <= 60 KB, WebP q76 <= 90 KB, quality lowered stepwise to fit (tools/encode/poster.mjs)
+#   Starting CRFs move with FILM_HEVC_CRF / FILM_H264_CRF (the film and its cut) and LOOP_HEVC_CRF / LOOP_H264_CRF; the
+#   budgets stay. FILM_VF puts a filter before the film's scaling and tags (for example hqdn3d=0:0:4:4, a light
+#   temporal denoise of the film's grain, which costs the most bits at these sizes): tools/encode/README.md says when.
 # - Every encode: yuv420p, BT.709 tags put on the frames with setparams (so they reach the VUI and the MP4 colr box),
 #   +faststart, no global metadata (Remotion's "Made with Remotion" comment is dropped); x264 at -level:v 4.0.
-#   Film: AAC 160 kb/s 48 kHz from the web soundtrack (one AAC generation). Loops and teaser: -an.
+#   Film and its cut: AAC 160 kb/s 48 kHz from the web mix (one AAC generation). Loops: -an.
 #   Social: H.264 High CRF 18 (VBV 20 Mb/s inside level 4.0), AAC-LC 192 kb/s 48 kHz stereo.
-# - The 1:1 film for phones (OVERRIDES §46 P2-9; src/lib/media.ts phoneSources): film-square.h264.mp4 is the 1:1 social
-#   film's video, copied (-c:v copy, no second encode), with the film's AAC 160 kb/s from the web soundtrack;
-#   film-square.hevc.mp4 is its HEVC twin, encoded from the 1:1 master as film-1080.hevc is (CRF 25, budget 6 MB, hard
-#   limit 12 MB), kept only while the film set (every film-*.mp4 in the folder) stays within 45 MB.
 # - At the end, tools/encode/verify.mjs checks the new files (codecs, colour, faststart, sizes, loudness, loop seams).
+# - Retired with the 1.x trailer (2 Nov 2026; git history keeps them): `square` (its 1:1 phone film), `teaser` and
+#   `social --cut` (its 30 s cut for X).
 #
 # Exit: 0 ok; 1 a failed encode or check; 64 usage; heavy.sh's own codes (73 refused: too little disk or memory, or a
 # hold; 75 lock wait timed out).
@@ -54,9 +60,9 @@ source "$HERE/../../scripts/env.sh"
 ORIG_ARGS=("$@")
 
 MB=1000000
-FILM_MAX_RAISE=4
+FILM_MAX_RAISE="${FILM_MAX_RAISE:-4}"
 MAX_RAISE=6
-OUT="${ENCODE_OUT:-$REPO/public/media/v1}"
+OUT="${ENCODE_OUT:-$REPO/public/media/v3}"
 EXACT=0
 VERIFY=1
 WORK=""
@@ -68,6 +74,22 @@ BUDGET_SCALE="${ENCODE_BUDGET_SCALE:-1}"
 # The loops' starting CRFs (see the header): lower for a loop whose picture needs it, within the same budgets.
 LOOP_HEVC_CRF="${LOOP_HEVC_CRF:-27}"
 LOOP_H264_CRF="${LOOP_H264_CRF:-23}"
+# The loops' budgets in bytes (verify.mjs's are the ceilings: 0.9 MB HEVC, 1.5 MB H.264). The launch loops run lower
+# (tools/encode/loops.mjs sets them from tools/encode/launch-loops.json "budgets"), so fourteen clips fit the page.
+LOOP_HEVC_BUDGET="${LOOP_HEVC_BUDGET:-900000}"
+LOOP_H264_BUDGET="${LOOP_H264_BUDGET:-1200000}"
+LOOP_H264_HARD="${LOOP_H264_HARD:-1500000}"
+# The film's (see the header): FILM_HEVC_CRF for film-1080.hevc and film-phone.hevc (film-720.hevc starts 1 higher),
+# FILM_H264_CRF for film-1080.h264 and film-phone.h264 (film-720.h264 starts 1 higher).
+FILM_HEVC_CRF="${FILM_HEVC_CRF:-25}"
+FILM_H264_CRF="${FILM_H264_CRF:-20}"
+FILM_VF="${FILM_VF:-}"
+# The web mix (D10: -16 LUFS, at most -1.5 dBTP after AAC; deliver.sh's limiter and linear loudnorm).
+MIX_LUFS="${MIX_LUFS:--16}"
+MIX_TP="${MIX_TP:--2.0}"
+MIX_LIMIT_DB="${MIX_LIMIT_DB:--4.0}"
+# The film set's ceiling (OVERRIDES §8, critic C6): every film-*.mp4 in the folder together.
+FILM_SET=$((45 * MB))
 
 die() { printf 'encode.sh: %s\n' "$*" >&2; exit 1; }
 usage_die() { printf 'encode.sh: %s\n' "$*" >&2; printf 'run "tools/encode/encode.sh --help" for usage\n' >&2; exit 64; }
@@ -297,15 +319,17 @@ EOF
 
 # Splits common options out of the arguments; positional ones land in POS (newline-separated).
 parse_common() {
-  POS="" ONLY="" CUT="" SOCIAL_CRF=18
+  POS="" ONLY="" SOCIAL_CRF=18 CROP="" SCALE=""
   while [ $# -gt 0 ]; do
     case "$1" in
     --exact) EXACT=1 ;;
     --no-verify) VERIFY=0 ;;
     --out-dir) [ $# -ge 2 ] || usage_die "--out-dir needs a folder"; OUT="$2"; shift ;;
     --only) [ $# -ge 2 ] || usage_die "--only needs a list"; ONLY="$2"; shift ;;
-    --cut) [ $# -ge 2 ] || usage_die "--cut needs a file"; CUT="$2"; shift ;;
     --crf) [ $# -ge 2 ] || usage_die "--crf needs a number"; SOCIAL_CRF="$2"; shift ;;
+    --crop) [ $# -ge 2 ] || usage_die "--crop needs W:H:X:Y"; CROP="$2"; shift ;;
+    --scale) [ $# -ge 2 ] || usage_die "--scale needs W:H"; SCALE="$2"; shift ;;
+    --cut) usage_die "--cut was the 1.x trailer's 30 s cut (retired on 2 Nov 2026; git history keeps it)" ;;
     --*) usage_die "unknown option $1" ;;
     *) POS="${POS}${POS:+
 }$1" ;;
@@ -318,35 +342,97 @@ npos() {
   if [ -z "$POS" ]; then echo 0; else printf '%s\n' "$POS" | wc -l | tr -d ' '; fi
 }
 
+# The film's frame count: src/content/chapters.ts FILM_DURATION_SECONDS at 30 fps (2,982 for the master's 99.4 s).
+film_frames() {
+  sed -n 's/^export const FILM_DURATION_SECONDS: number | null = \([0-9.]*\);.*/\1/p' "$REPO/src/content/chapters.ts" | head -n 1 |
+    awk '{ if ($1 > 0) printf "%d\n", $1 * 30 + 0.5; else print "?" }'
+}
+
+# check_film_master <file> <what> <WxH>: a 30 fps limited-range master of the film's length at that size.
+check_film_master() {
+  local expected
+  master "$1" "$2"
+  [ "${V_W}x${V_H}" = "$3" ] || die "$2 $1 is ${V_W}x${V_H}, not $3"
+  expected="$(film_frames)"
+  [ "$V_FRAMES" = "$expected" ] || die "$2 $1 has $V_FRAMES frames, and the film has $expected (src/content/chapters.ts FILM_DURATION_SECONDS): the tracks would drift"
+}
+
+# film_set_note: the film set's total so far (every film-*.mp4 in OUT), against its 45 MB ceiling.
+film_set_note() {
+  local f setsize=0
+  for f in "$OUT"/film-*.mp4; do
+    if [ -f "$f" ]; then setsize=$((setsize + $(fsize "$f"))); fi
+  done
+  if [ "$setsize" -gt "$FILM_SET" ]; then
+    note "the film set is $(human "$setsize"), over $(human "$FILM_SET"): verify.mjs fails it (drop a file with --only, or raise a CRF)"
+    return 1
+  fi
+  note "the film set is $(human "$setsize") of $(human "$FILM_SET")"
+}
+
+# The web mix (D10): deliver.sh's chain at the site's level. A 4x-oversampled peak limiter (auto level off, its
+# look-ahead compensated), then loudnorm in two passes; the second must be linear, one gain for the whole film.
+cmd_mix() {
+  parse_common "$@"
+  [ "$(npos)" = 2 ] || usage_die "mix <master.wav|master.mp4> <out.wav>"
+  local in out lin json filter log
+  in="$(pos 1)" out="$(pos 2)"
+  case "$out" in *.wav) ;; *) usage_die "the web mix is a .wav" ;; esac
+  aprobe "$in"
+  [ "$A_CH" = 2 ] || die "$in has $A_CH channels; the mix is stereo"
+  case "$A_CODEC" in pcm_*) ;; *) note "warning: $in is $A_CODEC, not PCM: prefer the master's .wav (video/src/launch/master/final.sh --wav-only)" ;; esac
+  enter_heavy encode-mix
+  lin="$(awk -v d="$MIX_LIMIT_DB" 'BEGIN { printf "%.4f", 10 ^ (d / 20) }')"
+  "$FF" -hide_banner -nostdin -loglevel error -y -i "$in" -vn \
+    -af "aresample=192000,alimiter=limit=$lin:attack=5:release=60:level=0:latency=1,aresample=48000" \
+    -c:a pcm_s24le "$WORK/limited.wav" || die "mix: the limiter pass failed"
+  json="$("$FF" -hide_banner -nostdin -nostats -i "$WORK/limited.wav" -vn -af "loudnorm=I=$MIX_LUFS:TP=$MIX_TP:LRA=20:print_format=json" -f null - 2>&1 | sed -n '/^{/,/^}/p')"
+  [ -n "$json" ] || die "mix: the loudness measurement failed"
+  filter="$(node -e '
+const m = JSON.parse(process.argv[1]);
+const [target, tp] = [Number(process.argv[2]), Number(process.argv[3])];
+const after = Number(m.input_tp) + (target - Number(m.input_i));
+if (after > tp || Number(m.input_lra) > 20) {
+  console.error(`mix: loudnorm cannot stay linear for ${target} LUFS: the limited mix is ${m.input_i} LUFS and ${m.input_tp} dBTP (it would reach ${after.toFixed(2)} dBTP), LRA ${m.input_lra}; lower MIX_LIMIT_DB`);
+  process.exit(1);
+}
+console.log(`loudnorm=I=${target}:TP=${tp}:LRA=20:measured_I=${m.input_i}:measured_TP=${m.input_tp}:measured_LRA=${m.input_lra}:measured_thresh=${m.input_thresh}:offset=${m.target_offset}:linear=true:print_format=summary`);
+' "$json" "$MIX_LUFS" "$MIX_TP")" || die "mix: no linear loudnorm (see above)"
+  log="$WORK/mix.log"
+  "$FF" -hide_banner -nostdin -nostats -loglevel info -y -i "$WORK/limited.wav" -vn -af "$filter,aresample=48000" \
+    -c:a pcm_s24le "$WORK/mix.wav" 2>"$log" || die "mix: the loudnorm pass failed (see $log)"
+  grep -q "Normalization Type: *Linear" "$log" || die "mix: loudnorm wasn't linear"
+  mkdir -p "$(dirname "$out")"
+  mv -f "$WORK/mix.wav" "$out"
+  note "mix: $(basename "$out"), $MIX_LUFS LUFS by one linear gain after a limiter at $MIX_LIMIT_DB dBFS (from $(basename "$in"))"
+}
+
 cmd_film() {
   parse_common "$@"
-  [ "$(npos)" = 2 ] || usage_die "film <master.mp4> <soundtrack_web.wav> [--only ...]"
-  local master wav variants v res codec crf0 target hard fixed final expected failed=0
+  [ "$(npos)" = 2 ] || usage_die "film <master_16x9.mp4> <mix.wav> [--only ...]"
+  local master wav variants v res codec crf0 target hard fixed final failed=0
   master="$(pos 1)" wav="$(pos 2)"
-  variants="$(printf '%s' "${ONLY:-1080.hevc,1080.h264,720.hevc,720.h264}" | tr ',' ' ')"
+  variants="$(printf '%s' "${ONLY:-1080.hevc,720.h264}" | tr ',' ' ')"
   for v in $variants; do
     case "$v" in 1080.hevc | 1080.h264 | 720.hevc | 720.h264) ;; *) usage_die "unknown film variant '$v' (1080.hevc, 1080.h264, 720.hevc, 720.h264)" ;; esac
   done
-  master "$master" "the film master"
-  [ "${V_W}x${V_H}" = 1920x1080 ] || die "the film master is ${V_W}x${V_H}; LaunchFilm renders 1920x1080"
+  check_film_master "$master" "the film master" 1920x1080
   local frames="$V_FRAMES"
   soundtrack "$wav" "$frames"
-  expected="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).total_frames)' "$REPO/docs/film-captions.json" 2>/dev/null || echo '?')"
-  [ "$frames" = "$expected" ] || note "warning: the master has $frames frames and docs/film-captions.json says $expected: captions and chapters would drift"
   enter_heavy encode-film
   mkdir -p "$OUT"
   fixed="$(awk -v d="$A_DUR" 'BEGIN { printf "%d", 160000 / 8 * d * 1.02 }')"
   for v in $variants; do
     res="${v%%.*}" codec="${v#*.}"
     case "$v" in
-    1080.hevc) crf0=25 target=$((12 * MB)) hard=$((20 * MB)) ;;
-    1080.h264) crf0=20 target=$((18 * MB)) hard=$((30 * MB)) ;;
-    720.hevc) crf0=26 target=$((6 * MB)) hard=$((12 * MB)) ;;
-    720.h264) crf0=21 target=$((9 * MB)) hard=$((18 * MB)) ;;
+    1080.hevc) crf0=$FILM_HEVC_CRF target=$((13 * MB)) hard=$((16 * MB)) ;;
+    1080.h264) crf0=$FILM_H264_CRF target=$((18 * MB)) hard=$((30 * MB)) ;;
+    720.hevc) crf0=$((FILM_HEVC_CRF + 1)) target=$((6 * MB)) hard=$((12 * MB)) ;;
+    720.h264) crf0=$((FILM_H264_CRF + 1)) target=$((9500000)) hard=$((12 * MB)) ;;
     esac
     final="$OUT/film-$v.mp4"
-    local vf=""
-    [ "$res" = 720 ] && vf="scale=1280:-2:flags=lanczos"
+    local vf="$FILM_VF"
+    [ "$res" = 720 ] && vf="${vf:+$vf,}scale=1280:-2:flags=lanczos"
     if fit "film-$v" "$codec" "$crf0" "$target" "$hard" "$FILM_MAX_RAISE" "$fixed" "$final" "$master" "$vf" "$wav" "$frames"; then
       report "$final" ok
       add_output "$final"
@@ -355,119 +441,87 @@ cmd_film() {
       failed=1
     fi
   done
+  film_set_note || failed=1
   run_verify || failed=1
   return "$failed"
 }
 
-# The 1:1 film for phones (OVERRIDES §46 P2-9): the H.264 file re-muxes the 1:1 social film's video with the web
-# soundtrack; the HEVC twin is encoded from the 1:1 master, and kept only if the film set stays within FILM_SET bytes.
-FILM_SET=$((45 * MB))
-cmd_square() {
+# The 4:5 cut for phones (src/lib/media.ts FILM_PHONE_FRAME): the 4:5 master's own layout, the same timing as the 16:9
+# film frame for frame (so the tracks are shared), with its own mix.
+cmd_phone() {
   parse_common "$@"
-  [ "$(npos)" = 3 ] || usage_die "square <square_master.mp4> <soundtrack_web.wav> <square_social.mp4> [--only hevc,h264]"
-  local master wav social variants v frames expected fixed final tmp setsize failed=0 f
-  master="$(pos 1)" wav="$(pos 2)" social="$(pos 3)"
-  variants="$(printf '%s' "${ONLY:-h264,hevc}" | tr ',' ' ')"
+  [ "$(npos)" = 2 ] || usage_die "phone <master_4x5.mp4> <mix.wav> [--only hevc,h264]"
+  local master wav variants v crf0 target hard fixed final failed=0
+  master="$(pos 1)" wav="$(pos 2)"
+  variants="$(printf '%s' "${ONLY:-hevc,h264}" | tr ',' ' ')"
   for v in $variants; do
-    case "$v" in hevc | h264) ;; *) usage_die "unknown square variant '$v' (hevc, h264)" ;; esac
+    case "$v" in hevc | h264) ;; *) usage_die "unknown phone variant '$v' (hevc, h264)" ;; esac
   done
-  master "$master" "the 1:1 master"
-  [ "${V_W}x${V_H}" = 1080x1080 ] || die "the 1:1 master is ${V_W}x${V_H}; LaunchFilmSquare renders 1080x1080"
-  frames="$V_FRAMES"
+  check_film_master "$master" "the 4:5 master" 1080x1350
+  local frames="$V_FRAMES"
   soundtrack "$wav" "$frames"
-  expected="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).total_frames)' "$REPO/docs/film-captions.json" 2>/dev/null || echo '?')"
-  [ "$frames" = "$expected" ] || note "warning: the 1:1 master has $frames frames and docs/film-captions.json says $expected: the shared text tracks would drift"
-  case " $variants " in
-  *" h264 "*)
-    vprobe "$social"
-    [ "${V_W}x${V_H}" = 1080x1080 ] || die "the 1:1 social film $social is ${V_W}x${V_H}, not 1080x1080"
-    [ "$V_FRAMES" = "$frames" ] || die "the 1:1 social film $social has $V_FRAMES frames, its master $frames"
-    [ "$("$FP" -v error -select_streams v:0 -show_entries stream=codec_name -of csv=p=0 "$social")" = h264 ] || die "the 1:1 social film $social is not H.264"
-    ;;
-  esac
-  enter_heavy encode-square
+  enter_heavy encode-phone
   mkdir -p "$OUT"
+  fixed="$(awk -v d="$A_DUR" 'BEGIN { printf "%d", 160000 / 8 * d * 1.02 }')"
   for v in $variants; do
-    final="$OUT/film-square.$v.mp4"
-    if [ "$v" = h264 ]; then
-      tmp="$WORK/film-square.h264.mp4"
-      note "film-square.h264: the 1:1 social film's video, copied, with AAC 160 kb/s from $(basename "$wav")"
-      "$FF" -hide_banner -nostdin -loglevel warning "$STATS" -y -i "$social" -i "$wav" -map 0:v:0 -map 1:a:0 \
-        -map_metadata -1 -map_chapters -1 -c:v copy -c:a aac -b:a 160k -ar 48000 -movflags +faststart "$tmp" ||
-        die "film-square.h264: the re-mux failed"
-      fits_page "$tmp" || die "film-square.h264: its codecs string does not fit the page's"
-      vprobe "$tmp"
-      [ "$V_FRAMES" = "$frames" ] || die "film-square.h264 has $V_FRAMES frames, its master $frames"
-      mv -f "$tmp" "$final"
-      FIT_CRF="copy" FIT_SIZE="$(fsize "$final")" FIT_NOTE="video copied from $(basename "$social")"
+    case "$v" in
+    hevc) crf0=$FILM_HEVC_CRF target=$((8500000)) hard=$((10 * MB)) ;;
+    h264) crf0=$FILM_H264_CRF target=$((11 * MB)) hard=$((13 * MB)) ;;
+    esac
+    final="$OUT/film-phone.$v.mp4"
+    if fit "film-phone.$v" "$v" "$crf0" "$target" "$hard" "$FILM_MAX_RAISE" "$fixed" "$final" "$master" "$FILM_VF" "$wav" "$frames"; then
       report "$final" ok
       add_output "$final"
     else
-      fixed="$(awk -v d="$A_DUR" 'BEGIN { printf "%d", 160000 / 8 * d * 1.02 }')"
-      if fit film-square.hevc hevc 25 $((6 * MB)) $((12 * MB)) "$FILM_MAX_RAISE" "$fixed" "$final" "$master" "" "$wav" "$frames"; then
-        setsize=0
-        for f in "$OUT"/film-*.mp4; do
-          if [ -f "$f" ]; then setsize=$((setsize + $(fsize "$f"))); fi
-        done
-        if [ "$setsize" -gt "$FILM_SET" ]; then
-          mkdir -p "$REPO/.work/tmp/encode-rejected"
-          mv -f "$final" "$REPO/.work/tmp/encode-rejected/film-square.hevc.mp4"
-          FIT_NOTE="the film set would be $(human "$setsize"), over $(human "$FILM_SET"): no HEVC twin (moved to .work/tmp/encode-rejected/)"
-          report "$REPO/.work/tmp/encode-rejected/film-square.hevc.mp4" FAIL
-          failed=1
-        else
-          FIT_NOTE="${FIT_NOTE:+$FIT_NOTE; }the film set is $(human "$setsize") of $(human "$FILM_SET")"
-          report "$final" ok
-          add_output "$final"
-        fi
-      else
-        report "$REPO/.work/tmp/encode-rejected/film-square.hevc.mp4" FAIL
-        failed=1
-      fi
+      report "$REPO/.work/tmp/encode-rejected/film-phone.$v.mp4" FAIL
+      failed=1
     fi
   done
+  film_set_note || failed=1
   run_verify || failed=1
   return "$failed"
+}
+
+# One frame of a master as an sRGB PNG (a poster's source): frame N, BT.709 limited range read as such, optionally
+# cropped (W:H:X:Y, before scaling) and scaled (W:H, lanczos).
+cmd_still() {
+  parse_common "$@"
+  [ "$(npos)" = 3 ] || usage_die "still <master.mp4> <frame> <out.png> [--crop W:H:X:Y] [--scale W:H]"
+  local master frame png vf
+  master="$(pos 1)" frame="$(pos 2)" png="$(pos 3)"
+  case "$frame" in '' | *[!0-9]*) usage_die "the frame is a whole number" ;; esac
+  case "$png" in *.png) ;; *) usage_die "the still is a .png" ;; esac
+  master "$master" "the master"
+  [ "$frame" -lt "$V_FRAMES" ] || die "frame $frame is past the master's $V_FRAMES frames"
+  enter_heavy encode-still
+  vf="select=eq(n\\,$frame)"
+  [ -z "$CROP" ] || vf="$vf,crop=$CROP"
+  [ -z "$SCALE" ] || vf="$vf,scale=$SCALE:flags=lanczos"
+  vf="$vf,scale=in_color_matrix=bt709:in_range=tv:out_range=pc,format=rgb24"
+  mkdir -p "$(dirname "$png")"
+  "$FF" -hide_banner -nostdin -loglevel error -y -i "$master" -vf "$vf" -frames:v 1 -update 1 "$WORK/still.png" || die "still: the frame could not be read"
+  mv -f "$WORK/still.png" "$png"
+  note "still: frame $frame of $(basename "$master") -> $png"
 }
 
 cmd_social() {
   parse_common "$@"
-  [ "$(npos)" = 3 ] || usage_die "social <master.mp4> <soundtrack_social.wav> <out.mp4> [--cut <cut.json>] [--crf <n>]"
-  local master wav out frames line i=0 filter="" inputs=() concat=""
+  [ "$(npos)" = 3 ] || usage_die "social <master.mp4> <soundtrack_social.wav> <out.mp4> [--crf <n>]"
+  local master wav out frames
   master="$(pos 1)" wav="$(pos 2)" out="$(pos 3)"
   case "$SOCIAL_CRF" in '' | *[!0-9]*) usage_die "--crf takes a whole number" ;; esac
   case "$out" in *.mp4) ;; *) usage_die "the social output must end in .mp4" ;; esac
   master "$master" "the social master"
-  case "${V_W}x${V_H}" in 1920x1080 | 1080x1080 | 1080x1920) ;; *) note "warning: ${V_W}x${V_H} is none of 16:9 1920x1080, 1:1 1080x1080, 9:16 1080x1920 (OVERRIDES §14)" ;; esac
+  case "${V_W}x${V_H}" in 1920x1080 | 1080x1080 | 1080x1920 | 1080x1350) ;; *) note "warning: ${V_W}x${V_H} is none of 16:9 1920x1080, 1:1 1080x1080, 9:16 1080x1920, 4:5 1080x1350" ;; esac
   frames="$V_FRAMES"
-  if [ -n "$CUT" ]; then
-    [ -f "$CUT" ] || die "no such cut file: $CUT"
-    local plan
-    plan="$(node "$REPO/tools/captions/cues.mjs" cut-inputs "$CUT" "$frames" 30)" || die "cannot read the cut $CUT"
-    frames="$(printf '%s\n' "$plan" | sed -n 1p)"
-    while IFS=' ' read -r seek count; do
-      [ -n "$seek" ] || continue
-      inputs+=(-ss "$seek" -i "$master")
-      filter="${filter}[$i:v]trim=end_frame=$count,setpts=PTS-STARTPTS[v$i];"
-      concat="${concat}[v$i]"
-      i=$((i + 1))
-    done <<EOF
-$(printf '%s\n' "$plan" | sed -n '2,$p')
-EOF
-    filter="${filter}${concat}concat=n=$i:v=1:a=0,${TAG709}[v]"
-  fi
   soundtrack "$wav" "$frames"
   awk -v f="$frames" 'BEGIN { exit (f / 30 >= 3 && f / 30 <= 140) ? 0 : 1 }' || note "warning: $(awk -v f="$frames" 'BEGIN { printf "%.1f", f / 30 }') s is outside X's 140 s / LinkedIn's 3 s limits"
   enter_heavy encode-social
   mkdir -p "$(dirname "$out")"
   local tmp="$WORK/social.mp4"
-  if [ -n "$CUT" ]; then
-    set -- "${inputs[@]}" -i "$wav" -filter_complex "$filter" -map "[v]" -map "$i:a:0"
-  else
-    set -- -i "$master" -i "$wav" -map 0:v:0 -map 1:a:0 -vf "$TAG709"
-  fi
   note "social: H.264 High CRF $SOCIAL_CRF, AAC 192 kb/s, $frames frames"
-  "$FF" -hide_banner -nostdin -loglevel warning "$STATS" -y "$@" -map_metadata -1 -map_chapters -1 \
+  "$FF" -hide_banner -nostdin -loglevel warning "$STATS" -y -i "$master" -i "$wav" -map 0:v:0 -map 1:a:0 -vf "$TAG709" \
+    -map_metadata -1 -map_chapters -1 \
     -c:v libx264 -preset slow -crf "$SOCIAL_CRF" -profile:v high -level:v 4.0 -pix_fmt yuv420p -maxrate 20M -bufsize 25M \
     -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv \
     -c:a aac -b:a 192k -ar 48000 -ac 2 -movflags +faststart "$tmp" || die "the social encode failed"
@@ -480,9 +534,9 @@ EOF
   run_verify
 }
 
-# The loop ids src/lib/media.ts knows (LoopId).
+# The loop ids src/lib/media.ts knows: the 1.x LoopId (in /media/v1) and the 2.0 LaunchLoopId (in /media/v3).
 known_loop() {
-  sed -n '/^export type LoopId =/,/;/p' "$REPO/src/lib/media.ts" | grep -o '"[a-z0-9-]*"' | tr -d '"' | grep -qx "$1"
+  sed -n '/^export type \(Launch\)\{0,1\}LoopId =/,/;/p' "$REPO/src/lib/media.ts" | grep -o '"[a-z0-9-]*"' | tr -d '"' | grep -qx "$1"
 }
 
 cmd_loop() {
@@ -495,6 +549,8 @@ cmd_loop() {
   case "$id" in '' | *[!a-z0-9-]*) usage_die "a loop id is lower-case letters, digits and hyphens" ;; esac
   case "$LOOP_HEVC_CRF" in '' | *[!0-9]*) usage_die "LOOP_HEVC_CRF takes a whole number" ;; esac
   case "$LOOP_H264_CRF" in '' | *[!0-9]*) usage_die "LOOP_H264_CRF takes a whole number" ;; esac
+  case "$LOOP_HEVC_BUDGET$LOOP_H264_BUDGET$LOOP_H264_HARD" in '' | *[!0-9]*) usage_die "the LOOP_*_BUDGET and LOOP_H264_HARD values are whole bytes" ;; esac
+  [ "$LOOP_HEVC_BUDGET" -le 900000 ] && [ "$LOOP_H264_HARD" -le 1500000 ] || usage_die "a loop's budget can't pass verify.mjs's ceilings (0.9 MB HEVC, 1.5 MB H.264)"
   known_loop "$id" || note "warning: '$id' is not a LoopId in src/lib/media.ts, so the page won't show it"
   master "$master" "the loop master"
   [ -z "$phone" ] || master "$phone" "the phone master"
@@ -508,9 +564,9 @@ cmd_loop() {
     [ "$name" = "loop-$id-phone" ] && [ "${V_W}x${V_H}" != 1080x1350 ] && note "note: the phone cut is ${V_W}x${V_H}; the 4:5 cuts render at 1080x1350"
     for codec in hevc h264; do
       if [ "$codec" = hevc ]; then
-        fit "$name.hevc" hevc "$LOOP_HEVC_CRF" 900000 900000 "$MAX_RAISE" 0 "$OUT/$name.hevc.mp4" "$src" "" "" "$frames" && st=ok || st=FAIL
+        fit "$name.hevc" hevc "$LOOP_HEVC_CRF" "$LOOP_HEVC_BUDGET" "$LOOP_HEVC_BUDGET" "$MAX_RAISE" 0 "$OUT/$name.hevc.mp4" "$src" "" "" "$frames" && st=ok || st=FAIL
       else
-        fit "$name.h264" h264 "$LOOP_H264_CRF" 1200000 1500000 "$MAX_RAISE" 0 "$OUT/$name.h264.mp4" "$src" "" "" "$frames" && st=ok || st=FAIL
+        fit "$name.h264" h264 "$LOOP_H264_CRF" "$LOOP_H264_BUDGET" "$LOOP_H264_HARD" "$MAX_RAISE" 0 "$OUT/$name.h264.mp4" "$src" "" "" "$frames" && st=ok || st=FAIL
       fi
       if [ "$st" = ok ]; then
         report "$OUT/$name.$codec.mp4" ok
@@ -520,36 +576,6 @@ cmd_loop() {
         failed=1
       fi
     done
-  done
-  run_verify || failed=1
-  return "$failed"
-}
-
-cmd_teaser() {
-  parse_common "$@"
-  [ "$(npos)" = 1 ] || usage_die "teaser <master.mp4>"
-  local master vf="" failed=0 codec st
-  master="$(pos 1)"
-  master "$master" "the teaser master"
-  awk -v w="$V_W" -v h="$V_H" 'BEGIN { r = w / h - 16 / 9; if (r < 0) r = -r; exit (r < 0.01) ? 0 : 1 }' || die "the teaser master is ${V_W}x${V_H}, not 16:9 (FilmTeaser renders 1280x720)"
-  [ "$V_W" -ge 1280 ] || die "the teaser master is ${V_W}x${V_H}, smaller than 1280x720"
-  [ "$V_W" = 1280 ] || vf="scale=1280:-2:flags=lanczos"
-  local frames="$V_FRAMES"
-  enter_heavy encode-teaser
-  mkdir -p "$OUT"
-  for codec in hevc h264; do
-    if [ "$codec" = hevc ]; then
-      fit teaser-720.hevc hevc 26 1500000 1500000 "$MAX_RAISE" 0 "$OUT/teaser-720.hevc.mp4" "$master" "$vf" "" "$frames" && st=ok || st=FAIL
-    else
-      fit teaser-720.h264 h264 21 1500000 1500000 "$MAX_RAISE" 0 "$OUT/teaser-720.h264.mp4" "$master" "$vf" "" "$frames" && st=ok || st=FAIL
-    fi
-    if [ "$st" = ok ]; then
-      report "$OUT/teaser-720.$codec.mp4" ok
-      add_output "$OUT/teaser-720.$codec.mp4"
-    else
-      report "$REPO/.work/tmp/encode-rejected/teaser-720.$codec.mp4" FAIL
-      failed=1
-    fi
   done
   run_verify || failed=1
   return "$failed"
@@ -578,11 +604,13 @@ command="$1"
 shift
 case "$command" in
 -h | --help | help) usage ;;
+mix) cmd_mix "$@" ;;
 film) cmd_film "$@" ;;
-square) cmd_square "$@" ;;
+phone) cmd_phone "$@" ;;
+still) cmd_still "$@" ;;
 social) cmd_social "$@" ;;
 loop) cmd_loop "$@" ;;
-teaser) cmd_teaser "$@" ;;
 poster) cmd_poster "$@" ;;
-*) usage_die "unknown command '$command' (film, square, social, loop, teaser, poster)" ;;
+square | teaser) usage_die "'$command' was the 1.x trailer's (retired on 2 Nov 2026; git history keeps it)" ;;
+*) usage_die "unknown command '$command' (mix, film, phone, still, social, loop, poster)" ;;
 esac

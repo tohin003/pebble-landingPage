@@ -3,15 +3,14 @@
 // usage (repo root, after `source scripts/env.sh`):
 //   node tools/encode/verify.mjs [<file or folder> ...] [--json] [--no-public] [--no-analysis] [--no-loudness] [--no-seams]
 //
-// What it reads: every file under the versioned media folders public/media/v1, v2, ... (unless --no-public), plus the
-// paths given (for example the social masters in "~/Desktop/Pebble launch film/"). The 1.x trailer's files are in v2
-// (its videos, the 1:1 cut for phones, its text tracks and its poster), the 1.x loops and the wallpaper in v1, and the
-// Pebble 2.0 launch's film (with its 4:5 cut film-phone and its poster) and loops in v3 (src/lib/media.ts MEDIA,
-// FILM_MEDIA and LAUNCH_MEDIA; a 2.0 loop's id is a LaunchLoopId); a file in a folder the page doesn't read it from is
-// a stray (a warning): the retired teaser T0 and the first film's poster among them (OVERRIDES §46). A file's role
-// comes from its name:
-//   film-{1080,720}.{hevc,h264}.mp4   the website film       film-square.{hevc,h264}.mp4  the trailer's 1:1 cut (v2)
-//   film-phone.{hevc,h264}.mp4        the launch film's 4:5 cut for phones (v3), 1080x1350
+// What it reads: every file under the versioned media folders public/media/v1, v3, ... (unless --no-public), plus the
+// paths given (for example the director's delivered files in video/out/launch/). The 1.x loops and the wallpaper are
+// in v1, and the Pebble 2.0 launch film (with its 4:5 cut film-phone, its tracks and two posters) and loops in v3
+// (src/lib/media.ts MEDIA and LAUNCH_MEDIA; a 2.0 loop's id is a LaunchLoopId). The 1.x trailer's v2 is retired
+// (2 Nov 2026): a file left there, or in any folder the page doesn't read it from, is a stray (a warning), as are the
+// retired teaser T0 and the first film's poster (OVERRIDES §46). A file's role comes from its name:
+//   film-{1080,720}.{hevc,h264}.mp4   the website film (16:9)     film-square.{hevc,h264}.mp4  the retired trailer's 1:1 cut
+//   film-phone.{hevc,h264}.mp4        the film's 4:5 cut for phones, 1080x1350
 //   loop-<id>[-phone].{hevc,h264}.mp4 a feature loop         <name>.poster.{avif,webp}    a poster
 //   teaser-720.{hevc,h264}.mp4        the retired teaser
 //   film.en.vtt, film.chapters.vtt, film.descriptions.en.vtt, *.vtt, *.srt                text tracks
@@ -22,12 +21,14 @@
 //   page's <source type> (src/lib/media.ts: hvc1.1.6.L120.90 / avc1.640028; Safari needs the hvc1 sample entry), the
 //   peak bitrate over any second under that level's ceiling (12 Mb/s HEVC Main 4.0, 25 Mb/s H.264 High 4.0; a social
 //   file: its own level), yuv420p, BT.709 primaries/transfer/matrix and limited range (stream and colr box), 30 fps
-//   (D7), square pixels, frame count and duration (the film and its phone cut: docs/film-captions.json total_frames),
+//   (D7), square pixels, frame count and duration (the film and its phone cut: src/content/chapters.ts
+//   FILM_DURATION_SECONDS at 30 fps, 2,982 frames),
 //   moov before mdat.
 // - Audio: the film has AAC-LC 48 kHz stereo at about 160 kb/s and lasts as long as the picture; loops and the teaser
 //   have no audio track (D11); social masters have AAC-LC 48 kHz stereo at about 192 kb/s (OVERRIDES §4).
-// - Size: every file under public/ <= 45 MB and public/ <= 90 MB (D16); the film set, its 1:1 cut included, <= 45 MB
-//   (OVERRIDES §8, §46, critic C6; per-file 12 / 18 / 6 / 9 MB, and 6 / 9 MB for the 1:1 or 4:5 cut, are warnings); teaser
+// - Size: every file under public/ <= 45 MB and public/ <= 90 MB (D16); the film set, its 4:5 cut included, <= 45 MB
+//   (OVERRIDES §8, critic C6; the launch film's per-file shares, LIMITS.film, are warnings: tools/encode/README.md
+//   "The launch film's budget"); teaser
 //   <= 1.5 MB; loop HEVC <= 0.9 MB; loop H.264 <= 1.5 MB (over
 //   1.2 MB is a warning); poster AVIF <= 60 KB, WebP <= 90 KB (MASTER_PLAN §5.5); social <= 512 MB and 3-140 s (X,
 //   LinkedIn; OVERRIDES §14).
@@ -38,9 +39,8 @@
 //   the median capped at 45 dB: in an encode, static holds give identical frames (infinite PSNR) and the seam's two
 //   frames carry different coding noise, so an uncapped rule would fail every loop with a still tail.
 // - Text tracks: WebVTT/SRT syntax, then the caption rules (tools/captions/cues.mjs: order, no overlaps, <= 2 lines of
-//   <= 42 characters, >= 1.2 s, <= 3.5 words/s); film.*.vtt must equal what tools/captions/build.mjs makes now, and so
-//   must a full-film .srt and the narrated twin's *-narrated.srt (build.mjs --narrated-srt, from
-//   docs/film-narration.json).
+//   <= 42 characters, >= 1.2 s, <= 3.5 words/s with the film's own-pace exception, FILM_OWN_PACE); film.*.vtt must
+//   equal what tools/captions/build.mjs makes now from the film's VTT and chapters.ts, and so must a full-film .srt.
 // - Posters: AVIF/WebP size and pixel size, the same aspect as their video, both formats present.
 //
 // The loudness and seam passes decode every film and loop, so they run as ONE scripts/heavy.sh job: started outside a
@@ -52,8 +52,8 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { fitsPage, imageInfo, mp4Info, pageCodecs } from "./mp4.mjs";
-import { filmTracks, formatTime, parseSrt, parseVtt, validateCues } from "../captions/cues.mjs";
-import { filmNarration, filmTrackTexts } from "../captions/build.mjs";
+import { FILM_OWN_PACE, filmSpec, filmTracks, formatTime, parseSrt, parseVtt, validateCues } from "../captions/cues.mjs";
+import { filmTrackTexts } from "../captions/build.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "../..");
@@ -66,7 +66,10 @@ export const LIMITS = Object.freeze({
   file: 45 * MB,
   public: 90 * MB,
   filmSet: 45 * MB,
-  film: { "1080.hevc": 12 * MB, "1080.h264": 18 * MB, "720.hevc": 6 * MB, "720.h264": 9 * MB, "square.hevc": 6 * MB, "square.h264": 9 * MB, "phone.hevc": 6 * MB, "phone.h264": 9 * MB },
+  // the Pebble 2.0 launch film's shares (99.4 s, with grain): tools/encode/README.md "The launch film's budget". The
+  // plan encodes 1080 HEVC, 720 H.264 and the 4:5 cut in both (42 MB); 1080 H.264 and 720 HEVC keep C6's shares, for
+  // a set that drops a planned file to fit one of them.
+  film: { "1080.hevc": 13 * MB, "720.h264": 9.5 * MB, "phone.hevc": 8.5 * MB, "phone.h264": 11 * MB, "1080.h264": 18 * MB, "720.hevc": 6 * MB, "square.hevc": 6 * MB, "square.h264": 9 * MB },
   teaser: 1.5 * MB,
   loopHevc: 0.9 * MB,
   loopH264Target: 1.2 * MB,
@@ -82,7 +85,7 @@ export const LOUDNESS = Object.freeze({
 });
 export const SEAM = Object.freeze({ width: 400, capDb: 45, marginDb: 3 });
 const FRAMES = { film: { "1080": [1920, 1080], "720": [1280, 720], square: [1080, 1080], phone: [1080, 1350] }, teaser: [1280, 720] };
-const LOOP_FRAMES = ["1600x1000", "1080x1080", "1080x1350"];
+const LOOP_FRAMES = ["1600x1000", "1080x1080", "1080x1350", "1600x900", "1200x800"];
 const SOCIAL_FRAMES = ["1920x1080", "1080x1080", "1080x1920"];
 const POSTER_FRAMES = { film: "1920x1080", "film-phone": "1080x1350", teaser: "1280x720" };
 
@@ -146,27 +149,23 @@ function classify(file) {
   if (name === "film.chapters.vtt") return { kind: "vtt", track: "chapters", film: true };
   if (name === "film.descriptions.en.vtt") return { kind: "vtt", track: "descriptions", film: true };
   if (/\.vtt$/i.test(name)) return { kind: "vtt", track: "captions", film: false };
-  if (/-narrated\.srt$/i.test(name)) return { kind: "srt", track: "captions", narrated: true };
   if (/\.srt$/i.test(name)) return { kind: "srt", track: "captions" };
   if (/\.mp4$/i.test(name)) return { kind: "social" };
   if (/\.(avif|webp|png|jpe?g|gif|svg)$/i.test(name)) return { kind: "image" };
   return { kind: "other" };
 }
 
-/** The 1.x trailer's own files: the ones src/lib/media.ts reads from FILM_MEDIA (public/media/v2): its videos, the 1:1
- *  cut, the text tracks and the poster. */
-const FILM_FILE = /^(film-(1080|720|square)\.(hevc|h264)\.mp4|film\.(en|chapters|descriptions\.en)\.vtt|film\.poster\.(avif|webp))$/;
-/** The launch film's files, read from LAUNCH_MEDIA (public/media/v3): its videos, the 4:5 cut, the tracks and the two
- *  posters (no 1:1 cut: the 4:5 one replaces it). */
+/** The film's files, read from LAUNCH_MEDIA (public/media/v3): its videos, the 4:5 cut, the tracks and the two posters
+ *  (no 1:1 cut: the 1.x trailer's film-square is retired with it). */
 const LAUNCH_FILM_FILE = /^(film-(1080|720|phone)\.(hevc|h264)\.mp4|film\.(en|chapters|descriptions\.en)\.vtt|film(-phone)?\.poster\.(avif|webp))$/;
 
 /**
- * The folders src/lib/media.ts reads from, as public paths: MEDIA for most files, FILM_MEDIA for the film's videos and
- * text tracks. An older media.ts without FILM_MEDIA reads the film from MEDIA too.
+ * The folders src/lib/media.ts reads from, as public paths: MEDIA for the 1.x loops and the wallpaper, LAUNCH_MEDIA for
+ * the film and the 2.0 loops. (FILM_MEDIA, the retired trailer's v2, is read only from an older media.ts.)
  */
 export function mediaBases(text) {
   const media = /const MEDIA\s*=\s*"([^"]+)"/.exec(text)?.[1] ?? "/media/v1";
-  const film = /const FILM_MEDIA\s*=\s*"([^"]+)"/.exec(text)?.[1] ?? media;
+  const film = /const FILM_MEDIA\s*=\s*"([^"]+)"/.exec(text)?.[1] ?? null;
   const launch = /const LAUNCH_MEDIA\s*=\s*"([^"]+)"/.exec(text)?.[1] ?? null;
   return { media, film, launch };
 }
@@ -196,8 +195,9 @@ function mediaFolderOf(file) {
 }
 
 /**
- * Names the page can use from the folder a file is in (src/lib/media.ts: the film's videos and tracks from FILM_MEDIA,
- * the rest from MEDIA), so a stray file in a versioned media folder is reported.
+ * Names the page can use from the folder a file is in (src/lib/media.ts: the film and the 2.0 loops from LAUNCH_MEDIA,
+ * the 1.x loops and the wallpaper from MEDIA), so a stray file in a versioned media folder is reported: anything in the
+ * retired trailer's v2, a film file in v1, the teaser T0 and the first film's poster (OVERRIDES §46).
  */
 export function pageKnows(name, loopIds, folder, bases) {
   const loop = /^loop-([a-z0-9-]+?)(-phone)?\.(hevc\.mp4|h264\.mp4|poster\.avif|poster\.webp)$/.exec(name);
@@ -206,15 +206,11 @@ export function pageKnows(name, loopIds, folder, bases) {
     if (loop) return loopIds.launch.size === 0 || loopIds.launch.has(loop[1]);
     return LAUNCH_FILM_FILE.test(name);
   }
-  if (folder !== (FILM_FILE.test(name) ? bases.film : bases.media)) return false;
+  // an older media.ts that still reads a film folder of its own (the trailer's v2)
+  if (bases.film && folder === bases.film && bases.film !== bases.media) return /^film(-(1080|720|square)\.(hevc|h264)\.mp4|\.(en|chapters|descriptions\.en)\.vtt|\.poster\.(avif|webp))$/.test(name);
+  if (folder !== bases.media) return false;
   if (loop) return loopIds.size === 0 || loopIds.has(loop[1]);
-  // the teaser T0 and the first film's poster are retired (OVERRIDES §46): a copy left anywhere is a stray
-  return (
-    /^film-(1080|720|square)\.(hevc|h264)\.mp4$/.test(name) ||
-    /^film\.poster\.(avif|webp)$/.test(name) ||
-    /^film\.(en|chapters|descriptions\.en)\.vtt$/.test(name) ||
-    /^wallpaper-(light|dark)-(1600|3200)\.(avif|webp)$/.test(name)
-  );
+  return /^wallpaper-(light|dark)-(1600|3200)\.(avif|webp)$/.test(name);
 }
 
 /** The 1.x LoopIds, with the 2.0 LaunchLoopIds as `.launch` (an empty set from an older media.ts). */
@@ -432,7 +428,7 @@ function checkVideo(rec, cls, ctx) {
   if (cls.kind === "film") {
     const [w, h] = FRAMES.film[cls.res];
     if (v.width !== w || v.height !== h) fail(`${dims}, film-${cls.res} is ${w}x${h}`);
-    if (ctx.totalFrames && frames !== ctx.totalFrames) fail(`${frames} frames; docs/film-captions.json times the captions for ${ctx.totalFrames}`);
+    if (ctx.totalFrames && frames !== ctx.totalFrames) fail(`${frames} frames; the film is ${ctx.totalFrames} (src/content/chapters.ts FILM_DURATION_SECONDS at 30 fps), and its tracks are timed for that`);
     const target = LIMITS.film[`${cls.res}.${cls.codec}`];
     rec.budget = target;
     if (size > target) warn(`${fmtSize(size)} is over its ${fmtSize(target)} share of the 45 MB film set (critic C6)`);
@@ -555,8 +551,9 @@ function checkTrack(rec, cls, ctx) {
   const text = fs.readFileSync(rec.file, "utf8");
   const parsed = cls.kind === "srt" ? parseSrt(text) : parseVtt(text);
   for (const e of parsed.errors) rec.fail(e);
-  const durationMs = cls.film ? ctx.tracks?.durationMs ?? null : null;
-  const result = validateCues(parsed.cues, { kind: cls.track, durationMs });
+  const durationMs = cls.film ? ctx.spec?.durationMs ?? null : null;
+  // every caption track checked here is the launch film's: its own-pace exception applies (cues.mjs FILM_OWN_PACE)
+  const result = validateCues(parsed.cues, { kind: cls.track, durationMs, ownPace: cls.track === "captions" ? FILM_OWN_PACE : null });
   for (const e of result.errors) rec.fail(e);
   if (cls.track === "descriptions" && result.warnings.length) {
     rec.warn(`${result.warnings.length} of ${parsed.cues.length} descriptions need more speech time than their cue lasts; the film player holds the film until each is read (extended description)`);
@@ -568,11 +565,8 @@ function checkTrack(rec, cls, ctx) {
   if (!ctx.tracks) return;
   const texts = ctx.texts;
   const name = path.basename(rec.file);
-  if (cls.film && texts[name] !== undefined && texts[name] !== text) rec.fail("stale: differs from what tools/captions/build.mjs makes from docs/film-captions.json and chapters.ts; rebuild it");
-  if (cls.narrated) {
-    if (texts.srtNarrated === undefined) rec.warn("not compared: no narrated captions to compare it with (docs/film-narration.json is missing or does not fit the captions)");
-    else if (text.replace(/\r\n?/g, "\n") !== texts.srtNarrated) rec.fail("stale: the narrated twin's SRT differs from what tools/captions/build.mjs --narrated-srt makes now; rebuild it");
-  } else if (cls.kind === "srt" && parsed.cues.length === ctx.tracks.captions.length && text.replace(/\r\n?/g, "\n") !== texts.srt) {
+  if (cls.film && texts[name] !== undefined && texts[name] !== text) rec.fail("stale: differs from what tools/captions/build.mjs makes from the film's VTT and chapters.ts; rebuild it");
+  if (cls.kind === "srt" && parsed.cues.length === ctx.tracks.captions.length && text.replace(/\r\n?/g, "\n") !== texts.srt) {
     rec.fail("stale: the full-film SRT differs from what tools/captions/build.mjs makes now; rebuild it");
   }
 }
@@ -651,24 +645,24 @@ async function main() {
 
   const loopIds = loopIdsFromMedia();
   const bases = mediaBasesFromMedia();
+  // the film's length from chapters.ts, always; its reference tracks need the film's own VTT too (gitignored: a fresh
+  // clone has none until `bun video/src/launch/master/captions.ts --write`), so without it tracks get syntax and rules
+  let spec = null;
   let tracks = null;
   let texts = {};
   try {
+    spec = await filmSpec();
+  } catch (error) {
+    console.error(`verify.mjs: cannot read the film's length (${error.message}); the film's frame count is not checked`);
+  }
+  try {
     tracks = await filmTracks();
-    let narrated = null;
-    try {
-      narrated = filmNarration(tracks);
-      if (narrated?.errors.length) throw new Error(narrated.errors.join("; "));
-    } catch (error) {
-      narrated = null;
-      console.error(`verify.mjs: cannot build the narrated twin's captions (${error.message}); a *-narrated.srt is checked for syntax and rules only`);
-    }
-    texts = filmTrackTexts(tracks, narrated);
+    texts = filmTrackTexts(tracks);
   } catch (error) {
     console.error(`verify.mjs: cannot build the reference tracks (${error.message}); text tracks are checked for syntax and rules only`);
   }
   const frames = pageFramesFromMedia();
-  const ctx = { loudness: opts.loudness, seams: opts.seams, loopIds, bases, frames, tracks, texts, totalFrames: tracks?.totalFrames ?? null };
+  const ctx = { loudness: opts.loudness, seams: opts.seams, loopIds, bases, frames, spec, tracks, texts, totalFrames: spec?.totalFrames ?? null };
 
   const records = [...files].sort().map((file) => {
     const rec = { file, kind: "", size: fs.statSync(file).size, budget: null, facts: {}, fails: [], warns: [], cells: {} };
