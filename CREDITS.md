@@ -20,7 +20,27 @@ the media or the third-party work below: each keeps its own licence. The site sh
   text in `shared/pebble/bloub/LICENSE` ("Copyright (c) 2026 Jérémy Perret").
 - The site and the films use only Pebble's own poses.
 
-## Launch trailer: music
+## Pebble 2.0 launch film: music and sound effects
+
+Since 2 November 2026 the site's film is the Pebble 2.0 launch film (`public/media/v3/`).
+
+- **"Your Breath"** by Eugenio Mininni (Mixkit), edited to picture: the music of the Pebble 2.0 launch film. Mixkit Stock
+  Music Free License (https://mixkit.co/license/): no credit is required; this line is a courtesy. The edit and its
+  build record are in `.work/launch/music/MUSIC.md` (not committed) and, once the film is published,
+  `docs/media-provenance.json`.
+- Sound effects: Kenney (www.kenney.nl), "Impact Sounds" and "Interface Sounds", CC0 1.0, and sounds designed in code
+  for this project, CC0 1.0. Pebble itself makes no sounds.
+- The pebble: wherever it appears in the film and in the clips cut from it, it is drawn by Pebble's character engine
+  (above), in the app's recordings and in the film's own scenes alike. The film's end card credits it: "Pebble's
+  character engine: bloub by Jérémy Perret (MIT)".
+
+## The 1.x launch trailer (retired from the site)
+
+The site played the 1.x launch trailer until 2 November 2026, when the Pebble 2.0 launch film replaced it at the
+owner's request. Its files are in git history (`public/media/v2/`); its sources stay in the repository
+(`video/src/film/`, `tools/audio/`). No media on the site plays its score or its effects now.
+
+### Music
 
 - **"Pebble launch trailer score"**: an original score composed for the launch trailer and synthesised entirely in
   code by this repository's synthesis engine (`tools/audio/synth`; the score is `tools/audio/scores/trailer_b.py`). It
@@ -31,7 +51,7 @@ the media or the third-party work below: each keeps its own licence. The site sh
 - The earlier film's score, played on CC0 instrument samples (the Versilian Community Sample Library and VS Chamber
   Orchestra: Community Edition), is retired with that film; no media on the site plays it.
 
-## Launch trailer: sound effects
+### Sound effects
 
 - Original sound effects synthesised for this project: the whooshes, the impacts, the sounds on the interface's
   events, the rim clicks (`tools/audio/sfx_synth.py`) and the suck-backs (`tools/audio/synth`). CC0 1.0. They are the
@@ -41,16 +61,6 @@ the media or the third-party work below: each keeps its own licence. The site sh
   filtered and tuned for the trailer (`tools/audio/sfx_foley.py`). CC0 1.0. The source files and their hashes are
   listed in `docs/media-provenance.json`.
 - Which take plays where is the final cue list, `tools/audio/cues.json` (exported from `video/src/film/timeline.ts`).
-
-## Pebble 2.0 launch film: music and sound effects
-
-- **"Your Breath"** by Eugenio Mininni (Mixkit), edited to picture: the music of the Pebble 2.0 launch film. Mixkit Stock
-  Music Free License (https://mixkit.co/license/): no credit is required; this line is a courtesy. The edit and its
-  build record are in `.work/launch/music/MUSIC.md` (not committed) and, once the film is published,
-  `docs/media-provenance.json`.
-- Sound effects: Kenney (www.kenney.nl), "Impact Sounds" and "Interface Sounds", CC0 1.0, and sounds designed in code
-  for this project, CC0 1.0. Pebble itself makes no sounds.
-- Until the launch film is published on the site, the site's film is the launch trailer above.
 
 ## Fonts
 
