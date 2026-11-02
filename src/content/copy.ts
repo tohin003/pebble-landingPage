@@ -1484,62 +1484,59 @@ export const media = {
     },
   },
   /**
-   * The Pebble 2.0 loops in /media/v3 (media.ts LaunchLoopId; SITE_AUDIT §4.2). `label` says in words everything the
-   * clip shows (its text alternative); `source` is the caption's second sentence, what it was recorded from. Written
-   * from the audit's plan of each clip before the clips exist, so each CLAIMS row (C-LOOP2-*) is to be checked against
-   * the delivered file, and the words changed here, before the file is published. Nothing shows until the file exists.
+   * The Pebble 2.0 loops in /media/v3 (media.ts LaunchLoopId; SITE_AUDIT §4.2): cycles of the launch film's own frames
+   * (tools/encode/launch-loops.json). `label` says in words everything the clip shows (its text alternative), the
+   * film's lines word for word as chapters.ts quotes them; `source` is the caption's second sentence, what the
+   * picture comes from (C-FILM2-44). Checked against every frame of the delivered clips (2 Nov 2026, site phase 2,
+   * phase B); CLAIMS C-LOOP2-*. Nothing shows until the file exists.
    */
   launchLoops: {
     desk: {
       name: "desktop",
       label:
-        "The pebble stays on screen as the desktop slides to another Space. A click on it opens the quick chat, where a question is typed and Pebble's reply appears.",
+        "On a Mac's desktop, the pebble sits beside a Finder window. “It lives on your Mac.” The desktop slides to another Space, a pottery studio's open-day page, and the pebble stays. “On every Space.” A click on the pebble opens the quick chat, and “What can you do now?” is typed. “Click. Ask.” Then the picture closes in on the pebble and pulls back to the desktop.",
       source: "Recorded from Pebble 2.0.0.",
     },
-    "mac-apps": {
-      name: "app window",
-      label: "Pebble uses Calculator, an app window it was allowed to use: it presses the keys one by one, and the result appears.",
-      source: "Recorded from Pebble 2.0.0.",
-    },
-    "mac-actions": {
-      name: "app action",
-      label: "An app-action card asks to use Calendar. Do it is pressed, and the new event appears in Calendar.",
-      source: "Recorded from Pebble 2.0.0.",
-    },
-    "mac-web": {
-      name: "website",
-      label: "A card asks to use youtube.com in Pebble's own tab. Allow is pressed, and the tab shows “Pebble is working in this tab”, with Stop.",
+    mac: {
+      name: "Across your Mac",
+      label:
+        "“Now it can use your Mac.” “Your apps.” In Calculator, Pebble keys in 48 × 12.5, and it reads 600. “Your calendar.” Calendar shows the new event Glaze order, at 09:00. “Your browser.” In Chrome, Pebble's pill on the tab reads “Pebble is working in this tab”, with Stop. “The app windows and websites you allow.” Pebble's card asks once before it first works in one app window, says it stops at sign-ins, codes and checks and hands them to you, and offers Don't allow and Allow.",
       source: "Recorded from Pebble 2.0.0.",
     },
     guard: {
       name: "AgentGuard",
-      label: "A reply held with “Pebble's change isn't verified yet.” The tests run, and the result reads Verified, with the tests that passed on the current files.",
-      source: "Recorded from Pebble 2.0.1.",
+      label:
+        "“Done means checked.” In Pebble, a task is held: “Pebble's change isn't verified yet.” The pointer presses Run the tests, a card reads “1 action needs your review. Nothing changes until you approve.”, and then the request reads “Verified · pytest 42 passed on current files”. “AgentGuard.” “Evidence before ‘done’.” Three ticked lines follow: tests the host ran, not the model’s word; files you asked to keep, kept; output matched to its file, byte for byte.",
+      source: "Pebble 2.0.1's own interface, run with sample data.",
     },
     workshop: {
       name: "Workshop",
-      label: "Pebble makes a small tool for a request, a blind check tests it, and a card asks whether to keep it, with Discard and Keep.",
-      source: "Recorded from Pebble 2.0.0.",
+      label:
+        "“It builds small tools for itself.” A request asks Pebble for a small tool, kiln_ramp_time, to time a kiln firing, and Pebble runs a script to create, test, keep and use it. In a drawn diagram, the tool passes its own three tests in a sandbox but only 2 of 5 in a blind check written from its description alone, so the pebble asks. “When the check disagrees, it asks you.” Pebble's card reads “Pebble asks because the independent check disagreed (2 of 5 tests passed).”, with View code, Discard and Keep.",
+      source: "Recorded from Pebble 2.0.0; the diagram is drawn.",
     },
     memory: {
       name: "memory",
-      label: "Pebble's Settings › Memory. The pointer chooses Forget on a memory, and the record disappears.",
-      source: "Recorded from Pebble 2.0.1.",
+      label:
+        "“It remembers what matters.” A table of Pebble's six kinds of memory: Profile, your preferences; Semantic, facts and knowledge; Procedural, how things are done here; Episodic, past tasks; Temporal, things that expire; Working, the current task. It opens into Settings › Memory, where each record says which file Pebble learned it from. “All visible.” The pointer chooses Forget on “Wheel taster: 10.00”, and “Forget anything.” appears as the record goes.",
+      source: "Pebble 2.0.1's own interface, run with sample data.",
     },
     "long-tasks": {
       name: "long tasks",
-      label: "Diagram. A long task's older tool results fold into short sealed stubs while the newest stay whole, then one stub opens to its full result, returned exactly.",
+      label:
+        "Diagram. A long task's tool results stack up under a dashed budget line: read invoice.py, read dates.py, searched the web, edited invoice.py, ran the tests, read the test log. When the newest reaches the line, the three oldest are sealed into short stubs while the newest stay whole, then one stub, read dates.py, opens again, unchanged.",
       source: "A diagram, not Pebble's interface.",
     },
     remote: {
       name: "Pebble Remote",
-      label: "Pebble Remote on an iPhone, connected to Pebble on a Mac: a conversation opens, and a message is sent from the phone.",
-      source: "Recorded from Pebble Remote, built from its published source.",
+      label:
+        "“Pebble, in your pocket.” Pebble Remote on an iPhone shows Pebble at work on a Mac, and one item that needs review, Change slots.py. “Pebble Remote for iPhone.” Pebble's card explains the edit, with Don't Allow and Apply Edit. Apply Edit is tapped, and the Face ID prompt appears. “Approve with Face ID.” The edit reads Done, with Undo This Edit, while Pebble works on, and “Open source. Build it with Xcode.” appears under the title.",
+      source: "Recorded from Pebble Remote, built from its published source, in the iOS Simulator against a stand-in Mac.",
     },
     stealth: {
       name: "Stealth Lockdown",
-      label: "Stealth Lockdown is turned on: the menu-bar icon changes shape, and Pebble's icon leaves the Dock.",
-      source: "Recorded from Pebble 2.0.0.",
+      label: `“Presenting?” In Pebble's ⌘K palette, “stealth” finds Turn Stealth Lockdown on. “Stealth Lockdown.” “${stealth.honest}” A screen recording shows Pebble's window and then the desktop without it: the window has left the recording. Then the pebble, drawn by Pebble's own code, wears the Veil.`,
+      source: "Recorded from Pebble 2.0.0; the Veil is drawn by Pebble's own code.",
     },
   } satisfies Readonly<Record<string, Readonly<{ name: string; label: string; source: string }>>>,
   loopControls: {

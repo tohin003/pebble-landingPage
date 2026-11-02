@@ -479,9 +479,11 @@ describe("describeFilm", () => {
       expect(waits[i]!).toBeLessThan(c.endTime);
     });
     expect(f.describerCalls.play).toBe(long.length);
-    // the film with its description runs about as long as its words take to read
+    // the film with its description runs about as long as its words take to read, plus the describer's 40 ms between
+    // sentences (the extended description quotes every film line, so it has about a hundred) and a second of slack
     const readingMs = cues.reduce((sum, c) => sum + Math.max((c.endTime - c.startTime) * 1000, (words(c.text) / 2.5) * 1000), 0);
+    const sentences = cues.reduce((n, c) => n + sentencesOf(c.text).length, 0);
     expect(f.wall()).toBeGreaterThan(readingMs);
-    expect(f.wall()).toBeLessThan(readingMs + 4000);
+    expect(f.wall()).toBeLessThan(readingMs + 40 * sentences + 1000);
   });
 });

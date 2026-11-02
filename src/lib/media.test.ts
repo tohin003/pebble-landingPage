@@ -137,9 +137,10 @@ describe("the film is the Pebble 2.0 launch film, from /media/v3", () => {
 });
 
 describe("the Pebble 2.0 loops in /media/v3", () => {
-  const ids = ["desk", "mac-apps", "mac-actions", "mac-web", "guard", "workshop", "memory", "long-tasks", "remote", "stealth"];
+  // #mac has one clip of the film's S03 burst (the director's phase-B answer 1), not one a tab
+  const ids = ["desk", "mac", "guard", "workshop", "memory", "long-tasks", "remote", "stealth"];
 
-  test("the director's ten ids, each read from /media/v3 only, never from a 1.x file of the same name", () => {
+  test("the director's eight ids, each read from /media/v3 only, never from a 1.x file of the same name", () => {
     const { launchLoops, loop } = manifest(at("v1", V1_REST));
     expect(Object.keys(launchLoops)).toEqual(ids);
     expect(launchLoops.memory!.available).toBe(false);
@@ -154,7 +155,7 @@ describe("the Pebble 2.0 loops in /media/v3", () => {
 
   test("frames: the film's own 16:9 at 1600 × 900, Pebble Remote at 4:5, long tasks as a 3:2 crop", () => {
     const { launchLoops } = manifest([]);
-    const want: Record<string, [number, number]> = { remote: [1080, 1350], "long-tasks": [1200, 800] };
+    const want: Record<string, [number, number]> = { remote: [1080, 1350], "long-tasks": [1140, 760] };
     for (const id of ids) {
       const l = launchLoops[id]!;
       expect({ id, frame: [l.width, l.height] }).toEqual({ id, frame: want[id] ?? [1600, 900] });

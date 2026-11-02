@@ -14,8 +14,9 @@
 //   (docs/launch/CHECKPOINT.md): the long-task scene's title. The film keeps it, and so does its caption track
 //   (public/media/v3/film.en.vtt, from video/src/launch/master/captions.ts); the page's own words never name it.
 // - Descriptions are read aloud by the theatre's audio-description toggle, sentence by sentence (audioDescription.ts:
-//   at most 32 words a sentence), and shown on /film as "What you see". They quote the film's lines and describe the
-//   pictures from the master's frames; Pebble's interface text is quoted as the interface shows it.
+//   at most 32 words a sentence), and shown on /film as "What you see". Each keeps every one of its chapter's film
+//   lines, in order, and adds at most two short sentences of what a listener needs to follow the pictures (the
+//   director's answer 8 for phase B), written from the masters' frames.
 // - No imports: tools/captions/cues.mjs imports this file with Node's type stripping. The honest line and the bloub
 //   credit are therefore literals here; film.test.ts checks them against copy.ts and credits.ts.
 // - Text the copy lint would otherwise stop: the rival products' names (this file is in its named scope, as /film is)
@@ -62,7 +63,7 @@ export const chapters: readonly Chapter[] = [
     sectionIds: [],
     onScreen: ["This is Pebble.", "It’s small.", "It just went up against Claude Code and Codex.", "Same model. Same tasks."], // [C-FILM2-01] [C-FILM2-02]
     description:
-      "The small sage pebble on a dark green ground: “This is Pebble.” “It’s small.” Then “It just went up against Claude Code and Codex.”, the names in large grey type, and “Same model. Same tasks.”",
+      "The small sage pebble on a dark green ground. “This is Pebble.” “It’s small.” “It just went up against Claude Code and Codex.” “Same model. Same tasks.”",
   },
   {
     id: "title",
@@ -72,7 +73,7 @@ export const chapters: readonly Chapter[] = [
     sectionIds: [],
     onScreen: ["Pebble 2.0", "The desktop companion that does real work, and shows its evidence."], // [C-FILM2-03] [C-FILM2-04]
     description:
-      "The pebble rises over “Pebble 2.0” and the line “The desktop companion that does real work, and shows its evidence.”",
+      "The pebble rises over the name. “Pebble 2.0” “The desktop companion that does real work, and shows its evidence.”",
   },
   {
     id: "desktop",
@@ -82,7 +83,7 @@ export const chapters: readonly Chapter[] = [
     sectionIds: ["desktop"],
     onScreen: ["It lives on your Mac.", "On every Space.", "Click. Ask."], // [C-FILM2-05] [C-FILM2-06] [C-FILM2-07]
     description:
-      "The whole Mac, with Pebble’s window and the pebble: “It lives on your Mac.” The desktop slides to another Space and the pebble stays: “On every Space.” A click opens the quick chat, and “What can you do now?” is sent: “Click. Ask.”",
+      "On a Mac’s desktop, the pebble stays put as the desktop slides to another Space. “It lives on your Mac.” “On every Space.” A click on the pebble opens the quick chat. “Click. Ask.”",
   },
   {
     id: "mac",
@@ -98,7 +99,7 @@ export const chapters: readonly Chapter[] = [
       "The app windows and websites you allow.",
     ], // [C-FILM2-08] to [C-FILM2-12]
     description:
-      "“Now it can use your Mac.” In Calculator, Pebble keys in 48 × 12.5 and gets 600: “Your apps.” Calendar shows its new event, Glaze order 09:00: “Your calendar.” Chrome shows Pebble’s pill, “Pebble is working in this tab”: “Your browser.” Then Pebble’s card asking to use one app window: “The app windows and websites you allow.”",
+      "“Now it can use your Mac.” Pebble works in Calculator, Calendar and a Chrome tab. “Your apps.” “Your calendar.” “Your browser.” Then its card asks to use one app window. “The app windows and websites you allow.”",
   },
   {
     id: "agentguard",
@@ -115,7 +116,7 @@ export const chapters: readonly Chapter[] = [
       "Output matched to its file, byte for byte.",
     ], // [C-FILM2-13] to [C-FILM2-17]
     description:
-      "A held reply in Pebble: “Pebble's change isn't verified yet.” “Done means checked.” The pointer presses Run the tests, and the check reads “Verified · pytest 42 passed on current files”. Then “AgentGuard. Evidence before ‘done’.”, with three ticked lines: “Tests the host ran, not the model’s word.” “Files you asked to keep, kept.” “Output matched to its file, byte for byte.”",
+      "A reply in Pebble is held until the tests run; the pointer runs them, and the check reads Verified. “Done means checked.” “AgentGuard.” “Evidence before ‘done’.” Three ticked lines follow. “Tests the host ran, not the model’s word.” “Files you asked to keep, kept.” “Output matched to its file, byte for byte.”",
   },
   {
     id: "workshop",
@@ -125,7 +126,7 @@ export const chapters: readonly Chapter[] = [
     sectionIds: ["workshop"],
     onScreen: ["It builds small tools for itself.", "When the check disagrees, it asks you."], // [C-FILM2-18] [C-FILM2-20]
     description:
-      "“It builds small tools for itself.” A script makes the tool kiln_ramp_time, drawn as a tile: its own tests pass in a sandbox, and a blind check, written from its description alone, passes 2 of 5. The pebble: “Asks you.” Pebble’s card asks whether to keep the tool: “When the check disagrees, it asks you.”",
+      "“It builds small tools for itself.” In a drawn diagram, the tool passes its own tests but only 2 of 5 in a blind check, so Pebble’s card asks whether to keep it. “When the check disagrees, it asks you.”",
   },
   {
     id: "memory",
@@ -135,7 +136,7 @@ export const chapters: readonly Chapter[] = [
     sectionIds: ["memory"],
     onScreen: ["It remembers what matters.", "All visible.", "Forget anything."], // [C-FILM2-21] [C-FILM2-23]
     description:
-      "“It remembers what matters.” A table of Pebble’s six kinds of memory: profile, semantic, procedural, episodic, temporal and working. Semantic opens into Settings › Memory: “All visible.” The pointer chooses Forget on one record, and it goes: “Forget anything.”",
+      "“It remembers what matters.” A table of Pebble’s six kinds of memory opens into Settings › Memory. “All visible.” The pointer chooses Forget on one record, and it goes. “Forget anything.”",
   },
   {
     id: "long-tasks",
@@ -145,7 +146,7 @@ export const chapters: readonly Chapter[] = [
     sectionIds: ["more"],
     onScreen: ["Long tasks keep a smaller window.", "Older results sealed. Any one returned exactly."], // [C-FILM2-25] [C-FILM2-26]
     description:
-      "A drawn diagram: “Long tasks keep a smaller window.” Six tool results stack past a dashed line marked “context budget”. The three oldest are sealed into short stubs, and the column falls back under the line. “Older results sealed. Any one returned exactly.” One stub opens again, unchanged.",
+      "“Long tasks keep a smaller window.” In a drawn diagram, tool results stack past a line marked “context budget”, and the three oldest are sealed into short stubs. “Older results sealed. Any one returned exactly.” One stub opens again, unchanged.",
   },
   {
     id: "remote",
@@ -155,7 +156,7 @@ export const chapters: readonly Chapter[] = [
     sectionIds: ["remote"],
     onScreen: ["Pebble, in your pocket.", "Pebble Remote for iPhone.", "Approve with Face ID.", "Open source. Build it with Xcode."], // [C-FILM2-28] to [C-FILM2-31]
     description:
-      "The Pebble Remote app on an iPhone screen, in the iOS Simulator: “Pebble, in your pocket.” “Pebble Remote for iPhone.” An edit to slots.py waits for review; Apply Edit is tapped, the Face ID prompt passes, and the edit is done. “Approve with Face ID.” “Open source. Build it with Xcode.”",
+      "The Pebble Remote app on an iPhone screen, in the iOS Simulator. “Pebble, in your pocket.” “Pebble Remote for iPhone.” An edit waiting for review is approved through the Face ID prompt. “Approve with Face ID.” “Open source. Build it with Xcode.”",
   },
   {
     id: "presenting",
@@ -165,7 +166,7 @@ export const chapters: readonly Chapter[] = [
     sectionIds: ["stealth"],
     onScreen: ["Presenting?", "Stealth Lockdown.", HONEST_LINE], // [C-FILM2-32] [C-FILM2-33]
     description:
-      `Pebble’s ⌘K palette: “Presenting?” The word “stealth” is typed and Turn Stealth Lockdown on is chosen. A screen recording follows, and Pebble’s window leaves it as the setting turns on. “Stealth Lockdown.” “${HONEST_LINE}” Then the pebble, drawn by Pebble’s own code, wears the Veil in dusk blue.`,
+      `“Presenting?” In Pebble’s ⌘K palette, Stealth Lockdown is turned on, and Pebble’s window leaves a screen recording. “Stealth Lockdown.” “${HONEST_LINE}” Then the pebble, drawn by Pebble’s own code, wears the Veil.`,
   },
   {
     id: "benchmarks",
@@ -189,7 +190,7 @@ export const chapters: readonly Chapter[] = [
       "Golden set 2.0, held-out split: 85 tasks in 17 families, 3 phrasings each, 255 runs per product. One model for both products in each comparison. Pebble 1.9.29, the source of 2.0.0. Costs at public list prices. Full results, including time, safety and where Pebble trails, in the 2.0.0 release notes.",
     ], // [C-FILM2-34] to [C-FILM2-39]
     description:
-      "“So. How did it do?” Three charts follow. “Tasks done correctly.”: Pebble 92.2 % against Claude Code’s 83.5 %, both on claude-opus-5-5, and 95.3 % against Codex’s 90.6 %, both on gpt-6.1-sol. “Said ‘done’ when it wasn’t.”, where lower is the aim: 6.3 % against 13.7 %, and 3.9 % against 7.1 %. “Cost per task.”, lower again: $0.091 against $0.117, and $0.042 against $0.050. Under the charts, the method: golden set 2.0’s held-out split, 255 runs per product, one model for both products in each comparison.",
+      "“So. How did it do?” Three charts follow, the pebble between each chart’s two comparisons. “Tasks done correctly.” “vs Claude Code, both on claude-opus-5-5: Pebble 235 of 255, 92.2 %. Claude Code 213 of 255, 83.5 %.” “vs Codex, both on gpt-6.1-sol: Pebble 243 of 255, 95.3 %. Codex 231 of 255, 90.6 %.” “Said ‘done’ when it wasn’t.” “Lower is better.” “vs Claude Code, both on claude-opus-5-5: Pebble 6.3 %. Claude Code 13.7 %.” “vs Codex, both on gpt-6.1-sol: Pebble 3.9 %. Codex 7.1 %.” “Cost per task.” “Lower is better.” “vs Claude Code, both on claude-opus-5-5: Pebble $0.091. Claude Code $0.117.” “vs Codex, both on gpt-6.1-sol: Pebble $0.042. Codex $0.050.” “Golden set 2.0, held-out split: 85 tasks in 17 families, 3 phrasings each, 255 runs per product. One model for both products in each comparison. Pebble 1.9.29, the source of 2.0.0. Costs at public list prices. Full results, including time, safety and where Pebble trails, in the 2.0.0 release notes.”",
   },
   {
     id: "get",
@@ -207,7 +208,7 @@ export const chapters: readonly Chapter[] = [
       BLOUB_CREDIT,
     ], // [C-FILM2-40] to [C-FILM2-43]
     description:
-      `Back on the dark ground: “Small pebble.” “Real work.” Then “Pebble 2.0”, “Free and open source, for Macs with Apple silicon.” and github.com/tohin003/Pebble. In small type: “Shown with sample data.” and “${BLOUB_CREDIT}”.`,
+      `On the dark ground: “Small pebble.” “Real work.” Then the end card under the pebble, its last two lines in small type. “Pebble 2.0” “Free and open source, for Macs with Apple silicon.” “github.com/tohin003/Pebble” “Shown with sample data.” “${BLOUB_CREDIT}”`,
   },
 ];
 

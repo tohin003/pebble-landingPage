@@ -52,9 +52,7 @@ export type LoopId =
  */
 export type LaunchLoopId =
   | "desk"
-  | "mac-apps"
-  | "mac-actions"
-  | "mac-web"
+  | "mac"
   | "guard"
   | "workshop"
   | "memory"
@@ -64,9 +62,7 @@ export type LaunchLoopId =
 
 export const LAUNCH_LOOP_IDS: readonly LaunchLoopId[] = [
   "desk",
-  "mac-apps",
-  "mac-actions",
-  "mac-web",
+  "mac",
   "guard",
   "workshop",
   "memory",
@@ -118,13 +114,11 @@ export const LOOP_PHONE_FRAME = { width: 1080, height: 1350 } as const;
  */
 const LAUNCH_LOOP_FRAMES: Readonly<Record<LaunchLoopId, Readonly<{ width: number; height: number }>>> = {
   desk: { width: 1600, height: 900 },
-  "mac-apps": { width: 1600, height: 900 },
-  "mac-actions": { width: 1600, height: 900 },
-  "mac-web": { width: 1600, height: 900 },
+  mac: { width: 1600, height: 900 },
   guard: { width: 1600, height: 900 },
   workshop: { width: 1600, height: 900 },
   memory: { width: 1600, height: 900 },
-  "long-tasks": { width: 1200, height: 800 },
+  "long-tasks": { width: 1140, height: 760 },
   remote: { width: 1080, height: 1350 },
   stealth: { width: 1600, height: 900 },
 };

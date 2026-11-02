@@ -96,11 +96,14 @@ const BANNED = [
 
 /**
  * Exact passages that may stand inside a longer text, where the sentence-by-sentence ALLOW below can't reach them: each
- * is cut out of the text before the rules run, and everything around it is still checked. Only Stealth Lockdown's
- * honest line (Pebble 1.1.0, src/stealthVeil.ts STEALTH_HONEST; copy.ts stealth.honest; OVERRIDES §21), word for word.
+ * is cut out of the text before the rules run, and everything around it is still checked. Stealth Lockdown's honest
+ * line (Pebble 1.1.0, src/stealthVeil.ts STEALTH_HONEST; copy.ts stealth.honest; OVERRIDES §21), word for word; and the
+ * Pebble 2.0 launch film's reading aid under S10's charts, which the /film transcript's description quotes among the
+ * film's other lines (src/content/chapters.ts `benchmarks`; C-FILM2-38, C-FILM3-10): how to read the bars, not a claim.
  */
 const ALLOW_PASSAGES = [
   "Hidden from screen capture and screen sharing, not from a camera, a capture card or a process list. Exams and interviews that forbid assistants still forbid it.",
+  "Lower is better.",
 ];
 
 // American spelling → British (MASTER_PLAN §7.2: British spelling; §9.3: licence, colour, recognise …)
@@ -170,9 +173,6 @@ const ALLOW = new Set([
   "Protection comes from elsewhere: the permission mode you pick, approvals that happen only in Pebble’s main window, and macOS’s sandbox, which limits commands and tests but is not a promise against every attack.",
   // Stealth Lockdown's honest line (OVERRIDES §21; also an ALLOW_PASSAGES entry, for when it sits inside a longer text)
   ...ALLOW_PASSAGES,
-  // the Pebble 2.0 launch film's reading aid under S10's charts, quoted on its own line in the /film transcript
-  // (src/content/chapters.ts `benchmarks`); a note on how to read the bars, not a claim about Pebble (C-FILM2-38)
-  "Lower is better.",
 ]);
 // Proper names and fixed terms that contain a flagged word
 const ALLOW_PATTERNS = [
