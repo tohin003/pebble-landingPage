@@ -5,19 +5,19 @@
 // 0.0  RS11-02: the match from S01's sage. The screen starts scaled up about the real companion pebble, centred and
 //      sharp (take px at 1.8× at most: REVIEW-1 S4), and settles to the whole Mac at 1.0×: the menu bar (its right end,
 //      the clock, masked), Pebble's window, Pebble's own folder in Finder, the Dock. "It lives on your Mac." (≥ 2 s).
-// 2.9  The Spaces swipe (REVIEW-4 S-1), on its first frame: one framing from the pull-back to the end of the shot, the
-//      whole screen in the same window at the same scale (the same slow drift about the pebble's spot). Finder's Space
-//      (shot A's own frame) leaves to the left, the black gap between two Spaces crosses, and Chrome's Space (RS1-03)
-//      arrives, on RS1-03's own measured slide played at 0.6×, with a motion blur of the move's own length (a 180°
-//      shutter, 55 px at most). The pebble does what it does in the take: it hides as the swipe starts and rides in
-//      with the new Space to the same spot. "On every Space." lands on the swipe's first frame.
+// 3.0  RS1-03, cut on the beat in the same framing (the director's S-1 ruling): the whole screen in the same window at
+//      the same scale and drift, so the pebble stays on its spot across the cut (2750, 1621 → 2752, 1613), now on the
+//      full-screen poster's Space, for 8 frames. "On every Space." lands on the cut. Then the take's own f237 (the
+//      pebble gone, the poster's Space starting to slide) as the first frame of REVIEW-4's whip into Chrome's Space:
+//      8 frames of smear, the cut between the two real frames inside it, Chrome's Space sharp with the pebble on the
+//      same spot from 3.533; then the take runs on.
 // 4.5  RS15-01 (cut on the downbeat): close on the pebble; the pointer, the click, the quick chat opens; a push onto
 //      its input as "What can you do now?" is typed, held whole ≥ 1.0 s, sent (Return, "Sending"). "Click. Ask."
 //      The scene ends on the send with the out half of a whip; S03 opens with the in half and its answer.
 //
-// Every frame inside the screen is a real frame of a take (time maps choose frames; nothing is drawn on Pebble's UI
-// except masks over hazards).
-import { useId } from "react";
+// Every frame inside the screen is a real frame of a take (time maps choose frames; the whip moves and blurs two real
+// frames). Nothing is drawn on Pebble's UI except masks over hazards, and nothing of Pebble's is ever painted out.
+import { useId, type CSSProperties } from "react";
 import { AbsoluteFill, Sequence } from "remotion";
 import type { Box } from "../../camera";
 import { FloatingWindow } from "../../components/FloatingWindow";
@@ -30,7 +30,7 @@ import { useLayout, type Layout } from "../../layout";
 import { fromRamps, realTime, type TimeMap } from "../../timeMap";
 import { EASE } from "../../tokens";
 import type { SceneProps } from "../types";
-import { DesktopGround, EdgeWhip, INK, lerp, MaskedZoom, R, ramp, sfxAt, sfxSrc, useSceneTime, ZoomAbout, type Mask, type SfxNote } from "./kit";
+import { clamp01, DesktopGround, EdgeWhip, INK, lerp, MaskedZoom, R, ramp, sfxAt, sfxSrc, useSceneTime, ZoomAbout, type Mask, type SfxNote } from "./kit";
 
 export const S02_NOMINAL = 6.5;
 
@@ -40,12 +40,12 @@ const B = TAKES["RS1-03"];
 const C = TAKES["RS15-01"];
 
 /**
- * shot starts, scene seconds at nominal (the master's beats fall on 13.551 + 0.5k: 2.0 a beat, 4.5 a downbeat); see
- * B_TIME for where the slide sits between them (the flash scan).
+ * shot starts, scene seconds at nominal (the master's beats fall on 13.551 + 0.5k: 2.0 a beat, 4.5 a downbeat): the cut
+ * to the poster's Space on the beat at 3.0 (film 16.567), the cut to click and ask on the downbeat at 4.5
  */
-const AT = { b: 2.9, c: 4.5 } as const;
-/** the first caption leaves just before the swipe (it sits under the screen, never over a picture) */
-const CAPTION_A_EXIT = 2.64;
+const AT = { b: 3.0, c: 4.5 } as const;
+/** the first caption leaves just before the cut (it sits under the screen, never over a picture): gone by about 2.96 */
+const CAPTION_A_EXIT = 2.74;
 /** the opening pull-back from the pebble to the whole Mac */
 const PULL_S = 0.85;
 const WHIP_S = 0.14;
@@ -64,57 +64,33 @@ const A_TIME = realTime(0.6); // a still tour shot: the pointer barely moves
 const B_BOX: Box = { x: 0, y: 0, w: 2940, h: 1912 };
 
 /*
- * The swipe (REVIEW-4 S-1). RS1-03 was recorded from the full-screen poster's Space, and its slide updates about 20
- * times a second, so its own frames can't show Finder's Space leaving and judder when slowed. The slide is composed
- * of real frames moved along the take's own measured curve: shot A's frame of the desktop leaves, and Chrome's Space
- * arrives as RS1-03 shows it the moment the slide ends (f266–f271 are one picture), then the take runs on. Nothing is
- * drawn but the black gap macOS leaves between two Spaces.
+ * The Space change (REVIEW-4 S-1, as the director ruled: nothing of Pebble's is ever painted out of a picture). Shot B is
+ * RS1-03 throughout:
+ * - its live frames on the poster's Space, the pebble asleep on its spot, for 8 frames (the ruling: at least 0.25 s);
+ * - its own f237, where the pebble has gone and the poster's Space has started to slide (54 px along; f237–f239 are one
+ *   picture);
+ * - REVIEW-4's whip into Chrome's Space, the film's own whip (EdgeWhip's travel, scale and blur) inside the screen: the
+ *   poster's Space accelerates out to the left over 4 frames from f237, Chrome's Space arrives from the right and
+ *   settles over 4, the cut between them at full speed inside the smear; 8 frames of smear, sharp after;
+ * - then the take runs on, the pebble on its spot.
+ * The composed slide the ruling asked for first (the take's measured slide at 0.6×, blur ≤ 55 px) read well, but it
+ * failed the flash scan's strictest binding in 16:9 (desk27 7 and css2560 9 transitions in a second against 6, 8 from
+ * the slide alone): the poster's and the page's big type and vases sweeping across the frame. The ruling's fallback is
+ * this whip.
  */
-/** the pebble on its spot, the page 4 px from home, the stray pointer still a crosshair (f266–f271: one picture) */
+/** the take's first slide frame: the pebble hidden, the poster's Space 54 px to the left (f237–f239 are one picture) */
+const B_LEAVE = 3.95;
+/** the pebble on the poster's Space after the cut, before f237: 8 frames at 30 fps (the ruling: at least 0.25 s) */
+const POSTER_S = 8 / 30;
+/** Chrome's Space as the take shows it once the slide has ended: the pebble on its spot (f266–f271 are one picture) */
 const B_HOLD = 4.45;
 /**
- * RS1-03's slide, measured off the black gap between its Spaces in each frame (f239–f266): Chrome's Space comes in
- * from the right on an exponential settle from 3.986 s, time constant 0.096 s (rms 30 take px against the 14 measured
- * positions), and rests 4 px from home at f266 (4.433), as the take does (it snaps home on f272). macOS leaves a
- * 125-px black gap between two Spaces (the take's dark run is that gap plus the poster's own 53-px black bar).
+ * The whip (kit.tsx's EdgeWhip: 8 % of the width, a 17 % scale that keeps the picture over the window's edges, a 90-px
+ * directional blur at full speed), in halves of 4 frames at 30 fps: its speed eases 0 → 1 across the out half and 1 → 0
+ * across the in half, and the blur rides it, so it builds over 4 frames and lands sharp (REVIEW-4: 8 frames of smear).
  */
-const SLIDE = { s0: 3.986, tc: 0.096, end: eventS("RS1-03", "pebbleSettled"), rest: 4, gap: 125 } as const;
-const SLIDE_FROM = SRC.w + SLIDE.gap; // Chrome's Space's left edge before the slide: the gap just off the screen
-const SLIDE_NORM = 1 - Math.exp(-(SLIDE.end - SLIDE.s0) / SLIDE.tc);
-/** Chrome's Space's left edge on the screen at take second `s`, take px (the leaving Space ends a gap to its left) */
-const spaceEdge = (s: number) => {
-  const p = s <= SLIDE.s0 ? 0 : s >= SLIDE.end ? 1 : (1 - Math.exp(-(s - SLIDE.s0) / SLIDE.tc)) / SLIDE_NORM;
-  return SLIDE_FROM - (SLIDE_FROM - SLIDE.rest) * p;
-};
-/**
- * The swipe's clock: the take's second at output second `u` after the swipe's first frame. The slide plays at 0.6×;
- * the speed eases in over 0.2 s from 0.05 s before that frame, so the move and its blur build over three frames
- * (never a cut from a sharp frame into a smear), and after the take's last step (4.533: the page home, the pointer an
- * arrow) it eases into real time.
- */
-const SWIPE = { speed: 0.6, rampIn: 0.2, lead: 0.05, slowTo: 4.533, rampOut: 0.15 } as const;
-const smoothInt = (x: number) => x * x * x - (x * x * x * x) / 2; // ∫ smoothstep from 0 (1/2 at 1)
-const swipeAt = (u: number): number => {
-  const { speed: v, rampIn: r1, lead, slowTo, rampOut: r2 } = SWIPE;
-  const tau = u + lead;
-  if (tau <= 0) return SLIDE.s0;
-  if (tau < r1) return SLIDE.s0 + v * r1 * smoothInt(tau / r1);
-  const t2 = r1 / 2 + (slowTo - SLIDE.s0) / v;
-  if (tau < t2) return SLIDE.s0 + v * (tau - r1 / 2);
-  if (tau < t2 + r2) return slowTo + v * (tau - t2) + (1 - v) * r2 * smoothInt((tau - t2) / r2);
-  return slowTo + v * r2 + ((1 - v) * r2) / 2 + (tau - t2 - r2);
-};
-const swipeInv = (s: number): number => {
-  let lo = -SWIPE.lead;
-  let hi = 10;
-  for (let i = 0; i < 60; i++) {
-    const mid = (lo + hi) / 2;
-    if (swipeAt(mid) < s) lo = mid;
-    else hi = mid;
-  }
-  return hi;
-};
-/** a time map from a function of output seconds (the swipe's layers; ScreenZoom reads only `at`) */
+const SPACE_WHIP = { half: 4 / 30, travel: 0.08, scale: 0.17, blur: 90 } as const;
+/** a time map from a function of output seconds (shot B's layers; ScreenZoom reads only `at`) */
 const mapOf = (at: (t: number) => number): TimeMap => ({
   at,
   inv: (src) => {
@@ -130,12 +106,6 @@ const mapOf = (at: (t: number) => number): TimeMap => ({
   speed: (t) => (at(t + 0.005) - at(t - 0.005)) / 0.01,
   knots: [],
 });
-/** the blur's longest length, frame px at 1080 (REVIEW-4 S-1: half the move per output frame, never more than 55 px) */
-const SWIPE_BLUR_MAX = 55;
-/** the Gaussian's sigma for a blur of that length: the sigma of a box blur that long (1/√12 of it) */
-const SIGMA_PER_LENGTH = 1 / Math.sqrt(12);
-/** the leaving desktop's pebble hides as the swipe starts, as Pebble does in RS1-03 (f237): Pebble's window ground under it */
-const PEBBLE_HIDES: Mask = { box: { x: 2652, y: 1532, w: 202, h: 184 }, s0: 0, s1: 99, kind: "fill", fill: "rgb(18, 24, 22)" };
 const C_CLICK = eventS("RS15-01", "click");
 const C_PANEL = eventS("RS15-01", "panelOpens");
 const C_TYPE = eventS("RS15-01", "typeW");
@@ -215,11 +185,12 @@ export const s02Moments = (lenS: number) => {
     k,
     b,
     c,
-    swipe: b,
-    /** the swipe's first frame: the first move, and "On every Space." */
+    /** the cut to the poster's Space, where "On every Space." lands */
     slide: b,
-    /** the new Space home, the pebble on its spot */
-    settled: b + swipeInv(SLIDE.end),
+    /** the whip's first frame: the take's f237 (the pebble hidden, the poster's Space 54 px along) */
+    swipe: b + POSTER_S,
+    /** the whip has landed: Chrome's Space sharp, the pebble on its spot (8 frames after f237) */
+    settled: b + POSTER_S + 2 * SPACE_WHIP.half,
     click: c + C_TIME.inv(C_CLICK),
     panel: c + C_TIME.inv(C_PANEL),
     typing: c + C_TIME.inv(C_TYPE),
@@ -275,26 +246,26 @@ export const S02OnYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
   const dockHide = t < 0 ? 0 : 1 - Math.min(1, Math.max(0, (t - 0.8 * PULL_S) / (0.3 * PULL_S)));
   const capA = PULL_S * 0.82;
 
-  /* shot B: the swipe, composed (REVIEW-4 S-1) */
-  const poseB = poseA(t); // the same framing and drift as shot A, carried across the swipe
+  /* shot B: the poster's Space, then the whip into Chrome's Space (REVIEW-4 S-1, the director's ruling) */
+  const poseB = poseA(t); // the same framing and drift as shot A, carried across the cut
   const blurId = `s02b${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
-  const mB = G.screen.w / SRC.w; // window px per take px
-  const u = t - M.b; // output seconds since the swipe's first frame
-  const sB = swipeAt(u);
-  const edge = spaceEdge(sB);
-  // the blur: the move over the last half frame at 30 fps (a 180° shutter, as delivered), in frame px, capped
-  const blurLen = u < -SWIPE.lead ? 0 : Math.min(L.px(SWIPE_BLUR_MAX), Math.abs(spaceEdge(swipeAt(u - 1 / 60)) - edge) * mB * poseB.s);
-  const blurB = (blurLen * SIGMA_PER_LENGTH) / poseB.s; // the filter sits inside the drift's scale
-  const sliding = sB < SLIDE.end;
-  const deskX = (edge - SLIDE.gap - SRC.w) * mB; // the leaving desktop, its right edge a gap left of Chrome's Space
-  const deskOn = edge - SLIDE.gap > -40; // until it is wholly out of the window (with the blur's tail)
-  const pageX = sliding ? (edge - SLIDE.rest) * mB : 0;
-  const tB0 = f(M.b) / fps; // the swipe Sequence's start, scene seconds (its children count from 0 there)
-  const deskTime = realTime(A_TIME.at(tB0));
-  const pageTime = mapOf((lt) => {
-    const s = swipeAt(lt + tB0 - M.b);
-    return s < SLIDE.end ? B_HOLD : s;
-  });
+  // the whip's halves at 30 fps: out from the last frame of the pebble (f504, at rest) to full speed (f508), f237 its
+  // first frame; in from full speed (f509) to rest (f513); the cut from the poster's Space to Chrome's between them
+  const outFrom = M.swipe - 1 / 30;
+  const inFrom = outFrom + SPACE_WHIP.half + 1 / 30;
+  const arriving = t >= inFrom - 1 / 60;
+  const pOut = clamp01((t - outFrom) / SPACE_WHIP.half);
+  const pIn = clamp01((t - inFrom) / SPACE_WHIP.half);
+  const whipV = arriving ? (1 - pIn) * (1 - pIn) : pOut * pOut; // the whip's speed: 0 → 1 → 0
+  const whipX = (arriving ? 1 : -1) * SPACE_WHIP.travel * G.screen.w * whipV; // out to the left, in from the right
+  const whipStyle: CSSProperties | undefined =
+    whipV > 0.001 ? { transform: `translateX(${whipX.toFixed(2)}px) scale(${(1 + SPACE_WHIP.scale * whipV).toFixed(4)})` } : undefined;
+  const blurB = (L.px(SPACE_WHIP.blur) * whipV) / poseB.s; // the filter sits inside the drift's scale
+  const tB0 = f(M.b) / fps; // shot B's Sequence start, scene seconds (its children count from 0 there)
+  // the poster's Space: the take's live frames up to f237 (the pebble asleep on its spot), then f237 for the out half
+  const leaveTime = mapOf((lt) => B_LEAVE + Math.min(0, lt + tB0 - M.swipe));
+  // Chrome's Space: the take's frame once its slide has ended, through the in half, then the take's own frames
+  const pageTime = mapOf((lt) => B_HOLD + Math.max(0, lt + tB0 - M.settled));
 
   /* shot C: the push onto the input once the quick chat is open */
   const tc = (sec: number) => sec - M.c;
@@ -338,9 +309,8 @@ export const S02OnYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
               </AbsoluteFill>
             ))}
           </Sequence>
-          <Sequence from={f(M.b)} durationInFrames={f(M.c) - f(M.b)} premountFor={pre} name="B · the Spaces swipe (RS11-02 leaves, RS1-03 arrives)">
+          <Sequence from={f(M.b)} durationInFrames={f(M.c) - f(M.b)} premountFor={pre} name="B · RS1-03 the poster's Space, then the whip into Chrome's Space">
             <ZoomAbout s={poseB.s} from={pebFinal} to={poseB.p}>
-              {/* black under the pictures: the gap between the two Spaces */}
               <FloatingWindow rect={G.screen} enter="none" spill={0} shadow={0.55} background="#000">
                 <AbsoluteFill style={{ filter: blurB > 0.3 ? `url(#${blurId})` : undefined }}>
                   <svg width={0} height={0} style={{ position: "absolute" }}>
@@ -348,12 +318,11 @@ export const S02OnYourMac: React.FC<SceneProps> = ({ durationInFrames }) => {
                       <feGaussianBlur stdDeviation={`${blurB.toFixed(2)} 0`} edgeMode="duplicate" />
                     </filter>
                   </svg>
-                  {deskOn && (
-                    <AbsoluteFill style={{ transform: `translateX(${deskX.toFixed(2)}px)` }}>
-                      <MaskedZoom src={A.file} srcSize={SRC} time={deskTime} srcDuration={A.durationS} drift={0} masks={[...A_MASKS, PEBBLE_HIDES]} />
-                    </AbsoluteFill>
-                  )}
-                  <AbsoluteFill style={{ transform: pageX !== 0 ? `translateX(${pageX.toFixed(2)}px)` : undefined }}>
+                  {/* both pictures stay mounted through the shot; the cut between them is inside the smear */}
+                  <AbsoluteFill style={{ opacity: arriving ? 0 : 1, ...(arriving ? {} : whipStyle) }}>
+                    <MaskedZoom src={B.file} srcSize={SRC} time={leaveTime} srcDuration={B.durationS} keys={[{ t: 0, box: B_BOX }]} drift={0} motionBlur={false} edgeFade={false} masks={B_MASKS} />
+                  </AbsoluteFill>
+                  <AbsoluteFill style={{ opacity: arriving ? 1 : 0, ...(arriving ? whipStyle : {}) }}>
                     <MaskedZoom src={B.file} srcSize={SRC} time={pageTime} srcDuration={B.durationS} keys={[{ t: 0, box: B_BOX }]} drift={0} motionBlur={false} edgeFade={false} masks={B_MASKS} />
                   </AbsoluteFill>
                 </AbsoluteFill>

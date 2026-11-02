@@ -23,7 +23,7 @@ export const GROUP_B: SceneDef[] = [
     nominalS: S02_NOMINAL,
     marks: marks({
       "the Mac, the pebble sharp (S01's push ends on it: S-8)": 0,
-      "cut to the Spaces on the slide's first frame (one framing: REVIEW-3 S-5); On every Space.": m02.slide,
+      "cut to the poster's Space on the beat, the same framing, the pebble on its spot; On every Space.": m02.slide,
       "pebble-settled": m02.settled,
       "cut to click, ask (downbeat)": m02.c,
       click: m02.click,
