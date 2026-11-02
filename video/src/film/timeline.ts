@@ -10,7 +10,8 @@
 // recut's):
 // - every frame comes from the beat map by INDEX (bar, beat, offset), never by accumulating;
 // - shots tile the film on bar lines, beats start on beat frames, the reveal lands on beatmap.reveal.frame (f648);
-// - every on-screen line is a copy line (src/content/chapters.ts), at most 6 words a line and 3 words a second, held
+// - every on-screen line is one of the trailer's own caption lines (docs/film-captions.json, its record since the
+//   Pebble 2.0 launch film replaced it on the page on 2 Nov 2026), at most 6 words a line and 3 words a second, held
 //   0.5 s + 0.3 s a word and at least 1.2 s (the last line of a shot at least 2 s; the end card's key lines twice);
 // - Pebble's own poses only (D6), pose changes at least 14 frames apart (18 into or out of the "!"), and exactly one
 //   celebration, from the app's own completion of the held run (f1725);
@@ -21,7 +22,6 @@
 //   cut or to Run the tests), the tail, at most ten slams, Verified held 36 frames with no cut or camera move.
 import beatmap from "../../../tools/audio/beatmap.json";
 import captions from "../../../docs/film-captions.json";
-import { chapters } from "../../../src/content/chapters";
 import { bloubCredit } from "../../../src/content/credits";
 import { BODY, VIEWBOX_SIZE } from "../../../shared/pebble/character";
 import { checkCues, type PebbleCue } from "../../../shared/pebble/cues";
@@ -74,21 +74,24 @@ export type ChapterId = "desktop" | "project" | "tested" | "model" | "pace" | "m
 
 const problems: string[] = [];
 const pending: string[] = [];
+/** The trailer's on-screen lines in its own captions: each cue's lines, a leading sound description ("[Hit] Free for
+ *  Macs with Apple silicon") cut off, sound-only lines left out. */
 const captionLines = new Set(
-  (captions.cues as { kind: string; lines: string[] }[]).filter((c) => c.kind !== "sound").flatMap((c) => c.lines.filter((l) => !l.startsWith("["))),
+  (captions.cues as { kind: string; lines: string[] }[])
+    .filter((c) => c.kind !== "sound")
+    .flatMap((c) => c.lines.map((l) => l.replace(/^\[[^\]]+\]\s*/, "")).filter((l) => l !== "")),
 );
 
-/** A line of on-screen text: one of the chapter's `onScreen` lines in src/content/chapters.ts (or the bloub credit).
- *  Anything else is a problem (validateTimeline); it never throws at import. */
+/** A line of on-screen text: one of the trailer's caption lines (docs/film-captions.json), or the bloub credit. Since
+ *  2 Nov 2026 src/content/chapters.ts holds the Pebble 2.0 launch film's chapters, so the retired trailer checks its
+ *  words against its own record alone. Anything else is a problem (validateTimeline); it never throws at import. */
 export function line(chapter: ChapterId, text: string): string {
-  const c = chapters.find((ch) => ch.id === chapter);
-  if (c && c.onScreen.includes(text)) return text;
+  if (captionLines.has(text)) return text;
   if (text === bloubCredit) return text; // src/content/credits.ts (OVERRIDES §2, verbatim)
-  if (captionLines.has(text)) pending.push(`${chapter}: "${text}"`);
-  else problems.push(`"${text}" (chapter ${chapter}) is in neither src/content/chapters.ts nor docs/film-captions.json`);
+  problems.push(`"${text}" (chapter ${chapter}) is not one of the trailer's caption lines (docs/film-captions.json)`);
   return text;
 }
-/** On-screen lines found only in the captions (they must reach chapters.ts too; LaunchFilm treats them as errors). */
+/** On-screen lines waiting to reach the copy: none since the trailer reads its own captions (kept for its callers). */
 export const pendingCopy = (): readonly string[] => pending;
 
 /* ================================================================================================================
