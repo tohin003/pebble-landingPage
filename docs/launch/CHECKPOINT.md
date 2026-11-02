@@ -167,3 +167,12 @@ is missing. claude-p sessions keep running (another account). Status:
   3. The 16:9: `final.sh 16x9`, then `qa.sh --verify`, `deliver.sh 16x9` and its thumbnails.
   4. The 4:5 web file: `ONLY=web deliver.sh 4x5` (1c336c5).
   5. The critic's 16:9 check, then the 16:9 to the Desktop.
+- ~17:50: the owner asked: "Also put the final film into the landing page replacing the older one."
+  - Site phase 2 starts now, as a claude-w subagent. Its phase A covers code, text tracks and the budget plan, with
+    no heavy jobs (`.work/launch/briefs/site2-phaseA.md`). Its handoff is `.work/handoffs/launch-site-2.md`.
+  - Phase B comes after the hold, once the film's files exist: the encodes into `public/media/v3`, the loops, the
+    checks and `next build`.
+  - The 1.x trailer in `public/media/v2` is retired as part of the swap.
+  - The film's caption track keeps "Context warping." (the film's words). The page's own text, its chapters and its
+    descriptions keep the name out.
+  - The page goes live only when the owner merges to main and deploys. Agents never push or deploy.
