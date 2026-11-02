@@ -9,9 +9,11 @@ keep the numbers, the method sentence and Stealth Lockdown's honest line exactly
   fills about 0.36 of the screen height against 0.20 for 16:9. Keep the 16:9 file for a Company Page, YouTube and the
   site.
 - **Captions:** attach `pebble-2.0-launch.srt` (LinkedIn reads SRT on desktop uploads only; attach it before
-  posting). It holds only the on-screen text, because there is no voice.
-- **Cover:** frame 0 is the cover on mobile ("This is Pebble." with the pebble). On desktop, upload
-  `poster-4x5.png` as the thumbnail.
+  posting). It holds only the on-screen text, because there is no voice. If the upload preview shows the captions over
+  the film by default, doubling its type, posting without them loses no words: every one is on screen.
+- **Cover:** post from desktop and upload `pebble-2.0-thumbnail-4x5.png` as the thumbnail: the film at 4.1 s, the
+  whole premise ("It just went up against / Claude Code and Codex. / Same model. Same tasks.") over the small pebble.
+  A post made from the phone app uses frame 0 instead ("This is Pebble." with the pebble).
 
 ## The post (≈ 1,700 characters; LinkedIn allows 3,000)
 
@@ -60,8 +62,8 @@ keep the numbers, the method sentence and Stealth Lockdown's honest line exactly
 
 ## Notes for the owner
 
-- **Thumbnail:** on desktop, upload a custom thumbnail. The critic suggests the frame with the rivals' names and "Same
-  model. Same tasks." over the tiny pebble; it sells the story better than frame 0.
+- **Thumbnail:** the critics chose the premise frame over frame 0: at feed size it tells the story before anyone
+  presses play. `pebble-2.0-thumbnail-16x9.png` is the same frame for a Company Page, YouTube or the site.
 
 - "we" can become "I" if you post it as a solo maker.
 - Where Pebble trailed (by one task each: remembering across sessions against Claude Code, long tasks against Codex)
