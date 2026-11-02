@@ -60,7 +60,7 @@ export const MUSIC_A: Music = {
   hits: [{"s": 8.051, "kind": "drop"}, {"s": 24.051, "kind": "phrase"}, {"s": 40.051, "kind": "phrase"}, {"s": 56.051, "kind": "phrase"}, {"s": 72.051, "kind": "breath"}, {"s": 73.411, "kind": "breakdown-hit"}, {"s": 81.051, "kind": "payoff"}, {"s": 89.051, "kind": "phrase"}, {"s": 93.055, "kind": "button"}, {"s": 93.303, "kind": "button-2"}, {"s": 95.055, "kind": "pad"}, {"s": 97.055, "kind": "final-chord"}, {"s": 100.0, "kind": "end"}],
   landmarks: {"drop": 8.051, "breath": 72.051, "payoff": 81.051, "button": 93.055, "final_chord": 97.055, "end": 100.0},
   credit: "",
-  needsOwnerDownload: true,
+  needsOwnerDownload: false, // the source is the owner's own download from Mixkit, 28 Oct 2026 (docs/media-provenance.json launch_film.music)
 };
 
 export const MUSIC_B: Music = {
