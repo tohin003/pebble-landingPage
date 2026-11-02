@@ -2,13 +2,17 @@
 // music's groove thins at 72.05 and stops at 73.07, the breakdown hit at 73.41).
 //
 // 0.0   "Presenting?" over the ⌘K palette (RS13-03), open on the first frame (REVIEW-2 M-2: the empty field with Light,
-//       Dark and System theme; not one frame of the first-run screen). "stealth" is typed whole by 1.13 and the row
-//       "Turn Stealth Lockdown on" is lit: the shot ends on it (REVIEW-3 S-1).
+//       Dark and System theme; not one frame of the first-run screen). On 4:5 the camera pushes in from the whole
+//       palette to 1.95× on the field (0.3–0.7, REVIEW-4 S-3), from the first keystroke to the row lighting. "stealth"
+//       is typed whole by 1.13 and the row "Turn Stealth Lockdown on" is lit: the shot ends on it (REVIEW-3 S-1).
 // 1.3   The real recording (RS13-03 was made with screencapture, so Pebble's windows really leave it), cut in on the same
-//       source moment, so its field reads "stealth" with the row lit: one continuous action. It opens pushed in on the
-//       palette (2.3×; on 4:5 at nearly the palette shot's own place and size), pulls back over 0.5 s to Pebble's whole
-//       window (a 16:10 crop) by 2.7, and the window leaves in one frame at 3.0 (on the music's stop): 1.7 s with the
-//       window in it. The wait before Return (a still picture: only the caret blinks) plays at about 0.35×.
+//       source moment, so its field reads "stealth" with the row lit: one continuous action. It opens in the palette
+//       shot's own window, place, scale and slow push (REVIEW-4 S-3: the crop's foot 24 px under the palette's lower
+//       border on 16:9, above the "Actions run at once…" line on 4:5, so the first-run "Connect a model" is never in
+//       the pushed frame), and from 2.0 pulls back over 15 frames (0.5 s) while the window opens out to Pebble's whole
+//       window (a 16:10 crop), whole from 2.5; the window leaves in one frame at 3.0 (on the music's stop): 1.7 s with
+//       the window in it, 0.5 s of it whole. The wait before Return (a still picture: only the caret blinks) plays at
+//       about 0.35×.
 //       0.8 s of the desktop without it (REVIEW-3 M-1): the take's Finder window and the widgets behind are cut out and
 //       filled from the wallpaper round them (a normalised blur: wallpaper texture, no window, no edge).
 //       Frosted: Pebble's iCloud notice and its first-run chips, the Dock's date and badge.
@@ -19,7 +23,7 @@
 // 8.2   The Veil pebble glides to S10's hand-off: its body centred at (0.5 W, 0.5 H), 12 % of the frame's height (kit
 //       VEIL_HANDOFF), still from 8.8 to the last frame; the type leaves in the last 2 frames.
 import { Sequence } from "remotion";
-import type { Box } from "../../camera";
+import { fitRegion, type Box } from "../../camera";
 import { FloatingWindow } from "../../components/FloatingWindow";
 import { FontGate } from "../../components/FontGate";
 import { Headline } from "../../components/Headline";
@@ -28,11 +32,11 @@ import { ScreenZoom } from "../../components/ScreenZoom";
 import { Sfx } from "../../components/Sfx";
 import { Stage } from "../../components/Stage";
 import { eventS, TAKES } from "../../data/takes";
-import { useLayout, type Layout } from "../../layout";
+import { useLayout, type Layout, type Rect } from "../../layout";
 import { fromRamps } from "../../timeMap";
 import { C, EASE } from "../../tokens";
 import type { SceneProps } from "../types";
-import { lerp, MaskedZoom, pebbleAt, R, ramp, sfxAt, sfxSrc, useSceneTime, VEIL_HANDOFF, type Mask, type SfxNote } from "./kit";
+import { lerp, lerpRect, MaskedZoom, pebbleAt, R, ramp, sfxAt, sfxSrc, useSceneTime, VEIL_HANDOFF, type Mask, type SfxNote } from "./kit";
 
 export const S09_NOMINAL = 9.05;
 
@@ -56,7 +60,8 @@ const DOCK_CLOSED = eventS("RS13-03", "dockClosed");
  * (at 30 fps), since S10 sheds the Veil (Stealth turning off) in its first 0.6 s. The recording leaves at 4.3 so the
  * locked-off empty desktop never holds dead still for more than 1 s.
  */
-const AT = { strip: 1.3, pullS: 0.5, whole: 2.7, vanish: 3.0, stripOut: 3.8, pebble: 4.2, veil: 4.6, glide: 8.2, glideS: 0.6, typeOut: S09_NOMINAL - 2 / 30 } as const;
+/** REVIEW-4 S-3: the pull-back runs 2.0–2.5 (15 frames at 30 fps), so the whole window holds 0.5 s before the vanish */
+const AT = { strip: 1.3, pullS: 0.5, whole: 2.5, vanish: 3.0, stripOut: 3.8, pebble: 4.2, veil: 4.6, glide: 8.2, glideS: 0.6, typeOut: S09_NOMINAL - 2 / 30 } as const;
 /** the recording's lead before the vanish (REVIEW-3 S-1: the window on screen ≥ 1.2 s; the vanish still on the music's stop at 3.0) */
 const LEAD = AT.vanish - AT.strip;
 
@@ -90,26 +95,96 @@ const stripTime = fromRamps(
   { ramp: 0.05, tail: 1 },
 );
 
-/** the palette alone (input, rows, its note): no first-run card (it starts at y 758) */
-const PAL = (portrait: boolean): Box => (portrait ? { x: 1150, y: 305, w: 1140, h: 396 } : { x: 1150, y: 305, w: 1140, h: 415 });
+/**
+ * The palette in the take (source px, measured on f397): its outer border 1163–2280 × 317–706; the field 329–427; the
+ * lit row 437–527 ("Turn Stealth Lockdown on", SF Pro 12 pt: a 17-px cap, 460–476); "Settings: Privacy & Stealth" and
+ * "Open Settings" 548–599; the note "Actions run at once…" 646–691. Under it, the first-run "Connect a model" card
+ * from y 757: never in the palette's frame. The empty field's placeholder runs 1211–1943.
+ *
+ * The palette shot's windows (reference px) and cameras: the take's point `src` sits at the frame's point `at`, `k`
+ * frame px per take px (reference px).
+ * - 16:9: the palette's own crop at 1.04 (REVIEW-3 S-1), its foot 24 px under the palette's lower border (REVIEW-4
+ *   S-3: 655 against the border's 630 through the push).
+ * - 4:5 (REVIEW-4 S-3): the shot opens on REVIEW-3's whole palette (0.877, as in draft 5), so the empty field's
+ *   placeholder is whole while it shows (to 0.31). As "s" is typed the camera pushes in over 0.4 s (on the camera
+ *   ease, arriving as the row lights at 0.71) to 1.95× about the field's left end (40, 380). REVIEW-4 asked 1.8× for
+ *   "Turn Stealth Lockdown on" at ≥ 40 px: 1.8× sets it at 38 px, 1.95× at 41 px. The window keeps the 40-px margins,
+ *   so its right edge crops the field and the lit row after their words; its foot (826) sits midway between "Open
+ *   Settings" (785) and the note (866), so no sentence is cut.
+ */
+const PAL16 = { rect: { x: 366, y: 210, w: 1186, h: 445 }, src: { x: 1150, y: 305 }, k: 1186 / 1140 } as const;
+const PAL45 = {
+  /** REVIEW-3's whole palette: the take's (1150, 305) at (40, 330) */
+  from: { x: 40, y: 330, w: 1000, h: 347 },
+  /** the big palette: `from` scaled 1.95× about `at`, the foot cropped above the note */
+  to: { x: 40, y: 282, w: 1000, h: 544 },
+  /** the field's left end: the take's (1150, 362) stays on it */
+  at: { x: 40, y: 380 },
+  src: { x: 1150, y: 362 },
+  k: 1000 / 1140,
+  f: 1.95,
+  /** from the first keystroke (0.31) to the row lighting (0.71): the placeholder is gone before the window crops it */
+  push: { at: 0.3, dur: 0.4 },
+} as const;
+/** the palette shot's slow push (per second, as ScreenZoom's drift): the recording's push continues it */
+const PAL_DRIFT = 0.01;
+const scaleRect = (r: Rect, u: number): Rect => ({ x: r.x * u, y: r.y * u, w: r.w * u, h: r.h * u });
+
+/** The palette shot's window (frame px) and camera (the take's px) at scene time `t`. */
+const palCam = (t: number, portrait: boolean, u: number): { rect: Rect; box: Box } => {
+  const d = Math.exp(PAL_DRIFT * Math.max(0, t));
+  if (!portrait) {
+    // ScreenZoom's drift: the box shrinks about its centre
+    const P = PAL16;
+    const w = P.rect.w / P.k;
+    const h = P.rect.h / P.k;
+    return { rect: scaleRect(P.rect, u), box: { x: P.src.x + (w - w / d) / 2, y: P.src.y + (h - h / d) / 2, w: w / d, h: h / d } };
+  }
+  // the push and the slow push both about the field's left end; the window's edges move with the push
+  const P = PAL45;
+  const p = EASE.camera(Math.min(1, Math.max(0, (t - P.push.at) / P.push.dur)));
+  const k = P.k * Math.pow(P.f, p) * d;
+  const r = lerpRect(P.from, P.to, p);
+  return { rect: scaleRect(r, u), box: { x: P.src.x + (r.x - P.at.x) / k, y: P.src.y + (r.y - P.at.y) / k, w: r.w / k, h: r.h / k } };
+};
 /**
  * REVIEW-2 S-4: a 16:10 crop (1.61) holding Pebble's whole window (310–2940 × 124–1730), under the menu bar (the clock,
  * the recording pill) and above the Dock (from y ≈ 1735: its dated icon and badge stay out).
  */
 const STRIP = (_portrait: boolean): Box => ({ x: 296, y: 100, w: 2644, h: 1640 });
+
 /**
- * REVIEW-3 S-2 (and S-1's "the less of the first-run state, the better"): the recording opens pushed in on the palette
- * (2.3× the whole window on 4:5, 2.3× on 16:9), at the palette shot's own place and scale, so the field and the lit row
- * match across the cut (4:5 at ×0.97, so the palette's right edge stays in; the window's top edge as the crop's top).
+ * The recording's window (frame px), camera (the take's px) and soft edges at scene time `t` (REVIEW-4 S-3).
+ * - The push (the cut to the pull): the palette shot's own window and camera, its slow push continued, so the cut on
+ *   "stealth" and the lit row matches exactly (REVIEW-3 S-1's one action) and nothing under the palette is in frame.
+ * - The pull-back (15 frames on the move ease, so every frame moves): the camera zooms out about the one frame point
+ *   both framings share (log scale), while the window's edges open out to the whole-window crop; the view never leaves
+ *   that crop (no menu bar, no Dock, no calendar dates).
+ * - The palette shot's soft crop edges (ScreenZoom's "auto": 6 % of the window's shorter side) carry through the cut
+ *   and fade out during the pull: the whole window and the after-state keep hard edges.
  */
-const pushMatch = (portrait: boolean, pal: { x: number; y: number; w: number }, strip: { x: number; y: number; w: number; h: number }): Box => {
-  const P = PAL(portrait);
-  const k = (pal.w / P.w) * (portrait ? 0.97 : 1); // view px per source px
-  const w = strip.w / k;
-  const h = strip.h / k;
-  const x = P.x - (pal.x - strip.x) / k;
-  const y = Math.max(124, P.y - (pal.y - strip.y) / k); // from the window's top edge (no menu bar, no wallpaper above it)
-  return { x, y, w, h };
+const recShot = (t: number, M: { pull: number; whole: number }, strip: Rect, portrait: boolean, L: Layout) => {
+  const fade = (r: Rect, k: number) => (0.06 * Math.min(r.w, r.h) * k * 1080) / L.H;
+  const p = EASE.move(Math.min(1, Math.max(0, (t - M.pull) / Math.max(1e-6, M.whole - M.pull))));
+  if (p <= 0) {
+    const c = palCam(t, portrait, L.u);
+    return { ...c, edgeFade: fade(c.rect, 1) };
+  }
+  const s = fitRegion(STRIP(portrait), { w: strip.w, h: strip.h }, SIZE);
+  if (p >= 1) return { rect: strip, box: s, edgeFade: false as const };
+  // source → frame on each camera: frame = A + source × k
+  const a = palCam(M.pull, portrait, L.u);
+  const ka = a.rect.w / a.box.w;
+  const Aa = { x: a.rect.x - a.box.x * ka, y: a.rect.y - a.box.y * ka };
+  const ks = strip.w / s.w;
+  const As = { x: strip.x - s.x * ks, y: strip.y - s.y * ks };
+  // the zoom's fixed point: the take's point both cameras put on the same frame point
+  const S = { x: (As.x - Aa.x) / (ka - ks), y: (As.y - Aa.y) / (ka - ks) };
+  const F = { x: Aa.x + S.x * ka, y: Aa.y + S.y * ka };
+  const k = Math.exp(Math.log(ka) + (Math.log(ks) - Math.log(ka)) * p);
+  const A = { x: F.x - S.x * k, y: F.y - S.y * k };
+  const rect = lerpRect(a.rect, strip, p);
+  return { rect, box: { x: (rect.x - A.x) / k, y: (rect.y - A.y) / k, w: rect.w / k, h: rect.h / k }, edgeFade: fade(a.rect, 1 - p) };
 };
 /** what Pebble's window leaves behind, cut out and filled from the wallpaper round it (REVIEW-3 M-1), source px */
 const AFTER_HOLES: Box[] = [
@@ -135,9 +210,8 @@ const DOWN45 = 79;
 const frame09 = (L: Layout) =>
   L.portrait
     ? {
-        // the palette sits where the recording's push shows it (the window's top edge as its crop: REVIEW-3 S-1, S-2)
-        ask: R(L, 64, 135, 952, 160),
-        pal: R(L, 40, 330, 1000, 347),
+        // "Presenting?" above the palette's window (REVIEW-4 S-3: after the push, the window's top is at 282)
+        ask: R(L, 64, 100, 952, 160),
         // REVIEW-3 S-2: the window and the type as one group centred at 50 % of the height
         strip: R(L, 54, 96 + DOWN45, 972, 604),
         title: R(L, 64, 790 + DOWN45, 952, 84),
@@ -148,9 +222,7 @@ const frame09 = (L: Layout) =>
         up: { x: 0.5, y: (96 + DOWN45 + 302) / 1350, h: 0.17 },
       }
     : {
-        // the palette where the recording's push shows it (1.04 frame px per take px: REVIEW-3 S-1's one action)
         ask: R(L, 128, 36, 1664, 150),
-        pal: R(L, 366, 210, 1186, 432),
         strip: R(L, 362, 22, 1196, 742),
         title: R(L, 128, 774, 1664, 84),
         line: R(L, 150, 862, 1620, 210),
@@ -205,29 +277,35 @@ export const S09Stealth: React.FC<SceneProps> = ({ durationInFrames }) => {
   const pin = ramp(t, M.pebble, 0.22, EASE.enter);
   const P = pebbleAt({ ...place, h: place.h * lerp(0.9, 1, pin) }, L.W, L.H);
   const sfx = S09_SFX(lenS);
-  /* the recording's camera: pushed in on the palette, then the whole window from 0.3 s before it leaves */
-  const pushBox = pushMatch(L.portrait, G.pal, G.strip);
-  const keysStrip = [
-    { t: 0, box: pushBox },
-    { t: M.pull - M.strip, box: pushBox },
-    { t: M.whole - M.strip, box: STRIP(L.portrait), dur: M.whole - M.pull, ease: EASE.camera },
+  /* the palette shot (on 4:5 pushed in from the whole palette), then the recording in the same window and camera through
+     the cut, and its pull-back to the whole window (REVIEW-4 S-3) */
+  const pal = palCam(t, L.portrait, L.u);
+  const rec = recShot(t, M, G.strip, L.portrait, L);
+  // the camera across the shutter (180°: half a frame), so ScreenZoom's camera blur smears the fast push and pull-back;
+  // held framings (the drift, the whole window) stay sharp. Keys in the ScreenZoom's own time (its Sequence starts at t0).
+  const open = 0.5 / fps;
+  const shutterKeys = (cam: (s: number) => { box: Box }, t0: number) => [
+    { t: t - t0 - open, box: cam(t - open).box },
+    { t: t - t0, box: cam(t).box, dur: open, ease: EASE.linear },
   ];
+  const palKeys = shutterKeys((s) => palCam(s, L.portrait, L.u), 0);
+  const recKeys = shutterKeys((s) => recShot(s, M, G.strip, L.portrait, L), f(M.strip) / fps);
 
   return (
     <FontGate>
       <Stage world="night" tint="dusk" keyLight={{ x: 0.5, y: lerp(G.up.y, VEIL_HANDOFF.y, pg), r: 0.6 }}>
         {/* the palette, cropped to itself */}
         <Sequence durationInFrames={f(M.strip)} name="RS13-03 · the palette">
-          <FloatingWindow rect={G.pal} enter="none" spill={0} background="#151A17">
-            <ScreenZoom src={T.file} srcSize={SIZE} time={palTime} srcDuration={T.durationS} keys={[{ t: 0, box: PAL(L.portrait) }]} drift={0.01} />
+          <FloatingWindow rect={pal.rect} enter="none" spill={0} background="#151A17">
+            <ScreenZoom src={T.file} srcSize={SIZE} time={palTime} srcDuration={T.durationS} keys={palKeys} drift={0} />
           </FloatingWindow>
           <Headline text="Presenting?" at={0.06} exitAt={M.strip - 0.3} exit="fade" entrance="ink" size={G.askSize} align="center" valign="middle" box={G.ask} />
         </Sequence>
 
         {/* the recording, locked off: the window leaves it */}
         <Sequence from={f(M.strip)} durationInFrames={f(M.stripOut + 0.35) - f(M.strip)} premountFor={pre} name="RS13-03 · the recording">
-          <FloatingWindow rect={G.strip} enter="none" spill={0} exitAt={M.stripOut - M.strip} background="#151A17">
-            <MaskedZoom src={T.file} srcSize={SIZE} time={stripTime} srcDuration={T.durationS} keys={keysStrip} drift={0} motionBlur={false} edgeFade={false} masks={STRIP_MASKS} />
+          <FloatingWindow rect={rec.rect} enter="none" spill={0} exitAt={M.stripOut - M.strip} background="#151A17">
+            <MaskedZoom src={T.file} srcSize={SIZE} time={stripTime} srcDuration={T.durationS} keys={recKeys} drift={0} motionBlur={6} edgeFade={rec.edgeFade} masks={STRIP_MASKS} />
           </FloatingWindow>
         </Sequence>
 
