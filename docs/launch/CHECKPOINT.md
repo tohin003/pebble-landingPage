@@ -210,3 +210,31 @@ is missing. claude-p sessions keep running (another account). Status:
   the Benchmarks section's line about the offered release, and the Stealth lines in the release notes' own words (D225;
   nothing about 2.0.2). Phase B starts once both masters are signed off.
 - `CLAUDE.md` now describes the launch film (f943f74, with the owner's OK).
+
+## Update, 2 Nov ~22:25 IST: the 4:5 is signed off and on the owner's Desktop; the 16:9 is with the critic; site phase B
+
+- The session ended at ~21:01. The 16:9 render restarted at 21:03 in its own process session, so a session end can't
+  stop it.
+- Round 5 phase B, the 4:5: **fix then ship**, with one MUST.
+  - MUST-1: in the Stealth recording, the desktop calendar's mask ran about 20 px onto Pebble's window, frosting the
+    red close button until the leave.
+  - Three frosts inside the window (Pebble's iCloud notice and two first-run "Connect a model" lines) made the
+    description's "Pebble's own windows are never altered" untrue.
+- The director's ruling: fix the film, not the sentence (0f1b7fe).
+  - The mask stops at the window's outline (the take's x 311).
+  - The in-window frosts are gone: none was private (TREATMENT §5).
+  - No other scene masks inside Pebble's windows.
+  - N-7 declined.
+- Both pictures re-rendered with `final.sh --picture-only` (new; the mixes kept), by `d5/post-fix.sh`.
+  - Gates pass on both.
+  - Frame comparisons with the pictures before the fix: only f2177–f2191 under 45 dB; the rest is render noise.
+  - LinkedIn files at −14.0 LUFS and −1.9 dBTP; web files at −16.0 LUFS.
+- 22:01: the critic said **ship** for the 4:5. `handoff.sh 4x5` put it on the Desktop
+  (`launch-film-2026-11-02/`), with its README:
+  - post without captions;
+  - listen once at 0:08, 0:17, 0:18 and 1:21.
+- 22:23: the critic has the 16:9 (`r5/f169`, `r5/f169-fix`). On "ship", run `handoff.sh 16x9`.
+- 22:23: the site worker starts phase B (`site2-phaseB.md`, its handoff's steps 0–13), in parallel with the 16:9's
+  check. A 16:9 MUST would mean redoing only the 16:9-derived encodes.
+- Pebble 2.0.3 on the page: 5c0aaaa (the worker) and ca77e52 (the director's plainer Benchmarks line). The post kit
+  notes that its claims still hold for 2.0.3 (fd24103).
