@@ -3,7 +3,8 @@
 // Frame 0 is the film's thumbnail and the muted autoplay start: the pebble awake, small, centre-low, and
 // "This is Pebble." already landed. Then "It's small." with a tiny hop; "It just went up against" and the rivals'
 // names as huge mute-grey monoliths, the pebble at their feet looking up (the premise is complete by 2.7 s); "Same
-// model. Same tasks." in Geist Mono, sage, under it (landed by 4.0 s). The rest is the pebble's, in its own poses: it
+// model. Same tasks." in Geist Mono, sage, under it (landed by 4.0 s). The verb stays to the drop (REVIEW-4 N-1), so
+// the hook's longest frame reads as the whole premise, verb, names and terms. The rest is the pebble's, in its own poses: it
 // reads the terms, sizes the giants up (one eye narrowed), rears up to look at them (5.0), turns to us, gives a small
 // sure squash with its proud squint (6.6) and gathers itself for the drop while the light closes in on it and the set
 // (names and pebble) drifts in 0.5 % a second (REVIEW-2 S-5: no 4-s still). The last 3 frames darken about 40 % (a dip before the drop); S01 takes
@@ -25,8 +26,9 @@ export const S00_NOMINAL = 8.05;
 /**
  * Beats, seconds at the nominal length (music A: a beat every 0.5 s from 0.05; the drop is S01's frame 0 at 8.051).
  * REVIEW-1 S10: "This is Pebble." 0–1.0, "It's small." 1.0–1.8, the rivals landed by 2.7, the terms landed by 4.0;
- * then the tension holds on the pebble until the drop. Every line leaves in 0.17 s and is gone 2 frames before the
- * next line in its place starts (M2).
+ * then the tension holds on the pebble until the drop. "This is Pebble." and "It's small." leave in 0.17 s and are
+ * gone 2 frames before the next line in their place starts (M2); "It just went up against" stays with the names and
+ * the terms to the drop (REVIEW-4 N-1).
  */
 export const S00_BEATS = {
   thisExit: 0.8,
@@ -37,7 +39,6 @@ export const S00_BEATS = {
   against: 1.9,
   claude: 2.3,
   codex: 2.55,
-  againstExit: 3.45,
   sameModel: 3.55,
   sameTasks: 3.8,
   read: 3.66,
@@ -117,7 +118,11 @@ export const coldOpenGeo = (L: Layout) => {
   // up against" is 56 px (16:9) / 48 px (4:5) and "Same model. Same tasks." 60 / 48 px (Inter's caps are 0.727 em,
   // Geist Mono's about 0.72 em). The giant rival names stay as they are: the contrast in size is the joke.
   const introSize = pick(L, { "16x9": 77, "4x5": 66 }) * L.u;
-  const introBase = capTop1 - L.px(pick(L, { "16x9": 50, "4x5": 44 }));
+  // REVIEW-4 N-1: the verb holds to the drop, a landed line (dead still) over the set's drift, which lifts the names'
+  // top by (peb.y − capTop1) × (S00_END_DRIFT − 1) by the end (about 13 px in 16:9, 16 in 4:5). The line sits that much
+  // higher from its entrance, so its descenders keep their draft-5 clearance over "Claude" to the last frame.
+  const driftRise = (peb.y - capTop1) * (S00_END_DRIFT - 1);
+  const introBase = capTop1 - L.px(pick(L, { "16x9": 50, "4x5": 44 })) - driftRise;
   const monoSize = pick(L, { "16x9": 86, "4x5": 69 }) * L.u;
   return {
     peb,
@@ -271,20 +276,19 @@ export const S00ColdOpen: React.FC<SceneProps> = ({ durationInFrames }) => {
             <ExitWrap at={T(B.smallExit)} t={t} rise={L.px(14)}>
               <Headline text="It's small." at={T(B.small)} entrance="blur" size={L.type.display} align="center" valign="top" box={g.title} leading={1} />
             </ExitWrap>
-            <ExitWrap at={T(B.againstExit)} t={t}>
-              <Headline
-                text="It just went up against"
-                variant="support"
-                at={T(B.against)}
-                entrance="blur"
-                size={g.intro.size}
-                color={C.stone1}
-                align="center"
-                valign="top"
-                box={g.intro.box}
-                leading={1}
-              />
-            </ExitWrap>
+            {/* REVIEW-4 N-1: no exit; it goes with the names and the terms on the drop */}
+            <Headline
+              text="It just went up against"
+              variant="support"
+              at={T(B.against)}
+              entrance="blur"
+              size={g.intro.size}
+              color={C.stone1}
+              align="center"
+              valign="top"
+              box={g.intro.box}
+              leading={1}
+            />
             <div style={{ position: "absolute", inset: 0, transform: drift > 1 ? `scale(${drift.toFixed(6)})` : undefined, transformOrigin: `${peb.x.toFixed(2)}px ${peb.y.toFixed(2)}px` }}>
               {g.lines.map((l) => (
                 <Monolith key={l.text} text={l.text} size={l.size} baseline={l.base} at={slams[l.slam]} t={t} dim={monoDim} />
