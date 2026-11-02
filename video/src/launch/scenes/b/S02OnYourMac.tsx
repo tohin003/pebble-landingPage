@@ -172,7 +172,9 @@ const frame02 = (L: Layout) =>
     : { screen: R(L, 299, 24, 1322, 860), caption: R(L, 128, 894, 1664, 110), cValign: "middle" as const, cSize: L.px(104), lines: false };
 
 /** shot C: close on the pebble with room above it for the quick chat, then its input (the question at ≈ 50 px) */
-const C_CLOSE: Box = { x: 1563, y: 838, w: 1323, h: 860 };
+// REVIEW-5 N-5: the left edge moved 64 px into the take (about 48 px in the 4:5 card), past "t)", the end of the page's
+// "(sold out)". The right edge and the centre's height are kept.
+const C_CLOSE: Box = { x: 1627, y: 859, w: 1259, h: 818 };
 /** the input, the question at ≈ 50 px (16:9) / 43 px (4:5), with the pebble whole under it */
 const C_INPUT = (portrait: boolean): Box => (portrait ? { x: 2100, y: 1290, w: 700, h: 455 } : { x: 2110, y: 1240, w: 760, h: 494 });
 
@@ -191,6 +193,8 @@ export const s02Moments = (lenS: number) => {
     swipe: b + POSTER_S,
     /** the whip has landed: Chrome's Space sharp, the pebble on its spot (8 frames after f237) */
     settled: b + POSTER_S + 2 * SPACE_WHIP.half,
+    /** the whip's fastest frame, at the end of its out half: its whoosh peaks here (REVIEW-5 N-3) */
+    spaceWhip: b + POSTER_S + 3 / 30,
     click: c + C_TIME.inv(C_CLICK),
     panel: c + C_TIME.inv(C_PANEL),
     typing: c + C_TIME.inv(C_TYPE),
@@ -204,7 +208,10 @@ export const s02Moments = (lenS: number) => {
 export const S02_SFX = (lenS: number): SfxNote[] => {
   const M = s02Moments(lenS);
   return [
-    { name: "click", s: M.click, db: -14, what: "the click on the pebble" },
+    // REVIEW-5 N-3: the one click the film shows being made sat 8–12 dB under the music above 2 kHz. It now uses
+    // Forget's take and level (soft-b at −1.9 dB, the master's kit level plus its bus). The whip has its own whoosh.
+    { name: "whoosh", s: M.spaceWhip, db: -12, what: "the whip into Chrome's Space" },
+    { name: "clickB", s: M.click, db: -1.9, what: "the click on the pebble" },
     { name: "clickB", s: M.ret, db: -17, what: "Return: the question is sent" },
   ];
 };

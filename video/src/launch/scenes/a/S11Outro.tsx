@@ -144,7 +144,8 @@ export const S11Outro: React.FC<S11Props> = ({ durationInFrames, musicCredit = "
             <HitSet at={T(B.small) + FIRST_FRAME} t={t} u={L.u} origin={origin(line1)}>
               <Headline text="Small pebble." at={-1} size={ds} align="center" valign="top" box={line1} leading={1} />
             </HitSet>
-            <HitSet at={T(B.real)} t={t} u={L.u} origin={origin(line2)}>
+            {/* REVIEW-5 N-2: on the frame nearest its hit (93.302): f2799, 2 ms before it, not f2800, 31 ms after */}
+            <HitSet at={T(B.real) - 0.5 / 30} t={t} u={L.u} origin={origin(line2)}>
               <Headline text="*Real work.*" at={-1} size={ds} align="center" valign="top" box={line2} leading={1} />
             </HitSet>
           </ExitWrap>

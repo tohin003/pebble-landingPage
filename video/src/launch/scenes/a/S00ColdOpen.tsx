@@ -245,8 +245,11 @@ export const S00ColdOpen: React.FC<SceneProps> = ({ durationInFrames }) => {
   ];
   const slams = [T(B.claude), T(B.codex)];
   const punch = punchAt(slams, t, 0.03, 0.02, 0.16);
-  // the giants dim when the terms arrive, then sink further while the light closes in on the pebble
-  const monoDim = tween(t, [T(B.sameModel) - 0.1, T(B.sameModel) + 0.4, T(B.toCamera), D - 0.2], [1, 0.62, 0.62, 0.48], EASE.camera);
+  // the giants dim once the terms have landed, then sink further while the light closes in on the pebble.
+  // REVIEW-5 N-6: the dim starts at 4.2 s, after the post's cover frame (4.1 s). The cover then shows the names at their
+  // landed grey, about 4.4:1, instead of 2.8:1 partway through the dim.
+  const DIM_FROM = 4.2;
+  const monoDim = tween(t, [DIM_FROM, DIM_FROM + 0.5, T(B.toCamera), D - 0.2], [1, 0.62, 0.62, 0.48], EASE.camera);
   const close = tween(t, [T(B.sizeUp), D - 0.1], [0, 1], EASE.camera);
   // the wind-up: the pebble gathers itself (a slow squash about its foot) before the anticipation of the leap
   const crouch = tween(t, [T(B.crouch), D - 0.15], [0, 1], EASE.camera);

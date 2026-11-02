@@ -194,7 +194,8 @@ export const S07ContextWarping: React.FC<SceneProps> = ({ durationInFrames }) =>
             box={g.lines}
           />
           <Headline
-            text="Older results sealed. Any one returned exactly."
+            // REVIEW-5 N-1: in 4:5, balancing broke "Any / one" across the lines; each sentence takes its own line there
+            text={L.portrait ? "Older results sealed.\nAny one returned exactly." : "Older results sealed. Any one returned exactly."}
             at={a(S07_BEATS.line2)}
             entrance="line"
             variant="support"

@@ -188,8 +188,11 @@ const groupD = (): Cue[] => {
 const groupB = (): Cue[] => {
   const out: Cue[] = [];
   const s02 = slotOf("S02-OnYourMac");
-  if (s02 && ALL_SCENES.some((s) => s.id === s02.id))
-    out.push({ peak: s02.in + s02Moments(s02.out - s02.in).click, role: "click", scene: s02.id, what: "the pointer clicks the pebble (RS15-01)", sceneOwned: true });
+  if (s02 && ALL_SCENES.some((s) => s.id === s02.id)) {
+    const m = s02Moments(s02.out - s02.in);
+    out.push({ peak: s02.in + m.click, role: "click", scene: s02.id, what: "the pointer clicks the pebble (RS15-01)", sceneOwned: true });
+    out.push({ peak: s02.in + m.spaceWhip, role: "whoosh-short", scene: s02.id, what: "the whip into Chrome's Space (REVIEW-5 N-3)", sceneOwned: true });
+  }
   const lists: [string, typeof S03_SFX][] = [
     ["S03-UsesYourMac", S03_SFX],
     ["S09-Stealth", S09_SFX],
