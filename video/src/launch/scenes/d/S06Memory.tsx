@@ -12,8 +12,10 @@
 //       4:5 (REVIEW-3 S-4): 3.4 to 4.0 it pushes 1.56× onto the record's words (about 47 px), holds, and 4.45 to 4.9
 //       pans right with the pointer onto Keep / Forget (the words and the buttons don't fit one framing at that size).
 // 5.00  The pointer presses Forget, on the beat: the record is gone (in one frame, as the app does it: the take has no
-//       collapse) and "Forget anything." is set, whole, on that frame. 5.75 to 6.45 (4:5: 5.55 to 6.25) the camera pulls
-//       back onto the two records left; held to the cut.
+//       collapse) and "Forget anything." is set, whole, on that frame. 5.75 to 6.45 the camera pulls back onto the two
+//       records left; held to the cut. 4:5 (REVIEW-4 S-2): the pull starts on the frame the record goes (on the master,
+//       5.033, film 52.6) and lands 0.5 s later (film 53.07–53.1), so the panned framing never holds half-words under
+//       "Forget anything.".
 // The camera moves are the capture's own framing keys (no scroll, no motion-blur samples on text: REVIEW-1 S8). No
 // cursor is in the capture: the drawn pointer follows the person's recorded path (data/ui.ts), as S04's does.
 import { AbsoluteFill, Sequence, useVideoConfig } from "remotion";
@@ -48,6 +50,13 @@ export const LAYERS = [
 ] as const;
 /** the row that becomes the capture (the capture opens on Facts & knowledge) */
 const CARRY = 1;
+/**
+ * 4:5 (REVIEW-4 S-2): the pull back to the whole window runs 0.5 s (15 frames at 30 fps) from the take's Forget, timed
+ * in the capture's own clock (the ScreenZoom's: the take's frames and the camera keys share it; its Sequence starts on
+ * a rounded frame, half a frame after `capAt` at 30 fps). It starts half a 60-fps frame before the take's first frame
+ * without the record (clip 4.0 s), so that frame is the pull's first moving frame at 30 fps and at 60.
+ */
+const PULL45 = { lead: 1 / 120, dur: 0.5 } as const;
 
 export const S06_BEATS = {
   headline: 0,
@@ -68,9 +77,9 @@ export const S06_BEATS = {
   pushedText45: 4.0,
   panFrom45: 4.45,
   panned45: 4.9,
-  /** 4:5: back on the two records left (from 5.55), 0.2 s sooner than 16:9: the buttons' framing after the record goes
-   *  holds cut lines of the next record */
-  pulled45: 6.25,
+  /** 4:5 (REVIEW-4 S-2): back on the whole list 0.5 s after the frame the record goes (the pull starts on it): the
+   *  buttons' framing holds cut lines of the next record, so it never outlives the press */
+  pulled45: 5.0 - PULL45.lead + PULL45.dur,
   /** the pointer presses Forget: the record is gone, "Forget anything." */
   forget: 5.0,
   /** the camera is back on the layer's two records (the pull starts 0.7 s before) */
@@ -147,6 +156,7 @@ export const S06_MARKS = [
   { name: "the push lands on the record and its Forget (about 2×; 4:5: on its words, 1.56×)", s: S06_BEATS.pushed },
   { name: "4:5: the pan onto Keep / Forget lands", s: S06_BEATS.panned45 },
   { name: "Forget pressed: the record is gone; \"Forget anything.\"", s: S06_BEATS.forget },
+  { name: "4:5: pulled back onto the whole list (from the frame the record goes)", s: S06_BEATS.pulled45 },
   { name: "pulled back onto the two records left", s: S06_BEATS.pulled },
 ] as const;
 
@@ -221,7 +231,9 @@ export const S06Memory: React.FC<SceneProps> = ({ durationInFrames }) => {
         { t: a(S06_BEATS.pushedText45) - capAt, box: FRAMES45_PUSH.text, dur: 0.6 },
         { t: a(S06_BEATS.panFrom45) - capAt, box: FRAMES45_PUSH.text, dur: 0.01 },
         { t: a(S06_BEATS.panned45) - capAt, box: FRAMES45_PUSH.buttons, dur: a(S06_BEATS.panned45) - a(S06_BEATS.panFrom45) },
-        { t: a(S06_BEATS.pulled45) - capAt, box: F.after, dur: 0.7 },
+        // REVIEW-4 S-2: in the capture's clock, from the take's Forget (CAP.forget, as captureTime places it), so the
+        // pull always starts on the frame the record goes
+        { t: CAP.forget - PULL45.lead + PULL45.dur, box: F.after, dur: PULL45.dur },
       ]
     : [
         { t: 0, box: F.all },
