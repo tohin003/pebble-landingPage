@@ -36,7 +36,9 @@ export function FeatureLoop({ id, sizes = "(max-width: 560px) calc(100vw - 32px)
   const words = media.launchLoops[id];
   const diagram = DIAGRAMS.has(id);
   const phoneCut = loop.phoneSources.length > 0;
-  const shape = { "--feature-loop-aspect": `${loop.width} / ${loop.height}` } as CSSProperties;
+  // the loop's own shape; the stylesheet turns it into --feature-loop-aspect, so the 4:5 rule for phones can win (an
+  // inline --feature-loop-aspect would beat any stylesheet rule, and a phone cut would be cropped into the wide frame)
+  const shape = { "--feature-loop-wide": `${loop.width} / ${loop.height}` } as CSSProperties;
   return (
     <figure
       className={`${styles.figure} ${className ?? ""}`}

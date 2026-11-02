@@ -218,9 +218,16 @@ export function loopMedia(id: LoopId): LoopMedia {
   return loopFiles(MEDIA, id, LOOP_FRAMES[id]);
 }
 
-/** A Pebble 2.0 loop, from /media/v3 (LAUNCH_LOOP_FRAMES). */
+/**
+ * A Pebble 2.0 loop, from /media/v3 (LAUNCH_LOOP_FRAMES). A loop whose own frame is already the phones' 4:5
+ * (LOOP_PHONE_FRAME: Pebble Remote's iPhone recording) is its own phone cut, so it plays on phones too instead of
+ * leaving its poster alone there.
+ */
 export function launchLoopMedia(id: LaunchLoopId): LoopMedia {
-  return loopFiles(LAUNCH_MEDIA, id, LAUNCH_LOOP_FRAMES[id]);
+  const frame = LAUNCH_LOOP_FRAMES[id];
+  const loop = loopFiles(LAUNCH_MEDIA, id, frame);
+  const portrait = frame.width === LOOP_PHONE_FRAME.width && frame.height === LOOP_PHONE_FRAME.height;
+  return portrait && loop.phoneSources.length === 0 ? { ...loop, phoneSources: loop.sources, phonePoster: loop.poster } : loop;
 }
 
 /** Whether a loop has anything to show: its video or its poster. Sections show nothing new until it does. */

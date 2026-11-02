@@ -191,7 +191,7 @@ describe("the 2.0 loop slots, once their files exist", () => {
     expect(html).toContain('data-loop-id="remote"');
     expect(html).toContain(`aria-label="${attr(media.launchLoops.remote.label)}"`);
     expect(html).toContain("data-portrait");
-    expect(html).toContain("--feature-loop-aspect:1080 / 1350");
+    expect(html).toContain("--feature-loop-wide:1080 / 1350");
   });
 
   test("the diagram is captioned as one, on the panel, without the sample-data line", () => {

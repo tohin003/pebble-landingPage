@@ -3,6 +3,7 @@
 .figure {
   margin: 28px 0 0;
   max-width: 952px;
+  --feature-loop-aspect: var(--feature-loop-wide, 16 / 10);
 }
 
 /* Pebble Remote's 4:5 iPhone recording: a narrow frame, not a column-wide one */

@@ -1507,7 +1507,7 @@ export const media = {
       name: "AgentGuard",
       label:
         "“Done means checked.” In Pebble, a task is held: “Pebble's change isn't verified yet.” The pointer presses Run the tests, a card reads “1 action needs your review. Nothing changes until you approve.”, and then the request reads “Verified · pytest 42 passed on current files”. “AgentGuard.” “Evidence before ‘done’.” Three ticked lines follow: tests the host ran, not the model’s word; files you asked to keep, kept; output matched to its file, byte for byte.",
-      source: "Pebble 2.0.1's own interface, run with sample data.",
+      source: "Pebble 2.0.1's own interface, in a scripted run.",
     },
     workshop: {
       name: "Workshop",
@@ -1519,7 +1519,7 @@ export const media = {
       name: "memory",
       label:
         "“It remembers what matters.” A table of Pebble's six kinds of memory: Profile, your preferences; Semantic, facts and knowledge; Procedural, how things are done here; Episodic, past tasks; Temporal, things that expire; Working, the current task. It opens into Settings › Memory, where each record says which file Pebble learned it from. “All visible.” The pointer chooses Forget on “Wheel taster: 10.00”, and “Forget anything.” appears as the record goes.",
-      source: "Pebble 2.0.1's own interface, run with sample data.",
+      source: "Pebble 2.0.1's own interface, in a scripted run.",
     },
     "long-tasks": {
       name: "long tasks",

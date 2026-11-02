@@ -45,10 +45,12 @@
   filter: drop-shadow(0 6px 6px rgba(var(--shade), 0.16));
 }
 
+/* on the dark field above the poster's one line: the launch film's frame 0 sets "This is Pebble." across the middle
+   (about 42 to 58 % of its height, in both cuts) and the pebble below it, so a centred button would cover the line */
 .play {
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: 24%;
   transform: translate(-50%, -50%);
 }
 
