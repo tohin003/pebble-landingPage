@@ -1,6 +1,7 @@
 // The master's plan, checked and printed: the timeline's invariants, the seams, every SFX cue with its time, the music's
 // ducks and the effect density per 30 s. `bun video/src/launch/master/check.ts [--json out.json]`; exit 2 when an
 // invariant fails.
+import "./noFontFetch"; // first: the scenes' font loading can't fail a check that passed
 import { writeFileSync } from "node:fs";
 import { MUSIC, MUSIC_PICK } from "../data/music";
 import { ALL_SCENES } from "../scenes/Previews";
