@@ -274,7 +274,7 @@ export const S00ColdOpen: React.FC<SceneProps> = ({ durationInFrames }) => {
               <Headline text="This is Pebble." at={-1} size={L.type.display} align="center" valign="top" fit box={g.title} leading={1} />
             </ExitWrap>
             <ExitWrap at={T(B.smallExit)} t={t} rise={L.px(14)}>
-              <Headline text="It's small." at={T(B.small)} entrance="blur" size={L.type.display} align="center" valign="top" box={g.title} leading={1} />
+              <Headline text="It’s small." at={T(B.small)} entrance="blur" size={L.type.display} align="center" valign="top" box={g.title} leading={1} />
             </ExitWrap>
             {/* REVIEW-4 N-1: no exit; it goes with the names and the terms on the drop */}
             <Headline

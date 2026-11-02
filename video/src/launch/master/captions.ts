@@ -95,7 +95,7 @@ export const CUES: readonly Cue[] = [
     scene: "S00-ColdOpen",
     in: 1.2,
     out: 2.4,
-    lines: ["It's small."],
+    lines: ["It’s small."],
     text: { in: 1.167, out: 1.9 },
     from: "blur entrance at T(S00_BEATS.small 1.05), \"small.\" +0.067 s, readable f35; starts f36 so the cue before has its 1.2 s; ExitWrap at T(1.75), half gone f57; held to 1.2 s",
   },

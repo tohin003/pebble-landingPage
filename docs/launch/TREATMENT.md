@@ -25,7 +25,7 @@ deliver the ~90 s film in 16:9 and a 4:5 re-layout (1080×1350, not a crop). Eve
 
 An underdog story with an open loop, told mostly in kinetic type over real footage:
 
-1. **The challenger (hook).** A tiny sage pebble blinks awake on a dark stage. *"This is Pebble." "It's small."* Then:
+1. **The challenger (hook).** A tiny sage pebble blinks awake on a dark stage. *"This is Pebble." "It’s small."* Then:
    *"It just went up against Claude Code and Codex."* *"Same model. Same tasks."* The question hangs. (Open loop.)
 2. **The reveal.** Drop. *Pebble 2.0*, with the README's own line: *"The desktop companion that does real work, and
    shows its evidence."*
@@ -46,7 +46,7 @@ Voice: British spelling, sentence case, statements end with a period, no exclama
 
 | # | Act | ~Time | Picture | On-screen text |
 |---|---|---|---|---|
-| 0 | Cold open | 0:00–0:08 | Dark stage; the pebble small at centre, blinks awake; looks up at the rivals' names | "This is Pebble." / "It's small." / "It just went up against" "Claude Code and Codex." / "Same model. Same tasks." |
+| 0 | Cold open | 0:00–0:08 | Dark stage; the pebble small at centre, blinks awake; looks up at the rivals' names | "This is Pebble." / "It’s small." / "It just went up against" "Claude Code and Codex." / "Same model. Same tasks." |
 | 1 | Title | 0:08–0:12 | The drop: the pebble hops into the lockup | "Pebble 2.0" + "The desktop companion that does real work, and shows its evidence." |
 | 2 | Lives on your Mac | 0:12–0:20 | RS1-03 (Spaces swipe, the pebble stays); RS15-01 (click the pebble, quick chat, "What can you do now?") | "It lives on your Mac." / "On every Space." / "Click. Ask." |
 | 3 | Uses your Mac | 0:20–0:33 | RS4-07 (Calculator: the keys pressed, 600); RS5C-04 (Calendar event); RS9B-02 (website approval, the working pill) | "Now it can use your Mac." / "Your apps." / "Your calendar." / "Your browser." / limit: "Only the windows and sites you allow." |
