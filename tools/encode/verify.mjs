@@ -86,7 +86,7 @@ export const LOUDNESS = Object.freeze({
 export const SEAM = Object.freeze({ width: 400, capDb: 45, marginDb: 3 });
 const FRAMES = { film: { "1080": [1920, 1080], "720": [1280, 720], square: [1080, 1080], phone: [1080, 1350] }, teaser: [1280, 720] };
 const LOOP_FRAMES = ["1600x1000", "1080x1080", "1080x1350", "1600x900", "1200x800"];
-const SOCIAL_FRAMES = ["1920x1080", "1080x1080", "1080x1920"];
+const SOCIAL_FRAMES = ["1920x1080", "1080x1080", "1080x1920", "1080x1350"];
 const POSTER_FRAMES = { film: "1920x1080", "film-phone": "1080x1350", teaser: "1280x720" };
 
 // ---- arguments and the heavy job -----------------------------------------------------------------------------------
@@ -470,7 +470,7 @@ function checkVideo(rec, cls, ctx) {
       if (!s.ok) fail(`seam: last -> first frame ${fmtDb(s.seamDb)} dB, below ${s.threshold.toFixed(1)} dB (median step ${fmtDb(s.medianDb)} dB, capped at ${SEAM.capDb}, minus ${SEAM.marginDb}); the loop jumps`);
     }
   } else if (cls.kind === "social") {
-    if (!SOCIAL_FRAMES.includes(dims)) warn(`${dims} is none of 1920x1080, 1080x1080, 1080x1920 (OVERRIDES §14)`);
+    if (!SOCIAL_FRAMES.includes(dims)) warn(`${dims} is none of 1920x1080, 1080x1080, 1080x1920, 1080x1350 (OVERRIDES §14; the launch film's 4:5)`);
     rec.budget = LIMITS.social;
     if (size > LIMITS.social) fail(`${fmtSize(size)}, over X's ${fmtSize(LIMITS.social)}`);
     const [lo, hi] = LIMITS.socialSeconds;

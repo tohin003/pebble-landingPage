@@ -140,7 +140,7 @@ starting CRF.
 
 ```bash
 node tools/encode/verify.mjs                                     # public/media (v1, v3), plus public/ totals
-node tools/encode/verify.mjs video/out/launch                    # ... plus the director's delivered files
+node tools/encode/verify.mjs video/out/launch/LaunchFilm-4x5-linkedin.mp4   # ... plus a delivered social file (never the masters)
 node tools/encode/verify.mjs --no-public <files or folders>      # only these
 node tools/encode/verify.mjs --no-analysis                       # probe-only: no loudness or seam pass, no heavy job
 node tools/encode/verify.mjs --json                              # machine-readable, the same exit code
