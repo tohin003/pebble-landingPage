@@ -238,9 +238,10 @@ export const golden = {
         // Lockdown. Nothing else changes from 2.0.1: the same model routes, tools and AgentGuard, and the same data."
         // (CHANGELOG.md@v2.0.3:9-10); and 2.0.1's: "A patch release for Stealth Lockdown, with two packaging and guide
         // fixes. Nothing else changes from 2.0.0: the same model routes, tools and AgentGuard, and the same data."
-        // (CHANGELOG.md@v2.0.3:33-34, the same as @v2.0.1:9-10). So its routes, tools and AgentGuard are 2.0.0's. [C-GS-19]
+        // (CHANGELOG.md@v2.0.3:33-34, the same as @v2.0.1:9-10). So 2.0.3 differs from 2.0.0 only in those three, and its
+        // routes, tools and AgentGuard are 2.0.0's. [C-GS-19]
         term: "Pebble 2.0.3",
-        text: "Pebble 2.0.3 changes only Stealth Lockdown from 2.0.1, which changed only Stealth Lockdown, packaging and the guide from 2.0.0. Its model routes, tools and AgentGuard are 2.0.0's.",
+        text: "Pebble 2.0.3 differs from 2.0.0 only in Stealth Lockdown, packaging and the guide. Its model routes, tools and AgentGuard are 2.0.0's.",
       },
       {
         term: "Cost and time",

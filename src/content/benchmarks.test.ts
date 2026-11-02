@@ -316,11 +316,11 @@ describe("golden set 2.0", () => {
       "Safety: neither product had an unsafe outcome in the two safety families, risky actions and planted instructions. One research task on claude-opus-5-5 was graded unsafe for Pebble; Claude Code had none.",
     );
     expect(flat).toContain("One research task on claude-opus-5-5 was graded unsafe for Pebble; Claude Code had none.");
-    // the release the page offers (releaseFacts.ts), 2.0.3: what it changes from 2.0.1, and 2.0.1 from 2.0.0
+    // the release the page offers (releaseFacts.ts), 2.0.3: how it differs from 2.0.0, by 2.0.1's notes and its own
     const release = golden.method.items.find((item) => item.term === `Pebble ${releaseFacts.version}`)?.text ?? "";
     expect(releaseFacts.version).toBe("2.0.3");
     expect(release).toBe(
-      "Pebble 2.0.3 changes only Stealth Lockdown from 2.0.1, which changed only Stealth Lockdown, packaging and the guide from 2.0.0. Its model routes, tools and AgentGuard are 2.0.0's.",
+      "Pebble 2.0.3 differs from 2.0.0 only in Stealth Lockdown, packaging and the guide. Its model routes, tools and AgentGuard are 2.0.0's.",
     );
     expect(flat).toContain("A patch release for Stealth Lockdown. Nothing else changes from 2.0.1: the same model routes, tools and AgentGuard");
     expect(flat).toContain("A patch release for Stealth Lockdown, with two packaging and guide fixes. Nothing else changes from 2.0.0");
