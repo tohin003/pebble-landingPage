@@ -13,9 +13,12 @@ if [ "${1:-}" = "--music-only" ]; then
   MUSIC="$(music_wav)"
   [ -f "$MUSIC" ] || { echo "final.sh: the music file is missing: $MUSIC" >&2; exit 66; }
   OUT="$OUT_DIR/LaunchFilm-$ASPECT-musiconly.mp4"
+  # the music starts one frame late, as in the master (Master.tsx MUSIC_DELAY_FRAMES: 1 frame at 30 fps)
+  SR="$("$FP" -v error -select_streams a:0 -show_entries stream=sample_rate -of csv=p=0 "$MUSIC")"
+  DELAY="adelay=delays=$(( SR / 30 ))S:all=1"
   "$HEAVY" "master-musiconly-$ASPECT" "$FF" -hide_banner -loglevel error -y -i "$MASTER" -i "$MUSIC" \
-    -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 320k -ar 48000 -shortest -movflags +faststart "$OUT"
-  "$HEAVY" "master-musiconly-wav-$ASPECT" "$FF" -hide_banner -loglevel error -y -i "$MUSIC" -ar 48000 -c:a pcm_s24le "${OUT%.mp4}.wav"
+    -map 0:v:0 -map 1:a:0 -af "$DELAY" -c:v copy -c:a aac -b:a 320k -ar 48000 -shortest -movflags +faststart "$OUT"
+  "$HEAVY" "master-musiconly-wav-$ASPECT" "$FF" -hide_banner -loglevel error -y -i "$MUSIC" -af "$DELAY" -ar 48000 -c:a pcm_s24le "${OUT%.mp4}.wav"
   echo "final.sh: $OUT"
   exit 0
 fi

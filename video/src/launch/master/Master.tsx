@@ -188,11 +188,22 @@ const SlotBody: React.FC<{
 
 /* ---------- the music ---------- */
 
+/**
+ * The music starts one frame late. data/music.ts's beat grid sits about 27 ms after the file's own transients (music A:
+ * 8.024 against 8.0507, 40.026 against 40.0523, 73.024 against 73.0538, 81.026 against 81.0542, measured on the file
+ * alone; REVIEW-4 S-4), so every cut on a beat landed about 40 ms after its downbeat. One frame (33.3 ms) later, each
+ * transient sits 8–10 ms before its cut, and the effects (placed on the picture's frames) meet it. The ducks stay on
+ * the master's clock: the stop still ends at 81.0, so the payoff's downbeat (now 81.059) plays at full.
+ * `final.sh --music-only` delays the bare music by the same frame.
+ */
+export const MUSIC_DELAY_FRAMES = 1;
+
 const MusicBed: React.FC<{ id: MusicId; level: number; duckList: readonly Duck[] }> = ({ id, level, duckList }) => {
   const { fps } = useVideoConfig();
   const m = MUSIC[id];
   const volume = (f: number) => {
-    const t = f / fps;
+    // f counts from the music's own start, one frame into the film: the ducks are on the master's clock
+    const t = (f + MUSIC_DELAY_FRAMES) / fps;
     let g = level;
     for (const d of duckList) {
       const x = t - d.at;
@@ -203,7 +214,11 @@ const MusicBed: React.FC<{ id: MusicId; level: number; duckList: readonly Duck[]
     }
     return g;
   };
-  return <Audio src={staticFile(m.file)} volume={volume} name={`music ${m.id}`} />;
+  return (
+    <Sequence from={MUSIC_DELAY_FRAMES} layout="none" name={`music ${m.id} (one frame late)`}>
+      <Audio src={staticFile(m.file)} volume={volume} name={`music ${m.id}`} />
+    </Sequence>
+  );
 };
 
 export const Master: React.FC<MasterProps> = ({ music = MUSIC_PICK, sfx = true, sfxDb = 0, musicDb = 0 }) => {
