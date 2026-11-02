@@ -26,8 +26,8 @@
 //   moov before mdat.
 // - Audio: the film has AAC-LC 48 kHz stereo at about 160 kb/s and lasts as long as the picture; loops and the teaser
 //   have no audio track (D11); social masters have AAC-LC 48 kHz stereo at about 192 kb/s (OVERRIDES §4).
-// - Size: every file under public/ <= 45 MB and public/ <= 90 MB (D16); the film set, its 4:5 cut included, <= 45 MB
-//   (OVERRIDES §8, critic C6; the launch film's per-file shares, LIMITS.film, are warnings: tools/encode/README.md
+// - Size: every file under public/ <= 45 MB and public/ <= 90 MB (D16); the film set, its 4:5 cut included, <= 50 MB
+//   (OVERRIDES §8 and critic C6 set 45; the director's phase-B answer 3 allows about 50; the launch film's per-file shares, LIMITS.film, are warnings: tools/encode/README.md
 //   "The launch film's budget"); teaser
 //   <= 1.5 MB; loop HEVC <= 0.9 MB; loop H.264 <= 1.5 MB (over
 //   1.2 MB is a warning); poster AVIF <= 60 KB, WebP <= 90 KB (MASTER_PLAN §5.5); social <= 512 MB and 3-140 s (X,
@@ -65,11 +65,13 @@ const KB = 1e3;
 export const LIMITS = Object.freeze({
   file: 45 * MB,
   public: 90 * MB,
-  filmSet: 45 * MB,
+  // 45 MB by OVERRIDES §8 and critic C6; 50 MB since the director's phase-B answer 3 (2 Nov 2026): "The film set may
+  // grow to about 50 MB if clean needs it", with public/ at most 85 MB in du -sh units.
+  filmSet: 50 * MB,
   // the Pebble 2.0 launch film's shares (99.4 s, with grain): tools/encode/README.md "The launch film's budget". The
-  // plan encodes 1080 HEVC, 720 H.264 and the 4:5 cut in both (42 MB); 1080 H.264 and 720 HEVC keep C6's shares, for
-  // a set that drops a planned file to fit one of them.
-  film: { "1080.hevc": 13 * MB, "720.h264": 9.5 * MB, "phone.hevc": 8.5 * MB, "phone.h264": 11 * MB, "1080.h264": 18 * MB, "720.hevc": 6 * MB, "square.hevc": 6 * MB, "square.h264": 9 * MB },
+  // plan encodes 1080 HEVC, 720 H.264 and the 4:5 cut in both (48.5 MB, for a clean dark ground); 1080 H.264 and 720
+  // HEVC keep C6's shares, for a set that drops a planned file to fit one of them.
+  film: { "1080.hevc": 14 * MB, "720.h264": 11 * MB, "phone.hevc": 11 * MB, "phone.h264": 12.5 * MB, "1080.h264": 18 * MB, "720.hevc": 6 * MB, "square.hevc": 6 * MB, "square.h264": 9 * MB },
   teaser: 1.5 * MB,
   loopHevc: 0.9 * MB,
   loopH264Target: 1.2 * MB,
@@ -85,7 +87,7 @@ export const LOUDNESS = Object.freeze({
 });
 export const SEAM = Object.freeze({ width: 400, capDb: 45, marginDb: 3 });
 const FRAMES = { film: { "1080": [1920, 1080], "720": [1280, 720], square: [1080, 1080], phone: [1080, 1350] }, teaser: [1280, 720] };
-const LOOP_FRAMES = ["1600x1000", "1080x1080", "1080x1350", "1600x900", "1200x800"];
+const LOOP_FRAMES = ["1600x1000", "1080x1080", "1080x1350", "1600x900", "1140x760"];
 const SOCIAL_FRAMES = ["1920x1080", "1080x1080", "1080x1920", "1080x1350"];
 const POSTER_FRAMES = { film: "1920x1080", "film-phone": "1080x1350", teaser: "1280x720" };
 
@@ -431,7 +433,7 @@ function checkVideo(rec, cls, ctx) {
     if (ctx.totalFrames && frames !== ctx.totalFrames) fail(`${frames} frames; the film is ${ctx.totalFrames} (src/content/chapters.ts FILM_DURATION_SECONDS at 30 fps), and its tracks are timed for that`);
     const target = LIMITS.film[`${cls.res}.${cls.codec}`];
     rec.budget = target;
-    if (size > target) warn(`${fmtSize(size)} is over its ${fmtSize(target)} share of the 45 MB film set (critic C6)`);
+    if (size > target) warn(`${fmtSize(size)} is over its ${fmtSize(target)} share of the ${fmtSize(LIMITS.filmSet)} film set (critic C6)`);
     checkAudioTrack(rec, audio, { bitRate: 160000, why: "MASTER_PLAN §5.5" }, duration);
     if (ctx.loudness && audio.length) checkLoudness(rec, LOUDNESS.web);
   } else if (cls.kind === "teaser" || cls.kind === "loop") {

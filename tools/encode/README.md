@@ -57,25 +57,27 @@ tools/encode/launch-site.sh clean                # then: the intermediate mixes,
   frames; its last `blend` frames (12, 0.4 s) dissolve into its first, and it starts on its poster frame, so the poster
   is frame 0 and the seam is two neighbouring film frames (`verify.mjs` checks every loop's seam). The 16:9 cuts are
   scaled to 1600 × 900; the 4:5 cuts are the 4:5 master's own frames, 1080 × 1350; long tasks is a 3:2 crop of the
-  16:9 diagram, clear of its scene's title. `--dry-run` checks the plan against `src/lib/media.ts`; each loop writes a
+  16:9 diagram (1140 × 760), clear of its scene's title and of its budget line's label. `--dry-run` checks the plan against `src/lib/media.ts`; each loop writes a
   six-frame review strip to `.work/launch/site/loops/review/` for the eye.
 
 ## The launch film's budget
 
-`public/` must stay within 90 MB and every file within 45 MB (D16); the film set within 45 MB (OVERRIDES §8). Decimal
-MB, measured on 2 Nov 2026 with the trailer retired:
+`public/` must stay within 90 MB and every file within 45 MB (D16), with 5 MB of headroom: at most 85 MB as `du -sh
+public` counts it (the director's phase-B brief). The film set may take about 50 MB (OVERRIDES §8 set 45; the
+director's phase-B answer 3 allows 50 "if clean needs it", and the calibration below says it does). Decimal MB, measured
+on 2 Nov 2026 with the trailer retired; the encoded sizes are phase B's:
 
 | Part | Files | Budget |
 |---|---|---|
 | Kept: `media/v1` (1.x loops, posters, wallpaper), `ui/v1` | 36 + 112 | 12.08 now; 8.74 once the v1 `companion` and `memory` loops retire (3.34), after `desk` and `memory` replace them |
-| The film, 16:9 | `film-1080.hevc` 13, `film-720.h264` 9.5 | 22.5 |
-| The film, 4:5 for phones | `film-phone.hevc` 8.5, `film-phone.h264` 11 | 19.5 |
-| **The film set** | 4 | **42 of 45** |
+| The film, 16:9 | `film-1080.hevc` 14 (13.32 at CRF 27), `film-720.h264` 11 (10.60 at CRF 22) | 25 |
+| The film, 4:5 for phones | `film-phone.hevc` 11 (10.17 at CRF 28), `film-phone.h264` 12.5 (12.60 at CRF 25) | 23.5 |
+| **The film set** | 4 | **48.5 of 50 (46.69 encoded)** |
 | The film's posters and tracks | 4 + 3 | 0.3 |
 | The loops | 8 loops, 14 clips (7 at 16:9 or 3:2, 7 at 4:5): HEVC ≤ 0.6, H.264 ≤ 0.9 (hard 1.2) | ≤ 21 (hard 25.2) |
 | The loops' posters | 28 (AVIF ≤ 60 KB, WebP ≤ 90 KB) | ≤ 2.5, about 1.3 |
-| **`public/`** | | **about 78 at the budgets (74 after the two v1 loops go); at most about 82** |
-| Left | | about 8 to 16 MB, enough for `ui/v2`'s 2.0.x stills (at most 6) |
+| **`public/`** | | **about 81 at the budgets after the two v1 loops go (77 MiB in `du -sh` units)** |
+| Left | | about 4 MB at the budgets, more at the encoded sizes; `ui/v2`'s 2.0.x stills (at most 6) need the loops to land under theirs |
 
 - **Which film files**: the player tries, on a phone, the 4:5 cut (HEVC, then H.264) and then the 16:9 files; on a
   screen at least 1,700 device pixels wide, 1080p then 720p, else 720p then 1080p; HEVC before H.264 in each; only what
@@ -89,12 +91,24 @@ MB, measured on 2 Nov 2026 with the trailer retired:
 - **The grain**: the masters carry the film's grain (at most 3 %, re-seeded 30 times a second, `video/src/launch/
   components/Grain.tsx`); it costs the most bits at these rates, and an encoder that can't keep it smears it or makes it
   pulse on the dark grounds (S00, S01, S08, S11). The drafts measured it: draft 5 at half size and CRF 20 is about 2.0
-  Mb/s of video. Phase B calibrates on a dark stretch and a light one before the full encodes: the planned budget with
-  and without `FILM_VF=hqdn3d=0:0:4:4` (a temporal-only denoise, which keeps the grain's texture in each frame), judged
-  by eye on 3×-contrast crops and by the director's blockiness measure (`bun video/src/launch/master/blockiness.ts
-  <file>`). The loops use the same choice (`launch-loops.json` `prefilter`).
+  Mb/s of video. Phase B calibrated on a dark stretch and a light one before the full encodes (2 Nov 2026, the 16:9
+  master's 0-8 s, the opening on its dark stage, and 31-40 s, a card on a light ground; x265 slow and x264 slow),
+  judged by eye on crops at 3× contrast and by the director's blockiness measure (`bun video/src/launch/master/
+  blockiness.ts <file>`; the master itself reads 1.73 and 1.38, its grain carrying H.264's 8-px grid):
+  - **No denoise** (the film's own look): at the planned 0.87 Mb/s, and at CRF 27, the grain doesn't survive. The dark
+    ground (luma about 34) breaks into flat blocks a level or two apart, and the first second after the start reads
+    2.6 to 3.7 (the master 1.7 to 1.8). x264 at 720p keeps some grain, as mottled patches, for 0.86 Mb/s on a near-still
+    dark shot. The director's own crop filter (`eq=contrast=3:brightness=0.15`) crushes a ground that dark to black, so
+    the crops are lifted from black instead (`lutyuv=y=(val-16)*3`).
+  - **So the web files use `FILM_VF=hqdn3d=0:0:4:4`** (a temporal-only denoise), the loops too (`launch-loops.json`
+    `prefilter`, each range read 15 frames early so the filter is warm at its first frame). On its own it changes
+    little in x265; with **`ENC_AQ=3`** (both encoders' adaptive quantisation with a bias to dark scenes, now the
+    default) the ground is smooth: median 1.26 at CRF 27, for 464 kb/s on the dark stretch. x264 at 720p is smooth
+    with it too (1.16, 0.52 Mb/s). The HEVC film's first second (**`FILM_ZONE`**, frames 0-29 at 2.5 times the bits,
+    about 0.4 MB) starts clean instead of clearing over a second: 1.07 to 1.19, and the stretch's worst falls to 1.32.
+    x264's first second was clean without it.
 - **If a file misses its budget** at its CRF + `FILM_MAX_RAISE`, it takes the lowest CRF under its hard limit, and
-  the film set must still pass 45 MB. Raise `FILM_MAX_RAISE` (to 6) or the starting CRF (`FILM_HEVC_CRF`,
+  the film set must still pass 50 MB. Raise `FILM_MAX_RAISE` (to 6) or the starting CRF (`FILM_HEVC_CRF`,
   `FILM_H264_CRF`) before dropping a file.
 
 ## Settings and budgets
@@ -107,11 +121,11 @@ starting CRF.
 
 | Output | Encode | Budget (raise CRF to fit) | Hard limit |
 |---|---|---|---|
-| `film-1080.hevc.mp4` | x265 slow CRF 25 (`FILM_HEVC_CRF`), `hvc1`, AAC 160k 48 kHz | 13 MB | 16 MB |
-| `film-720.h264.mp4` | x264 slow CRF 21 (`FILM_H264_CRF` + 1), High, `scale=1280:-2:flags=lanczos`, AAC 160k | 9.5 MB | 12 MB |
-| `film-phone.hevc.mp4` | x265 slow CRF 25 from the 4:5 master, `hvc1`, AAC 160k from its mix | 8.5 MB | 10 MB |
-| `film-phone.h264.mp4` | x264 slow CRF 20 from the 4:5 master, High, AAC 160k | 11 MB | 13 MB |
-| `film-1080.h264.mp4`, `film-720.hevc.mp4` | not in the plan (`--only`): CRF 20 / 26 | 18 / 6 MB | 30 / 12 MB |
+| `film-1080.hevc.mp4` | x265 slow CRF 27 (`FILM_HEVC_CRF`), `hvc1`, `FILM_ZONE` on its first second, AAC 160k 48 kHz | 14 MB | 16 MB |
+| `film-720.h264.mp4` | x264 slow CRF 22 (`FILM_H264_CRF` + 1), High, `scale=1280:-2:flags=lanczos`, AAC 160k | 11 MB | 12 MB |
+| `film-phone.hevc.mp4` | x265 slow CRF 27 from the 4:5 master, `hvc1`, `FILM_ZONE`, AAC 160k from its mix | 11 MB | 12 MB |
+| `film-phone.h264.mp4` | x264 slow CRF 21 from the 4:5 master, High, AAC 160k | 12.5 MB | 14 MB |
+| `film-1080.h264.mp4`, `film-720.hevc.mp4` | not in the plan (`--only`): CRF 21 / 28 | 18 / 6 MB | 30 / 12 MB |
 | `loop-<id>[-phone].hevc.mp4` | x265 slow CRF 27, `-an` | 0.6 MB for the launch loops (`LOOP_HEVC_BUDGET`; 0.9 by default) | the same |
 | `loop-<id>[-phone].h264.mp4` | x264 slow CRF 23, High, `-an` | 0.9 MB for the launch loops (`LOOP_H264_BUDGET`; 1.2) | 1.2 (`LOOP_H264_HARD`; 1.5) |
 | `<name>.poster.avif` / `.webp` | sharp AVIF q50 effort 6 / WebP q76 effort 6; quality down by 2 to fit (AVIF to q30, WebP to q50). A simple picture (under a quarter of its budget at the start quality: flat fields, soft gradients) gets the highest quality up to AVIF q80 / WebP q90 that stays under that quarter, because the start quality bands there | 60 KB / 90 KB | |
@@ -160,7 +174,8 @@ node tools/encode/verify.mjs --json                              # machine-reada
 - **Loudness** (`ebur128` with true peak, read at full precision from its metadata): the website film −16 LUFS ±1 and
   ≤ −1.5 dBTP (D10); social −14 LUFS ±1 and ≤ −1.0 dBTP (OVERRIDES §4). Outside ±0.5 LU (MASTER_PLAN §6.4's gate) is a
   warning.
-- **Sizes**: every file under `public/` ≤ 45 MB and `public/` ≤ 90 MB (D16); the film set ≤ 45 MB (OVERRIDES §8); a
+- **Sizes**: every file under `public/` ≤ 45 MB and `public/` ≤ 90 MB (D16); the film set ≤ 50 MB (OVERRIDES §8's 45,
+  raised by the director's phase-B answer 3); a
   film file over its share (`LIMITS.film`, the plan above) is a warning; loop and poster budgets as above; social
   ≤ 512 MB and 3 to 140 s (LinkedIn's minimum, X's 2 min 20 s).
 - **Seams** (loops): the PSNR of the last frame against the first must be at least the median PSNR between

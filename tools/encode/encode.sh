@@ -33,17 +33,20 @@
 #   past the start + FILM_MAX_RAISE (film, default 4) or + 6 (loops); the resolution never drops. The first CRF that
 #   fits wins; failing that, the lowest CRF under the hard limit; failing that, the command fails and the file is kept
 #   in .work/tmp/encode-rejected/ for a look. tools/encode/README.md "The launch film's budget" has the plan:
-#     film-1080.hevc CRF 25 <= 13 MB (hard 16)        film-720.h264 CRF 21 <= 9.5 MB (hard 12)    the plan's two 16:9
-#     film-phone.hevc CRF 25 <= 8.5 MB (hard 10)      film-phone.h264 CRF 20 <= 11 MB (hard 13)   files and the 4:5 cut
-#     film-1080.h264 CRF 20 <= 18 MB, film-720.hevc CRF 26 <= 6 MB: C6's shares, encoded only when --only names them
-#     (the film set, every film-*.mp4 in the folder, must stay within 45 MB: verify.mjs fails it above)
+#     film-1080.hevc CRF 27 <= 14 MB (hard 16)        film-720.h264 CRF 22 <= 11 MB (hard 12)     the plan's two 16:9
+#     film-phone.hevc CRF 27 <= 11 MB (hard 12)       film-phone.h264 CRF 21 <= 12.5 MB (hard 14) files and the 4:5 cut
+#     film-1080.h264 CRF 21 <= 18 MB, film-720.hevc CRF 28 <= 6 MB: C6's shares, encoded only when --only names them
+#     (the film set, every film-*.mp4 in the folder, must stay within 50 MB, the director's phase-B answer 3 for a
+#     clean dark ground: verify.mjs fails it above)
 #     loop HEVC CRF 27 <= 0.9 MB; loop H.264 CRF 23 <= 1.2 MB (hard 1.5)   (and the -phone 4:5 cuts the same)
 #     posters: AVIF q50 effort 6 <= 60 KB, WebP q76 <= 90 KB, quality lowered stepwise to fit (tools/encode/poster.mjs)
 #   Starting CRFs move with FILM_HEVC_CRF / FILM_H264_CRF (the film and its cut) and LOOP_HEVC_CRF / LOOP_H264_CRF; the
-#   budgets stay. FILM_VF puts a filter before the film's scaling and tags (for example hqdn3d=0:0:4:4, a light
-#   temporal denoise of the film's grain, which costs the most bits at these sizes): tools/encode/README.md says when.
+#   budgets stay. FILM_VF puts a filter before the film's scaling and tags (the launch film's web files use
+#   hqdn3d=0:0:4:4, a light temporal denoise of the film's grain, which costs the most bits at these sizes; the loops
+#   take the same from tools/encode/launch-loops.json): tools/encode/README.md "The grain" has the calibration.
 # - Every encode: yuv420p, BT.709 tags put on the frames with setparams (so they reach the VUI and the MP4 colr box),
-#   +faststart, no global metadata (Remotion's "Made with Remotion" comment is dropped); x264 at -level:v 4.0.
+#   +faststart, no global metadata (Remotion's "Made with Remotion" comment is dropped); x264 at -level:v 4.0; both
+#   encoders' AQ at ENC_AQ (3: a bias to dark scenes); the HEVC film's first second at FILM_ZONE's bitrate factor.
 #   Film and its cut: AAC 160 kb/s 48 kHz from the web mix (one AAC generation). Loops: -an.
 #   Social: H.264 High CRF 18 (VBV 20 Mb/s inside level 4.0), AAC-LC 192 kb/s 48 kHz stereo.
 # - At the end, tools/encode/verify.mjs checks the new files (codecs, colour, faststart, sizes, loudness, loop seams).
@@ -81,15 +84,26 @@ LOOP_H264_BUDGET="${LOOP_H264_BUDGET:-1200000}"
 LOOP_H264_HARD="${LOOP_H264_HARD:-1500000}"
 # The film's (see the header): FILM_HEVC_CRF for film-1080.hevc and film-phone.hevc (film-720.hevc starts 1 higher),
 # FILM_H264_CRF for film-1080.h264 and film-phone.h264 (film-720.h264 starts 1 higher).
-FILM_HEVC_CRF="${FILM_HEVC_CRF:-25}"
-FILM_H264_CRF="${FILM_H264_CRF:-20}"
+FILM_HEVC_CRF="${FILM_HEVC_CRF:-27}"
+FILM_H264_CRF="${FILM_H264_CRF:-21}"
 FILM_VF="${FILM_VF:-}"
+# The encoders' adaptive quantisation for every film and loop file: 3 is auto-variance with a bias to dark scenes (x265
+# aq-mode, x264 -aq-mode). Phase B's calibration (2 Nov 2026, tools/encode/README.md "The grain"): at these sizes the
+# film's dark ground came out in flat blocks with each encoder's default AQ, and smooth with 3.
+ENC_AQ="${ENC_AQ:-3}"
+# The HEVC film's first second (frames 0-29, what follows the poster when Play is pressed) gets FILM_ZONE's bitrate
+# factor (an x265 zone): at the film's CRF those frames started in blocks on the dark ground and took a second to clear.
+# x264 needs none (its first second measured clean, and a zone only kept grain at 2.6 times the bits). Empty for none.
+# ZONES is what ffenc applies; cmd_film and cmd_phone set it to FILM_ZONE.
+FILM_ZONE="${FILM_ZONE-0,29,b=2.5}"
+ZONES=""
 # The web mix (D10: -16 LUFS, at most -1.5 dBTP after AAC; deliver.sh's limiter and linear loudnorm).
 MIX_LUFS="${MIX_LUFS:--16}"
 MIX_TP="${MIX_TP:--2.0}"
 MIX_LIMIT_DB="${MIX_LIMIT_DB:--4.0}"
-# The film set's ceiling (OVERRIDES §8, critic C6): every film-*.mp4 in the folder together.
-FILM_SET=$((45 * MB))
+# The film set's ceiling (OVERRIDES §8, critic C6: 45 MB; 50 MB by the director's phase-B answer 3, "if clean needs
+# it"): every film-*.mp4 in the folder together.
+FILM_SET=$((50 * MB))
 
 die() { printf 'encode.sh: %s\n' "$*" >&2; exit 1; }
 usage_die() { printf 'encode.sh: %s\n' "$*" >&2; printf 'run "tools/encode/encode.sh --help" for usage\n' >&2; exit 64; }
@@ -213,9 +227,9 @@ ffenc() {
   set -- "$@" -map_metadata -1 -map_chapters -1 -vf "${vf:+$vf,}$TAG709"
   if [ "$codec" = hevc ]; then
     set -- "$@" -c:v libx265 -preset slow -crf "$crf" -tag:v hvc1 -pix_fmt yuv420p \
-      -x265-params "log-level=warning:colorprim=bt709:transfer=bt709:colormatrix=bt709${extra:+:$extra}"
+      -x265-params "log-level=warning:colorprim=bt709:transfer=bt709:colormatrix=bt709:aq-mode=$ENC_AQ${ZONES:+:zones=$ZONES}${extra:+:$extra}"
   else
-    set -- "$@" -c:v libx264 -preset slow -crf "$crf" -profile:v high -level:v 4.0 -pix_fmt yuv420p
+    set -- "$@" -c:v libx264 -preset slow -crf "$crf" -profile:v high -level:v 4.0 -pix_fmt yuv420p -aq-mode "$ENC_AQ"
   fi
   set -- "$@" -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv
   if [ -n "$wav" ]; then set -- "$@" -c:a aac -b:a 160k -ar 48000; fi
@@ -357,7 +371,7 @@ check_film_master() {
   [ "$V_FRAMES" = "$expected" ] || die "$2 $1 has $V_FRAMES frames, and the film has $expected (src/content/chapters.ts FILM_DURATION_SECONDS): the tracks would drift"
 }
 
-# film_set_note: the film set's total so far (every film-*.mp4 in OUT), against its 45 MB ceiling.
+# film_set_note: the film set's total so far (every film-*.mp4 in OUT), against its 50 MB ceiling.
 film_set_note() {
   local f setsize=0
   for f in "$OUT"/film-*.mp4; do
@@ -421,14 +435,15 @@ cmd_film() {
   soundtrack "$wav" "$frames"
   enter_heavy encode-film
   mkdir -p "$OUT"
+  ZONES="$FILM_ZONE"
   fixed="$(awk -v d="$A_DUR" 'BEGIN { printf "%d", 160000 / 8 * d * 1.02 }')"
   for v in $variants; do
     res="${v%%.*}" codec="${v#*.}"
     case "$v" in
-    1080.hevc) crf0=$FILM_HEVC_CRF target=$((13 * MB)) hard=$((16 * MB)) ;;
+    1080.hevc) crf0=$FILM_HEVC_CRF target=$((14 * MB)) hard=$((16 * MB)) ;;
     1080.h264) crf0=$FILM_H264_CRF target=$((18 * MB)) hard=$((30 * MB)) ;;
     720.hevc) crf0=$((FILM_HEVC_CRF + 1)) target=$((6 * MB)) hard=$((12 * MB)) ;;
-    720.h264) crf0=$((FILM_H264_CRF + 1)) target=$((9500000)) hard=$((12 * MB)) ;;
+    720.h264) crf0=$((FILM_H264_CRF + 1)) target=$((11 * MB)) hard=$((12 * MB)) ;;
     esac
     final="$OUT/film-$v.mp4"
     local vf="$FILM_VF"
@@ -441,6 +456,7 @@ cmd_film() {
       failed=1
     fi
   done
+  ZONES=""
   film_set_note || failed=1
   run_verify || failed=1
   return "$failed"
@@ -462,11 +478,12 @@ cmd_phone() {
   soundtrack "$wav" "$frames"
   enter_heavy encode-phone
   mkdir -p "$OUT"
+  ZONES="$FILM_ZONE"
   fixed="$(awk -v d="$A_DUR" 'BEGIN { printf "%d", 160000 / 8 * d * 1.02 }')"
   for v in $variants; do
     case "$v" in
-    hevc) crf0=$FILM_HEVC_CRF target=$((8500000)) hard=$((10 * MB)) ;;
-    h264) crf0=$FILM_H264_CRF target=$((11 * MB)) hard=$((13 * MB)) ;;
+    hevc) crf0=$FILM_HEVC_CRF target=$((11 * MB)) hard=$((12 * MB)) ;;
+    h264) crf0=$FILM_H264_CRF target=$((12500000)) hard=$((14 * MB)) ;;
     esac
     final="$OUT/film-phone.$v.mp4"
     if fit "film-phone.$v" "$v" "$crf0" "$target" "$hard" "$FILM_MAX_RAISE" "$fixed" "$final" "$master" "$FILM_VF" "$wav" "$frames"; then
@@ -477,6 +494,7 @@ cmd_phone() {
       failed=1
     fi
   done
+  ZONES=""
   film_set_note || failed=1
   run_verify || failed=1
   return "$failed"

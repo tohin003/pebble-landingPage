@@ -11,8 +11,8 @@
 //    (source first + frames .. first + frames + blend fading into first .. first + blend), started on `poster`:
 //      A = F[poster, first + frames)   B = xfade(F[first + frames, + blend) -> F[first, + blend))   C = F[first + blend, poster)
 //    each piece lossless (FFV1) from the master, then joined: no piece waits on frames far from it, so ffmpeg holds at
-//    most `blend` frames. Every piece gets the plan's prefilter, then the cut's crop (W:H:X:Y, master pixels) and
-//    scale (W:H). The result has the frame src/lib/media.ts gives the slot (LAUNCH_LOOP_FRAMES, LOOP_PHONE_FRAME).
+//    most `blend` frames. Every piece gets the plan's prefilter (each range read PREROLL frames early, so a temporal
+//    filter is warm at its first frame), then the cut's crop (W:H:X:Y, master pixels) and scale (W:H). The result has the frame src/lib/media.ts gives the slot (LAUNCH_LOOP_FRAMES, LOOP_PHONE_FRAME).
 // 2. A review strip (.work/launch/site/loops/review/loop-<id>[-phone].png): frames 0, a quarter, a half, the blend's
 //    start, its middle and the last, for the eye (the posters and the blend are provisional until looked at).
 // 3. The poster: frame 0 as a PNG (encode.sh still), then AVIF and WebP into public/media/v3 (encode.sh poster).
@@ -100,8 +100,19 @@ const run = (cmd, args, label) => {
   if (r.status !== 0) throw new Error(`${label}: ${path.basename(cmd)} exited ${r.status}`);
 };
 
-/** The filter after the cut's pieces are in hand: the plan's prefilter, the crop, the scale, the BT.709 tags. */
-const chain = (plan, cut) => [plan.prefilter || null, cut.crop ? `crop=${cut.crop}` : null, cut.scale ? `scale=${cut.scale}:flags=lanczos` : null, "format=yuv420p", TAG709].filter(Boolean).join(",");
+/** The filter after the cut's pieces are in hand: the crop, the scale, the BT.709 tags. */
+const chain = (cut) => [cut.crop ? `crop=${cut.crop}` : null, cut.scale ? `scale=${cut.scale}:flags=lanczos` : null, "format=yuv420p", TAG709].filter(Boolean).join(",");
+
+// The plan's prefilter (FILM_VF's twin, for example hqdn3d=0:0:4:4) is temporal: run cold, a range's first frames would
+// keep their grain and pop at the joins. So each range is read PREROLL frames early (as far as the film allows), the
+// prefilter runs over it, and the early frames are dropped: every frame then looks as it does in the filtered film.
+export const PREROLL = 15;
+/** trim + prefilter for the master's frames [from, to): the filter text, with the pre-roll dropped. */
+export function rangeFilter(prefilter, from, to) {
+  const r = prefilter ? Math.min(PREROLL, from) : 0;
+  const read = `trim=start_frame=${from - r}:end_frame=${to},setpts=PTS-STARTPTS`;
+  return prefilter ? `${read},${prefilter},trim=start_frame=${r},setpts=PTS-STARTPTS` : read;
+}
 
 function cutLoop(plan, loop, kind, cut, workDir) {
   const K = plan.blend;
@@ -109,17 +120,18 @@ function cutLoop(plan, loop, kind, cut, workDir) {
   if (!fs.existsSync(master)) throw new Error(`no master ${path.relative(REPO, master)} (the director's video/src/launch/master/final.sh)`);
   const name = kind === "phone" ? `loop-${loop.id}-phone` : `loop-${loop.id}`;
   const tmp = fs.mkdtempSync(path.join(workDir, `.${name}.`));
-  const vf = chain(plan, cut);
+  const vf = chain(cut);
+  const pre = plan.prefilter || "";
   const ffv1 = ["-c:v", "ffv1", "-level", "3", "-pix_fmt", "yuv420p", "-an"];
   const list = [];
   try {
     for (const p of pieces(loop, K)) {
       const out = path.join(tmp, `${p.piece}.mkv`);
       if (p.piece === "B") {
-        const graph = `[0:v]split=2[t][h];[t]trim=start_frame=${p.tail[0]}:end_frame=${p.tail[1]},setpts=PTS-STARTPTS[tail];[h]trim=start_frame=${p.head[0]}:end_frame=${p.head[1]},setpts=PTS-STARTPTS[head];[tail][head]xfade=transition=fade:duration=${K / plan.fps}:offset=0,${vf}[v]`;
+        const graph = `[0:v]split=2[t][h];[t]${rangeFilter(pre, p.tail[0], p.tail[1])}[tail];[h]${rangeFilter(pre, p.head[0], p.head[1])}[head];[tail][head]xfade=transition=fade:duration=${K / plan.fps}:offset=0,${vf}[v]`;
         run(FF, ["-hide_banner", "-nostdin", "-loglevel", "error", "-y", "-i", master, "-filter_complex", graph, "-map", "[v]", "-frames:v", String(K), ...ffv1, out], `${name} ${p.piece}`);
       } else {
-        run(FF, ["-hide_banner", "-nostdin", "-loglevel", "error", "-y", "-i", master, "-vf", `trim=start_frame=${p.from}:end_frame=${p.to},setpts=PTS-STARTPTS,${vf}`, ...ffv1, out], `${name} ${p.piece}`);
+        run(FF, ["-hide_banner", "-nostdin", "-loglevel", "error", "-y", "-i", master, "-vf", `${rangeFilter(pre, p.from, p.to)},${vf}`, ...ffv1, out], `${name} ${p.piece}`);
       }
       list.push(`file '${out.replace(/'/g, "'\\''")}'`);
     }
@@ -180,7 +192,8 @@ function main() {
       const p = pieces(loop, plan.blend);
       console.log(`${loop.id} (${loop.scene}): ${loop.frames} frames, ${(loop.frames / plan.fps).toFixed(2)} s, from master frame ${loop.first}; starts on ${loop.poster}`);
       for (const x of p) console.log(`  ${x.piece}: ${x.piece === "B" ? `[${x.tail}] fades into [${x.head}], ${plan.blend} frames` : `[${x.from}, ${x.to}), ${x.to - x.from} frames`}`);
-      for (const [kind, cut] of Object.entries(loop.cuts)) console.log(`  ${kind}: ${plan.masters[cut.master]} -> ${chain(plan, cut)}`);
+      if (plan.prefilter) console.log(`  prefilter: ${plan.prefilter}, each range read ${PREROLL} frames early (as far as the film allows)`);
+      for (const [kind, cut] of Object.entries(loop.cuts)) console.log(`  ${kind}: ${plan.masters[cut.master]} -> ${chain(cut)}`);
     }
     return 0;
   }

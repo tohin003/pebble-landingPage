@@ -3,7 +3,7 @@
   "about": "The Pebble 2.0 loops on the page (src/lib/media.ts LaunchLoopId), cut from the launch film's own masters by tools/encode/loops.mjs: the film's pixels at its own 30 fps, never a new render. Frames are master frames (video/src/launch/master/timeline.ts: fr(slot.in) .. fr(slot.out)); `within` is the part of the scene clear of its seams (a zoom-through's settle, a whip's blur, a wipe) and of type that is entering or leaving. A loop plays `frames` frames: the source frames first .. first + frames, where the last `blend` of them dissolve into the first `blend` (source first + frames .. first + frames + blend into first .. first + blend), so the cycle closes on the film's own frames. It starts on `poster`, a telling frame, so the poster is the loop's frame 0 and the seam (last frame to first) is two neighbouring film frames. Each cut renders one file: `main` is loop-<id> (LAUNCH_LOOP_FRAMES), `phone` is loop-<id>-phone (LOOP_PHONE_FRAME, 1080 x 1350, the 4:5 master's own layout). Posters and the blend are provisional until phase B looks at the frames; the labels are drafts for copy.ts media.launchLoops and CLAIMS C-LOOP2-*, to be checked against every frame of the delivered clip.",
   "fps": 30,
   "blend": 12,
-  "prefilter": "",
+  "prefilter": "hqdn3d=0:0:4:4",
   "budgets": { "hevc": 600000, "h264": 900000, "h264Hard": 1200000 },
   "masters": {
     "16x9": "video/out/launch/LaunchFilm-16x9-master.mp4",
@@ -23,14 +23,14 @@
       "source": "Recorded from Pebble 2.0.0."
     },
     {
-      "id": "mac-apps",
+      "id": "mac",
       "scene": "S03",
       "within": [606, 926],
       "first": 640,
       "frames": 270,
       "poster": 712,
       "cuts": { "main": { "master": "16x9", "scale": "1600:900" }, "phone": { "master": "4x5" } },
-      "note": "S03's shots last 1.5 to 2 s each (Calculator 2.5-4.0, Calendar 4.0-6.0, Chrome 6.0-7.75, the window card 7.75-11.0), too short for a 6-10 s loop each: this one loop is the whole burst, for #mac as one clip (the director's ruling asked in .work/handoffs/launch-site-2.md; until then it fills the App windows tab's slot and the other two stay empty).",
+      "note": "S03's shots last 1.5 to 2 s each (Calculator 2.5-4.0, Calendar 4.0-6.0, Chrome 6.0-7.75, the window card 7.75-11.0), too short for a 6-10 s loop each: this one loop is the whole burst, under #mac's feature list as the section's one clip (the director's phase-B answer 1).",
       "label": "“Now it can use your Mac.” In Calculator, Pebble keys in 48 × 12.5 and gets 600: “Your apps.” Calendar shows the new event Glaze order 09:00: “Your calendar.” Chrome shows Pebble's pill, “Pebble is working in this tab”: “Your browser.” Then Pebble's card asking to use one app window: “The app windows and websites you allow.”",
       "source": "Recorded from Pebble 2.0.0."
     },
@@ -51,7 +51,7 @@
       "within": [1205, 1415],
       "first": 1205,
       "frames": 198,
-      "poster": 1318,
+      "poster": 1336,
       "cuts": { "main": { "master": "16x9", "scale": "1600:900" }, "phone": { "master": "4x5" } },
       "label": "“It builds small tools for itself.” A script makes the tool kiln_ramp_time. In a drawn diagram its own tests pass in a sandbox, a blind check passes 2 of 5, and the pebble asks. Pebble's card asks whether to keep the tool: “When the check disagrees, it asks you.”",
       "source": "Recorded from Pebble 2.0.0, with a drawn diagram."
@@ -74,8 +74,8 @@
       "first": 1637,
       "frames": 181,
       "poster": 1795,
-      "cuts": { "main": { "master": "16x9", "crop": "1200:800:700:270" } },
-      "note": "The scene's title stays at full size over the whole scene, and the page never shows that name (the owner's ruling, 2 Nov 2026): the clip is a 3:2 crop of the diagram alone (16:9 layout: title y 56-206, lines x 112-732, the column x 840-1780 over a budget line from x 796, the floor at y 1012). Check every frame of the crop: no glyph of the title or of the lines, and the camera's push keeps the column inside. If it can't, the loop is dropped (the slot shows nothing). No 4:5 cut: the 4:5 layout stacks the title over the diagram.",
+      "cuts": { "main": { "master": "16x9", "crop": "1140:760:780:266" } },
+      "note": "The scene's title stays at full size over the whole scene, and the page never shows that name (the owner's ruling, 2 Nov 2026): the clip is a 3:2 crop of the diagram alone. Measured on the final 16:9 master (2 Nov, phase B): the title's lowest glyphs reach y 220; the column spans y 258 (the over-budget box at its highest, about 15 frames) to 1030 (the last stub's border); the label \"context budget\" ends at x 775 at most (frames 1685 to 1710, when the camera's push is at its widest), so the crop starts at x 780 and runs to the frame's edge: 1140 x 760 from (780, 266), shown at that size, with no scaling. It leaves out every glyph of the title and of the label, keeps the dashed budget line, and trims at most 8 px of the over-budget box's top border for about 15 frames and 4 px of the last stub's lower border. No 4:5 cut: the 4:5 layout stacks the title over the diagram.",
       "label": "Diagram. Six tool results stack up past a dashed line marked “context budget”. The three oldest are sealed into short stubs, the column falls back under the line, and one stub opens again, unchanged.",
       "source": "A diagram, not Pebble's interface."
     },
@@ -85,7 +85,7 @@
       "within": [1857, 2094],
       "first": 1857,
       "frames": 225,
-      "poster": 2030,
+      "poster": 2040,
       "cuts": { "main": { "master": "4x5" } },
       "label": "Pebble Remote on an iPhone screen, in the iOS Simulator: “Pebble, in your pocket.” “Pebble Remote for iPhone.” An edit waits for review; Apply Edit is tapped, the Face ID prompt passes, and the edit is done. “Approve with Face ID.” “Open source. Build it with Xcode.”",
       "source": "Pebble Remote in the iOS Simulator, built from its published source, against a stand-in Mac."

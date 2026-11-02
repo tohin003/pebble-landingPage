@@ -25,6 +25,10 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$HERE/../../scripts/env.sh"
 cd "$REPO"
 
+# The grain choice for every web file of the film (tools/encode/README.md "The grain"; the clips take the same filter from
+# tools/encode/launch-loops.json "prefilter"). FILM_VF= (empty) encodes the film's own grain instead.
+export FILM_VF="${FILM_VF-hqdn3d=0:0:4:4}"
+
 ENC="$HERE/encode.sh"
 OUT_DIR="$REPO/video/out/launch"
 M16="$OUT_DIR/LaunchFilm-16x9-master.mp4"
