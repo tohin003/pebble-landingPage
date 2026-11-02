@@ -3,7 +3,8 @@
 The story of Pebble's website and launch film, for a curious engineer: the ideas behind them, the pipeline, the gates
 every piece had to pass, the tools, and what was tried and turned down. The commands are in `docs/BUILDING.md`.
 
-Everything here was built with Claude Code, by teams of agents working in parallel in one checkout, in October 2026.
+Everything here was built with Claude Code, by teams of agents working in parallel in one checkout, in October and
+November 2026.
 
 ## The pipeline
 
@@ -27,6 +28,14 @@ video/        the film's timeline, snapped to the beat map --> 16:9, 1:1 and 9:1
 
 tools/encode  masters + soundtrack --> HEVC and H.264 --> public/media/v1, v2 --> the Next.js site --> Vercel
                                    `--> the social films and the 30 s cut (kept outside the repository)
+
+The Pebble 2.0 launch film, which replaced the trailer and its media/v2 on 2 November 2026:
+
+video/src/launch  real takes of Pebble 2.0, Pebble 2.0.1's interface, Pebble Remote, kinetic type and the pebble,
+                  on the music's beat map --> final.sh --> 16:9 and 4:5 masters, each with its WAV mix --> qa.sh
+                     |
+tools/encode      launch-site.sh: the web mix, the film set, the posters and the clips cut from the film
+                     --> public/media/v3 --> the Next.js site --> Vercel
 ```
 
 ## A philosophy before a page
@@ -145,7 +154,7 @@ The film kept its single story: it has no Stealth beat.
 ## The film, cut to the music
 
 This section and the next tell the first film's story. The launch trailer that replaced it on the page is described
-after them, in "The trailer".
+after them, in "The trailer", and the Pebble 2.0 launch film that replaced the trailer on 2 November 2026 after that.
 
 The launch film is a Remotion project. Its clock is the score's beat map: 100 BPM in 4/4, 18 frames a beat and 72 a
 bar at 30 fps, 32 bars, 2,304 frames. Every shot starts on a bar line or a beat, and every click lands on a beat. The
@@ -267,11 +276,69 @@ voice (Sarvam AI's Bulbul v4, the voice Simran):
 - the music ducks about 4.6 dB under each line;
 - the voice is disclosed as AI wherever the twin is posted.
 
-**On the page.** The poster is the trailer's own first frame, framed so the pebble peeks into the first screen and
-the play button sits on the dark field. Phones get the 1:1 cut, so the proof stays readable at phone width.
+**On the page** (until 2 November 2026). The poster is the trailer's own first frame, framed so the pebble peeks into
+the first screen and the play button sits on the dark field. Phones get the 1:1 cut, so the proof stays readable at
+phone width. Its files left `public/` with it; git history keeps them, and its spec, captions and 30 s cut stay in
+`docs/` as its record.
 
 Two fresh-eyes reviews judged the trailer against the blueprint, the truth rules and the owner's request. Each
 finding was decided by the lead and recorded, and the fixes were made before anything shipped.
+
+## The Pebble 2.0 launch film
+
+On 2 November 2026 the Pebble 2.0 launch film replaced the trailer on the page. It is a fresh production, made in
+`video/src/launch/` by a director session from a written treatment with the owner's decisions in it
+(`docs/launch/TREATMENT.md`, then `docs/launch/EDIT_PLAN.md`): 99.4 s at 30 fps, in 16:9 and a 4:5 cut that is laid
+out again for phones, never cropped.
+
+**The story is an underdog's.** A small sage pebble on a dark stage: "This is Pebble." "It’s small." "It just went up
+against Claude Code and Codex." "Same model. Same tasks." Then the title, eight of 2.0's features (seven on Pebble's
+real interface, the long-task one as a diagram), and the payoff: the benchmark published with Pebble 2.0.0, its
+numbers exactly as in the release notes and its method on screen beside them. It ends on "Small pebble." "Real work."
+There is no voiceover: kinetic type, music and effects tell it, so it reads muted, as most feeds play it.
+
+**The real interface, again.** The features are recordings of the Pebble 2.0.0 build, Pebble 2.0.1's own interface run
+in the capture harness with sample data, and Pebble Remote built from its published source and recorded in the iOS
+Simulator. The long-task scene is a diagram, and the page's clip of it says so. Stealth Lockdown's honest line is on
+screen, word for word, from the recording's first frame to the end of the scene.
+
+**The music is a stock track this time, chosen by ear.** Three edits of Mixkit tracks were offered, and the owner
+chose edit A, "Your Breath" by Eugenio Mininni, on 26 October. The film's acts fall on the track's own drop (8.05 s),
+breath (72.05 s) and payoff (81.05 s), with one cut into its drum-out (93.06 s). Mixkit's licence asks for no credit;
+the site gives one anyway. The effects are Kenney's CC0 clicks, ticks, pops and thuds and sounds designed in code; the
+kit's few recorded Mixkit effects are not in the film. `docs/media-provenance.json` (`launch_film`) has the hashes,
+the licences and every effect the film plays.
+
+**A fresh critic every round.** The owner's instruction was a loop: render, have a new reviewer that built nothing
+judge the film as a muted phone viewer and a desktop viewer would, fix, and go again until a critic calls it
+launch-ready and tasteful (`docs/launch/VERIFICATION_LOOP.md`). It took five rounds. The last ran on the full masters
+and found one MUST in the 4:5: a mask meant for the desktop ran onto the edge of Pebble's window in the Stealth
+recording, and three lines inside the window were frosted. It was fixed in the film, not in the sentence that
+describes it: nothing inside Pebble's window is masked. Both cuts were then called ready to ship. No round judged the
+sound by ear, so one listen on headphones is left to the owner.
+
+**On the page.** The poster is the film's frame 0, the small pebble under "This is Pebble." on its dark stage, so the
+rivals' names never sit on the page before a visitor presses play. Wide screens get the 16:9 film and phones the 4:5
+cut. Its captions come from the film's own caption list, the one source the film's subtitles also use. Its chapters
+follow its scenes, and its audio description keeps every line the film shows and adds at most two short sentences a
+chapter, so a listener can follow the pictures; the player pauses the film while a description is read.
+
+**The site's files** come from the two masters by one script, `tools/encode/launch-site.sh`: the web mix (one gain for
+the whole film to −16 LUFS, under a limiter that watches the peaks between samples), the film set, the posters and the
+eight clips. The grain was the hard part: it is re-seeded every frame, and at the page's sizes (about 0.9 Mb/s of
+video at 1080p) no encoder keeps it. Left alone, the dark stage broke into flat blocks a level or two apart, which
+crops at 3× contrast showed and the director's blockiness measure confirmed for the first second (2.6, against the
+master's 1.8). So every web file, the clips too, goes through a light temporal denoise (`hqdn3d=0:0:4:4`), both
+encoders spend more on dark blocks (adaptive quantisation with a bias to dark scenes), and the HEVC film's first
+second gets 2.5 times the bits, so the frames after the poster start clean instead of clearing over a second
+(`tools/encode/README.md`, "The grain").
+
+**The clips are the film's own frames.** Each feature's clip is a cycle of a scene's frames, 6 to 9 s long, that
+starts on its poster frame; its last 12 frames dissolve into its first, so the loop has no seam to find. The encoders
+had to be taught that too: with x264's default rate control a clip's first frame, a key frame, came out sharper than
+its last, and the seam showed; the H.264 clips now spread their quality evenly over the cycle. They are silent, and
+each label says in words everything the clip shows, checked against every frame. The long-task clip is a 3:2 crop of
+the diagram that leaves the scene's title out, because the page's own words never use the name.
 
 ## Every sentence has a source
 
@@ -462,6 +529,39 @@ three runs each, medians)
     172 KB, styles 26 KB, the HTML 59 KB, and the film's poster in both formats.
   - Two savings are known and not yet made. The hidden player's `poster` attribute fetches the poster's WebP on load
     (18 KB). The release facts' Geist Mono adds two preloaded files (20 KB).
+
+### The launch film on the page (2 November)
+
+**The source**
+
+- The type checks pass for the site and the films. The film's plan check, the 1.x loops' check and the retired
+  trailer's cue check pass.
+- The Bun suites pass: 232 site and content tests and 82 engine tests.
+- The captions pass their own rules (46 cues), and the page's three tracks are what `tools/captions/build.mjs` makes
+  from them now.
+- The copy lint finds nothing in 2,357 text items from five pages and `src/content`.
+
+**The media**
+
+- `node tools/encode/verify.mjs`: 91 files, all pass, with three warnings: the 4:5 H.264 film is 0.1 MB over its
+  share, the captions keep the film's own pace, and the extended description holds the film at every chapter.
+- The film set is 46.69 MB of its 50 MB: the 16:9 film in 1080p HEVC (13.32 MB) and 720p H.264 (10.60 MB), its 4:5 cut
+  in HEVC (10.17 MB) and H.264 (12.60 MB). Each has the master's 2,982 frames and measures −16.0 LUFS and −3.6 dBTP on
+  its AAC. `public/` is 72 MB as `du -sh` counts it.
+- The 14 clips (eight loops, six with a 4:5 cut) and their posters are 19.27 MB, and every seam passes.
+- Against its master, second by second, the 1080p HEVC film reads less blocking everywhere, and every file's first
+  second is clean; the 4:5 H.264 fallback is the weakest, in S08's night and S09's dusk.
+
+**The page** (8 screenshot runs of `/` and `/film` at 390 and 1440 px, motion on and reduced, and 64 interaction
+checks)
+
+- No console errors, failed requests or horizontal overflow; every check passes, the film playing in the theatre and
+  every clip's pause and play button working.
+- The screenshots found three things the tests didn't, fixed before the last run:
+  - on phones, a clip with a 4:5 cut was cropped into its wide frame: an inline style set the frame's shape, and an
+    inline style beats the stylesheet's rule for phones;
+  - Pebble Remote's clip, already 4:5, showed only its poster on phones; it is its own phone cut now;
+  - the play button sat on the poster's one line, "This is Pebble.", and now sits on the dark field above it.
 
 ## Skills and tools
 

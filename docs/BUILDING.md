@@ -1,9 +1,15 @@
 # Building everything
 
 How to rebuild the site's media from nothing: the captures of Pebble's real interface, the stills, the recordings, the
-score and the mix, the films in three aspects and the 30 s cut, the loops, the posters, the encodes and the checks.
-The site itself needs none of this to build (see `README.md`); this is for when the product, the story or the music
-changes.
+films, the loops, the posters, the encodes and the checks. The site itself needs none of this to build (see
+`README.md`); this is for when the product, the story or the music changes.
+
+**Since 2 November 2026 the page's film is the Pebble 2.0 launch film**, which replaced the 1.x trailer at the owner's
+ask. Its treatment and edit plan are in `docs/launch/`, its code in `video/src/launch/`, and its masters come from
+`video/src/launch/master/final.sh` (section 4). Every site file of it (the web mix, the film and its 4:5 cut, the
+posters, the clips cut from it, the text tracks) comes from one command, `tools/encode/launch-site.sh` (sections 5
+and 6). The trailer's own pipeline (its synthesised score in section 3, its compositions, its 1:1 and 9:16 cuts, its
+narrated twin and its 30 s cut) is kept below as its record: none of it feeds the page now.
 
 The commands come from the scripts' own headers and the folders' READMEs. When a script and this page disagree, the
 script is right, and this page should be corrected.
@@ -223,6 +229,10 @@ the wallpaper stay in `v1/`. The first film's poster and the teaser T0 are retir
 
 ## 3. The score, the sound effects and the mix
 
+(The retired 1.x trailer's. The launch film's music is "Your Breath" by Eugenio Mininni (Mixkit), edited to picture,
+with Kenney's CC0 effects and sounds designed in code; its mix is rendered with each master by
+`video/src/launch/master/final.sh`, and its record is `docs/media-provenance.json` `launch_film`.)
+
 The trailer's music is an original score synthesised in code: `tools/audio/scores/trailer_b.py`, a bright electro-pop
 launch cue on the engine in `tools/audio/synth` (its README), picked by a judge from two candidates written to the
 trailer blueprint (`trailer_a.py`, a hybrid trailer cue, is the other). It follows the film's grid
@@ -309,6 +319,18 @@ cut. `final_mix.sh` makes it with the film's masters. After a new cue export, re
 `tools/audio/cut_soundtrack.sh` made the retired sampled score's cut and is not used for the trailer.
 
 ## 4. The films, the loops and the stills in Remotion
+
+**The launch film** (`video/src/launch/`, registered by `video/src/launch/Root.tsx` and `master/index.tsx`) renders as
+two masters, `LaunchFilm-16x9` (1920 × 1080) and `LaunchFilm-4x5` (1080 × 1350), 2,982 frames at 30 fps:
+
+```bash
+video/src/launch/master/final.sh 16x9             # the master and its WAV mix, video/out/launch/LaunchFilm-16x9-master.*
+video/src/launch/master/qa.sh video/out/launch/LaunchFilm-16x9-master.mp4 --verify   # frames, pops, flash: gates.txt
+video/src/launch/master/deliver.sh 16x9           # the posted files (LinkedIn at -14 LUFS, a web copy at -16 LUFS)
+# the same with 4x5
+```
+
+The rest of this section is the retired 1.x trailer's and the 1.x loops':
 
 `video/` is its own npm project, pinned to Remotion 4.0.538 (every `remotion` and `@remotion/*` package exactly; never
 run `npx remotion upgrade` mid-project). `video/src/Root.tsx` registers the compositions:
@@ -404,124 +426,75 @@ changes.
 
 ## 5. Encode and verify
 
-`tools/encode/encode.sh` makes the web and social encodes from the masters, and `tools/encode/verify.mjs` checks them.
-`tools/encode/README.md` has the exact options, file names and budgets; `tools/encode/encode.sh --help` prints the
-usage.
+`tools/encode/launch-site.sh` makes every site file of the launch film from its two masters, in order, each heavy step
+through `scripts/heavy.sh`; `tools/encode/README.md` has the budget plan, the options and the file names, and
+`tools/encode/encode.sh --help` prints the usage. Don't wrap the script in `heavy.sh`: its steps queue themselves.
 
 ```bash
-tools/encode/encode.sh film   <master.mp4> <soundtrack_web.wav> [--only 1080.hevc,1080.h264,720.hevc,720.h264]
-tools/encode/encode.sh square <square_master.mp4> <soundtrack_web.wav> <square_social.mp4> [--only hevc,h264]
-tools/encode/encode.sh social <master.mp4> <soundtrack_social.wav> <out.mp4> [--cut <cut.json>] [--crf <n>]
-tools/encode/encode.sh loop   <id> <master.mp4> [<phone_master.mp4>]
-tools/encode/encode.sh teaser <master.mp4>
-tools/encode/encode.sh poster <png> <out-base> <width> <height>
+tools/encode/launch-site.sh                       # tracks, mix, film, posters, loops, verify (or name the steps)
+tools/encode/launch-site.sh clean                 # afterwards: the intermediate mixes, stills and loop masters go
 ```
 
-- Homebrew FFmpeg through `$FF` and `$FP`. Each command is one `scripts/heavy.sh` job: run directly, the script runs
-  itself through `heavy.sh`.
-- It checks its inputs before queueing: 30 fps masters, the film at 1920 × 1080 (its 1:1 cut at 1080 × 1080), and a
-  48 kHz stereo soundtrack as long as the picture, to the frame.
-- HEVC (`hvc1`) first, then H.264, each in `yuv420p` with BT.709 tags and `+faststart`. The film's audio is AAC at
-  48 kHz from the web soundtrack, encoded once; the loops and the teaser are silent. Each file starts at its planned
-  quality and steps down only as far as its size budget needs; the resolution never drops. A loop can start at a
-  higher quality with `LOOP_HEVC_CRF` and `LOOP_H264_CRF`, within the same budgets. The desktop loop (companion) uses
-  22 and 19: its desktop is one smooth gradient, which showed blocks at the defaults, 27 and 23.
-- At the end a verify pass checks the new files. `node tools/encode/mp4.mjs codecs <file>` prints a file's codecs
-  string, which must fit the one the page declares in `src/lib/media.ts` (`hvc1.1.6.L120.90` for HEVC, `avc1.640028`
-  for H.264).
-
-**The website's media**, under the names `src/lib/media.ts` reads: the film's own files into `public/media/v2/`
-(`--out-dir`), everything else into `public/media/v1/`:
+Its steps, one by one:
 
 ```bash
-tools/encode/encode.sh film video/out/masters/LaunchFilm.mp4 .work/audio/render/soundtrack_web.wav --out-dir public/media/v2   # film-1080, film-720
-tools/encode/encode.sh loop isolated-tests video/out/masters/loop-isolated-tests.mp4 video/out/masters/loop-isolated-tests-phone.mp4
-tools/encode/encode.sh loop memory video/out/masters/loop-memory.mp4      # and models, views
-LOOP_HEVC_CRF=22 LOOP_H264_CRF=19 tools/encode/encode.sh loop companion video/out/masters/loop-companion.mp4 video/out/masters/loop-companion-phone.mp4
-tools/encode/encode.sh poster video/out/stills/film.poster.png public/media/v2/film.poster 1920 1080   # the film's, beside it
-tools/encode/encode.sh poster video/out/stills/loop-memory.poster.png public/media/v1/loop-memory.poster 1600 1000
-node tools/encode/verify.mjs                  # everything in public/media/v1 and v2, and public/'s totals
-node tools/encode/verify.mjs --no-analysis    # the same without the loudness and seam passes: light, no heavy job
+tools/encode/encode.sh mix   video/out/launch/LaunchFilm-16x9-master.wav .work/launch/site/mix-16x9-web.wav   # -16 LUFS
+tools/encode/encode.sh film  video/out/launch/LaunchFilm-16x9-master.mp4 .work/launch/site/mix-16x9-web.wav   # film-1080.hevc, film-720.h264
+tools/encode/encode.sh phone video/out/launch/LaunchFilm-4x5-master.mp4 .work/launch/site/mix-4x5-web.wav     # film-phone.hevc, .h264
+tools/encode/encode.sh still video/out/launch/LaunchFilm-16x9-master.mp4 0 .work/launch/site/film.poster.png  # frame 0
+tools/encode/encode.sh poster .work/launch/site/film.poster.png public/media/v3/film.poster 1920 1080
+node tools/encode/loops.mjs                       # the clips of tools/encode/launch-loops.json, posters and encodes
+node tools/encode/verify.mjs                      # everything in public/media, and public/'s totals
+node tools/encode/verify.mjs --no-analysis        # the same without the loudness and seam passes: light, no heavy job
 ```
 
-`verify.mjs` checks codecs and profile against the page's `<source type>`, the peak bitrate against the declared level,
-the colour tags, `+faststart`, the frame count (the film's against `docs/film-captions.json`), sizes and budgets
-(every file at most 45 MB, `public/` at most 90 MB, the film set with its 1:1 cut at most 45 MB), the film's loudness
-on the encoded AAC (−16 LUFS ±1, at most −1.5 dBTP), the loops' and the teaser's seams on the encodes, the text tracks
-against what `tools/captions/build.mjs` makes now, and the posters against their videos. A file in a folder the page
-doesn't read it from (a film file left in `v1/`, say) is a warning. Its loudness and seam passes decode every file, so
-they run as one heavy job of their own.
+- **The mix.** The page plays the film at −16 LUFS (D10). `encode.sh mix` takes each master's own WAV through the chain
+  of the director's `deliver.sh`: a 4×-oversampled peak limiter at −4 dBFS, then a two-pass loudnorm that must stay
+  linear. The film's AAC is then one generation.
+- **The film's files.** 1080p HEVC and 720p H.264 of the 16:9 master, and the 4:5 master in both codecs for phones
+  (`film-phone`). HEVC (`hvc1`) first, then H.264, each in `yuv420p` with BT.709 tags and `+faststart`; each starts at
+  its CRF and rises only as far as its budget needs. `FILM_VF` puts a filter before the encode: `launch-site.sh` sets
+  `hqdn3d=0:0:4:4`, a light temporal denoise, and the clips take the same (`launch-loops.json` `prefilter`). Both
+  encoders run their adaptive quantisation with a bias to dark scenes (`ENC_AQ=3`), and the HEVC film's first second
+  gets 2.5 times the bits (`FILM_ZONE`), so the frames after the poster start clean. Why: `tools/encode/README.md`
+  "The grain".
+- **The clips** are cut from the masters, never rendered again: each a cycle of the film's own frames whose last 12
+  dissolve into its first, starting on its poster frame. `node tools/encode/loops.mjs --dry-run` checks the plan;
+  `--cut-only` makes the loop masters and a review strip each (`.work/launch/site/loops/review/`) to look at first.
+- **The checks.** `verify.mjs` checks codecs and profile against the page's `<source type>`, the peak bitrate against
+  the declared level, the colour tags, `+faststart`, the frame count (2,982, from `src/content/chapters.ts`), sizes
+  and budgets (every file at most 45 MB, `public/` at most 90 MB, the film set at most 50 MB), the film's loudness on
+  the encoded AAC (−16 LUFS ±1, at most −1.5 dBTP), the clips' seams, the text tracks against what
+  `tools/captions/build.mjs` makes now, and the posters against their videos. A file in a folder the page doesn't
+  read it from is a warning, as anything left in the retired `media/v2/` would be.
 
-**The social films** for X and LinkedIn: 16:9, 1:1 and 9:16, each from its own master, with the social soundtrack
-(−14 LUFS). They are delivered outside the repository and never committed:
-
-```bash
-D="<a folder outside the repository>"
-tools/encode/encode.sh social video/out/masters/LaunchFilm.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1920x1080.mp4"
-tools/encode/encode.sh social video/out/masters/LaunchFilmSquare.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1080x1080.mp4"
-tools/encode/encode.sh social video/out/masters/LaunchFilmVertical.mp4 .work/audio/render/soundtrack_social.wav "$D/Pebble-launch-film-1080x1920.mp4"
-tools/encode/encode.sh social video/out/masters/LaunchFilm.mp4 .work/audio/render/soundtrack_social_narrated.wav "$D/Pebble-launch-film-narrated-1920x1080.mp4"
-node tools/captions/build.mjs --out-dir public/media/v2 --srt "$D/Pebble-launch-film.srt" --narrated-srt "$D/Pebble-launch-film-narrated.srt"
-```
-
-**The 1:1 film for phones** (OVERRIDES §46 P2-9): at phone width the page plays the square film, whose interface text
-stays readable there (`src/lib/filmSources.ts`). It is made after the 1:1 social film: `film-square.h264.mp4` is that
-film's video, copied without a second encode, with the web soundtrack's AAC; `film-square.hevc.mp4` is encoded from the
-1:1 master like `film-1080.hevc.mp4`, and only kept while the film set stays within 45 MB. Its timing is the 16:9
-film's, frame for frame, so it shares the three text tracks:
-
-```bash
-tools/encode/encode.sh square video/out/masters/LaunchFilmSquare.mp4 .work/audio/render/soundtrack_web.wav \
-  "$D/Pebble-launch-film-1080x1080.mp4" --out-dir public/media/v2                # film-square.h264, film-square.hevc
-```
-
-**The narrated twin** (OVERRIDES §38) is the 16:9 film's picture with the narrated social soundtrack (section 3): one
-synthetic narrator speaks four lines over the question cards and the "Free and open source" card. The master stays
-wordless. Its SRT is the film's captions with each spoken line marked "Narrator: …" (section 6). Its voice is disclosed
-in its description, word for word: "Narration: an AI voice by Sarvam AI, Bulbul." (`docs/film-narration.json`
-`disclosure`), never beside a line that says the film has no voiceover, and the voice is never shared as audio alone.
-
-**The 30 s cut for X** (`docs/film-cuts/x30.json`; `docs/FILM_SPEC.md` §23). It is made only of the film's own frames:
-four source ranges, each starting on the same beat of the bar in the film and in the cut, 864 frames (28.8 s). There is
-no separate composition: `encode.sh social --cut` seeks each range frame-exactly in a film master and joins them, with
-the cut's own soundtrack (section 3):
-
-```bash
-tools/encode/encode.sh social video/out/masters/LaunchFilm.mp4 .work/audio/render/soundtrack_x30_social.wav \
-  "$D/Pebble-launch-film-30s-1920x1080.mp4" --cut docs/film-cuts/x30.json
-# the same with LaunchFilmSquare.mp4 (-1080x1080) and LaunchFilmVertical.mp4 (-1080x1920)
-node tools/captions/build.mjs --cut docs/film-cuts/x30.json --srt "$D/Pebble-launch-film-30s.srt"
-node tools/encode/verify.mjs "$D"             # public/media and the social folder together
-```
-
-`node tools/captions/cues.mjs cut-inputs docs/film-cuts/x30.json 2304 30` prints the seeks the cut uses. If the
-film's timing changes, pick the ranges again by the same rule, then re-run the caption check, `cut_cues.py` and
-`final_mix.sh` (the score renders the cut's bars from `music.score_bars`).
+The 1.x loops (`media/v1/`) were encoded with `encode.sh loop <id> <master.mp4> [<phone_master.mp4>] --out-dir
+public/media/v1`. The trailer's own commands (`encode.sh square`, `teaser`, `social --cut`) are retired with it; git
+history keeps them.
 
 ## 6. Captions and chapters
 
-`docs/film-captions.json` is the single source of the film's captions: sound descriptions and the on-screen lines,
-word for word, with frame numbers. `tools/captions/build.mjs` turns it into `film.en.vtt` for the site and, with
-`--srt`, the `.srt` for social posts; it turns `src/content/chapters.ts` into `film.chapters.vtt`, and the JSON's
-time-coded descriptions into `film.descriptions.en.vtt`, the text the film player's audio-description toggle reads.
-With `--narrated-srt`, it also writes the narrated twin's SRT from `docs/film-narration.json` (the voice lane's cues):
-the caption on screen when each line starts carries it as "Narrator: <the spoken text>", in place of the on-screen line
-with the same words. It checks every cue first (time order, no overlaps, one or two lines of at most 42 characters, at
-least 1.2 s on screen, at most 3.5 words a second, no exclamation mark) and writes nothing if one fails:
+The film's captions have one source, `video/src/launch/master/captions.ts`: its 46 cues are the film's on-screen type,
+in master seconds (the film has no voice). Its `--check` enforces its rules and its `--write` writes the SRT and the
+VTT into `video/out/launch/`. `tools/captions/build.mjs` then makes the page's three tracks in `public/media/v3/`:
+`film.en.vtt` (the film's VTT, cue for cue), `film.chapters.vtt` and `film.descriptions.en.vtt` (from
+`src/content/chapters.ts`: each chapter's title, start and description, which the player's audio-description toggle
+reads):
 
 ```bash
-node tools/captions/build.mjs --check                                   # validate only (the narrated twin's too)
-node tools/captions/build.mjs --out-dir public/media/v2 --srt <file.srt> # the three VTTs in public/media/v2/, and the SRT
-node tools/captions/build.mjs --out-dir public/media/v2 --srt <file.srt> --narrated-srt <narrated.srt>   # ... and the twin's
-node tools/captions/build.mjs --check --cut docs/film-cuts/x30.json     # a cut's captions, on the cut's timeline
+bun video/src/launch/master/captions.ts --write   # the film's VTT and SRT, after its own check
+node tools/captions/build.mjs --check             # the page's tracks, validated only
+node tools/captions/build.mjs                     # the three VTTs into public/media/v3
 ```
 
-The three VTTs land in `public/media/v2/`, beside the film. Without `--out-dir` they go to `public/media/v1/`, where the
-page no longer reads them, and `verify.mjs` reports them as strays and the v2 tracks as stale. A warning says when a
-description needs more speech than its cue lasts (16 of the trailer's 21 do): the film player then holds the film on
-the cue's last frame until the voice is done. Run it again whenever the JSON or `chapters.ts` changes: `verify.mjs`
-fails a stale track. `src/content/filmCaptions.ts` mirrors the JSON for the `/film` transcript; `npm run test:site`
-fails if the two drift apart.
+It checks every cue first (time order, no overlaps, one or two lines of at most 42 characters, at least 1.2 s on
+screen, every time on a frame and inside the film, no exclamation mark), and writes nothing if one fails. The film's
+type reads faster than 3.5 words a second in places: those captions are warnings, its documented exception
+(`tools/captions/cues.mjs` `FILM_OWN_PACE`). Every description outlasts its chapter, so the player holds the film on
+each chapter's last frame until the voice is done (extended description). The `/film` transcript is the page's own
+text (`chapters.ts`); `src/content/film.test.ts` checks that it carries every caption's words, but the long-task
+scene's title, which the page's words never use. `tools/captions/README.md` has the rest. The trailer's captions
+(`docs/film-captions.json`, its narrated twin and its 30 s cut) are its record now.
 
 ## 7. Quality gates
 

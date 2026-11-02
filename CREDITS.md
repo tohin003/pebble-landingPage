@@ -25,9 +25,9 @@ the media or the third-party work below: each keeps its own licence. The site sh
 Since 2 November 2026 the site's film is the Pebble 2.0 launch film (`public/media/v3/`).
 
 - **"Your Breath"** by Eugenio Mininni (Mixkit), edited to picture: the music of the Pebble 2.0 launch film. Mixkit Stock
-  Music Free License (https://mixkit.co/license/): no credit is required; this line is a courtesy. The edit and its
-  build record are in `.work/launch/music/MUSIC.md` (not committed) and, once the film is published,
-  `docs/media-provenance.json`.
+  Music Free License (https://mixkit.co/license/): no credit is required; this line is a courtesy. The source file's
+  hash, the edit and its licence are in `docs/media-provenance.json` (`launch_film`); the working record is
+  `.work/launch/music/MUSIC.md` (not committed).
 - Sound effects: Kenney (www.kenney.nl), "Impact Sounds" and "Interface Sounds", CC0 1.0, and sounds designed in code
   for this project, CC0 1.0. Pebble itself makes no sounds.
 - The pebble: wherever it appears in the film and in the clips cut from it, it is drawn by Pebble's character engine
